@@ -196,6 +196,15 @@ END:
     w.first = string_util::UnicodeTextToUTF8(uw2);
   }
 
+  // +3 for <unk>, <s>, </s>
+  CHECK_LT(static_cast<int>(required_chars_.size() + 3),
+           trainer_spec_.vocab_size())
+      << "Vocabulary size is smaller than required_chars. "
+      << trainer_spec_.vocab_size() << " vs " << required_chars_.size() + 3
+      << ". "
+      << "Increase vocab_size or decrease character_coverage with "
+      << "--character_coverage option.";
+
   LOG(INFO) << "Done! " << sentences_.size() << " sentences are loaded";
 }
 
