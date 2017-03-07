@@ -158,7 +158,7 @@ We have evaluated SentencePiece segmentation with the following configurations.
 
 *   Segmentation algorithms:
     *   **BPE** (Byte Pair
-        Encoding) [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] (`--model_type=bpe`)
+        Encoding) [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]] (`--model_type=bpe`)
     *   **Unigram**. Language-model based segmentation. (`--model_type=unigram`)
 
 *   Pre-tokenization methods:
