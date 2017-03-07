@@ -68,8 +68,8 @@ void Lattice::Clear() {
   end_nodes_.clear();
   sentence_.clear();
   surface_.clear();
-  all_nodes_.clear();
   port::STLDeleteElements(&all_nodes_);
+  all_nodes_.clear();
 }
 
 void Lattice::SetSentence(StringPiece sentence) {
@@ -392,9 +392,8 @@ void ModelBase::BuildTrie(std::vector<std::pair<std::string, int>> *pieces) {
   }
 
   trie_ = port::MakeUnique<Darts::DoubleArray>();
-  CHECK_EQ(0,
-           trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
-                        &value[0]))
+  CHECK_EQ(0, trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
+                           &value[0]))
       << "cannot build double-array";
 
   // Computes the maximum number of shared prefixes in the trie.
