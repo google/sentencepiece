@@ -15,6 +15,7 @@
 #include "unigram_model.h"
 
 #include <cfloat>
+#include <cmath>
 #include <map>
 #include <queue>
 #include <string>

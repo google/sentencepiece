@@ -14,6 +14,8 @@
 
 #include "char_model_trainer.h"
 
+#include <cmath>
+
 #include "char_model.h"
 #include "util.h"
 
