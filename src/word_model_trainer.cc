@@ -14,6 +14,8 @@
 
 #include "word_model_trainer.h"
 
+#include <cmath>
+
 #include "stringpiece.h"
 #include "util.h"
 #include "word_model.h"
