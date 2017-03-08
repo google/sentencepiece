@@ -7,15 +7,17 @@ before_install:
   - sed -i -e 's|AC_PREREQ(\[2.69\])|AC_PREREQ([2.68])|' configure.ac
 install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
-  - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.4" CC="clang-3.4"; fi
+  - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.7" CC="clang-3.7"; fi
 addons:
   apt:
     sources:
     - ubuntu-toolchain-r-test
+    - llvm-toolchain-precise-3.7
+    - llvm-toolchain-precise
     packages:
     - gcc-4.8
     - g++-4.8
-    - clang
+    - clang-3.7
     - libprotobuf-c++
     - protobuf-compiler
     - libprotobuf-dev
