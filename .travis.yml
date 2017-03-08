@@ -28,4 +28,4 @@ script:
   - ./configure && make && make check
   - if [ "$CXX" = "g++-4.8" ]; then ./configure --enable-gcov && make && make check; fi
 after_success:
-  - if [ "$CXX" = "g++-4.8" ]; then coveralls --root './src' --exclude-pattern '.*(include|usr|test|third_party|pb).*' --gcov-options '\-lp'; fi
+  - if [ "$CXX" = "g++-4.8" ]; then coveralls --exclude-pattern '.*(include|usr|test|third_party|pb).*' --gcov-options '\-lp'; fi
