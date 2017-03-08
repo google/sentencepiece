@@ -1,6 +1,6 @@
 # SentencePiece
 
-[![Build Status](https://travis-ci.org/google/sentencepiece.svg?branch=master)](https://travis-ci.org/google/sentencepiece)
+[![Build Status](https://travis-ci.org/google/sentencepiece.svg?branch=master)](https://travis-ci.org/google/sentencepiece) [![Coverage Status](https://coveralls.io/repos/github/google/sentencepiece/badge.svg?branch=master)](https://coveralls.io/github/google/sentencepiece?branch=master)
 
 SentencePiece is an unsupervised text tokenizer and detokenizer mainly for
 Neural Network-based text generation systems where the vocabulary size
