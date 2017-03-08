@@ -6,6 +6,7 @@ AC_INIT([sentencepiece], [0.1.0], [taku@google.com])
 AM_INIT_AUTOMAKE()
 AC_CONFIG_SRCDIR([src/normalizer.h])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_MACRO_DIR([third_party/m4])
 
 # Checks for programs.
 AC_LANG([C++])
@@ -21,6 +22,8 @@ AC_SUBST(PROTOBUF_CFLAGS)
 AC_SUBST(PROTOBUF_VERSION)
 CXXFLAGS="$CXXFLAGS $PROTOBUF_CFLAGS"
 LIBS="$LIBS $PROTOBUF_LIBS"
+
+m4_include([third_party/m4/ax_check_icu.m4])
 
 # Checks for header files.
 AC_CHECK_HEADERS([unistd.h])
@@ -43,8 +46,6 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([memchr memset])
-
-AC_CONFIG_MACRO_DIR([third_party/m4])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile])
