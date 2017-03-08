@@ -5,6 +5,7 @@ compiler:
   - clang
 before_install:
   - sed -i -e 's|AC_PREREQ(\[2.69\])|AC_PREREQ([2.68])|' configure.ac
+  - pip install --user cpp-coveralls
 install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
   - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.7" CC="clang-3.7"; fi
@@ -24,3 +25,6 @@ addons:
 script:
   - ./autogen.sh
   - ./configure && make && make check
+  - if [ "$CXX" = "g++" ]; then ./configure --enable-gcov && make && make check; fi
+after_success:
+  - if [ "$CXX" = "g++" ]; then coveralls --root './src' --exclude-pattern '.*(include|usr|test|third_party|pb).*' --gcov-options '\-lp'; fi
