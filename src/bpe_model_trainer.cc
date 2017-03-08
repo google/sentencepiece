@@ -261,8 +261,8 @@ void Trainer::Train() {
     }
 
     // Stores the best_symbol in the final output.
-    const float score = -final_pieces_.size();
-    final_pieces_.emplace_back(best_symbol->ToString(), score);
+    final_pieces_.emplace_back(best_symbol->ToString(),
+                               -static_cast<float>(final_pieces_.size()));
 
     if (final_pieces_.size() % 20 == 0) {
       LOG(INFO) << "Added: freq=" << best_symbol->freq
@@ -311,8 +311,8 @@ void Trainer::Train() {
   // Adds required_chars_
   for (const auto &w : Sorted(required_chars_)) {
     const Symbol *symbol = GetCharSymbol(w.first);
-    const float score = -final_pieces_.size();
-    final_pieces_.emplace_back(symbol->ToString(), score);
+    final_pieces_.emplace_back(symbol->ToString(),
+                               -static_cast<float>(final_pieces_.size()));
   }
 
   Save();

@@ -2,7 +2,7 @@
 
 SentencePiece is an unsupervised text tokenizer and detokenizer mainly for
 Neural Network-based text generation systems where the vocabulary size
-is predetermined prior to the Neural model training. SentencePiece implements
+is predetermined prior to the neural model training. SentencePiece implements
 **sub-word units** (also known as **wordpieces** [[Wu et al.](https://arxiv.org/pdf/1609.08144.pdf)]
 [[Schuster et al.](https://static.googleusercontent.com/media/research.google.com/ja//pubs/archive/37842.pdf)]
 and **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]) with the extension of direct
@@ -15,14 +15,14 @@ system that does not depend on language-specific pre/postprocessing.
 - **Purely data driven**: SentencePiece trains tokenization and detokenization
   models from only raw sentences. No pre-tokenization ([Moses tokenizer](https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/tokenizer.perl)/[MeCab](http://taku910.github.io/mecab/)/[KyTea](http://www.phontron.com/kytea/)) is required.
 - **Language independent**: SentencePiece treats the sentences just as sequences of Unicode characters. There is no language-dependent logic.
-- **Fast and lightweight**:  Segmentation speed is around 50k sentences/sec, and memory footprint is around 6MB.
+- **Fast and lightweight**: Segmentation speed is around 50k sentences/sec, and memory footprint is around 6MB.
 - **Self-contained**: The same tokenization/detokenization is obtained as long as the same model file is used.
 - **Direct vocabulary id generation**: SentencePiece manages vocabulary to id mapping and can directly generate vocabulary id sequences from raw sentences.
 - **NFKC-based normalization**: SentencePiece performs NFKC-based text normalization.
 
 ## Overview
 ### What is SentencePiece?
-SentencePiece is an unsupervised text tokenizer and detokenizer designed mainly for Neural Network-based text generation, for example Neural Network Machine Translation. SentencePiece is a re-implementation of **sub-word units** (also known as **wordpieces** [[Wu et al.](https://arxiv.org/pdf/1609.08144.pdf)][[Schuster et al.](https://static.googleusercontent.com/media/research.google.com/ja//pubs/archive/37842.pdf)] and **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]). Unlike previous sub-word approaches that train tokenizers from pre-tokenized sentences, SentencePiece directly trains the tokenizer and detokenizer from raw sentences.
+SentencePiece is an unsupervised text tokenizer and detokenizer designed mainly for Neural Network-based text generation, for example Neural Network Machine Translation. SentencePiece is a re-implementation of **sub-word units** (also known as **wordpieces** [[Wu et al.](https://arxiv.org/pdf/1609.08144.pdf)][[Schuster et al.](https://static.googleusercontent.com/media/research.google.com/ja//pubs/archive/37842.pdf)] and **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]). Unlike previous sub-word approaches that train tokenizers from pretokenized sentences, SentencePiece directly trains the tokenizer and detokenizer from raw sentences.
 SentencePiece might seem like a sort of unsupervised word segmentation, but there are several differences and constraints in SentencePiece.
 
 #### The number of unique tokens is predetermined
@@ -33,20 +33,20 @@ that the final vocabulary size is fixed, e.g., 8k, 16k, or 32k.
 
 #### Whitespace is considered as as a basic symbol
 The first step of Natural Language processing is text tokenization. For
-example, standard English tokenizer segments a text "Hello world." into the
+example, a standard English tokenizer would segment the text "Hello world." into the
 following three tokens.
 
 > [Hello] [World] [.]
 
 One observation is that the original input and tokenized sequence are **NOT
-reversibly convertible**. For instance, the information that no space exists
-between “World” and “.” is dropped from the tokenized sequence, since e.g., `Tokenize(“World.”) == Tokenize(“World .”)`
+reversibly convertible**. For instance, the information that is no space between
+“World” and “.” is dropped from the tokenized sequence, since e.g., `Tokenize(“World.”) == Tokenize(“World .”)`
 
 SentencePiece treats the input text just as a sequence of Unicode characters. Whitespace is also handled as a normal symbol. To handle the whitespace as a basic token explicitly, SentencePiece first escapes the whitespace with a meta symbol "▁" (U+2581) as follows.
 
 > Hello▁World.
 
-Then, this text is segmented into small pieces, for example.
+Then, this text is segmented into small pieces, for example:
 
 > [Hello] [▁Wor] [ld] [.]
 
@@ -60,7 +60,7 @@ This feature makes it possible to perform detokenization without relying on lang
 
 Note that we cannot apply the same lossless conversions when splitting the
 sentence with standard word segmenters, since they treat the whitespace as a
-special symbol. Tokenized sequences do not preserve the necessary information to restore the orignal sentence.
+special symbol. Tokenized sequences do not preserve the necessary information to restore the original sentence.
 
 * (en) Hello world.   → [Hello] [World] [.]   \(A space between Hello and World\)
 * (ja) こんにちは世界。  → [こんにちは] [世界] [。] \(No space between こんにちは and 世界\)
@@ -75,7 +75,7 @@ The following tools and libraries are required to build SentencePiece:
 On Ubuntu, autotools and libprotobuf can be install with apt-get:
 
 ```
-% sudo apt-get install autoconf automake libtool libprotobuf-c++ protocolbuffer
+% sudo apt-get install autoconf automake libtool libprotobuf-c++ protobuf-compiler libprotobuf-dev
 ```
 
 ## Build and Install SentencePiece
@@ -96,7 +96,7 @@ On Ubuntu, autotools and libprotobuf can be install with apt-get:
   the input with Unicode NFKC. You can pass a comma-separated list of files.
 * `--model_prefix`: output model name prefix. `<model_name>.model` and `<model_name>.vocab` are generated.
 * `--vocab_size`: vocabulary size, e.g., 8000, 16000, or 32000
-* `--model_type`: model type. Choose from `unigram` (default), `bpe`, `char`, or `word`. The input sentence must be pre-tokenized when using `word` type.
+* `--model_type`: model type. Choose from `unigram` (default), `bpe`, `char`, or `word`. The input sentence must be pretokenized when using `word` type.
 
 Note that `spm_train` loads only the first `--input_sentence_size` sentences (default value is 10M).
 
@@ -161,8 +161,8 @@ We have evaluated SentencePiece segmentation with the following configurations.
         Encoding) [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]] (`--model_type=bpe`)
     *   **Unigram**. Language-model based segmentation. (`--model_type=unigram`)
 
-*   Pre-tokenization methods:
-    *   **NoPretok**: No pre-tokenization. We train SentencePiece directly from
+*   pretokenization methods:
+    *   **NoPretok**: No pretokenization. We train SentencePiece directly from
         raw sentences (`--split_by_whitespace=false`).
     *   **WsPretok**: Trains SentencePiece model from the sentences tokenized by
         whitespaces (`--split_by_whitespace=true`). When handling CJK, this setting is almost equivalent to **NoPretok**.
@@ -218,8 +218,8 @@ We have evaluated SentencePiece segmentation with the following configurations.
 *   **MosesPretok** does not always improve BLEU scores. Comparable
     accuracy can be obtained without using language-dependent resources in many
     language pairs.
-*   Whitespace pre-tokenization is a reasonable choice. It does not use language-specific resources.
-*   **NoPretok** shows poor BLEU scores. Unigrams are more robust than BPE when no pre-tokenizer is applied.
+*   Whitespace pretokenization is a reasonable choice. It does not use language-specific resources.
+*   **NoPretok** shows poor BLEU scores. Unigrams are more robust than BPE when no pretokenizer is applied.
 
 ## Advanced topics
 
