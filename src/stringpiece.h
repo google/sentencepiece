@@ -17,6 +17,7 @@
 
 #include <cstring>
 #include <string>
+#include <ostream>
 
 namespace sentencepiece {
 
@@ -215,8 +216,7 @@ inline int StringPiece::compare(StringPiece b) const {
 }
 
 inline std::ostream &operator<<(std::ostream &o, StringPiece piece) {
-  o << piece.data();
-  return o;
+  return o.write(piece.data(), static_cast<std::streamsize>(piece.size()));
 }
 
 struct StringPieceHash {
