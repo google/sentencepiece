@@ -32,7 +32,7 @@ AS_IF([test "x${PROTOC}" == "x"],
 AC_ARG_ENABLE(enable-nfkc-compile,
  [  --enable-nfkc-compile            compile NFKC normalizer mapping [default no]])
 if test "$enable_nfkc_compile" = "yes"; then
-AX_CHECK_ICU([40], ,AC_MSG_ERROR([Library requirements (ICU) not met.]))
+AX_CHECK_ICU([40], [], AC_MSG_ERROR([Library requirements (ICU) not met.]))
 CXXFLAGS="$CXXFLAGS -DENABLE_NFKC_COMPILE"
 LIBS="$LIBS $ICU_LIBS"
 fi

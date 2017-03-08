@@ -19,7 +19,6 @@ addons:
     - libprotobuf-c++
     - protobuf-compiler
     - libprotobuf-dev
-    - gnulib
 script:
   - ./autogen.sh
   - ./configure && make && make check
