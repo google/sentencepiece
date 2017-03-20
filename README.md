@@ -33,7 +33,7 @@ vocabulary. Unlike most unsupervised word segmentation algorithms, which
 assume an infinite vocabulary, SentencePiece trains the segmentation model such
 that the final vocabulary size is fixed, e.g., 8k, 16k, or 32k.
 
-#### Whitespace is considered as as a basic symbol
+#### Whitespace is treated as a basic symbol
 The first step of Natural Language processing is text tokenization. For
 example, a standard English tokenizer would segment the text "Hello world." into the
 following three tokens.
