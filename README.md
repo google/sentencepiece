@@ -88,6 +88,7 @@ On Ubuntu, autotools and protobuf library can be install with apt-get:
 % make
 % make check
 % sudo make install
+$ sudo ldconfig -v
 ```
 ## Train SentencePiece Model
 ```
