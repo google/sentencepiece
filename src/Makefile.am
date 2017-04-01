@@ -49,16 +49,16 @@ spm_decode_SOURCES = spm_decode_main.cc
 spm_decode_LDADD = libsentencepiece.la
 
 spm_normalize_SOURCES = spm_normalize_main.cc
-spm_normalize_LDADD = libsentencepiece.la libtrain.a
+spm_normalize_LDADD = libtrain.a libsentencepiece.la
 
 spm_export_vocab_SOURCES = spm_export_vocab_main.cc
 spm_export_vocab_LDADD = libsentencepiece.la
 
 spm_train_SOURCES = spm_train_main.cc
-spm_train_LDADD = libsentencepiece.la libtrain.a
+spm_train_LDADD = libtrain.a libsentencepiece.la
 
 compile_charsmap_SOURCES = compile_charsmap_main.cc
-compile_charsmap_LDADD = libsentencepiece.la libtrain.a
+compile_charsmap_LDADD = libtrain.a libsentencepiece.la
 
 
 check_PROGRAMS = spm_test
@@ -85,7 +85,7 @@ spm_test_SOURCES = testharness.h \
 	           test_main.cc \
                    testharness.cc
 
-spm_test_LDADD = libsentencepiece.la libtrain.a
+spm_test_LDADD = libtrain.a libsentencepiece.la
 
 CLEANFILES = *.pb.cc *.pb.h *.pb.h *.gcda *.gcno *.info
 clean-local:
