@@ -172,7 +172,7 @@ You can find that the original input sentence is restored from the vocabulary id
     *   num lstms: 6
 
 *   Evaluation metrics:
-    *   Case-sensitive BLEU on detokenized text with NIST scorer. Used in-house rule-based detokenizer for Moses/KyTea/MeCab/neologd.
+    *   Case-sensitive BLEU on detokenized text with NIST scorer and KyTea segmenter. Used in-house rule-based detokenizer for Moses/KyTea/MeCab/neologd.
 
 *   Data sets:
     *   [KFTT](http://www.phontron.com/kftt/index.html)
