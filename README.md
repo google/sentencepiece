@@ -181,21 +181,23 @@ You can find that the original input sentence is restored from the vocabulary id
 |Setting|vocab size|BLEU(dev)|BLEU(test)|src #tokens/sent.|trg #tokens/sent.|
 |---|---|---|---|---|---|
 enja (Unigram)|8k (shared)|0.2718|0.2922|30.97|25.05|
+enja (Unigram)|16k (shared)|0.2609|0.2813|27.18|21.53|
 enja (BPE)|8k (shared)|0.2695|0.2919|31.76|25.43|
 enja (Moses/KyTea)|80k/80k|0.2514|0.2804|21.25|23.21|
 enja (Moses/MeCab)|80k/80k|0.2436|0.2739|21.25|21.20|
 enja (Moses/neologd)|80k/80k|0.2102|0.2350|21.25|18.47|
-jaen (Unigram)|8k (shared)|0.1984|0.2170|25.05|30.97|
+jaen (Unigram)|8k (shared)|0.1959|0.2170|25.05|30.97|
+jaen (Unigram)|16k (shared)|0.1984|0.2155|21.53|27.18|
 jaen (BPE)|8k (shared)|0.1975|0.2176|25.43|31.76|
 jaen (Moses/KyTea)|80k/80k|0.1697|0.1974|23.21|21.25|
 jaen (Moses/MeCab)|80k/80k|0.1654|0.1870|21.20|21.25|
 jaen (Moses/neologd)|80k/80k|0.1583|0.1838|18.47|21.25|
 
 
-    * **SentencePiece (Unigram/BPE)** outperform word-based methods **(Moses/KyTea/MeCab/neologd)** even with a smaller vocabulary (1/10 of word-based methods).
-    * The number of tokens to represent Japanese sentences are almost comparable between **SentencePiece (unigram)** and **KyTea**, though the vocabulary of **Sentencepice** is much smaller. It implies that Sentencepieca can effectively compress the sentences with a smaller symbol set.
-    * **Neologd** shows poor BLEU score. Tokenizing sentences with a large named entity dictionary might not be effective in neural-based text processing.
-    * **Unigram** shows slightly better text compression ratio than **BPE**, but no significant differences in BLEU score.
+* **SentencePiece (Unigram/BPE)** outperforms word-based methods **(Moses/KyTea/MeCab/neologd)** even with a smaller vocabulary (10% of word-based methods).
+* The number of tokens to represent Japanese sentences are almost comparable between **SentencePiece (unigram)** and **KyTea**, though the vocabulary of **Sentencepice** is much smaller. It implies that Sentencepieca can effectively compress the sentences with a smaller vocabulary set.
+* **Neologd** shows poor BLEU score. Tokenizing sentences with a large named entity dictionary might not be effective in neural-based text processing.
+* **Unigram** shows slightly better text compression ratio than **BPE**, but no significant differences in BLEU score.
 
 
 ## Experiments 2 (subwording with various pre-tokenizations)
