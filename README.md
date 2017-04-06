@@ -181,13 +181,11 @@ You can find that the original input sentence is restored from the vocabulary id
 |Setting|vocab size|BLEU(dev)|BLEU(test)|src #tokens/sent.|trg #tokens/sent.|
 |---|---|---|---|---|---|
 enja (Unigram)|8k (shared)|0.2718|0.2922|30.97|25.05|
-enja (Unigram)|16k (shared)|0.2609|0.2813|27.18|21.53|
 enja (BPE)|8k (shared)|0.2695|0.2919|31.76|25.43|
 enja (Moses/KyTea)|80k/80k|0.2514|0.2804|21.25|23.21|
 enja (Moses/MeCab)|80k/80k|0.2436|0.2739|21.25|21.20|
 enja (Moses/neologd)|80k/80k|0.2102|0.2350|21.25|18.47|
 jaen (Unigram)|8k (shared)|0.1959|0.2170|25.05|30.97|
-jaen (Unigram)|16k (shared)|0.1984|0.2155|21.53|27.18|
 jaen (BPE)|8k (shared)|0.1975|0.2176|25.43|31.76|
 jaen (KyTea/Moses)|80k/80k|0.1697|0.1974|23.21|21.25|
 jaen (MeCab/Moses)|80k/80k|0.1654|0.1870|21.20|21.25|
