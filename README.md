@@ -159,44 +159,70 @@ You can find that the original input sentence is restored from the vocabulary id
 ### Experimental settings
 
 *   Segmentation algorithms:
-    *   **Unigram**: SentencePiece with a language-model based segmentation. (`--model_type=unigram`)
-    *   **BPE**: SentencePiece with Byte Pair Encoding. [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]] (`--model_type=bpe`)
+    *   **SentencePiece**: SentencePiece with a language-model based segmentation. (`--model_type=unigram`)
+    *   **SentencePeice(BPE)**: SentencePiece with Byte Pair Encoding. [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]] (`--model_type=bpe`)
     *   **Moses**: [Moses tokenizer](https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/tokenizer.perl) for English.
     *   **KyTea**: [KyTea](http://www.phontron.com/kytea/) for Japanese.
     *   **MeCab**: [MeCab](http://taku910.github.io/mecab/) for Japanese.
-    *   **neologd**: [MeCab with neologd](https://github.com/neologd/mecab-ipadic-neologd) for Japanese. 
+    *   **neologd**: [MeCab with neologd](https://github.com/neologd/mecab-ipadic-neologd) for Japanese.
+    *   **(Moses/KyTea)+SentencePiece**: Apply SentencePiece (Unigram) to pre-tokenized sentences. We have several variants with different tokenizers., e.g., **(Moses/MeCab)+SentencePiece**, **(MeCab/Moses)+SentencePiece**.
     
+*   Data sets:
+    *   [KFTT](http://www.phontron.com/kftt/index.html)
+
 *   NMT parameters: ([Google’s Neural Machine Translation System](https://arxiv.org/pdf/1609.08144.pdf) is applied for all experiments.)
     *   Dropout prob: 0.2
     *   num nodes: 512
     *   num lstms: 6
+    *   Decoder parameters (α and β) are optimized with development data.
 
 *   Evaluation metrics:
     *   Case-sensitive BLEU on detokenized text with NIST scorer and KyTea segmenter. Used in-house rule-based detokenizer for Moses/KyTea/MeCab/neologd.
 
-*   Data sets:
-    *   [KFTT](http://www.phontron.com/kftt/index.html)
     
 ### Results (BLEU scores)
+#### English to Japanese
 |Setting|vocab size|BLEU(dev)|BLEU(test)|src #tokens/sent.|trg #tokens/sent.|
 |---|---|---|---|---|---|
-enja (Unigram)|8k (shared)|0.2718|0.2922|30.97|25.05|
-enja (BPE)|8k (shared)|0.2695|0.2919|31.76|25.43|
-enja (Moses/KyTea)|80k/80k|0.2514|0.2804|21.25|23.21|
-enja (Moses/MeCab)|80k/80k|0.2436|0.2739|21.25|21.20|
-enja (Moses/neologd)|80k/80k|0.2102|0.2350|21.25|18.47|
-jaen (Unigram)|8k (shared)|0.1959|0.2170|25.05|30.97|
-jaen (BPE)|8k (shared)|0.1975|0.2176|25.43|31.76|
-jaen (KyTea/Moses)|80k/80k|0.1697|0.1974|23.21|21.25|
-jaen (MeCab/Moses)|80k/80k|0.1654|0.1870|21.20|21.25|
-jaen (neologd/Moses)|80k/80k|0.1583|0.1838|18.47|21.25|
+|SentencePiece|8k  (shared)|0.2785|0.2955|30.9734|25.0540|
+|SentencePiece|16k (shared)|0.2664|0.2862|27.1827|21.5326|
+|SentencePiece|32k (shared)|0.2641|0.2849|25.0592|19.0840|
+|SentencePiece(BPE)|8k  (shared)|0.2767|0.2947|31.7693|25.4331|
+|(Moses/KyTea)+SentencePiece|8k (shared)|0.2900|0.2985|31.2719|29.9854|
+|(Moses/MeCab)+SentencePiece|8k (shared)|0.2817|0.2950|31.4743|28.9537|
+|(Moses/neologd)+SentencePiece|8k (shared)|0.2824|**0.3062**|31.2985|28.8645|
+|Moses/Kytea|80k/80k|0.2576|0.2824|21.2513|23.2161|
+|Moses/MeCab|80k/80k|0.2455|0.2780|21.2513|21.2033|
+|Moses/neologd|80k/80k|0.2157|0.2378|21.2513|18.4768|
+|Moses/SentencePiece|80k/8k|0.2475|0.2742|21.2513|22.9383|
+|SentencePiece/KyTea|8k/80k|0.2778|0.2918|27.0429|23.2161|
+|SentencePiece/MeCab|8k/80k|0.2673|0.2919|27.0429|21.2033|
+|SentencePiece/neolgod/8k80k|0.2280|0.2494|27.0429|18.4768|
 
+#### Japanese to English
+|Setting|vocab size|BLEU(dev)|BLEU(test)|src #tokens/sent.|trg #tokens/sent.|
+|---|---|---|---|---|---|
+|SentencePiece|8k  (shared)|0.1966|0.2162|25.0540|30.9734|
+|SentencePiece|16k (shared)|0.1996|0.2160|21.5326|27.1827|
+|SentencePiece|32k (shared)|0.1949|0.2159|19.0840|25.0592|
+|SentencePiece|8k  (shaerd)|0.1977|**0.2173**|25.4331|31.7693|
+|(KyTea/Moses)+SentencePiece|8k (shared)|0.1921|0.2086|29.9854|31.2719|
+|(MeCab/Moses)+SentencePiece|8k (shared)|0.1909|0.2049|28.9537|31.4743|
+|(neologd/Moses)+SentencePiece|8k (shared)|0.1938|0.2137|28.8645|31.2985|
+|KyTea/Moses|80k/80k|0.1707|0.2006|23.2161|21.2513|
+|MeCab/Moses|80k/80k|0.1668|0.1892|21.2033|21.2513|
+|neologd/Moses|80k/80k|0.1589|0.1836|18.4768|21.2513|
+|SentencePiece/Moses|8k/80k|0.1727|0.1994|22.9383|21.2513|
+|KyTea/SentencePiece|80k/8k|0.1939|0.2141|23.2161|27.0429|
+|MeCab/SentencePiece|80k/8k|0.1892|0.2077|21.2033|27.0429|
+|neologd/SentencePiece|80k/8k|0.1641|0.1804|18.4768|27.0429|
 
 * **SentencePiece (Unigram/BPE)** outperforms word-based methods **(Moses/KyTea/MeCab/neologd)** even with a smaller vocabulary (10% of word-based methods).
-* The number of tokens to represent Japanese sentences are almost comparable between **SentencePiece (unigram)** and **KyTea**, though the vocabulary of **Sentencepice** is much smaller. It implies that Sentencepiece can effectively compress the sentences with a smaller vocabulary set.
-* **Neologd** shows poor BLEU score. Tokenizing sentences with a large named entity dictionary might not be effective in neural-based text processing.
-* **Unigram** shows slightly better text compression ratio than **BPE**, but no significant differences in BLEU score.
-
+* The number of tokens to represent Japanese sentences is almost comparable between **SentencePiece (unigram)** and **KyTea**, though the vocabulary of **Sentencepice** is much smaller. It implies that Sentencepiece can effectively compress the sentences with a smaller vocabulary set.
+* Pretokenization can slightly improve the BLEU scores in English to Japanese. In Japanese to English translation, pretokenization doesn't help to improve BLEU.
+* **Neologd** shows poor BLEU score. Toeknizing sentences with a large named entity dictionary might not be effective in neural-based text processing.
+* **SentencePiece(Unigram)** shows slightly better text compression ratio than **BPE**, but no significant differences in BLEU score.
+* The selection of vocabulary size for SentencePiece is sensitive in English to Japanese. This is probably because the vocabulary size will drastically affect the tokenization results in Japanese which has no explicit spaces between words.
 
 ## Experiments 2 (subwording with various pre-tokenizations)
 ### Experimental settings
