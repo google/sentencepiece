@@ -166,6 +166,7 @@ You can find that the original input sentence is restored from the vocabulary id
     *   **MeCab**: [MeCab](http://taku910.github.io/mecab/) for Japanese.
     *   **neologd**: [MeCab with neologd](https://github.com/neologd/mecab-ipadic-neologd) for Japanese.
     *   **(Moses/KyTea)+SentencePiece**: Apply SentencePiece (Unigram) to pre-tokenized sentences. We have several variants with different tokenizers., e.g., **(Moses/MeCab)+SentencePiece**, **(MeCab/Moses)+SentencePiece**.
+    *   *char**: Segments sentence by characters.
     
 *   Data sets:
     *   [KFTT](http://www.phontron.com/kftt/index.html)
@@ -184,6 +185,7 @@ You can find that the original input sentence is restored from the vocabulary id
 #### English to Japanese
 |Setting|vocab size|BLEU(dev)|BLEU(test)|src #tokens/sent.|trg #tokens/sent.|
 |:---|---:|---:|---:|---:|---:|
+|SentencePiece|4k  (shared)|0.2857|0.2940|43.7478|29.6998|
 |SentencePiece|8k  (shared)|0.2785|0.2955|30.9734|25.0540|
 |SentencePiece|16k (shared)|0.2664|0.2862|27.1827|21.5326|
 |SentencePiece|32k (shared)|0.2641|0.2849|25.0592|19.0840|
@@ -198,14 +200,16 @@ You can find that the original input sentence is restored from the vocabulary id
 |SentencePiece/KyTea|8k/80k|0.2778|0.2918|27.0429|23.2161|
 |SentencePiece/MeCab|8k/80k|0.2673|0.2919|27.0429|21.2033|
 |SentencePiece/neolgod|8k80k|0.2280|0.2494|27.0429|18.4768|
+|Char|3k (shared)|0.2509|0.2679|109.8662|33.6963|
 
 #### Japanese to English
 |Setting|vocab size|BLEU(dev)|BLEU(test)|src #tokens/sent.|trg #tokens/sent.|
 |:---|---:|---:|---:|---:|---:|
+|SentencePiece|4k  (shared)|0.1970|**0.2179**|29.6998|43.7478|
 |SentencePiece|8k  (shared)|0.1966|0.2162|25.0540|30.9734|
 |SentencePiece|16k (shared)|0.1996|0.2160|21.5326|27.1827|
 |SentencePiece|32k (shared)|0.1949|0.2159|19.0840|25.0592|
-|SentencePiece(BPE)|8k  (shaerd)|0.1977|**0.2173**|25.4331|31.7693|
+|SentencePiece(BPE)|8k  (shaerd)|0.1977|0.2173|25.4331|31.7693|
 |(KyTea/Moses)+SentencePiece|8k (shared)|0.1921|0.2086|29.9854|31.2719|
 |(MeCab/Moses)+SentencePiece|8k (shared)|0.1909|0.2049|28.9537|31.4743|
 |(neologd/Moses)+SentencePiece|8k (shared)|0.1938|0.2137|28.8645|31.2985|
@@ -216,6 +220,7 @@ You can find that the original input sentence is restored from the vocabulary id
 |KyTea/SentencePiece|80k/8k|0.1939|0.2141|23.2161|27.0429|
 |MeCab/SentencePiece|80k/8k|0.1892|0.2077|21.2033|27.0429|
 |neologd/SentencePiece|80k/8k|0.1641|0.1804|18.4768|27.0429|
+|Char|3k (shared)|0.0824|0.0918|33.6963|109.8662|
 
 #### Discussion
 * **SentencePiece (Unigram/BPE)** outperforms word-based methods **(Moses/KyTea/MeCab/neologd)** even with a smaller vocabulary (10% of word-based methods).
