@@ -36,6 +36,7 @@ Makefile.in
 
 *.m4
 *.log
+*.trs
 
 compile_charsmap
 
@@ -44,6 +45,7 @@ spm_encode
 spm_export_vocab
 spm_train
 spm_normalize
+spm_test
 
 *.pb.cc
 *.pb.h
