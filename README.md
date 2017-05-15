@@ -82,7 +82,7 @@ On Ubuntu, autotools and protobuf library can be install with apt-get:
 
 On OSX, you can use brew:
 ```
-% brew install protobuf
+% brew install protobuf autoconf automake libtool
 ```
 
 ## Build and Install SentencePiece
