@@ -85,6 +85,14 @@ On OSX, you can use brew:
 % brew install protobuf autoconf automake libtool
 ```
 
+If want to use self-prepared protobuf library, setup below environment variables before build:
+```
+% export PROTOBUF=<path_to_protobuf>
+% export PROTOC="$PROTOBUF/bin/protoc"
+% export PROTOBUF_LIBS="-L$PROTOBUF/lib -lprotobuf -D_THREAD_SAFE"
+% export PROTOBUF_CFLAGS="-I$PROTOBUF/include -D_THREAD_SAFE" 
+```
+
 ## Build and Install SentencePiece
 ```
 % cd /path/to/sentencepiece
