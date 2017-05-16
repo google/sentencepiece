@@ -25,7 +25,9 @@ LIBS="$LIBS $PROTOBUF_LIBS"
 
 m4_include([third_party/m4/ax_check_icu.m4])
 
-AC_CHECK_PROG([PROTOC], [protoc], [protoc])
+if test ! -n "$PROTOC"; then
+  AC_CHECK_PROG([PROTOC], [protoc], [protoc])
+fi
 AS_IF([test "x${PROTOC}" == "x"],
     [AC_MSG_ERROR([ProtoBuf compiler "protoc" not found. You can install them with "sudo apt-get install libprotobuf-c++ protobuf-compiler" ])])
 
