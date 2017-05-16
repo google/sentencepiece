@@ -84,9 +84,9 @@ On OSX, you can use brew:
 ```
 % brew install protobuf autoconf automake libtool
 ```
-Use your prepared protobuf library:
+
+If want to use self-prepared protobuf library, setup below environment variables before build:
 ```
-Setup below environment variables before build
 % export PROTOBUF=<path_to_protobuf>
 % export PROTOC="$PROTOBUF/bin/protoc"
 % export PROTOBUF_LIBS="-L$PROTOBUF/lib -lprotobuf -D_THREAD_SAFE"
