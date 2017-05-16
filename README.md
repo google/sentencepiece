@@ -80,6 +80,11 @@ On Ubuntu, autotools and protobuf library can be install with apt-get:
 ```
 (If `libprotobuf9v5` is not found, try `libprotobuf-c++` instead.)
 
+On OSX, you can use brew:
+```
+% brew install protobuf autoconf automake libtool
+```
+
 ## Build and Install SentencePiece
 ```
 % cd /path/to/sentencepiece
@@ -131,7 +136,7 @@ Use `--extra_options` flag to decode the text in reverse order.
 ## End-to-End Example
 ```
 % spm_train --input=data/botchan.txt --model_prefix=m --vocab_size=1000
-unigram_model_trainer.cc(494) LOG(INFO) Starts training with : 
+unigram_model_trainer.cc(494) LOG(INFO) Starts training with :
 input: "../data/botchan.txt"
 ... <snip>
 unigram_model_trainer.cc(529) LOG(INFO) EM sub_iter=1 size=1100 obj=10.4973 num_tokens=37630 num_tokens/piece=34.2091
@@ -167,7 +172,7 @@ You can find that the original input sentence is restored from the vocabulary id
     *   **neologd**: [MeCab with neologd](https://github.com/neologd/mecab-ipadic-neologd) for Japanese.
     *   **(Moses/KyTea)+SentencePiece**: Apply SentencePiece (Unigram) to pre-tokenized sentences. We have several variants with different tokenizers., e.g., **(Moses/MeCab)+SentencePiece**, **(MeCab/Moses)+SentencePiece**.
     *   *char**: Segments sentence by characters.
-    
+
 *   Data sets:
     *   [KFTT](http://www.phontron.com/kftt/index.html)
 
@@ -180,7 +185,7 @@ You can find that the original input sentence is restored from the vocabulary id
 *   Evaluation metrics:
     *   Case-sensitive BLEU on detokenized text with NIST scorer and KyTea segmenter. Used in-house rule-based detokenizer for Moses/KyTea/MeCab/neologd.
 
-    
+
 ### Results (BLEU scores)
 #### English to Japanese
 |Setting|vocab size|BLEU(dev)|BLEU(test)|src #tokens/sent.|trg #tokens/sent.|

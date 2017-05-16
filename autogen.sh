@@ -18,7 +18,9 @@ aclocal -I .
 echo "Running autoheader..."
 autoheader
 echo "Running libtoolize .."
-libtoolize
+case `uname` in Darwin*) glibtoolize ;;
+  *) libtoolize ;;
+esac
 echo "Running automake ..."
 automake --add-missing --copy
 echo "Running autoconf ..."
