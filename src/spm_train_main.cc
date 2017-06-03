@@ -66,7 +66,7 @@ DEFINE_string(normalization_rule_name, "nfkc",
               "Choose from nfkc or identity");
 DEFINE_string(normalization_rule_tsv, "", "Normalization rule TSV file. ");
 DEFINE_bool(add_dummy_prefix, kDefaultNormalizerSpec.add_dummy_prefix(),
-            "Add dummy whitespace at the begging of text");
+            "Add dummy whitespace at the beginning of text");
 DEFINE_bool(remove_extra_whitespaces,
             kDefaultNormalizerSpec.remove_extra_whitespaces(),
             "Removes leading, trailing, and "
