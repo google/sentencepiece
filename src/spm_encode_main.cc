@@ -69,6 +69,7 @@ int main(int argc, char *argv[]) {
     sentencepiece::io::InputBuffer input(filename);
     while (input.ReadLine(&line)) {
       if (line.empty()) {
+	output.WriteLine("");
         continue;
       }
       process(line);
