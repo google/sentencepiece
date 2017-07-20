@@ -92,9 +92,17 @@ class SentencePieceProcessor {
   // Returns false if |filename| cannot be loaded.
   virtual bool Load(const std::string &filename);
 
+  // Loads model from |istream|.
+  // Returns false if |istream| cannot be loaded.
+  virtual bool Load(std::istream &istream);
+
   // Loads model from |filename|.
   // Dies if |filename| cannot be loaded.
   virtual void LoadOrDie(const std::string &filename);
+
+  // Loads model from |istream|.
+  // Dies if |istream| cannot be loaded.
+  virtual void LoadOrDie(std::istream &istream);
 
   // Sets encode extra_option sequence.
   virtual void SetEncodeExtraOptions(const std::string &extra_option);
