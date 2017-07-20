@@ -14,6 +14,7 @@
 
 #include "sentencepiece_processor.h"
 #include <unordered_map>
+#include <sstream>
 #include "builder.h"
 #include "model_interface.h"
 #include "normalizer.h"
@@ -371,6 +372,8 @@ TEST(SentencePieceProcessorTest, LoadInvalidModelTest) {
   SentencePieceProcessor sp;
   EXPECT_DEATH(sp.LoadOrDie(""));
   EXPECT_DEATH(sp.LoadOrDie("__UNKNOWN_FILE__"));
+  std::istringstream ss("__UNKNOWN_STREAM__");
+  EXPECT_DEATH(sp.LoadOrDie(ss));
 }
 
 TEST(SentencePieceProcessorTest, EndToEndTest) {
