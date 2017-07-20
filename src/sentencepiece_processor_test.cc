@@ -14,7 +14,6 @@
 
 #include "sentencepiece_processor.h"
 #include <unordered_map>
-#include <sstream>
 #include "builder.h"
 #include "model_interface.h"
 #include "normalizer.h"
