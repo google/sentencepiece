@@ -2,13 +2,16 @@
 
 ## Load SentencePiece model
 To start working with the SentencePiece model, you will want to include the `sentencepiece_processor.h` header file.
-Then instantiate sentencepiece::SentencePieceProcessor class and calls `Load`or `LoadOrDie` method to load the model file.
+Then instantiate sentencepiece::SentencePieceProcessor class and calls `Load`or `LoadOrDie` method to load the model with file path or std::istream.
 
 ```
 #include <sentencepiece_processor.h>
 
 sentencepiece::SentencePieceProcessor processor;
 processor.LoadOrDie("//path/to/model.model");
+// Or load from std::istream of anything
+// std::ifstream in("//path/to/model.model");
+// processor.LoadOrDie(in);
 ```
 
 ## Tokenize text (preprocessing)
