@@ -42,9 +42,13 @@ bool SentencePieceProcessor::Load(const std::string &filename) {
     return false;
   }
 
+  return Load(ifs);
+}
+
+bool SentencePieceProcessor::Load(std::istream &istream) {
   model_proto_ = port::MakeUnique<ModelProto>();
-  if (!model_proto_->ParseFromIstream(&ifs)) {
-    LOG(WARNING) << "Model file is broken: " << filename;
+  if (!model_proto_->ParseFromIstream(&istream)) {
+    LOG(WARNING) << "Model file is broken";
     return false;
   }
 
@@ -57,6 +61,10 @@ bool SentencePieceProcessor::Load(const std::string &filename) {
 
 void SentencePieceProcessor::LoadOrDie(const std::string &filename) {
   CHECK(Load(filename)) << "failed to load model: " << filename;
+}
+
+void SentencePieceProcessor::LoadOrDie(std::istream &istream) {
+  CHECK(Load(istream)) << "failed to load model";
 }
 
 void SentencePieceProcessor::SetEncodeExtraOptions(
