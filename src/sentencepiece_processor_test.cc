@@ -371,6 +371,8 @@ TEST(SentencePieceProcessorTest, LoadInvalidModelTest) {
   SentencePieceProcessor sp;
   EXPECT_DEATH(sp.LoadOrDie(""));
   EXPECT_DEATH(sp.LoadOrDie("__UNKNOWN_FILE__"));
+  std::istringstream ss("__UNKNOWN_STREAM__");
+  EXPECT_DEATH(sp.LoadOrDie(&ss));
 }
 
 TEST(SentencePieceProcessorTest, EndToEndTest) {

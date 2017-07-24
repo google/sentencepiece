@@ -2,19 +2,22 @@
 
 ## Load SentencePiece model
 To start working with the SentencePiece model, you will want to include the `sentencepiece_processor.h` header file.
-Then instantiate sentencepiece::SentencePieceProcessor class and calls `Load`or `LoadOrDie` method to load the model file.
+Then instantiate sentencepiece::SentencePieceProcessor class and calls `Load`or `LoadOrDie` method to load the model with file path or std::istream.
 
-```
+```C++
 #include <sentencepiece_processor.h>
 
 sentencepiece::SentencePieceProcessor processor;
 processor.LoadOrDie("//path/to/model.model");
+// Or load from std::istream of anything
+// std::ifstream in("//path/to/model.model");
+// processor.LoadOrDie(in);
 ```
 
 ## Tokenize text (preprocessing)
 Calls `SentencePieceProcessor::Encode` method to tokenize text.
 
-```
+```C++
 std::vector<std::string> pieces;
 processor.Encode("This is a test.", &pieces);
 for (const std::string &token : pieces) {
@@ -24,7 +27,7 @@ for (const std::string &token : pieces) {
 
 You will obtain the sequence of vocab ids as follows:
 
-```
+```C++
 std::vector<int> ids;
 processor.Encode("This is a test.", &ids);
 for (const int id : ids) {
@@ -35,7 +38,7 @@ for (const int id : ids) {
 ## Detokenize text (postprocessing)
 Calls `SentencePieceProcessor::Decode` method to detokenize a sequence of pieces or ids into a text. Basically it is guaranteed that the detoknization is an inverse operation of Encode, i.e., `Decode(Encode(Normalize(input))) == Normalize(input)`.
 
-```
+```C++
 std::vector<std::string> pieces = { "▁This", "▁is", "▁a", "▁", "te", "st", "." };   // sequence of pieces
 std::string text
 processor.Decode(pieces, &text);
@@ -49,7 +52,7 @@ std::cout << text << std::endl;
 ## SentencePieceText proto
 You will want to use `SentencePieceText` class to obtain the pieces and ids at the same time. This proto also encodes a utf8-byte offset of each piece over user input or detokenized text.
 
-```
+```C++
 #include <sentencepiece.pb.h>
 
 sentencepiece::SentencePieceText spt;
@@ -77,7 +80,7 @@ for (const auto &piece : spt.pieces()) {
 ## Vocabulary management
 You will want to use the following methods to obtain ids from/to pieces.
 
-```
+```C++
 processor.GetPieceSize();   // returns the size of vocabs.
 processor.PieceToId("foo");  // returns the vocab id of "foo"
 processor.IdToPiece(10);     // returns the string representation of id 10.
@@ -88,7 +91,7 @@ processor.IsControl(10);     // returns true if the given id is a control token.
 ## Extra Options
 Use `SetEncodeExtraOptions` and `SetDecodeExtraOptions` methods to set extra options for encoding and decoding respectively. These methods need to be called just after `Load/LoadOrDie` methods.
 
-```
+```C++
 processor.SetEncodeExtraOptions("bos:eos");   // add <s> and </s>.
 processor.SetEncodeExtraOptions("reverse:bos:eos");   // reverse the input and then add <s> and </s>.
 
