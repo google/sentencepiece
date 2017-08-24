@@ -39,8 +39,11 @@ BUILT_SOURCES = \
 
 EXTRA_DIST = sentencepiece.proto sentencepiece_model.proto	
 
-bin_PROGRAMS = spm_encode spm_decode spm_normalize spm_train spm_export_vocab
+bin_PROGRAMS = spm_model spm_encode spm_decode spm_normalize spm_train spm_export_vocab
 noinst_PROGRAMS = compile_charsmap
+
+spm_model_SOURCES = spm_model.cc
+spm_model_LDADD = libsentencepiece.la
 
 spm_encode_SOURCES = spm_encode_main.cc
 spm_encode_LDADD = libsentencepiece.la
