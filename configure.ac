@@ -58,6 +58,19 @@ if test "${enable_gcov}" = "yes"; then
   LIBS="$LIBS -lgcov"
 fi
 
+# pkgconfigdir
+AC_ARG_WITH(pkgconfigdir,
+	AC_HELP_STRING([--with-pkgconfigdir],
+	[Use the specified pkgconfig dir (default is libdir/pkgconfig)]),
+	[pkgconfigdir=${withval}],
+	[pkgconfigdir='${libdir}/pkgconfig'])
+AC_MSG_NOTICE([pkgconfig directory is ${pkgconfigdir}])
+pkgconfigcflags=$CFLAGS
+pkgconfiglibs=$LIBS
+AC_SUBST([pkgconfigdir])
+AC_SUBST([pkgconfigcflags])
+AC_SUBST([pkgconfiglibs])
+
 # Checks for header files.
 AC_CHECK_HEADERS([unistd.h])
 
@@ -69,6 +82,7 @@ AC_FUNC_STRTOD
 AC_CHECK_FUNCS([memchr memset])
 
 AC_CONFIG_FILES([Makefile
-                 src/Makefile])
+                 src/Makefile
+		 sentencepiece.pc])
 
 AC_OUTPUT

@@ -168,6 +168,7 @@ class SentencePieceProcessor {
   // Returns true if |id| is control symbol.
   virtual bool IsControl(int id) const;
 
+#ifndef SWIG
   //////////////////////////////////////////////////////////////
   // Model management.
   //
@@ -176,6 +177,7 @@ class SentencePieceProcessor {
 
   // Allows injection of a normalizer instance. |normalizer| is moved.
   void SetNormalizer(std::unique_ptr<normalizer::Normalizer> &&normalizer);
+#endif
 
   // Returns immutable model proto. Useful to obtain extended
   // or experimental parameters encoded in model_proto.

@@ -30,6 +30,7 @@ Makefile.in
 *.lo
 *.a
 *.la
+*.pyc
 
 .libs
 .deps
@@ -49,3 +50,10 @@ spm_test
 
 *.pb.cc
 *.pb.h
+
+.DS_Store
+*.egg-info/
+dist/
+*.swp
+*.swo
+*.pyc

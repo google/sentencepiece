@@ -1,9 +1,12 @@
 AUTOMAKE_OPTIONS = foreign
 SUBDIRS = src
 
-EXTRA_DIRS = m4 third_party data doc
+EXTRA_DIRS = m4 third_party data doc python
 EXTRA_DIST = README.md LICENSE
 ACLOCAL_AMFLAGS = -I third_party/m4
+
+pkgconfigdir = @pkgconfigdir@
+pkgconfig_DATA = sentencepiece.pc
 
 dist-hook:
 	for subdir in $(EXTRA_DIRS); do \
@@ -17,6 +20,6 @@ dist-hook:
 	  rm -rf $(distdir)/*/*/.svn; \
 	  rm -rf $(distdir)/$$subdir/*/CVS; \
 	  rm -rf $(distdir)/$$subdir/*/.svn; \
-  	  rm -rf $(distdir)/$$subdir/*/.pb.cc; \
+	  rm -rf $(distdir)/$$subdir/*/.pb.cc; \
 	  find $(distdir) -name .svn  | xargs rm -fr; \
 	done

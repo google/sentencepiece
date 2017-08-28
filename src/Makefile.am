@@ -17,6 +17,7 @@ libsentencepiece_la_SOURCES = \
 	word_model.h word_model.cc \
 	char_model.h char_model.cc \
 	bpe_model.h bpe_model.cc
+include_HEADERS = sentencepiece_processor.h
 
 noinst_LIBRARIES = libtrain.a
 libtrain_a_SOURCES = builder.cc builder.h \
@@ -37,7 +38,7 @@ BUILT_SOURCES = \
 	sentencepiece.pb.cc \
 	sentencepiece_model.pb.cc
 
-EXTRA_DIST = sentencepiece.proto sentencepiece_model.proto	
+EXTRA_DIST = sentencepiece.proto sentencepiece_model.proto
 
 bin_PROGRAMS = spm_encode spm_decode spm_normalize spm_train spm_export_vocab
 noinst_PROGRAMS = compile_charsmap

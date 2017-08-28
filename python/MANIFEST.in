@@ -1,0 +1,3 @@
+recursive-include test *.py *.model
+include *.i *.md
+
