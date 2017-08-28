@@ -8,13 +8,13 @@ Python wrapper for SentencePiece with SWIG. This module wrapps sentencepiece::Se
 ## Build and Install SentencePiece
 You need to install SentencePiece before before installing this python wrapper.
 
-Please use pip comand to install SentencePiece python module.
+You can simply use pip comand to install SentencePiece python module.
 
 ```
 % pip install sentencepiece
 ```
 
-You can install SentencePiece python module manually as follows:
+To install the wrapper manually, try the following commands:
 ```
 % python setup.py build
 % sudo python setup.py install
