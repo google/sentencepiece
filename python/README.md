@@ -1,12 +1,12 @@
 # SentencePiece Python Wrapper
 
-Python wrapper for SentencePiece with SWIG. This module wrapps sentencepiece::SentencePieceProcessor class with the following modifications:
+Python wrapper for SentencePiece with SWIG. This module wraps sentencepiece::SentencePieceProcessor class with the following modifications:
 * Encode and Decode methods are re-defined as EncodeAsIds, EncodeAsPieces, DecodeIds and DecodePieces respectevely.
 * SentencePieceText proto is not supported.
 * Added __len__ and __getitem__ methods. len(obj) and obj[key] returns vocab size and vocab id respectively.
 
 ## Build and Install SentencePiece
-You need to install SentencePiece before before installing this python wrapper.
+You need to install SentencePiece before installing this python wrapper.
 
 You can simply use pip comand to install SentencePiece python module.
 
