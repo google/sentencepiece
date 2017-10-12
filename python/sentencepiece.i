@@ -5,6 +5,12 @@
 
 %{
 #include <sentencepiece_processor.h>
+#if PY_VERSION_HEX >= 0x03000000
+#undef PyString_Check
+#define PyString_Check(name) PyUnicode_Check(name)
+#define PyString_AsStringAndSize(obj, s, len) {*s = PyUnicode_AsUTF8AndSize(obj, len);}
+#define PyString_FromStringAndSize(s, len) PyUnicode_FromStringAndSize(s, len)
+#endif
 %}
 
 %ignore sentencepiece::SentencePieceProcessor::Encode(std::string const &, std::vector<std::string>*) const;
