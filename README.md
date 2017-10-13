@@ -239,7 +239,7 @@ You can find that the original input sentence is restored from the vocabulary id
 * **SentencePiece (Unigram/BPE)** outperforms word-based methods **(Moses/KyTea/MeCab/neologd)** even with a smaller vocabulary (10% of word-based methods).
 * The number of tokens to represent Japanese sentences is almost comparable between **SentencePiece (unigram)** and **KyTea**, though the vocabulary of **Sentencepice** is much smaller. It implies that Sentencepiece can effectively compress the sentences with a smaller vocabulary set.
 * Pretokenization can slightly improve the BLEU scores in English to Japanese. In Japanese to English translation, pretokenization doesn't help to improve BLEU.
-* **Neologd** shows poor BLEU score. Toeknizing sentences with a large named entity dictionary might not be effective in neural-based text processing.
+* **Neologd** shows poor BLEU score. Tokenizing sentences with a large named entity dictionary might not be effective in neural-based text processing.
 * **SentencePiece(Unigram)** shows slightly better text compression ratio than **BPE**, but no significant differences in BLEU score.
 * The selection of vocabulary size for SentencePiece is sensitive in English to Japanese. This is probably because the vocabulary size will drastically affect the tokenization results in Japanese which has no explicit spaces between words.
 
