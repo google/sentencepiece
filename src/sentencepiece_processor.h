@@ -107,7 +107,7 @@ class SentencePieceProcessor {
   // Sets encode extra_option sequence.
   virtual void SetEncodeExtraOptions(const std::string &extra_option);
 
-  // Sets dncode extra_option sequence.
+  // Sets decode extra_option sequence.
   virtual void SetDecodeExtraOptions(const std::string &extra_option);
 
   //////////////////////////////////////////////////////////////
