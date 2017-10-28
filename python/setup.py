@@ -2,8 +2,8 @@
 
 from setuptools import setup, Extension
 import string
+import subprocess
 import sys
-import os
 
 sys.path.append('./test')
 
@@ -11,7 +11,12 @@ with open("README.md") as f:
     long_description = f.read()
 
 def cmd(line):
-    return os.popen(line).readlines()[0][:-1].split()
+    try:
+        output = subprocess.check_output(line, shell=True)
+    except subprocess.CalledProcessError:
+        sys.stderr.write('Failed to find sentencepiece pkgconfig\n')
+        sys.exit(1)
+    return output.strip().split()
 
 setup(name = 'sentencepiece',
       author = 'Taku Kudo',
