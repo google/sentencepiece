@@ -13,6 +13,8 @@ with open("README.md") as f:
 def cmd(line):
     try:
         output = subprocess.check_output(line, shell=True)
+        if sys.version_info >= (3,0,0):
+            output = output.decode('utf-8')
     except subprocess.CalledProcessError:
         sys.stderr.write('Failed to find sentencepiece pkgconfig\n')
         sys.exit(1)
