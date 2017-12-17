@@ -3,6 +3,7 @@
 
 import sentencepiece as spm
 import unittest
+import sys
 
 class TestSentencepieceProcessor(unittest.TestCase):
     """Test case for SentencePieceProcessor"""
@@ -56,6 +57,33 @@ class TestSentencepieceProcessor(unittest.TestCase):
         self.assertEqual(text, self.jasp_.Decode(pieces1))
         self.assertEqual(text, self.jasp_.DecodePieces(pieces2))
         self.assertEqual(text, self.jasp_.DecodeIds(ids))
+
+    def test_unicode_roundtrip(self):
+        text = u'I saw a girl with a telescope.'
+        ids = self.sp_.EncodeAsIds(text)
+        pieces1 = self.sp_.EncodeAsPieces(text)
+        pieces2 = self.sp_.Encode(text)
+        self.assertEqual(pieces1, pieces2)
+        self.assertEqual(text, self.sp_.Decode(pieces1))
+        self.assertEqual(text, self.sp_.DecodePieces(pieces2))
+        # python2 returns `str`.
+        if sys.version_info < (3,0,0):
+            text = text.encode('utf-8')
+        self.assertEqual(text, self.sp_.DecodeIds(ids))
+
+    def test_unicode_ja_roundtrip(self):
+        text = u'清水寺は京都にある。'
+        ids = self.jasp_.EncodeAsIds(text)
+        pieces1 = self.jasp_.EncodeAsPieces(text)
+        pieces2 = self.jasp_.Encode(text)
+        self.assertEqual(pieces1, pieces2)
+        self.assertEqual(text, self.jasp_.Decode(pieces1))
+        self.assertEqual(text, self.jasp_.DecodePieces(pieces2))
+        # python2 returns `str`.
+        if sys.version_info < (3,0,0):
+            text = text.encode('utf-8')
+        self.assertEqual(text, self.jasp_.DecodeIds(ids))
+
 
 def suite():
   suite = unittest.TestSuite()

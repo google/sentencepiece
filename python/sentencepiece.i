@@ -1,16 +1,64 @@
 %module sentencepiece
 
-# Python wrapper is generated with:
-# % swig -python -c++ sentencepiece.i
-
 %{
 #include <sentencepiece_processor.h>
+
+namespace {
+PyObject* kStringInput = reinterpret_cast<PyObject* >(0x1);
+PyObject* kUnicodeInput = reinterpret_cast<PyObject* >(0x2);
+
+class PyInputString {
+ public:
+  explicit PyInputString(PyObject* obj) {
 #if PY_VERSION_HEX >= 0x03000000
-#undef PyString_Check
-#define PyString_Check(name) PyUnicode_Check(name)
-#define PyString_AsStringAndSize(obj, s, len) {*s = PyUnicode_AsUTF8AndSize(obj, len);}
-#define PyString_FromStringAndSize(s, len) PyUnicode_FromStringAndSize(s, len)
+    if (PyUnicode_Check(obj)) {
+      str_ = PyUnicode_AsUTF8AndSize(obj, &size_);
+      input_type_ = kUnicodeInput;
+    } else if (PyBytes_Check(obj)) {
+      PyBytes_AsStringAndSize(obj, &str_, &size_);
+      input_type_ = kStringInput;
+    }
+#else
+    if (PyUnicode_Check(obj)) {
+      utf8_obj_ = PyUnicode_AsUTF8String(obj);
+      PyString_AsStringAndSize(utf8_obj_, &str_, &size_);
+      input_type_ = kUnicodeInput;
+    } else if (PyString_Check(obj)) {
+      PyString_AsStringAndSize(obj, &str_, &size_);
+      input_type_ = kStringInput;
+    }
 #endif
+    else {
+      str_ = nullptr;
+    }
+  }
+  virtual ~PyInputString() {
+    Py_XDECREF(utf8_obj_);
+  }
+  const char* str() const { return str_; }
+  Py_ssize_t size() const { return size_; }
+  bool IsAvalable() const { return str_ != nullptr; }
+  PyObject *input_type() const { return input_type_; }
+
+ private:
+  PyObject* utf8_obj_ = nullptr;
+  PyObject* input_type_ = nullptr;
+  char* str_ = nullptr;
+  Py_ssize_t size_ = 0;
+};
+
+PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
+#if PY_VERSION_HEX >= 0x03000000
+  return resultobj == kStringInput ?
+      PyBytes_FromStringAndSize(output.data(), output.size()) :
+      PyUnicode_FromStringAndSize(output.data(), output.size());
+#else
+   return resultobj == kUnicodeInput ?
+       PyUnicode_FromStringAndSize(output.data(), output.size()) :
+       PyString_FromStringAndSize(output.data(), output.size());
+#endif
+}
+}  // namespace
 %}
 
 %ignore sentencepiece::SentencePieceProcessor::Encode(std::string const &, std::vector<std::string>*) const;
@@ -73,32 +121,32 @@
 
 %typemap(out) std::vector<int> {
   $result = PyList_New($1.size());
-  for (size_t i = 0; i < $1.size(); ++i)
-    PyList_SetItem($result, i, PyInt_FromLong((long)$1[i]));
+  for (size_t i = 0; i < $1.size(); ++i) {
+    PyList_SetItem($result, i, PyInt_FromLong(static_cast<long>($1[i])));
+  }
 }
 
 %typemap(out) std::vector<std::string> {
+  PyObject *input_type = resultobj;
   $result = PyList_New($1.size());
-  for (size_t i = 0; i < $1.size(); ++i)
-    PyList_SetItem($result, i, PyString_FromStringAndSize($1[i].data(), $1[i].size()));
+  for (size_t i = 0; i < $1.size(); ++i) {
+    PyList_SetItem($result, i, MakePyOutputString($1[i], input_type));
+  }
 }
 
 %typemap(out) std::string {
-  $result = PyString_FromStringAndSize($1.data(), $1.size());
+  PyObject *input_type = resultobj;
+  $result = MakePyOutputString($1, input_type);
 }
 
 %typemap(in) const std::string & {
-  std::string *out = nullptr;
-  if (PyString_Check($input)) {
-    char *str = nullptr;
-    Py_ssize_t str_size = 0;
-    PyString_AsStringAndSize($input, &str, &str_size);
-    out = new std::string(str, str_size);
-  } else {
-    PyErr_SetString(PyExc_TypeError,"not a string");
-    return NULL;
+  const PyInputString ustring($input);
+  if (!ustring.IsAvalable()) {
+    PyErr_SetString(PyExc_TypeError, "not a string");
+    return nullptr;
   }
-  $1 = out;
+  resultobj = ustring.input_type();
+  $1 = new std::string(ustring.str(), ustring.size());
 }
 
 %typemap(in) const std::vector<std::string>& {
@@ -107,20 +155,18 @@
     const size_t size = PyList_Size($input);
     out = new std::vector<std::string>(size);
     for (size_t i = 0; i < size; ++i) {
-      PyObject *o = PyList_GetItem($input, i);
-      if (PyString_Check(o)) {
-        char *str = nullptr;
-        Py_ssize_t str_size = 0;
-        PyString_AsStringAndSize(o, &str, &str_size);
-        (*out)[i] = std::string(str, static_cast<size_t>(str_size));
+      const PyInputString ustring(PyList_GetItem($input, i));
+      if (ustring.IsAvalable()) {
+        (*out)[i] = std::string(ustring.str(), ustring.size());
       } else {
-        PyErr_SetString(PyExc_TypeError,"list must contain strings");
-        return NULL;
+        PyErr_SetString(PyExc_TypeError, "list must contain strings");
+        return nullptr;
       }
+      resultobj = ustring.input_type();
     }
   } else {
-    PyErr_SetString(PyExc_TypeError,"not a list");
-    return NULL;
+    PyErr_SetString(PyExc_TypeError, "not a list");
+    return nullptr;
   }
   $1 = out;
 }
@@ -136,12 +182,12 @@
         (*out)[i] = static_cast<int>(PyInt_AsLong(o));
       } else {
         PyErr_SetString(PyExc_TypeError,"list must contain integers");
-        return NULL;
+        return nullptr;
       }
     }
   } else {
     PyErr_SetString(PyExc_TypeError,"not a list");
-    return NULL;
+    return nullptr;
   }
   $1 = out;
 }

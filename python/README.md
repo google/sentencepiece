@@ -52,3 +52,35 @@ True
 >>> sp['</s>']
 2
 ```
+
+## Python2/3 String/Unicode compatibility issue
+Sentencepiece python wrapper accepts both Unicode string and legacy byte string.
+The output string type is determined by the input string type.
+The output type of IdToPiece/DecodeIds methods is '<str>', but note that it is a legacy byte string in Python2 and Unicode string in Python3 respectively.
+
+* Python2:
+```
+>>> sp.Encode('吾輩は猫である')
+['\xe2\x96\x81', '\xe5\x90\xbe', '\xe8\xbc\xa9', '\xe3\x81\xaf', '\xe7\x8c\xab', '\xe3\x81\xa7\xe3\x81\x82\xe3\x82\x8b']
+>>> sp.Encode(u'吾輩は猫である')
+[u'\u2581', u'\u543e', u'\u8f29', u'\u306f', u'\u732b', u'\u3067\u3042\u308b']
+>>> sp.Encode(u'吾輩は猫である'.encode('utf-8'))
+['\xe2\x96\x81', '\xe5\x90\xbe', '\xe8\xbc\xa9', '\xe3\x81\xaf', '\xe7\x8c\xab', '\xe3\x81\xa7\xe3\x81\x82\xe3\x82\x8b']
+>>> sp.IdToPiece(10)
+'\xe3\x81\xab'
+>>> type(sp.IdToPiece(10))
+<type 'str'>
+```
+
+* Python3:
+```
+>>> sp.Encode('吾輩は猫である')
+['▁', '吾', '輩', 'は', '猫', 'である']
+>>> sp.Encode('吾輩は猫である'.encode('utf-8'))
+[b'\xe2\x96\x81', b'\xe5\x90\xbe', b'\xe8\xbc\xa9', b'\xe3\x81\xaf', b'\xe7\x8c\xab', b'\xe3\x81\xa7\xe3\x81\x82\xe3\x82\x8b']
+>>>
+>>> sp.IdToPiece(10)
+'に'
+>>> type(sp.IdToPiece(10))
+<class 'str'>
+```
