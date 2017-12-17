@@ -53,10 +53,10 @@ True
 2
 ```
 
-## Python2/3 String/Unicode compatibility issue
+## Python2/3 String/Unicode compatibility
 Sentencepiece python wrapper accepts both Unicode string and legacy byte string.
 The output string type is determined by the input string type.
-The output type of IdToPiece/DecodeIds methods is '<str>', but note that it is a legacy byte string in Python2 and Unicode string in Python3 respectively.
+The output type of IdToPiece/DecodeIds methods is *str*, but note that it is a legacy byte string in Python2 and Unicode string in Python3 respectively.
 
 * Python2:
 ```
