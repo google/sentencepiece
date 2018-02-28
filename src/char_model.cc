@@ -37,8 +37,7 @@ Model::Model(const ModelProto &model_proto) {
 
 Model::~Model() {}
 
-std::vector<std::pair<StringPiece, int>> Model::Encode(
-    StringPiece normalized) const {
+EncodeResult Model::Encode(StringPiece normalized) const {
   if (normalized.empty()) {
     return {};
   }
@@ -46,7 +45,7 @@ std::vector<std::pair<StringPiece, int>> Model::Encode(
   // Splits the input into character sequence
   const char *begin = normalized.data();
   const char *end = normalized.data() + normalized.size();
-  std::vector<std::pair<StringPiece, int>> output;
+  EncodeResult output;
   while (begin < end) {
     int mblen = string_util::OneCharLen(begin);
     if (mblen > end - begin) {

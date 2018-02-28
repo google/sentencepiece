@@ -38,13 +38,12 @@ Model::Model(const ModelProto &model_proto) {
 
 Model::~Model() {}
 
-std::vector<std::pair<StringPiece, int>> Model::Encode(
-    StringPiece normalized) const {
+EncodeResult Model::Encode(StringPiece normalized) const {
   if (normalized.empty()) {
     return {};
   }
 
-  std::vector<std::pair<StringPiece, int>> output;
+  EncodeResult output;
   for (const auto &w : SplitIntoWords(normalized)) {
     output.emplace_back(w, PieceToId(w));
   }

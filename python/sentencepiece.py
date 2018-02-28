@@ -153,6 +153,24 @@ class SentencePieceProcessor(_object):
     def EncodeAsIds(self, input):
         return _sentencepiece.SentencePieceProcessor_EncodeAsIds(self, input)
 
+    def NBestEncode(self, input, nbest_size):
+        return _sentencepiece.SentencePieceProcessor_NBestEncode(self, input, nbest_size)
+
+    def NBestEncodeAsPieces(self, input, nbest_size):
+        return _sentencepiece.SentencePieceProcessor_NBestEncodeAsPieces(self, input, nbest_size)
+
+    def NBestEncodeAsIds(self, input, nbest_size):
+        return _sentencepiece.SentencePieceProcessor_NBestEncodeAsIds(self, input, nbest_size)
+
+    def SampleEncode(self, input, nbest_size, alpha):
+        return _sentencepiece.SentencePieceProcessor_SampleEncode(self, input, nbest_size, alpha)
+
+    def SampleEncodeAsPieces(self, input, nbest_size, alpha):
+        return _sentencepiece.SentencePieceProcessor_SampleEncodeAsPieces(self, input, nbest_size, alpha)
+
+    def SampleEncodeAsIds(self, input, nbest_size, alpha):
+        return _sentencepiece.SentencePieceProcessor_SampleEncodeAsIds(self, input, nbest_size, alpha)
+
     def Decode(self, input):
         return _sentencepiece.SentencePieceProcessor_Decode(self, input)
 

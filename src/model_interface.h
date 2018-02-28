@@ -28,6 +28,9 @@ namespace sentencepiece {
 // "_this_is_a_pen" => ["_this", "_is", "_a", "_pen"]
 std::vector<StringPiece> SplitIntoWords(StringPiece text);
 
+using EncodeResult = std::vector<std::pair<StringPiece, int>>;
+using NBestEncodeResult = std::vector<std::pair<EncodeResult, float>>;
+
 class ModelProto;
 
 // Underlying model interface.
@@ -48,8 +51,19 @@ class ModelInterface {
 
   // Given a normalized string, returns a sequence of sentence pieces with ids.
   // The concatenation of pieces must be the same as |normalized|.
-  virtual std::vector<std::pair<StringPiece, int>> Encode(
-      StringPiece normalized) const = 0;
+  virtual EncodeResult Encode(StringPiece normalized) const = 0;
+
+  // The same as above, but returns nbest result with score.
+  virtual NBestEncodeResult NBestEncode(StringPiece normalized,
+                                        int nbest_size) const {
+    LOG(FATAL) << "Not implemented.";
+    return NBestEncodeResult();
+  }
+
+  virtual EncodeResult SampleEncode(StringPiece normalized, float alpha) const {
+    LOG(FATAL) << "Not implemented.";
+    return EncodeResult();
+  }
 
   // Returns the size of sentence pieces, which is the same
   // as the size of vocabulary for NMT.

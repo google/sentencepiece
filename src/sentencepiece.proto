@@ -57,7 +57,14 @@ message SentencePieceText {
   // A sequence of sentence pieces.
   repeated SentencePiece pieces = 2;
 
+  // Score (usually log probability) for MultiSentencePieceText.
+  optional float score = 3;
+
   // Customized extensions: the range of field numbers
   // are open to third-party extensions.
   extensions 200 to max;
+}
+
+message NBestSentencePieceText {
+  repeated SentencePieceText nbests = 1;
 }

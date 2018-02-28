@@ -146,7 +146,7 @@ std::vector<std::pair<StringPiece, int>> Model::Encode(
     MaybeAddNewSymbolPair(top->left, symbols[top->left].next);
   }
 
-  std::vector<std::pair<StringPiece, int>> output;
+  EncodeResult output;
   for (int index = 0; index != -1; index = symbols[index].next) {
     CHECK_GE(index, 0);
     CHECK_LT(index, static_cast<int>(symbols.size()));

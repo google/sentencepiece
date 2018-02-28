@@ -18,6 +18,7 @@
 #include <cmath>
 #include <map>
 #include <queue>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -28,7 +29,26 @@ namespace sentencepiece {
 namespace unigram {
 namespace {
 constexpr size_t kNodeChunkSize = 512;
+
+// Returns log(exp(x) + exp(y)).
+// if init_mode is true, returns log(exp(y)) == y.
+// log(\sum_i exp(a[i])) can be computed as
+// for (int i = 0; i < a.size(); ++i)
+//   x = LogSumExp(x, a[i], i == 0);
+inline float LogSumExp(float x, float y, bool init_mode) {
+  if (init_mode) {
+    return y;
+  }
+  const float vmin = std::min(x, y);
+  const float vmax = std::max(x, y);
+  constexpr float kMinusLogEpsilon = 50;
+  if (vmax > vmin + kMinusLogEpsilon) {
+    return vmax;
+  } else {
+    return vmax + log(exp(vmin - vmax) + 1.0);
+  }
 }
+}  // namespace
 
 Lattice::Lattice() {}
 Lattice::~Lattice() { Clear(); }
@@ -160,25 +180,6 @@ float Lattice::PopulateMarginal(float freq,
                                 std::vector<float> *expected) const {
   CHECK_NOTNULL(expected);
 
-  // Returns log(exp(x) + exp(y)).
-  // if flg is true, returns log(exp(y)) == y.
-  // log(\sum_i exp(a[i])) can be computed as
-  // for (int i = 0; i < a.size(); ++i)
-  //   x = LogSumExp(x, a[i], i == 0);
-  auto LogSumExp = [](float x, float y, bool init_mode) -> float {
-    if (init_mode) {
-      return y;
-    }
-    const float vmin = std::min(x, y);
-    const float vmax = std::max(x, y);
-    constexpr float kMinusLogEpsilon = 50;
-    if (vmax > vmin + kMinusLogEpsilon) {
-      return vmax;
-    } else {
-      return vmax + log(exp(vmin - vmax) + 1.0);
-    }
-  };
-
   const int len = size();
   CHECK_GT(len, 0);
 
@@ -224,6 +225,10 @@ float Lattice::PopulateMarginal(float freq,
 std::vector<std::vector<Lattice::Node *>> Lattice::NBest(size_t nbest_size) {
   CHECK_GT(size(), 0);
   CHECK_GE(nbest_size, 1);
+
+  if (nbest_size == 1) {
+    return {Viterbi()};
+  }
 
   // Uses A* search to enumerate N-bests.
   // Given a lattice, enumerates hypotheses (paths) from EOS.
@@ -300,9 +305,69 @@ std::vector<std::vector<Lattice::Node *>> Lattice::NBest(size_t nbest_size) {
       hyp->next = top;
       agenda.push(hyp);
     }
+
+    // When the input is too long or contains duplicated phrases,
+    // `agenda` will get extremely big. Here we avoid this case by
+    // dynamically shrinking the agenda.
+    constexpr int kMaxAgendaSize = 100000;
+    constexpr int kMinAgendaSize = 512;
+    if (agenda.size() >= kMaxAgendaSize) {
+      LOG(WARNING) << "Too big agenda. shrinking";
+      // Keeps the top `kMinAgendaSize` hypothesis.
+      Agenda new_agenda;
+      const int size = std::min<int>(kMinAgendaSize, nbest_size * 10);
+      for (int i = 0; i < size; ++i) {
+        new_agenda.push(agenda.top());
+        agenda.pop();
+      }
+      agenda = std::move(new_agenda);
+    }
   }
 
   port::STLDeleteElements(&allocated);
+  return results;
+}
+
+std::vector<Lattice::Node *> Lattice::Sample(float theta) {
+  std::vector<float> alpha(all_nodes_.size(), 0.0);
+  CHECK_GE(theta, 0.0);
+
+  const int len = size();
+  CHECK_GT(len, 0);
+  CHECK_GT(begin_nodes_.size(), 0);
+  CHECK_GT(end_nodes_.size(), 0);
+
+  for (int pos = 0; pos <= len; ++pos) {
+    for (Node *rnode : begin_nodes_[pos]) {
+      for (Node *lnode : end_nodes_[pos]) {
+        alpha[rnode->node_id] = LogSumExp(
+            alpha[rnode->node_id], theta * lnode->score + alpha[lnode->node_id],
+            lnode == end_nodes_[pos][0]);
+      }
+    }
+  }
+
+  thread_local static std::mt19937 mt(std::random_device{}());
+
+  std::vector<Node *> results;
+  std::vector<float> probs;
+
+  float Z = alpha[eos_node()->node_id];
+  Node *node = eos_node();
+  while (true) {
+    probs.clear();
+    for (const Node *lnode : end_nodes_[node->pos]) {
+      probs.push_back(exp(alpha[lnode->node_id] + theta * lnode->score - Z));
+    }
+    std::discrete_distribution<int> dist(probs.begin(), probs.end());
+    node = end_nodes_[node->pos][dist(mt)];
+    if (node == bos_node()) break;
+
+    Z = alpha[node->node_id];
+    results.push_back(node);
+  }
+
+  std::reverse(results.begin(), results.end());
   return results;
 }
 
@@ -437,8 +502,7 @@ Model::Model(const ModelProto &model_proto) {
 
 Model::~Model() {}
 
-std::vector<std::pair<StringPiece, int>> Model::Encode(
-    StringPiece normalized) const {
+EncodeResult Model::Encode(StringPiece normalized) const {
   if (normalized.empty()) {
     return {};
   }
@@ -447,12 +511,57 @@ std::vector<std::pair<StringPiece, int>> Model::Encode(
   lattice.SetSentence(normalized);
   PopulateNodes(&lattice);
 
-  std::vector<std::pair<StringPiece, int>> results;
+  EncodeResult results;
   for (const auto *node : lattice.Viterbi()) {
     results.emplace_back(node->piece, node->id);
   }
 
   return results;
 }
+
+NBestEncodeResult Model::NBestEncode(StringPiece normalized,
+                                     int nbest_size) const {
+  if (normalized.empty()) {
+    return {{{}, 0.0}};
+  }
+
+  CHECK_GE(nbest_size, 1);
+  CHECK_LT(nbest_size, 1024);
+
+  Lattice lattice;
+  lattice.SetSentence(normalized);
+  PopulateNodes(&lattice);
+
+  NBestEncodeResult nbest_results;
+  for (const auto &nbest : lattice.NBest(nbest_size)) {
+    EncodeResult results;
+    float score = 0.0;
+    for (const auto *node : nbest) {
+      score += node->score;
+      results.emplace_back(node->piece, node->id);
+    }
+    nbest_results.emplace_back(results, score);
+  }
+
+  return nbest_results;
+}
+
+EncodeResult Model::SampleEncode(StringPiece normalized, float theta) const {
+  if (normalized.empty()) {
+    return {};
+  }
+
+  Lattice lattice;
+  lattice.SetSentence(normalized);
+  PopulateNodes(&lattice);
+
+  EncodeResult results;
+  for (const auto *node : lattice.Sample(theta)) {
+    results.emplace_back(node->piece, node->id);
+  }
+
+  return results;
+}
+
 }  // namespace unigram
 }  // namespace sentencepiece

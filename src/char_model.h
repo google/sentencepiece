@@ -27,8 +27,7 @@ class Model : public ModelInterface {
   explicit Model(const ModelProto &model_proto);
   ~Model() override;
 
-  std::vector<std::pair<StringPiece, int>> Encode(
-      StringPiece normalized) const override;
+  EncodeResult Encode(StringPiece normalized) const override;
 };
 }  // namespace character
 }  // namespace sentencepiece

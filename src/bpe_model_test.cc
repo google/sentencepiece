@@ -55,7 +55,7 @@ TEST(BPEModelTest, EncodeTest) {
 
   const Model model(model_proto);
 
-  std::vector<std::pair<StringPiece, int>> result;
+  EncodeResult result;
 
   result = model.Encode("");
   EXPECT_TRUE(result.empty());
@@ -110,7 +110,7 @@ TEST(BPEModelTest, EncodeAmbiguousTest) {
 
   const Model model(model_proto);
 
-  std::vector<std::pair<StringPiece, int>> result;
+  EncodeResult result;
 
   // leftmost symbols are merged first.
   result = model.Encode("aaa");

@@ -82,6 +82,11 @@ class Lattice {
   // Returns n-best results.
   std::vector<std::vector<Node *>> NBest(size_t nbest_size);
 
+  // Samples one path from the lattice according to the
+  // generation probability (Product of piece probabilities).
+  // `theta` is a smoothing parameter.
+  std::vector<Node *> Sample(float theta);
+
   // Populates marginal probability of every node in this lattice.
   // |freq| is the frequency of the sentence.
   //  for (auto *node : all_nodes_) {
@@ -141,8 +146,12 @@ class Model : public ModelBase {
   explicit Model(const ModelProto &model_proto);
   ~Model() override;
 
-  std::vector<std::pair<StringPiece, int>> Encode(
-      StringPiece normalized) const override;
+  EncodeResult Encode(StringPiece normalized) const override;
+
+  NBestEncodeResult NBestEncode(StringPiece normalized,
+                                int nbest_size) const override;
+
+  EncodeResult SampleEncode(StringPiece normalized, float theta) const override;
 };
 }  // namespace unigram
 }  // namespace sentencepiece

@@ -61,7 +61,7 @@ TEST(ModelTest, EncodeTest) {
 
   const Model model(model_proto);
 
-  std::vector<std::pair<StringPiece, int>> result;
+  EncodeResult result;
 
   result = model.Encode("");
   EXPECT_TRUE(result.empty());

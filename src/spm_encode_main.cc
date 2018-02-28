@@ -20,10 +20,14 @@
 #include "util.h"
 
 DEFINE_string(model, "", "model file name");
-DEFINE_string(output_format, "piece", "choose from piece, id, or proto");
+DEFINE_string(
+    output_format, "piece",
+    "choose from piece, id, proto, nbest_piece, nbest_id, or nbest_proto");
 DEFINE_string(output, "", "output filename");
 DEFINE_string(extra_options, "",
               "':' separated encoder extra options, e.g., \"reverse:bos:eos\"");
+DEFINE_int32(nbest_size, 10, "NBest size");
+DEFINE_double(theta, 0.5, "Smoothing parameter for sampling mode.");
 
 int main(int argc, char *argv[]) {
   std::vector<std::string> rest_args;
@@ -44,7 +48,10 @@ int main(int argc, char *argv[]) {
   std::string line;
   std::vector<std::string> sps;
   std::vector<int> ids;
+  std::vector<std::vector<std::string>> nbest_sps;
+  std::vector<std::vector<int>> nbest_ids;
   sentencepiece::SentencePieceText spt;
+  sentencepiece::NBestSentencePieceText nbest_spt;
   std::function<void(const std::string &line)> process;
 
   if (FLAGS_output_format == "piece") {
@@ -62,6 +69,40 @@ int main(int argc, char *argv[]) {
       sp.Encode(line, &spt);
       output.WriteLine(spt.Utf8DebugString());
     };
+  } else if (FLAGS_output_format == "sample_piece") {
+    process = [&](const std::string &line) {
+      sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_theta, &sps);
+      output.WriteLine(sentencepiece::string_util::Join(sps, " "));
+    };
+  } else if (FLAGS_output_format == "sample_id") {
+    process = [&](const std::string &line) {
+      sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_theta, &ids);
+      output.WriteLine(sentencepiece::string_util::Join(ids, " "));
+    };
+  } else if (FLAGS_output_format == "sample_proto") {
+    process = [&](const std::string &line) {
+      sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_theta, &spt);
+      output.WriteLine(spt.Utf8DebugString());
+    };
+  } else if (FLAGS_output_format == "nbest_piece") {
+    process = [&](const std::string &line) {
+      sp.NBestEncode(line, FLAGS_nbest_size, &nbest_sps);
+      for (const auto &result : nbest_sps) {
+        output.WriteLine(sentencepiece::string_util::Join(result, " "));
+      }
+    };
+  } else if (FLAGS_output_format == "nbest_id") {
+    process = [&](const std::string &line) {
+      sp.NBestEncode(line, FLAGS_nbest_size, &nbest_ids);
+      for (const auto &result : nbest_ids) {
+        output.WriteLine(sentencepiece::string_util::Join(result, " "));
+      }
+    };
+  } else if (FLAGS_output_format == "nbest_proto") {
+    process = [&](const std::string &line) {
+      sp.NBestEncode(line, FLAGS_nbest_size, &nbest_spt);
+      output.WriteLine(nbest_spt.Utf8DebugString());
+    };
   } else {
     LOG(FATAL) << "Unknown output format: " << FLAGS_output_format;
   }
@@ -70,7 +111,7 @@ int main(int argc, char *argv[]) {
     sentencepiece::io::InputBuffer input(filename);
     while (input.ReadLine(&line)) {
       if (line.empty()) {
-	output.WriteLine("");
+        output.WriteLine("");
         continue;
       }
       process(line);
