@@ -2,19 +2,18 @@
 
 Python wrapper for SentencePiece with SWIG. This module wraps sentencepiece::SentencePieceProcessor class with the following modifications:
 * Encode and Decode methods are re-defined as EncodeAsIds, EncodeAsPieces, DecodeIds and DecodePieces respectevely.
+* Support model training with SentencePieceTrainer.Train method.
 * SentencePieceText proto is not supported.
 * Added __len__ and __getitem__ methods. len(obj) and obj[key] returns vocab size and vocab id respectively.
 
 ## Build and Install SentencePiece
-You need to install SentencePiece before installing this python wrapper.
-
 You can simply use pip comand to install SentencePiece python module.
 
 ```
 % pip install sentencepiece
 ```
 
-To install the wrapper manually, try the following commands:
+To build and install the wrapper manually, you need to install SentencePiece C++ in advance, and then try the following commands:
 ```
 % python setup.py build
 % sudo python setup.py install
@@ -27,6 +26,7 @@ If you don’t have write permission to the global site-packages directory or do
 
 ## Usage
 
+### Segmentation
 ```
 % python
 >>> import sentencepiece as spm
@@ -39,6 +39,21 @@ True
 [284, 47, 11, 4, 15, 400]
 >>> sp.DecodePieces(['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'est'])
 'This is a test'
+>>> sp.NBestEncode("This is a test", 5)
+[['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'est'], ['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 'te', 'st'], ['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 'te', 's', 't'], ['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'e', 'st'], ['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'es', 't']]
+>>> for x in range(10):
+...     sp.SampleEncode("This is a test", -1, 0.1)
+...
+['\xe2\x96\x81', 'T', 'h', 'i', 's', '\xe2\x96\x81', 'is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'e', 's', 't']
+['\xe2\x96\x81T', 'h', 'is', '\xe2\x96\x81is', '\xe2\x96\x81', 'a', '\xe2\x96\x81', 't', 'est']
+['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81', 'a', '\xe2\x96\x81', 't', 'e', 'st']
+['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'e', 'st']
+['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'e', 's', 't']
+['\xe2\x96\x81T', 'h', 'is', '\xe2\x96\x81', 'i', 's', '\xe2\x96\x81a', '\xe2\x96\x81', 'te', 's', 't']
+['\xe2\x96\x81This', '\xe2\x96\x81', 'is', '\xe2\x96\x81a', '\xe2\x96\x81', 'te', 's', 't']
+['\xe2\x96\x81This', '\xe2\x96\x81', 'i', 's', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'e', 'st']
+['\xe2\x96\x81This', '\xe2\x96\x81', 'is', '\xe2\x96\x81', 'a', '\xe2\x96\x81', 't', 'e', 'st']
+['\xe2\x96\x81This', '\xe2\x96\x81', 'i', 's', '\xe2\x96\x81', 'a', '\xe2\x96\x81', 'te', 's', 't']
 >>> sp.DecodeIds([284, 47, 11, 4, 15, 400])
 'This is a test'
 >>> sp.GetPieceSize()
@@ -51,6 +66,26 @@ True
 1000
 >>> sp['</s>']
 2
+```
+
+### Model Training
+Training is peformed by passing parameters of [spm_train](https://github.com/google/sentencepiece#train-sentencepiece-model) to  SentencePieceTrainer.Train() function.
+
+```
+>>> import sentencepiece as spm
+>>> spm.SentencePieceTrainer.Train('--input=test/botchan.txt --model_prefix=m --vocab_size=1000')
+unigram_model_trainer.cc(494) LOG(INFO) Starts training with : 
+input: "test/botchan.txt"
+model_prefix: "m"
+model_type: UNIGRAM
+..snip..
+unigram_model_trainer.cc(529) LOG(INFO) EM sub_iter=0 size=1239 obj=10.4055 num_tokens=36256 num_tokens/piece=29.2623
+unigram_model_trainer.cc(529) LOG(INFO) EM sub_iter=1 size=1239 obj=10.3187 num_tokens=36256 num_tokens/piece=29.2623
+unigram_model_trainer.cc(529) LOG(INFO) EM sub_iter=0 size=1100 obj=10.5285 num_tokens=37633 num_tokens/piece=34.2118
+unigram_model_trainer.cc(529) LOG(INFO) EM sub_iter=1 size=1100 obj=10.4973 num_tokens=37630 num_tokens/piece=34.2091
+trainer_interface.cc(284) LOG(INFO) Saving model: m.model
+trainer_interface.cc(293) LOG(INFO) Saving vocabs: m.vocab
+>>>
 ```
 
 ## Python2/3 String/Unicode compatibility

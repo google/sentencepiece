@@ -27,7 +27,7 @@ DEFINE_string(output, "", "output filename");
 DEFINE_string(extra_options, "",
               "':' separated encoder extra options, e.g., \"reverse:bos:eos\"");
 DEFINE_int32(nbest_size, 10, "NBest size");
-DEFINE_double(theta, 0.5, "Smoothing parameter for sampling mode.");
+DEFINE_double(alpha, 0.5, "Smoothing parameter for sampling mode.");
 
 int main(int argc, char *argv[]) {
   std::vector<std::string> rest_args;
@@ -71,17 +71,17 @@ int main(int argc, char *argv[]) {
     };
   } else if (FLAGS_output_format == "sample_piece") {
     process = [&](const std::string &line) {
-      sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_theta, &sps);
+      sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &sps);
       output.WriteLine(sentencepiece::string_util::Join(sps, " "));
     };
   } else if (FLAGS_output_format == "sample_id") {
     process = [&](const std::string &line) {
-      sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_theta, &ids);
+      sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &ids);
       output.WriteLine(sentencepiece::string_util::Join(ids, " "));
     };
   } else if (FLAGS_output_format == "sample_proto") {
     process = [&](const std::string &line) {
-      sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_theta, &spt);
+      sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &spt);
       output.WriteLine(spt.Utf8DebugString());
     };
   } else if (FLAGS_output_format == "nbest_piece") {
