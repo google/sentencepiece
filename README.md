@@ -67,7 +67,18 @@ special symbol. Tokenized sequences do not preserve the necessary information to
 * (en) Hello world.   → [Hello] [World] [.]   \(A space between Hello and World\)
 * (ja) こんにちは世界。  → [こんにちは] [世界] [。] \(No space between こんにちは and 世界\)
 
-## Required packages
+## Python module
+SentencePiece provides Python wrapper that supports both SentencePiece training and segmentation.
+For Linux (x64) environment, you can install Python binary package of SentencePiece with.
+
+```
+% pip install sentencepiece
+```
+
+For more detail, [Python module](python/README.md)
+
+
+## Required packages (C++)
 The following tools and libraries are required to build SentencePiece:
 
 * GNU autotools (autoconf automake libtool)
@@ -129,6 +140,12 @@ Use `--extra_options` flag to insert the BOS/EOS markers or reverse the input se
 % spm_encode --extra_options=eos (add </s> only)
 % spm_encode --extra_options=bos:eos (add <s> and </s>)
 % spm_encode --extra_options=reverse:bos:eos (reverse input and add <s> and </s>)
+```
+
+SentencePiece supports nbest segmentation and segmentation sampling with `--output_format=(id|sample)_(piece|id)` flags.
+```
+% spm_encode --model=<model_file> --output_format=sample_piece --nbest_size=-1 --alpha=0.5 < input > output
+% spm_encode --model=<model_file> --output_format=nbest_id --nbest_size=10 < input > output
 ```
 
 ## Decode sentence pieces/ids into raw text
