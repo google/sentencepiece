@@ -2,6 +2,7 @@
 
 %{
 #include <sentencepiece_processor.h>
+#include <sentencepiece_trainer.h>
 
 namespace {
 PyObject* kStringInput = reinterpret_cast<PyObject* >(0x1);
@@ -78,6 +79,9 @@ PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
 %ignore sentencepiece::SentencePieceProcessor::Load(std::istream *);
 %ignore sentencepiece::SentencePieceProcessor::LoadOrDie(std::istream *);
 %ignore sentencepiece::SentencePieceProcessor::model_proto();
+%ignore sentencepiece::SentencePieceTrainer::Train(int, char **);
+%ignore sentencepiece::SentencePieceTrainer::Train(const TrainerSpec &);
+%ignore sentencepiece::SentencePieceTrainer::Train(const TrainerSpec &, const NormalizerSpec &);
 
 %extend sentencepiece::SentencePieceProcessor {
   std::vector<std::string> Encode(const std::string& input) const {
@@ -278,3 +282,4 @@ PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
 }
 
 %include <sentencepiece_processor.h>
+%include <sentencepiece_trainer.h>
