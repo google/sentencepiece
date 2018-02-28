@@ -3006,11 +3006,12 @@ SWIG_Python_NonDynamicSetAttr(PyObject *obj, PyObject *name, PyObject *value) {
 
 #define SWIGTYPE_p_char swig_types[0]
 #define SWIGTYPE_p_sentencepiece__SentencePieceProcessor swig_types[1]
-#define SWIGTYPE_p_std__string swig_types[2]
-#define SWIGTYPE_p_std__vectorT_int_t swig_types[3]
-#define SWIGTYPE_p_std__vectorT_std__string_t swig_types[4]
-static swig_type_info *swig_types[6];
-static swig_module_info swig_module = {swig_types, 5, 0, 0, 0, 0};
+#define SWIGTYPE_p_sentencepiece__SentencePieceTrainer swig_types[2]
+#define SWIGTYPE_p_std__string swig_types[3]
+#define SWIGTYPE_p_std__vectorT_int_t swig_types[4]
+#define SWIGTYPE_p_std__vectorT_std__string_t swig_types[5]
+static swig_type_info *swig_types[7];
+static swig_module_info swig_module = {swig_types, 6, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -3116,6 +3117,7 @@ namespace swig {
 
 
 #include <sentencepiece_processor.h>
+#include <sentencepiece_trainer.h>
 
 namespace {
 PyObject* kStringInput = reinterpret_cast<PyObject* >(0x1);
@@ -4557,6 +4559,42 @@ SWIGINTERN PyObject *SentencePieceProcessor_swigregister(PyObject *SWIGUNUSEDPAR
   return SWIG_Py_Void();
 }
 
+SWIGINTERN PyObject *_wrap_SentencePieceTrainer_Train(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  std::string *arg1 = 0 ;
+  PyObject * obj0 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"O:SentencePieceTrainer_Train",&obj0)) SWIG_fail;
+  {
+    const PyInputString ustring(obj0);
+    if (!ustring.IsAvalable()) {
+      PyErr_SetString(PyExc_TypeError, "not a string");
+      return nullptr;
+    }
+    resultobj = ustring.input_type();
+    arg1 = new std::string(ustring.str(), ustring.size());
+  }
+  sentencepiece::SentencePieceTrainer::Train((std::string const &)*arg1);
+  resultobj = SWIG_Py_Void();
+  {
+    delete arg1;
+  }
+  return resultobj;
+fail:
+  {
+    delete arg1;
+  }
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *SentencePieceTrainer_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *obj;
+  if (!PyArg_ParseTuple(args,(char*)"O:swigregister", &obj)) return NULL;
+  SWIG_TypeNewClientData(SWIGTYPE_p_sentencepiece__SentencePieceTrainer, SWIG_NewClientData(obj));
+  return SWIG_Py_Void();
+}
+
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"SWIG_PyInstanceMethod_New", (PyCFunction)SWIG_PyInstanceMethod_New, METH_O, NULL},
 	 { (char *)"new_SentencePieceProcessor", _wrap_new_SentencePieceProcessor, METH_VARARGS, NULL},
@@ -4586,6 +4624,8 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"SentencePieceProcessor___len__", _wrap_SentencePieceProcessor___len__, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor___getitem__", _wrap_SentencePieceProcessor___getitem__, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_swigregister", SentencePieceProcessor_swigregister, METH_VARARGS, NULL},
+	 { (char *)"SentencePieceTrainer_Train", _wrap_SentencePieceTrainer_Train, METH_VARARGS, NULL},
+	 { (char *)"SentencePieceTrainer_swigregister", SentencePieceTrainer_swigregister, METH_VARARGS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 
@@ -4594,6 +4634,7 @@ static PyMethodDef SwigMethods[] = {
 
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_sentencepiece__SentencePieceProcessor = {"_p_sentencepiece__SentencePieceProcessor", "sentencepiece::SentencePieceProcessor *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_sentencepiece__SentencePieceTrainer = {"_p_sentencepiece__SentencePieceTrainer", "sentencepiece::SentencePieceTrainer *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__string = {"_p_std__string", "std::string *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__vectorT_int_t = {"_p_std__vectorT_int_t", "std::vector< int > *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__vectorT_std__string_t = {"_p_std__vectorT_std__string_t", "std::vector< std::string > *", 0, 0, (void*)0, 0};
@@ -4601,6 +4642,7 @@ static swig_type_info _swigt__p_std__vectorT_std__string_t = {"_p_std__vectorT_s
 static swig_type_info *swig_type_initial[] = {
   &_swigt__p_char,
   &_swigt__p_sentencepiece__SentencePieceProcessor,
+  &_swigt__p_sentencepiece__SentencePieceTrainer,
   &_swigt__p_std__string,
   &_swigt__p_std__vectorT_int_t,
   &_swigt__p_std__vectorT_std__string_t,
@@ -4608,6 +4650,7 @@ static swig_type_info *swig_type_initial[] = {
 
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_sentencepiece__SentencePieceProcessor[] = {  {&_swigt__p_sentencepiece__SentencePieceProcessor, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_sentencepiece__SentencePieceTrainer[] = {  {&_swigt__p_sentencepiece__SentencePieceTrainer, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__string[] = {  {&_swigt__p_std__string, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__vectorT_int_t[] = {  {&_swigt__p_std__vectorT_int_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__vectorT_std__string_t[] = {  {&_swigt__p_std__vectorT_std__string_t, 0, 0, 0},{0, 0, 0, 0}};
@@ -4615,6 +4658,7 @@ static swig_cast_info _swigc__p_std__vectorT_std__string_t[] = {  {&_swigt__p_st
 static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_char,
   _swigc__p_sentencepiece__SentencePieceProcessor,
+  _swigc__p_sentencepiece__SentencePieceTrainer,
   _swigc__p_std__string,
   _swigc__p_std__vectorT_int_t,
   _swigc__p_std__vectorT_std__string_t,

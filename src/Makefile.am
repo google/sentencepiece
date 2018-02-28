@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libsentencepiece.la
+lib_LTLIBRARIES = libsentencepiece.la libsentencepiece_train.la
 
 AM_CXXFLAS = -I($srcdir)
 
@@ -17,10 +17,10 @@ libsentencepiece_la_SOURCES = \
 	word_model.h word_model.cc \
 	char_model.h char_model.cc \
 	bpe_model.h bpe_model.cc
-include_HEADERS = sentencepiece_processor.h
+include_HEADERS = sentencepiece_processor.h sentencepiece_trainer.h
 
-noinst_LIBRARIES = libtrain.a
-libtrain_a_SOURCES = builder.cc builder.h \
+# noinst_LIBRARIES = libsentencepiecetrain.a
+libsentencepiece_train_la_SOURCES = builder.cc builder.h \
 		    normalization_rule.h  \
 	   	    unicode_script.h unicode_script.cc \
 		    trainer_factory.h trainer_factory.cc \
@@ -28,7 +28,8 @@ libtrain_a_SOURCES = builder.cc builder.h \
                     unigram_model_trainer.h unigram_model_trainer.cc \
 	     	    word_model_trainer.h word_model_trainer.cc \
 		    char_model_trainer.h char_model_trainer.cc \
-	            bpe_model_trainer.h bpe_model_trainer.cc
+	            bpe_model_trainer.h bpe_model_trainer.cc \
+                    sentencepiece_trainer.h sentencepiece_trainer.cc
 
 nodist_libsentencepiece_la_SOURCES = \
 	sentencepiece.pb.cc  sentencepiece.pb.h \
@@ -50,16 +51,16 @@ spm_decode_SOURCES = spm_decode_main.cc
 spm_decode_LDADD = libsentencepiece.la
 
 spm_normalize_SOURCES = spm_normalize_main.cc
-spm_normalize_LDADD = libtrain.a libsentencepiece.la
+spm_normalize_LDADD = libsentencepiece_train.la libsentencepiece.la
 
 spm_export_vocab_SOURCES = spm_export_vocab_main.cc
 spm_export_vocab_LDADD = libsentencepiece.la
 
 spm_train_SOURCES = spm_train_main.cc
-spm_train_LDADD = libtrain.a libsentencepiece.la
+spm_train_LDADD = libsentencepiece_train.la libsentencepiece.la
 
 compile_charsmap_SOURCES = compile_charsmap_main.cc
-compile_charsmap_LDADD = libtrain.a libsentencepiece.la
+compile_charsmap_LDADD = libsentencepiece_train.la libsentencepiece.la
 
 
 check_PROGRAMS = spm_test
@@ -69,6 +70,7 @@ spm_test_SOURCES = testharness.h \
 	           flags_test.cc \
 	           normalizer_test.cc \
 	           sentencepiece_processor_test.cc \
+	           sentencepiece_trainer_test.cc \
 	           unicode_script_test.cc \
 	           model_interface_test.cc \
 	           model_factory_test.cc \
@@ -86,7 +88,7 @@ spm_test_SOURCES = testharness.h \
 	           test_main.cc \
                    testharness.cc
 
-spm_test_LDADD = libtrain.a libsentencepiece.la
+spm_test_LDADD = libsentencepiece_train.la libsentencepiece.la
 
 CLEANFILES = *.pb.cc *.pb.h *.pb.h *.gcda *.gcno *.info
 clean-local:

@@ -96,6 +96,10 @@ class TestSentencepieceProcessor(unittest.TestCase):
             text = text.encode('utf-8')
         self.assertEqual(text, self.jasp_.DecodeIds(ids))
 
+    def test_train(self):
+      spm.SentencePieceTrainer.Train(
+          "--input=test/botchan.txt --model_prefix=m --vocab_size=1000")
+
 
 def suite():
   suite = unittest.TestSuite()

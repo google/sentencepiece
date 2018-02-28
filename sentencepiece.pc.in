@@ -6,5 +6,5 @@ includedir=@includedir@
 Name: @PACKAGE@
 Description: Unsupervised text tokenizer and detokenizer for Neural Network-based text generation.
 Version: @VERSION@
-Libs: -L${libdir} -lsentencepiece @pkgconfiglibs@
+Libs: -L${libdir} -lsentencepiece -lsentencepiece_train @pkgconfiglibs@
 Cflags: -I${includedir} @pkgconfigcflags@

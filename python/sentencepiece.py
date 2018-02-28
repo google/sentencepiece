@@ -188,6 +188,26 @@ class SentencePieceProcessor(_object):
 SentencePieceProcessor_swigregister = _sentencepiece.SentencePieceProcessor_swigregister
 SentencePieceProcessor_swigregister(SentencePieceProcessor)
 
+class SentencePieceTrainer(_object):
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, SentencePieceTrainer, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, SentencePieceTrainer, name)
+
+    def __init__(self, *args, **kwargs):
+        raise AttributeError("No constructor defined")
+    __repr__ = _swig_repr
+    if _newclass:
+        Train = staticmethod(_sentencepiece.SentencePieceTrainer_Train)
+    else:
+        Train = _sentencepiece.SentencePieceTrainer_Train
+SentencePieceTrainer_swigregister = _sentencepiece.SentencePieceTrainer_swigregister
+SentencePieceTrainer_swigregister(SentencePieceTrainer)
+
+def SentencePieceTrainer_Train(arg):
+    return _sentencepiece.SentencePieceTrainer_Train(arg)
+SentencePieceTrainer_Train = _sentencepiece.SentencePieceTrainer_Train
+
 # This file is compatible with both classic and new-style classes.
 
 
