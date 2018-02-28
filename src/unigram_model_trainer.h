@@ -54,10 +54,7 @@ class TrainerModel : public ModelBase {
     return sentencepieces_[index].second;
   }
 
-  std::vector<std::pair<StringPiece, int>> Encode(
-      StringPiece normalized) const override {
-    return {};
-  }
+  EncodeResult Encode(StringPiece normalized) const override { return {}; }
 
  private:
   SentencePieces sentencepieces_;

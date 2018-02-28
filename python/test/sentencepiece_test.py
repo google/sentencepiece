@@ -31,10 +31,17 @@ class TestSentencepieceProcessor(unittest.TestCase):
         ids = self.sp_.EncodeAsIds(text)
         pieces1 = self.sp_.EncodeAsPieces(text)
         pieces2 = self.sp_.Encode(text)
+        pieces3 = self.sp_.NBestEncode(text, 10)[0]
         self.assertEqual(pieces1, pieces2)
+        self.assertEqual(pieces1, pieces3)
         self.assertEqual(text, self.sp_.Decode(pieces1))
         self.assertEqual(text, self.sp_.DecodePieces(pieces2))
         self.assertEqual(text, self.sp_.DecodeIds(ids))
+        for n in xrange(100):
+          self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, 64, 0.5)))
+          self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, -1, 0.5)))
+          self.assertEqual(text, self.sp_.DecodeIds(self.sp_.SampleEncodeAsIds(text, 64, 0.5)))
+          self.assertEqual(text, self.sp_.DecodeIds(self.sp_.SampleEncodeAsIds(text, -1, 0.5)))
 
     def test_ja_load(self):
         self.assertEqual(8000, self.jasp_.GetPieceSize())
@@ -53,10 +60,15 @@ class TestSentencepieceProcessor(unittest.TestCase):
         ids = self.jasp_.EncodeAsIds(text)
         pieces1 = self.jasp_.EncodeAsPieces(text)
         pieces2 = self.jasp_.Encode(text)
+        pieces3 = self.jasp_.NBestEncode(text, 10)[0]
         self.assertEqual(pieces1, pieces2)
         self.assertEqual(text, self.jasp_.Decode(pieces1))
         self.assertEqual(text, self.jasp_.DecodePieces(pieces2))
         self.assertEqual(text, self.jasp_.DecodeIds(ids))
+        for n in xrange(100):
+          self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, 64, 0.5)))
+          self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, -1, 0.5)))
+
 
     def test_unicode_roundtrip(self):
         text = u'I saw a girl with a telescope.'

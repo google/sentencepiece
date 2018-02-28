@@ -64,7 +64,13 @@ PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
 %ignore sentencepiece::SentencePieceProcessor::Encode(std::string const &, std::vector<std::string>*) const;
 %ignore sentencepiece::SentencePieceProcessor::Encode(std::string const &, std::vector<int>*) const;
 %ignore sentencepiece::SentencePieceProcessor::Encode(std::string const &, SentencePieceText *) const;
-%ignore sentencepiece::SentencePieceProcessor::Decode(std::vector<std::string> const &,std::string *) const;
+%ignore sentencepiece::SentencePieceProcessor::SampleEncode(std::string const &,int,float, std::vector< std::string > *) const;
+%ignore sentencepiece::SentencePieceProcessor::SampleEncode(std::string const &,int,float, std::vector< int > *) const;
+%ignore sentencepiece::SentencePieceProcessor::SampleEncode(std::string const &,int,float, SentencePieceText *) const;
+%ignore sentencepiece::SentencePieceProcessor::NBestEncode(std::string const &,int, NBestSentencePieceText *) const;
+%ignore sentencepiece::SentencePieceProcessor::NBestEncode(std::string const &,int,std::vector< std::vector< std::string > > *) const;
+%ignore sentencepiece::SentencePieceProcessor::NBestEncode(std::string const &,int,std::vector< std::vector< int > > *) const;
+%ignore sentencepiece::SentencePieceProcessor::Decode(std::vector<std::string> const &, std::string *) const;
 %ignore sentencepiece::SentencePieceProcessor::Decode(std::vector<int> const &, std::string *) const;
 %ignore sentencepiece::SentencePieceProcessor::Decode(std::vector<std::string> const &, SentencePieceText *) const;
 %ignore sentencepiece::SentencePieceProcessor::Decode(std::vector<int> const &, SentencePieceText *) const;
@@ -89,6 +95,42 @@ PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
   std::vector<int> EncodeAsIds(const std::string& input) const {
     std::vector<int> output;
     $self->Encode(input, &output);
+    return output;
+  }
+
+  std::vector<std::vector<std::string>> NBestEncode(const std::string& input, int nbest_size) const {
+    std::vector<std::vector<std::string>> output;
+    $self->NBestEncode(input, nbest_size, &output);
+    return output;
+  }
+
+  std::vector<std::vector<std::string>> NBestEncodeAsPieces(const std::string& input, int nbest_size) const {
+    std::vector<std::vector<std::string>> output;
+    $self->NBestEncode(input, nbest_size, &output);
+    return output;
+  }
+
+  std::vector<std::vector<int>> NBestEncodeAsIds(const std::string& input, int nbest_size) const {
+    std::vector<std::vector<int>> output;
+    $self->NBestEncode(input, nbest_size, &output);
+    return output;
+  }
+
+  std::vector<std::string> SampleEncode(const std::string& input, int nbest_size, float alpha) const {
+    std::vector<std::string> output;
+    $self->SampleEncode(input, nbest_size, alpha, &output);
+    return output;
+  }
+
+  std::vector<std::string> SampleEncodeAsPieces(const std::string& input, int nbest_size, float alpha) const {
+    std::vector<std::string> output;
+    $self->SampleEncode(input, nbest_size, alpha, &output);
+    return output;
+  }
+
+  std::vector<int> SampleEncodeAsIds(const std::string& input, int nbest_size, float alpha) const {
+    std::vector<int> output;
+    $self->SampleEncode(input, nbest_size, alpha, &output);
     return output;
   }
 
@@ -126,11 +168,34 @@ PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
   }
 }
 
+%typemap(out) std::vector<std::vector<int>> {
+  $result = PyList_New($1.size());
+  for (size_t i = 0; i < $1.size(); ++i) {
+    PyObject *obj = PyList_New($1[i].size());
+    for (size_t j = 0; j < $1[i].size(); ++j) {
+      PyList_SetItem(obj, j, PyInt_FromLong(static_cast<long>($1[i][j])));
+    }
+    PyList_SetItem($result, i, obj);
+  }
+}
+
 %typemap(out) std::vector<std::string> {
   PyObject *input_type = resultobj;
   $result = PyList_New($1.size());
   for (size_t i = 0; i < $1.size(); ++i) {
     PyList_SetItem($result, i, MakePyOutputString($1[i], input_type));
+  }
+}
+
+%typemap(out) std::vector<std::vector<std::string>> {
+  PyObject *input_type = resultobj;
+  $result = PyList_New($1.size());
+  for (size_t i = 0; i < $1.size(); ++i) {
+    PyObject *obj = PyList_New($1[i].size());
+    for (size_t j = 0; j < $1[i].size(); ++j) {
+      PyList_SetItem(obj, j, MakePyOutputString($1[i][j], input_type));
+    }
+    PyList_SetItem($result, i, obj);
   }
 }
 
@@ -200,7 +265,15 @@ PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
   delete $1;
 }
 
+%typemap(freearg) const std::vector<std::vector<std::string>>& {
+  delete $1;
+}
+
 %typemap(freearg) const std::vector<int>& {
+  delete $1;
+}
+
+%typemap(freearg) const std::vector<std::vector<int>>& {
   delete $1;
 }
 

@@ -76,8 +76,14 @@ namespace sentencepiece {
 //
 
 class SentencePieceText;
+class NBestSentencePieceText;
 class ModelInterface;
 class ModelProto;
+class StringPiece;
+
+#ifndef SWIG
+using EncodeResult = std::vector<std::pair<StringPiece, int>>;
+#endif  // SWIG
 
 namespace normalizer {
 class Normalizer;
@@ -129,12 +135,49 @@ class SentencePieceProcessor {
                       std::string *detokenized) const;
 
   //////////////////////////////////////////////////////////////
+  // NBest API.
+  // Same as Encode, but returns nbest results.
+  virtual void NBestEncode(const std::string &input, int nbest_size,
+                           std::vector<std::vector<std::string>> *pieces) const;
+
+  // Same as Encode, but returns nbest results.
+  virtual void NBestEncode(const std::string &input, int nbest_size,
+                           std::vector<std::vector<int>> *ids) const;
+
+  //////////////////////////////////////////////////////////////
+  // Sampling API
+  // When `nbest_size` is positive value, approximately samples one segmentation
+  // from nbest candidates.
+  // When `nbest_size` is negative value, samples one segmentation from
+  // the hypotheses (Lattice) according to the generation probabilities using
+  // forward-filtering and backward-sampling algorithm.
+  // `alpha` is a smoothing parameter.  The best segmentation
+  // (Viterbi segmentation) is more likely sampled when setting larger
+  // alpha (alpha >= 1.0). When alpha is 0.0, one segmentation is
+  // uniformly sampled from the nbest or lattice.
+  virtual void SampleEncode(const std::string &input, int nbest_size,
+                            float alpha,
+                            std::vector<std::string> *pieces) const;
+
+  // Same as above, but returns a sequence of ids.
+  virtual void SampleEncode(const std::string &input, int nbest_size,
+                            float alpha, std::vector<int> *ids) const;
+
+  //////////////////////////////////////////////////////////////
   // Advanced API returning SentencePieceText, which manages
   // utf8-byte alignments between user-input/detokenized text
   // and internal sentencepiece sequence.
   //
   // Given a UTF8 input, encodes it into SentencePieceText.
   virtual void Encode(const std::string &input, SentencePieceText *spt) const;
+
+  // Same as above, but returns NBestSentencePieceText.
+  virtual void NBestEncode(const std::string &input, int nbest_size,
+                           NBestSentencePieceText *nbest_spt) const;
+
+  // Same as above, but samples one segmentation from the hypotheses (Lattice).
+  virtual void SampleEncode(const std::string &input, int nbest_size,
+                            float alpha, SentencePieceText *spt) const;
 
   // Given a sequence of pieces, decodes it into SentencePieceText.
   virtual void Decode(const std::vector<std::string> &pieces,
@@ -190,6 +233,12 @@ class SentencePieceProcessor {
       const std::string &extra_option);
   void ApplyExtraOptions(const std::vector<ExtraOption> &extra_options,
                          SentencePieceText *spt) const;
+
+  void PopulateSentencePieceText(const std::string &input,
+                                 const std::string &normalized,
+                                 const std::vector<size_t> &norm_to_orig,
+                                 const EncodeResult &result,
+                                 SentencePieceText *spt) const;
 
   std::unique_ptr<ModelInterface> model_;
   std::unique_ptr<normalizer::Normalizer> normalizer_;

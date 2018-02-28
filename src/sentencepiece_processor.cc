@@ -13,6 +13,7 @@
 // limitations under the License.!
 
 #include "sentencepiece_processor.h"
+#include <random>
 #include "common.h"
 #include "model_factory.h"
 #include "normalizer.h"
@@ -47,7 +48,7 @@ bool SentencePieceProcessor::Load(const std::string &filename) {
 
 bool SentencePieceProcessor::Load(std::istream *is) {
   CHECK_NOTNULL(is);
-  
+
   model_proto_ = port::MakeUnique<ModelProto>();
   if (!model_proto_->ParseFromIstream(is)) {
     LOG(WARNING) << "Model file is broken";
@@ -121,19 +122,69 @@ void SentencePieceProcessor::Decode(const std::vector<int> &ids,
   *detokenized = std::move(spt.text());
 }
 
-//////////////////////////////////////////////////////////////
-// Advanced API with SentencePieceText proto.
-void SentencePieceProcessor::Encode(const std::string &input,
-                                    SentencePieceText *spt) const {
-  CHECK_NOTNULL(spt)->Clear();
+void SentencePieceProcessor::NBestEncode(
+    const std::string &input, int nbest_size,
+    std::vector<std::vector<std::string>> *pieces) const {
+  CHECK_NOTNULL(pieces)->clear();
 
-  std::string normalized;
-  std::vector<size_t> norm_to_orig;
-  CHECK_NOTNULL(normalizer_)->Normalize(input, &normalized, &norm_to_orig);
+  NBestSentencePieceText spt;
+  NBestEncode(input, nbest_size, &spt);
+  for (const auto &nbest : spt.nbests()) {
+    std::vector<std::string> result;
+    for (const auto &sp : nbest.pieces()) {
+      result.emplace_back(sp.piece());
+    }
+    pieces->emplace_back(result);
+  }
+}
 
+void SentencePieceProcessor::NBestEncode(
+    const std::string &input, int nbest_size,
+    std::vector<std::vector<int>> *ids) const {
+  CHECK_NOTNULL(ids)->clear();
+
+  NBestSentencePieceText spt;
+  NBestEncode(input, nbest_size, &spt);
+  for (const auto &nbest : spt.nbests()) {
+    std::vector<int> result;
+    for (const auto &sp : nbest.pieces()) {
+      result.emplace_back(sp.id());
+    }
+    ids->emplace_back(result);
+  }
+}
+
+void SentencePieceProcessor::SampleEncode(
+    const std::string &input, int nbest_size, float alpha,
+    std::vector<std::string> *pieces) const {
+  CHECK_NOTNULL(pieces)->clear();
+
+  SentencePieceText spt;
+  SampleEncode(input, nbest_size, alpha, &spt);
+  for (const auto &sp : spt.pieces()) {
+    pieces->emplace_back(sp.piece());
+  }
+}
+
+void SentencePieceProcessor::SampleEncode(const std::string &input,
+                                          int nbest_size, float alpha,
+                                          std::vector<int> *ids) const {
+  CHECK_NOTNULL(ids)->clear();
+
+  SentencePieceText spt;
+  SampleEncode(input, nbest_size, alpha, &spt);
+  for (const auto &sp : spt.pieces()) {
+    ids->emplace_back(sp.id());
+  }
+}
+
+void SentencePieceProcessor::PopulateSentencePieceText(
+    const std::string &input, const std::string &normalized,
+    const std::vector<size_t> &norm_to_orig, const EncodeResult &result,
+    SentencePieceText *spt) const {
   size_t consumed = 0;
   bool is_prev_unk = false;
-  for (const auto &p : CHECK_NOTNULL(model_)->Encode(normalized)) {
+  for (const auto &p : result) {
     const StringPiece w = p.first;  // piece
     const int id = p.second;        // id
     CHECK(!w.empty());
@@ -183,6 +234,74 @@ void SentencePieceProcessor::Encode(const std::string &input,
   ApplyExtraOptions(encode_extra_options_, spt);
 
   spt->set_text(input);
+}
+
+void SentencePieceProcessor::Encode(const std::string &input,
+                                    SentencePieceText *spt) const {
+  CHECK_NOTNULL(spt)->Clear();
+
+  std::string normalized;
+  std::vector<size_t> norm_to_orig;
+  CHECK_NOTNULL(normalizer_)->Normalize(input, &normalized, &norm_to_orig);
+
+  const auto result = CHECK_NOTNULL(model_)->Encode(normalized);
+  PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt);
+}
+
+void SentencePieceProcessor::NBestEncode(
+    const std::string &input, int nbest_size,
+    NBestSentencePieceText *nbest_spt) const {
+  CHECK_NOTNULL(nbest_spt)->Clear();
+
+  std::string normalized;
+  std::vector<size_t> norm_to_orig;
+  CHECK_NOTNULL(normalizer_)->Normalize(input, &normalized, &norm_to_orig);
+
+  const auto nbests =
+      CHECK_NOTNULL(model_)->NBestEncode(normalized, nbest_size);
+  for (const auto &result : nbests) {
+    auto *spt = nbest_spt->add_nbests();
+    spt->set_score(result.second);
+    PopulateSentencePieceText(input, normalized, norm_to_orig, result.first,
+                              spt);
+  }
+}
+
+void SentencePieceProcessor::SampleEncode(const std::string &input,
+                                          int nbest_size, float alpha,
+                                          SentencePieceText *spt) const {
+  CHECK_NOTNULL(spt)->Clear();
+
+  CHECK_LE(nbest_size, 512)
+      << "Too big nbest size. consider using nbest <= 512.";
+  CHECK_NE(nbest_size, 0) << "nbest size must not be zero.";
+
+  std::string normalized;
+  std::vector<size_t> norm_to_orig;
+  CHECK_NOTNULL(normalizer_)->Normalize(input, &normalized, &norm_to_orig);
+
+  if (nbest_size == 1) {
+    const auto result = CHECK_NOTNULL(model_)->Encode(normalized);
+    PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt);
+  } else if (nbest_size > 1) {
+    const auto nbests =
+        CHECK_NOTNULL(model_)->NBestEncode(normalized, nbest_size);
+    CHECK(!nbests.empty());
+
+    std::vector<float> probs(nbests.size(), 0.0);
+    for (size_t i = 0; i < nbests.size(); ++i) {
+      probs[i] = std::exp(alpha * nbests[i].second);
+    }
+
+    thread_local static std::mt19937 mt(std::random_device{}());
+    std::discrete_distribution<int> dist(probs.begin(), probs.end());
+    PopulateSentencePieceText(input, normalized, norm_to_orig,
+                              nbests[dist(mt)].first, spt);
+
+  } else if (nbest_size < 0) {
+    const auto result = CHECK_NOTNULL(model_)->SampleEncode(normalized, alpha);
+    PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt);
+  }
 }
 
 void SentencePieceProcessor::Decode(const std::vector<std::string> &pieces,

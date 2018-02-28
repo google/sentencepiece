@@ -256,6 +256,45 @@ TEST(LatticeTest, PopulateMarginalTest) {
   EXPECT_NEAR(log(Z), logZ, 0.001);
 }
 
+TEST(LatticeTest, SampleTest) {
+  Lattice lattice;
+  lattice.SetSentence("ABC");
+
+  InsertWithScoreAndId(&lattice, 0, 1, 1.0, 0);  // A
+  InsertWithScoreAndId(&lattice, 1, 1, 1.2, 1);  // B
+  InsertWithScoreAndId(&lattice, 2, 1, 1.5, 2);  // C
+  InsertWithScoreAndId(&lattice, 0, 2, 1.6, 3);  // AB
+  InsertWithScoreAndId(&lattice, 1, 2, 1.7, 4);  // BC
+  InsertWithScoreAndId(&lattice, 0, 3, 1.8, 5);  // ABC
+
+  const float kTheta[] = {0.0, 0.01, 0.5, 0.7, 1.0};
+  for (int i = 0; i < arraysize(kTheta); ++i) {
+    std::map<std::string, float> probs;
+    // Expands all paths in the lattice.
+    probs["A B C"] = exp(kTheta[i] * (1.0 + 1.2 + 1.5));  // A B C
+    probs["AB C"] = exp(kTheta[i] * (1.6 + 1.5));         // AB C
+    probs["A BC"] = exp(kTheta[i] * (1.0 + 1.7));         // A BC
+    probs["ABC"] = exp(kTheta[i] * 1.8);                  // ABC
+
+    // Computes expected probabilities.
+    float Z = 0.0;
+    for (const auto &it : probs) Z += it.second;
+    for (auto &it : probs) it.second /= Z;
+
+    // Samples `kTrial` times and verifies the probabilities.
+    constexpr int kTrial = 100000;
+    std::map<std::string, int> freq;
+    for (int n = 0; n < kTrial; ++n) {
+      freq[GetTokenized(lattice.Sample(kTheta[i]))]++;
+    }
+
+    EXPECT_EQ(probs.size(), freq.size());
+    for (const auto &it : probs) {
+      EXPECT_NEAR(it.second, 1.0 * freq[it.first] / kTrial, 0.02);
+    }
+  }
+}
+
 ModelProto MakeBaseModelProto() {
   ModelProto model_proto;
   auto *sp1 = model_proto.add_pieces();
