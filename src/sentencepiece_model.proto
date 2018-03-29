@@ -44,7 +44,7 @@ message TrainerSpec {
   }
   optional ModelType model_type = 3 [ default = UNIGRAM ];
 
-  // Vocabulary size. 32k is the default size.
+  // Vocabulary size. 8k is the default size.
   optional int32  vocab_size = 4 [ default = 8000 ];
 
   // List of the languages this model can accept.
