@@ -37,7 +37,7 @@ message SentencePieceText {
     // - Concatenation of surface is always the same as the |text|.
     // - |surface| may contain whitespaces.
     // - |surface| may be empty if the piece encodes
-    //   a control vocabulary. e.g., </s>, </s>, <unk>.
+    //   a control vocabulary. e.g., <s>, </s>, <unk>.
     // - When |surface| is empty, always begin == end. (zero-length span).
     optional string surface = 3;
 
