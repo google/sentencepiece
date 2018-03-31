@@ -28,7 +28,6 @@
 namespace sentencepiece {
 namespace unigram {
 namespace {
-constexpr size_t kNodeChunkSize = 512;
 
 // Returns log(exp(x) + exp(y)).
 // if init_mode is true, returns log(exp(y)) == y.
