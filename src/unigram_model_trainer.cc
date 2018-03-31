@@ -35,10 +35,6 @@ namespace sentencepiece {
 namespace unigram {
 namespace {
 
-constexpr char32 kWSChar = L'\u2581';
-constexpr char32 kUNKChar = L'\u2585';
-constexpr char kUNKStr[] = "\xe2\x96\x85";
-
 double Digamma(double x) {
   double result = 0.0;
   for (; x < 7; ++x) result -= 1 / x;
@@ -113,7 +109,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
 
   // Merges all sentences into one array with 0x0000 delimiter.
   std::vector<char32> array;
-  std::unordered_map<std::string, int64> all_chars, substrs;
+  std::unordered_map<std::string, int64> all_chars;
   constexpr char32 kSentenceBoundary = 0x0000;
 
   const size_t mining_size =
