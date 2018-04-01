@@ -85,11 +85,27 @@ The following tools and libraries are required to build SentencePiece:
 * C++11 compiler
 * [protobuf](https://github.com/google/protobuf) library
 
-On Ubuntu, autotools and protobuf library can be installed with apt-get:
+On Ubuntu, autotools can be installed with apt-get:
 ```
 % sudo apt-get install autoconf automake libtool pkg-config libprotobuf9v5 protobuf-compiler libprotobuf-dev
 ```
-(If `libprotobuf9v5` is not found, try `libprotobuf-c++` instead.)
+The name of the protobuf library is different between ubuntu distros. Please enter appropriate command for your Ubuntu version.
+
+On ubuntu 14.04 LTS (Trusty Tahr):
+```
+% sudo apt-get install libprotobuf8
+```
+
+On ubuntu 16.04 LTS (Xenial Xerus):
+```
+% sudo apt-get install libprotobuf9v5
+```
+```
+
+On ubuntu 17.10 (Artful Aardvark) and Later:
+```
+% sudo apt-get install libprotobuf10
+```
 
 On OSX, you can use brew:
 ```
