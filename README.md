@@ -100,7 +100,6 @@ On ubuntu 16.04 LTS (Xenial Xerus):
 ```
 % sudo apt-get install libprotobuf9v5
 ```
-```
 
 On ubuntu 17.10 (Artful Aardvark) and Later:
 ```
