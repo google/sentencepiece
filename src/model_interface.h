@@ -39,8 +39,6 @@ class ModelInterface {
  public:
   using PieceToIdMap = std::unordered_map<StringPiece, int, StringPieceHash>;
 
-  static const uint32 kUnkID;
-
   // |model_proto| should not be deleted until ModelInterface is destroyed.
   explicit ModelInterface(const ModelProto &model_proto);
   ModelInterface() {}
@@ -89,8 +87,6 @@ class ModelInterface {
   virtual bool IsControl(int id) const;
 
  protected:
-  void CheckControlSymbols() const;
-
   const ModelProto *model_proto_ = nullptr;
 
   // piece -> id map for normal pieces
@@ -98,6 +94,9 @@ class ModelInterface {
 
   // piece -> id map for control and unknown
   PieceToIdMap reserved_id_map_;
+
+  // unknown id.
+  int unk_id_ = 0;
 };
 }  // namespace sentencepiece
 #endif  // MODEL_INTERFACE_H_

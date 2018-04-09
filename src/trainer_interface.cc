@@ -14,6 +14,7 @@
 
 #include "trainer_interface.h"
 
+#include <cstdlib>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -37,9 +38,16 @@ const char TrainerInterface::kUNKStr[] = "\xe2\x96\x85";
 const char32 TrainerInterface::kUPPBoundaryChar = L'\u0009';
 const char TrainerInterface::kUPPBoundaryStr[] = "\t";
 
+const char TrainerInterface::kUNK[] = "<unk>";
+const char TrainerInterface::kBOS[] = "<s>";
+const char TrainerInterface::kEOS[] = "</s>";
+const char TrainerInterface::kPAD[] = "<pad>";
+
 TrainerInterface::TrainerInterface(const TrainerSpec &trainer_spec,
                                    const NormalizerSpec &normalizer_spec)
-    : trainer_spec_(trainer_spec), normalizer_spec_(normalizer_spec) {}
+    : trainer_spec_(trainer_spec), normalizer_spec_(normalizer_spec) {
+  InitMetaPieces();
+}
 TrainerInterface::~TrainerInterface() {}
 
 bool TrainerInterface::IsValidSentencePiece(
@@ -105,11 +113,28 @@ void TrainerInterface::LoadSentences() {
 
   const normalizer::Normalizer normalizer(normalizer_spec_);
 
+  CHECK(trainer_spec_.input_format().empty() ||
+        trainer_spec_.input_format() == "text" ||
+        trainer_spec_.input_format() == "tsv")
+      << "Supported formats are 'text' and 'tsv'.";
+
+  const bool is_tsv = trainer_spec_.input_format() == "tsv";
+
   for (const auto &filename : trainer_spec_.input()) {
     LOG(INFO) << "Loading corpus: " << filename;
     std::string sentence;
     io::InputBuffer input(filename);
     while (input.ReadLine(&sentence)) {
+      int64 freq = 1;
+      if (is_tsv) {
+        const std::vector<std::string> v = string_util::Split(sentence, "\t");
+        CHECK_EQ(v.size(), 2)
+            << "Input format must be: word <tab> freq. " << sentence;
+        sentence = v[0];
+        freq = std::atoll(v[1].c_str());
+        CHECK_GE(freq, 1);
+      }
+
       constexpr int kMaxLines = 2048;
       if (sentence.size() > kMaxLines) {
         continue;
@@ -133,9 +158,7 @@ void TrainerInterface::LoadSentences() {
         continue;
       }
 
-      // TODO(taku): We assumes that the sentence frequency is always 1.
-      // Support to use sentences with frequencies.
-      sentences_.emplace_back(normalized, 1);
+      sentences_.emplace_back(normalized, freq);
 
       if (sentences_.size() ==
           static_cast<size_t>(trainer_spec_.input_sentence_size())) {
@@ -196,13 +219,14 @@ END:
     w.first = string_util::UnicodeTextToUTF8(uw2);
   }
 
-  // +3 for <unk>, <s>, </s>
+  // +3 for meta pieces.
   if (trainer_spec_.model_type() != TrainerSpec::WORD &&
       trainer_spec_.model_type() != TrainerSpec::CHAR) {
-    CHECK_LT(static_cast<int>(required_chars_.size() + 3),
+    CHECK_LT(static_cast<int>(required_chars_.size() + meta_pieces_.size()),
              trainer_spec_.vocab_size())
         << "Vocabulary size is smaller than required_chars. "
-        << trainer_spec_.vocab_size() << " vs " << required_chars_.size() + 3
+        << trainer_spec_.vocab_size() << " vs "
+        << required_chars_.size() + meta_pieces_.size()
         << ". "
         << "Increase vocab_size or decrease character_coverage with "
         << "--character_coverage option.";
@@ -234,30 +258,12 @@ void TrainerInterface::Serialize(ModelProto *model_proto) const {
     CHECK(dup.insert(piece).second) << piece << " is already defined";
   };
 
-  auto *unk = model_proto->add_pieces();
-  unk->set_piece("<unk>");
-  unk->set_type(ModelProto::SentencePiece::UNKNOWN);
-  CheckPiece(unk->piece());
-
-  for (const auto &w : {"<s>", "</s>"}) {
+  for (const auto &w : meta_pieces_) {
     auto *sp = model_proto->add_pieces();
-    sp->set_piece(w);
-    sp->set_type(ModelProto::SentencePiece::CONTROL);
-    CheckPiece(sp->piece());
-  }
-
-  for (const auto &w : trainer_spec_.control_symbols()) {
-    auto *sp = model_proto->add_pieces();
-    sp->set_piece(w);
-    sp->set_type(ModelProto::SentencePiece::CONTROL);
-    CheckPiece(sp->piece());
-  }
-
-  for (const auto &w : trainer_spec_.user_defined_symbols()) {
-    auto *sp = model_proto->add_pieces();
-    sp->set_piece(w);
-    sp->set_type(ModelProto::SentencePiece::USER_DEFINED);
+    sp->set_piece(w.first);
+    sp->set_type(w.second);
     sp->set_score(0.0);
+    CHECK_NE(ModelProto::SentencePiece::NORMAL, sp->type());
     CheckPiece(sp->piece());
   }
 
@@ -304,6 +310,45 @@ void TrainerInterface::SaveVocab(StringPiece filename) const {
 void TrainerInterface::Save() const {
   SaveModel(trainer_spec_.model_prefix() + ".model");
   SaveVocab(trainer_spec_.model_prefix() + ".vocab");
-  //  SaveSplits(trainer_spec_.model_prefix() + ".splits");
 }
+
+void TrainerInterface::InitMetaPieces() {
+  CHECK(meta_pieces_.empty());
+
+  std::vector<std::pair<int, std::string>> ids;
+  if (trainer_spec_.unk_id() >= 0)
+    ids.emplace_back(trainer_spec_.unk_id(), kUNK);
+  if (trainer_spec_.bos_id() >= 0)
+    ids.emplace_back(trainer_spec_.bos_id(), kBOS);
+  if (trainer_spec_.eos_id() >= 0)
+    ids.emplace_back(trainer_spec_.eos_id(), kEOS);
+  if (trainer_spec_.pad_id() >= 0)
+    ids.emplace_back(trainer_spec_.pad_id(), kPAD);
+
+  std::sort(ids.begin(), ids.end());
+
+  int prev_id = -1;
+  bool has_unk = false;
+  for (const auto &p : ids) {
+    CHECK_EQ(prev_id + 1, p.first)
+        << "ID for `" << p.second << "` must be " << prev_id + 1;
+    prev_id = p.first;
+    CHECK_EQ(static_cast<int>(meta_pieces_.size()), p.first);
+    if (p.second == kUNK) has_unk = true;
+    meta_pieces_.emplace_back(
+        p.second, (p.second == kUNK ? ModelProto::SentencePiece::UNKNOWN
+                                    : ModelProto::SentencePiece::CONTROL));
+  }
+
+  CHECK(has_unk) << kUNK << " must be defined.";
+
+  for (const auto &w : trainer_spec_.control_symbols()) {
+    meta_pieces_.emplace_back(w, ModelProto::SentencePiece::CONTROL);
+  }
+
+  for (const auto &w : trainer_spec_.user_defined_symbols()) {
+    meta_pieces_.emplace_back(w, ModelProto::SentencePiece::USER_DEFINED);
+  }
+}
+
 }  // namespace sentencepiece

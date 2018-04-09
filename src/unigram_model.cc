@@ -424,7 +424,7 @@ void ModelBase::PopulateNodes(Lattice *lattice) const {
 
     if (!has_single_node) {
       Lattice::Node *node = lattice->Insert(begin_pos, 1);
-      node->id = kUnkID;  // add UNK node.
+      node->id = unk_id_;  // add UNK node.
       node->score = unk_score;
     }
   }
@@ -437,7 +437,7 @@ int ModelBase::PieceToId(StringPiece piece) const {
   }
   int id = 0;
   trie_->exactMatchSearch(piece.data(), id);
-  return id == -1 ? kUnkID : id;
+  return id == -1 ? unk_id_ : id;
 }
 
 void ModelBase::BuildTrie(std::vector<std::pair<std::string, int>> *pieces) {
@@ -478,8 +478,6 @@ Model::Model(const ModelProto &model_proto) {
   model_proto_ = &model_proto;
   min_score_ = FLT_MAX;
 
-  CheckControlSymbols();
-
   std::vector<std::pair<std::string, int>> pieces;  // <piece, vocab_id>
   for (int i = 0; i < model_proto_->pieces_size(); ++i) {
     const auto &sp = model_proto_->pieces(i);
@@ -490,6 +488,7 @@ Model::Model(const ModelProto &model_proto) {
       pieces.emplace_back(sp.piece(), i);
     } else {
       port::InsertOrDie(&reserved_id_map_, sp.piece(), i);
+      if (sp.type() == ModelProto::SentencePiece::UNKNOWN) unk_id_ = i;
     }
     if (sp.type() == ModelProto::SentencePiece::NORMAL) {
       min_score_ = std::min(min_score_, sp.score());

@@ -211,11 +211,8 @@ void Trainer::Train() {
     }
   }
 
-  const int meta_symbols_size = trainer_spec_.control_symbols().size() +
-                                trainer_spec_.user_defined_symbols().size() +
-                                3;  // <s>, </s>, <unk>
   const int vocab_size =
-      trainer_spec_.vocab_size() - meta_symbols_size - required_chars_.size();
+      trainer_spec_.vocab_size() - meta_pieces_.size() - required_chars_.size();
   CHECK_GE(vocab_size, 0);
 
   // We may see duplicated pieces that are extracted with different path.

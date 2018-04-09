@@ -55,6 +55,11 @@ class TrainerInterface {
   static const char kUNKStr[];
   static const char kUPPBoundaryStr[];
 
+  static const char kUNK[];
+  static const char kBOS[];
+  static const char kEOS[];
+  static const char kPAD[];
+
   TrainerInterface(const TrainerSpec &trainer_spec,
                    const NormalizerSpec &normalizer_spec);
 
@@ -63,6 +68,7 @@ class TrainerInterface {
   virtual void Train() {}
 
   FRIEND_TEST(TrainerInterfaceTest, IsValidSentencePieceTest);
+  FRIEND_TEST(TrainerInterfaceTest, OverrideSpecialPieces);
 
  protected:
   // Returns true if |piece| is valid sentence piece.
@@ -100,6 +106,11 @@ class TrainerInterface {
   // Normalizer spec
   NormalizerSpec normalizer_spec_;
 
+  // Reserved control pieces. e.g., <unk>, <s>, </s>.
+  // The index corresponds to vocab id.
+  std::vector<std::pair<std::string,
+                        ModelProto::SentencePiece::Type>> meta_pieces_;
+
  private:
   // Serialize final_pieces_ to |model_proto|.
   void Serialize(ModelProto *model_proto) const;
@@ -112,6 +123,9 @@ class TrainerInterface {
 
   // Saves vocabulary file for NMT.
   void SaveVocab(StringPiece filename) const;
+
+  // Initializes `meta_pieces_` from TrainerSpec.
+  void InitMetaPieces();
 };
 }  // namespace sentencepiece
 #endif  // TRAINER_INTERFACE_H_

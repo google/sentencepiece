@@ -448,11 +448,7 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
     }
   }
 
-  const int meta_symbols_size = trainer_spec_.control_symbols().size() +
-                                trainer_spec_.user_defined_symbols().size() +
-                                3;  // <s>, </s>, <unk>
-
-  const int vocab_size_size = trainer_spec_.vocab_size() - meta_symbols_size;
+  const int vocab_size_size = trainer_spec_.vocab_size() - meta_pieces_.size();
   CHECK_GT(vocab_size_size, 0);
 
   // Then keeps sentencepieces with higher scores.

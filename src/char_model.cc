@@ -20,7 +20,6 @@ namespace character {
 
 Model::Model(const ModelProto &model_proto) {
   model_proto_ = &model_proto;
-  CheckControlSymbols();
 
   for (int i = 0; i < model_proto_->pieces_size(); ++i) {
     const auto &sp = model_proto_->pieces(i);
@@ -31,6 +30,7 @@ Model::Model(const ModelProto &model_proto) {
       port::InsertOrDie(&pieces_, sp.piece(), i);
     } else {
       port::InsertOrDie(&reserved_id_map_, sp.piece(), i);
+      if (sp.type() == ModelProto::SentencePiece::UNKNOWN) unk_id_ = i;
     }
   }
 }

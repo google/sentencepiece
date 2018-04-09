@@ -47,11 +47,8 @@ void Trainer::Train() {
       freq[s.to_string()] += it.second;
     }
   }
-  const int meta_symbols_size = trainer_spec_.control_symbols().size() +
-                                trainer_spec_.user_defined_symbols().size() +
-                                3;  // <s>, </s>, <unk>
 
-  const int vocab_size = trainer_spec_.vocab_size() - meta_symbols_size;
+  const int vocab_size = trainer_spec_.vocab_size() - meta_pieces_.size();
   CHECK_GE(vocab_size, 0);
 
   uint64 sum = 0;
