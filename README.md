@@ -200,6 +200,16 @@ You can find that the original input sentence is restored from the vocabulary id
 ```
 ```<output file>``` stores a list of vocabulary and emission log probabilities. The vocabulary id corresponds to the line number in this file.
 
+## Refine special meta tokens
+  By default, SentencePiece uses Unknown (&lt;unk&gt;), BOS (&lt;s&gt;) and EOS (&lt;/s&gt;) tokens which have the ids of 0, 1, and 2 respectively. We can redefine these mappings in training phase as follows.
+  
+```
+% spm_train --bos_id=0 --eos_id=1 --unk_id=2 --input=... --model_prefix=...
+```
+When setting -1 id e.g., ```bos_id=-1```, this special token is ignored. Note that the unknow id cannot be removed and these ids must start with 0 and continous. In addition, we can define an id for padding (&lt;pad&gt;). Padding id is disabled by default. You can assign an id as ```--pad_id=3`.  
+
+If you want to assign another special tokens, please see [Use custom symbols](doc/special_symbols.md).
+
 ## Experiments 1 (subword vs word-based model)
 ### Experimental settings
 
