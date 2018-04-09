@@ -31,6 +31,11 @@ message TrainerSpec {
   //  with this parameter.
   repeated string input  = 1;
 
+  // Input corpus format:
+  // "text": one-sentence-per-line text format (default)
+  // "tsv":  sentence <tab> freq
+  optional string input_format = 7;
+
   // Output model file prefix.
   // <model_prefix>.model and <model_prefix>.vocab are generated.
   optional string model_prefix = 2;
@@ -126,6 +131,16 @@ message TrainerSpec {
   // so they are always treated as one unique symbol in any context.
   // Typical usage of user_defined_symbols is placeholder for named entities.
   repeated string user_defined_symbols = 31;
+
+  ///////////////////////////////////////////////////////////////////
+  // Reserved special meta tokens.
+  // * -1 is not used.
+  // * unk_id must not be -1.
+  // Id must starts with 0 and be contigous.
+  optional int32 unk_id = 40 [ default = 0 ];    // <unk>
+  optional int32 bos_id = 41 [ default = 1 ];    // <s>
+  optional int32 eos_id = 42 [ default = 2 ];    // </s>
+  optional int32 pad_id = 43 [ default = -1 ];   // <pad> (padding)
 
   // Customized extensions: the range of field numbers
   // are open to third-party extensions.

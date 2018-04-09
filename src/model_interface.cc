@@ -18,8 +18,6 @@
 
 namespace sentencepiece {
 
-const uint32 ModelInterface::kUnkID = 0;
-
 ModelInterface::ModelInterface(const ModelProto &model_proto)
     : model_proto_(&model_proto) {}
 ModelInterface::~ModelInterface() {}
@@ -33,7 +31,7 @@ int ModelInterface::PieceToId(StringPiece piece) const {
   if (it2 != pieces_.end()) {
     return it2->second;
   }
-  return kUnkID;
+  return unk_id_;
 }
 
 int ModelInterface::GetPieceSize() const {
@@ -56,23 +54,6 @@ bool ModelInterface::IsControl(int id) const {
 bool ModelInterface::IsUnknown(int id) const {
   return (CHECK_NOTNULL(model_proto_)->pieces(id).type() ==
           ModelProto::SentencePiece::UNKNOWN);
-}
-
-void ModelInterface::CheckControlSymbols() const {
-  CHECK_NOTNULL(model_proto_);
-
-  CHECK_GE(model_proto_->pieces_size(), 3);  // <unk>, <s>, </s>
-
-  // Verify reserved control symbols and unknon symbol.
-  CHECK_EQ(ModelProto::SentencePiece::UNKNOWN,  // <unk>
-           model_proto_->pieces(0).type());
-  CHECK_EQ("<unk>", model_proto_->pieces(0).piece());
-  CHECK_EQ(ModelProto::SentencePiece::CONTROL,  // <s>
-           model_proto_->pieces(1).type());
-  CHECK_EQ("<s>", model_proto_->pieces(1).piece());
-  CHECK_EQ(ModelProto::SentencePiece::CONTROL,  // </s>
-           model_proto_->pieces(2).type());
-  CHECK_EQ("</s>", model_proto_->pieces(2).piece());
 }
 
 std::vector<StringPiece> SplitIntoWords(StringPiece text) {

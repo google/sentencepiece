@@ -73,4 +73,103 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_TRUE(IsValid("1234"));
   EXPECT_FALSE(IsValid("12345"));
 }
+
+TEST(TrainerInterfaceTest, OverrideSpecialPieces) {
+  TrainerSpec trainer_spec;
+  NormalizerSpec normalizer_spec;
+
+  // Check default values.
+  EXPECT_EQ(0, trainer_spec.unk_id());
+  EXPECT_EQ(1, trainer_spec.bos_id());
+  EXPECT_EQ(2, trainer_spec.eos_id());
+  EXPECT_EQ(-1, trainer_spec.pad_id());
+
+  {
+    trainer_spec.set_unk_id(0);
+    trainer_spec.set_bos_id(1);
+    trainer_spec.set_eos_id(2);
+    trainer_spec.set_pad_id(3);
+
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    EXPECT_EQ(4, trainer.meta_pieces_.size());
+    EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
+    EXPECT_EQ("<s>", trainer.meta_pieces_[1].first);
+    EXPECT_EQ("</s>", trainer.meta_pieces_[2].first);
+    EXPECT_EQ("<pad>", trainer.meta_pieces_[3].first);
+  }
+
+  {
+    trainer_spec.set_unk_id(0);
+    trainer_spec.set_bos_id(3);
+    trainer_spec.set_eos_id(2);
+    trainer_spec.set_pad_id(1);
+
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    EXPECT_EQ(4, trainer.meta_pieces_.size());
+    EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
+    EXPECT_EQ("<pad>", trainer.meta_pieces_[1].first);
+    EXPECT_EQ("</s>", trainer.meta_pieces_[2].first);
+    EXPECT_EQ("<s>", trainer.meta_pieces_[3].first);
+  }
+
+  {
+    trainer_spec.set_unk_id(0);
+    trainer_spec.set_bos_id(-1);
+    trainer_spec.set_eos_id(1);
+    trainer_spec.set_pad_id(-1);
+
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    EXPECT_EQ(2, trainer.meta_pieces_.size());
+    EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
+    EXPECT_EQ("</s>", trainer.meta_pieces_[1].first);
+  }
+
+  {
+    trainer_spec.set_unk_id(0);
+    trainer_spec.set_bos_id(-1);
+    trainer_spec.set_eos_id(-1);
+    trainer_spec.set_pad_id(-1);
+
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    EXPECT_EQ(1, trainer.meta_pieces_.size());
+    EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
+  }
+
+  {
+    trainer_spec.set_unk_id(0);
+    trainer_spec.set_bos_id(1);
+    trainer_spec.set_eos_id(2);
+    trainer_spec.set_pad_id(-1);
+
+    trainer_spec.add_control_symbols("<c1>");
+    trainer_spec.add_control_symbols("<c2>");
+    trainer_spec.add_user_defined_symbols("<u1>");
+    trainer_spec.add_user_defined_symbols("<u2>");
+
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    EXPECT_EQ(7, trainer.meta_pieces_.size());
+    EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
+    EXPECT_EQ("<s>", trainer.meta_pieces_[1].first);
+    EXPECT_EQ("</s>", trainer.meta_pieces_[2].first);
+    EXPECT_EQ("<c1>", trainer.meta_pieces_[3].first);
+    EXPECT_EQ("<c2>", trainer.meta_pieces_[4].first);
+    EXPECT_EQ("<u1>", trainer.meta_pieces_[5].first);
+    EXPECT_EQ("<u2>", trainer.meta_pieces_[6].first);
+  }
+
+  {
+    // ID is not contiguous.
+    trainer_spec.set_unk_id(0);
+    trainer_spec.set_bos_id(-1);
+    trainer_spec.set_eos_id(2);
+    EXPECT_DEATH(TrainerInterface trainer(trainer_spec, normalizer_spec));
+
+    // UNK is not defined.
+    trainer_spec.set_unk_id(-1);
+    trainer_spec.set_bos_id(0);
+    trainer_spec.set_eos_id(1);
+    EXPECT_DEATH(TrainerInterface trainer(trainer_spec, normalizer_spec));
+  }
+}
+
 }  // namespace sentencepiece

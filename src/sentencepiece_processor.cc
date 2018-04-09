@@ -383,9 +383,6 @@ bool SentencePieceProcessor::IsUnknown(int id) const {
 void SentencePieceProcessor::ApplyExtraOptions(
     const std::vector<ExtraOption> &extra_options,
     SentencePieceText *spt) const {
-  constexpr int kBOS = 1;
-  constexpr int kEOS = 2;
-
   for (const auto &extra_option : extra_options) {
     switch (extra_option) {
       case REVERSE:
@@ -394,9 +391,9 @@ void SentencePieceProcessor::ApplyExtraOptions(
         break;
       case EOS: {
         auto *piece = spt->add_pieces();
-        piece->set_id(kEOS);
-        piece->set_piece(IdToPiece(kEOS));
-      } break;
+        piece->set_id(PieceToId("</s>"));
+        piece->set_piece("</s>");
+        } break;
       case BOS: {
         auto *array = spt->mutable_pieces();
         array->Add();
@@ -404,15 +401,16 @@ void SentencePieceProcessor::ApplyExtraOptions(
           array->SwapElements(i - 1, i);
         }
         auto *piece = array->Mutable(0);
-        piece->set_id(kBOS);
-        piece->set_piece(IdToPiece(kBOS));
+        piece->set_id(PieceToId("<s>"));
+        piece->set_piece("<s>");
       } break;
       default:
         LOG(FATAL) << "Unknown extra_option type: "
                    << static_cast<int>(extra_option);
-    }
+      }
   }
 }
+
 
 // static
 std::vector<SentencePieceProcessor::ExtraOption>
