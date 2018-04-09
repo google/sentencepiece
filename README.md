@@ -200,7 +200,7 @@ You can find that the original input sentence is restored from the vocabulary id
 ```
 ```<output file>``` stores a list of vocabulary and emission log probabilities. The vocabulary id corresponds to the line number in this file.
 
-## Refine special meta tokens
+## Redefine special meta tokens
   By default, SentencePiece uses Unknown (&lt;unk&gt;), BOS (&lt;s&gt;) and EOS (&lt;/s&gt;) tokens which have the ids of 0, 1, and 2 respectively. We can redefine these mappings in training phase as follows.
   
 ```
