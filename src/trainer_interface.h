@@ -68,7 +68,8 @@ class TrainerInterface {
   virtual void Train() {}
 
   FRIEND_TEST(TrainerInterfaceTest, IsValidSentencePieceTest);
-  FRIEND_TEST(TrainerInterfaceTest, OverrideSpecialPieces);
+  FRIEND_TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest);
+  FRIEND_TEST(TrainerInterfaceTest, SerializeTest);
 
  protected:
   // Returns true if |piece| is valid sentence piece.

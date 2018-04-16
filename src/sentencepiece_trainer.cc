@@ -78,6 +78,8 @@ DEFINE_bool(remove_extra_whitespaces,
             kDefaultNormalizerSpec.remove_extra_whitespaces(),
             "Removes leading, trailing, and "
             "duplicate internal whitespace");
+DEFINE_bool(hard_vocab_limit, kDefaultTrainerSpec.hard_vocab_limit(),
+            "If set to false, --vocab_size is considered as a soft limit.");
 DEFINE_int32(unk_id, kDefaultTrainerSpec.unk_id(),
              "Override UNK (<unk>) id.");
 DEFINE_int32(bos_id, kDefaultTrainerSpec.bos_id(),
@@ -152,6 +154,7 @@ void MakeTrainerSpecFromFlags(TrainerSpec *trainer_spec,
   SetTrainerSpecFromFlag(max_sentencepiece_length);
   SetTrainerSpecFromFlag(split_by_unicode_script);
   SetTrainerSpecFromFlag(split_by_whitespace);
+  SetTrainerSpecFromFlag(hard_vocab_limit);
   SetTrainerSpecFromFlag(unk_id);
   SetTrainerSpecFromFlag(bos_id);
   SetTrainerSpecFromFlag(eos_id);
