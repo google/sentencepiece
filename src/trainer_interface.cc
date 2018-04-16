@@ -274,16 +274,20 @@ void TrainerInterface::Serialize(ModelProto *model_proto) const {
     CheckPiece(sp->piece());
   }
 
-  if (trainer_spec_.model_type() == TrainerSpec::CHAR) {
-    CHECK_GE(trainer_spec_.vocab_size(), model_proto->pieces_size());
-    CHECK_GE(static_cast<size_t>(trainer_spec_.vocab_size()), dup.size());
-  } else {
-    CHECK_EQ(trainer_spec_.vocab_size(), model_proto->pieces_size());
-    CHECK_EQ(static_cast<size_t>(trainer_spec_.vocab_size()), dup.size());
-  }
-
   *(model_proto->mutable_trainer_spec()) = trainer_spec_;
   *(model_proto->mutable_normalizer_spec()) = normalizer_spec_;
+
+  if (!trainer_spec_.hard_vocab_limit() ||
+      trainer_spec_.model_type() == TrainerSpec::CHAR) {
+    CHECK_GE(trainer_spec_.vocab_size(), model_proto->pieces_size());
+    CHECK_GE(trainer_spec_.vocab_size(), dup.size());
+    model_proto->mutable_trainer_spec()->set_vocab_size(
+        model_proto->pieces_size());
+  } else {
+    CHECK(trainer_spec_.vocab_size() ==  model_proto->pieces_size() &&
+          trainer_spec_.vocab_size() == dup.size())
+        << "Use --hard_vocab_limt=false to make the vocab size `soft limit`.";
+  }
 }
 
 void TrainerInterface::SaveModel(StringPiece filename) const {

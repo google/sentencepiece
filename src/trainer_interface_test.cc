@@ -74,7 +74,7 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_FALSE(IsValid("12345"));
 }
 
-TEST(TrainerInterfaceTest, OverrideSpecialPieces) {
+TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
 
@@ -169,6 +169,53 @@ TEST(TrainerInterfaceTest, OverrideSpecialPieces) {
     trainer_spec.set_bos_id(0);
     trainer_spec.set_eos_id(1);
     EXPECT_DEATH(TrainerInterface trainer(trainer_spec, normalizer_spec));
+  }
+}
+
+TEST(TrainerInterfaceTest, SerializeTest) {
+  TrainerSpec trainer_spec;
+  NormalizerSpec normalizer_spec;
+
+  EXPECT_TRUE(trainer_spec.hard_vocab_limit());
+
+  std::vector<std::pair<std::string, float>> final_pieces = {
+      {"a", 0.1}, {"b", 0.2}, {"c", 0.3}};
+
+  {
+    trainer_spec.set_vocab_size(10);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    trainer.final_pieces_ = final_pieces;
+    ModelProto model_proto;
+    EXPECT_DEATH(trainer.Serialize(&model_proto))
+  }
+
+  {
+    trainer_spec.set_vocab_size(10);
+    trainer_spec.set_hard_vocab_limit(false);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    trainer.final_pieces_ = final_pieces;
+    ModelProto model_proto;
+    trainer.Serialize(&model_proto);
+    EXPECT_EQ(6, model_proto.trainer_spec().vocab_size());
+    for (int i = 3; i < 6; ++i) {
+      EXPECT_EQ(final_pieces[i - 3].first, model_proto.pieces(i).piece());
+      EXPECT_EQ(final_pieces[i - 3].second, model_proto.pieces(i).score());
+    }
+  }
+
+  {
+    trainer_spec.set_vocab_size(10);
+    trainer_spec.set_model_type(TrainerSpec::CHAR);
+    trainer_spec.set_hard_vocab_limit(true);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    trainer.final_pieces_ = final_pieces;
+    ModelProto model_proto;
+    trainer.Serialize(&model_proto);
+    EXPECT_EQ(6, model_proto.trainer_spec().vocab_size());
+    for (int i = 3; i < 6; ++i) {
+      EXPECT_EQ(final_pieces[i - 3].first, model_proto.pieces(i).piece());
+      EXPECT_EQ(final_pieces[i - 3].second, model_proto.pieces(i).score());
+    }
   }
 }
 

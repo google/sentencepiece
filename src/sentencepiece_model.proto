@@ -132,6 +132,13 @@ message TrainerSpec {
   // Typical usage of user_defined_symbols is placeholder for named entities.
   repeated string user_defined_symbols = 31;
 
+  // `vocab_size` is treated as hard limit. Crash if
+  // the model can not produce the vocab of size `vocab_size`,
+  // When `hard_vocab_limit` is false, vocab_size is treated
+  // as soft limit. Note that when model_type=char,
+  // always assumes hard_vocab_limit = false.
+  optional bool hard_vocab_limit = 33 [ default = true ];
+
   ///////////////////////////////////////////////////////////////////
   // Reserved special meta tokens.
   // * -1 is not used.
