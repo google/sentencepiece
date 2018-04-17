@@ -21,6 +21,9 @@ TEST(TrainerFactoryTest, BasicTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
 
+  trainer_spec.set_model_prefix("model");
+  trainer_spec.add_input("input");
+
   {
     trainer_spec.set_model_type(TrainerSpec::UNIGRAM);
     auto m = TrainerFactory::Create(trainer_spec, normalizer_spec);
