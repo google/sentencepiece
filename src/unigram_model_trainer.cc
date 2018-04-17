@@ -466,23 +466,6 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
 }
 
 void Trainer::Train() {
-#define CHECK_RANGE(variable, minval, maxval) \
-  CHECK(variable >= minval && variable <= maxval)
-
-  CHECK_GT(trainer_spec_.input().size(), 0);
-  CHECK(!trainer_spec_.model_prefix().empty());
-  CHECK_RANGE(trainer_spec_.vocab_size(), 100, 320000);
-  CHECK_RANGE(trainer_spec_.character_coverage(), 0.98, 1.0);
-  CHECK_RANGE(trainer_spec_.input_sentence_size(), 100, 100000000);
-  CHECK_RANGE(trainer_spec_.mining_sentence_size(), 100, 5000000);
-  CHECK_RANGE(trainer_spec_.training_sentence_size(), 100, 100000000);
-  CHECK_RANGE(trainer_spec_.max_sentencepiece_length(), 1, 64);
-  CHECK_RANGE(trainer_spec_.seed_sentencepiece_size(), 1000, 5000000);
-  CHECK_RANGE(trainer_spec_.shrinking_factor(), 0.5, 0.95);
-  CHECK_RANGE(trainer_spec_.num_threads(), 1, 128);
-  CHECK_RANGE(trainer_spec_.num_sub_iterations(), 1, 10);
-#undef CHECK_RANGE
-
   LOG(INFO) << "Starts training with : \n" << trainer_spec_.Utf8DebugString();
 
   CHECK(normalizer_spec_.escape_whitespaces());

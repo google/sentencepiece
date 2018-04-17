@@ -24,6 +24,8 @@ namespace sentencepiece {
 TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
+  trainer_spec.set_model_prefix("model");
+  trainer_spec.add_input("input");
 
   auto IsValid = [&trainer_spec, &normalizer_spec](const std::string &str) {
     TrainerInterface trainer(trainer_spec, normalizer_spec);
@@ -77,6 +79,8 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
 TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
+  trainer_spec.set_model_prefix("model");
+  trainer_spec.add_input("input");
 
   // Check default values.
   EXPECT_EQ(0, trainer_spec.unk_id());
@@ -175,6 +179,8 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
 TEST(TrainerInterfaceTest, SerializeTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
+  trainer_spec.set_model_prefix("model");
+  trainer_spec.add_input("input");
 
   EXPECT_TRUE(trainer_spec.hard_vocab_limit());
 

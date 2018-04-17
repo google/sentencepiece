@@ -47,7 +47,27 @@ TrainerInterface::TrainerInterface(const TrainerSpec &trainer_spec,
                                    const NormalizerSpec &normalizer_spec)
     : trainer_spec_(trainer_spec), normalizer_spec_(normalizer_spec) {
   InitMetaPieces();
+
+  CHECK(!trainer_spec_.model_prefix().empty());
+  CHECK_GT(trainer_spec_.input().size(), 0);
+  CHECK_GT(trainer_spec_.vocab_size(), 0);
+
+#define CHECK_RANGE(variable, minval, maxval) \
+  CHECK(variable >= minval && variable <= maxval)
+
+  CHECK_RANGE(trainer_spec_.character_coverage(), 0.98, 1.0);
+  CHECK_RANGE(trainer_spec_.input_sentence_size(), 100, 100000000);
+  CHECK_RANGE(trainer_spec_.max_sentencepiece_length(), 1, 512);
+  CHECK_RANGE(trainer_spec_.mining_sentence_size(), 100, 5000000);
+  CHECK_RANGE(trainer_spec_.num_sub_iterations(), 1, 10);
+  CHECK_RANGE(trainer_spec_.num_threads(), 1, 128);
+  CHECK_RANGE(trainer_spec_.seed_sentencepiece_size(), 1000, 5000000);
+  CHECK_RANGE(trainer_spec_.shrinking_factor(), 0.5, 0.95);
+  CHECK_RANGE(trainer_spec_.training_sentence_size(), 100, 100000000);
+
+#undef CHECK_RANGE
 }
+
 TrainerInterface::~TrainerInterface() {}
 
 bool TrainerInterface::IsValidSentencePiece(
@@ -280,12 +300,12 @@ void TrainerInterface::Serialize(ModelProto *model_proto) const {
   if (!trainer_spec_.hard_vocab_limit() ||
       trainer_spec_.model_type() == TrainerSpec::CHAR) {
     CHECK_GE(trainer_spec_.vocab_size(), model_proto->pieces_size());
-    CHECK_GE(trainer_spec_.vocab_size(), dup.size());
+    CHECK_GE(trainer_spec_.vocab_size(), static_cast<int>(dup.size()));
     model_proto->mutable_trainer_spec()->set_vocab_size(
         model_proto->pieces_size());
   } else {
     CHECK(trainer_spec_.vocab_size() ==  model_proto->pieces_size() &&
-          trainer_spec_.vocab_size() == dup.size())
+          trainer_spec_.vocab_size() == static_cast<int>(dup.size()))
         << "Use --hard_vocab_limt=false to make the vocab size `soft limit`.";
   }
 }
