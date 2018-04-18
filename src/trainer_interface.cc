@@ -306,7 +306,7 @@ void TrainerInterface::Serialize(ModelProto *model_proto) const {
   } else {
     CHECK(trainer_spec_.vocab_size() ==  model_proto->pieces_size() &&
           trainer_spec_.vocab_size() == static_cast<int>(dup.size()))
-        << "Use --hard_vocab_limt=false to make the vocab size `soft limit`.";
+        << "Use --hard_vocab_limit=false to make the vocab size `soft limit`.";
   }
 }
 
