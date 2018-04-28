@@ -36,99 +36,121 @@ const char kUnknownSymbol[] = " \xE2\x81\x87 ";
 SentencePieceProcessor::SentencePieceProcessor() {}
 SentencePieceProcessor::~SentencePieceProcessor() {}
 
-bool SentencePieceProcessor::Load(const std::string &filename) {
+util::Status SentencePieceProcessor::Load(const std::string &filename) {
   std::ifstream ifs(filename.c_str(), std::ios::binary | std::ios::in);
   if (!ifs) {
-    LOG(WARNING) << "Cannot open " << filename;
-    return false;
+    return util::NotFoundError(std::string("Cannot open ") + filename);
   }
 
   return Load(&ifs);
 }
 
-bool SentencePieceProcessor::Load(std::istream *is) {
-  CHECK_NOTNULL(is);
+util::Status SentencePieceProcessor::Load(std::istream *is) {
+  if (is == nullptr)
+    return util::InternalError("input ifstream is null");
 
   model_proto_ = port::MakeUnique<ModelProto>();
   if (!model_proto_->ParseFromIstream(is)) {
-    LOG(WARNING) << "Model file is broken";
-    return false;
+    return util::InternalError("Model file is broken");
   }
 
   model_ = ModelFactory::Create(*model_proto_);
   normalizer_ =
       port::MakeUnique<normalizer::Normalizer>(model_proto_->normalizer_spec());
 
-  return true;
+  return status();
 }
 
-void SentencePieceProcessor::LoadOrDie(const std::string &filename) {
-  CHECK(Load(filename)) << "failed to load model: " << filename;
-}
-
-void SentencePieceProcessor::LoadOrDie(std::istream *is) {
-  CHECK(Load(is)) << "failed to load model";
-}
-
-void SentencePieceProcessor::SetEncodeExtraOptions(
+util::Status SentencePieceProcessor::SetEncodeExtraOptions(
     const std::string &extra_options) {
-  encode_extra_options_ = ParseExtraOptions(extra_options);
+  return ParseExtraOptions(extra_options, &encode_extra_options_);
 }
 
-void SentencePieceProcessor::SetDecodeExtraOptions(
+util::Status SentencePieceProcessor::SetDecodeExtraOptions(
     const std::string &extra_options) {
-  decode_extra_options_ = ParseExtraOptions(extra_options);
+  return ParseExtraOptions(extra_options, &decode_extra_options_);
 }
+
+util::Status SentencePieceProcessor::status() const {
+  if (model_ == nullptr)
+    return util::InternalError("Model is not initialized.");
+  if (normalizer_ == nullptr)
+    return util::InternalError("Normalizer is not initialized.");
+  if (!model_->status().ok()) return model_->status();
+  if (!normalizer_->status().ok()) return normalizer_->status();
+
+  return util::OkStatus();
+}
+
+#define CHECK_OR_RETURN_STATUS_STL(container)                   \
+  RETURN_IF_ERROR(status());                                    \
+  if (container == nullptr)                                     \
+    return util::InternalError("output container is null");     \
+  container->clear();
+
+#define CHECK_OR_RETURN_STATUS_PROTO(proto)             \
+  RETURN_IF_ERROR(status());                            \
+  if (proto == nullptr)                                 \
+    return util::InternalError("output proto is null"); \
+  proto->Clear();
 
 //////////////////////////////////////////////////////////////
 // Simple API.
-void SentencePieceProcessor::Encode(const std::string &input,
-                                    std::vector<std::string> *pieces) const {
-  CHECK_NOTNULL(pieces)->clear();
+util::Status SentencePieceProcessor::Encode(const std::string &input,
+                                            std::vector<std::string> *pieces) const {
+  CHECK_OR_RETURN_STATUS_STL(pieces);
 
   SentencePieceText spt;
-  Encode(input, &spt);
+  RETURN_IF_ERROR(Encode(input, &spt));
   for (const auto &sp : spt.pieces()) {
     pieces->emplace_back(sp.piece());
   }
+
+  return util::OkStatus();
 }
 
-void SentencePieceProcessor::Encode(const std::string &input,
-                                    std::vector<int> *ids) const {
-  CHECK_NOTNULL(ids)->clear();
+util::Status SentencePieceProcessor::Encode(const std::string &input,
+                                            std::vector<int> *ids) const {
+  CHECK_OR_RETURN_STATUS_STL(ids);
 
   SentencePieceText spt;
-  Encode(input, &spt);
+  RETURN_IF_ERROR(Encode(input, &spt));
   for (const auto &sp : spt.pieces()) {
     ids->emplace_back(sp.id());
   }
+
+  return util::OkStatus();
 }
 
-void SentencePieceProcessor::Decode(const std::vector<std::string> &pieces,
-                                    std::string *detokenized) const {
-  CHECK_NOTNULL(detokenized);
+util::Status SentencePieceProcessor::Decode(const std::vector<std::string> &pieces,
+                                            std::string *detokenized) const {
+  CHECK_OR_RETURN_STATUS_STL(detokenized);
   SentencePieceText spt;
 
-  Decode(pieces, &spt);
+  RETURN_IF_ERROR(Decode(pieces, &spt));
   *detokenized = std::move(spt.text());
+
+  return util::OkStatus();
 }
 
-void SentencePieceProcessor::Decode(const std::vector<int> &ids,
-                                    std::string *detokenized) const {
-  CHECK_NOTNULL(detokenized);
+util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
+                                            std::string *detokenized) const {
+  CHECK_OR_RETURN_STATUS_STL(detokenized);
   SentencePieceText spt;
 
-  Decode(ids, &spt);
+  RETURN_IF_ERROR(Decode(ids, &spt));
   *detokenized = std::move(spt.text());
+
+  return util::OkStatus();
 }
 
-void SentencePieceProcessor::NBestEncode(
+util::Status SentencePieceProcessor::NBestEncode(
     const std::string &input, int nbest_size,
     std::vector<std::vector<std::string>> *pieces) const {
-  CHECK_NOTNULL(pieces)->clear();
+  CHECK_OR_RETURN_STATUS_STL(pieces);
 
   NBestSentencePieceText spt;
-  NBestEncode(input, nbest_size, &spt);
+  RETURN_IF_ERROR(NBestEncode(input, nbest_size, &spt));
   for (const auto &nbest : spt.nbests()) {
     std::vector<std::string> result;
     for (const auto &sp : nbest.pieces()) {
@@ -136,15 +158,17 @@ void SentencePieceProcessor::NBestEncode(
     }
     pieces->emplace_back(result);
   }
+
+  return util::OkStatus();
 }
 
-void SentencePieceProcessor::NBestEncode(
+util::Status SentencePieceProcessor::NBestEncode(
     const std::string &input, int nbest_size,
     std::vector<std::vector<int>> *ids) const {
-  CHECK_NOTNULL(ids)->clear();
+  CHECK_OR_RETURN_STATUS_STL(ids);
 
   NBestSentencePieceText spt;
-  NBestEncode(input, nbest_size, &spt);
+  RETURN_IF_ERROR(NBestEncode(input, nbest_size, &spt));
   for (const auto &nbest : spt.nbests()) {
     std::vector<int> result;
     for (const auto &sp : nbest.pieces()) {
@@ -152,33 +176,39 @@ void SentencePieceProcessor::NBestEncode(
     }
     ids->emplace_back(result);
   }
+
+  return util::OkStatus();
 }
 
-void SentencePieceProcessor::SampleEncode(
+util::Status SentencePieceProcessor::SampleEncode(
     const std::string &input, int nbest_size, float alpha,
     std::vector<std::string> *pieces) const {
-  CHECK_NOTNULL(pieces)->clear();
+  CHECK_OR_RETURN_STATUS_STL(pieces);
 
   SentencePieceText spt;
-  SampleEncode(input, nbest_size, alpha, &spt);
+  RETURN_IF_ERROR(SampleEncode(input, nbest_size, alpha, &spt));
   for (const auto &sp : spt.pieces()) {
     pieces->emplace_back(sp.piece());
   }
+
+  return util::OkStatus();
 }
 
-void SentencePieceProcessor::SampleEncode(const std::string &input,
-                                          int nbest_size, float alpha,
-                                          std::vector<int> *ids) const {
-  CHECK_NOTNULL(ids)->clear();
+util::Status SentencePieceProcessor::SampleEncode(const std::string &input,
+                                                  int nbest_size, float alpha,
+                                                  std::vector<int> *ids) const {
+  CHECK_OR_RETURN_STATUS_STL(ids);
 
   SentencePieceText spt;
-  SampleEncode(input, nbest_size, alpha, &spt);
+  RETURN_IF_ERROR(SampleEncode(input, nbest_size, alpha, &spt));
   for (const auto &sp : spt.pieces()) {
     ids->emplace_back(sp.id());
   }
+
+  return util::OkStatus();
 }
 
-void SentencePieceProcessor::PopulateSentencePieceText(
+util::Status SentencePieceProcessor::PopulateSentencePieceText(
     const std::string &input, const std::string &normalized,
     const std::vector<size_t> &norm_to_orig, const EncodeResult &result,
     SentencePieceText *spt) const {
@@ -187,7 +217,11 @@ void SentencePieceProcessor::PopulateSentencePieceText(
   for (const auto &p : result) {
     const StringPiece w = p.first;  // piece
     const int id = p.second;        // id
-    CHECK(!w.empty());
+
+    if (w.empty()) {
+      return util::InternalError("Empty piece is not allowed.");
+    }
+
     const bool is_unk = IsUnknown(id);
 
     if (IsControl(id)) {
@@ -200,13 +234,15 @@ void SentencePieceProcessor::PopulateSentencePieceText(
     } else {
       const size_t begin = consumed;
       const size_t end = consumed + w.size();
-      CHECK_LE(begin, norm_to_orig.size());
-      CHECK_LE(end, norm_to_orig.size());
+      if (begin >= norm_to_orig.size() || end >= norm_to_orig.size()) {
+        return util::OutOfRangeError("consumed index is out-of-range.");
+      }
       const size_t orig_begin = norm_to_orig[begin];
       const size_t orig_end = norm_to_orig[end];
-      CHECK_LE(orig_begin, input.size());
-      CHECK_LE(orig_end, input.size());
-      CHECK_LE(orig_begin, orig_end);
+      if (orig_begin > input.size() || orig_end > input.size() ||
+          orig_begin > orig_end) {
+        return util::OutOfRangeError("original index is out-of-range.");
+      }
       const auto surface = input.substr(orig_begin, orig_end - orig_begin);
       // Merges continuous run of unknown pieces so that decoder
       // can copy or generate unknown tokens easily.
@@ -229,64 +265,80 @@ void SentencePieceProcessor::PopulateSentencePieceText(
     }
     is_prev_unk = is_unk;
   }
-  CHECK_EQ(consumed, normalized.size());
 
-  ApplyExtraOptions(encode_extra_options_, spt);
+  if (consumed != normalized.size()) {
+    return util::OutOfRangeError("all normalized characters are not consumed.");
+  }
+
+  RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, spt));
 
   spt->set_text(input);
+
+  return util::OkStatus();
 }
 
-void SentencePieceProcessor::Encode(const std::string &input,
-                                    SentencePieceText *spt) const {
-  CHECK_NOTNULL(spt)->Clear();
+util::Status SentencePieceProcessor::Encode(const std::string &input,
+                                            SentencePieceText *spt) const {
+  CHECK_OR_RETURN_STATUS_PROTO(spt);
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  CHECK_NOTNULL(normalizer_)->Normalize(input, &normalized, &norm_to_orig);
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
-  const auto result = CHECK_NOTNULL(model_)->Encode(normalized);
-  PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt);
+  const auto result = model_->Encode(normalized);
+  RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt));
+
+  return util::OkStatus();
 }
 
-void SentencePieceProcessor::NBestEncode(
+util::Status SentencePieceProcessor::NBestEncode(
     const std::string &input, int nbest_size,
     NBestSentencePieceText *nbest_spt) const {
-  CHECK_NOTNULL(nbest_spt)->Clear();
+  CHECK_OR_RETURN_STATUS_PROTO(nbest_spt);
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  CHECK_NOTNULL(normalizer_)->Normalize(input, &normalized, &norm_to_orig);
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
   const auto nbests =
-      CHECK_NOTNULL(model_)->NBestEncode(normalized, nbest_size);
+      model_->NBestEncode(normalized, nbest_size);
+  if (nbests.empty()) {
+    return util::InternalError("NBestEncode returns empty result");
+  }
+
   for (const auto &result : nbests) {
     auto *spt = nbest_spt->add_nbests();
     spt->set_score(result.second);
-    PopulateSentencePieceText(input, normalized, norm_to_orig, result.first,
-                              spt);
+    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig, result.first,
+                                              spt));
   }
+
+  return util::OkStatus();
 }
 
-void SentencePieceProcessor::SampleEncode(const std::string &input,
-                                          int nbest_size, float alpha,
-                                          SentencePieceText *spt) const {
-  CHECK_NOTNULL(spt)->Clear();
+util::Status SentencePieceProcessor::SampleEncode(const std::string &input,
+                                                  int nbest_size, float alpha,
+                                                  SentencePieceText *spt) const {
+  CHECK_OR_RETURN_STATUS_PROTO(spt);
 
-  CHECK_LE(nbest_size, 512)
-      << "Too big nbest size. consider using nbest <= 512.";
-  CHECK_NE(nbest_size, 0) << "nbest size must not be zero.";
+  if (nbest_size > 512 || nbest_size == 0) {
+    return util::OutOfRangeError(
+        "nbest_size must be 0 < nbest_size <= 512 or nbest_size < 0.");
+  }
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  CHECK_NOTNULL(normalizer_)->Normalize(input, &normalized, &norm_to_orig);
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
   if (nbest_size == 1) {
-    const auto result = CHECK_NOTNULL(model_)->Encode(normalized);
-    PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt);
+    const auto result = model_->Encode(normalized);
+    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt));
   } else if (nbest_size > 1) {
     const auto nbests =
-        CHECK_NOTNULL(model_)->NBestEncode(normalized, nbest_size);
-    CHECK(!nbests.empty());
+        model_->NBestEncode(normalized, nbest_size);
+    if (nbests.empty()) {
+      return util::InternalError("NBestEncode returns empty result");
+    }
 
     std::vector<float> probs(nbests.size(), 0.0);
     for (size_t i = 0; i < nbests.size(); ++i) {
@@ -295,18 +347,20 @@ void SentencePieceProcessor::SampleEncode(const std::string &input,
 
     thread_local static std::mt19937 mt(std::random_device{}());
     std::discrete_distribution<int> dist(probs.begin(), probs.end());
-    PopulateSentencePieceText(input, normalized, norm_to_orig,
-                              nbests[dist(mt)].first, spt);
+    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
+                                              nbests[dist(mt)].first, spt));
 
   } else if (nbest_size < 0) {
-    const auto result = CHECK_NOTNULL(model_)->SampleEncode(normalized, alpha);
-    PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt);
+    const auto result = model_->SampleEncode(normalized, alpha);
+    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt));
   }
+
+  return util::OkStatus();
 }
 
-void SentencePieceProcessor::Decode(const std::vector<std::string> &pieces,
-                                    SentencePieceText *spt) const {
-  CHECK_NOTNULL(spt)->Clear();
+util::Status SentencePieceProcessor::Decode(const std::vector<std::string> &pieces,
+                                            SentencePieceText *spt) const {
+  CHECK_OR_RETURN_STATUS_PROTO(spt);
 
   auto DecodeSentencePiece = [&](StringPiece piece, int id,
                                  bool is_bos_ws) -> std::string {
@@ -335,7 +389,7 @@ void SentencePieceProcessor::Decode(const std::vector<std::string> &pieces,
     sp->set_id(PieceToId(w));
   }
 
-  ApplyExtraOptions(decode_extra_options_, spt);
+  RETURN_IF_ERROR(ApplyExtraOptions(decode_extra_options_, spt));
 
   std::string *text = spt->mutable_text();
   for (auto &sp : *(spt->mutable_pieces())) {
@@ -344,10 +398,12 @@ void SentencePieceProcessor::Decode(const std::vector<std::string> &pieces,
     sp.set_end(text->size() + sp.surface().size());
     *text += sp.surface();
   }
+
+  return util::OkStatus();
 }
 
-void SentencePieceProcessor::Decode(const std::vector<int> &ids,
-                                    SentencePieceText *spt) const {
+util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
+                                            SentencePieceText *spt) const {
   std::vector<std::string> pieces;
   for (const int id : ids) {
     pieces.emplace_back(IdToPiece(id));
@@ -355,32 +411,44 @@ void SentencePieceProcessor::Decode(const std::vector<int> &ids,
   return Decode(pieces, spt);
 }
 
+#define CHECK_STATUS_OR_RETURN_DEFAULT(value)                           \
+  if (!status().ok()) {                                                 \
+    LOG(ERROR) << status().error_message() << "\nReturns default value " << value; \
+    return value;                                                       \
+  }
+
 int SentencePieceProcessor::GetPieceSize() const {
-  return CHECK_NOTNULL(model_)->GetPieceSize();
+  CHECK_STATUS_OR_RETURN_DEFAULT(0);
+  return model_->GetPieceSize();
 }
 
 int SentencePieceProcessor::PieceToId(const std::string &piece) const {
-  return CHECK_NOTNULL(model_)->PieceToId(piece);
+  CHECK_STATUS_OR_RETURN_DEFAULT(0);
+  return model_->PieceToId(piece);
 }
 
 std::string SentencePieceProcessor::IdToPiece(int id) const {
-  return CHECK_NOTNULL(model_)->IdToPiece(id);
+  CHECK_STATUS_OR_RETURN_DEFAULT("");
+  return model_->IdToPiece(id);
 }
 
 float SentencePieceProcessor::GetScore(int id) const {
-  return CHECK_NOTNULL(model_)->GetScore(id);
+  CHECK_STATUS_OR_RETURN_DEFAULT(0.0);
+  return model_->GetScore(id);
 }
 
 bool SentencePieceProcessor::IsControl(int id) const {
-  return CHECK_NOTNULL(model_)->IsControl(id);
+  CHECK_STATUS_OR_RETURN_DEFAULT(0);
+  return model_->IsControl(id);
 }
 
 bool SentencePieceProcessor::IsUnknown(int id) const {
-  return CHECK_NOTNULL(model_)->IsUnknown(id);
+  CHECK_STATUS_OR_RETURN_DEFAULT(0);
+  return model_->IsUnknown(id);
 }
 
 // static
-void SentencePieceProcessor::ApplyExtraOptions(
+util::Status SentencePieceProcessor::ApplyExtraOptions(
     const std::vector<ExtraOption> &extra_options,
     SentencePieceText *spt) const {
   for (const auto &extra_option : extra_options) {
@@ -393,7 +461,7 @@ void SentencePieceProcessor::ApplyExtraOptions(
         auto *piece = spt->add_pieces();
         piece->set_id(PieceToId("</s>"));
         piece->set_piece("</s>");
-        } break;
+      } break;
       case BOS: {
         auto *array = spt->mutable_pieces();
         array->Add();
@@ -405,25 +473,29 @@ void SentencePieceProcessor::ApplyExtraOptions(
         piece->set_piece("<s>");
       } break;
       default:
-        LOG(FATAL) << "Unknown extra_option type: "
-                   << static_cast<int>(extra_option);
-      }
+        return util::InternalError("Unknown extra_option type");
+    }
   }
+
+  return util::OkStatus();
 }
 
-
 // static
-std::vector<SentencePieceProcessor::ExtraOption>
-SentencePieceProcessor::ParseExtraOptions(const std::string &extra_option) {
+util::Status SentencePieceProcessor::ParseExtraOptions(
+    const std::string &extra_option,
+    std::vector<SentencePieceProcessor::ExtraOption> *extra_options) {
+  extra_options->clear();
   static std::map<std::string, SentencePieceProcessor::ExtraOption>
       extra_option_map = {{"bos", SentencePieceProcessor::BOS},
                           {"eos", SentencePieceProcessor::EOS},
                           {"reverse", SentencePieceProcessor::REVERSE}};
-  std::vector<SentencePieceProcessor::ExtraOption> extra_options;
   for (const auto &s : string_util::Split(extra_option, ":")) {
-    extra_options.push_back(port::FindOrDie(extra_option_map, s));
+    const auto it = extra_option_map.find(s);
+    if (it == extra_option_map.end())
+      return util::InternalError(std::string("option ") + s + " is not available.");
+    extra_options->push_back(it->second);
   }
-  return extra_options;
+  return util::OkStatus();
 }
 
 void SentencePieceProcessor::SetModel(std::unique_ptr<ModelInterface> &&model) {
@@ -436,7 +508,6 @@ void SentencePieceProcessor::SetNormalizer(
 }
 
 const ModelProto &SentencePieceProcessor::model_proto() const {
-  CHECK_NOTNULL(model_proto_);
   return *model_proto_;
 }
 }  // namespace sentencepiece

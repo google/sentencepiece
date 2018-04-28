@@ -23,10 +23,14 @@ namespace normalizer {
 
 Normalizer::Normalizer(const NormalizerSpec &spec) : spec_(&spec) {
   StringPiece index = spec.precompiled_charsmap();
-  CHECK(!index.empty());
+  if (index.empty()) {
+    status_ = util::InvalidArgumentError("precompiled_charsmap is empty.");
+    return;
+  }
 
   StringPiece trie_blob, normalized;
-  DecodePrecompiledCharsMap(index, &trie_blob, &normalized);
+  status_ = DecodePrecompiledCharsMap(index, &trie_blob, &normalized);
+  if (!status_.ok()) return;
 
   // Reads the body of double array.
   trie_ = port::MakeUnique<Darts::DoubleArray>();
@@ -41,13 +45,17 @@ Normalizer::Normalizer(const NormalizerSpec &spec) : spec_(&spec) {
 
 Normalizer::~Normalizer() {}
 
-void Normalizer::Normalize(StringPiece input, std::string *normalized,
-                           std::vector<size_t> *norm_to_orig) const {
-  CHECK_NOTNULL(norm_to_orig)->clear();
-  CHECK_NOTNULL(normalized)->clear();
+util::Status Normalizer::Normalize(StringPiece input, std::string *normalized,
+                                   std::vector<size_t> *norm_to_orig) const {
+  if (trie_ == nullptr || normalized_ == nullptr) {
+    return util::InternalError("Normalizer model is not available.");
+  }
+
+  norm_to_orig->clear();
+  normalized->clear();
 
   if (input.empty()) {
-    return;
+    return util::OkStatus();
   }
 
   int consumed = 0;
@@ -66,7 +74,7 @@ void Normalizer::Normalize(StringPiece input, std::string *normalized,
 
   // all chars are whitespace.
   if (input.empty()) {
-    return;
+    return util::OkStatus();
   }
 
   // Reserves the output buffer to avoid re-allocations.
@@ -134,7 +142,7 @@ void Normalizer::Normalize(StringPiece input, std::string *normalized,
     const StringPiece space = spec_->escape_whitespaces() ? kSpaceSymbol : " ";
     while (string_util::EndsWith(*normalized, space)) {
       const int length = normalized->size() - space.size();
-      CHECK_GE(length, 0);
+      if (length < 0) return util::InternalError("length < 0");
       consumed = (*norm_to_orig)[length];
       normalized->resize(length);
       norm_to_orig->resize(length);
@@ -142,7 +150,12 @@ void Normalizer::Normalize(StringPiece input, std::string *normalized,
   }
 
   norm_to_orig->push_back(consumed);
-  CHECK_EQ(norm_to_orig->size(), normalized->size() + 1);
+
+  if (norm_to_orig->size() != normalized->size() + 1) {
+    return util::InternalError("norm_to_org and normalized are inconsistent");
+  }
+
+  return util::OkStatus();
 }
 
 std::string Normalizer::Normalize(StringPiece input) const {
@@ -154,7 +167,9 @@ std::string Normalizer::Normalize(StringPiece input) const {
 
 std::pair<StringPiece, int> Normalizer::NormalizePrefix(
     StringPiece input) const {
-  CHECK(!input.empty());
+  std::pair<StringPiece, int> result;
+
+  if (input.empty()) return result;
 
   // Allocates trie_results in stack, which makes the encoding speed 36% faster.
   // (38k sentences/sec => 60k sentences/sec).
@@ -164,9 +179,9 @@ std::pair<StringPiece, int> Normalizer::NormalizePrefix(
   Darts::DoubleArray::result_pair_type
       trie_results[Normalizer::kMaxTrieResultsSize];
 
-  const size_t num_nodes = CHECK_NOTNULL(trie_)->commonPrefixSearch(
-      input.data(), trie_results, Normalizer::kMaxTrieResultsSize,
-      input.size());
+  const size_t num_nodes =
+      trie_->commonPrefixSearch(input.data(), trie_results,
+                                Normalizer::kMaxTrieResultsSize, input.size());
 
   // Finds the longest rule.
   size_t longest_length = 0;
@@ -178,7 +193,6 @@ std::pair<StringPiece, int> Normalizer::NormalizePrefix(
     }
   }
 
-  std::pair<StringPiece, int> result;
   if (longest_length == 0) {
     result.second = std::min<int>(
         input.size(), std::max<int>(1, string_util::OneCharLen(input.data())));
@@ -189,9 +203,6 @@ std::pair<StringPiece, int> Normalizer::NormalizePrefix(
     // since |normalized| is delimitered by "\0".
     result.first.set(&normalized_[longest_value]);
   }
-
-  CHECK(!result.first.empty());
-  CHECK_GT(result.second, 0);
 
   return result;
 }
@@ -208,21 +219,24 @@ std::string Normalizer::EncodePrecompiledCharsMap(StringPiece trie_blob,
 }
 
 // static
-void Normalizer::DecodePrecompiledCharsMap(StringPiece blob,
-                                           StringPiece *trie_blob,
-                                           StringPiece *normalized) {
+util::Status Normalizer::DecodePrecompiledCharsMap(StringPiece blob,
+                                                   StringPiece *trie_blob,
+                                                   StringPiece *normalized) {
   uint32 trie_blob_size = 0;
-  CHECK_GT(blob.size(), sizeof(trie_blob_size));
+  if (blob.size() <= sizeof(trie_blob_size) ||
+      !string_util::DecodePOD<uint32>(
+          StringPiece(blob.data(), sizeof(trie_blob_size)), &trie_blob_size) ||
+      trie_blob_size >= blob.size()) {
+    return util::InternalError("Trie blob is broken.");
+  }
 
-  CHECK(string_util::DecodePOD<uint32>(
-      StringPiece(blob.data(), sizeof(trie_blob_size)), &trie_blob_size));
-  CHECK_LT(trie_blob_size, blob.size());
   blob.remove_prefix(sizeof(trie_blob_size));
-
-  CHECK_NOTNULL(trie_blob)->set(blob.data(), trie_blob_size);
+  *trie_blob = StringPiece(blob.data(), trie_blob_size);
 
   blob.remove_prefix(trie_blob_size);
-  CHECK_NOTNULL(normalized)->set(blob.data(), blob.size());
+  *normalized = StringPiece(blob.data(), blob.size());
+
+  return util::OkStatus();
 }
 }  // namespace normalizer
 }  // namespace sentencepiece

@@ -93,7 +93,7 @@ TEST(BPETrainerTest, EndToEndTest) {
   trainer.Train();
 
   SentencePieceProcessor sp;
-  EXPECT_TRUE(sp.Load(std::string(sf.filename()) + ".model"));
+  EXPECT_OK(sp.Load(std::string(sf.filename()) + ".model"));
   EXPECT_EQ(kVocabSize, sp.GetPieceSize());
 
   const int cid = sp.PieceToId("<ctrl>");

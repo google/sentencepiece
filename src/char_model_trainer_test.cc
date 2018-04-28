@@ -67,6 +67,8 @@ std::string RunTrainer(const std::vector<std::string> &input, int size) {
 TEST(TrainerTest, BasicTest) {
   EXPECT_EQ(WS " a e p n I h l v",
             RunTrainer({"I have a pen", "I have an apple", "apple pen"}, 100));
+  EXPECT_EQ(WS " a",  // <unk>, <s>, </s>, _, a
+            RunTrainer({"I have a pen", "I have an apple", "apple pen"}, 5));
 }
 }  // namespace character
 }  // namespace sentencepiece

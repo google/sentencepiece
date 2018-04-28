@@ -26,6 +26,13 @@ namespace unigram {
 // Space symbol
 #define WS "\xe2\x96\x81"
 
+TEST(UnigramTrainerTest, TrainerModelTest) {
+  TrainerSpec trainer_spec;
+  NormalizerSpec normalizer_spec;
+  const TrainerModel model(trainer_spec, normalizer_spec);
+  EXPECT_EQ(EncodeResult(), model.Encode("test"));
+}
+
 TEST(UnigramTrainerTest, EndToEndTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
@@ -45,7 +52,7 @@ TEST(UnigramTrainerTest, EndToEndTest) {
   trainer.Train();
 
   SentencePieceProcessor sp;
-  EXPECT_TRUE(sp.Load(std::string(sf.filename()) + ".model"));
+  EXPECT_OK(sp.Load(std::string(sf.filename()) + ".model"));
   EXPECT_EQ(kVocabSize, sp.GetPieceSize());
 
   const int cid = sp.PieceToId("<ctrl>");

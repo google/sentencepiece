@@ -33,8 +33,8 @@ int main(int argc, char *argv[]) {
   CHECK_OR_HELP(model);
 
   sentencepiece::SentencePieceProcessor sp;
-  sp.LoadOrDie(FLAGS_model);
-  sp.SetDecodeExtraOptions(FLAGS_extra_options);
+  CHECK_OK(sp.Load(FLAGS_model));
+  CHECK_OK(sp.SetDecodeExtraOptions(FLAGS_extra_options));
 
   sentencepiece::io::OutputBuffer output(FLAGS_output);
 
@@ -57,12 +57,12 @@ int main(int argc, char *argv[]) {
   if (FLAGS_input_format == "piece") {
     if (FLAGS_output_format == "string") {
       process = [&](const std::vector<std::string> &pieces) {
-        sp.Decode(pieces, &detok);
+        CHECK_OK(sp.Decode(pieces, &detok));
         output.WriteLine(detok);
       };
     } else if (FLAGS_output_format == "proto") {
       process = [&](const std::vector<std::string> &pieces) {
-        sp.Decode(pieces, &spt);
+        CHECK_OK(sp.Decode(pieces, &spt));
         output.WriteLine(spt.Utf8DebugString());
       };
     } else {
@@ -71,12 +71,12 @@ int main(int argc, char *argv[]) {
   } else if (FLAGS_input_format == "id") {
     if (FLAGS_output_format == "string") {
       process = [&](const std::vector<std::string> &pieces) {
-        sp.Decode(ToIds(pieces), &detok);
+        CHECK_OK(sp.Decode(ToIds(pieces), &detok));
         output.WriteLine(detok);
       };
     } else if (FLAGS_output_format == "proto") {
       process = [&](const std::vector<std::string> &pieces) {
-        sp.Decode(ToIds(pieces), &spt);
+        CHECK_OK(sp.Decode(ToIds(pieces), &spt));
         output.WriteLine(spt.Utf8DebugString());
       };
     } else {

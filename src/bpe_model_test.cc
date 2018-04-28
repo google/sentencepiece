@@ -137,6 +137,19 @@ TEST(BPEModelTest, EncodeAmbiguousTest) {
   EXPECT_EQ("aa", result[0].first);
   EXPECT_EQ("ab", result[1].first);
   EXPECT_EQ("a", result[2].first);
+
+  // makes a broken utf-8
+  const std::string broken_utf8 = std::string("あ").substr(0, 1);
+  result = model.Encode(broken_utf8);
+  EXPECT_EQ(1, result.size());
+  EXPECT_EQ(broken_utf8, result[0].first);
+}
+
+TEST(BPEModelTest, NotSupportedTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+  const Model model(model_proto);
+  EXPECT_EQ(NBestEncodeResult(), model.NBestEncode("test", 10));
+  EXPECT_EQ(EncodeResult(), model.SampleEncode("test", 0.1));
 }
 
 }  // namespace

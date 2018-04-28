@@ -14,6 +14,7 @@
 
 #include "model_interface.h"
 #include "model_factory.h"
+#include "util.h"
 #include "testharness.h"
 
 namespace sentencepiece {
@@ -161,6 +162,37 @@ TEST(ModelInterfaceTest, PieceToIdStressTest) {
       }
     }
   }
+}
+
+TEST(ModelInterfaceTest, InitializePiecesTest) {
+  class TestModel : public ModelInterface {
+   public:
+    TestModel(const ModelProto &proto,
+              bool userdefined_symbol) :
+        ModelInterface::ModelInterface(proto) {
+      model_proto_ = &proto;
+      InitializePieces(userdefined_symbol);
+    }
+
+    EncodeResult Encode(StringPiece normalized) const override {
+      return EncodeResult();
+    }
+  };
+
+  ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
+  AddPiece(&model_proto, "a", 0.1);
+  model_proto.mutable_pieces(3)->set_type(
+      ModelProto::SentencePiece::USER_DEFINED);
+
+  TestModel model1(model_proto, true);
+  EXPECT_OK(model1.status());
+
+  TestModel model2(model_proto, false);
+  EXPECT_NOT_OK(model2.status());
+
+  AddPiece(&model_proto, "a", 0.1);
+  TestModel model3(model_proto, true);
+  EXPECT_NOT_OK(model3.status());
 }
 
 TEST(ModelInterfaceTest, SplitIntoWordsTest) {

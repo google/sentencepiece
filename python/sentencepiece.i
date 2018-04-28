@@ -1,4 +1,5 @@
 %module sentencepiece
+%include exception.i
 
 %{
 #include <sentencepiece_processor.h>
@@ -59,8 +60,25 @@ PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
        PyString_FromStringAndSize(output.data(), output.size());
 #endif
 }
+
+#define THROW_IF_ERROR(expr)                            \
+  do {                                                  \
+    const sentencepiece::util::Status _status = expr;   \
+    if (!_status.ok()) throw _status;                   \
+  } while (0)
+
 }  // namespace
 %}
+
+%exception {
+  try { $action }
+  catch (const sentencepiece::util::Status &status) {
+    SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+  }
+}
+
+%ignore sentencepiece::util::Status;
+%ignore sentencepiece::util::error::Code;
 
 %ignore sentencepiece::SentencePieceProcessor::Encode(std::string const &, std::vector<std::string>*) const;
 %ignore sentencepiece::SentencePieceProcessor::Encode(std::string const &, std::vector<int>*) const;
@@ -86,73 +104,73 @@ PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
 %extend sentencepiece::SentencePieceProcessor {
   std::vector<std::string> Encode(const std::string& input) const {
     std::vector<std::string> output;
-    $self->Encode(input, &output);
+    THROW_IF_ERROR($self->Encode(input, &output));
     return output;
   }
 
   std::vector<std::string> EncodeAsPieces(const std::string& input) const {
     std::vector<std::string> output;
-    $self->Encode(input, &output);
+    THROW_IF_ERROR($self->Encode(input, &output));
     return output;
   }
 
   std::vector<int> EncodeAsIds(const std::string& input) const {
     std::vector<int> output;
-    $self->Encode(input, &output);
+    THROW_IF_ERROR($self->Encode(input, &output));
     return output;
   }
 
   std::vector<std::vector<std::string>> NBestEncode(const std::string& input, int nbest_size) const {
     std::vector<std::vector<std::string>> output;
-    $self->NBestEncode(input, nbest_size, &output);
+    THROW_IF_ERROR($self->NBestEncode(input, nbest_size, &output));
     return output;
   }
 
   std::vector<std::vector<std::string>> NBestEncodeAsPieces(const std::string& input, int nbest_size) const {
     std::vector<std::vector<std::string>> output;
-    $self->NBestEncode(input, nbest_size, &output);
+    THROW_IF_ERROR($self->NBestEncode(input, nbest_size, &output));
     return output;
   }
 
   std::vector<std::vector<int>> NBestEncodeAsIds(const std::string& input, int nbest_size) const {
     std::vector<std::vector<int>> output;
-    $self->NBestEncode(input, nbest_size, &output);
+    THROW_IF_ERROR($self->NBestEncode(input, nbest_size, &output));
     return output;
   }
 
   std::vector<std::string> SampleEncode(const std::string& input, int nbest_size, float alpha) const {
     std::vector<std::string> output;
-    $self->SampleEncode(input, nbest_size, alpha, &output);
+    THROW_IF_ERROR($self->SampleEncode(input, nbest_size, alpha, &output));
     return output;
   }
 
   std::vector<std::string> SampleEncodeAsPieces(const std::string& input, int nbest_size, float alpha) const {
     std::vector<std::string> output;
-    $self->SampleEncode(input, nbest_size, alpha, &output);
+    THROW_IF_ERROR($self->SampleEncode(input, nbest_size, alpha, &output));
     return output;
   }
 
   std::vector<int> SampleEncodeAsIds(const std::string& input, int nbest_size, float alpha) const {
     std::vector<int> output;
-    $self->SampleEncode(input, nbest_size, alpha, &output);
+    THROW_IF_ERROR($self->SampleEncode(input, nbest_size, alpha, &output));
     return output;
   }
 
   std::string Decode(const std::vector<std::string>& input) const {
     std::string output;
-    $self->Decode(input, &output);
+    THROW_IF_ERROR($self->Decode(input, &output));
     return output;
   }
 
   std::string DecodePieces(const std::vector<std::string>& input) const {
     std::string output;
-    $self->Decode(input, &output);
+    THROW_IF_ERROR($self->Decode(input, &output));
     return output;
   }
 
   std::string DecodeIds(const std::vector<int>& input) const {
     std::string output;
-    $self->Decode(input, &output);
+    THROW_IF_ERROR($self->Decode(input, &output));
     return output;
   }
 
@@ -206,6 +224,13 @@ PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
 %typemap(out) std::string {
   PyObject *input_type = resultobj;
   $result = MakePyOutputString($1, input_type);
+}
+
+%typemap(out) sentencepiece::util::Status {
+  if (!$1.ok()) {
+    SWIG_exception(SWIG_RuntimeError, $1.ToString().c_str());
+  }
+  $result = SWIG_From_bool($1.ok());
 }
 
 %typemap(in) const std::string & {

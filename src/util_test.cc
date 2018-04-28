@@ -446,4 +446,30 @@ TEST(UtilTest, STLDeleteELementsTest) {
   CHECK_EQ(10, counter);
   EXPECT_EQ(0, data.size());
 }
+
+TEST(UtilTest, StatusTest) {
+  const util::Status ok;
+  EXPECT_TRUE(ok.ok());
+  EXPECT_EQ(util::error::OK, ok.code());
+  EXPECT_EQ(std::string(""), ok.error_message());
+
+  const util::Status s1(util::error::UNKNOWN, "unknown");
+  const util::Status s2(util::error::UNKNOWN, std::string("unknown"));
+
+  EXPECT_EQ(util::error::UNKNOWN, s1.code());
+  EXPECT_EQ(util::error::UNKNOWN, s2.code());
+  EXPECT_EQ(std::string("unknown"), s1.error_message());
+  EXPECT_EQ(std::string("unknown"), s2.error_message());
+
+  auto ok2 = util::OkStatus();
+  EXPECT_TRUE(ok2.ok());
+  EXPECT_EQ(util::error::OK, ok2.code());
+  EXPECT_EQ(std::string(""), ok2.error_message());
+
+  util::OkStatus().IgnoreError();
+  for (int i = 0; i <= 16; ++i) {
+    util::Status s(static_cast<util::error::Code>(i), "message");
+    EXPECT_TRUE(s.ToString().find("message") != std::string::npos);
+  }
+}
 }  // namespace sentencepiece
