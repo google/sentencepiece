@@ -89,16 +89,17 @@ void TrainerModel::SetSentencePieces(SentencePieces &&sentencepieces) {
   CHECK(!sentencepieces_.empty());
 
   min_score_ = FLT_MAX;
-  std::vector<std::pair<std::string, int>> pieces;
+  std::vector<std::pair<StringPiece, int>> pieces;
   for (size_t i = 0; i < sentencepieces_.size(); ++i) {
-    const std::string &w = sentencepieces_[i].first;  // piece
-    const float score = sentencepieces_[i].second;    // score.
+    const StringPiece w = sentencepieces_[i].first;  // piece
+    const float score = sentencepieces_[i].second;   // score.
     CHECK(!std::isnan(score));
     pieces.emplace_back(w, i);
     min_score_ = std::min(min_score_, score);
   }
 
   BuildTrie(&pieces);
+  CHECK_OK(status());
 }
 
 // Returns seed sentencepieces for EM training.

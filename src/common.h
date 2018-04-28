@@ -70,7 +70,7 @@ static const int64 kint64max = ((int64)(0x7FFFFFFFFFFFFFFF));
 #endif
 
 #if defined(OS_WIN) && defined(UNICODE) && defined(_UNICODE)
-#define WPATH(path) (sentencepiece::win32::Utf8ToWide(path).c_str())
+#define WPATH(path) (::sentencepiece::win32::Utf8ToWide(path).c_str())
 #else
 #define WPATH(path) (path)
 #endif
@@ -149,15 +149,15 @@ enum LogSeverity {
 }  // namespace logging
 }  // namespace sentencepiece
 
-#define LOG(severity)                                                 \
-  sentencepiece::error::Die(sentencepiece::logging::LOG_##severity >= \
-                            sentencepiece::logging::LOG_FATAL) &      \
-      std::cerr << __FILE__ << "(" << __LINE__ << ") "                \
+#define LOG(severity)                                                     \
+  ::sentencepiece::error::Die(::sentencepiece::logging::LOG_##severity >= \
+                              ::sentencepiece::logging::LOG_FATAL) &      \
+      std::cerr << __FILE__ << "(" << __LINE__ << ") "                    \
                 << "LOG(" << #severity << ") "
 
 #define CHECK(condition)                                              \
   (condition) ? 0                                                     \
-              : sentencepiece::error::Die(true) &                     \
+              : ::sentencepiece::error::Die(true) &                   \
                     std::cerr << __FILE__ << "(" << __LINE__ << ") [" \
                               << #condition << "] "
 
@@ -170,10 +170,21 @@ enum LogSeverity {
 #define CHECK_LE(a, b) CHECK((a) <= (b))
 #define CHECK_GT(a, b) CHECK((a) > (b))
 #define CHECK_LT(a, b) CHECK((a) < (b))
-#define CHECK_NOTNULL(val)                               \
-  sentencepiece::error::CheckNotNull(__FILE__, __LINE__, \
-                                     "'" #val "' Must be non NULL", (val))
+#define CHECK_NOTNULL(val)                                 \
+  ::sentencepiece::error::CheckNotNull(__FILE__, __LINE__, \
+                                       "'" #val "' Must be non NULL", (val))
 
 #define FRIEND_TEST(a, b) friend class a##_Test_##b;
+
+#define CHECK_OK(status) \
+  CHECK_EQ(status.code(), ::sentencepiece::util::error::OK) << status.ToString()
+#define CHECK_NOT_OK(status) \
+  CHECK_NE(status.code(), ::sentencepiece::util::error::OK) << status.ToString()
+
+#define RETURN_IF_ERROR(expr)          \
+  do {                                 \
+    const util::Status _status = expr; \
+    if (!_status.ok()) return _status; \
+  } while (0)
 
 #endif  // COMMON_H_

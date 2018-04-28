@@ -13,7 +13,6 @@
 // limitations under the License.!
 
 #include "word_model.h"
-
 #include "util.h"
 
 namespace sentencepiece {
@@ -21,25 +20,13 @@ namespace word {
 
 Model::Model(const ModelProto &model_proto) {
   model_proto_ = &model_proto;
-
-  for (int i = 0; i < model_proto_->pieces_size(); ++i) {
-    const auto &sp = model_proto_->pieces(i);
-    CHECK(!sp.piece().empty());
-    if (sp.type() == ModelProto::SentencePiece::NORMAL ||
-        sp.type() == ModelProto::SentencePiece::USER_DEFINED) {
-      CHECK(sp.has_score());
-      port::InsertOrDie(&pieces_, sp.piece(), i);
-    } else {
-      port::InsertOrDie(&reserved_id_map_, sp.piece(), i);
-      if (sp.type() == ModelProto::SentencePiece::UNKNOWN) unk_id_ = i;
-    }
-  }
+  InitializePieces(true /* use_user_defined */);
 }
 
 Model::~Model() {}
 
 EncodeResult Model::Encode(StringPiece normalized) const {
-  if (normalized.empty()) {
+  if (!status().ok() || normalized.empty()) {
     return {};
   }
 

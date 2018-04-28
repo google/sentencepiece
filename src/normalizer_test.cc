@@ -26,6 +26,12 @@ namespace {
 NormalizerSpec MakeDefaultSpec() { return Builder::GetNormalizerSpec("nfkc"); }
 }  // namespace
 
+TEST(NormalizerTest, NormalizeErrorTest) {
+  NormalizerSpec spec;
+  Normalizer normalizer(spec);
+  EXPECT_NOT_OK(normalizer.Normalize("test", nullptr, nullptr));
+}
+
 TEST(NormalizerTest, NormalizeTest) {
   auto spec = MakeDefaultSpec();
   const Normalizer normalizer(spec);
@@ -226,7 +232,8 @@ TEST(NormalizerTest, NormalizeFullTest) {
 
   {
     const std::string input = " I   saw a　 　girl　　";
-    normalizer.Normalize(input, &output, &n2i);
+    EXPECT_OK(normalizer.Normalize(input, &output, &n2i));
+    LOG(INFO) << output;
     EXPECT_EQ(WS "I" WS "saw" WS "a" WS "girl", output);
     const std::vector<size_t> expected = {1,  1,  1,       // WS (3byte)
                                           1,               // I
@@ -285,9 +292,27 @@ TEST(NormalizerTest, NormalizeFullTest) {
 TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest) {
   const std::string blob = Normalizer::EncodePrecompiledCharsMap("foo", "bar");
   StringPiece trie_blob, normalized_blob;
-  Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob, &normalized_blob);
+  EXPECT_OK(Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob,
+                                                  &normalized_blob));
   EXPECT_EQ("foo", trie_blob);
   EXPECT_EQ("bar", normalized_blob);
+
+  EXPECT_NOT_OK(Normalizer::DecodePrecompiledCharsMap("", &trie_blob,
+                                                      &normalized_blob));
+}
+
+TEST(NormalizerTest, StatusTest) {
+  NormalizerSpec spec;
+  {
+    const Normalizer normalizer(spec);
+    EXPECT_FALSE(normalizer.status().ok());
+  }
+
+  spec = MakeDefaultSpec();
+  {
+    const Normalizer normalizer(spec);
+    EXPECT_TRUE(normalizer.status().ok());
+  }
 }
 }  // namespace normalizer
 }  // namespace sentencepiece

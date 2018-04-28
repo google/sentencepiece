@@ -22,28 +22,14 @@ namespace bpe {
 
 Model::Model(const ModelProto &model_proto) {
   model_proto_ = &model_proto;
-
-  for (int i = 0; i < model_proto_->pieces_size(); ++i) {
-    const auto &sp = model_proto_->pieces(i);
-    CHECK(!sp.piece().empty());
-    if (sp.type() == ModelProto::SentencePiece::NORMAL) {
-      CHECK(sp.has_score());
-      port::InsertOrDie(&pieces_, sp.piece(), i);
-    } else if (sp.type() == ModelProto::SentencePiece::USER_DEFINED) {
-      // TODO(taku): implement USER_DEFINED symbol.
-      LOG(FATAL) << "User defined symbol is not supported in BPE";
-    } else {
-      port::InsertOrDie(&reserved_id_map_, sp.piece(), i);
-      if (sp.type() == ModelProto::SentencePiece::UNKNOWN) unk_id_ = i;
-    }
-  }
+  InitializePieces(false /* use_user_defined */);
 }
 
 Model::~Model() {}
 
 std::vector<std::pair<StringPiece, int>> Model::Encode(
     StringPiece normalized) const {
-  if (normalized.empty()) {
+  if (!status().ok() || normalized.empty()) {
     return {};
   }
 
@@ -110,7 +96,10 @@ std::vector<std::pair<StringPiece, int>> Model::Encode(
     ++index;
     symbols.emplace_back(s);
   }
-  CHECK(!symbols.empty());
+
+  if (symbols.empty()) {
+    return {};
+  }
 
   // Lookup all bigrams.
   for (size_t i = 1; i < symbols.size(); ++i) {

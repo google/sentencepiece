@@ -87,7 +87,21 @@ TEST(ModelTest, EncodeTest) {
   EXPECT_EQ("a", result[7].first);
   EXPECT_EQ("b", result[8].first);
   EXPECT_EQ("c", result[9].first);
+
+  // makes a broken utf-8
+  const std::string broken_utf8 = std::string("あ").substr(0, 1);
+  result = model.Encode(broken_utf8);
+  EXPECT_EQ(1, result.size());
+  EXPECT_EQ(broken_utf8, result[0].first);
 }
+
+TEST(CharModelTest, NotSupportedTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+  const Model model(model_proto);
+  EXPECT_EQ(NBestEncodeResult(), model.NBestEncode("test", 10));
+  EXPECT_EQ(EncodeResult(), model.SampleEncode("test", 0.1));
+}
+
 
 }  // namespace
 }  // namespace character

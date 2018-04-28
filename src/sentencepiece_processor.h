@@ -89,60 +89,104 @@ namespace normalizer {
 class Normalizer;
 }  // namespace normalizer
 
+namespace util {
+namespace error {
+enum Code {
+  OK = 0,
+  CANCELLED = 1,
+  UNKNOWN = 2,
+  INVALID_ARGUMENT = 3,
+  DEADLINE_EXCEEDED = 4,
+  NOT_FOUND = 5,
+  ALREADY_EXISTS = 6,
+  PERMISSION_DENIED = 7,
+  UNAUTHENTICATED = 16,
+  RESOURCE_EXHAUSTED = 8,
+  FAILED_PRECONDITION = 9,
+  ABORTED = 10,
+  OUT_OF_RANGE = 11,
+  UNIMPLEMENTED = 12,
+  INTERNAL = 13,
+  UNAVAILABLE = 14,
+  DATA_LOSS = 15,
+};
+}  // namespace error
+
+class Status {
+ public:
+  Status();
+  ~Status();
+  Status(error::Code code, const char *error_message);
+  Status(error::Code code, const std::string &error_message);
+  Status(const Status &s);
+  void operator=(const Status &s);
+  bool operator==(const Status &s) const;
+  bool operator!=(const Status &s) const;
+  inline bool ok() const { return rep_ == nullptr; }
+
+  const char *error_message() const;
+  error::Code code() const;
+  std::string ToString() const;
+
+  void IgnoreError();
+
+ private:
+  struct Rep;
+  std::unique_ptr<Rep> rep_;
+};
+}  // namespace util
+
 class SentencePieceProcessor {
  public:
   SentencePieceProcessor();
   virtual ~SentencePieceProcessor();
 
-  // Loads model from |filename|.
-  // Returns false if |filename| cannot be loaded.
-  virtual bool Load(const std::string &filename);
+  // Loads model from `filename`.
+  // Returns false if `filename` cannot be loaded.
+  virtual util::Status Load(const std::string &filename);
 
-  // Loads model from |is|.
-  // Returns false if |is| cannot be loaded.
-  virtual bool Load(std::istream *is);
+  // Loads model from `is`.
+  // Returns false if `is` cannot be loaded.
+  virtual util::Status Load(std::istream *is);
 
-  // Loads model from |filename|.
-  // Dies if |filename| cannot be loaded.
-  virtual void LoadOrDie(const std::string &filename);
-
-  // Loads model from |is|.
-  // Dies if |is| cannot be loaded.
-  virtual void LoadOrDie(std::istream *is);
+  // Returns the status. Encode/Decode methods are valid when status is OK.
+  virtual util::Status status() const;
 
   // Sets encode extra_option sequence.
-  virtual void SetEncodeExtraOptions(const std::string &extra_option);
+  virtual util::Status SetEncodeExtraOptions(const std::string &extra_option);
 
   // Sets decode extra_option sequence.
-  virtual void SetDecodeExtraOptions(const std::string &extra_option);
+  virtual util::Status SetDecodeExtraOptions(const std::string &extra_option);
 
   //////////////////////////////////////////////////////////////
   // Simple API.
   //
   // Given a UTF8 input, encodes it into a sequence of sentence pieces.
-  virtual void Encode(const std::string &input,
-                      std::vector<std::string> *pieces) const;
+  virtual util::Status Encode(const std::string &input,
+                              std::vector<std::string> *pieces) const;
 
   // Given a UTF8 input, encodes it into a sequence of ids.
-  virtual void Encode(const std::string &input, std::vector<int> *ids) const;
+  virtual util::Status Encode(const std::string &input,
+                              std::vector<int> *ids) const;
 
   // Given a sequence of pieces, decodes it into a detokenized output.
-  virtual void Decode(const std::vector<std::string> &pieces,
-                      std::string *detokenized) const;
+  virtual util::Status Decode(const std::vector<std::string> &pieces,
+                              std::string *detokenized) const;
 
   // Given a sequence of ids, decodes it into a detokenized output.
-  virtual void Decode(const std::vector<int> &ids,
-                      std::string *detokenized) const;
+  virtual util::Status Decode(const std::vector<int> &ids,
+                              std::string *detokenized) const;
 
   //////////////////////////////////////////////////////////////
   // NBest API.
   // Same as Encode, but returns nbest results.
-  virtual void NBestEncode(const std::string &input, int nbest_size,
-                           std::vector<std::vector<std::string>> *pieces) const;
+  virtual util::Status NBestEncode(
+      const std::string &input, int nbest_size,
+      std::vector<std::vector<std::string>> *pieces) const;
 
   // Same as Encode, but returns nbest results.
-  virtual void NBestEncode(const std::string &input, int nbest_size,
-                           std::vector<std::vector<int>> *ids) const;
+  virtual util::Status NBestEncode(const std::string &input, int nbest_size,
+                                   std::vector<std::vector<int>> *ids) const;
 
   //////////////////////////////////////////////////////////////
   // Sampling API
@@ -155,13 +199,13 @@ class SentencePieceProcessor {
   // (Viterbi segmentation) is more likely sampled when setting larger
   // alpha (alpha >= 1.0). When alpha is 0.0, one segmentation is
   // uniformly sampled from the nbest or lattice.
-  virtual void SampleEncode(const std::string &input, int nbest_size,
-                            float alpha,
-                            std::vector<std::string> *pieces) const;
+  virtual util::Status SampleEncode(const std::string &input, int nbest_size,
+                                    float alpha,
+                                    std::vector<std::string> *pieces) const;
 
   // Same as above, but returns a sequence of ids.
-  virtual void SampleEncode(const std::string &input, int nbest_size,
-                            float alpha, std::vector<int> *ids) const;
+  virtual util::Status SampleEncode(const std::string &input, int nbest_size,
+                                    float alpha, std::vector<int> *ids) const;
 
   //////////////////////////////////////////////////////////////
   // Advanced API returning SentencePieceText, which manages
@@ -169,23 +213,24 @@ class SentencePieceProcessor {
   // and internal sentencepiece sequence.
   //
   // Given a UTF8 input, encodes it into SentencePieceText.
-  virtual void Encode(const std::string &input, SentencePieceText *spt) const;
+  virtual util::Status Encode(const std::string &input,
+                              SentencePieceText *spt) const;
 
   // Same as above, but returns NBestSentencePieceText.
-  virtual void NBestEncode(const std::string &input, int nbest_size,
-                           NBestSentencePieceText *nbest_spt) const;
+  virtual util::Status NBestEncode(const std::string &input, int nbest_size,
+                                   NBestSentencePieceText *nbest_spt) const;
 
   // Same as above, but samples one segmentation from the hypotheses (Lattice).
-  virtual void SampleEncode(const std::string &input, int nbest_size,
-                            float alpha, SentencePieceText *spt) const;
+  virtual util::Status SampleEncode(const std::string &input, int nbest_size,
+                                    float alpha, SentencePieceText *spt) const;
 
   // Given a sequence of pieces, decodes it into SentencePieceText.
-  virtual void Decode(const std::vector<std::string> &pieces,
-                      SentencePieceText *spt) const;
+  virtual util::Status Decode(const std::vector<std::string> &pieces,
+                              SentencePieceText *spt) const;
 
   // Given a sequence of ids, decodes it into SentencePieceText.
-  virtual void Decode(const std::vector<int> &ids,
-                      SentencePieceText *spt) const;
+  virtual util::Status Decode(const std::vector<int> &ids,
+                              SentencePieceText *spt) const;
 
   //////////////////////////////////////////////////////////////
   // Vocabulary management methods.
@@ -194,31 +239,31 @@ class SentencePieceProcessor {
   // the size of vocabulary for NMT.
   virtual int GetPieceSize() const;
 
-  // Returns the vocab id of |piece|.
-  // Returns UNK(0) if |piece| is unknown.
+  // Returns the vocab id of `piece`.
+  // Returns UNK(0) if `piece` is unknown.
   virtual int PieceToId(const std::string &piece) const;
 
-  // Returns the string representation of vocab with |id|.
+  // Returns the string representation of vocab with `id`.
   virtual std::string IdToPiece(int id) const;
 
-  // Returns the score of |id|.
+  // Returns the score of `id`.
   // Usually score is an emission log probability of unigram language model.
   virtual float GetScore(int id) const;
 
-  // Returns true if |id| is unknown symbol.
+  // Returns true if `id` is unknown symbol.
   virtual bool IsUnknown(int id) const;
 
-  // Returns true if |id| is control symbol.
+  // Returns true if `id` is control symbol.
   virtual bool IsControl(int id) const;
 
 #ifndef SWIG
   //////////////////////////////////////////////////////////////
   // Model management.
   //
-  // Allows injection of a mock model instance. |model| is moved.
+  // Allows injection of a mock model instance. `model` is moved.
   void SetModel(std::unique_ptr<ModelInterface> &&model);
 
-  // Allows injection of a normalizer instance. |normalizer| is moved.
+  // Allows injection of a normalizer instance. `normalizer` is moved.
   void SetNormalizer(std::unique_ptr<normalizer::Normalizer> &&normalizer);
 #endif
 
@@ -229,16 +274,15 @@ class SentencePieceProcessor {
  private:
   enum ExtraOption { REVERSE, BOS, EOS };
 
-  static std::vector<ExtraOption> ParseExtraOptions(
-      const std::string &extra_option);
-  void ApplyExtraOptions(const std::vector<ExtraOption> &extra_options,
-                         SentencePieceText *spt) const;
-
-  void PopulateSentencePieceText(const std::string &input,
-                                 const std::string &normalized,
-                                 const std::vector<size_t> &norm_to_orig,
-                                 const EncodeResult &result,
+  static util::Status ParseExtraOptions(
+      const std::string &extra_option, std::vector<ExtraOption> *extra_options);
+  util::Status ApplyExtraOptions(const std::vector<ExtraOption> &extra_options,
                                  SentencePieceText *spt) const;
+
+  util::Status PopulateSentencePieceText(
+      const std::string &input, const std::string &normalized,
+      const std::vector<size_t> &norm_to_orig, const EncodeResult &result,
+      SentencePieceText *spt) const;
 
   std::unique_ptr<ModelInterface> model_;
   std::unique_ptr<normalizer::Normalizer> normalizer_;

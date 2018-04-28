@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
   if (FLAGS_normalization_rule_tsv.empty() && !FLAGS_model.empty()) {
     sentencepiece::SentencePieceProcessor sp;
-    sp.LoadOrDie(FLAGS_model);
+    sp.Load(FLAGS_model);
     spec = sp.model_proto().normalizer_spec();
   } else if (!FLAGS_normalization_rule_tsv.empty() && FLAGS_model.empty()) {
     const auto cmap = sentencepiece::normalizer::Builder::BuildMapFromFile(

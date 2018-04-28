@@ -2,16 +2,21 @@
 
 ## Load SentencePiece model
 To start working with the SentencePiece model, you will want to include the `sentencepiece_processor.h` header file.
-Then instantiate sentencepiece::SentencePieceProcessor class and calls `Load`or `LoadOrDie` method to load the model with file path or std::istream.
+Then instantiate sentencepiece::SentencePieceProcessor class and calls `Load` method to load the model with file path or std::istream.
 
 ```C++
 #include <sentencepiece_processor.h>
 
 sentencepiece::SentencePieceProcessor processor;
-processor.LoadOrDie("//path/to/model.model");
-// Or load from std::istream of anything
+const auto status = processor.Load("//path/to/model.model");
+if (!status.ok()) {
+   std::cerr << status.ToString() << std::endl;
+   // error
+}
+
+// You can also load a model from std::ifstream.
 // std::ifstream in("//path/to/model.model");
-// processor.LoadOrDie(in);
+// auto status = processor.Load(in);
 ```
 
 ## Tokenize text (preprocessing)
@@ -89,7 +94,7 @@ processor.IsControl(10);     // returns true if the given id is a control token.
 ```
 
 ## Extra Options
-Use `SetEncodeExtraOptions` and `SetDecodeExtraOptions` methods to set extra options for encoding and decoding respectively. These methods need to be called just after `Load/LoadOrDie` methods.
+Use `SetEncodeExtraOptions` and `SetDecodeExtraOptions` methods to set extra options for encoding and decoding respectively. These methods need to be called just after `Load` methods.
 
 ```C++
 processor.SetEncodeExtraOptions("bos:eos");   // add <s> and </s>.

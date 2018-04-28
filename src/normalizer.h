@@ -19,6 +19,7 @@
 #include <string>
 #include "common.h"
 #include "sentencepiece_model.pb.h"
+#include "sentencepiece_processor.h"
 #include "stringpiece.h"
 #include "third_party/darts_clone/darts.h"
 
@@ -42,6 +43,10 @@ class Normalizer {
   explicit Normalizer(const NormalizerSpec &spec);
   virtual ~Normalizer();
 
+  // Returns Status.
+  // Normalizes function is valid only when status is OK.
+  virtual util::Status status() const { return status_; }
+
   // Normalizes a plain utf8 string into an internal representation for
   // Sentencepiece model. |norm_to_orig| stores the byte-alignment from
   // normalized string to the original input.
@@ -51,8 +56,8 @@ class Normalizer {
   // - Adds a prefix space.
   // - Replaces a space with a meta symbol.
   // - Removing heading, tailing and other redundant spaces.
-  virtual void Normalize(StringPiece input, std::string *normalized,
-                         std::vector<size_t> *norm_to_orig) const;
+  virtual util::Status Normalize(StringPiece input, std::string *normalized,
+                                 std::vector<size_t> *norm_to_orig) const;
 
   // Returns a normalized string without alignments.
   // This function is used in sentencepiece training.
@@ -82,9 +87,9 @@ class Normalizer {
                                                StringPiece normalized);
 
   // Decodes blob into trie_blob and normalized string.
-  static void DecodePrecompiledCharsMap(StringPiece blob,
-                                        StringPiece *trie_blob,
-                                        StringPiece *normalized);
+  static util::Status DecodePrecompiledCharsMap(StringPiece blob,
+                                                StringPiece *trie_blob,
+                                                StringPiece *normalized);
 
   // Maximum size of the return value of Trie, which corresponds
   // to the maximum size of shared common prefix in the chars map.
@@ -95,10 +100,13 @@ class Normalizer {
 
   // "\0" delimitered output string.
   // the value of |trie_| stores pointers to this string.
-  const char *normalized_;
+  const char *normalized_ = nullptr;
 
   // Spec for normalization.
   const NormalizerSpec *spec_;
+
+  // Normalizer's status.
+  util::Status status_;
 };
 }  // namespace normalizer
 }  // namespace sentencepiece

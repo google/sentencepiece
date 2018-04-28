@@ -82,6 +82,13 @@ TEST(WordModelTest, EncodeTest) {
   EXPECT_EQ(WS "abc", result[2].first);
 }
 
+TEST(WordModelTest, NotSupportedTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+  const Model model(model_proto);
+  EXPECT_EQ(NBestEncodeResult(), model.NBestEncode("test", 10));
+  EXPECT_EQ(EncodeResult(), model.SampleEncode("test", 0.1));
+}
+
 }  // namespace
 }  // namespace word
 }  // namespace sentencepiece

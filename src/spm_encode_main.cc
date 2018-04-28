@@ -36,8 +36,8 @@ int main(int argc, char *argv[]) {
   CHECK_OR_HELP(model);
 
   sentencepiece::SentencePieceProcessor sp;
-  sp.LoadOrDie(FLAGS_model);
-  sp.SetEncodeExtraOptions(FLAGS_extra_options);
+  CHECK_OK(sp.Load(FLAGS_model));
+  CHECK_OK(sp.SetEncodeExtraOptions(FLAGS_extra_options));
 
   sentencepiece::io::OutputBuffer output(FLAGS_output);
 
@@ -56,51 +56,51 @@ int main(int argc, char *argv[]) {
 
   if (FLAGS_output_format == "piece") {
     process = [&](const std::string &line) {
-      sp.Encode(line, &sps);
+      CHECK_OK(sp.Encode(line, &sps));
       output.WriteLine(sentencepiece::string_util::Join(sps, " "));
     };
   } else if (FLAGS_output_format == "id") {
     process = [&](const std::string &line) {
-      sp.Encode(line, &ids);
+      CHECK_OK(sp.Encode(line, &ids));
       output.WriteLine(sentencepiece::string_util::Join(ids, " "));
     };
   } else if (FLAGS_output_format == "proto") {
     process = [&](const std::string &line) {
-      sp.Encode(line, &spt);
+      CHECK_OK(sp.Encode(line, &spt));
       output.WriteLine(spt.Utf8DebugString());
     };
   } else if (FLAGS_output_format == "sample_piece") {
     process = [&](const std::string &line) {
-      sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &sps);
+      CHECK_OK(sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &sps));
       output.WriteLine(sentencepiece::string_util::Join(sps, " "));
     };
   } else if (FLAGS_output_format == "sample_id") {
     process = [&](const std::string &line) {
-      sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &ids);
+      CHECK_OK(sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &ids));
       output.WriteLine(sentencepiece::string_util::Join(ids, " "));
     };
   } else if (FLAGS_output_format == "sample_proto") {
     process = [&](const std::string &line) {
-      sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &spt);
+      CHECK_OK(sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &spt));
       output.WriteLine(spt.Utf8DebugString());
     };
   } else if (FLAGS_output_format == "nbest_piece") {
     process = [&](const std::string &line) {
-      sp.NBestEncode(line, FLAGS_nbest_size, &nbest_sps);
+      CHECK_OK(sp.NBestEncode(line, FLAGS_nbest_size, &nbest_sps));
       for (const auto &result : nbest_sps) {
         output.WriteLine(sentencepiece::string_util::Join(result, " "));
       }
     };
   } else if (FLAGS_output_format == "nbest_id") {
     process = [&](const std::string &line) {
-      sp.NBestEncode(line, FLAGS_nbest_size, &nbest_ids);
+      CHECK_OK(sp.NBestEncode(line, FLAGS_nbest_size, &nbest_ids));
       for (const auto &result : nbest_ids) {
         output.WriteLine(sentencepiece::string_util::Join(result, " "));
       }
     };
   } else if (FLAGS_output_format == "nbest_proto") {
     process = [&](const std::string &line) {
-      sp.NBestEncode(line, FLAGS_nbest_size, &nbest_spt);
+      CHECK_OK(sp.NBestEncode(line, FLAGS_nbest_size, &nbest_spt));
       output.WriteLine(nbest_spt.Utf8DebugString());
     };
   } else {

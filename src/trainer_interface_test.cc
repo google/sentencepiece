@@ -27,6 +27,10 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   trainer_spec.set_model_prefix("model");
   trainer_spec.add_input("input");
 
+  // Calls the default method for better coverage.
+  TrainerInterface trainer(trainer_spec, normalizer_spec);
+  trainer.Train();
+
   auto IsValid = [&trainer_spec, &normalizer_spec](const std::string &str) {
     TrainerInterface trainer(trainer_spec, normalizer_spec);
     const string_util::UnicodeText text = string_util::UTF8ToUnicodeText(str);
@@ -51,6 +55,7 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_TRUE(IsValid("$10"));  // $ and 1 are both "common" script.
   EXPECT_FALSE(IsValid("$ABC"));
   EXPECT_FALSE(IsValid("ab\tbc"));  // "\t" is UPP boundary.
+  EXPECT_FALSE(IsValid("ab cd"));
 
   trainer_spec.set_split_by_whitespace(false);
   EXPECT_TRUE(IsValid(WS));
@@ -174,6 +179,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_eos_id(1);
     EXPECT_DEATH(TrainerInterface trainer(trainer_spec, normalizer_spec));
   }
+
 }
 
 TEST(TrainerInterfaceTest, SerializeTest) {

@@ -22,6 +22,7 @@
 
 #include "common.h"
 #include "stringpiece.h"
+#include "sentencepiece_processor.h"
 
 namespace sentencepiece {
 
@@ -45,6 +46,10 @@ class ModelInterface {
 
   virtual ~ModelInterface();
 
+  // Returns Status.
+  // Encode/Decode functions are valid only when status is OK.
+  virtual util::Status status() const { return status_; }
+
   virtual const ModelProto &model_proto() const { return *model_proto_; }
 
   // Given a normalized string, returns a sequence of sentence pieces with ids.
@@ -54,12 +59,12 @@ class ModelInterface {
   // The same as above, but returns nbest result with score.
   virtual NBestEncodeResult NBestEncode(StringPiece normalized,
                                         int nbest_size) const {
-    LOG(FATAL) << "Not implemented.";
+    LOG(ERROR) << "Not implemented.";
     return NBestEncodeResult();
   }
 
   virtual EncodeResult SampleEncode(StringPiece normalized, float alpha) const {
-    LOG(FATAL) << "Not implemented.";
+    LOG(ERROR) << "Not implemented.";
     return EncodeResult();
   }
 
@@ -87,6 +92,8 @@ class ModelInterface {
   virtual bool IsControl(int id) const;
 
  protected:
+  void InitializePieces(bool enable_user_defined);
+
   const ModelProto *model_proto_ = nullptr;
 
   // piece -> id map for normal pieces
@@ -97,6 +104,9 @@ class ModelInterface {
 
   // unknown id.
   int unk_id_ = 0;
+
+  // status.
+  util::Status status_;
 };
 }  // namespace sentencepiece
 #endif  // MODEL_INTERFACE_H_

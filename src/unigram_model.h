@@ -130,7 +130,7 @@ class ModelBase : public ModelInterface {
 
  protected:
   // Builds a Trie index.
-  void BuildTrie(std::vector<std::pair<std::string, int>> *pieces);
+  void BuildTrie(std::vector<std::pair<StringPiece, int>> *pieces);
 
   float min_score_;
   std::unique_ptr<Darts::DoubleArray> trie_;

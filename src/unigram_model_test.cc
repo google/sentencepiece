@@ -31,6 +31,12 @@ TEST(LatticeTest, SetSentenceTest) {
   EXPECT_EQ(0, lattice.size());
   EXPECT_EQ(0, lattice.utf8_size());
 
+  lattice.SetSentence("");
+  EXPECT_EQ(0, lattice.size());
+  EXPECT_EQ(0, lattice.utf8_size());
+  EXPECT_STREQ("", lattice.sentence());
+  EXPECT_STREQ("", lattice.surface(0));
+
   lattice.SetSentence("test");
   EXPECT_EQ(4, lattice.size());
   EXPECT_EQ(4, lattice.utf8_size());
@@ -219,7 +225,14 @@ TEST(LatticeTest, NBestTest) {
   EXPECT_EQ("A BC", GetTokenized(nbests[1]));
   EXPECT_EQ("AB C", GetTokenized(nbests[2]));
   EXPECT_EQ("A B C", GetTokenized(nbests[3]));
+
+  auto nbests0 = lattice.NBest(0);
+  EXPECT_TRUE(nbests0.empty());
+
+  auto nbests1 = lattice.NBest(1);
+  EXPECT_EQ(nbests1.size(), 1);
 }
+
 
 TEST(LatticeTest, PopulateMarginalTest) {
   Lattice lattice;
@@ -438,5 +451,32 @@ TEST(UnigramModelTest, PopulateNodesTest) {
   EXPECT_NEAR(0.2, lattice.begin_nodes(1)[0]->score, 0.001);
   EXPECT_NEAR(0.4, lattice.begin_nodes(1)[1]->score, 0.001);
 }
+
+TEST(UnigramModelTest, ModelNBestTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+
+  AddPiece(&model_proto, "a", 0.0);   // 3
+  AddPiece(&model_proto, "b", 0.0);   // 4
+  AddPiece(&model_proto, "c", 0.0);   // 5
+  AddPiece(&model_proto, "ab", 2.0);  // 6
+  AddPiece(&model_proto, "bc", 5.0);  // 7
+  AddPiece(&model_proto, "abc", 10.0);  // 8
+
+  const Model model(model_proto);
+
+  auto nbest = model.NBestEncode("", 10);
+  EXPECT_EQ(1, nbest.size());
+  EXPECT_TRUE(nbest[0].first.empty());
+  EXPECT_EQ(0.0, nbest[0].second);
+
+  nbest = model.NBestEncode("abc", 10);
+  EXPECT_EQ(4, nbest.size());
+
+  auto sample = model.SampleEncode("", 0.1);
+  EXPECT_EQ(0, sample.size());
+  sample = model.SampleEncode("abc", 0.1);
+  EXPECT_FALSE(sample.empty());
+}
+
 }  // namespace unigram
 }  // namespace sentencepiece
