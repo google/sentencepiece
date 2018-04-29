@@ -69,6 +69,22 @@ special symbol. Tokenized sequences do not preserve the necessary information to
 * (en) Hello world.   → [Hello] [World] [.]   \(A space between Hello and World\)
 * (ja) こんにちは世界。  → [こんにちは] [世界] [。] \(No space between こんにちは and 世界\)
 
+## Comparisons with other implementations
+|Feature|SentencePiece|[subword-nmt](https://github.com/rsennrich/subword-nmt)|[WordPiece](https://arxiv.org/pdf/1609.08144.pdf)|
+|:---|:---:|:---:|:---:|
+|Supported algorithm|BPE, unigram, char, word|BPE|BPE*|
+|OSS?|Yes|Yes|Google internal|
+|[Subword regularization](http://acl2018.org/conference/accepted-papers/)|Yes (unigram only)|No|No|
+|Supported platform|C++/Python|Python|C++|
+|Python Library (pip)|Yes|No|N/A|
+|C++ Library|Yes|No|N/A|
+|Pre-segmentation required?|No|Yes|Yes|
+|Customizable normalization (NFKC)|Yes|No|N/A|
+|Vocab <=> id management|Yes|No|N/A|
+|Direct encoding to ids|Yes|No|N/A|
+
+Note that BPE algorithm used in WordPiece is slightly different from the original BPE.
+
 ## Python module
 SentencePiece provides Python wrapper that supports both SentencePiece training and segmentation.
 For Linux (x64) environment, you can install Python binary package of SentencePiece with.
