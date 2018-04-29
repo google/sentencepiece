@@ -8,8 +8,7 @@ is predetermined prior to the neural model training. SentencePiece implements
 **subword units** (e.g., **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]) and 
 **unigram language model** [[Kudo.](http://acl2018.org/conference/accepted-papers/)])
 with the extension of direct training from raw sentences. 
-Subword segmentation with unigram language model supports probabilistic subword sampling for **subword regularization** [[Kudo.](http://acl2018.org/conference/accepted-papers\
-/)], a simple technique to improve the robustness of NMT model. SentencePiece allows us to make a purely end-to-end system that does not depend on language-specific pre/postp\
+Subword segmentation with unigram language model supports probabilistic subword sampling for **subword regularization** [[Kudo.](http://acl2018.org/conference/accepted-papers/)], a simple technique to improve the robustness of NMT model. SentencePiece allows us to make a purely end-to-end system that does not depend on language-specific pre/postp\
 rocessing.
 
 **This is not an official Google product.**
