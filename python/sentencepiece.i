@@ -61,6 +61,20 @@ PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
 #endif
 }
 
+int ToSwigError(sentencepiece::util::error::Code code) {
+  switch (code) {
+    case sentencepiece::util::error::NOT_FOUND:
+      return SWIG_IOError;
+    case sentencepiece::util::error::OUT_OF_RANGE:
+      return SWIG_IndexError;
+    case sentencepiece::util::error::INVALID_ARGUMENT:
+      return SWIG_SyntaxError;
+    default:
+      return SWIG_RuntimeError;
+  }
+  return SWIG_RuntimeError;
+}
+
 #define THROW_IF_ERROR(expr)                            \
   do {                                                  \
     const sentencepiece::util::Status _status = expr;   \
@@ -73,13 +87,14 @@ PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
 %exception {
   try { $action }
   catch (const sentencepiece::util::Status &status) {
-    SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+    SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
   }
 }
 
 %ignore sentencepiece::util::Status;
 %ignore sentencepiece::util::error::Code;
 
+%ignore sentencepiece::SentencePieceProcessor::status() const;
 %ignore sentencepiece::SentencePieceProcessor::Encode(std::string const &, std::vector<std::string>*) const;
 %ignore sentencepiece::SentencePieceProcessor::Encode(std::string const &, std::vector<int>*) const;
 %ignore sentencepiece::SentencePieceProcessor::Encode(std::string const &, SentencePieceText *) const;
@@ -228,7 +243,7 @@ PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
 
 %typemap(out) sentencepiece::util::Status {
   if (!$1.ok()) {
-    SWIG_exception(SWIG_RuntimeError, $1.ToString().c_str());
+    SWIG_exception(ToSwigError($1.code()), $1.ToString().c_str());
   }
   $result = SWIG_From_bool($1.ok());
 }

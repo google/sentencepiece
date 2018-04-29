@@ -117,9 +117,6 @@ class SentencePieceProcessor(_object):
     def Load(self, filename):
         return _sentencepiece.SentencePieceProcessor_Load(self, filename)
 
-    def status(self):
-        return _sentencepiece.SentencePieceProcessor_status(self)
-
     def SetEncodeExtraOptions(self, extra_option):
         return _sentencepiece.SentencePieceProcessor_SetEncodeExtraOptions(self, extra_option)
 
