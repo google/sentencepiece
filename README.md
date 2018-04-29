@@ -5,15 +5,18 @@
 SentencePiece is an unsupervised text tokenizer and detokenizer mainly for
 Neural Network-based text generation systems where the vocabulary size
 is predetermined prior to the neural model training. SentencePiece implements
-**sub-word units** (also known as **wordpieces** [[Wu et al.](https://arxiv.org/pdf/1609.08144.pdf)]
-[[Schuster et al.](https://static.googleusercontent.com/media/research.google.com/ja//pubs/archive/37842.pdf)]
-and **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]) with the extension of direct
-training from raw sentences. SentencePiece allows us to make a purely end-to-end
-system that does not depend on language-specific pre/postprocessing.
+**subword units** (e.g., **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]) and 
+**unigram language model** [[Kudo.](http://acl2018.org/conference/accepted-papers/)])
+with the extension of direct training from raw sentences. 
+Subword segmentation with unigram language model supports probabilistic subword sampling for **subword regularization** [[Kudo.](http://acl2018.org/conference/accepted-papers\
+/)], a simple technique to improve the robustness of NMT model. SentencePiece allows us to make a purely end-to-end system that does not depend on language-specific pre/postp\
+rocessing.
 
 **This is not an official Google product.**
 
 ## Technical highlights
+- **Multiple subword algorithms**: **BPE**  [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](http://acl2018.org/conference/accepted-papers/)] are supported.
+- **Subword regularization**: SentencePiece implements subwrod sampling for subword regularization which helps to improve the robustness and accuracy of NMT model (Available only on unigram language model.)
 - **Purely data driven**: SentencePiece trains tokenization and detokenization
   models from only raw sentences. No pre-tokenization ([Moses tokenizer](https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/tokenizer.perl)/[MeCab](http://taku910.github.io/mecab/)/[KyTea](http://www.phontron.com/kytea/)) is required.
 - **Language independent**: SentencePiece treats the sentences just as sequences of Unicode characters. There is no language-dependent logic.
