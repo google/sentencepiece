@@ -3178,6 +3178,20 @@ PyObject* MakePyOutputString(const std::string& output, PyObject *resultobj) {
 #endif
 }
 
+int ToSwigError(sentencepiece::util::error::Code code) {
+  switch (code) {
+    case sentencepiece::util::error::NOT_FOUND:
+      return SWIG_IOError;
+    case sentencepiece::util::error::OUT_OF_RANGE:
+      return SWIG_IndexError;
+    case sentencepiece::util::error::INVALID_ARGUMENT:
+      return SWIG_SyntaxError;
+    default:
+      return SWIG_RuntimeError;
+  }
+  return SWIG_RuntimeError;
+}
+
 #define THROW_IF_ERROR(expr)                            \
   do {                                                  \
     const sentencepiece::util::Status _status = expr;   \
@@ -3480,7 +3494,7 @@ SWIGINTERN PyObject *_wrap_new_SentencePieceProcessor(PyObject *SWIGUNUSEDPARM(s
       result = (sentencepiece::SentencePieceProcessor *)new sentencepiece::SentencePieceProcessor(); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_sentencepiece__SentencePieceProcessor, SWIG_POINTER_NEW |  0 );
@@ -3508,7 +3522,7 @@ SWIGINTERN PyObject *_wrap_delete_SentencePieceProcessor(PyObject *SWIGUNUSEDPAR
       delete arg1; 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   resultobj = SWIG_Py_Void();
@@ -3548,12 +3562,12 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_Load(PyObject *SWIGUNUSEDPARM(
       result = (arg1)->Load((std::string const &)*arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
     if (!(&result)->ok()) {
-      SWIG_exception(SWIG_RuntimeError, (&result)->ToString().c_str());
+      SWIG_exception(ToSwigError((&result)->code()), (&result)->ToString().c_str());
     }
     resultobj = SWIG_From_bool((&result)->ok());
   }
@@ -3565,40 +3579,6 @@ fail:
   {
     delete arg2;
   }
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_SentencePieceProcessor_status(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject * obj0 = 0 ;
-  sentencepiece::util::Status result;
-  
-  if (!PyArg_ParseTuple(args,(char *)"O:SentencePieceProcessor_status",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor_status" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor const *""'"); 
-  }
-  arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
-  {
-    try {
-      result = ((sentencepiece::SentencePieceProcessor const *)arg1)->status(); 
-    }
-    catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
-    }
-  }
-  {
-    if (!(&result)->ok()) {
-      SWIG_exception(SWIG_RuntimeError, (&result)->ToString().c_str());
-    }
-    resultobj = SWIG_From_bool((&result)->ok());
-  }
-  return resultobj;
-fail:
   return NULL;
 }
 
@@ -3633,12 +3613,12 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SetEncodeExtraOptions(PyObject
       result = (arg1)->SetEncodeExtraOptions((std::string const &)*arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
     if (!(&result)->ok()) {
-      SWIG_exception(SWIG_RuntimeError, (&result)->ToString().c_str());
+      SWIG_exception(ToSwigError((&result)->code()), (&result)->ToString().c_str());
     }
     resultobj = SWIG_From_bool((&result)->ok());
   }
@@ -3684,12 +3664,12 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SetDecodeExtraOptions(PyObject
       result = (arg1)->SetDecodeExtraOptions((std::string const &)*arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
     if (!(&result)->ok()) {
-      SWIG_exception(SWIG_RuntimeError, (&result)->ToString().c_str());
+      SWIG_exception(ToSwigError((&result)->code()), (&result)->ToString().c_str());
     }
     resultobj = SWIG_From_bool((&result)->ok());
   }
@@ -3724,7 +3704,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_GetPieceSize(PyObject *SWIGUNU
       result = (int)((sentencepiece::SentencePieceProcessor const *)arg1)->GetPieceSize(); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
@@ -3764,7 +3744,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_PieceToId(PyObject *SWIGUNUSED
       result = (int)((sentencepiece::SentencePieceProcessor const *)arg1)->PieceToId((std::string const &)*arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
@@ -3808,7 +3788,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_IdToPiece(PyObject *SWIGUNUSED
       result = ((sentencepiece::SentencePieceProcessor const *)arg1)->IdToPiece(arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
@@ -3849,7 +3829,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_GetScore(PyObject *SWIGUNUSEDP
       result = (float)((sentencepiece::SentencePieceProcessor const *)arg1)->GetScore(arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   resultobj = SWIG_From_float(static_cast< float >(result));
@@ -3887,7 +3867,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_IsUnknown(PyObject *SWIGUNUSED
       result = (bool)((sentencepiece::SentencePieceProcessor const *)arg1)->IsUnknown(arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   resultobj = SWIG_From_bool(static_cast< bool >(result));
@@ -3925,7 +3905,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_IsControl(PyObject *SWIGUNUSED
       result = (bool)((sentencepiece::SentencePieceProcessor const *)arg1)->IsControl(arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   resultobj = SWIG_From_bool(static_cast< bool >(result));
@@ -3965,7 +3945,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_Encode(PyObject *SWIGUNUSEDPAR
       result = sentencepiece_SentencePieceProcessor_Encode((sentencepiece::SentencePieceProcessor const *)arg1,(std::string const &)*arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
@@ -4017,7 +3997,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_EncodeAsPieces(PyObject *SWIGU
       result = sentencepiece_SentencePieceProcessor_EncodeAsPieces((sentencepiece::SentencePieceProcessor const *)arg1,(std::string const &)*arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
@@ -4069,7 +4049,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_EncodeAsIds(PyObject *SWIGUNUS
       result = sentencepiece_SentencePieceProcessor_EncodeAsIds((sentencepiece::SentencePieceProcessor const *)arg1,(std::string const &)*arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
@@ -4129,7 +4109,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_NBestEncode(PyObject *SWIGUNUS
       result = sentencepiece_SentencePieceProcessor_NBestEncode((sentencepiece::SentencePieceProcessor const *)arg1,(std::string const &)*arg2,arg3); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
@@ -4194,7 +4174,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_NBestEncodeAsPieces(PyObject *
       result = sentencepiece_SentencePieceProcessor_NBestEncodeAsPieces((sentencepiece::SentencePieceProcessor const *)arg1,(std::string const &)*arg2,arg3); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
@@ -4259,7 +4239,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_NBestEncodeAsIds(PyObject *SWI
       result = sentencepiece_SentencePieceProcessor_NBestEncodeAsIds((sentencepiece::SentencePieceProcessor const *)arg1,(std::string const &)*arg2,arg3); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
@@ -4332,7 +4312,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SampleEncode(PyObject *SWIGUNU
       result = sentencepiece_SentencePieceProcessor_SampleEncode((sentencepiece::SentencePieceProcessor const *)arg1,(std::string const &)*arg2,arg3,arg4); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
@@ -4402,7 +4382,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SampleEncodeAsPieces(PyObject 
       result = sentencepiece_SentencePieceProcessor_SampleEncodeAsPieces((sentencepiece::SentencePieceProcessor const *)arg1,(std::string const &)*arg2,arg3,arg4); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
@@ -4472,7 +4452,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SampleEncodeAsIds(PyObject *SW
       result = sentencepiece_SentencePieceProcessor_SampleEncodeAsIds((sentencepiece::SentencePieceProcessor const *)arg1,(std::string const &)*arg2,arg3,arg4); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
@@ -4535,7 +4515,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_Decode(PyObject *SWIGUNUSEDPAR
       result = sentencepiece_SentencePieceProcessor_Decode((sentencepiece::SentencePieceProcessor const *)arg1,(std::vector< std::string > const &)*arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
@@ -4596,7 +4576,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_DecodePieces(PyObject *SWIGUNU
       result = sentencepiece_SentencePieceProcessor_DecodePieces((sentencepiece::SentencePieceProcessor const *)arg1,(std::vector< std::string > const &)*arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
@@ -4656,7 +4636,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_DecodeIds(PyObject *SWIGUNUSED
       result = sentencepiece_SentencePieceProcessor_DecodeIds((sentencepiece::SentencePieceProcessor const *)arg1,(std::vector< int > const &)*arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   {
@@ -4694,7 +4674,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor___len__(PyObject *SWIGUNUSEDPA
       result = (int)sentencepiece_SentencePieceProcessor___len__(arg1); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
@@ -4734,7 +4714,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor___getitem__(PyObject *SWIGUNUS
       result = (int)sentencepiece_SentencePieceProcessor___getitem__((sentencepiece::SentencePieceProcessor const *)arg1,(std::string const &)*arg2); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
@@ -4777,7 +4757,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceTrainer_Train(PyObject *SWIGUNUSEDPARM(s
       sentencepiece::SentencePieceTrainer::Train((std::string const &)*arg1); 
     }
     catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(SWIG_RuntimeError, status.ToString().c_str());
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
   resultobj = SWIG_Py_Void();
@@ -4805,7 +4785,6 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_SentencePieceProcessor", _wrap_new_SentencePieceProcessor, METH_VARARGS, NULL},
 	 { (char *)"delete_SentencePieceProcessor", _wrap_delete_SentencePieceProcessor, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_Load", _wrap_SentencePieceProcessor_Load, METH_VARARGS, NULL},
-	 { (char *)"SentencePieceProcessor_status", _wrap_SentencePieceProcessor_status, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_SetEncodeExtraOptions", _wrap_SentencePieceProcessor_SetEncodeExtraOptions, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_SetDecodeExtraOptions", _wrap_SentencePieceProcessor_SetDecodeExtraOptions, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_GetPieceSize", _wrap_SentencePieceProcessor_GetPieceSize, METH_VARARGS, NULL},
