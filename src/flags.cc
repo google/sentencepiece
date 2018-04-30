@@ -14,6 +14,7 @@
 
 #include "flags.h"
 #include "common.h"
+#include "util.h"
 
 #include <algorithm>
 #include <cctype>
@@ -44,23 +45,6 @@ FlagMap *GetFlagMap() {
   return &flag_map;
 }
 
-bool IsTrue(const std::string &value) {
-  const char *kTrue[] = {"1", "t", "true", "y", "yes"};
-  const char *kFalse[] = {"0", "f", "false", "n", "no"};
-  std::string lower_value = value;
-  std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(),
-                 ::tolower);
-  for (size_t i = 0; i < 5; ++i) {
-    if (lower_value == kTrue[i]) {
-      return true;
-    } else if (lower_value == kFalse[i]) {
-      return false;
-    }
-  }
-  LOG(FATAL) << "cannot parse boolean value: " << value;
-  return false;
-}
-
 bool SetFlag(const std::string &name, const std::string &value) {
   auto it = GetFlagMap()->find(name);
   if (it == GetFlagMap()->end()) {
@@ -85,31 +69,26 @@ bool SetFlag(const std::string &name, const std::string &value) {
     }
   }
 
+#define DEFINE_ARG(FLAG_TYPE, CPP_TYPE)                        \
+  case FLAG_TYPE: {                                            \
+    CPP_TYPE *s = reinterpret_cast<CPP_TYPE *>(flag->storage); \
+    CHECK(string_util::lexical_cast<CPP_TYPE>(v, s));          \
+    break;                                                     \
+  }
+
   switch (flag->type) {
-    case I:
-      *reinterpret_cast<int32 *>(flag->storage) = atoi(v.c_str());
-      break;
-    case B:
-      *(reinterpret_cast<bool *>(flag->storage)) = IsTrue(v);
-      break;
-    case I64:
-      *reinterpret_cast<int64 *>(flag->storage) = atoll(v.c_str());
-      break;
-    case U64:
-      *reinterpret_cast<uint64 *>(flag->storage) = atoll(v.c_str());
-      break;
-    case D:
-      *reinterpret_cast<double *>(flag->storage) = strtod(v.c_str(), nullptr);
-      break;
-    case S:
-      *reinterpret_cast<std::string *>(flag->storage) = v;
-      break;
+    DEFINE_ARG(I, int32);
+    DEFINE_ARG(B, bool);
+    DEFINE_ARG(I64, int64);
+    DEFINE_ARG(U64, uint64);
+    DEFINE_ARG(D, double);
+    DEFINE_ARG(S, std::string);
     default:
       break;
   }
 
   return true;
-}
+}  // namespace
 
 bool CommandLineGetFlag(int argc, char **argv, std::string *key,
                         std::string *value, int *used_args) {

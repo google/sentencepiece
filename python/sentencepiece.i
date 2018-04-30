@@ -112,9 +112,13 @@ int ToSwigError(sentencepiece::util::error::Code code) {
 %ignore sentencepiece::SentencePieceProcessor::Load(std::istream *);
 %ignore sentencepiece::SentencePieceProcessor::LoadOrDie(std::istream *);
 %ignore sentencepiece::SentencePieceProcessor::model_proto();
-%ignore sentencepiece::SentencePieceTrainer::Train(int, char **);
 %ignore sentencepiece::SentencePieceTrainer::Train(const TrainerSpec &);
 %ignore sentencepiece::SentencePieceTrainer::Train(const TrainerSpec &, const NormalizerSpec &);
+%ignore sentencepiece::SentencePieceTrainer::MergeSpecsFromArgs(const std::string &,
+                                                                TrainerSpec *, NormalizerSpec *);
+%ignore sentencepiece::SentencePieceTrainer::SetProtoField(const std::string &,
+                                                           const std::string &,
+                                                           google::protobuf::Message *message);
 
 %extend sentencepiece::SentencePieceProcessor {
   std::vector<std::string> Encode(const std::string& input) const {

@@ -175,6 +175,12 @@ message NormalizerSpec {
   // This field must be true to train sentence piece model.
   optional bool escape_whitespaces = 5 [ default = true ];
 
+  // Custom normalization rule file in TSV format.
+  // https://github.com/google/sentencepiece/blob/master/doc/normalization.md
+  // This field is only used in SentencePieceTrainer::Train() method, which
+  // compiles the rule into the binary rule stored in `precompiled_charsmap`.
+  optional string normalization_rule_tsv = 6;
+
   // Customized extensions: the range of field numbers
   // are open to third-party extensions.
   extensions 200 to max;

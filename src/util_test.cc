@@ -18,6 +18,31 @@
 
 namespace sentencepiece {
 
+TEST(UtilTest, LexicalCastTest) {
+  bool b = false;
+  EXPECT_TRUE(string_util::lexical_cast<bool>("true", &b));
+  EXPECT_TRUE(b);
+  EXPECT_TRUE(string_util::lexical_cast<bool>("false", &b));
+  EXPECT_FALSE(b);
+  EXPECT_FALSE(string_util::lexical_cast<bool>("UNK", &b));
+
+  int32 n = 0;
+  EXPECT_TRUE(string_util::lexical_cast<int32>("123", &n));
+  EXPECT_EQ(123, n);
+  EXPECT_TRUE(string_util::lexical_cast<int32>("-123", &n));
+  EXPECT_EQ(-123, n);
+  EXPECT_FALSE(string_util::lexical_cast<int32>("UNK", &n));
+
+  double d = 0.0;
+  EXPECT_TRUE(string_util::lexical_cast<double>("123.4", &d));
+  EXPECT_NEAR(123.4, d, 0.001);
+  EXPECT_FALSE(string_util::lexical_cast<double>("UNK", &d));
+
+  std::string s;
+  EXPECT_TRUE(string_util::lexical_cast<std::string>("123.4", &s));
+  EXPECT_EQ("123.4", s);
+}
+
 TEST(UtilTest, CheckNotNullTest) {
   int a = 0;
   CHECK_NOTNULL(&a);
