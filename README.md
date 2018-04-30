@@ -24,10 +24,25 @@ rocessing.
 - **Direct vocabulary id generation**: SentencePiece manages vocabulary to id mapping and can directly generate vocabulary id sequences from raw sentences.
 - **NFKC-based normalization**: SentencePiece performs NFKC-based text normalization.
 
+## Comparisons with other implementations
+|Feature|SentencePiece|[subword-nmt](https://github.com/rsennrich/subword-nmt)|[WordPiece](https://arxiv.org/pdf/1609.08144.pdf)|
+|:---|:---:|:---:|:---:|
+|Supported algorithm|BPE, unigram, char, word|BPE|BPE*|
+|OSS?|Yes|Yes|Google internal|
+|[Subword regularization](http://acl2018.org/conference/accepted-papers/)|Yes (unigram only)|No|No|
+|Python Library (pip)|Yes|No|N/A|
+|C++ Library|Yes|No|N/A|
+|Pre-segmentation required?|No|Yes|Yes|
+|Customizable normalization (NFKC)|Yes|No|N/A|
+|Vocab <=> id management|Yes|No|N/A|
+|Direct encoding to ids|Yes|No|N/A|
+
+Note that BPE algorithm used in WordPiece is slightly different from the original BPE.
+
 ## Overview
 ### What is SentencePiece?
-SentencePiece is an unsupervised text tokenizer and detokenizer designed mainly for Neural Network-based text generation, for example Neural Network Machine Translation. SentencePiece is a re-implementation of **sub-word units** (also known as **wordpieces** [[Wu et al.](https://arxiv.org/pdf/1609.08144.pdf)][[Schuster et al.](https://static.googleusercontent.com/media/research.google.com/ja//pubs/archive/37842.pdf)] and **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]). Unlike previous sub-word approaches that train tokenizers from pretokenized sentences, SentencePiece directly trains the tokenizer and detokenizer from raw sentences.
-SentencePiece might seem like a sort of unsupervised word segmentation, but there are several differences and constraints in SentencePiece.
+SentencePiece is an unsupervised text tokenizer and detokenizer designed mainly for Neural Network-based text generation, for example Neural Network Machine Translation. SentencePiece is a re-implementation of **sub-word units** (e.g., **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]) and 
+**unigram language model** [[Kudo.](http://acl2018.org/conference/accepted-papers/)]). Unlike previous sub-word approaches that train tokenizers from pretokenized sentences, SentencePiece directly trains the tokenizer and detokenizer from raw sentences. SentencePiece might seem like a sort of unsupervised word segmentation, but there are several differences and constraints in SentencePiece.
 
 #### The number of unique tokens is predetermined
 Neural Machine Translation models typically operate with a fixed
@@ -69,23 +84,10 @@ special symbol. Tokenized sequences do not preserve the necessary information to
 * (en) Hello world.   → [Hello] [World] [.]   \(A space between Hello and World\)
 * (ja) こんにちは世界。  → [こんにちは] [世界] [。] \(No space between こんにちは and 世界\)
 
-## Comparisons with other implementations
-|Feature|SentencePiece|[subword-nmt](https://github.com/rsennrich/subword-nmt)|[WordPiece](https://arxiv.org/pdf/1609.08144.pdf)|
-|:---|:---:|:---:|:---:|
-|Supported algorithm|BPE, unigram, char, word|BPE|BPE*|
-|OSS?|Yes|Yes|Google internal|
-|[Subword regularization](http://acl2018.org/conference/accepted-papers/)|Yes (unigram only)|No|No|
-|Supported platform|C++/Python|Python|C++|
-|Python Library (pip)|Yes|No|N/A|
-|C++ Library|Yes|No|N/A|
-|Pre-segmentation required?|No|Yes|Yes|
-|Customizable normalization (NFKC)|Yes|No|N/A|
-|Vocab <=> id management|Yes|No|N/A|
-|Direct encoding to ids|Yes|No|N/A|
 
-Note that BPE algorithm used in WordPiece is slightly different from the original BPE.
+## Installation
 
-## Python module
+### Python module
 SentencePiece provides Python wrapper that supports both SentencePiece training and segmentation.
 For Linux (x64) environment, you can install Python binary package of SentencePiece with.
 
@@ -95,8 +97,7 @@ For Linux (x64) environment, you can install Python binary package of SentencePi
 
 For more detail, see [Python module](python/README.md)
 
-
-## Required packages (C++)
+### C++ (from source)
 The following tools and libraries are required to build SentencePiece:
 
 * GNU autotools (autoconf automake libtool)
@@ -137,7 +138,7 @@ If want to use self-prepared protobuf library, setup below environment variables
 % export PROTOBUF_CFLAGS="-I$PROTOBUF/include -D_THREAD_SAFE" 
 ```
 
-## Build and Install SentencePiece
+### Build and Install SentencePiece
 ```
 % cd /path/to/sentencepiece
 % ./autogen.sh
@@ -147,7 +148,8 @@ If want to use self-prepared protobuf library, setup below environment variables
 % sudo make install
 $ sudo ldconfig -v
 ```
-## Train SentencePiece Model
+## Usage instructions
+### Train SentencePiece Model
 ```
 % spm_train --input=<input> --model_prefix=<model_name> --vocab_size=8000 --model_type=<type>
 ```
@@ -162,7 +164,7 @@ Note that `spm_train` loads only the first `--input_sentence_size` sentences (de
 
 Use `--help` flag to display all parameters for training.
 
-## Encode raw text into sentence pieces/ids
+### Encode raw text into sentence pieces/ids
 ```
 % spm_encode --model=<model_file> --output_format=piece < input > output
 % spm_encode --model=<model_file> --output_format=id < input > output
@@ -181,7 +183,7 @@ SentencePiece supports nbest segmentation and segmentation sampling with `--outp
 % spm_encode --model=<model_file> --output_format=nbest_id --nbest_size=10 < input > output
 ```
 
-## Decode sentence pieces/ids into raw text
+### Decode sentence pieces/ids into raw text
 ```
 % spm_decode --model=<model_file> --input_format=piece < input > output
 % spm_decode --model=<model_file> --input_format=id < input > output
@@ -191,7 +193,7 @@ Use `--extra_options` flag to decode the text in reverse order.
 % spm_decode --extra_options=reverse < input > output
 ```
 
-## End-to-End Example
+### End-to-End Example
 ```
 % spm_train --input=data/botchan.txt --model_prefix=m --vocab_size=1000
 unigram_model_trainer.cc(494) LOG(INFO) Starts training with :
@@ -212,13 +214,13 @@ I saw a girl with a telescope.
 ```
 You can find that the original input sentence is restored from the vocabulary id sequence.
 
-## Export vocabulary list
+### Export vocabulary list
 ```
 % spm_export_vocab --model=<model_file> --output=<output file>
 ```
 ```<output file>``` stores a list of vocabulary and emission log probabilities. The vocabulary id corresponds to the line number in this file.
 
-## Redefine special meta tokens
+### Redefine special meta tokens
   By default, SentencePiece uses Unknown (&lt;unk&gt;), BOS (&lt;s&gt;) and EOS (&lt;/s&gt;) tokens which have the ids of 0, 1, and 2 respectively. We can redefine this mapping in training phase as follows.
   
 ```
