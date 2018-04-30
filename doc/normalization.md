@@ -2,10 +2,10 @@
 By default, SentencePiece normalizes the input sentence with a variant of Unicode
 [NFKC](https://en.wikipedia.org/wiki/Unicode_equivalence).
 
-SentencePiece framework allows us to define custom normalization rule, which is stored in the model file.
+SentencePiece allows us to define custom normalization rule, which is stored in the model file.
 
 ## Use pre-defined normalization rule
-SentencePiece framework provides the following pre-defined normalization rule. It is recommended to use one of them unless you have any special reasons.
+SentencePiece provides the following pre-defined normalization rule. It is recommended to use one of them unless you have any special reasons.
 
 * **nfkc**:  [NFKC](https://en.wikipedia.org/wiki/Unicode_equivalence) normalization (default)
 * **identity**: no normalization
