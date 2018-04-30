@@ -201,8 +201,8 @@ class SentencePieceTrainer(_object):
 SentencePieceTrainer_swigregister = _sentencepiece.SentencePieceTrainer_swigregister
 SentencePieceTrainer_swigregister(SentencePieceTrainer)
 
-def SentencePieceTrainer_Train(arg):
-    return _sentencepiece.SentencePieceTrainer_Train(arg)
+def SentencePieceTrainer_Train(args):
+    return _sentencepiece.SentencePieceTrainer_Train(args)
 SentencePieceTrainer_Train = _sentencepiece.SentencePieceTrainer_Train
 
 # This file is compatible with both classic and new-style classes.

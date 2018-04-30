@@ -37,6 +37,52 @@ std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
 // String utilities
 namespace string_util {
 
+inline std::string ToLower(StringPiece arg) {
+  std::string lower_value = arg.ToString();
+  std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(),
+                 ::tolower);
+  return lower_value;
+}
+
+inline std::string ToUpper(StringPiece arg) {
+  std::string upper_value = arg.ToString();
+  std::transform(upper_value.begin(), upper_value.end(), upper_value.begin(),
+                 ::toupper);
+  return upper_value;
+}
+
+template <typename Target>
+inline bool lexical_cast(StringPiece arg, Target *result) {
+  std::stringstream ss;
+  return (ss << arg.data() && ss >> *result);
+}
+
+template <>
+inline bool lexical_cast(StringPiece arg, bool *result) {
+  const char *kTrue[] = {"1", "t", "true", "y", "yes"};
+  const char *kFalse[] = {"0", "f", "false", "n", "no"};
+  std::string lower_value = arg.ToString();
+  std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(),
+                 ::tolower);
+  for (size_t i = 0; i < 5; ++i) {
+    if (lower_value == kTrue[i]) {
+      *result = true;
+      return true;
+    } else if (lower_value == kFalse[i]) {
+      *result = false;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+template <>
+inline bool lexical_cast(StringPiece arg, std::string *result) {
+  *result = arg.ToString();
+  return true;
+}
+
 std::vector<std::string> Split(const std::string &str,
                                const std::string &delim);
 

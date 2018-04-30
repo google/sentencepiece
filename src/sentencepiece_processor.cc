@@ -31,6 +31,7 @@ const char kSpaceSymbol[] = "\xe2\x96\x81";
 // since this character can be useful both for user and
 // developer. We can easily figure out that <unk> is emitted.
 const char kUnknownSymbol[] = " \xE2\x81\x87 ";
+
 }  // namespace
 
 SentencePieceProcessor::SentencePieceProcessor() {}

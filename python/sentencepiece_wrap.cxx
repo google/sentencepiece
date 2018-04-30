@@ -4741,6 +4741,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceTrainer_Train(PyObject *SWIGUNUSEDPARM(s
   PyObject *resultobj = 0;
   std::string *arg1 = 0 ;
   PyObject * obj0 = 0 ;
+  sentencepiece::util::Status result;
   
   if (!PyArg_ParseTuple(args,(char *)"O:SentencePieceTrainer_Train",&obj0)) SWIG_fail;
   {
@@ -4754,13 +4755,18 @@ SWIGINTERN PyObject *_wrap_SentencePieceTrainer_Train(PyObject *SWIGUNUSEDPARM(s
   }
   {
     try {
-      sentencepiece::SentencePieceTrainer::Train((std::string const &)*arg1); 
+      result = sentencepiece::SentencePieceTrainer::Train((std::string const &)*arg1); 
     }
     catch (const sentencepiece::util::Status &status) {
       SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
     }
   }
-  resultobj = SWIG_Py_Void();
+  {
+    if (!(&result)->ok()) {
+      SWIG_exception(ToSwigError((&result)->code()), (&result)->ToString().c_str());
+    }
+    resultobj = SWIG_From_bool((&result)->ok());
+  }
   {
     delete arg1;
   }
