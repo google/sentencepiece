@@ -32,7 +32,6 @@ static constexpr char kDefaultNormalizerName[] = "nfkc";
 // static
 util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec) {
   NormalizerSpec normalizer_spec;
-  normalizer_spec.set_name(kDefaultNormalizerName);
   Train(trainer_spec, normalizer_spec);
   return util::OkStatus();
 }
@@ -192,10 +191,7 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
 util::Status SentencePieceTrainer::Train(const std::string &args) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
-  normalizer_spec.set_name(kDefaultNormalizerName);
-
   CHECK_OK(MergeSpecsFromArgs(args, &trainer_spec, &normalizer_spec));
-
   return Train(trainer_spec, normalizer_spec);
 }
 

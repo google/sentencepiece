@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "builder.h"
+#include <map>
 #include "flags.h"
+#include "sentencepiece_model.pb.h"
 #include "sentencepiece_trainer.h"
 #include "util.h"
 
 using sentencepiece::NormalizerSpec;
 using sentencepiece::TrainerSpec;
-using sentencepiece::normalizer::Builder;
 
 namespace {
 static sentencepiece::TrainerSpec kDefaultTrainerSpec;
@@ -141,8 +141,8 @@ int main(int argc, char *argv[]) {
       {"word", TrainerSpec::WORD},
       {"char", TrainerSpec::CHAR}};
 
-  trainer_spec.set_model_type(
-      sentencepiece::port::FindOrDie(kModelTypeMap, FLAGS_model_type));
+  trainer_spec.set_model_type(sentencepiece::port::FindOrDie(
+      kModelTypeMap, sentencepiece::string_util::ToLower(FLAGS_model_type)));
 
   CHECK_OK(sentencepiece::SentencePieceTrainer::Train(trainer_spec,
                                                       normalizer_spec));
