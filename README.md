@@ -94,7 +94,7 @@ To enable subword regularization, you would like to use the SentencePiece librar
 ```
 >>> import sentencepiece as spm
 >>> s = spm.SentencePieceProcessor()
->>> s.Load('newm.model')
+>>> s.Load('spm.model')
 >>> for n in range(5):
 ...     s.SampleEncode('New York', -1, 0.1)
 ... 
