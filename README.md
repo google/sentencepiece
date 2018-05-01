@@ -85,7 +85,7 @@ special symbol. Tokenized sequences do not preserve the necessary information to
 * (ja) こんにちは世界。  → [こんにちは] [世界] [。] \(No space between こんにちは and 世界\)
 
 ### Subword regularization
-Subword regularization [[Kudo.](http://acl2018.org/conference/accepted-papers/)]) is a simple regularization method
+Subword regularization [[Kudo.](https://arxiv.org/abs/1804.10959)] is a simple regularization method
 that virtually augments training data with on-the-fly subword sampling, which helps to improve the accuracy as well as robustness of NMT models.
 
 To enable subword regularization, you would like to use the SentencePiece library to sample one segmentation for each parameter updates, which is different from the standard off-line data preparations. Here's the example of [Python libra\
