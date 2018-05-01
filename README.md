@@ -34,8 +34,6 @@ Subword segmentation with unigram language model supports probabilistic subword 
 |Pre-segmentation required?|[No](#whitespace-is-treated-as-a-basic-symbol)|Yes|Yes|
 |Customizable normalization (e.g., NFKC)|[Yes](doc/normalization.md)|No|N/A|
 |Direct id generation|[Yes](#end-to-end-example)|No|N/A|
-|Training speed|N/A|N/A|N/A|
-|Segmentation speed|N/A|N/A|N/A|
 
 Note that BPE algorithm used in WordPiece is slightly different from the original BPE.
 
@@ -49,6 +47,10 @@ Neural Machine Translation models typically operate with a fixed
 vocabulary. Unlike most unsupervised word segmentation algorithms, which
 assume an infinite vocabulary, SentencePiece trains the segmentation model such
 that the final vocabulary size is fixed, e.g., 8k, 16k, or 32k.
+
+Note that SentencePices specifies the final vocabulary size for training, which is different from the 
+[subword-nmt](https://github.com/rsennrich/subword-nmt) that uses the number of merge operations.
+The number of merge operations is a BPE-specific parameter and not applicable to other segmentation algorithms, including unigram, word and character.
 
 #### Whitespace is treated as a basic symbol
 The first step of Natural Language processing is text tokenization. For
