@@ -94,8 +94,8 @@ special symbol. Tokenized sequences do not preserve the necessary information to
 Subword regularization [[Kudo.](https://arxiv.org/abs/1804.10959)] is a simple regularization method
 that virtually augments training data with on-the-fly subword sampling, which helps to improve the accuracy as well as robustness of NMT models.
 
-To enable subword regularization, you would like to use the SentencePiece library 
-([C++](doc/api.md#sampling-subword-regularization)/[Python](python/README.md)) to sample one segmentation for each parameter update, which is different from the standard off-line data preparations. Here's the example of [Python library](python/README.md). You can find that 'New York' is segmented differently on each ``SampleEncode`` call. The details of sampling parameters are found in [sentencepiece_processor.h](src/sentencepiece_processor.h).
+To enable subword regularization, you would like to integrate SentencePiece library 
+([C++](doc/api.md#sampling-subword-regularization)/[Python](python/README.md)) into the NMT system to sample one segmentation for each parameter update, which is different from the standard off-line data preparations. Here's the example of [Python library](python/README.md). You can find that 'New York' is segmented differently on each ``SampleEncode`` call. The details of sampling parameters are found in [sentencepiece_processor.h](src/sentencepiece_processor.h).
 
 ```
 >>> import sentencepiece as spm
