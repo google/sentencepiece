@@ -40,7 +40,7 @@ Note that BPE algorithm used in WordPiece is slightly different from the origina
 ## Overview
 ### What is SentencePiece?
 SentencePiece is a re-impelemtation of **sub-word units**, an effective way to alleviate the open vocabulary
-  problems in neural machine translation. SentencePiece supports two segmentation algorithms **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](http://acl2018.org/conference/accepted-papers/)]. Here are the high level differences from other implementations.
+  problems in neural machine translation. SentencePiece supports two segmentation algorithms, **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](http://acl2018.org/conference/accepted-papers/)]. Here are the high level differences from other implementations.
 
 #### The number of unique tokens is predetermined
 Neural Machine Translation models typically operate with a fixed
