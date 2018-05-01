@@ -28,13 +28,13 @@ Subword segmentation with unigram language model supports probabilistic subword 
 |:---|:---:|:---:|:---:|
 |Supported algorithm|BPE, unigram, char, word|BPE|BPE*|
 |OSS?|Yes|Yes|Google internal|
-|[Subword regularization](https://arxiv.org/abs/1804.10959bb)|Yes (unigram only)|No|No|
-|[Python Library (pip)](python/README.md)|Yes|No|N/A|
-|C++ Library|Yes|No|N/A|
-|Pre-segmentation required?|No|Yes|Yes|
-|Customizable normalization (NFKC)|Yes|No|N/A|
-|Vocab <=> id management|Yes|No|N/A|
-|Traini speed|N/A|N/A|N/A|
+|Subword regularization|[Yes](#subword-regularization)|No|No|
+|Python Library (pip)|[Yes](python/README.md)|No|N/A|
+|C++ Library|[Yes](doc/api.md)|No|N/A|
+|Pre-segmentation required?|[No](#whitespace-is-treated-as-a-basic-symbol)|Yes|Yes|
+|Customizable normalization (e.g., NFKC)|[Yes](doc/normalization.md)|No|N/A|
+|Direct id generation|[Yes](#end-to-end-example)|No|N/A|
+|Training speed|N/A|N/A|N/A|
 |Segmentation speed|N/A|N/A|N/A|
 
 Note that BPE algorithm used in WordPiece is slightly different from the original BPE.
