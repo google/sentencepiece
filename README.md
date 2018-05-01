@@ -14,7 +14,7 @@ Subword segmentation with unigram language model supports probabilistic subword 
 
 ## Technical highlights
 - **Multiple subword algorithms**: **BPE**  [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)] are supported.
-- **Subword regularization**: SentencePiece implements subwrod sampling for subword regularization which helps to improve the robustness and accuracy of NMT model (Available only on unigram language model.)
+- **Subword regularization**: SentencePiece implements subwrod sampling for [subword regularization](https://arxiv.org/abs/1804.10959) which helps to improve the robustness and accuracy of NMT models.
 - **Purely data driven**: SentencePiece trains tokenization and detokenization
   models from only raw sentences. No pre-tokenization ([Moses tokenizer](https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/tokenizer.perl)/[MeCab](http://taku910.github.io/mecab/)/[KyTea](http://www.phontron.com/kytea/)) is required.
 - **Language independent**: SentencePiece treats the sentences just as sequences of Unicode characters. There is no language-dependent logic.
@@ -29,12 +29,13 @@ Subword segmentation with unigram language model supports probabilistic subword 
 |Supported algorithm|BPE, unigram, char, word|BPE|BPE*|
 |OSS?|Yes|Yes|Google internal|
 |[Subword regularization](https://arxiv.org/abs/1804.10959bb)|Yes (unigram only)|No|No|
-|Python Library (pip)|Yes|No|N/A|
+|[Python Library (pip)](python/README.md)|Yes|No|N/A|
 |C++ Library|Yes|No|N/A|
 |Pre-segmentation required?|No|Yes|Yes|
 |Customizable normalization (NFKC)|Yes|No|N/A|
 |Vocab <=> id management|Yes|No|N/A|
-|Direct encoding to ids|Yes|No|N/A|
+|Traini speed|N/A|N/A|N/A|
+|Segmentation speed|N/A|N/A|N/A|
 
 Note that BPE algorithm used in WordPiece is slightly different from the original BPE.
 
@@ -83,12 +84,32 @@ special symbol. Tokenized sequences do not preserve the necessary information to
 * (en) Hello world.   → [Hello] [World] [.]   \(A space between Hello and World\)
 * (ja) こんにちは世界。  → [こんにちは] [世界] [。] \(No space between こんにちは and 世界\)
 
+### Subword regularization
+Subword regularization [[Kudo.](http://acl2018.org/conference/accepted-papers/)]) is a simple regularization method
+that virtually augments training data with on-the-fly subword sampling, which helps to improve the accuracy as well as robustness of NMT models.
+
+To enable subword regularization, you would like to use the SentencePiece library to sample one segmentation for each parameter updates, which is different from the standard off-line data preparations. Here's the example of [Python libra\
+ry](python/README.md). You can find that 'New York' is segmented differently on each ``SampleEncode`` call. The details of sampling parameters are found in [sentencepiece_processor.h](src/sentencepiece_processor.h).
+
+```
+>>> import sentencepiece as spm
+>>> s = spm.SentencePieceProcessor()
+>>> s.Load('newm.model')
+>>> for n in range(5):
+...     s.SampleEncode('New York', -1, 0.1)
+... 
+['▁', 'N', 'e', 'w', '▁York']
+['▁', 'New', '▁York']
+['▁', 'New', '▁Y', 'o', 'r', 'k']
+['▁', 'New', '▁York']
+['▁', 'New', '▁York']
+```
 
 ## Installation
 
 ### Python module
 SentencePiece provides Python wrapper that supports both SentencePiece training and segmentation.
-For Linux (x64) environment, you can install Python binary package of SentencePiece with.
+For Linux (x64/i686) environment, you can install Python binary package of SentencePiece with.
 
 ```
 % pip install sentencepiece
