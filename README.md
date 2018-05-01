@@ -48,7 +48,7 @@ vocabulary. Unlike most unsupervised word segmentation algorithms, which
 assume an infinite vocabulary, SentencePiece trains the segmentation model such
 that the final vocabulary size is fixed, e.g., 8k, 16k, or 32k.
 
-Note that SentencePices specifies the final vocabulary size for training, which is different from the 
+Note that SentencePices specifies the final vocabulary size for training, which is different from 
 [subword-nmt](https://github.com/rsennrich/subword-nmt) that uses the number of merge operations.
 The number of merge operations is a BPE-specific parameter and not applicable to other segmentation algorithms, including unigram, word and character.
 
