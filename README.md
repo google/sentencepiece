@@ -39,8 +39,8 @@ Note that BPE algorithm used in WordPiece is slightly different from the origina
 
 ## Overview
 ### What is SentencePiece?
-SentencePiece is an unsupervised text tokenizer and detokenizer designed mainly for Neural Network-based text generation, for example Neural Network Machine Translation. SentencePiece is a re-implementation of **sub-word units** (e.g., **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]) and 
-**unigram language model** [[Kudo.](http://acl2018.org/conference/accepted-papers/)]). Unlike previous sub-word approaches that train tokenizers from pretokenized sentences, SentencePiece directly trains the tokenizer and detokenizer from raw sentences. SentencePiece might seem like a sort of unsupervised word segmentation, but there are several differences and constraints in SentencePiece.
+SentencePiece is a re-impelemtation of **sub-word units**, an effective way to alleviate the open vocabulary
+  problems in neural machine translation. SentencePiece supports two segmentation algorithms **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](http://acl2018.org/conference/accepted-papers/)]. Here are the high level differences from other implementations.
 
 #### The number of unique tokens is predetermined
 Neural Machine Translation models typically operate with a fixed
@@ -51,6 +51,10 @@ that the final vocabulary size is fixed, e.g., 8k, 16k, or 32k.
 Note that SentencePices specifies the final vocabulary size for training, which is different from the 
 [subword-nmt](https://github.com/rsennrich/subword-nmt) that uses the number of merge operations.
 The number of merge operations is a BPE-specific parameter and not applicable to other segmentation algorithms, including unigram, word and character.
+
+#### Trains from raw sentences
+Previous sub-word implementations assume that the input sentences are pre-tokenized. This constraint was required for efficient training, but makes the preprocessing complicated as we have to run language dependent tokenizers in advance.
+The implementation of SentencePiece is fast enough to train the model from raw sentences. This is useful for training the tokenizer and detokenizer for Chinese, Japanese and Korean where no explicit spaces exist between words.
 
 #### Whitespace is treated as a basic symbol
 The first step of Natural Language processing is text tokenization. For
