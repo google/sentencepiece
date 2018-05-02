@@ -8,7 +8,7 @@ is predetermined prior to the neural model training. SentencePiece implements
 **subword units** (e.g., **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]) and 
 **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)])
 with the extension of direct training from raw sentences. 
-Subword segmentation with unigram language model supports probabilistic subword sampling for **subword regularization** [[Kudo.](http://acl2018.org/conference/accepted-papers/)], a simple technique to improve the robustness of NMT model. SentencePiece allows us to make a purely end-to-end system that does not depend on language-specific pre/postprocessing.
+Subword segmentation with unigram language model supports probabilistic subword sampling for **subword regularization** [[Kudo.](https://arxiv.org/abs/1804.10959)], a simple technique to improve the robustness of NMT model. SentencePiece allows us to make a purely end-to-end system that does not depend on language-specific pre/postprocessing.
 
 **This is not an official Google product.**
 
@@ -40,7 +40,7 @@ Note that BPE algorithm used in WordPiece is slightly different from the origina
 ## Overview
 ### What is SentencePiece?
 SentencePiece is a re-impelemtation of **sub-word units**, an effective way to alleviate the open vocabulary
-  problems in neural machine translation. SentencePiece supports two segmentation algorithms, **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](http://acl2018.org/conference/accepted-papers/)]. Here are the high level differences from other implementations.
+  problems in neural machine translation. SentencePiece supports two segmentation algorithms, **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)]. Here are the high level differences from other implementations.
 
 #### The number of unique tokens is predetermined
 Neural Machine Translation models typically operate with a fixed
