@@ -197,8 +197,10 @@ class SentencePieceProcessor {
   // forward-filtering and backward-sampling algorithm.
   // `alpha` is a smoothing parameter.  The best segmentation
   // (Viterbi segmentation) is more likely sampled when setting larger
-  // alpha (alpha >= 1.0). When alpha is 0.0, one segmentation is
-  // uniformly sampled from the nbest or lattice.
+  // alpha. When alpha is 0.0, one segmentation is uniformly sampled from the
+  // nbest or lattice.
+  // `nbest_size` and `alpha` correspond to parameters `l` and `alpha`
+  // in https://arxiv.org/abs/1804.10959  (nbest_size < 0 means l = infinity)
   virtual util::Status SampleEncode(const std::string &input, int nbest_size,
                                     float alpha,
                                     std::vector<std::string> *pieces) const;
