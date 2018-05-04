@@ -64,7 +64,9 @@ build_linux_clang_ubuntu() {
 
 build_osx() {
   brew update
-  brew install protobuf autoconf libtool
+  brew install protobuf
+  brew install autoconf
+  brew install libtool
   build_generic
 }
 
