@@ -63,7 +63,8 @@ build_linux_clang_ubuntu() {
 }
 
 build_osx() {
-  brew install protobuf autoconf automake libtool
+  brew update
+  brew install protobuf autoconf libtool
   build_generic
 }
 
