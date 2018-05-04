@@ -13,7 +13,7 @@ matrix:
       env: IMAGE=ubuntu:rolling COMMAND=build_linux_clang_ubuntu
       services: docker
     - os: osx
-      env: SCRIPT=osx
+      env: IMAGE=native COMMAND=build_osx
 script:
   - $TRAVIS_BUILD_DIR/test.sh ${IMAGE} ${COMMAND}
 env:
