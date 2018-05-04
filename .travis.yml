@@ -1,3 +1,4 @@
+language: cpp
 matrix:
   include:
     - os: linux
