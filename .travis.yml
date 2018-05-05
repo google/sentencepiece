@@ -8,6 +8,9 @@ matrix:
       env: IMAGE=i386/ubuntu:rolling COMMAND=build_linux_gcc_ubuntu
       services: docker
     - os: linux
+      env: IMAGE=ubuntu:xenial COMMAND=build_linux_gcc_ubuntu
+      services: docker
+    - os: linux
       env: IMAGE=debian:stable COMMAND=build_linux_gcc_debian
       services: docker    
     - os: linux
