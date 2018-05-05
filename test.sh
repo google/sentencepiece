@@ -15,7 +15,7 @@ setup_debian() {
 
 setup_fedora() {
   dnf update -y
-  dnf install -y rpm-build gcc-c++ make protobuf-devel autoconf automake libtool pkg-config
+  dnf install -y rpm-build gcc-c++ make protobuf-devel autoconf automake libtool pkg-config python-pip
 }
 
 build_generic() {
@@ -25,11 +25,20 @@ build_generic() {
   make check -j2
 }
 
+build_python() {
+  make install
+  export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+  export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+  ldconfig -v
+  cd python; python setup.py test
+}
+
 build_linux_gcc_coverall_ubuntu() {
   setup_debian
   pip install cpp-coveralls
   pip install 'requests[security]'
   build_generic
+  build_python
   make distclean
   ./configure --enable-gcov
   make check -j2
@@ -39,21 +48,24 @@ build_linux_gcc_coverall_ubuntu() {
 build_linux_gcc_ubuntu() {
   setup_ubuntu
   build_generic
+  build_python
 }
 
 build_linux_gcc_debian() {
   setup_debian
   build_generic
+  build_python
 }
 
 build_linux_gcc_fedora() {
   setup_fedora
   build_generic
+  build_python
 }
 
 build_linux_clang_ubuntu() {
   setup_ubuntu
-#  for v in 3.9 4.0 5.0 6.0; do  
+#  for v in 3.9 4.0 5.0 6.0; do
   for v in 3.9 6.0; do
     apt-get install -y clang-${v}
     export CXX="clang++-${v}" CC="clang-${v}"
@@ -87,4 +99,3 @@ if [ "$1" = "native" ]; then
 else
   run_docker $1 $2
 fi
-
