@@ -80,6 +80,10 @@ build_osx() {
   brew update
   brew install protobuf || brew link --overwrite protobuf
   build_generic
+  make install
+  cd python
+  python setup.py test
+  cd ..
 }
 
 run_docker() {
