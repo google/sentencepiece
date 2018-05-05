@@ -15,7 +15,7 @@ setup_debian() {
 
 setup_fedora() {
   dnf update -y
-  dnf install -y rpm-build gcc-c++ make protobuf-devel autoconf automake libtool pkg-config python-pip
+  dnf install -y rpm-build gcc-c++ make protobuf-devel autoconf automake libtool pkg-config python-pip python-devel
 }
 
 build_generic() {
@@ -30,7 +30,9 @@ build_python() {
   export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
   export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
   ldconfig -v
-  cd python; python setup.py test
+  cd python
+  python setup.py test
+  cd ..
 }
 
 build_linux_gcc_coverall_ubuntu() {
