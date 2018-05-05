@@ -5,8 +5,11 @@ matrix:
       env: IMAGE=ubuntu:rolling COMMAND=build_linux_gcc_coverall_ubuntu
       services: docker
     - os: linux
-      env: IMAGE=debian:stable COMMAND=build_linux_gcc_debian
+      env: IMAGE=i386/ubuntu:rolling COMMAND=build_linux_gcc_ubuntu
       services: docker
+    - os: linux
+      env: IMAGE=debian:stable COMMAND=build_linux_gcc_debian
+      services: docker    
     - os: linux
       env: IMAGE=fedora:latest COMMAND=build_linux_gcc_fedora
       services: docker
