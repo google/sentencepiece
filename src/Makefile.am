@@ -95,7 +95,7 @@ clean-local:
 	-rm -rf lcov_html
 
 %.pb.cc %.pb.h: %.proto
-	$(PROTOC) --cpp_out=$(srcdir) $(srcdir)/$<
+	$(PROTOC) --cpp_out=$(srcdir) $<
 
 coverage:
 	make clean
