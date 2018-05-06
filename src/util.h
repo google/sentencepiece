@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -201,21 +202,25 @@ namespace io {
 class InputBuffer {
  public:
   explicit InputBuffer(StringPiece filename);
+  util::Status status() const;
   ~InputBuffer();
   bool ReadLine(std::string *line);
 
  private:
+  util::Status status_;
   std::istream *is_;
 };
 
 class OutputBuffer {
  public:
   explicit OutputBuffer(StringPiece filename);
+  util::Status status() const;
   ~OutputBuffer();
-  void Write(StringPiece text);
-  void WriteLine(StringPiece text);
+  bool Write(StringPiece text);
+  bool WriteLine(StringPiece text);
 
  private:
+  util::Status status_;
   std::ostream *os_;
 };
 }  // namespace io
@@ -390,7 +395,37 @@ DECLARE_ERROR(DataLoss, DATA_LOSS)
 DECLARE_ERROR(Unknown, UNKNOWN)
 DECLARE_ERROR(PermissionDenied, PERMISSION_DENIED)
 DECLARE_ERROR(Unauthenticated, UNAUTHENTICATED)
-}  // namespace util
 
+class StatusBuilder {
+ public:
+  explicit StatusBuilder(error::Code code) : code_(code) {}
+
+  template <typename T>
+  StatusBuilder &operator<<(const T &value) {
+    os_ << value;
+    return *this;
+  }
+
+  operator Status() const { return Status(code_, os_.str()); }
+
+ private:
+  error::Code code_;
+  std::ostringstream os_;
+};
+
+#define CHECK_OR_RETURN(condition)                                     \
+  if (condition) {                                                     \
+  } else /* NOLINT */                                                  \
+    return ::sentencepiece::util::StatusBuilder(util::error::INTERNAL) \
+           << __FILE__ << "(" << __LINE__ << ") [" << #condition << "] "
+
+#define CHECK_EQ_OR_RETURN(a, b) CHECK_OR_RETURN((a) == (b))
+#define CHECK_NE_OR_RETURN(a, b) CHECK_OR_RETURN((a) != (b))
+#define CHECK_GE_OR_RETURN(a, b) CHECK_OR_RETURN((a) >= (b))
+#define CHECK_LE_OR_RETURN(a, b) CHECK_OR_RETURN((a) <= (b))
+#define CHECK_GT_OR_RETURN(a, b) CHECK_OR_RETURN((a) > (b))
+#define CHECK_LT_OR_RETURN(a, b) CHECK_OR_RETURN((a) < (b))
+
+}  // namespace util
 }  // namespace sentencepiece
 #endif  // UTIL_H_

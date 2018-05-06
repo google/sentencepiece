@@ -167,11 +167,13 @@ void Trainer::UpdateActiveSymbols() {
   active_symbols_.insert(symbols.begin(), symbols.begin() + size);
 }
 
-void Trainer::Train() {
+util::Status Trainer::Train() {
+  RETURN_IF_ERROR(status());
+
   LOG(INFO) << "Starts training with : \n" << trainer_spec_.Utf8DebugString();
 
-  CHECK(normalizer_spec_.escape_whitespaces());
-  CHECK_EQ(TrainerSpec::BPE, trainer_spec_.model_type());
+  CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());
+  CHECK_EQ_OR_RETURN(TrainerSpec::BPE, trainer_spec_.model_type());
 
   symbols_.clear();
   allocated_.clear();
@@ -179,7 +181,7 @@ void Trainer::Train() {
   active_symbols_.clear();
 
   // Load all sentences
-  LoadSentences();
+  RETURN_IF_ERROR(LoadSentences());
 
   if (trainer_spec_.split_by_whitespace()) {
     SplitSentencesByWhitespace();
@@ -202,7 +204,7 @@ void Trainer::Train() {
 
   const int vocab_size =
       trainer_spec_.vocab_size() - meta_pieces_.size() - required_chars_.size();
-  CHECK_GE(vocab_size, 0);
+  CHECK_GE_OR_RETURN(vocab_size, 0);
 
   // We may see duplicated pieces that are extracted with different path.
   // In real segmentation phase, we can consider them as one symbol.
@@ -210,7 +212,7 @@ void Trainer::Train() {
   std::unordered_set<std::string> dup;
 
   // Main loop.
-  CHECK(final_pieces_.empty());
+  CHECK_OR_RETURN(final_pieces_.empty());
   while (final_pieces_.size() < static_cast<size_t>(vocab_size)) {
     constexpr int kUpdateActiveSymbolsInteval = 100;
     if (final_pieces_.size() % kUpdateActiveSymbolsInteval == 0) {
@@ -269,7 +271,7 @@ void Trainer::Train() {
         // when left_symbol == right_symbol.
         continue;
       }
-      CHECK_NOTNULL(symbols_[pos.sid][pos.right]);
+      CHECK_OR_RETURN(symbols_[pos.sid][pos.right]);
 
       // We have three bigrams [prev, left], [left, right], [right, next],
       // which are affected with this symbol replacement.
@@ -301,9 +303,9 @@ void Trainer::Train() {
                                -static_cast<float>(final_pieces_.size()));
   }
 
-  Save();
-
   port::STLDeleteElements(&allocated_);
+
+  return Save();
 }
 }  // namespace bpe
 }  // namespace sentencepiece

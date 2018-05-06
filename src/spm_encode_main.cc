@@ -40,6 +40,7 @@ int main(int argc, char *argv[]) {
   CHECK_OK(sp.SetEncodeExtraOptions(FLAGS_extra_options));
 
   sentencepiece::io::OutputBuffer output(FLAGS_output);
+  CHECK_OK(output.status());
 
   if (rest_args.empty()) {
     rest_args.push_back("");  // empty means that reading from stdin.
@@ -109,6 +110,7 @@ int main(int argc, char *argv[]) {
 
   for (const auto &filename : rest_args) {
     sentencepiece::io::InputBuffer input(filename);
+    CHECK_OK(input.status());
     while (input.ReadLine(&line)) {
       if (line.empty()) {
         output.WriteLine("");

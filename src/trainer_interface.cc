@@ -43,29 +43,35 @@ const char TrainerInterface::kBOS[] = "<s>";
 const char TrainerInterface::kEOS[] = "</s>";
 const char TrainerInterface::kPAD[] = "<pad>";
 
+namespace {
+util::Status VerifySpec(const TrainerSpec &trainer_spec) {
+  CHECK_OR_RETURN(!trainer_spec.model_prefix().empty());
+  CHECK_GT_OR_RETURN(trainer_spec.input().size(), 0);
+  CHECK_GT_OR_RETURN(trainer_spec.vocab_size(), 0);
+
+#define CHECK_RANGE(variable, minval, maxval) \
+  CHECK_OR_RETURN(variable >= minval && variable <= maxval)
+
+  CHECK_RANGE(trainer_spec.character_coverage(), 0.98, 1.0);
+  CHECK_RANGE(trainer_spec.input_sentence_size(), 100, 100000000);
+  CHECK_RANGE(trainer_spec.max_sentencepiece_length(), 1, 512);
+  CHECK_RANGE(trainer_spec.mining_sentence_size(), 100, 5000000);
+  CHECK_RANGE(trainer_spec.num_sub_iterations(), 1, 10);
+  CHECK_RANGE(trainer_spec.num_threads(), 1, 128);
+  CHECK_RANGE(trainer_spec.seed_sentencepiece_size(), 1000, 5000000);
+  CHECK_RANGE(trainer_spec.shrinking_factor(), 0.5, 0.95);
+  CHECK_RANGE(trainer_spec.training_sentence_size(), 100, 100000000);
+#undef CHECK_RANGE
+
+  return util::OkStatus();
+}
+}  // namespace
+
 TrainerInterface::TrainerInterface(const TrainerSpec &trainer_spec,
                                    const NormalizerSpec &normalizer_spec)
     : trainer_spec_(trainer_spec), normalizer_spec_(normalizer_spec) {
-  InitMetaPieces();
-
-  CHECK(!trainer_spec_.model_prefix().empty());
-  CHECK_GT(trainer_spec_.input().size(), 0);
-  CHECK_GT(trainer_spec_.vocab_size(), 0);
-
-#define CHECK_RANGE(variable, minval, maxval) \
-  CHECK(variable >= minval && variable <= maxval)
-
-  CHECK_RANGE(trainer_spec_.character_coverage(), 0.98, 1.0);
-  CHECK_RANGE(trainer_spec_.input_sentence_size(), 100, 100000000);
-  CHECK_RANGE(trainer_spec_.max_sentencepiece_length(), 1, 512);
-  CHECK_RANGE(trainer_spec_.mining_sentence_size(), 100, 5000000);
-  CHECK_RANGE(trainer_spec_.num_sub_iterations(), 1, 10);
-  CHECK_RANGE(trainer_spec_.num_threads(), 1, 128);
-  CHECK_RANGE(trainer_spec_.seed_sentencepiece_size(), 1000, 5000000);
-  CHECK_RANGE(trainer_spec_.shrinking_factor(), 0.5, 0.95);
-  CHECK_RANGE(trainer_spec_.training_sentence_size(), 100, 100000000);
-
-#undef CHECK_RANGE
+  status_ = VerifySpec(trainer_spec_);
+  if (status_.ok()) status_ = InitMetaPieces();
 }
 
 TrainerInterface::~TrainerInterface() {}
@@ -127,15 +133,16 @@ bool TrainerInterface::IsValidSentencePiece(
   return true;
 }
 
-void TrainerInterface::LoadSentences() {
-  CHECK(sentences_.empty());
-  CHECK(required_chars_.empty());
+util::Status TrainerInterface::LoadSentences() {
+  RETURN_IF_ERROR(status());
+  CHECK_OR_RETURN(sentences_.empty());
+  CHECK_OR_RETURN(required_chars_.empty());
 
   const normalizer::Normalizer normalizer(normalizer_spec_);
 
-  CHECK(trainer_spec_.input_format().empty() ||
-        trainer_spec_.input_format() == "text" ||
-        trainer_spec_.input_format() == "tsv")
+  CHECK_OR_RETURN(trainer_spec_.input_format().empty() ||
+                  trainer_spec_.input_format() == "text" ||
+                  trainer_spec_.input_format() == "tsv")
       << "Supported formats are 'text' and 'tsv'.";
 
   const bool is_tsv = trainer_spec_.input_format() == "tsv";
@@ -144,15 +151,16 @@ void TrainerInterface::LoadSentences() {
     LOG(INFO) << "Loading corpus: " << filename;
     std::string sentence;
     io::InputBuffer input(filename);
+    RETURN_IF_ERROR(input.status());
     while (input.ReadLine(&sentence)) {
       int64 freq = 1;
       if (is_tsv) {
         const std::vector<std::string> v = string_util::Split(sentence, "\t");
-        CHECK_EQ(v.size(), 2)
+        CHECK_EQ_OR_RETURN(v.size(), 2)
             << "Input format must be: word <tab> freq. " << sentence;
         sentence = v[0];
         freq = std::atoll(v[1].c_str());
-        CHECK_GE(freq, 1);
+        CHECK_GE_OR_RETURN(freq, 1);
       }
 
       constexpr int kMaxLines = 2048;
@@ -171,7 +179,7 @@ void TrainerInterface::LoadSentences() {
         LOG(INFO) << "Loading: " << normalized
                   << "\tsize=" << sentences_.size();
       }
-      CHECK(normalized.find(" ") == std::string::npos)
+      CHECK_OR_RETURN(normalized.find(" ") == std::string::npos)
           << "Normalized string must not include spaces";
       if (normalized.empty()) {
         LOG(WARNING) << "Empty string found. removed";
@@ -198,7 +206,7 @@ END:
       if (c == 0x0020) {
         // UTF8ToUnicodeText returns a white space if the text
         // contains an interchange-invalid character.
-        CHECK(w.first.find(" ") == std::string::npos)
+        CHECK_OR_RETURN(w.first.find(" ") == std::string::npos)
             << "space must not be included in normalized string.";
         continue;
       }
@@ -217,13 +225,13 @@ END:
       break;
     }
     accumulated_chars_count += w.second;
-    CHECK_NE(w.first, 0x0020)
+    CHECK_NE_OR_RETURN(w.first, 0x0020)
         << "space must not be included in normalized string.";
     required_chars_.insert(w);
   }
   LOG(INFO) << "alphabet size=" << required_chars_.size();
 
-  CHECK(!port::ContainsKey(required_chars_, kUNKChar));
+  CHECK_OR_RETURN(!port::ContainsKey(required_chars_, kUNKChar));
 
   // Replaces rare characters (characters not included in required_chars_)
   // with kUNKChar.
@@ -242,17 +250,19 @@ END:
   // +3 for meta pieces.
   if (trainer_spec_.model_type() != TrainerSpec::WORD &&
       trainer_spec_.model_type() != TrainerSpec::CHAR) {
-    CHECK_LT(static_cast<int>(required_chars_.size() + meta_pieces_.size()),
-             trainer_spec_.vocab_size())
+    CHECK_LT_OR_RETURN(
+        static_cast<int>(required_chars_.size() + meta_pieces_.size()),
+        trainer_spec_.vocab_size())
         << "Vocabulary size is smaller than required_chars. "
         << trainer_spec_.vocab_size() << " vs "
-        << required_chars_.size() + meta_pieces_.size()
-        << ". "
+        << required_chars_.size() + meta_pieces_.size() << ". "
         << "Increase vocab_size or decrease character_coverage with "
         << "--character_coverage option.";
   }
 
   LOG(INFO) << "Done! " << sentences_.size() << " sentences are loaded";
+
+  return util::OkStatus();
 }
 
 void TrainerInterface::SplitSentencesByWhitespace() {
@@ -267,31 +277,29 @@ void TrainerInterface::SplitSentencesByWhitespace() {
   sentences_ = Sorted(tokens);
   LOG(INFO) << "Done! " << sentences_.size();
 }
-// #endif
 
-void TrainerInterface::Serialize(ModelProto *model_proto) const {
+util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
   // Duplicated sentencepiece is not allowed.
   std::unordered_set<std::string> dup;
 
-  auto CheckPiece = [&dup](const std::string &piece) {
-    CHECK(!piece.empty());
-    CHECK(dup.insert(piece).second) << piece << " is already defined";
-  };
+#define CHECK_PIECE(piece)         \
+  CHECK_OR_RETURN(!piece.empty()); \
+  CHECK_OR_RETURN(dup.insert(piece).second) << piece << " is already defined";
 
   for (const auto &w : meta_pieces_) {
     auto *sp = model_proto->add_pieces();
     sp->set_piece(w.first);
     sp->set_type(w.second);
     sp->set_score(0.0);
-    CHECK_NE(ModelProto::SentencePiece::NORMAL, sp->type());
-    CheckPiece(sp->piece());
+    CHECK_NE_OR_RETURN(ModelProto::SentencePiece::NORMAL, sp->type());
+    CHECK_PIECE(sp->piece());
   }
 
   for (const auto &w : final_pieces_) {
     auto *sp = model_proto->add_pieces();
     sp->set_piece(w.first);
     sp->set_score(w.second);
-    CheckPiece(sp->piece());
+    CHECK_PIECE(sp->piece());
   }
 
   *(model_proto->mutable_trainer_spec()) = trainer_spec_;
@@ -299,45 +307,55 @@ void TrainerInterface::Serialize(ModelProto *model_proto) const {
 
   if (!trainer_spec_.hard_vocab_limit() ||
       trainer_spec_.model_type() == TrainerSpec::CHAR) {
-    CHECK_GE(trainer_spec_.vocab_size(), model_proto->pieces_size());
-    CHECK_GE(trainer_spec_.vocab_size(), static_cast<int>(dup.size()));
+    CHECK_GE_OR_RETURN(trainer_spec_.vocab_size(), model_proto->pieces_size());
+    CHECK_GE_OR_RETURN(trainer_spec_.vocab_size(),
+                       static_cast<int>(dup.size()));
     model_proto->mutable_trainer_spec()->set_vocab_size(
         model_proto->pieces_size());
   } else {
-    CHECK(trainer_spec_.vocab_size() ==  model_proto->pieces_size() &&
-          trainer_spec_.vocab_size() == static_cast<int>(dup.size()))
+    CHECK_OR_RETURN(trainer_spec_.vocab_size() == model_proto->pieces_size() &&
+                    trainer_spec_.vocab_size() == static_cast<int>(dup.size()))
         << "Use --hard_vocab_limit=false to make the vocab size `soft limit`.";
   }
+
+  return util::OkStatus();
 }
 
-void TrainerInterface::SaveModel(StringPiece filename) const {
+util::Status TrainerInterface::SaveModel(StringPiece filename) const {
   LOG(INFO) << "Saving model: " << filename;
   ModelProto model_proto;
-  Serialize(&model_proto);
+  RETURN_IF_ERROR(Serialize(&model_proto));
   std::ofstream ofs(filename.data(), OUTPUT_MODE);
-  CHECK_OFS(ofs, filename.to_string());
-  CHECK(model_proto.SerializeToOstream(&ofs));
+  CHECK_OR_RETURN(ofs) << "\"" << filename.data()
+                       << "\": " << std::strerror(errno);
+  CHECK_OR_RETURN(model_proto.SerializeToOstream(&ofs));
+  return util::OkStatus();
 }
 
-void TrainerInterface::SaveVocab(StringPiece filename) const {
+util::Status TrainerInterface::SaveVocab(StringPiece filename) const {
   LOG(INFO) << "Saving vocabs: " << filename;
   ModelProto model_proto;
   Serialize(&model_proto);
   io::OutputBuffer output(filename);
+  RETURN_IF_ERROR(output.status());
+
   for (const auto &piece : model_proto.pieces()) {
     std::ostringstream os;
     os << piece.piece() << "\t" << piece.score();
-    output.WriteLine(os.str());
+    CHECK_OR_RETURN(output.WriteLine(os.str()));
   }
+
+  return util::OkStatus();
 }
 
-void TrainerInterface::Save() const {
-  SaveModel(trainer_spec_.model_prefix() + ".model");
-  SaveVocab(trainer_spec_.model_prefix() + ".vocab");
+util::Status TrainerInterface::Save() const {
+  RETURN_IF_ERROR(SaveModel(trainer_spec_.model_prefix() + ".model"));
+  RETURN_IF_ERROR(SaveVocab(trainer_spec_.model_prefix() + ".vocab"));
+  return util::OkStatus();
 }
 
-void TrainerInterface::InitMetaPieces() {
-  CHECK(meta_pieces_.empty());
+util::Status TrainerInterface::InitMetaPieces() {
+  CHECK_OR_RETURN(meta_pieces_.empty());
 
   std::vector<std::pair<int, std::string>> ids;
   if (trainer_spec_.unk_id() >= 0)
@@ -354,17 +372,17 @@ void TrainerInterface::InitMetaPieces() {
   int prev_id = -1;
   bool has_unk = false;
   for (const auto &p : ids) {
-    CHECK_EQ(prev_id + 1, p.first)
+    CHECK_EQ_OR_RETURN(prev_id + 1, p.first)
         << "ID for `" << p.second << "` must be " << prev_id + 1;
     prev_id = p.first;
-    CHECK_EQ(static_cast<int>(meta_pieces_.size()), p.first);
+    CHECK_EQ_OR_RETURN(static_cast<int>(meta_pieces_.size()), p.first);
     if (p.second == kUNK) has_unk = true;
     meta_pieces_.emplace_back(
         p.second, (p.second == kUNK ? ModelProto::SentencePiece::UNKNOWN
                                     : ModelProto::SentencePiece::CONTROL));
   }
 
-  CHECK(has_unk) << kUNK << " must be defined.";
+  CHECK_OR_RETURN(has_unk) << kUNK << " must be defined.";
 
   for (const auto &w : trainer_spec_.control_symbols()) {
     meta_pieces_.emplace_back(w, ModelProto::SentencePiece::CONTROL);
@@ -373,6 +391,8 @@ void TrainerInterface::InitMetaPieces() {
   for (const auto &w : trainer_spec_.user_defined_symbols()) {
     meta_pieces_.emplace_back(w, ModelProto::SentencePiece::USER_DEFINED);
   }
+
+  return util::OkStatus();
 }
 
 }  // namespace sentencepiece

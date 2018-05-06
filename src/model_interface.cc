@@ -63,7 +63,8 @@ void ModelInterface::InitializePieces(bool enable_user_defined) {
     const auto &sp = model_proto_->pieces(i);
     if (!enable_user_defined &&
         sp.type() == ModelProto::SentencePiece::USER_DEFINED) {
-      status_ = util::InternalError("User defined symbol is not supported.");
+      status_ = util::StatusBuilder(util::error::INTERNAL)
+                << "user defined symbol is not supported.";
       return;
     }
 
@@ -72,7 +73,8 @@ void ModelInterface::InitializePieces(bool enable_user_defined) {
          sp.type() == ModelProto::SentencePiece::USER_DEFINED);
     if (!port::InsertIfNotPresent(
             is_normal_piece ? &pieces_ : &reserved_id_map_, sp.piece(), i)) {
-      status_ = util::InternalError(sp.piece() + " is already defined.");
+      status_ = util::StatusBuilder(util::error::INTERNAL)
+                << "\"" << sp.piece() << "\" is already defined.";
       return;
     }
 
@@ -94,7 +96,6 @@ std::vector<StringPiece> SplitIntoWords(StringPiece text) {
     if (begin == text.data() || StringPiece(begin, mblen) == kSpaceSymbol) {
       result.emplace_back(begin, 0);  // add empty string piece.
     }
-    CHECK(!result.empty());
     result.back() =
         StringPiece(result.back().data(), result.back().size() + mblen);
     begin += mblen;

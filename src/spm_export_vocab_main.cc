@@ -26,9 +26,10 @@ DEFINE_string(output_format, "txt", "output format. choose from txt or proto");
 int main(int argc, char *argv[]) {
   sentencepiece::flags::ParseCommandLineFlags(argc, argv);
   sentencepiece::SentencePieceProcessor sp;
-  sp.Load(FLAGS_model);
+  CHECK_OK(sp.Load(FLAGS_model));
 
   sentencepiece::io::OutputBuffer output(FLAGS_output);
+  CHECK_OK(output.status());
 
   if (FLAGS_output_format == "txt") {
     for (const auto &piece : sp.model_proto().pieces()) {

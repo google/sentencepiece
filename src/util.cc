@@ -220,7 +220,9 @@ namespace io {
 InputBuffer::InputBuffer(StringPiece filename)
     : is_(filename.empty() ? &std::cin
                            : new std::ifstream(WPATH(filename.data()))) {
-  CHECK_IFS(*is_, filename.data());
+  if (!*is_)
+    status_ = util::StatusBuilder(util::error::NOT_FOUND)
+              << "\"" << filename.data() << "\": " << std::strerror(errno);
 }
 
 InputBuffer::~InputBuffer() {
@@ -228,6 +230,8 @@ InputBuffer::~InputBuffer() {
     delete is_;
   }
 }
+
+util::Status InputBuffer::status() const { return status_; }
 
 bool InputBuffer::ReadLine(std::string *line) {
   return static_cast<bool>(std::getline(*is_, *line));
@@ -237,7 +241,9 @@ OutputBuffer::OutputBuffer(StringPiece filename)
     : os_(filename.empty()
               ? &std::cout
               : new std::ofstream(WPATH(filename.data()), OUTPUT_MODE)) {
-  CHECK_OFS(*os_, filename.data());
+  if (!*os_)
+    status_ = util::StatusBuilder(util::error::PERMISSION_DENIED)
+              << "\"" << filename.data() << "\": " << std::strerror(errno);
 }
 
 OutputBuffer::~OutputBuffer() {
@@ -246,13 +252,15 @@ OutputBuffer::~OutputBuffer() {
   }
 }
 
-void OutputBuffer::Write(StringPiece text) {
+util::Status OutputBuffer::status() const { return status_; }
+
+bool OutputBuffer::Write(StringPiece text) {
   os_->write(text.data(), text.size());
+  return os_->good();
 }
 
-void OutputBuffer::WriteLine(StringPiece text) {
-  Write(text);
-  Write("\n");
+bool OutputBuffer::WriteLine(StringPiece text) {
+  return Write(text) && Write("\n");
 }
 }  // namespace io
 }  // namespace sentencepiece

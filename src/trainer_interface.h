@@ -22,6 +22,7 @@
 
 #include "common.h"
 #include "sentencepiece_model.pb.h"
+#include "sentencepiece_processor.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -65,7 +66,9 @@ class TrainerInterface {
 
   virtual ~TrainerInterface();
 
-  virtual void Train() {}
+  virtual util::Status Train() { return status(); }
+
+  virtual util::Status status() const { return status_; }
 
   FRIEND_TEST(TrainerInterfaceTest, IsValidSentencePieceTest);
   FRIEND_TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest);
@@ -79,7 +82,7 @@ class TrainerInterface {
 
   // Loads all sentences from spec.input().
   // It loads at most input_sentence_size sentences.
-  void LoadSentences();
+  util::Status LoadSentences();
 
   // Splits all sentencecs by whitespaces and
   // replace the |sentences_| with tokenized string.
@@ -89,7 +92,7 @@ class TrainerInterface {
   void SplitSentencesByWhitespace();
 
   // Save model files into spec.model_prefix().
-  void Save() const;
+  util::Status Save() const;
 
   // Set of characters which must be included in the final vocab.
   // The value of this map stores the frequency.
@@ -109,24 +112,27 @@ class TrainerInterface {
 
   // Reserved control pieces. e.g., <unk>, <s>, </s>.
   // The index corresponds to vocab id.
-  std::vector<std::pair<std::string,
-                        ModelProto::SentencePiece::Type>> meta_pieces_;
+  std::vector<std::pair<std::string, ModelProto::SentencePiece::Type>>
+      meta_pieces_;
+
+  // Detect errors on initialization.
+  util::Status status_;
 
  private:
   // Serialize final_pieces_ to |model_proto|.
-  void Serialize(ModelProto *model_proto) const;
+  util::Status Serialize(ModelProto *model_proto) const;
 
   // Saves the best sentence split with the current model for debugging.
-  void SaveSplits(StringPiece filename) const;
+  util::Status SaveSplits(StringPiece filename) const;
 
   // Saves model file.
-  void SaveModel(StringPiece filename) const;
+  util::Status SaveModel(StringPiece filename) const;
 
   // Saves vocabulary file for NMT.
-  void SaveVocab(StringPiece filename) const;
+  util::Status SaveVocab(StringPiece filename) const;
 
   // Initializes `meta_pieces_` from TrainerSpec.
-  void InitMetaPieces();
+  util::Status InitMetaPieces();
 };
 }  // namespace sentencepiece
 #endif  // TRAINER_INTERFACE_H_

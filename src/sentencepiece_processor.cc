@@ -40,20 +40,22 @@ SentencePieceProcessor::~SentencePieceProcessor() {}
 util::Status SentencePieceProcessor::Load(const std::string &filename) {
   std::ifstream ifs(filename.c_str(), std::ios::binary | std::ios::in);
   if (!ifs) {
-    return util::NotFoundError(std::string("Cannot open ") + filename);
+    return util::StatusBuilder(util::error::NOT_FOUND)
+           << "\"" << filename << "\": " << std::strerror(errno);
   }
 
   return Load(&ifs);
 }
 
+void SentencePieceProcessor::LoadOrDie(const std::string &filename) {
+  CHECK_OK(Load(filename));
+}
+
 util::Status SentencePieceProcessor::Load(std::istream *is) {
-  if (is == nullptr)
-    return util::InternalError("input ifstream is null");
+  CHECK_OR_RETURN(is) << "input ifstream is null";
 
   model_proto_ = port::MakeUnique<ModelProto>();
-  if (!model_proto_->ParseFromIstream(is)) {
-    return util::InternalError("Model file is broken");
-  }
+  CHECK_OR_RETURN(model_proto_->ParseFromIstream(is)) << "Model file is broken";
 
   model_ = ModelFactory::Create(*model_proto_);
   normalizer_ =
@@ -73,32 +75,27 @@ util::Status SentencePieceProcessor::SetDecodeExtraOptions(
 }
 
 util::Status SentencePieceProcessor::status() const {
-  if (model_ == nullptr)
-    return util::InternalError("Model is not initialized.");
-  if (normalizer_ == nullptr)
-    return util::InternalError("Normalizer is not initialized.");
-  if (!model_->status().ok()) return model_->status();
-  if (!normalizer_->status().ok()) return normalizer_->status();
-
+  CHECK_OR_RETURN(model_) << "Model is not initialized.";
+  CHECK_OR_RETURN(normalizer_) << "Normalizer is not initialized.";
+  RETURN_IF_ERROR(model_->status());
+  RETURN_IF_ERROR(normalizer_->status());
   return util::OkStatus();
 }
 
-#define CHECK_OR_RETURN_STATUS_STL(container)                   \
-  RETURN_IF_ERROR(status());                                    \
-  if (container == nullptr)                                     \
-    return util::InternalError("output container is null");     \
+#define CHECK_OR_RETURN_STATUS_STL(container)               \
+  RETURN_IF_ERROR(status());                                \
+  CHECK_OR_RETURN(container) << "output container is null"; \
   container->clear();
 
-#define CHECK_OR_RETURN_STATUS_PROTO(proto)             \
-  RETURN_IF_ERROR(status());                            \
-  if (proto == nullptr)                                 \
-    return util::InternalError("output proto is null"); \
+#define CHECK_OR_RETURN_STATUS_PROTO(proto)         \
+  RETURN_IF_ERROR(status());                        \
+  CHECK_OR_RETURN(proto) << "output proto is null"; \
   proto->Clear();
 
 //////////////////////////////////////////////////////////////
 // Simple API.
-util::Status SentencePieceProcessor::Encode(const std::string &input,
-                                            std::vector<std::string> *pieces) const {
+util::Status SentencePieceProcessor::Encode(
+    const std::string &input, std::vector<std::string> *pieces) const {
   CHECK_OR_RETURN_STATUS_STL(pieces);
 
   SentencePieceText spt;
@@ -123,11 +120,11 @@ util::Status SentencePieceProcessor::Encode(const std::string &input,
   return util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::Decode(const std::vector<std::string> &pieces,
-                                            std::string *detokenized) const {
+util::Status SentencePieceProcessor::Decode(
+    const std::vector<std::string> &pieces, std::string *detokenized) const {
   CHECK_OR_RETURN_STATUS_STL(detokenized);
-  SentencePieceText spt;
 
+  SentencePieceText spt;
   RETURN_IF_ERROR(Decode(pieces, &spt));
   *detokenized = std::move(spt.text());
 
@@ -137,8 +134,8 @@ util::Status SentencePieceProcessor::Decode(const std::vector<std::string> &piec
 util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
                                             std::string *detokenized) const {
   CHECK_OR_RETURN_STATUS_STL(detokenized);
-  SentencePieceText spt;
 
+  SentencePieceText spt;
   RETURN_IF_ERROR(Decode(ids, &spt));
   *detokenized = std::move(spt.text());
 
@@ -219,9 +216,7 @@ util::Status SentencePieceProcessor::PopulateSentencePieceText(
     const StringPiece w = p.first;  // piece
     const int id = p.second;        // id
 
-    if (w.empty()) {
-      return util::InternalError("Empty piece is not allowed.");
-    }
+    CHECK_OR_RETURN(!w.empty()) << "Empty piece is not allowed.";
 
     const bool is_unk = IsUnknown(id);
 
@@ -287,7 +282,8 @@ util::Status SentencePieceProcessor::Encode(const std::string &input,
   RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
   const auto result = model_->Encode(normalized);
-  RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt));
+  RETURN_IF_ERROR(
+      PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt));
 
   return util::OkStatus();
 }
@@ -301,25 +297,22 @@ util::Status SentencePieceProcessor::NBestEncode(
   std::vector<size_t> norm_to_orig;
   RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
-  const auto nbests =
-      model_->NBestEncode(normalized, nbest_size);
-  if (nbests.empty()) {
-    return util::InternalError("NBestEncode returns empty result");
-  }
+  const auto nbests = model_->NBestEncode(normalized, nbest_size);
+  CHECK_OR_RETURN(!nbests.empty()) << "NBestEncode returns empty result.";
 
   for (const auto &result : nbests) {
     auto *spt = nbest_spt->add_nbests();
     spt->set_score(result.second);
-    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig, result.first,
-                                              spt));
+    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
+                                              result.first, spt));
   }
 
   return util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::SampleEncode(const std::string &input,
-                                                  int nbest_size, float alpha,
-                                                  SentencePieceText *spt) const {
+util::Status SentencePieceProcessor::SampleEncode(
+    const std::string &input, int nbest_size, float alpha,
+    SentencePieceText *spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
   if (nbest_size > 512 || nbest_size == 0) {
@@ -333,13 +326,11 @@ util::Status SentencePieceProcessor::SampleEncode(const std::string &input,
 
   if (nbest_size == 1) {
     const auto result = model_->Encode(normalized);
-    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt));
+    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
+                                              result, spt));
   } else if (nbest_size > 1) {
-    const auto nbests =
-        model_->NBestEncode(normalized, nbest_size);
-    if (nbests.empty()) {
-      return util::InternalError("NBestEncode returns empty result");
-    }
+    const auto nbests = model_->NBestEncode(normalized, nbest_size);
+    CHECK_OR_RETURN(!nbests.empty()) << "NBestEncode returns empty result.";
 
     std::vector<float> probs(nbests.size(), 0.0);
     for (size_t i = 0; i < nbests.size(); ++i) {
@@ -353,14 +344,15 @@ util::Status SentencePieceProcessor::SampleEncode(const std::string &input,
 
   } else if (nbest_size < 0) {
     const auto result = model_->SampleEncode(normalized, alpha);
-    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt));
+    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
+                                              result, spt));
   }
 
   return util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::Decode(const std::vector<std::string> &pieces,
-                                            SentencePieceText *spt) const {
+util::Status SentencePieceProcessor::Decode(
+    const std::vector<std::string> &pieces, SentencePieceText *spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
   auto DecodeSentencePiece = [&](StringPiece piece, int id,
@@ -412,10 +404,11 @@ util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
   return Decode(pieces, spt);
 }
 
-#define CHECK_STATUS_OR_RETURN_DEFAULT(value)                           \
-  if (!status().ok()) {                                                 \
-    LOG(ERROR) << status().error_message() << "\nReturns default value " << value; \
-    return value;                                                       \
+#define CHECK_STATUS_OR_RETURN_DEFAULT(value)                            \
+  if (!status().ok()) {                                                  \
+    LOG(ERROR) << status().error_message() << "\nReturns default value " \
+               << value;                                                 \
+    return value;                                                        \
   }
 
 int SentencePieceProcessor::GetPieceSize() const {
@@ -474,7 +467,7 @@ util::Status SentencePieceProcessor::ApplyExtraOptions(
         piece->set_piece("<s>");
       } break;
       default:
-        return util::InternalError("Unknown extra_option type");
+        return util::InternalError("unknown extra_option type.");
     }
   }
 
@@ -492,8 +485,8 @@ util::Status SentencePieceProcessor::ParseExtraOptions(
                           {"reverse", SentencePieceProcessor::REVERSE}};
   for (const auto &s : string_util::Split(extra_option, ":")) {
     const auto it = extra_option_map.find(s);
-    if (it == extra_option_map.end())
-      return util::InternalError(std::string("option ") + s + " is not available.");
+    CHECK_OR_RETURN(it != extra_option_map.end())
+        << "option \"" << s << "\" is not available.";
     extra_options->push_back(it->second);
   }
   return util::OkStatus();

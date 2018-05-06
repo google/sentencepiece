@@ -28,7 +28,7 @@ class Trainer : public TrainerInterface {
           const NormalizerSpec &normalizer_spec)
       : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec) {}
 
-  void Train() override;
+  util::Status Train() override;
 };
 }  // namespace character
 }  // namespace sentencepiece

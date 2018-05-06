@@ -23,13 +23,15 @@
 namespace sentencepiece {
 namespace word {
 
-void Trainer::Train() {
+util::Status Trainer::Train() {
+  RETURN_IF_ERROR(status());
+
   LOG(INFO) << "Starts training with : \n" << trainer_spec_.Utf8DebugString();
 
-  CHECK(normalizer_spec_.escape_whitespaces());
-  CHECK_EQ(TrainerSpec::WORD, trainer_spec_.model_type());
+  CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());
+  CHECK_EQ_OR_RETURN(TrainerSpec::WORD, trainer_spec_.model_type());
 
-  LoadSentences();
+  RETURN_IF_ERROR(LoadSentences());
 
   std::unordered_map<std::string, uint64> freq;
   for (const auto &it : sentences_) {
@@ -39,7 +41,7 @@ void Trainer::Train() {
   }
 
   const int vocab_size = trainer_spec_.vocab_size() - meta_pieces_.size();
-  CHECK_GE(vocab_size, 0);
+  CHECK_GE_OR_RETURN(vocab_size, 0);
 
   uint64 sum = 0;
   for (const auto &it : freq) {
@@ -48,7 +50,7 @@ void Trainer::Train() {
 
   const float logsum = log(sum);
 
-  CHECK(final_pieces_.empty());
+  CHECK_OR_RETURN(final_pieces_.empty());
   for (const auto &it : Sorted(freq)) {
     if (it.first.find(kUNKStr) != std::string::npos) {
       continue;
@@ -59,7 +61,7 @@ void Trainer::Train() {
     final_pieces_.emplace_back(it.first, log(it.second) - logsum);
   }
 
-  Save();
+  return Save();
 }
 }  // namespace word
 }  // namespace sentencepiece

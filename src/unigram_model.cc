@@ -434,7 +434,7 @@ void ModelBase::BuildTrie(std::vector<std::pair<StringPiece, int>> *pieces) {
   if (!status().ok()) return;
 
   if (pieces->empty()) {
-    status_ = util::InternalError("No pieces are loaded.");
+    status_ = util::InternalError("no pieces are loaded.");
     return;
   }
 
@@ -453,7 +453,7 @@ void ModelBase::BuildTrie(std::vector<std::pair<StringPiece, int>> *pieces) {
   trie_ = port::MakeUnique<Darts::DoubleArray>();
   if (trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
                    &value[0]) != 0) {
-    status_ = util::InternalError("Cannot build double-array.");
+    status_ = util::InternalError("cannot build double-array.");
     return;
   }
 
@@ -471,7 +471,7 @@ void ModelBase::BuildTrie(std::vector<std::pair<StringPiece, int>> *pieces) {
   pieces_.clear();
 
   if (trie_results_size_ == 0)
-    status_ = util::InternalError("No entry is found in the trie.");
+    status_ = util::InternalError("no entry is found in the trie.");
 }
 
 Model::Model(const ModelProto &model_proto) {

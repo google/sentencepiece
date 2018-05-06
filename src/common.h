@@ -161,8 +161,6 @@ enum LogSeverity {
                     std::cerr << __FILE__ << "(" << __LINE__ << ") [" \
                               << #condition << "] "
 
-#define CHECK_IFS(a, b) CHECK((a)) << "No such file or directory: [" << b << "]"
-#define CHECK_OFS(a, b) CHECK((a)) << "Permission denied: [" << b << "]"
 #define CHECK_STREQ(a, b) CHECK_EQ(std::string(a), std::string(b))
 #define CHECK_EQ(a, b) CHECK((a) == (b))
 #define CHECK_NE(a, b) CHECK((a) != (b))
@@ -176,14 +174,21 @@ enum LogSeverity {
 
 #define FRIEND_TEST(a, b) friend class a##_Test_##b;
 
-#define CHECK_OK(status) \
-  CHECK_EQ(status.code(), ::sentencepiece::util::error::OK) << status.ToString()
-#define CHECK_NOT_OK(status) \
-  CHECK_NE(status.code(), ::sentencepiece::util::error::OK) << status.ToString()
+#define CHECK_OK(expr)                         \
+  do {                                         \
+    const auto _status = expr;                 \
+    CHECK(_status.ok()) << _status.ToString(); \
+  } while (0)
+
+#define CHECK_NOT_OK(expr)                      \
+  do {                                          \
+    const auto _status = expr;                  \
+    CHECK(!_status.ok()) << _status.ToString(); \
+  } while (0)
 
 #define RETURN_IF_ERROR(expr)          \
   do {                                 \
-    const util::Status _status = expr; \
+    const auto _status = expr;         \
     if (!_status.ok()) return _status; \
   } while (0)
 
