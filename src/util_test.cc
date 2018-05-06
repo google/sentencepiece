@@ -449,7 +449,8 @@ TEST(UtilTest, InputOutputBufferTest) {
 }
 
 TEST(UtilTest, InputOutputBufferInvalidFileTest) {
-  EXPECT_DEATH(io::InputBuffer input("__UNKNOWN__FILE__"));
+  io::InputBuffer input("__UNKNOWN__FILE__");
+  EXPECT_NOT_OK(input.status());
 }
 
 TEST(UtilTest, STLDeleteELementsTest) {

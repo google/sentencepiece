@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
   if (FLAGS_normalization_rule_tsv.empty() && !FLAGS_model.empty()) {
     sentencepiece::SentencePieceProcessor sp;
-    sp.Load(FLAGS_model);
+    CHECK_OK(sp.Load(FLAGS_model));
     spec = sp.model_proto().normalizer_spec();
   } else if (!FLAGS_normalization_rule_tsv.empty() && FLAGS_model.empty()) {
     const auto cmap = sentencepiece::normalizer::Builder::BuildMapFromFile(
@@ -57,6 +57,7 @@ int main(int argc, char *argv[]) {
 
   sentencepiece::normalizer::Normalizer normalizer(spec);
   sentencepiece::io::OutputBuffer output(FLAGS_output);
+  CHECK_OK(output.status());
 
   if (rest_args.empty()) {
     rest_args.push_back("");  // empty means that read from stdin.
@@ -65,6 +66,7 @@ int main(int argc, char *argv[]) {
   std::string line;
   for (const auto &filename : rest_args) {
     sentencepiece::io::InputBuffer input(filename);
+    CHECK_OK(input.status());
     while (input.ReadLine(&line)) {
       output.WriteLine(normalizer.Normalize(line));
     }

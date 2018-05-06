@@ -171,15 +171,18 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_unk_id(0);
     trainer_spec.set_bos_id(-1);
     trainer_spec.set_eos_id(2);
-    EXPECT_DEATH(TrainerInterface trainer(trainer_spec, normalizer_spec));
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    EXPECT_NOT_OK(trainer.status());
+  }
 
+  {
     // UNK is not defined.
     trainer_spec.set_unk_id(-1);
     trainer_spec.set_bos_id(0);
     trainer_spec.set_eos_id(1);
-    EXPECT_DEATH(TrainerInterface trainer(trainer_spec, normalizer_spec));
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    EXPECT_NOT_OK(trainer.status());
   }
-
 }
 
 TEST(TrainerInterfaceTest, SerializeTest) {
@@ -198,7 +201,7 @@ TEST(TrainerInterfaceTest, SerializeTest) {
     TrainerInterface trainer(trainer_spec, normalizer_spec);
     trainer.final_pieces_ = final_pieces;
     ModelProto model_proto;
-    EXPECT_DEATH(trainer.Serialize(&model_proto))
+    EXPECT_NOT_OK(trainer.Serialize(&model_proto));
   }
 
   {
@@ -207,7 +210,7 @@ TEST(TrainerInterfaceTest, SerializeTest) {
     TrainerInterface trainer(trainer_spec, normalizer_spec);
     trainer.final_pieces_ = final_pieces;
     ModelProto model_proto;
-    trainer.Serialize(&model_proto);
+    EXPECT_OK(trainer.Serialize(&model_proto));
     EXPECT_EQ(6, model_proto.trainer_spec().vocab_size());
     for (int i = 3; i < 6; ++i) {
       EXPECT_EQ(final_pieces[i - 3].first, model_proto.pieces(i).piece());

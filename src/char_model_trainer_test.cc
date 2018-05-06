@@ -50,7 +50,7 @@ std::string RunTrainer(const std::vector<std::string> &input, int size) {
   trainer.Train();
 
   SentencePieceProcessor processor;
-  processor.Load(model_prefix + ".model");
+  EXPECT_OK(processor.Load(model_prefix + ".model"));
 
   const auto &model = processor.model_proto();
   std::vector<std::string> pieces;

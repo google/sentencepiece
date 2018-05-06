@@ -32,8 +32,7 @@ static constexpr char kDefaultNormalizerName[] = "nfkc";
 // static
 util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec) {
   NormalizerSpec normalizer_spec;
-  Train(trainer_spec, normalizer_spec);
-  return util::OkStatus();
+  return Train(trainer_spec, normalizer_spec);
 }
 
 // static
@@ -42,9 +41,8 @@ util::Status SentencePieceTrainer::Train(
   auto copied_normalizer_spec = normalizer_spec;
 
   if (!copied_normalizer_spec.normalization_rule_tsv().empty()) {
-    if (!copied_normalizer_spec.precompiled_charsmap().empty()) {
-      return util::InternalError("precompiled_charsmap is already defined.");
-    }
+    CHECK_OR_RETURN(copied_normalizer_spec.precompiled_charsmap().empty())
+        << "precompiled_charsmap is already defined.";
 
     const auto chars_map = normalizer::Builder::BuildMapFromFile(
         copied_normalizer_spec.normalization_rule_tsv());
@@ -64,7 +62,7 @@ util::Status SentencePieceTrainer::Train(
   }
 
   auto trainer = TrainerFactory::Create(trainer_spec, copied_normalizer_spec);
-  trainer->Train();
+  RETURN_IF_ERROR(trainer->Train());
 
   return util::OkStatus();
 }
@@ -76,16 +74,15 @@ util::Status SentencePieceTrainer::SetProtoField(
   const auto *descriptor = message->GetDescriptor();
   const auto *reflection = message->GetReflection();
 
-  if (descriptor == nullptr || reflection == nullptr) {
-    return util::InternalError("Reflection is not supported.");
-  }
+  CHECK_OR_RETURN(descriptor != nullptr && reflection != nullptr)
+      << "reflection is not supported.";
 
   const auto *field = descriptor->FindFieldByName(std::string(field_name));
 
   if (field == nullptr) {
-    return util::NotFoundError(std::string("Unknown field name \"") +
-                               field_name + "\" in " +
-                               descriptor->DebugString());
+    return util::StatusBuilder(util::error::NOT_FOUND)
+           << "unknown field name \"" << field_name << "\" in\n"
+           << descriptor->DebugString();
   }
 
   std::vector<std::string> values = {value};
@@ -97,16 +94,16 @@ util::Status SentencePieceTrainer::SetProtoField(
   else                                               \
     reflection->Set##METHOD_TYPE(message, field, v);
 
-#define DEFINE_SET_FIELD(PROTO_TYPE, CPP_TYPE, FUNC_PREFIX, METHOD_TYPE, \
-                         EMPTY)                                          \
-  case google::protobuf::FieldDescriptor::CPPTYPE_##PROTO_TYPE: {        \
-    CPP_TYPE v;                                                          \
-    if (!string_util::lexical_cast(value.empty() ? EMPTY : value, &v))   \
-      return util::InvalidArgumentError(std::string("Cannot parse \"") + \
-                                        value + "\" as \"" +             \
-                                        field->type_name() + "\".");     \
-    SET_FIELD(METHOD_TYPE, v);                                           \
-    break;                                                               \
+#define DEFINE_SET_FIELD(PROTO_TYPE, CPP_TYPE, FUNC_PREFIX, METHOD_TYPE,       \
+                         EMPTY)                                                \
+  case google::protobuf::FieldDescriptor::CPPTYPE_##PROTO_TYPE: {              \
+    CPP_TYPE v;                                                                \
+    if (!string_util::lexical_cast(value.empty() ? EMPTY : value, &v))         \
+      return util::StatusBuilder(util::error::INVALID_ARGUMENT)                \
+             << "cannot parse \"" << value << "\" as \"" << field->type_name() \
+             << "\".";                                                         \
+    SET_FIELD(METHOD_TYPE, v);                                                 \
+    break;                                                                     \
   }
 
   for (const auto &value : values) {
@@ -125,17 +122,16 @@ util::Status SentencePieceTrainer::SetProtoField(
         const auto *enum_value =
             field->enum_type()->FindValueByName(string_util::ToUpper(value));
         if (enum_value == nullptr)
-          return util::InvalidArgumentError(
-              std::string("Unknown enumeration value of \"") + value +
-              "\" for field \"" + field->name() + "\".");
+          return util::StatusBuilder(util::error::INVALID_ARGUMENT)
+                 << "unknown enumeration value of \"" << value
+                 << "\" for field \"" << field->name() << "\".";
         SET_FIELD(Enum, enum_value);
         break;
       }
       default:
-        return util::UnimplementedError(std::string("Proto type \"") +
-                                        field->cpp_type_name() +
-                                        "\" is not supported.");
-        break;
+        return util::StatusBuilder(util::error::UNIMPLEMENTED)
+               << "proto type \"" << field->cpp_type_name()
+               << "\" is not supported.";
     }
   }
 
@@ -146,10 +142,8 @@ util::Status SentencePieceTrainer::SetProtoField(
 util::Status SentencePieceTrainer::MergeSpecsFromArgs(
     const std::string &args, TrainerSpec *trainer_spec,
     NormalizerSpec *normalizer_spec) {
-  if (trainer_spec == nullptr || normalizer_spec == nullptr) {
-    return util::InternalError(
-        "`trainer_spec` and `normalizer_spec` must not be null.");
-  }
+  CHECK_OR_RETURN(trainer_spec) << "`trainer_spec` must not be null.";
+  CHECK_OR_RETURN(normalizer_spec) << "`normalizer_spec` must not be null.";
 
   if (args.empty()) return util::OkStatus();
 

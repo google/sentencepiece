@@ -59,6 +59,11 @@ const char* Status::error_message() const {
   return ok() ? "" : rep_->error_message.c_str();
 }
 
+void Status::set_error_message(const char* str) {
+  if (rep_ == nullptr) rep_.reset(new Rep);
+  rep_->error_message = str;
+}
+
 error::Code Status::code() const { return ok() ? error::OK : rep_->code; }
 
 std::string Status::ToString() const {

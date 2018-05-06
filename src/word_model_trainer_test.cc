@@ -48,10 +48,10 @@ std::string RunTrainer(const std::vector<std::string> &input, int size) {
   normalizer_spec.set_add_dummy_prefix(true);
 
   Trainer trainer(trainer_spec, normalizer_spec);
-  trainer.Train();
+  EXPECT_OK(trainer.Train());
 
   SentencePieceProcessor processor;
-  processor.Load(model_prefix + ".model");
+  EXPECT_OK(processor.Load(model_prefix + ".model"));
 
   const auto &model = processor.model_proto();
   std::vector<std::string> pieces;

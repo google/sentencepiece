@@ -466,14 +466,18 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
   return Sorted(final_sentencepieces);
 }
 
-void Trainer::Train() {
+util::Status Trainer::Train() {
+  RETURN_IF_ERROR(status());
+
   LOG(INFO) << "Starts training with : \n" << trainer_spec_.Utf8DebugString();
 
-  CHECK(normalizer_spec_.escape_whitespaces());
+  CHECK_EQ_OR_RETURN(TrainerSpec::UNIGRAM, trainer_spec_.model_type());
+  CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());
 
   TrainerModel model(trainer_spec_, normalizer_spec_);
 
-  LoadSentences();
+  RETURN_IF_ERROR(model.status());
+  RETURN_IF_ERROR(LoadSentences());
 
   auto seed_sentencepieces = MakeSeedSentencePieces();
   model.SetSentencePieces(std::move(seed_sentencepieces));
@@ -522,7 +526,7 @@ void Trainer::Train() {
   // Finally, adjusts the size of sentencepices to be |vocab_size|.
   final_pieces_ = FinalizeSentencePieces(model);
 
-  Save();
+  return Save();
 }
 }  // namespace unigram
 }  // namespace sentencepiece

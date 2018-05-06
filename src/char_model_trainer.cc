@@ -22,16 +22,18 @@
 namespace sentencepiece {
 namespace character {
 
-void Trainer::Train() {
+util::Status Trainer::Train() {
+  RETURN_IF_ERROR(status());
+
   LOG(INFO) << "Starts training with : \n" << trainer_spec_.Utf8DebugString();
 
-  CHECK(normalizer_spec_.escape_whitespaces());
-  CHECK_EQ(TrainerSpec::CHAR, trainer_spec_.model_type());
+  CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());
+  CHECK_EQ_OR_RETURN(TrainerSpec::CHAR, trainer_spec_.model_type());
 
-  LoadSentences();
+  RETURN_IF_ERROR(LoadSentences());
 
   const int vocab_size = trainer_spec_.vocab_size() - meta_pieces_.size();
-  CHECK_GE(vocab_size, 0);
+  CHECK_GE_OR_RETURN(vocab_size, 0);
 
   uint64 sum = 0;
   for (const auto &it : required_chars_) {
@@ -40,7 +42,7 @@ void Trainer::Train() {
 
   const float logsum = log(sum);
 
-  CHECK(final_pieces_.empty());
+  CHECK_OR_RETURN(final_pieces_.empty());
   for (const auto &it : Sorted(required_chars_)) {
     if (final_pieces_.size() == static_cast<size_t>(vocab_size)) {
       break;
@@ -49,7 +51,7 @@ void Trainer::Train() {
                                log(it.second) - logsum);
   }
 
-  Save();
+  return Save();
 }
 }  // namespace character
 }  // namespace sentencepiece

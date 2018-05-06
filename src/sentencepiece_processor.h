@@ -124,6 +124,7 @@ class Status {
   bool operator!=(const Status &s) const;
   inline bool ok() const { return rep_ == nullptr; }
 
+  void set_error_message(const char *str);
   const char *error_message() const;
   error::Code code() const;
   std::string ToString() const;
@@ -144,6 +145,10 @@ class SentencePieceProcessor {
   // Loads model from `filename`.
   // Returns false if `filename` cannot be loaded.
   virtual util::Status Load(const std::string &filename);
+
+  // Loads model from `filename`.
+  // Crash if `filename` cannot be loaded.
+  virtual void LoadOrDie(const std::string &filename);
 
   // Loads model from `is`.
   // Returns false if `is` cannot be loaded.

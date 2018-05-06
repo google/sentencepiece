@@ -49,7 +49,7 @@ TEST(UnigramTrainerTest, EndToEndTest) {
   test::ScopedTempFile sf("tmp_model");
   trainer_spec.set_model_prefix(sf.filename());
   unigram::Trainer trainer(trainer_spec, normalizer_spec);
-  trainer.Train();
+  EXPECT_OK(trainer.Train());
 
   SentencePieceProcessor sp;
   EXPECT_OK(sp.Load(std::string(sf.filename()) + ".model"));
