@@ -37,7 +37,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
         self.assertEqual(text, self.sp_.Decode(pieces1))
         self.assertEqual(text, self.sp_.DecodePieces(pieces2))
         self.assertEqual(text, self.sp_.DecodeIds(ids))
-        for n in xrange(100):
+        for n in range(100):
           self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, 64, 0.5)))
           self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, -1, 0.5)))
           self.assertEqual(text, self.sp_.DecodeIds(self.sp_.SampleEncodeAsIds(text, 64, 0.5)))
@@ -65,7 +65,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
         self.assertEqual(text, self.jasp_.Decode(pieces1))
         self.assertEqual(text, self.jasp_.DecodePieces(pieces2))
         self.assertEqual(text, self.jasp_.DecodeIds(ids))
-        for n in xrange(100):
+        for n in range(100):
           self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, 64, 0.5)))
           self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, -1, 0.5)))
 

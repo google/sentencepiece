@@ -12,9 +12,13 @@ matrix:
       services: docker
     - os: linux
       env: IMAGE=debian:stable COMMAND=build_linux_gcc_debian
-      services: docker    
+      services: docker
     - os: linux
       env: IMAGE=fedora:latest COMMAND=build_linux_gcc_fedora
+      services: docker
+    - os: linux
+      script:
+        - $TRAVIS_BUILD_DIR/make_py_wheel.sh
       services: docker
     - os: linux
       env: IMAGE=ubuntu:rolling COMMAND=build_linux_clang_ubuntu
