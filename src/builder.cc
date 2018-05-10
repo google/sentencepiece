@@ -33,6 +33,7 @@
 namespace sentencepiece {
 namespace normalizer {
 namespace {
+static constexpr char kDefaultNormalizerName[] = "nfkc";
 
 #ifdef ENABLE_NFKC_COMPILE
 // Normalize |input| with ICU's normalizer with |mode|.
@@ -140,8 +141,10 @@ Builder::Chars Normalize(const Builder::CharsMap &chars_map,
 }  // namespace
 
 // static
-std::string Builder::CompileCharsMap(const CharsMap &chars_map) {
-  CHECK(!chars_map.empty());
+util::Status Builder::CompileCharsMap(const CharsMap &chars_map,
+                                      std::string *output) {
+  CHECK_OR_RETURN(output);
+  CHECK_OR_RETURN(!chars_map.empty());
 
   LOG(INFO) << "Loading CharsMap of size " << chars_map.size();
 
@@ -175,9 +178,8 @@ std::string Builder::CompileCharsMap(const CharsMap &chars_map) {
   }
 
   Darts::DoubleArray trie;
-  CHECK_EQ(
-      0,
-      trie.build(key.size(), const_cast<char **>(&key[0]), nullptr, &value[0]))
+  CHECK_EQ_OR_RETURN(0, trie.build(key.size(), const_cast<char **>(&key[0]),
+                                   nullptr, &value[0]))
       << "cannot build double-array";
 
   int max_nodes_size = 0;
@@ -188,41 +190,60 @@ std::string Builder::CompileCharsMap(const CharsMap &chars_map) {
                                                   results.size(), strlen(str));
     max_nodes_size = std::max(num_nodes, max_nodes_size);
   }
-  CHECK_LT(max_nodes_size, Normalizer::kMaxTrieResultsSize)
+  CHECK_LT_OR_RETURN(max_nodes_size, Normalizer::kMaxTrieResultsSize)
       << "This charmaps contain many shared prefix. "
       << "The number of shared prefix must be less than "
       << Normalizer::kMaxTrieResultsSize;
 
   StringPiece trie_blob(static_cast<const char *>(trie.array()),
                         trie.size() * trie.unit_size());
-  const std::string blob =
-      Normalizer::EncodePrecompiledCharsMap(trie_blob, normalized);
+  *output = Normalizer::EncodePrecompiledCharsMap(trie_blob, normalized);
 
-  LOG(INFO) << "Generated normalizer blob. size= " << blob.size();
+  LOG(INFO) << "Generated normalizer blob. size= " << output->size();
 
-  return blob;
+  return util::OkStatus();
 }
 
 // static
-std::string Builder::GetPrecompiledCharsMap(const std::string &name) {
+util::Status Builder::GetPrecompiledCharsMap(const std::string &name,
+                                             std::string *output) {
   std::string result;
   for (size_t i = 0; i < kNormalizationRules_size; ++i) {
     const auto *blob = &kNormalizationRules_blob[i];
     if (blob->name == name) {
-      result.assign(blob->data, blob->size);
-      return result;
+      output->assign(blob->data, blob->size);
+      return util::OkStatus();
     }
   }
-  LOG(FATAL) << "No precompiled charsmap is found: " << name;
-  return result;
+  return util::StatusBuilder(util::error::NOT_FOUND)
+         << "No precompiled charsmap is found: " << name;
 }
 
 // static
-NormalizerSpec Builder::GetNormalizerSpec(const std::string &name) {
-  NormalizerSpec spec;
-  spec.set_name(name);
-  spec.set_precompiled_charsmap(GetPrecompiledCharsMap(name));
-  return spec;
+util::Status Builder::PopulateNormalizationSpec(
+    NormalizerSpec *normalizer_spec) {
+  CHECK_OR_RETURN(normalizer_spec);
+
+  if (!normalizer_spec->normalization_rule_tsv().empty()) {
+    CHECK_OR_RETURN(normalizer_spec->precompiled_charsmap().empty())
+        << "precompiled_charsmap is already defined.";
+    const auto chars_map = normalizer::Builder::BuildMapFromFile(
+        normalizer_spec->normalization_rule_tsv());
+    RETURN_IF_ERROR(CompileCharsMap(
+        chars_map, normalizer_spec->mutable_precompiled_charsmap()));
+    normalizer_spec->set_name("user_defined");
+  } else {
+    if (normalizer_spec->name().empty()) {
+      normalizer_spec->set_name(kDefaultNormalizerName);
+    }
+    if (normalizer_spec->precompiled_charsmap().empty()) {
+      RETURN_IF_ERROR(GetPrecompiledCharsMap(
+          normalizer_spec->name(),
+          normalizer_spec->mutable_precompiled_charsmap()));
+    }
+  }
+
+  return util::OkStatus();
 }
 
 // static

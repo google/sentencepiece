@@ -23,7 +23,12 @@ namespace {
 // Space symbol
 #define WS "\xe2\x96\x81"
 
-NormalizerSpec MakeDefaultSpec() { return Builder::GetNormalizerSpec("nfkc"); }
+NormalizerSpec MakeDefaultSpec() {
+  NormalizerSpec normalizer_spec;
+  normalizer_spec.set_name("nfkc");
+  EXPECT_OK(normalizer::Builder::PopulateNormalizationSpec(&normalizer_spec));
+  return normalizer_spec;
+}
 }  // namespace
 
 TEST(NormalizerTest, NormalizeErrorTest) {
@@ -140,7 +145,8 @@ TEST(NormalizeTest, NomalizeWithSpaceContainedRules) {
   AddRule("d", " F G ");
 
   NormalizerSpec spec;
-  spec.set_precompiled_charsmap(Builder::CompileCharsMap(charsmap));
+  EXPECT_OK(
+      Builder::CompileCharsMap(charsmap, spec.mutable_precompiled_charsmap()));
 
   // Test default behavior
   {
@@ -297,8 +303,8 @@ TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest) {
   EXPECT_EQ("foo", trie_blob);
   EXPECT_EQ("bar", normalized_blob);
 
-  EXPECT_NOT_OK(Normalizer::DecodePrecompiledCharsMap("", &trie_blob,
-                                                      &normalized_blob));
+  EXPECT_NOT_OK(
+      Normalizer::DecodePrecompiledCharsMap("", &trie_blob, &normalized_blob));
 }
 
 TEST(NormalizerTest, StatusTest) {

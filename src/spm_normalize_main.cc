@@ -25,9 +25,14 @@ DEFINE_string(model, "", "Model file name");
 DEFINE_bool(use_internal_normalization, false,
             "Use NormalizerSpec \"as-is\" to run the normalizer "
             "for SentencePiece segmentation");
+DEFINE_string(normalization_rule_name, "",
+              "Normalization rule name. "
+              "Choose from nfkc or identity");
 DEFINE_string(normalization_rule_tsv, "", "Normalization rule TSV file. ");
 DEFINE_bool(remove_extra_whitespaces, true, "Remove extra whitespaces");
 DEFINE_string(output, "", "Output filename");
+
+using sentencepiece::normalizer::Builder;
 
 int main(int argc, char *argv[]) {
   std::vector<std::string> rest_args;
@@ -35,17 +40,19 @@ int main(int argc, char *argv[]) {
 
   sentencepiece::NormalizerSpec spec;
 
-  if (FLAGS_normalization_rule_tsv.empty() && !FLAGS_model.empty()) {
+  if (!FLAGS_model.empty()) {
     sentencepiece::SentencePieceProcessor sp;
     CHECK_OK(sp.Load(FLAGS_model));
     spec = sp.model_proto().normalizer_spec();
-  } else if (!FLAGS_normalization_rule_tsv.empty() && FLAGS_model.empty()) {
-    const auto cmap = sentencepiece::normalizer::Builder::BuildMapFromFile(
-        FLAGS_normalization_rule_tsv);
-    spec.set_precompiled_charsmap(
-        sentencepiece::normalizer::Builder::CompileCharsMap(cmap));
+  } else if (!FLAGS_normalization_rule_tsv.empty()) {
+    spec.set_normalization_rule_tsv(FLAGS_normalization_rule_tsv);
+    CHECK_OK(Builder::PopulateNormalizationSpec(&spec));
+  } else if (!FLAGS_normalization_rule_name.empty()) {
+    spec.set_name(FLAGS_normalization_rule_name);
+    CHECK_OK(Builder::PopulateNormalizationSpec(&spec));
   } else {
-    LOG(FATAL) << "Sets --model or normalization_rule_tsv flag";
+    LOG(FATAL) << "Sets --model, normalization_rule_tsv, or "
+                  "normalization_rule_name flag.";
   }
 
   // Uses the normalizer spec encoded in the model_pb.

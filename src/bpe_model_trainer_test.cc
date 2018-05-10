@@ -44,8 +44,10 @@ std::string RunTrainer(const std::vector<std::string> &input, int size) {
   trainer_spec.set_vocab_size(size - 3);  // remove <unk>, <s>, </s>
   trainer_spec.set_model_prefix(model_prefix);
 
-  auto normalizer_spec = normalizer::Builder::GetNormalizerSpec("identity");
+  NormalizerSpec normalizer_spec;
+  normalizer_spec.set_name("identity");
   normalizer_spec.set_add_dummy_prefix(false);
+  EXPECT_OK(normalizer::Builder::PopulateNormalizationSpec(&normalizer_spec));
 
   Trainer trainer(trainer_spec, normalizer_spec);
   trainer.Train();
@@ -76,9 +78,11 @@ TEST(BPETrainerTest, BasicTest) {
 
 TEST(BPETrainerTest, EndToEndTest) {
   TrainerSpec trainer_spec;
-  NormalizerSpec normalizer_spec;
-  normalizer_spec = normalizer::Builder::GetNormalizerSpec("nfkc");
   trainer_spec.add_input("../data/wagahaiwa_nekodearu.txt");
+
+  NormalizerSpec normalizer_spec;
+  normalizer_spec.set_name("nfkc");
+  EXPECT_OK(normalizer::Builder::PopulateNormalizationSpec(&normalizer_spec));
 
   constexpr int kVocabSize = 8000;
   trainer_spec.set_vocab_size(kVocabSize);

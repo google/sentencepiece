@@ -25,9 +25,6 @@
 #include "util.h"
 
 namespace sentencepiece {
-namespace {
-static constexpr char kDefaultNormalizerName[] = "nfkc";
-}  // namespace
 
 // static
 util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec) {
@@ -39,32 +36,11 @@ util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec) {
 util::Status SentencePieceTrainer::Train(
     const TrainerSpec &trainer_spec, const NormalizerSpec &normalizer_spec) {
   auto copied_normalizer_spec = normalizer_spec;
-
-  if (!copied_normalizer_spec.normalization_rule_tsv().empty()) {
-    CHECK_OR_RETURN(copied_normalizer_spec.precompiled_charsmap().empty())
-        << "precompiled_charsmap is already defined.";
-
-    const auto chars_map = normalizer::Builder::BuildMapFromFile(
-        copied_normalizer_spec.normalization_rule_tsv());
-    copied_normalizer_spec.set_precompiled_charsmap(
-        normalizer::Builder::CompileCharsMap(chars_map));
-    copied_normalizer_spec.set_name("user_defined");
-  } else {
-    if (copied_normalizer_spec.name().empty()) {
-      copied_normalizer_spec.set_name(kDefaultNormalizerName);
-    }
-
-    if (copied_normalizer_spec.precompiled_charsmap().empty()) {
-      *(copied_normalizer_spec.mutable_precompiled_charsmap()) =
-          normalizer::Builder::GetNormalizerSpec(copied_normalizer_spec.name())
-              .precompiled_charsmap();
-    }
-  }
+  RETURN_IF_ERROR(
+      normalizer::Builder::PopulateNormalizationSpec(&copied_normalizer_spec));
 
   auto trainer = TrainerFactory::Create(trainer_spec, copied_normalizer_spec);
-  RETURN_IF_ERROR(trainer->Train());
-
-  return util::OkStatus();
+  return trainer->Train();
 }
 
 // static

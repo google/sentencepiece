@@ -20,6 +20,7 @@
 #include <vector>
 #include "common.h"
 #include "sentencepiece_model.pb.h"
+#include "sentencepiece_processor.h"
 #include "stringpiece.h"
 
 namespace sentencepiece {
@@ -41,14 +42,17 @@ class Builder {
   // String-to-string mapping.
   using CharsMap = std::map<Chars, Chars>;
 
-  // Compiles |chars_map| into a binary index.
-  static std::string CompileCharsMap(const CharsMap &chars_map);
+  static util::Status CompileCharsMap(const CharsMap &chars_map,
+                                      std::string *output);
 
-  // Returns a pre-compiled binary index with |name|.
-  static std::string GetPrecompiledCharsMap(const std::string &name);
+  // Returns a pre-compiled binary index with `name`.
+  static util::Status GetPrecompiledCharsMap(const std::string &name,
+                                             std::string *output);
 
-  // Returns a normalizer spec with a binary index |name|.
-  static NormalizerSpec GetNormalizerSpec(const std::string &name);
+  // Populates necessary fields (precompiled_charmap) from
+  // `name` or `normalization_rule_tsv` fields in `normalizer_spec`.
+  static util::Status PopulateNormalizationSpec(
+      NormalizerSpec *normalizer_spec);
 
   // Makes a normalization mapping based on NFKC.
   //
@@ -90,7 +94,7 @@ class Builder {
   // Returns identity mapping, which dose not perform any normalization.
   static CharsMap BuildIdentityMap();
 
-  // Builds Chars map save in |filename|.
+  // Builds Chars map save in `filename`.
   // Format:
   // src_uchar1 src_uchar2 ... <tab> trg_uchar1 trg_uchar2...
   // (src|trg)_ucharX must be a hex of UCS4.
@@ -99,7 +103,7 @@ class Builder {
  private:
   FRIEND_TEST(BuilderTest, RemoveRedundantMapTest);
 
-  // Removes redundant rules from |chars_map|.
+  // Removes redundant rules from `chars_map`.
   // When char_maps have "aa" => "bb" and "a" => "b", the first
   // rule is not necessary since the second rule can cover the first rule.
   static CharsMap RemoveRedundantMap(const CharsMap &chars_map);

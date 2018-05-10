@@ -44,7 +44,9 @@ std::string RunTrainer(const std::vector<std::string> &input, int size) {
   trainer_spec.set_vocab_size(size - 3);  // remove <unk>, <s>, </s>
   trainer_spec.set_model_prefix(model_prefix);
 
-  auto normalizer_spec = normalizer::Builder::GetNormalizerSpec("identity");
+  NormalizerSpec normalizer_spec;
+  normalizer_spec.set_name("identity");
+  EXPECT_OK(normalizer::Builder::PopulateNormalizationSpec(&normalizer_spec));
   normalizer_spec.set_add_dummy_prefix(true);
 
   Trainer trainer(trainer_spec, normalizer_spec);
