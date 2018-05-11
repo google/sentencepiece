@@ -42,8 +42,9 @@ TEST(BuilderTest, RemoveRedundantMapTest) {
 }
 
 TEST(BuilderTest, GetPrecompiledCharsMapWithInvalidNameTest) {
-  EXPECT_DEATH(Builder::GetPrecompiledCharsMap(""));
-  EXPECT_DEATH(Builder::GetPrecompiledCharsMap("__UNKNOWN__"));
+  std::string output;
+  EXPECT_NOT_OK(Builder::GetPrecompiledCharsMap("", &output));
+  EXPECT_NOT_OK(Builder::GetPrecompiledCharsMap("__UNKNOWN__", &output));
 }
 
 TEST(BuilderTest, BuildIdentityMapTest) {
@@ -62,8 +63,9 @@ TEST(BuilderTest, BuildNFKCMapTest) {
 
 TEST(BuilderTest, GetPrecompiledCharsMapTest) {
   {
-    const NormalizerSpec spec = Builder::GetNormalizerSpec("nfkc");
-
+    NormalizerSpec spec;
+    spec.set_name("nfkc");
+    EXPECT_OK(Builder::PopulateNormalizationSpec(&spec));
     const Normalizer normalizer(spec);
     EXPECT_EQ(WS "ABC", normalizer.Normalize("ＡＢＣ"));
     EXPECT_EQ(WS "(株)", normalizer.Normalize("㈱"));
@@ -71,8 +73,9 @@ TEST(BuilderTest, GetPrecompiledCharsMapTest) {
   }
 
   {
-    const NormalizerSpec spec = Builder::GetNormalizerSpec("identity");
-
+    NormalizerSpec spec;
+    spec.set_name("identity");
+    EXPECT_OK(Builder::PopulateNormalizationSpec(&spec));
     const Normalizer normalizer(spec);
     EXPECT_EQ(WS "ＡＢＣ", normalizer.Normalize("ＡＢＣ"));
     EXPECT_EQ(WS "㈱", normalizer.Normalize("㈱"));
@@ -94,7 +97,8 @@ TEST(BuilderTest, CompileCharsMap) {
   chars_map[{0x3042, 0x3044, 0x3046}] = {0x0061, 0x0062, 0x0063};
 
   NormalizerSpec spec;
-  spec.set_precompiled_charsmap(Builder::CompileCharsMap(chars_map));
+  EXPECT_OK(
+      Builder::CompileCharsMap(chars_map, spec.mutable_precompiled_charsmap()));
   spec.set_add_dummy_prefix(false);
   const Normalizer normalizer(spec);
 
@@ -110,8 +114,10 @@ TEST(BuilderTest, CompileCharsMap) {
 
 TEST(BuilderTest, BuildMapFromFileTest) {
   const auto cmap = Builder::BuildMapFromFile("../data/nfkc.tsv");
-  const auto precompiled = Builder::CompileCharsMap(cmap);
-  EXPECT_EQ(Builder::GetPrecompiledCharsMap("nfkc"), precompiled);
+  std::string expected, precompiled;
+  EXPECT_OK(Builder::CompileCharsMap(cmap, &precompiled));
+  EXPECT_OK(Builder::GetPrecompiledCharsMap("nfkc", &expected));
+  EXPECT_EQ(expected, precompiled);
 }
 
 TEST(BuilderTest, ContainsTooManySharedPrefixTest) {
@@ -122,7 +128,8 @@ TEST(BuilderTest, ContainsTooManySharedPrefixTest) {
     keys.push_back('a');
     chars_map[keys] = {'b'};
   }
-  EXPECT_DEATH(Builder::CompileCharsMap(chars_map));
+  std::string output;
+  EXPECT_NOT_OK(Builder::CompileCharsMap(chars_map, &output));
 }
 
 }  // namespace normalizer

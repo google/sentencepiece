@@ -100,7 +100,10 @@ std::vector<std::string> GetSpVec(const SentencePieceText &spt) {
 }
 
 NormalizerSpec MakeDefaultNormalizerSpec() {
-  return normalizer::Builder::GetNormalizerSpec("nfkc");
+  NormalizerSpec normalizer_spec;
+  normalizer_spec.set_name("nfkc");
+  EXPECT_OK(normalizer::Builder::PopulateNormalizationSpec(&normalizer_spec));
+  return normalizer_spec;
 }
 
 TEST(SentencepieceProcessorTest, StatusTest) {
@@ -512,7 +515,7 @@ void AddPiece(ModelProto *model_proto, StringPiece piece, float score = 0.0) {
 
 TEST(SentencePieceProcessorTest, LoadInvalidModelTest) {
   SentencePieceProcessor sp;
-  std::istream* stream = nullptr;
+  std::istream *stream = nullptr;
   EXPECT_NOT_OK(sp.Load(stream));
   EXPECT_NOT_OK(sp.Load(""));
   EXPECT_NOT_OK(sp.Load("__UNKNOWN_FILE__"));

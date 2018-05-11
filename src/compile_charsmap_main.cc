@@ -76,7 +76,7 @@ std::string ToHexData(StringPiece data) {
   return os.str();
 }
 }  // namespace
-}  // sentencepiece
+}  // namespace sentencepiece
 
 int main(int argc, char **argv) {
   sentencepiece::flags::ParseCommandLineFlags(argc, argv);
@@ -108,7 +108,8 @@ constexpr BinaryBlob kNormalizationRules_blob[] = {)";
 
   for (const auto &p : kRuleList) {
     const auto normalized_map = p.second();
-    const auto index = Builder::CompileCharsMap(normalized_map);
+    std::string index;
+    CHECK_OK(Builder::CompileCharsMap(normalized_map, &index));
     os << "{ \"" << p.first << "\", " << index.size() << ",\n";
     os << sentencepiece::ToHexData(index);
     os << " },";
