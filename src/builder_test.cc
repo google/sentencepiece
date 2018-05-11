@@ -65,7 +65,7 @@ TEST(BuilderTest, GetPrecompiledCharsMapTest) {
   {
     NormalizerSpec spec;
     spec.set_name("nfkc");
-    EXPECT_OK(Builder::PopulateNormalizationSpec(&spec));
+    EXPECT_OK(Builder::PopulateNormalizerSpec(&spec));
     const Normalizer normalizer(spec);
     EXPECT_EQ(WS "ABC", normalizer.Normalize("ＡＢＣ"));
     EXPECT_EQ(WS "(株)", normalizer.Normalize("㈱"));
@@ -75,7 +75,7 @@ TEST(BuilderTest, GetPrecompiledCharsMapTest) {
   {
     NormalizerSpec spec;
     spec.set_name("identity");
-    EXPECT_OK(Builder::PopulateNormalizationSpec(&spec));
+    EXPECT_OK(Builder::PopulateNormalizerSpec(&spec));
     const Normalizer normalizer(spec);
     EXPECT_EQ(WS "ＡＢＣ", normalizer.Normalize("ＡＢＣ"));
     EXPECT_EQ(WS "㈱", normalizer.Normalize("㈱"));

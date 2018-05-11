@@ -26,7 +26,7 @@ namespace {
 NormalizerSpec MakeDefaultSpec() {
   NormalizerSpec normalizer_spec;
   normalizer_spec.set_name("nfkc");
-  EXPECT_OK(normalizer::Builder::PopulateNormalizationSpec(&normalizer_spec));
+  EXPECT_OK(normalizer::Builder::PopulateNormalizerSpec(&normalizer_spec));
   return normalizer_spec;
 }
 }  // namespace

@@ -46,7 +46,7 @@ std::string RunTrainer(const std::vector<std::string> &input, int size) {
 
   NormalizerSpec normalizer_spec;
   normalizer_spec.set_name("identity");
-  EXPECT_OK(normalizer::Builder::PopulateNormalizationSpec(&normalizer_spec));
+  EXPECT_OK(normalizer::Builder::PopulateNormalizerSpec(&normalizer_spec));
   normalizer_spec.set_add_dummy_prefix(true);
 
   Trainer trainer(trainer_spec, normalizer_spec);

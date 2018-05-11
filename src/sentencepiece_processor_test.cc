@@ -102,7 +102,7 @@ std::vector<std::string> GetSpVec(const SentencePieceText &spt) {
 NormalizerSpec MakeDefaultNormalizerSpec() {
   NormalizerSpec normalizer_spec;
   normalizer_spec.set_name("nfkc");
-  EXPECT_OK(normalizer::Builder::PopulateNormalizationSpec(&normalizer_spec));
+  EXPECT_OK(normalizer::Builder::PopulateNormalizerSpec(&normalizer_spec));
   return normalizer_spec;
 }
 

@@ -46,10 +46,10 @@ int main(int argc, char *argv[]) {
     spec = sp.model_proto().normalizer_spec();
   } else if (!FLAGS_normalization_rule_tsv.empty()) {
     spec.set_normalization_rule_tsv(FLAGS_normalization_rule_tsv);
-    CHECK_OK(Builder::PopulateNormalizationSpec(&spec));
+    CHECK_OK(Builder::PopulateNormalizerSpec(&spec));
   } else if (!FLAGS_normalization_rule_name.empty()) {
     spec.set_name(FLAGS_normalization_rule_name);
-    CHECK_OK(Builder::PopulateNormalizationSpec(&spec));
+    CHECK_OK(Builder::PopulateNormalizerSpec(&spec));
   } else {
     LOG(FATAL) << "Sets --model, normalization_rule_tsv, or "
                   "normalization_rule_name flag.";

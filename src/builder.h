@@ -51,8 +51,7 @@ class Builder {
 
   // Populates necessary fields (precompiled_charmap) from
   // `name` or `normalization_rule_tsv` fields in `normalizer_spec`.
-  static util::Status PopulateNormalizationSpec(
-      NormalizerSpec *normalizer_spec);
+  static util::Status PopulateNormalizerSpec(NormalizerSpec *normalizer_spec);
 
   // Makes a normalization mapping based on NFKC.
   //
