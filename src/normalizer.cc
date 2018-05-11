@@ -21,6 +21,8 @@
 namespace sentencepiece {
 namespace normalizer {
 
+constexpr int Normalizer::kMaxTrieResultsSize;
+
 Normalizer::Normalizer(const NormalizerSpec &spec) : spec_(&spec) {
   StringPiece index = spec.precompiled_charsmap();
   if (index.empty()) {
