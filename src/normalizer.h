@@ -93,7 +93,7 @@ class Normalizer {
 
   // Maximum size of the return value of Trie, which corresponds
   // to the maximum size of shared common prefix in the chars map.
-  static const int kMaxTrieResultsSize = 32;
+  static constexpr int kMaxTrieResultsSize = 32;
 
   // Internal trie for efficient longest matching.
   std::unique_ptr<Darts::DoubleArray> trie_;
