@@ -220,8 +220,7 @@ util::Status Builder::GetPrecompiledCharsMap(const std::string &name,
 }
 
 // static
-util::Status Builder::PopulateNormalizationSpec(
-    NormalizerSpec *normalizer_spec) {
+util::Status Builder::PopulateNormalizerSpec(NormalizerSpec *normalizer_spec) {
   CHECK_OR_RETURN(normalizer_spec);
 
   if (!normalizer_spec->normalization_rule_tsv().empty()) {
