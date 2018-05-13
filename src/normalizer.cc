@@ -196,9 +196,19 @@ std::pair<StringPiece, int> Normalizer::NormalizePrefix(
   }
 
   if (longest_length == 0) {
-    result.second = std::min<int>(
-        input.size(), std::max<int>(1, string_util::OneCharLen(input.data())));
-    result.first.set(input.data(), result.second);
+    size_t length = 0;
+    if (!string_util::IsValidDecodeUTF8(input, &length)) {
+      // Found a malformed utf8.
+      // The rune is set to be 0xFFFD (REPLACEMENT CHARACTER),
+      // which is a valid Unicode of three bytes in utf8,
+      // but here we only consume one byte.
+      result.second = 1;
+      static const char kReplacementChar[] = "\xEF\xBF\xBD";
+      result.first.set(kReplacementChar, 3);
+    } else {
+      result.second = length;
+      result.first.set(input.data(), result.second);
+    }
   } else {
     result.second = longest_length;
     // No need to pass the size of normalized sentence,

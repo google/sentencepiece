@@ -1,3 +1,4 @@
+
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +18,9 @@
 #include "testharness.h"
 
 namespace sentencepiece {
+namespace {
+constexpr int kMaxUnicode = 0x10FFFF;
+}
 
 TEST(UtilTest, LexicalCastTest) {
   bool b = false;
@@ -260,73 +264,57 @@ TEST(UtilTest, DecodeUTF8Test) {
 
   {
     const std::string input = "";
-    EXPECT_EQ(0, string_util::DecodeUTF8(input.data(),
-                                         input.data() + input.size(), &mblen));
+    EXPECT_EQ(0, string_util::DecodeUTF8(input, &mblen));
     EXPECT_EQ(1, mblen);  // mblen always returns >= 1
   }
 
   {
-    const std::string input = "\x01";
-    EXPECT_EQ(1, string_util::DecodeUTF8(input.data(),
-                                         input.data() + input.size(), &mblen));
+    EXPECT_EQ(1, string_util::DecodeUTF8("\x01", &mblen));
     EXPECT_EQ(1, mblen);
   }
 
   {
-    const std::string input = "\x7F";
-    EXPECT_EQ(0x7F, string_util::DecodeUTF8(
-                        input.data(), input.data() + input.size(), &mblen));
+    EXPECT_EQ(0x7F, string_util::DecodeUTF8("\x7F", &mblen));
     EXPECT_EQ(1, mblen);
   }
 
   {
-    const std::string input = "\xC2\x80 ";
-    EXPECT_EQ(0x80, string_util::DecodeUTF8(
-                        input.data(), input.data() + input.size(), &mblen));
+    EXPECT_EQ(0x80, string_util::DecodeUTF8("\xC2\x80 ", &mblen));
     EXPECT_EQ(2, mblen);
   }
 
   {
-    const std::string input = "\xDF\xBF ";
-    EXPECT_EQ(0x7FF, string_util::DecodeUTF8(
-                         input.data(), input.data() + input.size(), &mblen));
+    EXPECT_EQ(0x7FF, string_util::DecodeUTF8("\xDF\xBF ", &mblen));
     EXPECT_EQ(2, mblen);
   }
 
   {
-    const std::string input = "\xE0\xA0\x80 ";
-    EXPECT_EQ(0x800, string_util::DecodeUTF8(
-                         input.data(), input.data() + input.size(), &mblen));
+    EXPECT_EQ(0x800, string_util::DecodeUTF8("\xE0\xA0\x80 ", &mblen));
     EXPECT_EQ(3, mblen);
   }
 
   {
-    const std::string input = "\xF0\x90\x80\x80 ";
-    EXPECT_EQ(0x10000, string_util::DecodeUTF8(
-                           input.data(), input.data() + input.size(), &mblen));
+    EXPECT_EQ(0x10000, string_util::DecodeUTF8("\xF0\x90\x80\x80 ", &mblen));
     EXPECT_EQ(4, mblen);
   }
 
+  // Invalid UTF8
   {
-    const std::string input = "\xF7\xBF\xBF\xBF ";
-    EXPECT_EQ(0x1FFFFF, string_util::DecodeUTF8(
-                            input.data(), input.data() + input.size(), &mblen));
-    EXPECT_EQ(4, mblen);
+    EXPECT_EQ(kUnicodeError,
+              string_util::DecodeUTF8("\xF7\xBF\xBF\xBF ", &mblen));
+    EXPECT_EQ(1, mblen);
   }
 
   {
-    const std::string input = "\xF8\x88\x80\x80\x80 ";
-    EXPECT_EQ(0x200000, string_util::DecodeUTF8(
-                            input.data(), input.data() + input.size(), &mblen));
-    EXPECT_EQ(5, mblen);
+    EXPECT_EQ(kUnicodeError,
+              string_util::DecodeUTF8("\xF8\x88\x80\x80\x80 ", &mblen));
+    EXPECT_EQ(1, mblen);
   }
 
   {
-    const std::string input = "\xFC\x84\x80\x80\x80\x80 ";
-    EXPECT_EQ(0x4000000,
-              string_util::DecodeUTF8(input.data(), input.data() + input.size(),
-                                      &mblen));
-    EXPECT_EQ(6, mblen);
+    EXPECT_EQ(kUnicodeError,
+              string_util::DecodeUTF8("\xFC\x84\x80\x80\x80\x80 ", &mblen));
+    EXPECT_EQ(1, mblen);
   }
 
   {
@@ -340,46 +328,90 @@ TEST(UtilTest, DecodeUTF8Test) {
     for (size_t i = 0; i < 4; ++i) {
       // return values of string_util::DecodeUTF8 is not defined.
       // TODO(taku) implement an workaround.
-      string_util::DecodeUTF8(
-          kInvalidData[i], kInvalidData[i] + strlen(kInvalidData[i]), &mblen);
+      EXPECT_EQ(kUnicodeError,
+                string_util::DecodeUTF8(
+                    kInvalidData[i], kInvalidData[i] + strlen(kInvalidData[i]),
+                    &mblen));
+      EXPECT_FALSE(string_util::IsStructurallyValid(kInvalidData[i]));
       EXPECT_EQ(1, mblen);
     }
+  }
+
+  {
+    EXPECT_EQ(kUnicodeError, string_util::DecodeUTF8("\xDF\xDF ", &mblen));
+    EXPECT_EQ(1, mblen);
+  }
+
+  {
+    EXPECT_EQ(kUnicodeError, string_util::DecodeUTF8("\xE0\xE0\xE0 ", &mblen));
+    EXPECT_EQ(1, mblen);
+  }
+
+  {
+    EXPECT_EQ(kUnicodeError,
+              string_util::DecodeUTF8("\xF0\xF0\xF0\xFF ", &mblen));
+    EXPECT_EQ(1, mblen);
   }
 }
 
 TEST(UtilTest, EncodeUTF8Test) {
-  constexpr int kMaxUnicode = 0x110000;
   char buf[16];
   for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
+    if (!string_util::IsValidCodepoint(cp)) continue;
     const size_t mblen = string_util::EncodeUTF8(cp, buf);
     size_t mblen2;
-    char32 c = string_util::DecodeUTF8(buf, buf + 16, &mblen2);
+    const char32 c = string_util::DecodeUTF8(buf, buf + 16, &mblen2);
     EXPECT_EQ(mblen2, mblen);
     EXPECT_EQ(cp, c);
   }
 
-  EXPECT_EQ(0, string_util::EncodeUTF8(0, buf));
+  EXPECT_EQ(1, string_util::EncodeUTF8(0, buf));
   EXPECT_EQ('\0', buf[0]);
 
   // non UCS4
   size_t mblen;
-  EXPECT_EQ(5, string_util::EncodeUTF8(0x7000000, buf));
-  string_util::DecodeUTF8(buf, buf + 16, &mblen);
-  EXPECT_EQ(5, mblen);
+  EXPECT_EQ(3, string_util::EncodeUTF8(0x7000000, buf));
+  EXPECT_EQ(kUnicodeError, string_util::DecodeUTF8(buf, buf + 16, &mblen));
+  EXPECT_EQ(3, mblen);
 
-  EXPECT_EQ(6, string_util::EncodeUTF8(0x8000001, buf));
-  string_util::DecodeUTF8(buf, buf + 16, &mblen);
-  EXPECT_EQ(6, mblen);
+  EXPECT_EQ(3, string_util::EncodeUTF8(0x8000001, buf));
+  EXPECT_EQ(kUnicodeError, string_util::DecodeUTF8(buf, buf + 16, &mblen));
+  EXPECT_EQ(3, mblen);
 }
 
 TEST(UtilTest, UnicodeCharToUTF8Test) {
-  constexpr int kMaxUnicode = 0x110000;
   for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
+    if (!string_util::IsValidCodepoint(cp)) continue;
     const auto s = string_util::UnicodeCharToUTF8(cp);
     const auto ut = string_util::UTF8ToUnicodeText(s);
     EXPECT_EQ(1, ut.size());
     EXPECT_EQ(cp, ut[0]);
   }
+}
+
+TEST(UtilTest, IsStructurallyValidTest) {
+  EXPECT_TRUE(string_util::IsStructurallyValid("abcd"));
+  EXPECT_TRUE(
+      string_util::IsStructurallyValid(StringPiece("a\0cd", 4)));     // NUL
+  EXPECT_TRUE(string_util::IsStructurallyValid("ab\xc3\x81"));        // 2-byte
+  EXPECT_TRUE(string_util::IsStructurallyValid("a\xe3\x81\x81"));     // 3-byte
+  EXPECT_TRUE(string_util::IsStructurallyValid("\xf2\x82\x81\x84"));  // 4
+  EXPECT_FALSE(string_util::IsStructurallyValid("abc\x80"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("abc\xc3"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("ab\xe3\x81"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("a\xf3\x81\x81"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("ab\xc0\x82"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("a\xe0\x82\x81"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("\xf0\x82\x83\x84"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("\xf4\xbd\xbe\xbf"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("\xED\xA0\x80"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("\xED\xBF\xBF"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("\xc0\x81"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("\xc1\xbf"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("\xe0\x81\x82"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("\xe0\x9f\xbf"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("\xf0\x80\x81\x82"));
+  EXPECT_FALSE(string_util::IsStructurallyValid("\xf0\x83\xbe\xbd"));
 }
 
 TEST(UtilTest, UnicodeTextToUTF8Test) {

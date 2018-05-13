@@ -158,6 +158,7 @@ util::Status Builder::CompileCharsMap(const CharsMap &chars_map,
   for (auto &p : normalized2pos) {
     p.second = normalized.size();  // stores the pointer (position).
     const std::string utf8_out = string_util::UnicodeTextToUTF8(p.first);
+    CHECK_OR_RETURN(string_util::IsStructurallyValid(utf8_out));
     normalized += utf8_out;
     normalized += '\0';
   }
@@ -166,6 +167,7 @@ util::Status Builder::CompileCharsMap(const CharsMap &chars_map,
   for (const auto &p : chars_map) {
     // The value of Trie stores the pointer to the normalized string.
     const std::string utf8_in = string_util::UnicodeTextToUTF8(p.first);
+    CHECK_OR_RETURN(string_util::IsStructurallyValid(utf8_in));
     kv.emplace_back(utf8_in, port::FindOrDie(normalized2pos, p.second));
   }
 
@@ -258,7 +260,7 @@ Builder::CharsMap Builder::BuildNFKCMap() {
 
   Builder::CharsMap nfkc_map;  // The final NFKC mapping.
 
-  constexpr int kMaxUnicode = 0x110000;
+  constexpr int kMaxUnicode = 0x10FFFF;
   for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
     if (!U_IS_UNICODE_CHAR(cp)) {
       continue;
