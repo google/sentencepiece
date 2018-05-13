@@ -100,6 +100,9 @@ bool TrainerInterface::IsValidSentencePiece(
       LOG(WARNING) << "space must not be included in normalized string.";
       return false;
     }
+    if (!string_util::IsValidCodepoint(*it)) {
+      return false;
+    }
     if (*it == kWSChar) {
       // Only allows whitespace to appear as a prefix of piece.
       // When split_by_whitespace is false, we allow whitespaces to
@@ -203,6 +206,7 @@ END:
   std::unordered_map<char32, int64> chars_count;
   for (const auto &w : sentences_) {
     for (const char32 c : string_util::UTF8ToUnicodeText(w.first)) {
+      if (!string_util::IsValidCodepoint(c)) continue;
       if (c == 0x0020) {
         // UTF8ToUnicodeText returns a white space if the text
         // contains an interchange-invalid character.
@@ -282,8 +286,9 @@ util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
   // Duplicated sentencepiece is not allowed.
   std::unordered_set<std::string> dup;
 
-#define CHECK_PIECE(piece)         \
-  CHECK_OR_RETURN(!piece.empty()); \
+#define CHECK_PIECE(piece)                                  \
+  CHECK_OR_RETURN(string_util::IsStructurallyValid(piece)); \
+  CHECK_OR_RETURN(!piece.empty());                          \
   CHECK_OR_RETURN(dup.insert(piece).second) << piece << " is already defined";
 
   for (const auto &w : meta_pieces_) {

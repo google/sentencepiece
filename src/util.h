@@ -168,25 +168,32 @@ inline size_t Itoa(T val, char *s) {
 
 // Return length of a single UTF-8 source character
 inline size_t OneCharLen(const char *src) {
-  // Table of UTF-8 character lengths, based on first byte
-  constexpr unsigned char kUTF8LenTable[256] = {
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-      2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-      2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-      4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 1, 1};
-  return kUTF8LenTable[*reinterpret_cast<const unsigned char *>(src)];
+  return "\1\1\1\1\1\1\1\1\1\1\1\1\2\2\3\4"[(*src & 0xFF) >> 4];
 }
+
+// Return (x & 0xC0) == 0x80;
+// Since trail bytes are always in [0x80, 0xBF], we can optimize:
+inline bool IsTrailByte(char x) { return static_cast<signed char>(x) < -0x40; }
+
+inline bool IsValidCodepoint(char32 c) {
+  return (static_cast<uint32>(c) < 0xD800) || (c >= 0xE000 && c <= 0x10FFFF);
+}
+
+bool IsStructurallyValid(StringPiece str);
 
 using UnicodeText = std::vector<char32>;
 
 char32 DecodeUTF8(const char *begin, const char *end, size_t *mblen);
+
+inline char32 DecodeUTF8(StringPiece input, size_t *mblen) {
+  return DecodeUTF8(input.data(), input.data() + input.size(), mblen);
+}
+
+inline bool IsValidDecodeUTF8(StringPiece input, size_t *mblen) {
+  const char32 c = DecodeUTF8(input, mblen);
+  return c != kUnicodeError || *mblen == 3;
+}
+
 size_t EncodeUTF8(char32 c, char *output);
 
 std::string UnicodeCharToUTF8(const char32 c);

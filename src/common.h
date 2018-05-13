@@ -63,6 +63,8 @@ static constexpr int32 kint32max = ((int32)0x7FFFFFFF);
 static constexpr int64 kint64min = ((int64)(~0x7FFFFFFFFFFFFFFF));
 static constexpr int64 kint64max = ((int64)(0x7FFFFFFFFFFFFFFF));
 
+static constexpr uint32 kUnicodeError = 0xFFFD;
+
 #ifdef OS_WIN
 #define OUTPUT_MODE std::ios::binary | std::ios::out
 #else
