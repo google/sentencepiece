@@ -13,8 +13,8 @@
 // limitations under the License.!
 
 #include "unigram_model_trainer.h"
-#include "normalizer.h"
 
+#include <algorithm>
 #include <cfloat>
 #include <cmath>
 #include <functional>
@@ -26,7 +26,10 @@
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
+
+#include "normalizer.h"
 #include "third_party/esaxx/esa.hxx"  // Suffix array library.
 #include "unicode_script.h"
 #include "util.h"

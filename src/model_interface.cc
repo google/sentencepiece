@@ -13,6 +13,8 @@
 // limitations under the License.!
 
 #include "model_interface.h"
+
+#include <algorithm>
 #include "sentencepiece_model.pb.h"
 #include "util.h"
 

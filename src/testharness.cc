@@ -13,15 +13,16 @@
 // limitations under the License.!
 
 #include "testharness.h"
+
+#include <unistd.h>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
+
 #include "common.h"
 #include "util.h"
-
-#include <unistd.h>
 
 namespace sentencepiece {
 namespace test {

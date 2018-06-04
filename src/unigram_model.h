@@ -15,6 +15,11 @@
 #ifndef UNIGRAM_MODEL_H_
 #define UNIGRAM_MODEL_H_
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "common.h"
 #include "model_interface.h"
 #include "sentencepiece_model.pb.h"

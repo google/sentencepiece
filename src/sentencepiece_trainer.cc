@@ -14,6 +14,7 @@
 
 #include "sentencepiece_trainer.h"
 #include <string>
+#include <vector>
 
 #include "builder.h"
 #include "common.h"

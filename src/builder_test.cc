@@ -54,7 +54,7 @@ TEST(BuilderTest, BuildNFKCMapTest) {
   EXPECT_OK(Builder::BuildNFKCMap(&chars_map));
   EXPECT_TRUE(!chars_map.empty());
 #else
-  //  EXPECT_DEATH(Builder::BuildNFKCMap(&chars_map));
+  EXPECT_OK(Builder::BuildNFKCMap(&chars_map));
 #endif
 }
 

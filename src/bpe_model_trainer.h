@@ -16,6 +16,10 @@
 #define BPE_MODEL_TRAINER_H_
 
 #include <set>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 #include "sentencepiece_model.pb.h"
 #include "trainer_interface.h"
 

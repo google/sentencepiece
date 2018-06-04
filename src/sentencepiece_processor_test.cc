@@ -13,7 +13,10 @@
 // limitations under the License.!
 
 #include "sentencepiece_processor.h"
+
 #include <unordered_map>
+#include <utility>
+
 #include "builder.h"
 #include "model_interface.h"
 #include "normalizer.h"

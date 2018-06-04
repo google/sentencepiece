@@ -17,6 +17,9 @@
 
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
+
 #include "common.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"

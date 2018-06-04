@@ -31,6 +31,8 @@ DEFINE_string(normalization_rule_name, "",
               "Choose from nfkc or identity");
 DEFINE_string(normalization_rule_tsv, "", "Normalization rule TSV file. ");
 DEFINE_bool(remove_extra_whitespaces, true, "Remove extra whitespaces");
+DEFINE_bool(decompile, false,
+            "Decompile compiled charamap and output it as TSV.");
 DEFINE_string(output, "", "Output filename");
 
 using sentencepiece::ModelProto;
@@ -69,20 +71,27 @@ int main(int argc, char *argv[]) {
     spec.set_remove_extra_whitespaces(FLAGS_remove_extra_whitespaces);
   }
 
-  const Normalizer normalizer(spec);
-  sentencepiece::io::OutputBuffer output(FLAGS_output);
-  CHECK_OK(output.status());
+  if (FLAGS_decompile) {
+    Builder::CharsMap chars_map;
+    CHECK_OK(
+        Builder::DecompileCharsMap(spec.precompiled_charsmap(), &chars_map));
+    CHECK_OK(Builder::SaveCharsMap(FLAGS_output, chars_map));
+  } else {
+    const Normalizer normalizer(spec);
+    sentencepiece::io::OutputBuffer output(FLAGS_output);
+    CHECK_OK(output.status());
 
-  if (rest_args.empty()) {
-    rest_args.push_back("");  // empty means that read from stdin.
-  }
+    if (rest_args.empty()) {
+      rest_args.push_back("");  // empty means that read from stdin.
+    }
 
-  std::string line;
-  for (const auto &filename : rest_args) {
-    sentencepiece::io::InputBuffer input(filename);
-    CHECK_OK(input.status());
-    while (input.ReadLine(&line)) {
-      output.WriteLine(normalizer.Normalize(line));
+    std::string line;
+    for (const auto &filename : rest_args) {
+      sentencepiece::io::InputBuffer input(filename);
+      CHECK_OK(input.status());
+      while (input.ReadLine(&line)) {
+        output.WriteLine(normalizer.Normalize(line));
+      }
     }
   }
 

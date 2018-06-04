@@ -15,11 +15,13 @@
 #include "unigram_model_trainer.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
+#include "sentencepiece_trainer.h"
 #include "testharness.h"
 #include "util.h"
 
 namespace sentencepiece {
 namespace unigram {
+namespace {
 
 // Space symbol
 #define WS "\xe2\x96\x81"
@@ -32,27 +34,20 @@ TEST(UnigramTrainerTest, TrainerModelTest) {
 }
 
 TEST(UnigramTrainerTest, EndToEndTest) {
-  TrainerSpec trainer_spec;
-  trainer_spec.add_input("../data/wagahaiwa_nekodearu.txt");
+  const test::ScopedTempFile sf("tmp_model");
 
-  NormalizerSpec normalizer_spec;
-  normalizer_spec.set_name("identity");
-
-  constexpr int kVocabSize = 8000;
-  trainer_spec.set_vocab_size(kVocabSize);
-  trainer_spec.set_model_type(TrainerSpec::UNIGRAM);
-
-  trainer_spec.add_control_symbols("<ctrl>");
-  trainer_spec.add_user_defined_symbols("<user>");
-
-  test::ScopedTempFile sf("tmp_model");
-  trainer_spec.set_model_prefix(sf.filename());
-  unigram::Trainer trainer(trainer_spec, normalizer_spec);
-  EXPECT_OK(trainer.Train());
+  EXPECT_OK(SentencePieceTrainer::Train(
+      std::string("--model_prefix=") + sf.filename() +
+      " --input=../data/wagahaiwa_nekodearu.txt"
+      " --vocab_size=8000"
+      " --normalization_rule_name=identity"
+      " --model_type=unigram"
+      " --user_defined_symbols=<user>"
+      " --control_symbols=<ctrl>"));
 
   SentencePieceProcessor sp;
   EXPECT_OK(sp.Load(std::string(sf.filename()) + ".model"));
-  EXPECT_EQ(kVocabSize, sp.GetPieceSize());
+  EXPECT_EQ(8000, sp.GetPieceSize());
 
   const int cid = sp.PieceToId("<ctrl>");
   const int uid = sp.PieceToId("<user>");
@@ -61,15 +56,15 @@ TEST(UnigramTrainerTest, EndToEndTest) {
 
   std::vector<std::string> tok;
 
-  sp.Encode("", &tok);
+  EXPECT_OK(sp.Encode("", &tok));
   EXPECT_TRUE(tok.empty());
 
-  sp.Encode(
+  EXPECT_OK(sp.Encode(
       "吾輩《わがはい》は猫である。名前はまだ無い。"
       "どこで生れたかとんと見当《けんとう》がつかぬ。"
       "何でも薄暗いじめじめした所でニャーニャー泣いていた事だけは記憶している"
       "。",
-      &tok);
+      &tok));
   EXPECT_EQ(WS
             " 吾輩 《 わが はい 》 は 猫 である 。 名前 はまだ 無い 。 "
             "どこ で 生 れた か とん と 見当 《 けん とう 》 が つか ぬ 。 "
@@ -77,5 +72,7 @@ TEST(UnigramTrainerTest, EndToEndTest) {
             "泣 い ていた 事 だけは 記憶 している 。",
             string_util::Join(tok, " "));
 }
+
+}  // namespace
 }  // namespace unigram
 }  // namespace sentencepiece

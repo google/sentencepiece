@@ -14,6 +14,8 @@
 
 #include "word_model_trainer.h"
 
+#include <string>
+#include <vector>
 #include "sentencepiece_processor.h"
 #include "testharness.h"
 #include "util.h"

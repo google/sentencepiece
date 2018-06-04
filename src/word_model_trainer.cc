@@ -15,6 +15,8 @@
 #include "word_model_trainer.h"
 
 #include <cmath>
+#include <string>
+#include <unordered_map>
 
 #include "stringpiece.h"
 #include "util.h"

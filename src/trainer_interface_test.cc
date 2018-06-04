@@ -13,6 +13,8 @@
 // limitations under the License.!
 
 #include "trainer_interface.h"
+#include <utility>
+
 #include "testharness.h"
 #include "util.h"
 

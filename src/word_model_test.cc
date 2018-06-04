@@ -14,6 +14,7 @@
 
 #include "word_model.h"
 
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
