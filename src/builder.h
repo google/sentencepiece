@@ -45,13 +45,12 @@ class Builder {
   static util::Status CompileCharsMap(const CharsMap &chars_map,
                                       std::string *output);
 
+  // Decompiles `blob` into `chars_map`.
+  static util::Status DecompileCharsMap(StringPiece blob, CharsMap *chars_map);
+
   // Returns a pre-compiled binary index with `name`.
   static util::Status GetPrecompiledCharsMap(const std::string &name,
                                              std::string *output);
-
-  // Populates necessary fields (precompiled_charmap) from
-  // `name` or `normalization_rule_tsv` fields in `normalizer_spec`.
-  static util::Status PopulateNormalizerSpec(NormalizerSpec *normalizer_spec);
 
   // Makes a normalization mapping based on NFKC.
   //
@@ -88,16 +87,17 @@ class Builder {
   //     normalizer is the goal of SentencePiece.
   //
   // TODO(taku): Make NFC, NFD, and NFKD mapping if necessary.
-  static CharsMap BuildNFKCMap();
-
-  // Returns identity mapping, which dose not perform any normalization.
-  static CharsMap BuildIdentityMap();
+  static util::Status BuildNFKCMap(CharsMap *chars_map);
 
   // Builds Chars map save in `filename`.
   // Format:
   // src_uchar1 src_uchar2 ... <tab> trg_uchar1 trg_uchar2...
-  // (src|trg)_ucharX must be a hex of UCS4.
-  static CharsMap BuildMapFromFile(StringPiece filename);
+  // (src|trg)_ucharX must be a hex of Unicode code point.
+  static util::Status LoadCharsMap(StringPiece filename, CharsMap *chars_map);
+
+  // Saves Chars map to `filename` as TSV.
+  static util::Status SaveCharsMap(StringPiece filename,
+                                   const CharsMap &chars_map);
 
  private:
   FRIEND_TEST(BuilderTest, RemoveRedundantMapTest);
@@ -105,7 +105,7 @@ class Builder {
   // Removes redundant rules from `chars_map`.
   // When char_maps have "aa" => "bb" and "a" => "b", the first
   // rule is not necessary since the second rule can cover the first rule.
-  static CharsMap RemoveRedundantMap(const CharsMap &chars_map);
+  static util::Status RemoveRedundantMap(CharsMap *chars_map);
 };
 }  // namespace normalizer
 }  // namespace sentencepiece

@@ -19,6 +19,7 @@
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
+#include "sentencepiece_trainer.h"
 #include "stringpiece.h"
 #include "testharness.h"
 #include "util.h"
@@ -100,10 +101,7 @@ std::vector<std::string> GetSpVec(const SentencePieceText &spt) {
 }
 
 NormalizerSpec MakeDefaultNormalizerSpec() {
-  NormalizerSpec normalizer_spec;
-  normalizer_spec.set_name("nfkc");
-  EXPECT_OK(normalizer::Builder::PopulateNormalizerSpec(&normalizer_spec));
-  return normalizer_spec;
+  return SentencePieceTrainer::GetNormalizerSpec("nfkc");
 }
 
 TEST(SentencepieceProcessorTest, StatusTest) {

@@ -14,6 +14,7 @@
 
 #include "normalizer.h"
 #include "builder.h"
+#include "sentencepiece_trainer.h"
 #include "testharness.h"
 #include "util.h"
 
@@ -23,19 +24,13 @@ namespace {
 // Space symbol
 #define WS "\xe2\x96\x81"
 
+// Replacement char
+#define RC "\xEF\xBF\xBD"
+
 NormalizerSpec MakeDefaultSpec() {
-  NormalizerSpec normalizer_spec;
-  normalizer_spec.set_name("nfkc");
-  EXPECT_OK(normalizer::Builder::PopulateNormalizerSpec(&normalizer_spec));
-  return normalizer_spec;
+  return SentencePieceTrainer::GetNormalizerSpec("nfkc");
 }
 }  // namespace
-
-TEST(NormalizerTest, NormalizeErrorTest) {
-  NormalizerSpec spec;
-  Normalizer normalizer(spec);
-  EXPECT_NOT_OK(normalizer.Normalize("test", nullptr, nullptr));
-}
 
 TEST(NormalizerTest, NormalizeTest) {
   auto spec = MakeDefaultSpec();
@@ -211,6 +206,44 @@ TEST(NormalizeTest, NomalizeWithSpaceContainedRules) {
     EXPECT_EQ("  A F G ", normalizer.Normalize("ad"));
     EXPECT_EQ("  A F G B", normalizer.Normalize("adb"));
   }
+
+  // Added several corner cases around spaces.
+  struct SpacePattern {
+    bool add_dummy_prefix;
+    bool remove_extra_whitespaces;
+    bool escape_whitespaces;
+    const char *input;
+    const char *expected;
+  };
+
+  constexpr SpacePattern kSpacePatternData[] = {
+      {false, false, false, WS, WS},    {false, false, true, WS, WS},
+      {false, true, false, WS, WS},     {false, true, true, WS, ""},
+      {true, false, false, WS, " " WS}, {true, false, true, WS, WS WS},
+      {true, true, false, WS, " " WS},  {true, true, true, WS, ""},
+      {false, false, false, " ", " "},  {false, false, true, " ", WS},
+      {false, true, false, " ", ""},    {false, true, true, " ", ""},
+      {true, false, false, " ", "  "},  {true, false, true, " ", WS WS},
+      {true, true, false, " ", ""},     {true, true, true, " ", ""}};
+
+  for (const auto &c : kSpacePatternData) {
+    spec.set_add_dummy_prefix(c.add_dummy_prefix);
+    spec.set_remove_extra_whitespaces(c.remove_extra_whitespaces);
+    spec.set_escape_whitespaces(c.escape_whitespaces);
+    const Normalizer normalizer(spec);
+    EXPECT_EQ(c.expected, normalizer.Normalize(c.input));
+  }
+}
+
+TEST(NormalizerTest, NormalizeReplacementChar) {
+  auto spec = MakeDefaultSpec();
+  spec.set_add_dummy_prefix(false);
+  const Normalizer normalizer(spec);
+  EXPECT_EQ("abc" RC "xy", normalizer.Normalize("abc\x80xy"));
+  EXPECT_EQ("abc" RC, normalizer.Normalize("abc\xc3"));
+  EXPECT_EQ("ab" RC RC "xy", normalizer.Normalize("ab\xe3\x81xy"));
+  EXPECT_EQ("a" RC RC RC "xy", normalizer.Normalize("a\xf3\x81\x81xy"));
+  EXPECT_EQ("ab" RC RC "xy", normalizer.Normalize("ab\xc0\x82xy"));
 }
 
 TEST(NormalizerTest, NormalizeFullTest) {
@@ -310,6 +343,12 @@ TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest) {
 TEST(NormalizerTest, StatusTest) {
   NormalizerSpec spec;
   {
+    const Normalizer normalizer(spec);
+    EXPECT_OK(normalizer.status());  // fallback to identity.
+  }
+
+  {
+    spec.set_precompiled_charsmap("x");
     const Normalizer normalizer(spec);
     EXPECT_FALSE(normalizer.status().ok());
   }

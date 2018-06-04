@@ -19,6 +19,7 @@
 #include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
+#include "sentencepiece_trainer.h"
 #include "util.h"
 
 DEFINE_string(model, "", "Model file name");
@@ -32,24 +33,30 @@ DEFINE_string(normalization_rule_tsv, "", "Normalization rule TSV file. ");
 DEFINE_bool(remove_extra_whitespaces, true, "Remove extra whitespaces");
 DEFINE_string(output, "", "Output filename");
 
+using sentencepiece::ModelProto;
+using sentencepiece::NormalizerSpec;
+using sentencepiece::SentencePieceProcessor;
+using sentencepiece::SentencePieceTrainer;
 using sentencepiece::normalizer::Builder;
+using sentencepiece::normalizer::Normalizer;
 
 int main(int argc, char *argv[]) {
   std::vector<std::string> rest_args;
   sentencepiece::flags::ParseCommandLineFlags(argc, argv, &rest_args);
 
-  sentencepiece::NormalizerSpec spec;
+  NormalizerSpec spec;
 
   if (!FLAGS_model.empty()) {
-    sentencepiece::SentencePieceProcessor sp;
+    ModelProto model_proto;
+    SentencePieceProcessor sp;
     CHECK_OK(sp.Load(FLAGS_model));
     spec = sp.model_proto().normalizer_spec();
   } else if (!FLAGS_normalization_rule_tsv.empty()) {
     spec.set_normalization_rule_tsv(FLAGS_normalization_rule_tsv);
-    CHECK_OK(Builder::PopulateNormalizerSpec(&spec));
+    CHECK_OK(SentencePieceTrainer::PopulateNormalizerSpec(&spec));
   } else if (!FLAGS_normalization_rule_name.empty()) {
     spec.set_name(FLAGS_normalization_rule_name);
-    CHECK_OK(Builder::PopulateNormalizerSpec(&spec));
+    CHECK_OK(SentencePieceTrainer::PopulateNormalizerSpec(&spec));
   } else {
     LOG(FATAL) << "Sets --model, normalization_rule_tsv, or "
                   "normalization_rule_name flag.";
@@ -62,7 +69,7 @@ int main(int argc, char *argv[]) {
     spec.set_remove_extra_whitespaces(FLAGS_remove_extra_whitespaces);
   }
 
-  sentencepiece::normalizer::Normalizer normalizer(spec);
+  const Normalizer normalizer(spec);
   sentencepiece::io::OutputBuffer output(FLAGS_output);
   CHECK_OK(output.status());
 

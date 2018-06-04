@@ -111,8 +111,8 @@ class TrainerInterface {
   NormalizerSpec normalizer_spec_;
 
   // Reserved control pieces. e.g., <unk>, <s>, </s>.
-  // The index corresponds to vocab id.
-  std::vector<std::pair<std::string, ModelProto::SentencePiece::Type>>
+  // key is vocab id.
+  std::map<int, std::pair<std::string, ModelProto::SentencePiece::Type>>
       meta_pieces_;
 
   // Detect errors on initialization.

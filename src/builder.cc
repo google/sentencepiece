@@ -13,6 +13,7 @@
 // limitations under the License.!
 
 #include "builder.h"
+#include <functional>
 
 #ifdef ENABLE_NFKC_COMPILE
 #include <unicode/errorcode.h>
@@ -33,10 +34,13 @@
 namespace sentencepiece {
 namespace normalizer {
 namespace {
+
+constexpr int kMaxUnicode = 0x10FFFF;
+
 static constexpr char kDefaultNormalizerName[] = "nfkc";
 
 #ifdef ENABLE_NFKC_COMPILE
-// Normalize |input| with ICU's normalizer with |mode|.
+// Normalize `input` with ICU's normalizer with `mode`.
 Builder::Chars UnicodeNormalize(UNormalizationMode mode,
                                 const Builder::Chars &input) {
   const std::string utf8 = string_util::UnicodeTextToUTF8(input);
@@ -78,7 +82,7 @@ Builder::Chars ToNFD(const Builder::Chars &input) {
 }
 
 // Given an NFKD-normalized string, returns a set of all strings which are
-// normalized into the same |nfkd|. |norm2orig| is the normalized to
+// normalized into the same `nfkd`. `norm2orig` is the normalized to
 // un-normalized character mapping.
 std::vector<Builder::Chars> ExpandUnnormalized(
     const Builder::Chars &nfkd,
@@ -104,8 +108,8 @@ std::vector<Builder::Chars> ExpandUnnormalized(
 }
 #endif
 
-// Normalizes |src| with |chars_map| and returns normalized Chars.
-// |max_len| specifies the maximum length of the key in |chars_map|.
+// Normalizes `src` with `chars_map` and returns normalized Chars.
+// `max_len` specifies the maximum length of the key in `chars_map`.
 Builder::Chars Normalize(const Builder::CharsMap &chars_map,
                          const Builder::Chars &src, int max_len) {
   CHECK_GE(max_len, 1);
@@ -146,7 +150,7 @@ util::Status Builder::CompileCharsMap(const CharsMap &chars_map,
   CHECK_OR_RETURN(output);
   CHECK_OR_RETURN(!chars_map.empty());
 
-  LOG(INFO) << "Loading CharsMap of size " << chars_map.size();
+  LOG(INFO) << "Loading CharsMap of size=" << chars_map.size();
 
   // Aggregates the same target strings to save footprint.
   std::map<Chars, int> normalized2pos;
@@ -201,7 +205,59 @@ util::Status Builder::CompileCharsMap(const CharsMap &chars_map,
                         trie.size() * trie.unit_size());
   *output = Normalizer::EncodePrecompiledCharsMap(trie_blob, normalized);
 
-  LOG(INFO) << "Generated normalizer blob. size= " << output->size();
+  LOG(INFO) << "Generated normalizer blob. size=" << output->size();
+
+  return util::OkStatus();
+}
+
+// static
+util::Status Builder::DecompileCharsMap(StringPiece blob,
+                                        Builder::CharsMap *chars_map) {
+  CHECK_OR_RETURN(chars_map);
+  chars_map->clear();
+
+  StringPiece trie_blob, normalized;
+  RETURN_IF_ERROR(
+      Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob, &normalized));
+
+  Darts::DoubleArray trie;
+  trie.set_array(const_cast<char *>(trie_blob.data()),
+                 trie_blob.size() / trie.unit_size());
+
+  std::string key;
+  std::function<void(size_t, size_t)> traverse;
+
+  // Given a Trie node at `node_pos` and the key position at `key_position`,
+  // Expands children nodes from `node_pos`.
+  // When leaf nodes are found, stores them into `chars_map`.
+  traverse = [&traverse, &key, &trie, &normalized, &chars_map](
+                 size_t node_pos, size_t key_pos) -> void {
+    for (int c = 0; c <= 255; ++c) {
+      key.push_back(static_cast<char>(c));
+      size_t copied_node_pos = node_pos;
+      size_t copied_key_pos = key_pos;
+      // Note: `copied_(node|key)_pos` are non-const references.
+      // They store the new positions after node traversal.
+      const Darts::DoubleArray::result_type result = trie.traverse(
+          key.data(), copied_node_pos, copied_key_pos, key.size());
+      if (result >= -1) {   // node exists.
+        if (result >= 0) {  // has a value after transition.
+          const StringPiece value = normalized.data() + result;
+          Chars key_chars, value_chars;
+          for (const auto c : string_util::UTF8ToUnicodeText(key))
+            key_chars.push_back(c);
+          for (const auto c : string_util::UTF8ToUnicodeText(value))
+            value_chars.push_back(c);
+          (*chars_map)[key_chars] = value_chars;
+        }
+        // Recursively traverse.
+        traverse(copied_node_pos, copied_key_pos);
+      }
+      key.pop_back();
+    }
+  };
+
+  traverse(0, 0);
 
   return util::OkStatus();
 }
@@ -209,6 +265,13 @@ util::Status Builder::CompileCharsMap(const CharsMap &chars_map,
 // static
 util::Status Builder::GetPrecompiledCharsMap(const std::string &name,
                                              std::string *output) {
+  CHECK_OR_RETURN(output);
+
+  if (name == "identity") {
+    output->clear();
+    return util::OkStatus();
+  }
+
   std::string result;
   for (size_t i = 0; i < kNormalizationRules_size; ++i) {
     const auto *blob = &kNormalizationRules_blob[i];
@@ -222,33 +285,7 @@ util::Status Builder::GetPrecompiledCharsMap(const std::string &name,
 }
 
 // static
-util::Status Builder::PopulateNormalizerSpec(NormalizerSpec *normalizer_spec) {
-  CHECK_OR_RETURN(normalizer_spec);
-
-  if (!normalizer_spec->normalization_rule_tsv().empty()) {
-    CHECK_OR_RETURN(normalizer_spec->precompiled_charsmap().empty())
-        << "precompiled_charsmap is already defined.";
-    const auto chars_map = normalizer::Builder::BuildMapFromFile(
-        normalizer_spec->normalization_rule_tsv());
-    RETURN_IF_ERROR(CompileCharsMap(
-        chars_map, normalizer_spec->mutable_precompiled_charsmap()));
-    normalizer_spec->set_name("user_defined");
-  } else {
-    if (normalizer_spec->name().empty()) {
-      normalizer_spec->set_name(kDefaultNormalizerName);
-    }
-    if (normalizer_spec->precompiled_charsmap().empty()) {
-      RETURN_IF_ERROR(GetPrecompiledCharsMap(
-          normalizer_spec->name(),
-          normalizer_spec->mutable_precompiled_charsmap()));
-    }
-  }
-
-  return util::OkStatus();
-}
-
-// static
-Builder::CharsMap Builder::BuildNFKCMap() {
+util::Status Builder::BuildNFKCMap(CharsMap *chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   LOG(INFO) << "Running BuildNFKCMap";
 
@@ -286,7 +323,7 @@ Builder::CharsMap Builder::BuildNFKCMap() {
     if (nfkc == nfkd) {
       continue;
     }
-    // Expand all possible sequences which are normalized into the same |nfkd|.
+    // Expand all possible sequences which are normalized into the same `nfkd`.
     for (const auto &nfkd_orig : ExpandUnnormalized(nfkd, norm2orig)) {
       if (nfkd_orig != nfkc) {
         nfkc_map[nfkd_orig] = nfkc;
@@ -294,61 +331,94 @@ Builder::CharsMap Builder::BuildNFKCMap() {
     }
   }
 
-  return RemoveRedundantMap(nfkc_map);
+  RETURN_IF_ERROR(RemoveRedundantMap(&nfkc_map));
+  *chars_map = std::move(nfkc_map);
+
 #else
-  LOG(FATAL) << "NFKC compile is not enabled."
+  LOG(ERROR) << "NFKC compile is not enabled."
              << " rebuild with ./configure --enable-nfkc-compile";
-  return {};
 #endif
+
+  return util::OkStatus();
 }
 
 // static
-Builder::CharsMap Builder::BuildIdentityMap() {
-  // Adds one dummy entry since empty rule is not allowed.
-  const CharsMap result = {{{0x0020}, {0x0020}}};
-  return result;
-}
-
-// static
-Builder::CharsMap Builder::BuildMapFromFile(StringPiece filename) {
+util::Status Builder::LoadCharsMap(StringPiece filename, CharsMap *chars_map) {
   LOG(INFO) << "Loading maping file: " << filename.data();
+  CHECK_OR_RETURN(chars_map);
+
   io::InputBuffer input(filename);
+  RETURN_IF_ERROR(input.status());
+
   std::string line;
-  CharsMap chars_map;
+  chars_map->clear();
   while (input.ReadLine(&line)) {
     const auto fields = string_util::SplitPiece(line, "\t");
     CHECK_GE(fields.size(), 2);
     std::vector<char32> src, trg;
-    for (const auto &s : string_util::SplitPiece(fields[0], " ")) {
+    for (auto &s : string_util::SplitPiece(fields[0], " ")) {
+      s.Consume("U+");
       src.push_back(string_util::HexToInt<char32>(s));
     }
-    for (const auto &s : string_util::SplitPiece(fields[1], " ")) {
+    for (auto &s : string_util::SplitPiece(fields[1], " ")) {
+      s.Consume("U+");
       trg.push_back(string_util::HexToInt<char32>(s));
     }
     CHECK(!src.empty());
     CHECK(!trg.empty());
-    chars_map[src] = trg;
+    (*chars_map)[src] = trg;
   }
-  return chars_map;
+
+  return util::OkStatus();
 }
 
 // static
-Builder::CharsMap Builder::RemoveRedundantMap(const CharsMap &chars_map) {
-  CharsMap new_chars_map;
+util::Status Builder::SaveCharsMap(StringPiece filename,
+                                   const Builder::CharsMap &chars_map) {
+  io::OutputBuffer output(filename);
+  RETURN_IF_ERROR(output.status());
 
+  for (const auto &c : chars_map) {
+    std::vector<std::string> src, trg;
+    string_util::UnicodeText srcu, trgu;
+    for (char32 v : c.first) {
+      src.push_back(string_util::IntToHex(v));
+      srcu.push_back(v);
+    }
+    for (char32 v : c.second) {
+      trg.push_back(string_util::IntToHex(v));
+      trgu.push_back(v);
+    }
+    std::string line = string_util::Join(src, " ") + "\t" +
+                       string_util::Join(trg, " ") + "\t# " +
+                       string_util::UnicodeTextToUTF8(c.first) + " => " +
+                       string_util::UnicodeTextToUTF8(c.second);
+    line = string_util::StringReplace(line, "\n", " ", true);
+    line = string_util::StringReplace(line, "\r", " ", true);
+    output.WriteLine(line);
+  }
+
+  return util::OkStatus();
+}
+
+// static
+util::Status Builder::RemoveRedundantMap(CharsMap *chars_map) {
+  CHECK_OR_RETURN(chars_map);
+
+  CharsMap new_chars_map;
   size_t max_len = 0;
-  for (const auto &p : chars_map) {
+  for (const auto &p : *chars_map) {
     max_len = std::max(p.first.size(), max_len);
     if (p.first.size() == 1) {
       new_chars_map.insert(p);
     }
   }
-  CHECK_GT(max_len, 0);
+  CHECK_GT_OR_RETURN(max_len, 0);
 
-  // Checks whether the rules with size of |len| can be normalized by
+  // Checks whether the rules with size of `len` can be normalized by
   // the rules with size of [1 .. len - 1].
   for (size_t len = 2; len <= max_len; ++len) {
-    for (const auto &p : chars_map) {
+    for (const auto &p : *chars_map) {
       if (p.first.size() == len &&
           p.second != Normalize(new_chars_map, p.first, len - 1)) {
         new_chars_map.insert(p);
@@ -356,12 +426,14 @@ Builder::CharsMap Builder::RemoveRedundantMap(const CharsMap &chars_map) {
     }
   }
 
-  // Verify all characters in |chars_map| are normalized by |new_chars_map|.
-  for (const auto &p : chars_map) {
-    CHECK_EQ(p.second, Normalize(new_chars_map, p.first, max_len));
+  // Verify all characters in `chars_map` are normalized by `new_chars_map`.
+  for (const auto &p : *chars_map) {
+    CHECK_EQ_OR_RETURN(p.second, Normalize(new_chars_map, p.first, max_len));
   }
 
-  return new_chars_map;
+  *chars_map = std::move(new_chars_map);
+
+  return util::OkStatus();
 }
 }  // namespace normalizer
 }  // namespace sentencepiece

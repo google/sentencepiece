@@ -45,6 +45,15 @@ class SentencePieceTrainer {
   // '--input=data --model_prefix=m --vocab_size=8192 model_type=unigram'
   static util::Status Train(const std::string &args);
 
+  // Handy function to make a normalizer spec from the pre-compiled
+  // normalization name. Do not use this method in production as it crashes
+  // when `name` is invalid. Useful for unittesting.
+  static NormalizerSpec GetNormalizerSpec(const std::string &name);
+
+  // Populates necessary fields (precompiled_charmap) from
+  // `NormalizerSpec::name` or `NormalizerSpec::normalization_rule_tsv`.
+  static util::Status PopulateNormalizerSpec(NormalizerSpec *normalizer_spec);
+
   // Overrides `trainer_spec` and `normalizer_spec` with the
   // command-line string in `args`.
   static util::Status MergeSpecsFromArgs(const std::string &args,

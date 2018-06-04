@@ -57,14 +57,14 @@ bool ModelInterface::IsUnknown(int id) const {
 void ModelInterface::InitializePieces(bool enable_user_defined) {
   pieces_.clear();
   reserved_id_map_.clear();
-  unk_id_ = 0;
+  unk_id_ = -1;
 
   for (int i = 0; i < model_proto_->pieces_size(); ++i) {
     const auto &sp = model_proto_->pieces(i);
     if (!enable_user_defined &&
         sp.type() == ModelProto::SentencePiece::USER_DEFINED) {
       status_ = util::StatusBuilder(util::error::INTERNAL)
-                << "user defined symbol is not supported.";
+                << "User defined symbol is not supported.";
       return;
     }
 
@@ -78,8 +78,19 @@ void ModelInterface::InitializePieces(bool enable_user_defined) {
       return;
     }
 
-    if (sp.type() == ModelProto::SentencePiece::UNKNOWN) unk_id_ = i;
+    if (sp.type() == ModelProto::SentencePiece::UNKNOWN) {
+      if (unk_id_ >= 0) {
+        status_ = util::StatusBuilder(util::error::INTERNAL)
+                  << "unk is already defined.";
+        return;
+      }
+      unk_id_ = i;
+    }
   }
+
+  if (unk_id_ == -1)
+    status_ = util::StatusBuilder(util::error::INTERNAL)
+              << "unk is not defined.";
 }
 
 std::vector<StringPiece> SplitIntoWords(StringPiece text) {

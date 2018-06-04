@@ -15,6 +15,7 @@
 #include "builder.h"
 #include "common.h"
 #include "normalizer.h"
+#include "sentencepiece_trainer.h"
 #include "testharness.h"
 #include "util.h"
 
@@ -33,12 +34,12 @@ TEST(BuilderTest, RemoveRedundantMapTest) {
   chars_map[{0x0061, 0x0062}] = {0x0041, 0x0042};
   chars_map[{0x0061, 0x0062, 0x0063}] = {0x0043, 0x0042, 0x0041};
 
-  const auto new_chars_map = Builder::RemoveRedundantMap(chars_map);
-  EXPECT_EQ(3, new_chars_map.size());
-  EXPECT_EQ(new_chars_map.end(), new_chars_map.find({0x0061, 0x0062}));
-  EXPECT_NE(new_chars_map.end(), new_chars_map.find({0x0061}));
-  EXPECT_NE(new_chars_map.end(), new_chars_map.find({0x0062}));
-  EXPECT_NE(new_chars_map.end(), new_chars_map.find({0x0061, 0x0062, 0x0063}));
+  EXPECT_OK(Builder::RemoveRedundantMap(&chars_map));
+  EXPECT_EQ(3, chars_map.size());
+  EXPECT_EQ(chars_map.end(), chars_map.find({0x0061, 0x0062}));
+  EXPECT_NE(chars_map.end(), chars_map.find({0x0061}));
+  EXPECT_NE(chars_map.end(), chars_map.find({0x0062}));
+  EXPECT_NE(chars_map.end(), chars_map.find({0x0061, 0x0062, 0x0063}));
 }
 
 TEST(BuilderTest, GetPrecompiledCharsMapWithInvalidNameTest) {
@@ -47,25 +48,19 @@ TEST(BuilderTest, GetPrecompiledCharsMapWithInvalidNameTest) {
   EXPECT_NOT_OK(Builder::GetPrecompiledCharsMap("__UNKNOWN__", &output));
 }
 
-TEST(BuilderTest, BuildIdentityMapTest) {
-  const auto m = Builder::BuildIdentityMap();
-  EXPECT_EQ(1, m.size());
-}
-
 TEST(BuilderTest, BuildNFKCMapTest) {
+  Builder::CharsMap chars_map;
 #ifdef ENABLE_NFKC_COMPILE
-  const auto m = Builder::BuildNFKCMap();
-  EXPECT_TRUE(!m.empty());
+  EXPECT_OK(Builder::BuildNFKCMap(&chars_map));
+  EXPECT_TRUE(!chars_map.empty());
 #else
-  EXPECT_DEATH(Builder::BuildNFKCMap());
+  //  EXPECT_DEATH(Builder::BuildNFKCMap(&chars_map));
 #endif
 }
 
 TEST(BuilderTest, GetPrecompiledCharsMapTest) {
   {
-    NormalizerSpec spec;
-    spec.set_name("nfkc");
-    EXPECT_OK(Builder::PopulateNormalizerSpec(&spec));
+    const NormalizerSpec spec = SentencePieceTrainer::GetNormalizerSpec("nfkc");
     const Normalizer normalizer(spec);
     EXPECT_EQ(WS "ABC", normalizer.Normalize("ＡＢＣ"));
     EXPECT_EQ(WS "(株)", normalizer.Normalize("㈱"));
@@ -73,9 +68,9 @@ TEST(BuilderTest, GetPrecompiledCharsMapTest) {
   }
 
   {
-    NormalizerSpec spec;
-    spec.set_name("identity");
-    EXPECT_OK(Builder::PopulateNormalizerSpec(&spec));
+    const NormalizerSpec spec =
+        SentencePieceTrainer::GetNormalizerSpec("identity");
+    EXPECT_TRUE(spec.precompiled_charsmap().empty());
     const Normalizer normalizer(spec);
     EXPECT_EQ(WS "ＡＢＣ", normalizer.Normalize("ＡＢＣ"));
     EXPECT_EQ(WS "㈱", normalizer.Normalize("㈱"));
@@ -99,6 +94,11 @@ TEST(BuilderTest, CompileCharsMap) {
   NormalizerSpec spec;
   EXPECT_OK(
       Builder::CompileCharsMap(chars_map, spec.mutable_precompiled_charsmap()));
+  Builder::CharsMap decompiled_chars_map;
+  EXPECT_OK(Builder::DecompileCharsMap(spec.precompiled_charsmap(),
+                                       &decompiled_chars_map));
+  EXPECT_EQ(chars_map, decompiled_chars_map);
+
   spec.set_add_dummy_prefix(false);
   const Normalizer normalizer(spec);
 
@@ -112,12 +112,30 @@ TEST(BuilderTest, CompileCharsMap) {
   EXPECT_EQ("ABCabcD", normalizer.Normalize("abcあいうd"));
 }
 
-TEST(BuilderTest, BuildMapFromFileTest) {
-  const auto cmap = Builder::BuildMapFromFile("../data/nfkc.tsv");
-  std::string expected, precompiled;
-  EXPECT_OK(Builder::CompileCharsMap(cmap, &precompiled));
-  EXPECT_OK(Builder::GetPrecompiledCharsMap("nfkc", &expected));
-  EXPECT_EQ(expected, precompiled);
+TEST(BuilderTest, LoadCharsMapTest) {
+  Builder::CharsMap chars_map;
+  EXPECT_OK(Builder::LoadCharsMap("../data/nfkc.tsv", &chars_map));
+
+  std::string precompiled, expected;
+  EXPECT_OK(Builder::CompileCharsMap(chars_map, &precompiled));
+
+  // Round-trip.
+  Builder::CharsMap decompiled_chars_map;
+  EXPECT_OK(Builder::DecompileCharsMap(precompiled, &decompiled_chars_map));
+  EXPECT_EQ(chars_map, decompiled_chars_map);
+
+  test::ScopedTempFile output_tsv("output.tsv");
+  EXPECT_OK(Builder::SaveCharsMap(output_tsv.filename(), chars_map));
+
+  Builder::CharsMap saved_chars_map;
+  EXPECT_OK(Builder::LoadCharsMap(output_tsv.filename(), &saved_chars_map));
+  EXPECT_EQ(chars_map, saved_chars_map);
+
+#ifdef ENABLE_NFKC_COMPILE
+  Builder::CharsMap nfkc_map;
+  EXPECT_OK(Builder::BuildNFKCMap(&nfkc_map));
+  EXPECT_OK(Builder::CompileCharsMap(nfkc_map, &expected));
+#endif
 }
 
 TEST(BuilderTest, ContainsTooManySharedPrefixTest) {
@@ -129,7 +147,7 @@ TEST(BuilderTest, ContainsTooManySharedPrefixTest) {
     chars_map[keys] = {'b'};
   }
   std::string output;
-  EXPECT_NOT_OK(Builder::CompileCharsMap(chars_map, &output));
+  EXPECT_FALSE(Builder::CompileCharsMap(chars_map, &output).ok());
 }
 
 }  // namespace normalizer
