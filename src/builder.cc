@@ -13,7 +13,9 @@
 // limitations under the License.!
 
 #include "builder.h"
+#include <algorithm>
 #include <functional>
+#include <utility>
 
 #ifdef ENABLE_NFKC_COMPILE
 #include <unicode/errorcode.h>

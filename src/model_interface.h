@@ -18,11 +18,12 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "common.h"
-#include "stringpiece.h"
 #include "sentencepiece_processor.h"
+#include "stringpiece.h"
 
 namespace sentencepiece {
 

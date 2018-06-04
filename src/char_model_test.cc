@@ -14,6 +14,7 @@
 
 #include "char_model.h"
 
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -101,7 +102,6 @@ TEST(CharModelTest, NotSupportedTest) {
   EXPECT_EQ(NBestEncodeResult(), model.NBestEncode("test", 10));
   EXPECT_EQ(EncodeResult(), model.SampleEncode("test", 0.1));
 }
-
 
 }  // namespace
 }  // namespace character

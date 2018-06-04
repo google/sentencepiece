@@ -14,7 +14,10 @@
 
 #include "bpe_model.h"
 
+#include <memory>
 #include <queue>
+#include <utility>
+#include <vector>
 #include "util.h"
 
 namespace sentencepiece {

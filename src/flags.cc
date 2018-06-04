@@ -13,8 +13,6 @@
 // limitations under the License.!
 
 #include "flags.h"
-#include "common.h"
-#include "util.h"
 
 #include <algorithm>
 #include <cctype>
@@ -22,6 +20,10 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <utility>
+
+#include "common.h"
+#include "util.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

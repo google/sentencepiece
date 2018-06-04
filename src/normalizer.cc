@@ -13,6 +13,9 @@
 // limitations under the License.!
 
 #include "normalizer.h"
+
+#include <utility>
+#include <vector>
 #include "common.h"
 #include "stringpiece.h"
 #include "third_party/darts_clone/darts.h"

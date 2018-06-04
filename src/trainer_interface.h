@@ -15,9 +15,12 @@
 #ifndef TRAINER_INTERFACE_H_
 #define TRAINER_INTERFACE_H_
 
+#include <algorithm>
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "common.h"

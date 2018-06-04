@@ -13,7 +13,11 @@
 // limitations under the License.!
 
 #include "sentencepiece_processor.h"
+
+#include <map>
 #include <random>
+#include <utility>
+
 #include "common.h"
 #include "model_factory.h"
 #include "normalizer.h"

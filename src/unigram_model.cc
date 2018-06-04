@@ -14,12 +14,14 @@
 
 #include "unigram_model.h"
 
+#include <algorithm>
 #include <cfloat>
 #include <cmath>
 #include <map>
 #include <queue>
 #include <random>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "stringpiece.h"

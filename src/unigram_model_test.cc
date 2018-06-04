@@ -15,8 +15,11 @@
 #include "unigram_model.h"
 
 #include <fstream>
+#include <map>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "sentencepiece_model.pb.h"
 #include "testharness.h"
@@ -232,7 +235,6 @@ TEST(LatticeTest, NBestTest) {
   auto nbests1 = lattice.NBest(1);
   EXPECT_EQ(nbests1.size(), 1);
 }
-
 
 TEST(LatticeTest, PopulateMarginalTest) {
   Lattice lattice;
@@ -455,11 +457,11 @@ TEST(UnigramModelTest, PopulateNodesTest) {
 TEST(UnigramModelTest, ModelNBestTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
-  AddPiece(&model_proto, "a", 0.0);   // 3
-  AddPiece(&model_proto, "b", 0.0);   // 4
-  AddPiece(&model_proto, "c", 0.0);   // 5
-  AddPiece(&model_proto, "ab", 2.0);  // 6
-  AddPiece(&model_proto, "bc", 5.0);  // 7
+  AddPiece(&model_proto, "a", 0.0);     // 3
+  AddPiece(&model_proto, "b", 0.0);     // 4
+  AddPiece(&model_proto, "c", 0.0);     // 5
+  AddPiece(&model_proto, "ab", 2.0);    // 6
+  AddPiece(&model_proto, "bc", 5.0);    // 7
   AddPiece(&model_proto, "abc", 10.0);  // 8
 
   const Model model(model_proto);

@@ -13,6 +13,8 @@
 // limitations under the License.!
 
 #include "normalizer.h"
+
+#include <vector>
 #include "builder.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"

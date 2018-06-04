@@ -14,7 +14,10 @@
 
 #include "bpe_model_trainer.h"
 
+#include <algorithm>
+#include <string>
 #include <unordered_set>
+#include <vector>
 #include "util.h"
 
 namespace sentencepiece {

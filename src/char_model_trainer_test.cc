@@ -13,6 +13,8 @@
 // limitations under the License.!
 
 #include "char_model_trainer.h"
+#include <string>
+#include <vector>
 #include "sentencepiece_processor.h"
 #include "testharness.h"
 #include "util.h"
@@ -46,7 +48,7 @@ std::string RunTrainer(const std::vector<std::string> &input, int size) {
   normalizer_spec.set_name("identity");
 
   Trainer trainer(trainer_spec, normalizer_spec);
-  trainer.Train();
+  EXPECT_OK(trainer.Train());
 
   SentencePieceProcessor processor;
   EXPECT_OK(processor.Load(model_prefix + ".model"));
@@ -61,7 +63,6 @@ std::string RunTrainer(const std::vector<std::string> &input, int size) {
 
   return string_util::Join(pieces, " ");
 }
-}  // namespace
 
 TEST(TrainerTest, BasicTest) {
   EXPECT_EQ(WS " a e p n I h l v",
@@ -69,5 +70,7 @@ TEST(TrainerTest, BasicTest) {
   EXPECT_EQ(WS " a",  // <unk>, <s>, </s>, _, a
             RunTrainer({"I have a pen", "I have an apple", "apple pen"}, 5));
 }
+
+}  // namespace
 }  // namespace character
 }  // namespace sentencepiece
