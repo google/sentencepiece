@@ -25,6 +25,9 @@
 #include "util.h"
 
 namespace sentencepiece {
+namespace {
+static constexpr char kDefaultNormalizerName[] = "nfkc";
+}  // namespace
 
 // static
 util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec) {
@@ -36,11 +39,19 @@ util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec) {
 util::Status SentencePieceTrainer::Train(
     const TrainerSpec &trainer_spec, const NormalizerSpec &normalizer_spec) {
   auto copied_normalizer_spec = normalizer_spec;
-  RETURN_IF_ERROR(
-      normalizer::Builder::PopulateNormalizerSpec(&copied_normalizer_spec));
-
+  RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_normalizer_spec));
   auto trainer = TrainerFactory::Create(trainer_spec, copied_normalizer_spec);
   return trainer->Train();
+}
+
+// static
+NormalizerSpec SentencePieceTrainer::GetNormalizerSpec(
+    const std::string &name) {
+  NormalizerSpec spec;
+  spec.set_name(name);
+  CHECK_OK(normalizer::Builder::GetPrecompiledCharsMap(
+      spec.name(), spec.mutable_precompiled_charsmap()));
+  return spec;
 }
 
 // static
@@ -161,8 +172,36 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
 util::Status SentencePieceTrainer::Train(const std::string &args) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
-  CHECK_OK(MergeSpecsFromArgs(args, &trainer_spec, &normalizer_spec));
+  RETURN_IF_ERROR(MergeSpecsFromArgs(args, &trainer_spec, &normalizer_spec));
   return Train(trainer_spec, normalizer_spec);
+}
+
+// static
+util::Status SentencePieceTrainer::PopulateNormalizerSpec(
+    NormalizerSpec *normalizer_spec) {
+  CHECK_OR_RETURN(normalizer_spec);
+
+  if (!normalizer_spec->normalization_rule_tsv().empty()) {
+    CHECK_OR_RETURN(normalizer_spec->precompiled_charsmap().empty())
+        << "precompiled_charsmap is already defined.";
+    normalizer::Builder::CharsMap chars_map;
+    RETURN_IF_ERROR(normalizer::Builder::LoadCharsMap(
+        normalizer_spec->normalization_rule_tsv(), &chars_map));
+    RETURN_IF_ERROR(normalizer::Builder::CompileCharsMap(
+        chars_map, normalizer_spec->mutable_precompiled_charsmap()));
+    normalizer_spec->set_name("user_defined");
+  } else {
+    if (normalizer_spec->name().empty()) {
+      normalizer_spec->set_name(kDefaultNormalizerName);
+    }
+    if (normalizer_spec->precompiled_charsmap().empty()) {
+      RETURN_IF_ERROR(normalizer::Builder::GetPrecompiledCharsMap(
+          normalizer_spec->name(),
+          normalizer_spec->mutable_precompiled_charsmap()));
+    }
+  }
+
+  return util::OkStatus();
 }
 
 }  // namespace sentencepiece

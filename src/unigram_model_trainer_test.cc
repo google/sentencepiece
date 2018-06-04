@@ -13,8 +13,6 @@
 // limitations under the License.!
 
 #include "unigram_model_trainer.h"
-#include "builder.h"
-#include "normalizer.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "testharness.h"
@@ -39,7 +37,6 @@ TEST(UnigramTrainerTest, EndToEndTest) {
 
   NormalizerSpec normalizer_spec;
   normalizer_spec.set_name("identity");
-  EXPECT_OK(normalizer::Builder::PopulateNormalizerSpec(&normalizer_spec));
 
   constexpr int kVocabSize = 8000;
   trainer_spec.set_vocab_size(kVocabSize);

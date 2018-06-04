@@ -23,42 +23,40 @@ namespace normalizer {
 
 constexpr int Normalizer::kMaxTrieResultsSize;
 
-Normalizer::Normalizer(const NormalizerSpec &spec) : spec_(&spec) {
+Normalizer::Normalizer(const NormalizerSpec &spec)
+    : spec_(&spec), status_(util::OkStatus()) {
   StringPiece index = spec.precompiled_charsmap();
   if (index.empty()) {
-    status_ = util::InvalidArgumentError("precompiled_charsmap is empty.");
-    return;
+    LOG(INFO) << "precompiled_charsmap is empty. use identity normalization.";
+  } else {
+    StringPiece trie_blob, normalized;
+    status_ = DecodePrecompiledCharsMap(index, &trie_blob, &normalized);
+    if (!status_.ok()) return;
+
+    // Reads the body of double array.
+    trie_ = port::MakeUnique<Darts::DoubleArray>();
+
+    // The second arg of set_array is not the size of blob,
+    // but the number of double array units.
+    trie_->set_array(const_cast<char *>(trie_blob.data()),
+                     trie_blob.size() / trie_->unit_size());
+
+    normalized_ = normalized.data();
   }
-
-  StringPiece trie_blob, normalized;
-  status_ = DecodePrecompiledCharsMap(index, &trie_blob, &normalized);
-  if (!status_.ok()) return;
-
-  // Reads the body of double array.
-  trie_ = port::MakeUnique<Darts::DoubleArray>();
-
-  // The second arg of set_array is not the size of blob,
-  // but the number of double array units.
-  trie_->set_array(const_cast<char *>(trie_blob.data()),
-                   trie_blob.size() / trie_->unit_size());
-
-  normalized_ = normalized.data();
 }
 
 Normalizer::~Normalizer() {}
 
 util::Status Normalizer::Normalize(StringPiece input, std::string *normalized,
                                    std::vector<size_t> *norm_to_orig) const {
-  if (trie_ == nullptr || normalized_ == nullptr) {
-    return util::InternalError("Normalizer model is not available.");
-  }
-
   norm_to_orig->clear();
   normalized->clear();
 
   if (input.empty()) {
     return util::OkStatus();
   }
+
+  RETURN_IF_ERROR(status());
 
   int consumed = 0;
 
@@ -144,7 +142,7 @@ util::Status Normalizer::Normalize(StringPiece input, std::string *normalized,
     const StringPiece space = spec_->escape_whitespaces() ? kSpaceSymbol : " ";
     while (string_util::EndsWith(*normalized, space)) {
       const int length = normalized->size() - space.size();
-      if (length < 0) return util::InternalError("length < 0");
+      CHECK_GE_OR_RETURN(length, 0);
       consumed = (*norm_to_orig)[length];
       normalized->resize(length);
       norm_to_orig->resize(length);
@@ -153,9 +151,7 @@ util::Status Normalizer::Normalize(StringPiece input, std::string *normalized,
 
   norm_to_orig->push_back(consumed);
 
-  if (norm_to_orig->size() != normalized->size() + 1) {
-    return util::InternalError("norm_to_org and normalized are inconsistent");
-  }
+  CHECK_EQ_OR_RETURN(norm_to_orig->size(), normalized->size() + 1);
 
   return util::OkStatus();
 }
@@ -173,25 +169,27 @@ std::pair<StringPiece, int> Normalizer::NormalizePrefix(
 
   if (input.empty()) return result;
 
-  // Allocates trie_results in stack, which makes the encoding speed 36% faster.
-  // (38k sentences/sec => 60k sentences/sec).
-  // Builder checks that the result size never exceeds kMaxTrieResultsSize.
-  // This array consumes 0.5kByte in stack, which is less than
-  // default stack frames (16kByte).
-  Darts::DoubleArray::result_pair_type
-      trie_results[Normalizer::kMaxTrieResultsSize];
-
-  const size_t num_nodes =
-      trie_->commonPrefixSearch(input.data(), trie_results,
-                                Normalizer::kMaxTrieResultsSize, input.size());
-
-  // Finds the longest rule.
   size_t longest_length = 0;
   int longest_value = 0;
-  for (size_t k = 0; k < num_nodes; ++k) {
-    if (longest_length == 0 || trie_results[k].length > longest_length) {
-      longest_length = trie_results[k].length;  // length of prefix
-      longest_value = trie_results[k].value;    // pointer to |normalized_|.
+
+  if (trie_ != nullptr) {
+    // Allocates trie_results in stack, which makes the encoding speed 36%
+    // faster. (38k sentences/sec => 60k sentences/sec). Builder checks that the
+    // result size never exceeds kMaxTrieResultsSize. This array consumes
+    // 0.5kByte in stack, which is less than default stack frames (16kByte).
+    Darts::DoubleArray::result_pair_type
+        trie_results[Normalizer::kMaxTrieResultsSize];
+
+    const size_t num_nodes = trie_->commonPrefixSearch(
+        input.data(), trie_results, Normalizer::kMaxTrieResultsSize,
+        input.size());
+
+    // Finds the longest rule.
+    for (size_t k = 0; k < num_nodes; ++k) {
+      if (longest_length == 0 || trie_results[k].length > longest_length) {
+        longest_length = trie_results[k].length;  // length of prefix
+        longest_value = trie_results[k].value;    // pointer to |normalized_|.
+      }
     }
   }
 
@@ -239,7 +237,7 @@ util::Status Normalizer::DecodePrecompiledCharsMap(StringPiece blob,
       !string_util::DecodePOD<uint32>(
           StringPiece(blob.data(), sizeof(trie_blob_size)), &trie_blob_size) ||
       trie_blob_size >= blob.size()) {
-    return util::InternalError("Trie blob is broken.");
+    return util::InternalError("Blob for normalization rule is broken.");
   }
 
   blob.remove_prefix(sizeof(trie_blob_size));

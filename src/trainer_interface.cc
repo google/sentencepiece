@@ -283,29 +283,37 @@ void TrainerInterface::SplitSentencesByWhitespace() {
 }
 
 util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
+  RETURN_IF_ERROR(status());
+
   // Duplicated sentencepiece is not allowed.
-  std::unordered_set<std::string> dup;
+  std::set<std::string> dup;
 
 #define CHECK_PIECE(piece)                                  \
   CHECK_OR_RETURN(string_util::IsStructurallyValid(piece)); \
   CHECK_OR_RETURN(!piece.empty());                          \
   CHECK_OR_RETURN(dup.insert(piece).second) << piece << " is already defined";
 
-  for (const auto &w : meta_pieces_) {
-    auto *sp = model_proto->add_pieces();
-    sp->set_piece(w.first);
-    sp->set_type(w.second);
-    sp->set_score(0.0);
-    CHECK_NE_OR_RETURN(ModelProto::SentencePiece::NORMAL, sp->type());
-    CHECK_PIECE(sp->piece());
+  size_t fid = 0;
+  for (int id = 0; id < trainer_spec_.vocab_size(); ++id) {
+    const auto it = meta_pieces_.find(id);
+    if (it != meta_pieces_.end()) {
+      auto *sp = model_proto->add_pieces();
+      sp->set_piece(it->second.first);
+      sp->set_type(it->second.second);
+      sp->set_score(0.0);
+      CHECK_EQ_OR_RETURN(model_proto->pieces_size() - 1, it->first);
+      CHECK_NE_OR_RETURN(ModelProto::SentencePiece::NORMAL, sp->type());
+      CHECK_PIECE(sp->piece());
+    } else if (fid < final_pieces_.size()) {
+      const auto &w = final_pieces_[fid++];
+      auto *sp = model_proto->add_pieces();
+      sp->set_piece(w.first);
+      sp->set_score(w.second);
+      CHECK_PIECE(sp->piece());
+    }
   }
 
-  for (const auto &w : final_pieces_) {
-    auto *sp = model_proto->add_pieces();
-    sp->set_piece(w.first);
-    sp->set_score(w.second);
-    CHECK_PIECE(sp->piece());
-  }
+  CHECK_EQ_OR_RETURN(fid, final_pieces_.size());
 
   *(model_proto->mutable_trainer_spec()) = trainer_spec_;
   *(model_proto->mutable_normalizer_spec()) = normalizer_spec_;
@@ -314,13 +322,13 @@ util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
       trainer_spec_.model_type() == TrainerSpec::CHAR) {
     CHECK_GE_OR_RETURN(trainer_spec_.vocab_size(), model_proto->pieces_size());
     CHECK_GE_OR_RETURN(trainer_spec_.vocab_size(),
-                       static_cast<int>(dup.size()));
+                       static_cast<int32>(dup.size()));
     model_proto->mutable_trainer_spec()->set_vocab_size(
         model_proto->pieces_size());
   } else {
-    CHECK_OR_RETURN(trainer_spec_.vocab_size() == model_proto->pieces_size() &&
-                    trainer_spec_.vocab_size() == static_cast<int>(dup.size()))
-        << "Use --hard_vocab_limit=false to make the vocab size `soft limit`.";
+    CHECK_EQ_OR_RETURN(trainer_spec_.vocab_size(), model_proto->pieces_size());
+    CHECK_EQ_OR_RETURN(trainer_spec_.vocab_size(),
+                       static_cast<int32>(dup.size()));
   }
 
   return util::OkStatus();
@@ -361,40 +369,64 @@ util::Status TrainerInterface::Save() const {
 
 util::Status TrainerInterface::InitMetaPieces() {
   CHECK_OR_RETURN(meta_pieces_.empty());
-
-  std::vector<std::pair<int, std::string>> ids;
-  if (trainer_spec_.unk_id() >= 0)
-    ids.emplace_back(trainer_spec_.unk_id(), kUNK);
-  if (trainer_spec_.bos_id() >= 0)
-    ids.emplace_back(trainer_spec_.bos_id(), kBOS);
-  if (trainer_spec_.eos_id() >= 0)
-    ids.emplace_back(trainer_spec_.eos_id(), kEOS);
-  if (trainer_spec_.pad_id() >= 0)
-    ids.emplace_back(trainer_spec_.pad_id(), kPAD);
-
-  std::sort(ids.begin(), ids.end());
-
-  int prev_id = -1;
   bool has_unk = false;
-  for (const auto &p : ids) {
-    CHECK_EQ_OR_RETURN(prev_id + 1, p.first)
-        << "ID for `" << p.second << "` must be " << prev_id + 1;
-    prev_id = p.first;
-    CHECK_EQ_OR_RETURN(static_cast<int>(meta_pieces_.size()), p.first);
-    if (p.second == kUNK) has_unk = true;
-    meta_pieces_.emplace_back(
-        p.second, (p.second == kUNK ? ModelProto::SentencePiece::UNKNOWN
-                                    : ModelProto::SentencePiece::CONTROL));
-  }
+
+  auto insert_id = [&has_unk, this](int id, const std::string &w) -> bool {
+    if (id < 0) return true;
+    if (id >= trainer_spec_.vocab_size() ||
+        meta_pieces_.find(id) != meta_pieces_.end() || (has_unk && w == kUNK))
+      return false;
+    if (w == kUNK) has_unk = true;
+    meta_pieces_[id] =
+        std::make_pair(w, w == kUNK ? ModelProto::SentencePiece::UNKNOWN
+                                    : ModelProto::SentencePiece::CONTROL);
+    return true;
+  };
+
+  CHECK_OR_RETURN(insert_id(trainer_spec_.unk_id(), kUNK));
+  CHECK_OR_RETURN(insert_id(trainer_spec_.bos_id(), kBOS));
+  CHECK_OR_RETURN(insert_id(trainer_spec_.eos_id(), kEOS));
+  CHECK_OR_RETURN(insert_id(trainer_spec_.pad_id(), kPAD));
 
   CHECK_OR_RETURN(has_unk) << kUNK << " must be defined.";
 
+  std::set<std::string> dup;
+
+  int id = 0;
+  auto insert_meta_symbol = [&id, &dup, this](
+                                const std::string &w,
+                                ModelProto::SentencePiece::Type type) -> bool {
+    if (!dup.insert(w).second) {
+      LOG(ERROR) << w << " is already defined.";
+      return false;
+    }
+
+    if (w == kUNK) {
+      LOG(ERROR) << "<unk> must not be defined with --control_symbols and "
+                    "--user_defined_symbols.";
+      return false;
+    }
+
+    if (w == kBOS && trainer_spec_.bos_id() >= 0) {
+      meta_pieces_[trainer_spec_.bos_id()].second = type;
+    } else if (w == kEOS && trainer_spec_.eos_id() >= 0) {
+      meta_pieces_[trainer_spec_.eos_id()].second = type;
+    } else if (w == kPAD && trainer_spec_.pad_id() >= 0) {
+      meta_pieces_[trainer_spec_.pad_id()].second = type;
+    } else {
+      while (meta_pieces_.find(id) != meta_pieces_.end()) ++id;
+      meta_pieces_[id] = std::make_pair(w, type);
+    }
+    return true;
+  };
+
   for (const auto &w : trainer_spec_.control_symbols()) {
-    meta_pieces_.emplace_back(w, ModelProto::SentencePiece::CONTROL);
+    CHECK_OR_RETURN(insert_meta_symbol(w, ModelProto::SentencePiece::CONTROL));
   }
 
   for (const auto &w : trainer_spec_.user_defined_symbols()) {
-    meta_pieces_.emplace_back(w, ModelProto::SentencePiece::USER_DEFINED);
+    CHECK_OR_RETURN(
+        insert_meta_symbol(w, ModelProto::SentencePiece::USER_DEFINED));
   }
 
   return util::OkStatus();
