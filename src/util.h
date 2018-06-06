@@ -166,6 +166,13 @@ inline size_t Itoa(T val, char *s) {
   return static_cast<size_t>(t - org);
 }
 
+template <typename T>
+std::string SimpleItoa(T val) {
+  char buf[32];
+  Itoa<T>(val, buf);
+  return std::string(buf);
+}
+
 // Return length of a single UTF-8 source character
 inline size_t OneCharLen(const char *src) {
   return "\1\1\1\1\1\1\1\1\1\1\1\1\2\2\3\4"[(*src & 0xFF) >> 4];
