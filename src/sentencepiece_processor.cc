@@ -16,6 +16,7 @@
 
 #include <map>
 #include <random>
+#include <set>
 #include <utility>
 
 #include "common.h"
@@ -57,14 +58,23 @@ void SentencePieceProcessor::LoadOrDie(const std::string &filename) {
 
 util::Status SentencePieceProcessor::Load(std::istream *is) {
   CHECK_OR_RETURN(is) << "input ifstream is null";
+  auto model_proto = port::MakeUnique<ModelProto>();
+  CHECK_OR_RETURN(model_proto->ParseFromIstream(is)) << "Model file is broken";
+  return Load(std::move(model_proto));
+}
 
-  model_proto_ = port::MakeUnique<ModelProto>();
-  CHECK_OR_RETURN(model_proto_->ParseFromIstream(is)) << "Model file is broken";
+util::Status SentencePieceProcessor::Load(const ModelProto &model_proto) {
+  auto model_proto_copy = port::MakeUnique<ModelProto>();
+  *model_proto_copy = model_proto;
+  return Load(std::move(model_proto_copy));
+}
 
+util::Status SentencePieceProcessor::Load(
+    std::unique_ptr<ModelProto> &&model_proto) {
+  model_proto_ = std::move(model_proto);
   model_ = ModelFactory::Create(*model_proto_);
   normalizer_ =
       port::MakeUnique<normalizer::Normalizer>(model_proto_->normalizer_spec());
-
   return status();
 }
 
@@ -84,6 +94,61 @@ util::Status SentencePieceProcessor::status() const {
   RETURN_IF_ERROR(model_->status());
   RETURN_IF_ERROR(normalizer_->status());
   return util::OkStatus();
+}
+
+util::Status SentencePieceProcessor::SetVocabulary(
+    const std::vector<std::string> &valid_vocab) {
+  RETURN_IF_ERROR(status());
+
+  // TODO(taku): supports vocabulary constraint in BPE model.
+  const auto type = model_proto_->trainer_spec().model_type();
+  CHECK_EQ_OR_RETURN(type, TrainerSpec::UNIGRAM)
+      << "Vocabulary constraint is only enabled in subword units.";
+
+  const std::set<std::string> vocab(valid_vocab.begin(), valid_vocab.end());
+
+  for (int i = 0; i < model_proto_->pieces_size(); ++i) {
+    auto *piece = model_proto_->mutable_pieces(i);
+    if (vocab.find(piece->piece()) != vocab.end() ||
+        string_util::OneCharLen(piece->piece().c_str()) ==
+            piece->piece().size()) {
+      piece->set_type(ModelProto::SentencePiece::NORMAL);
+    } else {
+      piece->set_type(ModelProto::SentencePiece::UNUSED);
+    }
+  }
+
+  return util::OkStatus();
+}
+
+util::Status SentencePieceProcessor::ResetVocabulary() {
+  RETURN_IF_ERROR(status());
+  for (auto &piece : *(model_proto_->mutable_pieces())) {
+    if (piece.type() == ModelProto::SentencePiece::UNUSED)
+      piece.set_type(ModelProto::SentencePiece::NORMAL);
+  }
+
+  return util::OkStatus();
+}
+
+util::Status SentencePieceProcessor::LoadVocabulary(const std::string &filename,
+                                                    int threshold) {
+  io::InputBuffer input(filename);
+  RETURN_IF_ERROR(input.status());
+
+  std::string line;
+  std::vector<std::string> vocab;
+
+  while (input.ReadLine(&line)) {
+    const std::vector<std::string> v = string_util::Split(line, "\t");
+    CHECK_GE_OR_RETURN(v.size(), 1);
+    CHECK_OR_RETURN(!v[0].empty());
+    int32 freq = 1;
+    if (v.size() >= 2) freq = atoi(v[1].c_str());
+    if (freq >= threshold) vocab.emplace_back(v[0]);
+  }
+
+  return SetVocabulary(vocab);
 }
 
 #define CHECK_OR_RETURN_STATUS_STL(container)               \
@@ -443,6 +508,11 @@ bool SentencePieceProcessor::IsControl(int id) const {
 bool SentencePieceProcessor::IsUnknown(int id) const {
   CHECK_STATUS_OR_RETURN_DEFAULT(0);
   return model_->IsUnknown(id);
+}
+
+bool SentencePieceProcessor::IsUnused(int id) const {
+  CHECK_STATUS_OR_RETURN_DEFAULT(false);
+  return model_->IsUnused(id);
 }
 
 // static

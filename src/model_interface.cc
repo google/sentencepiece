@@ -56,6 +56,10 @@ bool ModelInterface::IsUnknown(int id) const {
           ModelProto::SentencePiece::UNKNOWN);
 }
 
+bool ModelInterface::IsUnused(int id) const {
+  return (model_proto_->pieces(id).type() == ModelProto::SentencePiece::UNUSED);
+}
+
 void ModelInterface::InitializePieces(bool enable_user_defined) {
   pieces_.clear();
   reserved_id_map_.clear();

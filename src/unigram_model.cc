@@ -406,8 +406,10 @@ void ModelBase::PopulateNodes(Lattice *lattice) const {
     // Inserts pieces to the lattice.
     for (size_t k = 0; k < num_nodes; ++k) {
       const int length = GetCharsLength(begin, trie_results[k].length);
+      const int id = trie_results[k].value;
+      if (IsUnused(id)) continue;
       Lattice::Node *node = lattice->Insert(begin_pos, length);
-      node->id = trie_results[k].value;  // the value of Trie stores vocab_id.
+      node->id = id;                     // the value of Trie stores vocab_id.
       node->score = GetScore(node->id);  // calls method defined in subclass.
       if (!has_single_node && node->length == 1) {
         has_single_node = true;

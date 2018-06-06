@@ -112,9 +112,13 @@ int ToSwigError(sentencepiece::util::error::Code code) {
 %ignore sentencepiece::SentencePieceProcessor::model_proto;
 %ignore sentencepiece::SentencePieceProcessor::Load(std::istream *);
 %ignore sentencepiece::SentencePieceProcessor::LoadOrDie(std::istream *);
+%ignore sentencepiece::SentencePieceProcessor::Load(const ModelProto &);
+%ignore sentencepiece::SentencePieceProcessor::Load(std::unique_ptr<ModelProto> &&);
 %ignore sentencepiece::SentencePieceProcessor::model_proto();
 %ignore sentencepiece::SentencePieceTrainer::Train(const TrainerSpec &);
 %ignore sentencepiece::SentencePieceTrainer::Train(const TrainerSpec &, const NormalizerSpec &);
+%ignore sentencepiece::SentencePieceTrainer::GetNormalizerSpec(const std::string &);
+%ignore sentencepiece::SentencePieceTrainer::PopulateNormalizerSpec(NormalizerSpec *);
 %ignore sentencepiece::SentencePieceTrainer::MergeSpecsFromArgs(const std::string &,
                                                                 TrainerSpec *, NormalizerSpec *);
 %ignore sentencepiece::SentencePieceTrainer::SetProtoField(const std::string &,

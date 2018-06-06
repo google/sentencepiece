@@ -454,6 +454,32 @@ TEST(UnigramModelTest, PopulateNodesTest) {
   EXPECT_NEAR(0.4, lattice.begin_nodes(1)[1]->score, 0.001);
 }
 
+TEST(ModelTest, PopulateNodesWithUnusedTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+
+  AddPiece(&model_proto, "a", 0.1);   // 3
+  AddPiece(&model_proto, "b", 0.2);   // 4
+  AddPiece(&model_proto, "ab", 0.3);  // 5
+  AddPiece(&model_proto, "bc", 0.4);  // 6
+
+  model_proto.mutable_pieces(5)->set_type(ModelProto::SentencePiece::UNUSED);
+  model_proto.mutable_pieces(6)->set_type(ModelProto::SentencePiece::UNUSED);
+
+  const Model model(model_proto);
+
+  Lattice lattice;
+  lattice.SetSentence("abc");
+
+  model.PopulateNodes(&lattice);
+
+  EXPECT_EQ(1, lattice.begin_nodes(0).size());  // a
+  EXPECT_EQ(1, lattice.begin_nodes(1).size());  // b
+  EXPECT_EQ(1, lattice.begin_nodes(2).size());  // c(unk)
+  EXPECT_EQ(3, lattice.begin_nodes(0)[0]->id);
+  EXPECT_EQ(4, lattice.begin_nodes(1)[0]->id);
+  EXPECT_EQ(0, lattice.begin_nodes(2)[0]->id);
+}
+
 TEST(UnigramModelTest, ModelNBestTest) {
   ModelProto model_proto = MakeBaseModelProto();
 

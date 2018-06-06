@@ -55,6 +55,16 @@ class TrainerModel : public ModelBase {
     return sentencepieces_[index].second;
   }
 
+  std::string IdToPiece(int id) const override {
+    return sentencepieces_[id].first;
+  }
+
+  bool IsControl(int id) const override { return false; }
+
+  bool IsUnknown(int id) const override { return false; }
+
+  bool IsUnused(int id) const override { return false; }
+
   EncodeResult Encode(StringPiece normalized) const override { return {}; }
 
  private:

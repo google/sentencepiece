@@ -14,8 +14,8 @@
 
 #include "model_interface.h"
 #include "model_factory.h"
-#include "util.h"
 #include "testharness.h"
+#include "util.h"
 
 namespace sentencepiece {
 namespace {
@@ -72,6 +72,7 @@ TEST(ModelInterfaceTest, PieceToIdTest) {
     AddPiece(&model_proto, "b", 0.2);
     AddPiece(&model_proto, "c", 0.3);
     AddPiece(&model_proto, "d", 0.4);
+    model_proto.mutable_pieces(6)->set_type(ModelProto::SentencePiece::UNUSED);
 
     auto model = ModelFactory::Create(model_proto);
 
@@ -111,6 +112,14 @@ TEST(ModelInterfaceTest, PieceToIdTest) {
     EXPECT_FALSE(model->IsControl(4));
     EXPECT_FALSE(model->IsControl(5));
     EXPECT_FALSE(model->IsControl(6));
+
+    EXPECT_FALSE(model->IsUnused(0));
+    EXPECT_FALSE(model->IsUnused(1));
+    EXPECT_FALSE(model->IsUnused(2));
+    EXPECT_FALSE(model->IsUnused(3));
+    EXPECT_FALSE(model->IsUnused(4));
+    EXPECT_FALSE(model->IsUnused(5));
+    EXPECT_TRUE(model->IsUnused(6));
 
     EXPECT_NEAR(0, model->GetScore(0), 0.0001);
     EXPECT_NEAR(0, model->GetScore(1), 0.0001);
@@ -167,9 +176,8 @@ TEST(ModelInterfaceTest, PieceToIdStressTest) {
 TEST(ModelInterfaceTest, InitializePiecesTest) {
   class TestModel : public ModelInterface {
    public:
-    TestModel(const ModelProto &proto,
-              bool userdefined_symbol) :
-        ModelInterface::ModelInterface(proto) {
+    TestModel(const ModelProto &proto, bool userdefined_symbol)
+        : ModelInterface::ModelInterface(proto) {
       model_proto_ = &proto;
       InitializePieces(userdefined_symbol);
     }

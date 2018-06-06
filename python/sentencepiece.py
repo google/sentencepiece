@@ -117,11 +117,23 @@ class SentencePieceProcessor(_object):
     def Load(self, filename):
         return _sentencepiece.SentencePieceProcessor_Load(self, filename)
 
+    def LoadOrDie(self, filename):
+        return _sentencepiece.SentencePieceProcessor_LoadOrDie(self, filename)
+
     def SetEncodeExtraOptions(self, extra_option):
         return _sentencepiece.SentencePieceProcessor_SetEncodeExtraOptions(self, extra_option)
 
     def SetDecodeExtraOptions(self, extra_option):
         return _sentencepiece.SentencePieceProcessor_SetDecodeExtraOptions(self, extra_option)
+
+    def SetVocabulary(self, valid_vocab):
+        return _sentencepiece.SentencePieceProcessor_SetVocabulary(self, valid_vocab)
+
+    def ResetVocabulary(self):
+        return _sentencepiece.SentencePieceProcessor_ResetVocabulary(self)
+
+    def LoadVocabulary(self, filename, threshold):
+        return _sentencepiece.SentencePieceProcessor_LoadVocabulary(self, filename, threshold)
 
     def GetPieceSize(self):
         return _sentencepiece.SentencePieceProcessor_GetPieceSize(self)
@@ -140,6 +152,9 @@ class SentencePieceProcessor(_object):
 
     def IsControl(self, id):
         return _sentencepiece.SentencePieceProcessor_IsControl(self, id)
+
+    def IsUnused(self, id):
+        return _sentencepiece.SentencePieceProcessor_IsUnused(self, id)
 
     def Encode(self, input):
         return _sentencepiece.SentencePieceProcessor_Encode(self, input)
