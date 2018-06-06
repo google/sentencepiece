@@ -199,6 +199,7 @@ message ModelProto {
       USER_DEFINED = 4;  // user defined symbols.
                          // Typical usage of USER_DEFINED symbol
                          // is placeholder.
+      UNUSED       = 5;  // this piece is not used.
     };
     optional string piece = 1;   // piece must not be empty.
     optional float  score = 2;

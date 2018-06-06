@@ -41,7 +41,7 @@ class ModelInterface {
  public:
   using PieceToIdMap = std::unordered_map<StringPiece, int, StringPieceHash>;
 
-  // |model_proto| should not be deleted until ModelInterface is destroyed.
+  // `model_proto` should not be deleted until ModelInterface is destroyed.
   explicit ModelInterface(const ModelProto &model_proto);
   ModelInterface() {}
 
@@ -54,7 +54,7 @@ class ModelInterface {
   virtual const ModelProto &model_proto() const { return *model_proto_; }
 
   // Given a normalized string, returns a sequence of sentence pieces with ids.
-  // The concatenation of pieces must be the same as |normalized|.
+  // The concatenation of pieces must be the same as `normalized`.
   virtual EncodeResult Encode(StringPiece normalized) const = 0;
 
   // The same as above, but returns nbest result with score.
@@ -73,24 +73,27 @@ class ModelInterface {
   // as the size of vocabulary for NMT.
   virtual int GetPieceSize() const;
 
-  // Returns the vocab id of |piece|.
-  // Returns UNK(0) if |piece| is unknown
+  // Returns the vocab id of `piece`.
+  // Returns UNK(0) if `piece` is unknown
   virtual int PieceToId(StringPiece piece) const;
 
-  // Returns the string representation of vocab with |id|.
+  // Returns the string representation of vocab with `id`.
   // id must be 0 <= id < GetPieceSize().
   virtual std::string IdToPiece(int id) const;
 
-  // Returns the score of |id|.
+  // Returns the score of `id`.
   // Score represents a log probability of the piece.
   // We can roughly estimate the unigram frequency of the piece.
   virtual float GetScore(int id) const;
 
-  // Returns true if |id| is unknown symbol.
+  // Returns true if `id` is unknown symbol.
   virtual bool IsUnknown(int id) const;
 
-  // Returns true if |id| is control symbol.
+  // Returns true if `id` is control symbol.
   virtual bool IsControl(int id) const;
+
+  // Returns true if `id` is unused symbol.
+  virtual bool IsUnused(int id) const;
 
  protected:
   void InitializePieces(bool enable_user_defined);

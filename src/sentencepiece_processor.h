@@ -155,6 +155,14 @@ class SentencePieceProcessor {
   // Returns false if `is` cannot be loaded.
   virtual util::Status Load(std::istream *is);
 
+  // Loads model from `model_proto`.
+  // `model_proto` is copied.
+  virtual util::Status Load(const ModelProto &model_proto);
+
+  // Loads model from `model_proto`.
+  // `model_proto` is moved.
+  virtual util::Status Load(std::unique_ptr<ModelProto> &&model_proto);
+
   // Returns the status. Encode/Decode methods are valid when status is OK.
   virtual util::Status status() const;
 
@@ -163,6 +171,25 @@ class SentencePieceProcessor {
 
   // Sets decode extra_option sequence.
   virtual util::Status SetDecodeExtraOptions(const std::string &extra_option);
+
+  //////////////////////////////////////////////////////////////
+  // Vocabulary restriction.
+  // Background:
+  // https://github.com/rsennrich/subword-nmt#best-practice-advice-for-byte-pair-encoding-in-nmt
+
+  // Restricts the vocabulary set.
+  // The input sentences are encoded into the tokens in `valid_vocab`.
+  virtual util::Status SetVocabulary(
+      const std::vector<std::string> &valid_vocab);
+
+  // Reverts the vocabulary restriction.
+  virtual util::Status ResetVocabulary();
+
+  // Loads the valid vocabulary set from `filename` in TSV format.
+  // Format:  <token> <tab> <freq>.
+  // Any token with frequency < threshold will be treated as OOV.
+  virtual util::Status LoadVocabulary(const std::string &filename,
+                                      int threshold);
 
   //////////////////////////////////////////////////////////////
   // Simple API.
@@ -263,6 +290,9 @@ class SentencePieceProcessor {
 
   // Returns true if `id` is control symbol.
   virtual bool IsControl(int id) const;
+
+  // Returns true if `id` is unused symbol.
+  virtual bool IsUnused(int id) const;
 
 #ifndef SWIG
   //////////////////////////////////////////////////////////////

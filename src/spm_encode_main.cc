@@ -29,6 +29,14 @@ DEFINE_string(extra_options, "",
 DEFINE_int32(nbest_size, 10, "NBest size");
 DEFINE_double(alpha, 0.5, "Smoothing parameter for sampling mode.");
 
+// Piece restriction with vocabulary file.
+// https://github.com/rsennrich/subword-nmt#best-practice-advice-for-byte-pair-encoding-in-nmt
+DEFINE_string(vocabulary, "",
+              "Restrict the vocabulary. The encoder only emits the "
+              "tokens in \"vocabulary\" file");
+DEFINE_int32(vocabulary_threshold, 0,
+             "Words with frequency < threshold will be treated as OOV");
+
 int main(int argc, char *argv[]) {
   std::vector<std::string> rest_args;
   sentencepiece::flags::ParseCommandLineFlags(argc, argv, &rest_args);
@@ -38,6 +46,10 @@ int main(int argc, char *argv[]) {
   sentencepiece::SentencePieceProcessor sp;
   CHECK_OK(sp.Load(FLAGS_model));
   CHECK_OK(sp.SetEncodeExtraOptions(FLAGS_extra_options));
+
+  if (!FLAGS_vocabulary.empty()) {
+    CHECK_OK(sp.LoadVocabulary(FLAGS_vocabulary, FLAGS_vocabulary_threshold));
+  }
 
   sentencepiece::io::OutputBuffer output(FLAGS_output);
   CHECK_OK(output.status());
