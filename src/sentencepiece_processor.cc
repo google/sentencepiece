@@ -102,7 +102,7 @@ util::Status SentencePieceProcessor::SetVocabulary(
 
   // TODO(taku): supports vocabulary constraint in BPE model.
   const auto type = model_proto_->trainer_spec().model_type();
-  CHECK_EQ_OR_RETURN(type, TrainerSpec::UNIGRAM)
+  CHECK_OR_RETURN(type == TrainerSpec::UNIGRAM || type == TrainerSpec::BPE)
       << "Vocabulary constraint is only enabled in subword units.";
 
   const std::set<std::string> vocab(valid_vocab.begin(), valid_vocab.end());

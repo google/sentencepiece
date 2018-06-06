@@ -153,6 +153,63 @@ TEST(BPEModelTest, NotSupportedTest) {
   EXPECT_EQ(EncodeResult(), model.SampleEncode("test", 0.1));
 }
 
+TEST(ModelTest, EncodeWithUnusedTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+
+  AddPiece(&model_proto, "abcd", 10.0);  // 3
+  AddPiece(&model_proto, "abc", 5.0);    // 4
+  AddPiece(&model_proto, "ab", 2.0);     // 5
+  AddPiece(&model_proto, "cd", 1.0);     // 6
+  AddPiece(&model_proto, "a", 0.0);      // 7
+  AddPiece(&model_proto, "b", 0.0);      // 8
+  AddPiece(&model_proto, "c", 0.0);      // 9
+  AddPiece(&model_proto, "d", 0.0);      // 10
+
+  // No unused.
+  {
+    const Model model(model_proto);
+    const auto result = model.Encode("abcd");
+    EXPECT_EQ(1, result.size());
+    EXPECT_EQ("abcd", result[0].first);
+  }
+
+  {
+    model_proto.mutable_pieces(3)->set_type(ModelProto::SentencePiece::UNUSED);
+    const Model model(model_proto);
+    const auto result = model.Encode("abcd");
+    EXPECT_EQ(2, result.size());
+    EXPECT_EQ("abc", result[0].first);
+    EXPECT_EQ("d", result[1].first);
+  }
+
+  {
+    // The parent rule "abc" is still alive even if the child "ab" is unused.
+    model_proto.mutable_pieces(3)->set_type(ModelProto::SentencePiece::UNUSED);
+    model_proto.mutable_pieces(5)->set_type(ModelProto::SentencePiece::UNUSED);
+    const Model model(model_proto);
+    const auto result = model.Encode("abcd");
+    EXPECT_EQ(2, result.size());
+    EXPECT_EQ("abc", result[0].first);
+    EXPECT_EQ("d", result[1].first);
+  }
+
+  {
+    // This is tricky case. Even though "cd" is alive, it is not used, as
+    // it is not merged during the segmentation step.
+    // Segmentation: a|b|c|d => ab|c|d| => abc|d => abcd
+    // Resegmentation: abcd => abc|d => ab|c|d. ("abcd", "abc" are unsued)
+    model_proto.mutable_pieces(3)->set_type(ModelProto::SentencePiece::UNUSED);
+    model_proto.mutable_pieces(4)->set_type(ModelProto::SentencePiece::UNUSED);
+    model_proto.mutable_pieces(5)->set_type(ModelProto::SentencePiece::NORMAL);
+    const Model model(model_proto);
+    const auto result = model.Encode("abcd");
+    EXPECT_EQ(3, result.size());
+    EXPECT_EQ("ab", result[0].first);
+    EXPECT_EQ("c", result[1].first);
+    EXPECT_EQ("d", result[2].first);
+  }
+}
+
 }  // namespace
 }  // namespace bpe
 }  // namespace sentencepiece
