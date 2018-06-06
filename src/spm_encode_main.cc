@@ -13,10 +13,12 @@
 // limitations under the License.!
 
 #include <functional>
+#include <unordered_map>
 #include "common.h"
 #include "flags.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
+#include "trainer_interface.h"
 #include "util.h"
 
 DEFINE_string(model, "", "model file name");
@@ -36,6 +38,9 @@ DEFINE_string(vocabulary, "",
               "tokens in \"vocabulary\" file");
 DEFINE_int32(vocabulary_threshold, 0,
              "Words with frequency < threshold will be treated as OOV");
+
+DEFINE_bool(generate_vocabulary, false,
+            "Generates vocabulary file instead of segmentation");
 
 int main(int argc, char *argv[]) {
   std::vector<std::string> rest_args;
@@ -63,11 +68,20 @@ int main(int argc, char *argv[]) {
   std::vector<int> ids;
   std::vector<std::vector<std::string>> nbest_sps;
   std::vector<std::vector<int>> nbest_ids;
+  std::unordered_map<std::string, int> vocab;
   sentencepiece::SentencePieceText spt;
   sentencepiece::NBestSentencePieceText nbest_spt;
   std::function<void(const std::string &line)> process;
 
-  if (FLAGS_output_format == "piece") {
+  if (FLAGS_generate_vocabulary) {
+    process = [&](const std::string &line) {
+      CHECK_OK(sp.Encode(line, &spt));
+      for (const auto &piece : spt.pieces()) {
+        if (!sp.IsUnknown(piece.id()) && !sp.IsControl(piece.id()))
+          vocab[piece.piece()]++;
+      }
+    };
+  } else if (FLAGS_output_format == "piece") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.Encode(line, &sps));
       output.WriteLine(sentencepiece::string_util::Join(sps, " "));
@@ -124,11 +138,14 @@ int main(int argc, char *argv[]) {
     sentencepiece::io::InputBuffer input(filename);
     CHECK_OK(input.status());
     while (input.ReadLine(&line)) {
-      if (line.empty()) {
-        output.WriteLine("");
-        continue;
-      }
       process(line);
+    }
+  }
+
+  if (FLAGS_generate_vocabulary) {
+    for (const auto &it : sentencepiece::Sorted(vocab)) {
+      output.WriteLine(it.first + "\t" +
+                       sentencepiece::string_util::SimpleItoa(it.second));
     }
   }
 
