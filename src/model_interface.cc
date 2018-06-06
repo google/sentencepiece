@@ -76,7 +76,8 @@ void ModelInterface::InitializePieces(bool enable_user_defined) {
 
     const bool is_normal_piece =
         (sp.type() == ModelProto::SentencePiece::NORMAL ||
-         sp.type() == ModelProto::SentencePiece::USER_DEFINED);
+         sp.type() == ModelProto::SentencePiece::USER_DEFINED ||
+         sp.type() == ModelProto::SentencePiece::UNUSED);
     if (!port::InsertIfNotPresent(
             is_normal_piece ? &pieces_ : &reserved_id_map_, sp.piece(), i)) {
       status_ = util::StatusBuilder(util::error::INTERNAL)
