@@ -20,7 +20,7 @@ namespace character {
 
 Model::Model(const ModelProto &model_proto) {
   model_proto_ = &model_proto;
-  InitializePieces(false /* use_user_defined */);
+  InitializePieces(true /* use prefix matcher */);
 }
 
 Model::~Model() {}
@@ -31,18 +31,12 @@ EncodeResult Model::Encode(StringPiece normalized) const {
   }
 
   // Splits the input into character sequence
-  const char *begin = normalized.data();
-  const char *end = normalized.data() + normalized.size();
   EncodeResult output;
-  while (begin < end) {
-    int mblen = string_util::OneCharLen(begin);
-    if (mblen > end - begin) {
-      LOG(ERROR) << "Invalid character length.";
-      mblen = end - begin;
-    }
-    StringPiece w(begin, mblen);
+  while (!normalized.empty()) {
+    const int mblen = matcher_->PrefixMatch(normalized);
+    StringPiece w(normalized.data(), mblen);
     output.emplace_back(w, PieceToId(w));
-    begin += mblen;
+    normalized.remove_prefix(mblen);
   }
 
   return output;

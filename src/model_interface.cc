@@ -20,6 +20,40 @@
 
 namespace sentencepiece {
 
+PrefixMatcher::PrefixMatcher(const std::set<StringPiece> &dic) {
+  if (dic.empty()) return;
+  std::vector<const char *> key;
+  key.reserve(dic.size());
+  for (const auto &it : dic) key.push_back(it.data());
+  trie_ = port::MakeUnique<Darts::DoubleArray>();
+  CHECK_EQ(0, trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
+                           nullptr));
+}
+
+int PrefixMatcher::PrefixMatch(StringPiece w, bool *found) const {
+  if (trie_ == nullptr) {
+    if (found) *found = false;
+    return std::min<int>(w.size(), string_util::OneCharLen(w.data()));
+  }
+
+  constexpr int kResultSize = 64;
+  Darts::DoubleArray::result_pair_type trie_results[kResultSize];
+  const int num_nodes =
+      trie_->commonPrefixSearch(w.data(), trie_results, kResultSize, w.size());
+
+  if (found) *found = (num_nodes > 0);
+  if (num_nodes == 0) {
+    return std::min<int>(w.size(), string_util::OneCharLen(w.data()));
+  }
+
+  int mblen = 0;
+  for (int i = 0; i < num_nodes; ++i) {
+    mblen = std::max<int>(trie_results[i].length, mblen);
+  }
+
+  return mblen;
+}
+
 ModelInterface::ModelInterface(const ModelProto &model_proto)
     : model_proto_(&model_proto), status_(util::OkStatus()) {}
 ModelInterface::~ModelInterface() {}
@@ -60,17 +94,22 @@ bool ModelInterface::IsUnused(int id) const {
   return (model_proto_->pieces(id).type() == ModelProto::SentencePiece::UNUSED);
 }
 
-void ModelInterface::InitializePieces(bool enable_user_defined) {
+bool ModelInterface::IsUserDefined(int id) const {
+  return (model_proto_->pieces(id).type() ==
+          ModelProto::SentencePiece::USER_DEFINED);
+}
+
+void ModelInterface::InitializePieces(bool use_prefix_matcher) {
   pieces_.clear();
   reserved_id_map_.clear();
   unk_id_ = -1;
 
+  std::set<StringPiece> user_defined_symbols;
+
   for (int i = 0; i < model_proto_->pieces_size(); ++i) {
     const auto &sp = model_proto_->pieces(i);
-    if (!enable_user_defined &&
-        sp.type() == ModelProto::SentencePiece::USER_DEFINED) {
-      status_ = util::StatusBuilder(util::error::INTERNAL)
-                << "User defined symbol is not supported.";
+    if (sp.piece().empty()) {
+      status_ = util::InternalError("piece must not be empty.");
       return;
     }
 
@@ -80,24 +119,32 @@ void ModelInterface::InitializePieces(bool enable_user_defined) {
          sp.type() == ModelProto::SentencePiece::UNUSED);
     if (!port::InsertIfNotPresent(
             is_normal_piece ? &pieces_ : &reserved_id_map_, sp.piece(), i)) {
-      status_ = util::StatusBuilder(util::error::INTERNAL)
-                << "\"" << sp.piece() << "\" is already defined.";
+      status_ = util::InternalError(sp.piece() + " is already defined.");
       return;
+    }
+
+    if (use_prefix_matcher &&
+        sp.type() == ModelProto::SentencePiece::USER_DEFINED) {
+      user_defined_symbols.insert(sp.piece());
     }
 
     if (sp.type() == ModelProto::SentencePiece::UNKNOWN) {
       if (unk_id_ >= 0) {
-        status_ = util::StatusBuilder(util::error::INTERNAL)
-                  << "unk is already defined.";
+        status_ = util::InternalError("unk is already defined.");
         return;
       }
       unk_id_ = i;
     }
   }
 
-  if (unk_id_ == -1)
-    status_ = util::StatusBuilder(util::error::INTERNAL)
-              << "unk is not defined.";
+  if (unk_id_ == -1) {
+    status_ = util::InternalError("unk is not defined.");
+    return;
+  }
+
+  if (use_prefix_matcher) {
+    matcher_ = port::MakeUnique<PrefixMatcher>(user_defined_symbols);
+  }
 }
 
 std::vector<StringPiece> SplitIntoWords(StringPiece text) {

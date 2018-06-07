@@ -68,11 +68,14 @@ TEST(ModelInterfaceTest, PieceToIdTest) {
   for (const auto type : kModelTypes) {
     ModelProto model_proto = MakeBaseModelProto(type);
 
-    AddPiece(&model_proto, "a", 0.1);
-    AddPiece(&model_proto, "b", 0.2);
-    AddPiece(&model_proto, "c", 0.3);
-    AddPiece(&model_proto, "d", 0.4);
+    AddPiece(&model_proto, "a", 0.1);  // 3
+    AddPiece(&model_proto, "b", 0.2);  // 4
+    AddPiece(&model_proto, "c", 0.3);  // 5
+    AddPiece(&model_proto, "d", 0.4);  // 6
+    AddPiece(&model_proto, "e", 0.5);  // 7
     model_proto.mutable_pieces(6)->set_type(ModelProto::SentencePiece::UNUSED);
+    model_proto.mutable_pieces(7)->set_type(
+        ModelProto::SentencePiece::USER_DEFINED);
 
     auto model = ModelFactory::Create(model_proto);
 
@@ -86,7 +89,8 @@ TEST(ModelInterfaceTest, PieceToIdTest) {
     EXPECT_EQ(4, model->PieceToId("b"));
     EXPECT_EQ(5, model->PieceToId("c"));
     EXPECT_EQ(6, model->PieceToId("d"));
-    EXPECT_EQ(0, model->PieceToId("e"));  // unk
+    EXPECT_EQ(7, model->PieceToId("e"));
+    EXPECT_EQ(0, model->PieceToId("f"));  // unk
     EXPECT_EQ(0, model->PieceToId(""));   // unk
 
     EXPECT_EQ("<unk>", model->IdToPiece(0));
@@ -96,6 +100,7 @@ TEST(ModelInterfaceTest, PieceToIdTest) {
     EXPECT_EQ("b", model->IdToPiece(4));
     EXPECT_EQ("c", model->IdToPiece(5));
     EXPECT_EQ("d", model->IdToPiece(6));
+    EXPECT_EQ("e", model->IdToPiece(7));
 
     EXPECT_TRUE(model->IsUnknown(0));
     EXPECT_FALSE(model->IsUnknown(1));
@@ -104,6 +109,7 @@ TEST(ModelInterfaceTest, PieceToIdTest) {
     EXPECT_FALSE(model->IsUnknown(4));
     EXPECT_FALSE(model->IsUnknown(5));
     EXPECT_FALSE(model->IsUnknown(6));
+    EXPECT_FALSE(model->IsUnknown(7));
 
     EXPECT_FALSE(model->IsControl(0));
     EXPECT_TRUE(model->IsControl(1));
@@ -112,6 +118,7 @@ TEST(ModelInterfaceTest, PieceToIdTest) {
     EXPECT_FALSE(model->IsControl(4));
     EXPECT_FALSE(model->IsControl(5));
     EXPECT_FALSE(model->IsControl(6));
+    EXPECT_FALSE(model->IsControl(7));
 
     EXPECT_FALSE(model->IsUnused(0));
     EXPECT_FALSE(model->IsUnused(1));
@@ -120,6 +127,16 @@ TEST(ModelInterfaceTest, PieceToIdTest) {
     EXPECT_FALSE(model->IsUnused(4));
     EXPECT_FALSE(model->IsUnused(5));
     EXPECT_TRUE(model->IsUnused(6));
+    EXPECT_FALSE(model->IsUnused(7));
+
+    EXPECT_FALSE(model->IsUserDefined(0));
+    EXPECT_FALSE(model->IsUserDefined(1));
+    EXPECT_FALSE(model->IsUserDefined(2));
+    EXPECT_FALSE(model->IsUserDefined(3));
+    EXPECT_FALSE(model->IsUserDefined(4));
+    EXPECT_FALSE(model->IsUserDefined(5));
+    EXPECT_FALSE(model->IsUserDefined(6));
+    EXPECT_TRUE(model->IsUserDefined(7));
 
     EXPECT_NEAR(0, model->GetScore(0), 0.0001);
     EXPECT_NEAR(0, model->GetScore(1), 0.0001);
@@ -128,6 +145,42 @@ TEST(ModelInterfaceTest, PieceToIdTest) {
     EXPECT_NEAR(0.2, model->GetScore(4), 0.0001);
     EXPECT_NEAR(0.3, model->GetScore(5), 0.0001);
     EXPECT_NEAR(0.4, model->GetScore(6), 0.0001);
+    EXPECT_NEAR(0.5, model->GetScore(7), 0.0001);
+  }
+}
+
+TEST(ModelInterfaceTest, InvalidModelTest) {
+  // Empty piece.
+  {
+    ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
+    AddPiece(&model_proto, "");
+    auto model = ModelFactory::Create(model_proto);
+    EXPECT_FALSE(model->status().ok());
+  }
+
+  // Duplicated pieces.
+  {
+    ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
+    AddPiece(&model_proto, "a");
+    AddPiece(&model_proto, "a");
+    auto model = ModelFactory::Create(model_proto);
+    EXPECT_FALSE(model->status().ok());
+  }
+
+  // Multiple unknowns.
+  {
+    ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
+    model_proto.mutable_pieces(1)->set_type(ModelProto::SentencePiece::UNKNOWN);
+    auto model = ModelFactory::Create(model_proto);
+    EXPECT_FALSE(model->status().ok());
+  }
+
+  // No unknown.
+  {
+    ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
+    model_proto.mutable_pieces(0)->set_type(ModelProto::SentencePiece::CONTROL);
+    auto model = ModelFactory::Create(model_proto);
+    EXPECT_FALSE(model->status().ok());
   }
 }
 
@@ -173,36 +226,6 @@ TEST(ModelInterfaceTest, PieceToIdStressTest) {
   }
 }
 
-TEST(ModelInterfaceTest, InitializePiecesTest) {
-  class TestModel : public ModelInterface {
-   public:
-    TestModel(const ModelProto &proto, bool userdefined_symbol)
-        : ModelInterface::ModelInterface(proto) {
-      model_proto_ = &proto;
-      InitializePieces(userdefined_symbol);
-    }
-
-    EncodeResult Encode(StringPiece normalized) const override {
-      return EncodeResult();
-    }
-  };
-
-  ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
-  AddPiece(&model_proto, "a", 0.1);
-  model_proto.mutable_pieces(3)->set_type(
-      ModelProto::SentencePiece::USER_DEFINED);
-
-  TestModel model1(model_proto, true);
-  EXPECT_OK(model1.status());
-
-  TestModel model2(model_proto, false);
-  EXPECT_NOT_OK(model2.status());
-
-  AddPiece(&model_proto, "a", 0.1);
-  TestModel model3(model_proto, true);
-  EXPECT_NOT_OK(model3.status());
-}
-
 TEST(ModelInterfaceTest, SplitIntoWordsTest) {
   {
     const auto v = SplitIntoWords(WS "this" WS "is" WS "a" WS "pen");
@@ -239,6 +262,46 @@ TEST(ModelInterfaceTest, SplitIntoWordsTest) {
     const auto v = SplitIntoWords("hello");
     EXPECT_EQ(1, v.size());
     EXPECT_EQ("hello", v[0]);
+  }
+}
+
+TEST(ModelInterfaceTest, PrefixMatcherTest) {
+  {
+    const PrefixMatcher matcher({"abc", "ab", "xy", "京都"});
+    bool found;
+    EXPECT_EQ(1, matcher.PrefixMatch("test", &found));
+    EXPECT_FALSE(found);
+    EXPECT_EQ(3, matcher.PrefixMatch("abcd", &found));
+    EXPECT_TRUE(found);
+    EXPECT_EQ(2, matcher.PrefixMatch("abxy", &found));
+    EXPECT_TRUE(found);
+    EXPECT_EQ(1, matcher.PrefixMatch("x", &found));
+    EXPECT_FALSE(found);
+    EXPECT_EQ(2, matcher.PrefixMatch("xyz", &found));
+    EXPECT_TRUE(found);
+    EXPECT_EQ(6, matcher.PrefixMatch("京都大学", &found));
+    EXPECT_TRUE(found);
+    EXPECT_EQ(3, matcher.PrefixMatch("東京大学", &found));
+    EXPECT_FALSE(found);
+  }
+
+  {
+    const PrefixMatcher matcher({});
+    bool found;
+    EXPECT_EQ(1, matcher.PrefixMatch("test", &found));
+    EXPECT_FALSE(found);
+    EXPECT_EQ(1, matcher.PrefixMatch("abcd", &found));
+    EXPECT_FALSE(found);
+    EXPECT_EQ(1, matcher.PrefixMatch("abxy", &found));
+    EXPECT_FALSE(found);
+    EXPECT_EQ(1, matcher.PrefixMatch("x", &found));
+    EXPECT_FALSE(found);
+    EXPECT_EQ(1, matcher.PrefixMatch("xyz", &found));
+    EXPECT_FALSE(found);
+    EXPECT_EQ(3, matcher.PrefixMatch("京都大学", &found));
+    EXPECT_FALSE(found);
+    EXPECT_EQ(3, matcher.PrefixMatch("東京大学", &found));
+    EXPECT_FALSE(found);
   }
 }
 

@@ -59,6 +59,9 @@ TEST(ModelTest, EncodeTest) {
   AddPiece(&model_proto, "b", 0.2);
   AddPiece(&model_proto, "c", 0.3);
   AddPiece(&model_proto, "d", 0.4);
+  AddPiece(&model_proto, "ABC", 0.4);
+  model_proto.mutable_pieces(8)->set_type(
+      ModelProto::SentencePiece::USER_DEFINED);
 
   const Model model(model_proto);
 
@@ -94,6 +97,16 @@ TEST(ModelTest, EncodeTest) {
   result = model.Encode(broken_utf8);
   EXPECT_EQ(1, result.size());
   EXPECT_EQ(broken_utf8, result[0].first);
+
+  // "ABC" is treated as one piece, as it is USER_DEFINED.
+  result = model.Encode(WS "abABCcd");
+  EXPECT_EQ(6, result.size());
+  EXPECT_EQ(WS, result[0].first);
+  EXPECT_EQ("a", result[1].first);
+  EXPECT_EQ("b", result[2].first);
+  EXPECT_EQ("ABC", result[3].first);
+  EXPECT_EQ("c", result[4].first);
+  EXPECT_EQ("d", result[5].first);
 }
 
 TEST(CharModelTest, NotSupportedTest) {

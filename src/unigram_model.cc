@@ -99,15 +99,13 @@ void Lattice::SetSentence(StringPiece sentence) {
 
   sentence_ = sentence;
 
-  const char *begin = sentence_.data();
-  const char *end = sentence_.data() + sentence_.size();
-  while (begin < end) {
-    const int mblen =
-        std::min<int>(string_util::OneCharLen(begin), end - begin);
-    surface_.push_back(begin);
-    begin += mblen;
+  while (!sentence.empty()) {
+    const int mblen = std::min<int>(string_util::OneCharLen(sentence.data()),
+                                    sentence.size());
+    surface_.push_back(sentence.data());
+    sentence.remove_prefix(mblen);
   }
-  surface_.push_back(end);
+  surface_.push_back(sentence.data());
 
   const int len = size();
   begin_nodes_.resize(len + 1);
@@ -409,8 +407,10 @@ void ModelBase::PopulateNodes(Lattice *lattice) const {
       const int id = trie_results[k].value;
       if (IsUnused(id)) continue;
       Lattice::Node *node = lattice->Insert(begin_pos, length);
-      node->id = id;                     // the value of Trie stores vocab_id.
-      node->score = GetScore(node->id);  // calls method defined in subclass.
+      node->id = id;  // the value of Trie stores vocab_id.
+      // User defined symbol receives extra bonus to always be selected.
+      node->score =
+          IsUserDefined(id) ? (length * max_score_ + 1.0) : GetScore(id);
       if (!has_single_node && node->length == 1) {
         has_single_node = true;
       }
@@ -481,13 +481,15 @@ void ModelBase::BuildTrie(std::vector<std::pair<StringPiece, int>> *pieces) {
 Model::Model(const ModelProto &model_proto) {
   model_proto_ = &model_proto;
 
-  InitializePieces(true /* use_user_defined */);
+  InitializePieces(false /* enable prefix matcher */);
 
   min_score_ = FLT_MAX;
+  max_score_ = FLT_MIN;
   for (const auto &sp : model_proto_->pieces()) {
-    if (sp.type() == ModelProto::SentencePiece::NORMAL ||
-        sp.type() == ModelProto::SentencePiece::USER_DEFINED)
+    if (sp.type() == ModelProto::SentencePiece::NORMAL) {
       min_score_ = std::min(min_score_, sp.score());
+      max_score_ = std::max(max_score_, sp.score());
+    }
   }
 
   std::vector<std::pair<StringPiece, int>> pieces;

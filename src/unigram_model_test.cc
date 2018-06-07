@@ -359,6 +359,7 @@ TEST(UnigramModelTest, PieceToIdTest) {
             model.model_proto().SerializeAsString());
 
   EXPECT_NEAR(0.1, model.min_score(), 0.001);
+  EXPECT_NEAR(0.4, model.max_score(), 0.001);
 
   EXPECT_EQ(0, model.PieceToId("<unk>"));
   EXPECT_EQ(1, model.PieceToId("<s>"));
@@ -454,7 +455,7 @@ TEST(UnigramModelTest, PopulateNodesTest) {
   EXPECT_NEAR(0.4, lattice.begin_nodes(1)[1]->score, 0.001);
 }
 
-TEST(ModelTest, PopulateNodesWithUnusedTest) {
+TEST(UnigramModelTest, PopulateNodesWithUnusedTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
   AddPiece(&model_proto, "a", 0.1);   // 3
@@ -504,6 +505,150 @@ TEST(UnigramModelTest, ModelNBestTest) {
   EXPECT_EQ(0, sample.size());
   sample = model.SampleEncode("abc", 0.1);
   EXPECT_FALSE(sample.empty());
+}
+
+TEST(UnigramModelTest, EncodeTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+
+  AddPiece(&model_proto, "ab", 0.0);         // 3
+  AddPiece(&model_proto, "cd", -0.1);        // 4
+  AddPiece(&model_proto, "abc", -0.2);       // 5
+  AddPiece(&model_proto, "a", -0.3);         // 6
+  AddPiece(&model_proto, "b", -0.4);         // 7
+  AddPiece(&model_proto, "c", -0.5);         // 8
+  AddPiece(&model_proto, "ABC", -0.5);       // 9
+  AddPiece(&model_proto, "abcdabcd", -0.5);  // 10
+  AddPiece(&model_proto, "q", -0.5);         // 11
+  AddPiece(&model_proto, "r", -0.5);         // 12
+  AddPiece(&model_proto, "qr", -0.5);        // 13
+  model_proto.mutable_pieces(9)->set_type(   // ABC
+      ModelProto::SentencePiece::USER_DEFINED);
+  model_proto.mutable_pieces(10)->set_type(  // abcdabcd
+      ModelProto::SentencePiece::USER_DEFINED);
+  model_proto.mutable_pieces(11)->set_type(  // q
+      ModelProto::SentencePiece::USER_DEFINED);
+  model_proto.mutable_pieces(12)->set_type(  // r
+      ModelProto::SentencePiece::USER_DEFINED);
+
+  const Model model(model_proto);
+
+  EncodeResult result;
+
+  result = model.Encode("abc");
+  EXPECT_EQ(1, result.size());
+  EXPECT_EQ("abc", result[0].first);
+
+  result = model.Encode("AB");
+  EXPECT_EQ(2, result.size());
+  EXPECT_EQ("A", result[0].first);
+  EXPECT_EQ("B", result[1].first);
+
+  result = model.Encode("abcd");
+  EXPECT_EQ(2, result.size());
+  EXPECT_EQ("ab", result[0].first);
+  EXPECT_EQ("cd", result[1].first);
+
+  result = model.Encode("abcc");
+  EXPECT_EQ(2, result.size());
+  EXPECT_EQ("abc", result[0].first);
+  EXPECT_EQ("c", result[1].first);
+
+  result = model.Encode("xabcabaabcdd");
+  EXPECT_EQ(7, result.size());
+  EXPECT_EQ("x", result[0].first);
+  EXPECT_EQ("abc", result[1].first);
+  EXPECT_EQ("ab", result[2].first);
+  EXPECT_EQ("a", result[3].first);
+  EXPECT_EQ("ab", result[4].first);
+  EXPECT_EQ("cd", result[5].first);
+  EXPECT_EQ("d", result[6].first);
+
+  // all unknown.
+  result = model.Encode("xyz東京");
+  EXPECT_EQ(5, result.size());
+  EXPECT_EQ("x", result[0].first);
+  EXPECT_EQ("y", result[1].first);
+  EXPECT_EQ("z", result[2].first);
+  EXPECT_EQ("東", result[3].first);
+  EXPECT_EQ("京", result[4].first);
+
+  // User defined
+  result = model.Encode("ABC");
+  EXPECT_EQ(1, result.size());
+  EXPECT_EQ("ABC", result[0].first);
+
+  result = model.Encode("abABCcd");
+  EXPECT_EQ(3, result.size());
+  EXPECT_EQ("ab", result[0].first);
+  EXPECT_EQ("ABC", result[1].first);
+  EXPECT_EQ("cd", result[2].first);
+
+  // middle "abcdabcd" is user defined.
+  result = model.Encode("ababcdabcdcd");
+  EXPECT_EQ(3, result.size());
+  EXPECT_EQ("ab", result[0].first);
+  EXPECT_EQ("abcdabcd", result[1].first);
+  EXPECT_EQ("cd", result[2].first);
+
+  result = model.Encode("abqrcd");
+  EXPECT_EQ(4, result.size());
+  EXPECT_EQ("ab", result[0].first);
+  EXPECT_EQ("q", result[1].first);
+  EXPECT_EQ("r", result[2].first);
+  EXPECT_EQ("cd", result[3].first);
+}
+
+TEST(UnigramModelTest, EncodeWithUnusedTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+
+  AddPiece(&model_proto, "abcd", 10.0);  // 3
+  AddPiece(&model_proto, "abc", 5.0);    // 4
+  AddPiece(&model_proto, "ab", 2.0);     // 5
+  AddPiece(&model_proto, "cd", 1.0);     // 6
+  AddPiece(&model_proto, "a", 0.0);      // 7
+  AddPiece(&model_proto, "b", 0.0);      // 8
+  AddPiece(&model_proto, "c", 0.0);      // 9
+  AddPiece(&model_proto, "d", 0.0);      // 10
+
+  // No unused.
+  {
+    const Model model(model_proto);
+    const auto result = model.Encode("abcd");
+    EXPECT_EQ(1, result.size());
+    EXPECT_EQ("abcd", result[0].first);
+  }
+
+  {
+    model_proto.mutable_pieces(3)->set_type(ModelProto::SentencePiece::UNUSED);
+    const Model model(model_proto);
+    const auto result = model.Encode("abcd");
+    EXPECT_EQ(2, result.size());
+    EXPECT_EQ("abc", result[0].first);
+    EXPECT_EQ("d", result[1].first);
+  }
+
+  {
+    model_proto.mutable_pieces(3)->set_type(ModelProto::SentencePiece::UNUSED);
+    model_proto.mutable_pieces(5)->set_type(ModelProto::SentencePiece::UNUSED);
+    const Model model(model_proto);
+    const auto result = model.Encode("abcd");
+    EXPECT_EQ(2, result.size());
+    EXPECT_EQ("abc", result[0].first);
+    EXPECT_EQ("d", result[1].first);
+  }
+
+  {
+    // This is different from BPE segmentation.
+    // Unigram language model simply finds the best path without unused nodes.
+    model_proto.mutable_pieces(3)->set_type(ModelProto::SentencePiece::UNUSED);
+    model_proto.mutable_pieces(4)->set_type(ModelProto::SentencePiece::UNUSED);
+    model_proto.mutable_pieces(5)->set_type(ModelProto::SentencePiece::NORMAL);
+    const Model model(model_proto);
+    const auto result = model.Encode("abcd");
+    EXPECT_EQ(2, result.size());
+    EXPECT_EQ("ab", result[0].first);
+    EXPECT_EQ("cd", result[1].first);
+  }
 }
 
 }  // namespace unigram

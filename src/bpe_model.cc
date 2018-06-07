@@ -26,7 +26,7 @@ namespace bpe {
 
 Model::Model(const ModelProto &model_proto) {
   model_proto_ = &model_proto;
-  InitializePieces(false /* use_user_defined */);
+  InitializePieces(true /* use prefix matcher */);
 }
 
 Model::~Model() {}
@@ -53,8 +53,9 @@ std::vector<std::pair<StringPiece, int>> Model::Encode(
   };
 
   struct Symbol {
-    int prev;  // prev index of this symbol. -1 for BOS.
-    int next;  // next index of tihs symbol. -1 for EOS.
+    int prev;     // prev index of this symbol. -1 for BOS.
+    int next;     // next index of tihs symbol. -1 for EOS.
+    bool freeze;  // this symbol is never be merged.
     StringPiece piece;
   };
 
@@ -73,7 +74,9 @@ std::vector<std::pair<StringPiece, int>> Model::Encode(
   // Lookup new symbol pair at [left, right] and inserts it to agenda.
   auto MaybeAddNewSymbolPair = [this, &symbols, &agenda, &rev_merge](
                                    int left, int right) {
-    if (left == -1 || right == -1) return;
+    if (left == -1 || right == -1 || symbols[left].freeze ||
+        symbols[right].freeze)
+      return;
     const StringPiece piece(
         symbols[left].piece.data(),
         symbols[left].piece.size() + symbols[right].piece.size());
@@ -96,20 +99,14 @@ std::vector<std::pair<StringPiece, int>> Model::Encode(
   };
 
   // Splits the input into character sequence
-  const char *begin = normalized.data();
-  const char *end = normalized.data() + normalized.size();
   int index = 0;
-  while (begin < end) {
-    int mblen = string_util::OneCharLen(begin);
-    if (mblen > end - begin) {
-      LOG(ERROR) << "Invalid character length.";
-      mblen = end - begin;
-    }
+  while (!normalized.empty()) {
     Symbol s;
-    s.piece = StringPiece(begin, mblen);
-    s.prev = begin == normalized.data() ? -1 : index - 1;
-    begin += mblen;
-    s.next = begin == end ? -1 : index + 1;
+    const int mblen = matcher_->PrefixMatch(normalized, &s.freeze);
+    s.piece = StringPiece(normalized.data(), mblen);
+    s.prev = index == 0 ? -1 : index - 1;
+    normalized.remove_prefix(mblen);
+    s.next = normalized.empty() ? -1 : index + 1;
     ++index;
     symbols.emplace_back(s);
   }

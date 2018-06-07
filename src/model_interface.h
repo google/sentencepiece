@@ -16,6 +16,7 @@
 #define MODEL_INTERFACE_H_
 
 #include <memory>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -24,6 +25,7 @@
 #include "common.h"
 #include "sentencepiece_processor.h"
 #include "stringpiece.h"
+#include "third_party/darts_clone/darts.h"
 
 namespace sentencepiece {
 
@@ -34,6 +36,23 @@ using EncodeResult = std::vector<std::pair<StringPiece, int>>;
 using NBestEncodeResult = std::vector<std::pair<EncodeResult, float>>;
 
 class ModelProto;
+
+// Given a list of strings, finds the longest string which is a
+// prefix of a query.
+class PrefixMatcher {
+ public:
+  // Initializes the PrefixMatcher with `dic`.
+  explicit PrefixMatcher(const std::set<StringPiece> &dic);
+
+  // Finds the longest string in dic, which is a prefix of `w`.
+  // Returns the UTF8 byte length of matched string.
+  // `found` is set if a prefix match exists.
+  // If no entry is found, consumes one Unicode character.
+  int PrefixMatch(StringPiece w, bool *found = nullptr) const;
+
+ private:
+  std::unique_ptr<Darts::DoubleArray> trie_;
+};
 
 // Underlying model interface.
 // Given a normalized string, returns a sequence of sentence pieces with ids.
@@ -95,10 +114,16 @@ class ModelInterface {
   // Returns true if `id` is unused symbol.
   virtual bool IsUnused(int id) const;
 
+  // Returns true if `id` is user defined symbol.
+  virtual bool IsUserDefined(int id) const;
+
  protected:
-  void InitializePieces(bool enable_user_defined);
+  void InitializePieces(bool use_prefix_matcher);
 
   const ModelProto *model_proto_ = nullptr;
+
+  // PrefixMatcher for user defined symbols.
+  std::unique_ptr<PrefixMatcher> matcher_;
 
   // piece -> id map for normal pieces
   PieceToIdMap pieces_;

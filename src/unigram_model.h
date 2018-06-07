@@ -125,6 +125,10 @@ class ModelBase : public ModelInterface {
   // min_score() - 10 is used for the cost of unknown sentence.
   float min_score() const { return min_score_; }
 
+  // Returns the maximum score in sentence pieces.
+  // max_score() is used for the cost of user defined symbols.
+  float max_score() const { return max_score_; }
+
   // Populates all sentence pieces to the |lattice|.
   // After calling this function, lattice.Viterbi() returns the
   // best segmentation.
@@ -137,7 +141,8 @@ class ModelBase : public ModelInterface {
   // Builds a Trie index.
   void BuildTrie(std::vector<std::pair<StringPiece, int>> *pieces);
 
-  float min_score_;
+  float min_score_ = 0.0;
+  float max_score_ = 0.0;
   std::unique_ptr<Darts::DoubleArray> trie_;
 
   // Maximum size of the return value of Trie, which corresponds
