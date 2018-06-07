@@ -65,6 +65,8 @@ class TrainerModel : public ModelBase {
 
   bool IsUnused(int id) const override { return false; }
 
+  bool IsUserDefined(int id) const override { return false; }
+
   EncodeResult Encode(StringPiece normalized) const override { return {}; }
 
  private:

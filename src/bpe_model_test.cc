@@ -46,13 +46,25 @@ void AddPiece(ModelProto *model_proto, const std::string &piece,
 TEST(BPEModelTest, EncodeTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
-  AddPiece(&model_proto, "ab", -0.1);
-  AddPiece(&model_proto, "cd", -0.2);
-  AddPiece(&model_proto, "abc", -0.3);
-  AddPiece(&model_proto, "a", -0.4);
-  AddPiece(&model_proto, "b", -0.5);
-  AddPiece(&model_proto, "c", -0.6);
-  AddPiece(&model_proto, "d", -0.7);
+  AddPiece(&model_proto, "ab", 0.0);         // 3
+  AddPiece(&model_proto, "cd", -0.1);        // 4
+  AddPiece(&model_proto, "abc", -0.2);       // 5
+  AddPiece(&model_proto, "a", -0.3);         // 6
+  AddPiece(&model_proto, "b", -0.4);         // 7
+  AddPiece(&model_proto, "c", -0.5);         // 8
+  AddPiece(&model_proto, "ABC", -0.5);       // 9
+  AddPiece(&model_proto, "abcdabcd", -0.5);  // 10
+  AddPiece(&model_proto, "q", -0.5);         // 11
+  AddPiece(&model_proto, "r", -0.5);         // 12
+  AddPiece(&model_proto, "qr", -0.5);        // 13
+  model_proto.mutable_pieces(9)->set_type(   // ABC
+      ModelProto::SentencePiece::USER_DEFINED);
+  model_proto.mutable_pieces(10)->set_type(  // abcdabcd
+      ModelProto::SentencePiece::USER_DEFINED);
+  model_proto.mutable_pieces(11)->set_type(  // q
+      ModelProto::SentencePiece::USER_DEFINED);
+  model_proto.mutable_pieces(12)->set_type(  // r
+      ModelProto::SentencePiece::USER_DEFINED);
 
   const Model model(model_proto);
 
@@ -98,6 +110,31 @@ TEST(BPEModelTest, EncodeTest) {
   EXPECT_EQ("z", result[2].first);
   EXPECT_EQ("東", result[3].first);
   EXPECT_EQ("京", result[4].first);
+
+  // User defined
+  result = model.Encode("ABC");
+  EXPECT_EQ(1, result.size());
+  EXPECT_EQ("ABC", result[0].first);
+
+  result = model.Encode("abABCcd");
+  EXPECT_EQ(3, result.size());
+  EXPECT_EQ("ab", result[0].first);
+  EXPECT_EQ("ABC", result[1].first);
+  EXPECT_EQ("cd", result[2].first);
+
+  // middle "abcdabcd" is user defined.
+  result = model.Encode("ababcdabcdcd");
+  EXPECT_EQ(3, result.size());
+  EXPECT_EQ("ab", result[0].first);
+  EXPECT_EQ("abcdabcd", result[1].first);
+  EXPECT_EQ("cd", result[2].first);
+
+  result = model.Encode("abqrcd");
+  EXPECT_EQ(4, result.size());
+  EXPECT_EQ("ab", result[0].first);
+  EXPECT_EQ("q", result[1].first);
+  EXPECT_EQ("r", result[2].first);
+  EXPECT_EQ("cd", result[3].first);
 }
 
 TEST(BPEModelTest, EncodeAmbiguousTest) {
@@ -153,7 +190,7 @@ TEST(BPEModelTest, NotSupportedTest) {
   EXPECT_EQ(EncodeResult(), model.SampleEncode("test", 0.1));
 }
 
-TEST(ModelTest, EncodeWithUnusedTest) {
+TEST(BPEModelTest, EncodeWithUnusedTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
   AddPiece(&model_proto, "abcd", 10.0);  // 3
