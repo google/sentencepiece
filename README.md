@@ -247,14 +247,35 @@ You can find that the original input sentence is restored from the vocabulary id
 ```<output file>``` stores a list of vocabulary and emission log probabilities. The vocabulary id corresponds to the line number in this file.
 
 ### Redefine special meta tokens
-  By default, SentencePiece uses Unknown (&lt;unk&gt;), BOS (&lt;s&gt;) and EOS (&lt;/s&gt;) tokens which have the ids of 0, 1, and 2 respectively. We can redefine this mapping in training phase as follows.
+  By default, SentencePiece uses Unknown (&lt;unk&gt;), BOS (&lt;s&gt;) and EOS (&lt;/s&gt;) tokens which have the ids of 0, 1, and 2 respectively. We can redefine this mapping in the training phase as follows.
   
 ```
-% spm_train --bos_id=0 --eos_id=1 --unk_id=2 --input=... --model_prefix=...
+% spm_train --bos_id=0 --eos_id=1 --unk_id=5 --input=... --model_prefix=...
 ```
-When setting -1 id e.g., ```bos_id=-1```, this special token is disabled. Note that the unknow id cannot be removed. In addition, these ids must start with 0 and be continous. We can define an id for padding (&lt;pad&gt;). Padding id is disabled by default. You can assign an id as ```--pad_id=3```.  
+When setting -1 id e.g., ```bos_id=-1```, this special token is disabled. Note that the unknow id cannot be disabled.  We can define an id for padding (&lt;pad&gt;) as ```--pad_id=3```.  
 
 If you want to assign another special tokens, please see [Use custom symbols](doc/special_symbols.md).
+
+### Vocabulary restriction
+```spm_encode``` accepts a ```--vocabulary``` and a ```--vocabulary_threshold``` option so that ```spm_encode``` will only produce symbols which also appear in the vocabulary (with at least some frequency). The background of this feature is decribed in [subword-nmt page](https://github.com/rsennrich/subword-nmt#best-practice-advice-for-byte-pair-encoding-in-nmt).
+
+The usage is basically the same as that of ```subword-nmt```. Assming that L1 and L2 are the two languages (source/target languages), train the shared spm model, and get resulting vocabulary for each:
+
+```
+% cat {train_file}.L1 {train_file}.L2 | shuffle > trian
+% spm_train --input=train --model_prefix=spm --vocab_size=8000 
+% spm_encode --model=spm.model --generate_vocabulary < {train_file}.L1 > {vocab_file}.L1
+% spm_encode --model=spm.model --generate_vocabulary < {train_file}.L2 > {vocab_file}.L2
+```
+
+```shuffle``` command is used just in case because ```spm_encode``` loads the first 10M lines of corpus by default.
+
+
+Then segment train/test corpus with ```--vocabulary``` option
+```
+% spm_encode --model=spm.model --vocabulary={vocab_file}.L1 --vocabulary_threshold=50 < {test_file}.L1 > {test_file}.seg.L1
+% spm_encode --model=spm.model --vocabulary={vocab_file}.L2 --vocabulary_threshold=50 < {test_file}.L2 > {test_file}.seg.L2
+```
 
 ## Advanced topics
 
