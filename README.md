@@ -268,7 +268,7 @@ The usage is basically the same as that of ```subword-nmt```. Assming that L1 an
 % spm_encode --model=spm.model --generate_vocabulary < {train_file}.L2 > {vocab_file}.L2
 ```
 
-```shuffle``` command is used just in case because ```spm_encode``` loads the first 10M lines of corpus by default.
+```shuffle``` command is used just in case because ```spm_train``` loads the first 10M lines of corpus by default.
 
 
 Then segment train/test corpus with ```--vocabulary``` option
