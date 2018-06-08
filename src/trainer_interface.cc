@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "model_factory.h"
+#include "model_interface.h"
 #include "normalizer.h"
 #include "sentencepiece_processor.h"
 #include "unicode_script.h"
@@ -152,6 +153,10 @@ util::Status TrainerInterface::LoadSentences() {
 
   const bool is_tsv = trainer_spec_.input_format() == "tsv";
 
+  std::set<StringPiece> meta_pieces_set;
+  for (const auto &it : meta_pieces_) meta_pieces_set.insert(it.second.first);
+  const PrefixMatcher meta_pieces_matcher(meta_pieces_set);
+
   for (const auto &filename : trainer_spec_.input()) {
     LOG(INFO) << "Loading corpus: " << filename;
     std::string sentence;
@@ -177,6 +182,9 @@ util::Status TrainerInterface::LoadSentences() {
         continue;
       }
 
+      // Escapes meta symbols so that they are not extract as normal pieces.
+      sentence = meta_pieces_matcher.GlobalReplace(sentence, " ");
+
       // Normalizes sentence with Normalizer.
       // whitespaces are replaced with kWSChar.
       const std::string normalized = normalizer.Normalize(sentence);
@@ -184,6 +192,7 @@ util::Status TrainerInterface::LoadSentences() {
         LOG(INFO) << "Loading: " << normalized
                   << "\tsize=" << sentences_.size();
       }
+
       CHECK_OR_RETURN(normalized.find(" ") == std::string::npos)
           << "Normalized string must not include spaces";
       if (normalized.empty()) {

@@ -42,7 +42,7 @@ TEST(UnigramTrainerTest, EndToEndTest) {
       " --vocab_size=8000"
       " --normalization_rule_name=identity"
       " --model_type=unigram"
-      " --user_defined_symbols=<user>"
+      " --user_defined_symbols=<user>"  // Allows duplicated symbol
       " --control_symbols=<ctrl>"));
 
   SentencePieceProcessor sp;

@@ -54,6 +54,21 @@ int PrefixMatcher::PrefixMatch(StringPiece w, bool *found) const {
   return mblen;
 }
 
+std::string PrefixMatcher::GlobalReplace(StringPiece w, StringPiece out) const {
+  std::string result;
+  while (!w.empty()) {
+    bool found = false;
+    const int mblen = PrefixMatch(w, &found);
+    if (found) {
+      result.append(out.data(), out.size());
+    } else {
+      result.append(w.data(), mblen);
+    }
+    w.remove_prefix(mblen);
+  }
+  return result;
+}
+
 ModelInterface::ModelInterface(const ModelProto &model_proto)
     : model_proto_(&model_proto), status_(util::OkStatus()) {}
 ModelInterface::~ModelInterface() {}
