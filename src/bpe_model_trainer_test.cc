@@ -28,7 +28,9 @@ namespace {
 // Space symbol
 #define WS "\xe2\x96\x81"
 
-std::string RunTrainer(const std::vector<std::string> &input, int size) {
+std::string RunTrainer(
+    const std::vector<std::string> &input, int size,
+    const std::vector<std::string> &user_defined_symbols = {}) {
   test::ScopedTempFile input_scoped_file("input");
   test::ScopedTempFile model_scoped_file("model");
   const std::string input_file = input_scoped_file.filename();
@@ -49,6 +51,10 @@ std::string RunTrainer(const std::vector<std::string> &input, int size) {
   NormalizerSpec normalizer_spec;
   normalizer_spec.set_name("identity");
   normalizer_spec.set_add_dummy_prefix(false);
+
+  for (const auto &w : user_defined_symbols) {
+    trainer_spec.add_user_defined_symbols(w);
+  }
 
   Trainer trainer(trainer_spec, normalizer_spec);
   EXPECT_OK(trainer.Train());
@@ -74,6 +80,8 @@ TEST(BPETrainerTest, BasicTest) {
             RunTrainer({"pen", "pineapple", "apple"}, 20));
   EXPECT_EQ("he ll llo hello hellohe el lo oh hel ohe e h l o",
             RunTrainer({"hellohe"}, 20));
+  EXPECT_EQ("app le en in ine pen " WS "le pine e l n p i " WS,
+            RunTrainer({"pen", "pineapple", "apple"}, 20, {"app"}));
 }
 
 TEST(BPETrainerTest, EndToEndTest) {
