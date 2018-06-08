@@ -50,6 +50,9 @@ class PrefixMatcher {
   // If no entry is found, consumes one Unicode character.
   int PrefixMatch(StringPiece w, bool *found = nullptr) const;
 
+  // Replaces entries in `w` with `out`.
+  std::string GlobalReplace(StringPiece w, StringPiece out) const;
+
  private:
   std::unique_ptr<Darts::DoubleArray> trie_;
 };

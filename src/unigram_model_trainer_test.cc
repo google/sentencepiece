@@ -26,6 +26,60 @@ namespace {
 // Space symbol
 #define WS "\xe2\x96\x81"
 
+std::string RunTrainer(
+    const std::vector<std::string> &input, int size,
+    const std::vector<std::string> &user_defined_symbols = {}) {
+  test::ScopedTempFile input_scoped_file("input");
+  test::ScopedTempFile model_scoped_file("model");
+  const std::string input_file = input_scoped_file.filename();
+  const std::string model_prefix = model_scoped_file.filename();
+  {
+    io::OutputBuffer output(input_file);
+    for (const auto &line : input) {
+      output.WriteLine(line);
+    }
+  }
+
+  TrainerSpec trainer_spec;
+  trainer_spec.set_model_type(TrainerSpec::UNIGRAM);
+  trainer_spec.add_input(input_file);
+  trainer_spec.set_vocab_size(size - 3);  // remove <unk>, <s>, </s>
+  trainer_spec.set_model_prefix(model_prefix);
+  trainer_spec.set_hard_vocab_limit(false);
+
+  NormalizerSpec normalizer_spec;
+  normalizer_spec.set_name("identity");
+  normalizer_spec.set_add_dummy_prefix(false);
+
+  for (const auto &w : user_defined_symbols) {
+    trainer_spec.add_user_defined_symbols(w);
+  }
+
+  Trainer trainer(trainer_spec, normalizer_spec);
+  EXPECT_OK(trainer.Train());
+
+  SentencePieceProcessor processor;
+  EXPECT_OK(processor.Load(model_prefix + ".model"));
+
+  const auto &model = processor.model_proto();
+  std::vector<std::string> pieces;
+
+  // remove <unk>, <s>, </s>
+  for (int i = 3; i < model.pieces_size(); ++i) {
+    pieces.emplace_back(model.pieces(i).piece());
+  }
+
+  return string_util::Join(pieces, " ");
+}
+
+TEST(BPETrainerTest, BasicTest) {
+  EXPECT_EQ("abra r a c b d", RunTrainer({"abracadabra"}, 20));
+  EXPECT_EQ("p e n a l i", RunTrainer({"pen", "pineapple", "apple"}, 20));
+  EXPECT_EQ("l he h e o", RunTrainer({"hellohe"}, 20));
+  EXPECT_EQ("app e p l n i " WS,
+            RunTrainer({"pen", "pineapple", "apple"}, 20, {"app"}));
+}
+
 TEST(UnigramTrainerTest, TrainerModelTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
@@ -42,7 +96,7 @@ TEST(UnigramTrainerTest, EndToEndTest) {
       " --vocab_size=8000"
       " --normalization_rule_name=identity"
       " --model_type=unigram"
-      " --user_defined_symbols=<user>"
+      " --user_defined_symbols=<user>"  // Allows duplicated symbol
       " --control_symbols=<ctrl>"));
 
   SentencePieceProcessor sp;

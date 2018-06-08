@@ -109,7 +109,6 @@ void TrainerModel::SetSentencePieces(SentencePieces &&sentencepieces) {
 TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
   CHECK(!sentences_.empty());
   CHECK(!required_chars_.empty());
-  CHECK(port::ContainsKey(required_chars_, kWSChar));
 
   // Merges all sentences into one array with 0x0000 delimiter.
   std::vector<char32> array;
