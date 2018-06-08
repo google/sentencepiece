@@ -262,7 +262,7 @@ If you want to assign another special tokens, please see [Use custom symbols](do
 The usage is basically the same as that of ```subword-nmt```. Assming that L1 and L2 are the two languages (source/target languages), train the shared spm model, and get resulting vocabulary for each:
 
 ```
-% cat {train_file}.L1 {train_file}.L2 | shuffle > trian
+% cat {train_file}.L1 {train_file}.L2 | shuffle > train
 % spm_train --input=train --model_prefix=spm --vocab_size=8000 
 % spm_encode --model=spm.model --generate_vocabulary < {train_file}.L1 > {vocab_file}.L1
 % spm_encode --model=spm.model --generate_vocabulary < {train_file}.L2 > {vocab_file}.L2
