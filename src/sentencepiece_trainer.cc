@@ -27,7 +27,7 @@
 
 namespace sentencepiece {
 namespace {
-static constexpr char kDefaultNormalizerName[] = "nfkc";
+static constexpr char kDefaultNormalizerName[] = "nmt_nfkc";
 }  // namespace
 
 // static

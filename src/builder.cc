@@ -344,6 +344,44 @@ util::Status Builder::BuildNFKCMap(CharsMap *chars_map) {
   return util::OkStatus();
 }
 
+util::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
+#ifdef ENABLE_NFKC_COMPILE
+  LOG(INFO) << "Running BuildNmtNFKCMap";
+
+  CharsMap nfkc_map;
+  RETURN_IF_ERROR(Builder::BuildNFKCMap(&nfkc_map));
+
+  // Other code points considered as whitespace.
+  nfkc_map[{0x9}] = {0x20};     // TAB
+  nfkc_map[{0xA}] = {0x20};     // LINE FEED
+  nfkc_map[{0xC}] = {0x20};     // FORM FEED
+  nfkc_map[{0xD}] = {0x20};     // CARRIAGE RETURN
+  nfkc_map[{0x1680}] = {0x20};  // OGHAM SPACE MARK
+  nfkc_map[{0x200B}] = {0x20};  // ZERO WIDTH SPACE
+  nfkc_map[{0x200E}] = {0x20};  // LEFT-TO-RIGHT MARK
+  nfkc_map[{0x200F}] = {0x20};  // RIGHT-TO-LEFT MARK
+  nfkc_map[{0x2028}] = {0x20};  // LINE SEPARATOR
+  nfkc_map[{0x2029}] = {0x20};  // PARAGRAPH SEPARATOR
+  nfkc_map[{0x2581}] = {0x20};  // LOWER ONE EIGHT BLOCK
+  nfkc_map[{0xFEFF}] = {0x20};  // ZERO WIDTH NO-BREAK
+  nfkc_map[{0xFFFD}] = {0x20};  // REPLACEMENT CHARACTER
+
+  // Do not normalize FULL_WIDTH TILDE, since FULL_WIDTH TILDE
+  // and HALF_WIDTH TILDE are used differently in Japanese.
+  nfkc_map.erase({0xFF5E});
+
+  RETURN_IF_ERROR(RemoveRedundantMap(&nfkc_map));
+
+  *chars_map = std::move(nfkc_map);
+
+#else
+  LOG(ERROR) << "NFKC compile is not enabled."
+             << " rebuild with ./configure --enable-nfkc-compile";
+#endif
+
+  return util::OkStatus();
+}
+
 // static
 util::Status Builder::LoadCharsMap(StringPiece filename, CharsMap *chars_map) {
   LOG(INFO) << "Loading maping file: " << filename.data();
