@@ -104,7 +104,7 @@ std::vector<std::string> GetSpVec(const SentencePieceText &spt) {
 }
 
 NormalizerSpec MakeDefaultNormalizerSpec() {
-  return SentencePieceTrainer::GetNormalizerSpec("nfkc");
+  return SentencePieceTrainer::GetNormalizerSpec("nmt_nfkc");
 }
 
 TEST(SentencepieceProcessorTest, StatusTest) {

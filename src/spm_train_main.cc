@@ -64,7 +64,7 @@ DEFINE_bool(split_by_whitespace, kDefaultTrainerSpec.split_by_whitespace(),
 DEFINE_string(control_symbols, "", "comma separated list of control symbols");
 DEFINE_string(user_defined_symbols, "",
               "comma separated list of user defined symbols");
-DEFINE_string(normalization_rule_name, "nfkc",
+DEFINE_string(normalization_rule_name, "nmt_nfkc",
               "Normalization rule name. "
               "Choose from nfkc or identity");
 DEFINE_string(normalization_rule_tsv, "", "Normalization rule TSV file. ");

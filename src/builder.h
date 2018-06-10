@@ -89,6 +89,10 @@ class Builder {
   // TODO(taku): Make NFC, NFD, and NFKD mapping if necessary.
   static util::Status BuildNFKCMap(CharsMap *chars_map);
 
+  // Makes an NFKC-based mapping with NMT specific modifications around
+  // whitespaces.
+  static util::Status BuildNmtNFKCMap(CharsMap *chars_map);
+
   // Builds Chars map save in `filename`.
   // Format:
   // src_uchar1 src_uchar2 ... <tab> trg_uchar1 trg_uchar2...

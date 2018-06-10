@@ -60,7 +60,8 @@ TEST(BuilderTest, BuildNFKCMapTest) {
 
 TEST(BuilderTest, GetPrecompiledCharsMapTest) {
   {
-    const NormalizerSpec spec = SentencePieceTrainer::GetNormalizerSpec("nfkc");
+    const NormalizerSpec spec =
+        SentencePieceTrainer::GetNormalizerSpec("nmt_nfkc");
     const Normalizer normalizer(spec);
     EXPECT_EQ(WS "ABC", normalizer.Normalize("ＡＢＣ"));
     EXPECT_EQ(WS "(株)", normalizer.Normalize("㈱"));

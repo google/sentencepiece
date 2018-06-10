@@ -30,7 +30,7 @@ namespace {
 #define RC "\xEF\xBF\xBD"
 
 NormalizerSpec MakeDefaultSpec() {
-  return SentencePieceTrainer::GetNormalizerSpec("nfkc");
+  return SentencePieceTrainer::GetNormalizerSpec("nmt_nfkc");
 }
 }  // namespace
 

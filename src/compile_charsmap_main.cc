@@ -66,7 +66,8 @@ int main(int argc, char **argv) {
 
   const std::vector<
       std::pair<std::string, std::function<Status(Builder::CharsMap *)>>>
-      kRuleList = {{"nfkc", Builder::BuildNFKCMap}};
+      kRuleList = {{"nfkc", Builder::BuildNFKCMap},
+                   {"nmt_nfkc", Builder::BuildNmtNFKCMap}};
 
   constexpr char kHeader[] =
       R"(#ifndef NORMALIZATION_RULE_H_
