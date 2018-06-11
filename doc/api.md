@@ -66,6 +66,15 @@ processor.SampleEncode("This is a test.", &ids, -1, 0.2);
 ```
 SampleEncode has two sampling parameters, `nbest_size` and `alpha`, which correspond to `l` and `alpha` in the [original paper](https://arxiv.org/abs/1804.10959). When `nbest_size` is -1, one segmentation is sampled from all hypothesis with forward-filtering and backward sampling algorithm.
 
+## Training
+Calls `SentencePieceTrainer::Train` function to train sentencepiece model. You can pass the same parameters of [spm_train](https://github.com/google/sentencepiece#train-sentencepiece-model) as a single stirng.
+
+```C++
+#include <sentencepiece_trainer.h>
+
+sentencepiece::SentencePieceTrainer::Train("--input=test/botchan.txt --model_prefix=m --vocab_size=1000");
+```
+
 ## SentencePieceText proto
 You will want to use `SentencePieceText` class to obtain the pieces and ids at the same time. This proto also encodes a utf8-byte offset of each piece over user input or detokenized text.
 
