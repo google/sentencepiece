@@ -92,6 +92,9 @@ TEST(BuilderTest, CompileCharsMap) {
   // あいう => abc
   chars_map[{0x3042, 0x3044, 0x3046}] = {0x0061, 0x0062, 0x0063};
 
+  // えお => remove
+  chars_map[{0x3048, 0x304A}] = {};
+
   NormalizerSpec spec;
   EXPECT_OK(
       Builder::CompileCharsMap(chars_map, spec.mutable_precompiled_charsmap()));
@@ -111,6 +114,7 @@ TEST(BuilderTest, CompileCharsMap) {
   EXPECT_EQ("abc", normalizer.Normalize("あいう"));
   EXPECT_EQ("abcえ", normalizer.Normalize("あいうえ"));
   EXPECT_EQ("ABCabcD", normalizer.Normalize("abcあいうd"));
+  EXPECT_EQ("abcか", normalizer.Normalize("あいうえおか"));
 }
 
 TEST(BuilderTest, LoadCharsMapTest) {
@@ -137,6 +141,31 @@ TEST(BuilderTest, LoadCharsMapTest) {
   EXPECT_OK(Builder::BuildNFKCMap(&nfkc_map));
   EXPECT_OK(Builder::CompileCharsMap(nfkc_map, &expected));
 #endif
+}
+
+TEST(BuilderTest, LoadCharsMapWithEmptyeTest) {
+  test::ScopedTempFile test_tsv("test.tsv");
+  test::ScopedTempFile test_out_tsv("test_out.tsv");
+  {
+    io::OutputBuffer output(test_tsv.filename());
+    output.WriteLine("0061\t0041");
+    output.WriteLine("0062");
+    output.WriteLine("0063\t\t#foo=>bar");
+  }
+
+  Builder::CharsMap chars_map;
+  EXPECT_OK(Builder::LoadCharsMap(test_tsv.filename(), &chars_map));
+
+  EXPECT_EQ(3, chars_map.size());
+  EXPECT_EQ(std::vector<char32>({0x0041}), chars_map[{0x0061}]);
+  EXPECT_EQ(std::vector<char32>({}), chars_map[{0x0062}]);
+  EXPECT_EQ(std::vector<char32>({}), chars_map[{0x0063}]);
+
+  EXPECT_OK(Builder::SaveCharsMap(test_out_tsv.filename(), chars_map));
+
+  Builder::CharsMap new_chars_map;
+  EXPECT_OK(Builder::LoadCharsMap(test_out_tsv.filename(), &new_chars_map));
+  EXPECT_EQ(chars_map, new_chars_map);
 }
 
 TEST(BuilderTest, ContainsTooManySharedPrefixTest) {
