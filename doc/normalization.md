@@ -7,7 +7,8 @@ SentencePiece allows us to define custom normalization rule, which is stored in 
 ## Use pre-defined normalization rule
 SentencePiece provides the following pre-defined normalization rule. It is recommended to use one of them unless you have any special reasons.
 
-* **nfkc**:  [NFKC](https://en.wikipedia.org/wiki/Unicode_equivalence) normalization (default)
+* **nmt_nfkc**: [NFKC](https://en.wikipedia.org/wiki/Unicode_equivalence) normalization with some additional normalization around spaces. (default)
+* **nfkc**:  original NFKC normalization.
 * **identity**: no normalization
 
 You can choose the normalization rule with `--normalization_rule_name` flag.
@@ -16,6 +17,8 @@ You can choose the normalization rule with `--normalization_rule_name` flag.
 ```
 
 NOTE: Due to the limitation of normalization algorithm, full NFKC normalization is not implemented. [builder.h] describes example character sequences not normalized by our NFKC implementation.
+
+The difference between **nmt_nfkc** and **nfkc** can be found via ```diff -u data/nfkc.tsv data/nmt_nfkc.tsv``` command.
 
 ## Use custom normalization rule
 The normalization is performed with user-defined string-to-string mappings and leftmost longest matching.
@@ -34,7 +37,7 @@ See [data/nfkc.tsv](data/nfkc.tsv) as an example. Once a TSV file is prepared, y
 % spm_train --normalization_rule_tsv=<rule tsv file> --input=<input> --model_prefix=<model file> --vocab_size=8000                                                                                                                                                                             
 ```
 
-`<model file>` embeds the normalization rule `<rule tsv file>` so the same normalization rule is applied when `<model file>` is used.
+`<model file>` embeds the normalization rule so the same normalization rule is applied when `<model file>` is used.
 
 
 ## Command line tool to perform normalization
