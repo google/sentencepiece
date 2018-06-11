@@ -104,7 +104,8 @@ inline void Abort() {
   if (error::gTestMode) {
     longjmp(error::gTestJmp, 0);
   } else {
-    abort();
+    std::cerr << "Program terminated with an unrecoverable error." << std::endl;
+    exit(-1);
   }
 }
 

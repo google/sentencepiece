@@ -173,6 +173,7 @@ util::Status Builder::CompileCharsMap(const CharsMap &chars_map,
   for (const auto &p : chars_map) {
     // The value of Trie stores the pointer to the normalized string.
     const std::string utf8_in = string_util::UnicodeTextToUTF8(p.first);
+    CHECK_OR_RETURN(!utf8_in.empty());
     CHECK_OR_RETURN(string_util::IsStructurallyValid(utf8_in));
     kv.emplace_back(utf8_in, port::FindOrDie(normalized2pos, p.second));
   }
@@ -393,8 +394,9 @@ util::Status Builder::LoadCharsMap(StringPiece filename, CharsMap *chars_map) {
   std::string line;
   chars_map->clear();
   while (input.ReadLine(&line)) {
-    const auto fields = string_util::SplitPiece(line, "\t");
-    CHECK_GE(fields.size(), 2);
+    auto fields = string_util::SplitPiece(line, "\t", true /* allow empty*/);
+    CHECK_GE(fields.size(), 1);
+    if (fields.size() == 1) fields.push_back("");  // Deletion rule.
     std::vector<char32> src, trg;
     for (auto &s : string_util::SplitPiece(fields[0], " ")) {
       s.Consume("U+");
@@ -405,7 +407,6 @@ util::Status Builder::LoadCharsMap(StringPiece filename, CharsMap *chars_map) {
       trg.push_back(string_util::HexToInt<char32>(s));
     }
     CHECK(!src.empty());
-    CHECK(!trg.empty());
     (*chars_map)[src] = trg;
   }
 

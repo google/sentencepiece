@@ -19,12 +19,13 @@ namespace sentencepiece {
 namespace string_util {
 
 template <typename T>
-std::vector<T> SplitInternal(const T &str, const T &delim) {
+std::vector<T> SplitInternal(const T &str, const T &delim, bool allow_empty) {
   std::vector<T> result;
   size_t current_pos = 0;
   size_t found_pos = 0;
   while ((found_pos = str.find_first_of(delim, current_pos)) != T::npos) {
-    if (found_pos > current_pos) {
+    if ((allow_empty && found_pos >= current_pos) ||
+        (!allow_empty && found_pos > current_pos)) {
       result.push_back(str.substr(current_pos, found_pos - current_pos));
     }
     current_pos = found_pos + 1;
@@ -35,13 +36,14 @@ std::vector<T> SplitInternal(const T &str, const T &delim) {
   return result;
 }
 
-std::vector<std::string> Split(const std::string &str,
-                               const std::string &delim) {
-  return SplitInternal<std::string>(str, delim);
+std::vector<std::string> Split(const std::string &str, const std::string &delim,
+                               bool allow_empty) {
+  return SplitInternal<std::string>(str, delim, allow_empty);
 }
 
-std::vector<StringPiece> SplitPiece(StringPiece str, StringPiece delim) {
-  return SplitInternal<StringPiece>(str, delim);
+std::vector<StringPiece> SplitPiece(StringPiece str, StringPiece delim,
+                                    bool allow_empty) {
+  return SplitInternal<StringPiece>(str, delim, allow_empty);
 }
 
 std::string Join(const std::vector<std::string> &tokens, StringPiece delim) {
@@ -217,7 +219,7 @@ InputBuffer::InputBuffer(StringPiece filename)
                            : new std::ifstream(WPATH(filename.data()))) {
   if (!*is_)
     status_ = util::StatusBuilder(util::error::NOT_FOUND)
-              << "\"" << filename.data() << "\": " << std::strerror(errno);
+              << "\"" << filename.data() << "\": " << util::StrError(errno);
 }
 
 InputBuffer::~InputBuffer() {
@@ -238,7 +240,7 @@ OutputBuffer::OutputBuffer(StringPiece filename)
               : new std::ofstream(WPATH(filename.data()), OUTPUT_MODE)) {
   if (!*os_)
     status_ = util::StatusBuilder(util::error::PERMISSION_DENIED)
-              << "\"" << filename.data() << "\": " << std::strerror(errno);
+              << "\"" << filename.data() << "\": " << util::StrError(errno);
 }
 
 OutputBuffer::~OutputBuffer() {

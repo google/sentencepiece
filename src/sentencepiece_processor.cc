@@ -46,7 +46,7 @@ util::Status SentencePieceProcessor::Load(const std::string &filename) {
   std::ifstream ifs(filename.c_str(), std::ios::binary | std::ios::in);
   if (!ifs) {
     return util::StatusBuilder(util::error::NOT_FOUND)
-           << "\"" << filename << "\": " << std::strerror(errno);
+           << "\"" << filename << "\": " << util::StrError(errno);
   }
 
   return Load(&ifs);

@@ -117,6 +117,15 @@ TEST(UtilTest, SplitTest) {
 
   tokens = string_util::Split("", "");
   EXPECT_TRUE(tokens.empty());
+
+  tokens = string_util::Split(" this  is a test", " ", true);
+  EXPECT_EQ(6, tokens.size());
+  EXPECT_EQ(tokens[0], "");
+  EXPECT_EQ(tokens[1], "this");
+  EXPECT_EQ(tokens[2], "");
+  EXPECT_EQ(tokens[3], "is");
+  EXPECT_EQ(tokens[4], "a");
+  EXPECT_EQ(tokens[5], "test");
 }
 
 TEST(UtilTest, SplitPieceTest) {
@@ -151,6 +160,15 @@ TEST(UtilTest, SplitPieceTest) {
 
   tokens = string_util::SplitPiece("", "");
   EXPECT_TRUE(tokens.empty());
+
+  tokens = string_util::SplitPiece(" this  is a test", " ", true);
+  EXPECT_EQ(6, tokens.size());
+  EXPECT_EQ(tokens[0], "");
+  EXPECT_EQ(tokens[1], "this");
+  EXPECT_EQ(tokens[2], "");
+  EXPECT_EQ(tokens[3], "is");
+  EXPECT_EQ(tokens[4], "a");
+  EXPECT_EQ(tokens[5], "test");
 }
 
 TEST(UtilTest, JoinTest) {

@@ -351,7 +351,7 @@ util::Status TrainerInterface::SaveModel(StringPiece filename) const {
   RETURN_IF_ERROR(Serialize(&model_proto));
   std::ofstream ofs(filename.data(), OUTPUT_MODE);
   CHECK_OR_RETURN(ofs) << "\"" << filename.data()
-                       << "\": " << std::strerror(errno);
+                       << "\": " << util::StrError(errno);
   CHECK_OR_RETURN(model_proto.SerializeToOstream(&ofs));
   return util::OkStatus();
 }

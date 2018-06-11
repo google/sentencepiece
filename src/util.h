@@ -15,6 +15,9 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
+#include <stdio.h>
+#include <string.h>
+
 #include <algorithm>
 #include <fstream>
 #include <memory>
@@ -85,10 +88,11 @@ inline bool lexical_cast(StringPiece arg, std::string *result) {
   return true;
 }
 
-std::vector<std::string> Split(const std::string &str,
-                               const std::string &delim);
+std::vector<std::string> Split(const std::string &str, const std::string &delim,
+                               bool allow_empty = false);
 
-std::vector<StringPiece> SplitPiece(StringPiece str, StringPiece delim);
+std::vector<StringPiece> SplitPiece(StringPiece str, StringPiece delim,
+                                    bool allow_empty = false);
 
 std::string Join(const std::vector<std::string> &tokens, StringPiece delim);
 
@@ -383,6 +387,12 @@ void STLDeleteElements(std::vector<T *> *vec) {
 }  // namespace port
 
 namespace util {
+
+inline const std::string StrError(int n) {
+  char buf[1024];
+  strerror_r(n, buf, sizeof(buf) - 1);
+  return std::string(buf);
+}
 
 inline Status OkStatus() { return Status(); }
 
