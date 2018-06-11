@@ -399,14 +399,16 @@ util::Status Builder::LoadCharsMap(StringPiece filename, CharsMap *chars_map) {
     if (fields.size() == 1) fields.push_back("");  // Deletion rule.
     std::vector<char32> src, trg;
     for (auto &s : string_util::SplitPiece(fields[0], " ")) {
+      if (s.empty()) continue;
       s.Consume("U+");
       src.push_back(string_util::HexToInt<char32>(s));
     }
     for (auto &s : string_util::SplitPiece(fields[1], " ")) {
+      if (s.empty()) continue;
       s.Consume("U+");
       trg.push_back(string_util::HexToInt<char32>(s));
     }
-    CHECK(!src.empty());
+    CHECK_OR_RETURN(!src.empty());
     (*chars_map)[src] = trg;
   }
 
