@@ -17,6 +17,7 @@
 #include <functional>
 #include <memory>
 #include <queue>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #include "util.h"

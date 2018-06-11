@@ -20,6 +20,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 #include "common.h"
 #include "sentencepiece_processor.h"
