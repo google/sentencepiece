@@ -268,6 +268,71 @@ class SentencePieceProcessor {
                               SentencePieceText *spt) const;
 
   //////////////////////////////////////////////////////////////
+  // Handy methods that return the result directly.
+  // These functions ignore internal errors.
+#ifdef SWIG
+#define DEFINE_SPP_DIRECT_FUNC_IMPL(FuncName, OutType, ...) \
+  OutType output;                                           \
+  const auto _status = FuncName(__VA_ARGS__, &output);      \
+  if (!_status.ok()) throw _status;                         \
+  return output;
+#else
+#define DEFINE_SPP_DIRECT_FUNC_IMPL(FuncName, OutType, ...) \
+  OutType output;                                           \
+  FuncName(__VA_ARGS__, &output).IgnoreError();             \
+  return output;
+#endif
+
+  // Encode
+  virtual std::vector<std::string> EncodeAsPieces(
+      const std::string &input) const {
+    DEFINE_SPP_DIRECT_FUNC_IMPL(Encode, std::vector<std::string>, input);
+  }
+
+  virtual std::vector<int> EncodeAsIds(const std::string &input) const {
+    DEFINE_SPP_DIRECT_FUNC_IMPL(Encode, std::vector<int>, input);
+  }
+
+  // NBestEncode
+  virtual std::vector<std::vector<std::string>> NBestEncodeAsPieces(
+      const std::string &input, int nbest_size) const {
+    DEFINE_SPP_DIRECT_FUNC_IMPL(
+        NBestEncode, std::vector<std::vector<std::string>>, input, nbest_size);
+  }
+
+  virtual std::vector<std::vector<int>> NBestEncodeAsIds(
+      const std::string &input, int nbest_size) const {
+    DEFINE_SPP_DIRECT_FUNC_IMPL(NBestEncode, std::vector<std::vector<int>>,
+                                input, nbest_size);
+  }
+
+  // SampleEncode
+  virtual std::vector<std::string> SampleEncodeAsPieces(
+      const std::string &input, int nbest_size, float alpha) const {
+    DEFINE_SPP_DIRECT_FUNC_IMPL(SampleEncode, std::vector<std::string>, input,
+                                nbest_size, alpha);
+  }
+
+  virtual std::vector<int> SampleEncodeAsIds(const std::string &input,
+                                             int nbest_size,
+                                             float alpha) const {
+    DEFINE_SPP_DIRECT_FUNC_IMPL(SampleEncode, std::vector<int>, input,
+                                nbest_size, alpha);
+  }
+
+  // Decode
+  virtual std::string DecodePieces(
+      const std::vector<std::string> &pieces) const {
+    DEFINE_SPP_DIRECT_FUNC_IMPL(Decode, std::string, pieces);
+  }
+
+  virtual std::string DecodeIds(const std::vector<int> &ids) const {
+    DEFINE_SPP_DIRECT_FUNC_IMPL(Decode, std::string, ids);
+  }
+
+#undef DEFINE_SPP_DIRECT_FUNC_IMPL
+
+  //////////////////////////////////////////////////////////////
   // Vocabulary management methods.
   //
   // Returns the size of sentence pieces, which is the same as
