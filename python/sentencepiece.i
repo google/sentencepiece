@@ -15,7 +15,7 @@ class PyInputString {
   explicit PyInputString(PyObject* obj) {
 #if PY_VERSION_HEX >= 0x03000000
     if (PyUnicode_Check(obj)) {
-      str_ = PyUnicode_AsUTF8AndSize(obj, &size_);
+      str_ = const_cast<char *>(PyUnicode_AsUTF8AndSize(obj, &size_));
       input_type_ = kUnicodeInput;
     } else if (PyBytes_Check(obj)) {
       PyBytes_AsStringAndSize(obj, &str_, &size_);
@@ -125,77 +125,135 @@ int ToSwigError(sentencepiece::util::error::Code code) {
                                                            const std::string &,
                                                            google::protobuf::Message *message);
 
+%extend sentencepiece::SentencePieceTrainer {
+  static util::Status train(const std::string &args) {
+    return sentencepiece::SentencePieceTrainer::Train(args);
+  }
+}
+
 %extend sentencepiece::SentencePieceProcessor {
+  util::Status load(const std::string &filename) {
+    return $self->Load(filename);
+  }
+
+  util::Status _set_encode_extra_options(const std::string &extra_option) {
+    return $self->SetEncodeExtraOptions(extra_option);
+  }
+
+  util::Status _set_decode_extra_options(const std::string &extra_option) {
+    return $self->SetDecodeExtraOptions(extra_option);
+  }
+
+  util::Status set_vocabulary(
+      const std::vector<std::string> &valid_vocab) {
+    return $self->SetVocabulary(valid_vocab);
+  }
+
+  util::Status reset_vocabulary() {
+    return $self->ResetVocabulary();
+  }
+
+  util::Status load_vocabulary(const std::string &filename,
+                               int threshold) {
+    return $self->LoadVocabulary(filename, threshold);
+  }
+
+  std::vector<std::string> encode(const std::string& input) const {
+    return $self->EncodeAsPieces(input);
+  }
+
+  std::vector<std::string> encode_as_pieces(const std::string& input) const {
+    return $self->EncodeAsPieces(input);
+  }
+
+  std::vector<int> encode_as_ids(const std::string& input) const {
+    return $self->EncodeAsIds(input);
+  }
+
+  std::vector<std::vector<std::string>> nbest_encode(const std::string& input,
+                                                       int nbest_size) const {
+    return $self->NBestEncodeAsPieces(input, nbest_size);
+  }
+
+  std::vector<std::vector<std::string>> nbest_encode_as_pieces(
+      const std::string& input, int nbest_size) const {
+    return $self->NBestEncodeAsPieces(input, nbest_size);
+  }
+
+  std::vector<std::vector<int>> nbest_encode_as_ids(const std::string& input,
+                                                    int nbest_size) const {
+    return $self->NBestEncodeAsIds(input, nbest_size);
+  }
+
+  std::vector<std::string> sample_encode(const std::string& input,
+                                         int nbest_size, float alpha) const {
+    return $self->SampleEncodeAsPieces(input, nbest_size, alpha);
+  }
+
+  std::vector<std::string> sample_encode_as_pieces(const std::string& input,
+                                            int nbest_size, float alpha) const {
+    return $self->SampleEncodeAsPieces(input, nbest_size, alpha);
+  }
+
+  std::vector<int> sample_encode_as_ids(const std::string& input,
+                                 int nbest_size, float alpha) const {
+    return $self->SampleEncodeAsIds(input, nbest_size, alpha);
+  }
+
+  std::string decode(const std::vector<std::string>& input) const {
+    return $self->DecodePieces(input);
+  }
+
+  std::string decode_pieces(const std::vector<std::string>& input) const {
+    return $self->DecodePieces(input);
+  }
+
+  std::string decode_ids(const std::vector<int>& input) const {
+    return $self->DecodeIds(input);
+  }
+
   std::vector<std::string> Encode(const std::string& input) const {
-    std::vector<std::string> output;
-    THROW_IF_ERROR($self->Encode(input, &output));
-    return output;
+    return $self->EncodeAsPieces(input);
   }
 
-  std::vector<std::string> EncodeAsPieces(const std::string& input) const {
-    std::vector<std::string> output;
-    THROW_IF_ERROR($self->Encode(input, &output));
-    return output;
+  int get_piece_size() const {
+    return $self->GetPieceSize();
   }
 
-  std::vector<int> EncodeAsIds(const std::string& input) const {
-    std::vector<int> output;
-    THROW_IF_ERROR($self->Encode(input, &output));
-    return output;
+  int piece_to_id(const std::string &piece) const {
+    return $self->PieceToId(piece);
+  }
+
+  std::string id_to_piece(int id) const {
+    return $self->IdToPiece(id);
+  }
+
+  float get_score(int id) const {
+    return $self->GetScore(id);
+  }
+
+  bool is_unknown(int id) const {
+    return $self->IsUnused(id);
+  }
+
+  bool is_control(int id) const {
+    return $self->IsControl(id);
+  }
+
+  bool is_unused(int id) const {
+    return $self->IsUnused(id);
   }
 
   std::vector<std::vector<std::string>> NBestEncode(const std::string& input, int nbest_size) const {
-    std::vector<std::vector<std::string>> output;
-    THROW_IF_ERROR($self->NBestEncode(input, nbest_size, &output));
-    return output;
-  }
-
-  std::vector<std::vector<std::string>> NBestEncodeAsPieces(const std::string& input, int nbest_size) const {
-    std::vector<std::vector<std::string>> output;
-    THROW_IF_ERROR($self->NBestEncode(input, nbest_size, &output));
-    return output;
-  }
-
-  std::vector<std::vector<int>> NBestEncodeAsIds(const std::string& input, int nbest_size) const {
-    std::vector<std::vector<int>> output;
-    THROW_IF_ERROR($self->NBestEncode(input, nbest_size, &output));
-    return output;
+    return $self->NBestEncodeAsPieces(input, nbest_size);
   }
 
   std::vector<std::string> SampleEncode(const std::string& input, int nbest_size, float alpha) const {
-    std::vector<std::string> output;
-    THROW_IF_ERROR($self->SampleEncode(input, nbest_size, alpha, &output));
-    return output;
-  }
-
-  std::vector<std::string> SampleEncodeAsPieces(const std::string& input, int nbest_size, float alpha) const {
-    std::vector<std::string> output;
-    THROW_IF_ERROR($self->SampleEncode(input, nbest_size, alpha, &output));
-    return output;
-  }
-
-  std::vector<int> SampleEncodeAsIds(const std::string& input, int nbest_size, float alpha) const {
-    std::vector<int> output;
-    THROW_IF_ERROR($self->SampleEncode(input, nbest_size, alpha, &output));
-    return output;
+    return $self->SampleEncodeAsPieces(input, nbest_size, alpha);
   }
 
   std::string Decode(const std::vector<std::string>& input) const {
-    std::string output;
-    THROW_IF_ERROR($self->Decode(input, &output));
-    return output;
-  }
-
-  std::string DecodePieces(const std::vector<std::string>& input) const {
-    std::string output;
-    THROW_IF_ERROR($self->Decode(input, &output));
-    return output;
-  }
-
-  std::string DecodeIds(const std::vector<int>& input) const {
-    std::string output;
-    THROW_IF_ERROR($self->Decode(input, &output));
-    return output;
+    return $self->DecodePieces(input);
   }
 
   int __len__() {

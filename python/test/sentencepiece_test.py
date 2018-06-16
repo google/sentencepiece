@@ -6,99 +6,188 @@ import unittest
 import sys
 
 class TestSentencepieceProcessor(unittest.TestCase):
-    """Test case for SentencePieceProcessor"""
+  """Test case for SentencePieceProcessor"""
 
-    def setUp(self):
-        self.sp_ = spm.SentencePieceProcessor()
-        self.assertTrue(self.sp_.Load('test/test_model.model'))
-        self.jasp_ = spm.SentencePieceProcessor()
-        self.assertTrue(self.jasp_.Load('test/test_ja_model.model'))
+  def setUp(self):
+    self.sp_ = spm.SentencePieceProcessor()
+    self.assertTrue(self.sp_.Load('test/test_model.model'))
+    self.jasp_ = spm.SentencePieceProcessor()
+    self.assertTrue(self.jasp_.Load('test/test_ja_model.model'))
+    self.assertTrue(self.sp_.load('test/test_model.model'))
+    self.jasp_ = spm.SentencePieceProcessor()
+    self.assertTrue(self.jasp_.load('test/test_ja_model.model'))
 
-    def test_load(self):
-        self.assertEqual(1000, self.sp_.GetPieceSize())
-        self.assertEqual(0, self.sp_.PieceToId('<unk>'))
-        self.assertEqual(1, self.sp_.PieceToId('<s>'))
-        self.assertEqual(2, self.sp_.PieceToId('</s>'))
-        self.assertEqual('<unk>', self.sp_.IdToPiece(0))
-        self.assertEqual('<s>', self.sp_.IdToPiece(1))
-        self.assertEqual('</s>', self.sp_.IdToPiece(2))
-        for i in range(self.sp_.GetPieceSize()):
-            piece = self.sp_.IdToPiece(i)
-            self.assertEqual(i, self.sp_.PieceToId(piece))
+  def test_load(self):
+    self.assertEqual(1000, self.sp_.GetPieceSize())
+    self.assertEqual(0, self.sp_.PieceToId('<unk>'))
+    self.assertEqual(1, self.sp_.PieceToId('<s>'))
+    self.assertEqual(2, self.sp_.PieceToId('</s>'))
+    self.assertEqual('<unk>', self.sp_.IdToPiece(0))
+    self.assertEqual('<s>', self.sp_.IdToPiece(1))
+    self.assertEqual('</s>', self.sp_.IdToPiece(2))
+    for i in range(self.sp_.GetPieceSize()):
+      piece = self.sp_.IdToPiece(i)
+      self.assertEqual(i, self.sp_.PieceToId(piece))
 
-    def test_roundtrip(self):
-        text = 'I saw a girl with a telescope.'
-        ids = self.sp_.EncodeAsIds(text)
-        pieces1 = self.sp_.EncodeAsPieces(text)
-        pieces2 = self.sp_.Encode(text)
-        pieces3 = self.sp_.NBestEncode(text, 10)[0]
-        self.assertEqual(pieces1, pieces2)
-        self.assertEqual(pieces1, pieces3)
-        self.assertEqual(text, self.sp_.Decode(pieces1))
-        self.assertEqual(text, self.sp_.DecodePieces(pieces2))
-        self.assertEqual(text, self.sp_.DecodeIds(ids))
-        for n in range(100):
-          self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, 64, 0.5)))
-          self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, -1, 0.5)))
-          self.assertEqual(text, self.sp_.DecodeIds(self.sp_.SampleEncodeAsIds(text, 64, 0.5)))
-          self.assertEqual(text, self.sp_.DecodeIds(self.sp_.SampleEncodeAsIds(text, -1, 0.5)))
+  def test_roundtrip(self):
+    text = 'I saw a girl with a telescope.'
+    ids = self.sp_.EncodeAsIds(text)
+    pieces1 = self.sp_.EncodeAsPieces(text)
+    pieces2 = self.sp_.Encode(text)
+    pieces3 = self.sp_.NBestEncode(text, 10)[0]
+    self.assertEqual(pieces1, pieces2)
+    self.assertEqual(pieces1, pieces3)
+    self.assertEqual(text, self.sp_.Decode(pieces1))
+    self.assertEqual(text, self.sp_.DecodePieces(pieces2))
+    self.assertEqual(text, self.sp_.DecodeIds(ids))
+    for n in range(100):
+      self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, 64, 0.5)))
+      self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, -1, 0.5)))
+      self.assertEqual(text, self.sp_.DecodeIds(self.sp_.SampleEncodeAsIds(text, 64, 0.5)))
+      self.assertEqual(text, self.sp_.DecodeIds(self.sp_.SampleEncodeAsIds(text, -1, 0.5)))
 
-    def test_ja_load(self):
-        self.assertEqual(8000, self.jasp_.GetPieceSize())
-        self.assertEqual(0, self.jasp_.PieceToId('<unk>'))
-        self.assertEqual(1, self.jasp_.PieceToId('<s>'))
-        self.assertEqual(2, self.jasp_.PieceToId('</s>'))
-        self.assertEqual('<unk>', self.jasp_.IdToPiece(0))
-        self.assertEqual('<s>', self.jasp_.IdToPiece(1))
-        self.assertEqual('</s>', self.jasp_.IdToPiece(2))
-        for i in range(self.jasp_.GetPieceSize()):
-            piece = self.jasp_.IdToPiece(i)
-            self.assertEqual(i, self.jasp_.PieceToId(piece))
+  def test_ja_load(self):
+    self.assertEqual(8000, self.jasp_.GetPieceSize())
+    self.assertEqual(0, self.jasp_.PieceToId('<unk>'))
+    self.assertEqual(1, self.jasp_.PieceToId('<s>'))
+    self.assertEqual(2, self.jasp_.PieceToId('</s>'))
+    self.assertEqual('<unk>', self.jasp_.IdToPiece(0))
+    self.assertEqual('<s>', self.jasp_.IdToPiece(1))
+    self.assertEqual('</s>', self.jasp_.IdToPiece(2))
+    for i in range(self.jasp_.GetPieceSize()):
+      piece = self.jasp_.IdToPiece(i)
+      self.assertEqual(i, self.jasp_.PieceToId(piece))
 
-    def test_ja_roundtrip(self):
-        text = '清水寺は京都にある。'
-        ids = self.jasp_.EncodeAsIds(text)
-        pieces1 = self.jasp_.EncodeAsPieces(text)
-        pieces2 = self.jasp_.Encode(text)
-        pieces3 = self.jasp_.NBestEncode(text, 10)[0]
-        self.assertEqual(pieces1, pieces2)
-        self.assertEqual(text, self.jasp_.Decode(pieces1))
-        self.assertEqual(text, self.jasp_.DecodePieces(pieces2))
-        self.assertEqual(text, self.jasp_.DecodeIds(ids))
-        for n in range(100):
-          self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, 64, 0.5)))
-          self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, -1, 0.5)))
+  def test_ja_roundtrip(self):
+    text = '清水寺は京都にある。'
+    ids = self.jasp_.EncodeAsIds(text)
+    pieces1 = self.jasp_.EncodeAsPieces(text)
+    pieces2 = self.jasp_.Encode(text)
+    pieces3 = self.jasp_.NBestEncode(text, 10)[0]
+    self.assertEqual(pieces1, pieces2)
+    self.assertEqual(text, self.jasp_.Decode(pieces1))
+    self.assertEqual(text, self.jasp_.DecodePieces(pieces2))
+    self.assertEqual(text, self.jasp_.DecodeIds(ids))
+    for n in range(100):
+      self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, 64, 0.5)))
+      self.assertEqual(text, self.sp_.Decode(self.sp_.SampleEncode(text, -1, 0.5)))
 
 
-    def test_unicode_roundtrip(self):
-        text = u'I saw a girl with a telescope.'
-        ids = self.sp_.EncodeAsIds(text)
-        pieces1 = self.sp_.EncodeAsPieces(text)
-        pieces2 = self.sp_.Encode(text)
-        self.assertEqual(pieces1, pieces2)
-        self.assertEqual(text, self.sp_.Decode(pieces1))
-        self.assertEqual(text, self.sp_.DecodePieces(pieces2))
-        # python2 returns `str`.
-        if sys.version_info < (3,0,0):
-            text = text.encode('utf-8')
-        self.assertEqual(text, self.sp_.DecodeIds(ids))
+  def test_unicode_roundtrip(self):
+    text = u'I saw a girl with a telescope.'
+    ids = self.sp_.EncodeAsIds(text)
+    pieces1 = self.sp_.EncodeAsPieces(text)
+    pieces2 = self.sp_.Encode(text)
+    self.assertEqual(pieces1, pieces2)
+    self.assertEqual(text, self.sp_.Decode(pieces1))
+    self.assertEqual(text, self.sp_.DecodePieces(pieces2))
+    # python2 returns `str`.
+    if sys.version_info < (3,0,0):
+      text = text.encode('utf-8')
+      self.assertEqual(text, self.sp_.DecodeIds(ids))
 
-    def test_unicode_ja_roundtrip(self):
-        text = u'清水寺は京都にある。'
-        ids = self.jasp_.EncodeAsIds(text)
-        pieces1 = self.jasp_.EncodeAsPieces(text)
-        pieces2 = self.jasp_.Encode(text)
-        self.assertEqual(pieces1, pieces2)
-        self.assertEqual(text, self.jasp_.Decode(pieces1))
-        self.assertEqual(text, self.jasp_.DecodePieces(pieces2))
-        # python2 returns `str`.
-        if sys.version_info < (3,0,0):
-            text = text.encode('utf-8')
-        self.assertEqual(text, self.jasp_.DecodeIds(ids))
+  def test_unicode_ja_roundtrip(self):
+    text = u'清水寺は京都にある。'
+    ids = self.jasp_.EncodeAsIds(text)
+    pieces1 = self.jasp_.EncodeAsPieces(text)
+    pieces2 = self.jasp_.Encode(text)
+    self.assertEqual(pieces1, pieces2)
+    self.assertEqual(text, self.jasp_.Decode(pieces1))
+    self.assertEqual(text, self.jasp_.DecodePieces(pieces2))
+    # python2 returns `str`.
+    if sys.version_info < (3,0,0):
+      text = text.encode('utf-8')
+      self.assertEqual(text, self.jasp_.DecodeIds(ids))
 
-    def test_train(self):
-      spm.SentencePieceTrainer.Train(
-          "--input=test/botchan.txt --model_prefix=m --vocab_size=1000")
+  def test_train(self):
+    spm.SentencePieceTrainer.Train(
+        "--input=test/botchan.txt --model_prefix=m --vocab_size=1000")
+
+  # snake case API.
+  def test_load_snake(self):
+    self.assertEqual(1000, self.sp_.get_piece_size())
+    self.assertEqual(0, self.sp_.piece_to_id('<unk>'))
+    self.assertEqual(1, self.sp_.piece_to_id('<s>'))
+    self.assertEqual(2, self.sp_.piece_to_id('</s>'))
+    self.assertEqual('<unk>', self.sp_.id_to_piece(0))
+    self.assertEqual('<s>', self.sp_.id_to_piece(1))
+    self.assertEqual('</s>', self.sp_.id_to_piece(2))
+    for i in range(self.sp_.get_piece_size()):
+      piece = self.sp_.id_to_piece(i)
+      self.assertEqual(i, self.sp_.piece_to_id(piece))
+
+  def test_roundtrip_snake(self):
+    text = 'I saw a girl with a telescope.'
+    ids = self.sp_.encode_as_ids(text)
+    pieces1 = self.sp_.encode_as_pieces(text)
+    pieces2 = self.sp_.encode(text)
+    pieces3 = self.sp_.nbest_encode(text, 10)[0]
+    self.assertEqual(pieces1, pieces2)
+    self.assertEqual(pieces1, pieces3)
+    self.assertEqual(text, self.sp_.decode(pieces1))
+    self.assertEqual(text, self.sp_.decode_pieces(pieces2))
+    self.assertEqual(text, self.sp_.decode_ids(ids))
+    for n in range(100):
+      self.assertEqual(text, self.sp_.decode(self.sp_.sample_encode(text, 64, 0.5)))
+      self.assertEqual(text, self.sp_.decode(self.sp_.sample_encode(text, -1, 0.5)))
+      self.assertEqual(text, self.sp_.decode_ids(self.sp_.sample_encode_as_ids(text, 64, 0.5)))
+      self.assertEqual(text, self.sp_.decode_ids(self.sp_.sample_encode_as_ids(text, -1, 0.5)))
+
+  def test_ja_load_snake(self):
+    self.assertEqual(8000, self.jasp_.get_piece_size())
+    self.assertEqual(0, self.jasp_.piece_to_id('<unk>'))
+    self.assertEqual(1, self.jasp_.piece_to_id('<s>'))
+    self.assertEqual(2, self.jasp_.piece_to_id('</s>'))
+    self.assertEqual('<unk>', self.jasp_.id_to_piece(0))
+    self.assertEqual('<s>', self.jasp_.id_to_piece(1))
+    self.assertEqual('</s>', self.jasp_.id_to_piece(2))
+    for i in range(self.jasp_.get_piece_size()):
+      piece = self.jasp_.id_to_piece(i)
+      self.assertEqual(i, self.jasp_.piece_to_id(piece))
+
+  def test_ja_roundtrip_snake(self):
+    text = '清水寺は京都にある。'
+    ids = self.jasp_.encode_as_ids(text)
+    pieces1 = self.jasp_.encode_as_pieces(text)
+    pieces2 = self.jasp_.encode(text)
+    pieces3 = self.jasp_.nbest_encode(text, 10)[0]
+    self.assertEqual(pieces1, pieces2)
+    self.assertEqual(text, self.jasp_.decode(pieces1))
+    self.assertEqual(text, self.jasp_.decode_pieces(pieces2))
+    self.assertEqual(text, self.jasp_.decode_ids(ids))
+    for n in range(100):
+      self.assertEqual(text, self.sp_.decode(self.sp_.sample_encode(text, 64, 0.5)))
+      self.assertEqual(text, self.sp_.decode(self.sp_.sample_encode(text, -1, 0.5)))
+
+  def test_unicode_roundtrip_snake(self):
+    text = u'I saw a girl with a telescope.'
+    ids = self.sp_.encode_as_ids(text)
+    pieces1 = self.sp_.encode_as_pieces(text)
+    pieces2 = self.sp_.encode(text)
+    self.assertEqual(pieces1, pieces2)
+    self.assertEqual(text, self.sp_.decode(pieces1))
+    self.assertEqual(text, self.sp_.decode_pieces(pieces2))
+    # python2 returns `str`.
+    if sys.version_info < (3,0,0):
+      text = text.encode('utf-8')
+      self.assertEqual(text, self.sp_.decode_ids(ids))
+
+  def test_unicode_ja_roundtrip_snake(self):
+    text = u'清水寺は京都にある。'
+    ids = self.jasp_.encode_as_ids(text)
+    pieces1 = self.jasp_.encode_as_pieces(text)
+    pieces2 = self.jasp_.encode(text)
+    self.assertEqual(pieces1, pieces2)
+    self.assertEqual(text, self.jasp_.decode(pieces1))
+    self.assertEqual(text, self.jasp_.decode_pieces(pieces2))
+    # python2 returns `str`.
+    if sys.version_info < (3,0,0):
+      text = text.encode('utf-8')
+      self.assertEqual(text, self.jasp_.decode_ids(ids))
+
+  def test_train_snake(self):
+    spm.SentencePieceTrainer.train(
+        "--input=test/botchan.txt --model_prefix=m --vocab_size=1000")
 
 
 def suite():
@@ -106,5 +195,6 @@ def suite():
   suite.addTests(unittest.makeSuite(TestSentencepieceProcessor))
   return suite
 
+
 if __name__ == '__main__':
-    unittest.main()
+  unittest.main()
