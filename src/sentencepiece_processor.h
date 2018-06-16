@@ -312,8 +312,9 @@ class SentencePieceProcessor {
  private:
   enum ExtraOption { REVERSE, BOS, EOS };
 
-  static util::Status ParseExtraOptions(
-      const std::string &extra_option, std::vector<ExtraOption> *extra_options);
+  util::Status ParseExtraOptions(const std::string &extra_option,
+                                 std::vector<ExtraOption> *extra_options) const;
+
   util::Status ApplyExtraOptions(const std::vector<ExtraOption> &extra_options,
                                  SentencePieceText *spt) const;
 

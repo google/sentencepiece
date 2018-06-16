@@ -805,6 +805,9 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
     EXPECT_EQ("abc", output);
   }
 
+  EXPECT_OK(sp.SetEncodeExtraOptions(""));
+  EXPECT_OK(sp.SetDecodeExtraOptions(""));
+
   EXPECT_NOT_OK(sp.SetEncodeExtraOptions("foo"));
   EXPECT_NOT_OK(sp.SetDecodeExtraOptions("foo"));
 
@@ -907,6 +910,26 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
     EXPECT_OK(sp.Encode("abc", &ids));
     EXPECT_EQ(expected_id, ids);
   }
+}
+
+TEST(SentencePieceProcessorTest, ExtraOptionsUndefinedTest) {
+  ModelProto model_proto;
+  auto *sp1 = model_proto.add_pieces();
+
+  // No BOS/EOS.
+  sp1->set_type(ModelProto::SentencePiece::UNKNOWN);
+  sp1->set_piece("<unk>");
+
+  AddPiece(&model_proto, "a", 0.0);
+  AddPiece(&model_proto, "b", 0.3);
+  AddPiece(&model_proto, "c", 0.2);
+  AddPiece(&model_proto, "ab", 1.0);
+
+  SentencePieceProcessor sp;
+  EXPECT_OK(sp.Load(model_proto));
+
+  EXPECT_NOT_OK(sp.SetEncodeExtraOptions("bos"));
+  EXPECT_NOT_OK(sp.SetDecodeExtraOptions("eos"));
 }
 
 TEST(SentencePieceProcessorTest, VocabularyTest) {

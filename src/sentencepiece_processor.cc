@@ -551,8 +551,12 @@ util::Status SentencePieceProcessor::ApplyExtraOptions(
 // static
 util::Status SentencePieceProcessor::ParseExtraOptions(
     const std::string &extra_option,
-    std::vector<SentencePieceProcessor::ExtraOption> *extra_options) {
+    std::vector<SentencePieceProcessor::ExtraOption> *extra_options) const {
   extra_options->clear();
+  if (extra_option.empty()) return util::OkStatus();
+
+  RETURN_IF_ERROR(status());
+
   static std::map<std::string, SentencePieceProcessor::ExtraOption>
       extra_option_map = {{"bos", SentencePieceProcessor::BOS},
                           {"eos", SentencePieceProcessor::EOS},
@@ -562,6 +566,15 @@ util::Status SentencePieceProcessor::ParseExtraOptions(
     CHECK_OR_RETURN(it != extra_option_map.end())
         << "option \"" << s << "\" is not available.";
     extra_options->push_back(it->second);
+
+    if (it->second == SentencePieceProcessor::BOS) {
+      CHECK_OR_RETURN(!IsUnknown(PieceToId("<s>")))
+          << "id for `<s>` is not defined.";
+    }
+    if (it->second == SentencePieceProcessor::EOS) {
+      CHECK_OR_RETURN(!IsUnknown(PieceToId("</s>")))
+          << "id for `</s>` is not defined.";
+    }
   }
   return util::OkStatus();
 }
