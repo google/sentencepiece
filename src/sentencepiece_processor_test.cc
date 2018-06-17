@@ -408,7 +408,7 @@ TEST(SentencepieceProcessorTest, SampleEncodeTest) {
   }
 
   EXPECT_NOT_OK(sp.SampleEncode("ABC DEF", 1024, 0.5, &output));
-  EXPECT_NOT_OK(sp.SampleEncode("ABC DEF", 0, 0.5, &output));
+  EXPECT_OK(sp.SampleEncode("ABC DEF", 0, 0.5, &output));
   EXPECT_OK(sp.SampleEncode("ABC DEF", 1, 0.5, &output));
 
   std::vector<int> freq(2, 0);
