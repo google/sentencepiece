@@ -20,12 +20,14 @@ matrix:
       env: IMAGE=ubuntu:rolling COMMAND=build_linux_clang_ubuntu
       services: docker
     - os: linux
+      env: IMAGE=x86_64 COMMAND=make_py_wheel
       script:
-        - $TRAVIS_BUILD_DIR/make_py_wheel.sh x86_64
+        - $TRAVIS_BUILD_DIR/make_py_wheel.sh ${IMAGE}
       services: docker
     - os: linux
+      env: IMAGE=i686 COMMAND=make_py_wheel
       script:
-        - $TRAVIS_BUILD_DIR/make_py_wheel.sh i686
+        - $TRAVIS_BUILD_DIR/make_py_wheel.sh ${IMAGE}
       services: docker      
     - os: osx
       osx_image: xcode9.3

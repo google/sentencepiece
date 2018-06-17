@@ -299,15 +299,13 @@ util::Status SentencePieceProcessor::PopulateSentencePieceText(
     } else {
       const size_t begin = consumed;
       const size_t end = consumed + w.size();
-      if (begin >= norm_to_orig.size() || end >= norm_to_orig.size()) {
-        return util::OutOfRangeError("consumed index is out-of-range.");
-      }
+      CHECK_LT_OR_RETURN(begin, norm_to_orig.size());
+      CHECK_LT_OR_RETURN(end, norm_to_orig.size());
       const size_t orig_begin = norm_to_orig[begin];
       const size_t orig_end = norm_to_orig[end];
-      if (orig_begin > input.size() || orig_end > input.size() ||
-          orig_begin > orig_end) {
-        return util::OutOfRangeError("original index is out-of-range.");
-      }
+      CHECK_LE_OR_RETURN(orig_begin, input.size());
+      CHECK_LE_OR_RETURN(orig_end, input.size());
+      CHECK_LE_OR_RETURN(orig_begin, orig_end);
       const auto surface = input.substr(orig_begin, orig_end - orig_begin);
       // Merges continuous run of unknown pieces so that decoder
       // can copy or generate unknown tokens easily.
@@ -331,16 +329,15 @@ util::Status SentencePieceProcessor::PopulateSentencePieceText(
     is_prev_unk = is_unk;
   }
 
-  if (consumed != normalized.size()) {
-    return util::OutOfRangeError("all normalized characters are not consumed.");
-  }
+  CHECK_EQ_OR_RETURN(consumed, normalized.size())
+      << "all normalized characters are not consumed.";
 
   RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, spt));
 
   spt->set_text(input);
 
   return util::OkStatus();
-}
+}  // namespace sentencepiece
 
 util::Status SentencePieceProcessor::Encode(const std::string &input,
                                             SentencePieceText *spt) const {
@@ -384,16 +381,13 @@ util::Status SentencePieceProcessor::SampleEncode(
     SentencePieceText *spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
-  if (nbest_size > 512 || nbest_size == 0) {
-    return util::OutOfRangeError(
-        "nbest_size must be 0 < nbest_size <= 512 or nbest_size < 0.");
-  }
+  CHECK_LE_OR_RETURN(nbest_size, 512) << "nbest_size must be nbest_size <= 512";
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
   RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
-  if (nbest_size == 1) {
+  if (nbest_size == 1 || nbest_size == 0) {
     const auto result = model_->Encode(normalized);
     RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
                                               result, spt));
