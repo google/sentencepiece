@@ -47,9 +47,9 @@ util::Status SentencePieceTrainer::Train(
 
 // static
 NormalizerSpec SentencePieceTrainer::GetNormalizerSpec(
-    const std::string &name) {
+    util::min_string_view name) {
   NormalizerSpec spec;
-  spec.set_name(name);
+  spec.set_name(name.data(), name.size());
   CHECK_OK(normalizer::Builder::GetPrecompiledCharsMap(
       spec.name(), spec.mutable_precompiled_charsmap()));
   return spec;
@@ -57,15 +57,19 @@ NormalizerSpec SentencePieceTrainer::GetNormalizerSpec(
 
 // static
 util::Status SentencePieceTrainer::SetProtoField(
-    const std::string &field_name, const std::string &value,
+    util::min_string_view _field_name, util::min_string_view _value,
     google::protobuf::Message *message) {
+  const absl::string_view field_name(_field_name.data(), _field_name.size());
+  const absl::string_view value(_value.data(), _value.size());
+
   const auto *descriptor = message->GetDescriptor();
   const auto *reflection = message->GetReflection();
 
   CHECK_OR_RETURN(descriptor != nullptr && reflection != nullptr)
       << "reflection is not supported.";
 
-  const auto *field = descriptor->FindFieldByName(std::string(field_name));
+  const auto *field = descriptor->FindFieldByName(
+      std::string(field_name.data(), field_name.size()));
 
   if (field == nullptr) {
     return util::StatusBuilder(util::error::NOT_FOUND)
@@ -73,8 +77,9 @@ util::Status SentencePieceTrainer::SetProtoField(
            << descriptor->DebugString();
   }
 
-  std::vector<std::string> values = {value};
-  if (field->is_repeated()) values = string_util::Split(value, ",");
+  std::vector<std::string> values = {std::string(value)};
+  if (field->is_repeated())
+    values = string_util::Split(std::string(value), ",");
 
 #define SET_FIELD(METHOD_TYPE, v)                    \
   if (field->is_repeated())                          \
@@ -128,11 +133,12 @@ util::Status SentencePieceTrainer::SetProtoField(
 
 // static
 util::Status SentencePieceTrainer::MergeSpecsFromArgs(
-    const std::string &args, TrainerSpec *trainer_spec,
+    util::min_string_view _args, TrainerSpec *trainer_spec,
     NormalizerSpec *normalizer_spec) {
   CHECK_OR_RETURN(trainer_spec) << "`trainer_spec` must not be null.";
   CHECK_OR_RETURN(normalizer_spec) << "`normalizer_spec` must not be null.";
 
+  absl::string_view args(_args.data(), _args.size());
   if (args.empty()) return util::OkStatus();
 
   for (auto arg : string_util::SplitPiece(args, " ")) {
@@ -170,7 +176,7 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
 }
 
 // static
-util::Status SentencePieceTrainer::Train(const std::string &args) {
+util::Status SentencePieceTrainer::Train(util::min_string_view args) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
   RETURN_IF_ERROR(MergeSpecsFromArgs(args, &trainer_spec, &normalizer_spec));

@@ -98,6 +98,36 @@ except __builtin__.Exception:
         pass
     _newclass = 0
 
+class min_string_view(_object):
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, min_string_view, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, min_string_view, name)
+    __repr__ = _swig_repr
+
+    def data(self):
+        return _sentencepiece.min_string_view_data(self)
+
+    def size(self):
+        return _sentencepiece.min_string_view_size(self)
+
+    def assign(self, data, len):
+        return _sentencepiece.min_string_view_assign(self, data, len)
+
+    def copy(self, data, len):
+        return _sentencepiece.min_string_view_copy(self, data, len)
+
+    def __init__(self, *args):
+        this = _sentencepiece.new_min_string_view(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+    __swig_destroy__ = _sentencepiece.delete_min_string_view
+    __del__ = lambda self: None
+min_string_view_swigregister = _sentencepiece.min_string_view_swigregister
+min_string_view_swigregister(min_string_view)
+
 class SentencePieceProcessor(_object):
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, SentencePieceProcessor, name, value)
@@ -183,11 +213,11 @@ class SentencePieceProcessor(_object):
     def load(self, filename):
         return _sentencepiece.SentencePieceProcessor_load(self, filename)
 
-    def _set_encode_extra_options(self, extra_option):
-        return _sentencepiece.SentencePieceProcessor__set_encode_extra_options(self, extra_option)
+    def set_encode_extra_options(self, extra_option):
+        return _sentencepiece.SentencePieceProcessor_set_encode_extra_options(self, extra_option)
 
-    def _set_decode_extra_options(self, extra_option):
-        return _sentencepiece.SentencePieceProcessor__set_decode_extra_options(self, extra_option)
+    def set_decode_extra_options(self, extra_option):
+        return _sentencepiece.SentencePieceProcessor_set_decode_extra_options(self, extra_option)
 
     def set_vocabulary(self, valid_vocab):
         return _sentencepiece.SentencePieceProcessor_set_vocabulary(self, valid_vocab)
@@ -198,17 +228,11 @@ class SentencePieceProcessor(_object):
     def load_vocabulary(self, filename, threshold):
         return _sentencepiece.SentencePieceProcessor_load_vocabulary(self, filename, threshold)
 
-    def encode(self, input):
-        return _sentencepiece.SentencePieceProcessor_encode(self, input)
-
     def encode_as_pieces(self, input):
         return _sentencepiece.SentencePieceProcessor_encode_as_pieces(self, input)
 
     def encode_as_ids(self, input):
         return _sentencepiece.SentencePieceProcessor_encode_as_ids(self, input)
-
-    def nbest_encode(self, input, nbest_size):
-        return _sentencepiece.SentencePieceProcessor_nbest_encode(self, input, nbest_size)
 
     def nbest_encode_as_pieces(self, input, nbest_size):
         return _sentencepiece.SentencePieceProcessor_nbest_encode_as_pieces(self, input, nbest_size)
@@ -216,26 +240,17 @@ class SentencePieceProcessor(_object):
     def nbest_encode_as_ids(self, input, nbest_size):
         return _sentencepiece.SentencePieceProcessor_nbest_encode_as_ids(self, input, nbest_size)
 
-    def sample_encode(self, input, nbest_size, alpha):
-        return _sentencepiece.SentencePieceProcessor_sample_encode(self, input, nbest_size, alpha)
-
     def sample_encode_as_pieces(self, input, nbest_size, alpha):
         return _sentencepiece.SentencePieceProcessor_sample_encode_as_pieces(self, input, nbest_size, alpha)
 
     def sample_encode_as_ids(self, input, nbest_size, alpha):
         return _sentencepiece.SentencePieceProcessor_sample_encode_as_ids(self, input, nbest_size, alpha)
 
-    def decode(self, input):
-        return _sentencepiece.SentencePieceProcessor_decode(self, input)
-
     def decode_pieces(self, input):
         return _sentencepiece.SentencePieceProcessor_decode_pieces(self, input)
 
     def decode_ids(self, input):
         return _sentencepiece.SentencePieceProcessor_decode_ids(self, input)
-
-    def Encode(self, input):
-        return _sentencepiece.SentencePieceProcessor_Encode(self, input)
 
     def get_piece_size(self):
         return _sentencepiece.SentencePieceProcessor_get_piece_size(self)
@@ -257,15 +272,6 @@ class SentencePieceProcessor(_object):
 
     def is_unused(self, id):
         return _sentencepiece.SentencePieceProcessor_is_unused(self, id)
-
-    def NBestEncode(self, input, nbest_size):
-        return _sentencepiece.SentencePieceProcessor_NBestEncode(self, input, nbest_size)
-
-    def SampleEncode(self, input, nbest_size, alpha):
-        return _sentencepiece.SentencePieceProcessor_SampleEncode(self, input, nbest_size, alpha)
-
-    def Decode(self, input):
-        return _sentencepiece.SentencePieceProcessor_Decode(self, input)
 
     def __len__(self):
         return _sentencepiece.SentencePieceProcessor___len__(self)
