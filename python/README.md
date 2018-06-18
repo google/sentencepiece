@@ -98,7 +98,7 @@ The output type of IdToPiece/DecodeIds methods is *str*, but note that it is a l
 
 * Python2:
 ```
->>> sp.Encode('吾輩は猫である')
+>>> sp.EncodeAsPieces('吾輩は猫である')
 ['\xe2\x96\x81', '\xe5\x90\xbe', '\xe8\xbc\xa9', '\xe3\x81\xaf', '\xe7\x8c\xab', '\xe3\x81\xa7\xe3\x81\x82\xe3\x82\x8b']
 >>> sp.EncodeAsPieces(u'吾輩は猫である')
 [u'\u2581', u'\u543e', u'\u8f29', u'\u306f', u'\u732b', u'\u3067\u3042\u308b']
