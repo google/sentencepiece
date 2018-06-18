@@ -14,13 +14,13 @@
 
 #include "unicode_script.h"
 #include "common.h"
-#include "stringpiece.h"
+#include "third_party/absl/strings/string_view.h"
 #include "testharness.h"
 #include "util.h"
 
 namespace sentencepiece {
 namespace unicode_script {
-ScriptType GetScriptType(StringPiece s) {
+ScriptType GetScriptType(absl::string_view s) {
   const auto ut = string_util::UTF8ToUnicodeText(s);
   CHECK_EQ(1, ut.size());
   return GetScript(ut[0]);

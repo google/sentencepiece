@@ -23,7 +23,7 @@
 #include "common.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "stringpiece.h"
+#include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
 
 namespace sentencepiece {
@@ -59,12 +59,12 @@ class Normalizer {
   // - Adds a prefix space.
   // - Replaces a space with a meta symbol.
   // - Removing heading, tailing and other redundant spaces.
-  virtual util::Status Normalize(StringPiece input, std::string *normalized,
+  virtual util::Status Normalize(absl::string_view input, std::string *normalized,
                                  std::vector<size_t> *norm_to_orig) const;
 
   // Returns a normalized string without alignments.
   // This function is used in sentencepiece training.
-  virtual std::string Normalize(StringPiece input) const;
+  virtual std::string Normalize(absl::string_view input) const;
 
   friend class Builder;
 
@@ -77,22 +77,22 @@ class Normalizer {
   // Here's the sample code for the full text normalization.
   //
   // string output;
-  // StringPiece input = "...";
+  // absl::string_view input = "...";
   // while (!input.empty()) {
   //   const auto p = normalizer.NormalizePrefix(input);
   //   output.append(p.first.data(), p.first.size());
   //   input.remove_prefix(p.second);
   // }
-  std::pair<StringPiece, int> NormalizePrefix(StringPiece input) const;
+  std::pair<absl::string_view, int> NormalizePrefix(absl::string_view input) const;
 
   // Encodes trie_blob and normalized string and return compiled blob.
-  static std::string EncodePrecompiledCharsMap(StringPiece trie_blob,
-                                               StringPiece normalized);
+  static std::string EncodePrecompiledCharsMap(absl::string_view trie_blob,
+                                               absl::string_view normalized);
 
   // Decodes blob into trie_blob and normalized string.
-  static util::Status DecodePrecompiledCharsMap(StringPiece blob,
-                                                StringPiece *trie_blob,
-                                                StringPiece *normalized);
+  static util::Status DecodePrecompiledCharsMap(absl::string_view blob,
+                                                absl::string_view *trie_blob,
+                                                absl::string_view *normalized);
 
   // Maximum size of the return value of Trie, which corresponds
   // to the maximum size of shared common prefix in the chars map.

@@ -153,7 +153,7 @@ util::Status TrainerInterface::LoadSentences() {
 
   const bool is_tsv = trainer_spec_.input_format() == "tsv";
 
-  std::set<StringPiece> meta_pieces_set;
+  std::set<absl::string_view> meta_pieces_set;
   for (const auto &it : meta_pieces_) meta_pieces_set.insert(it.second.first);
   const PrefixMatcher meta_pieces_matcher(meta_pieces_set);
 
@@ -286,7 +286,7 @@ void TrainerInterface::SplitSentencesByWhitespace() {
   std::unordered_map<std::string, int64> tokens;
   for (const auto &s : sentences_) {
     for (const auto &w : SplitIntoWords(s.first)) {
-      tokens[w.to_string()] += s.second;
+      tokens[std::string(w)] += s.second;
     }
   }
   sentences_ = Sorted(tokens);
@@ -345,7 +345,7 @@ util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
   return util::OkStatus();
 }
 
-util::Status TrainerInterface::SaveModel(StringPiece filename) const {
+util::Status TrainerInterface::SaveModel(absl::string_view filename) const {
   LOG(INFO) << "Saving model: " << filename;
   ModelProto model_proto;
   RETURN_IF_ERROR(Serialize(&model_proto));
@@ -356,7 +356,7 @@ util::Status TrainerInterface::SaveModel(StringPiece filename) const {
   return util::OkStatus();
 }
 
-util::Status TrainerInterface::SaveVocab(StringPiece filename) const {
+util::Status TrainerInterface::SaveVocab(absl::string_view filename) const {
   LOG(INFO) << "Saving vocabs: " << filename;
   ModelProto model_proto;
   Serialize(&model_proto);

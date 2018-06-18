@@ -24,15 +24,16 @@
 
 #include "common.h"
 #include "sentencepiece_processor.h"
-#include "stringpiece.h"
+#include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
+#include "util.h"
 
 namespace sentencepiece {
 
 // "_this_is_a_pen" => ["_this", "_is", "_a", "_pen"]
-std::vector<StringPiece> SplitIntoWords(StringPiece text);
+std::vector<absl::string_view> SplitIntoWords(absl::string_view text);
 
-using EncodeResult = std::vector<std::pair<StringPiece, int>>;
+using EncodeResult = std::vector<std::pair<absl::string_view, int>>;
 using NBestEncodeResult = std::vector<std::pair<EncodeResult, float>>;
 
 class ModelProto;
@@ -42,16 +43,16 @@ class ModelProto;
 class PrefixMatcher {
  public:
   // Initializes the PrefixMatcher with `dic`.
-  explicit PrefixMatcher(const std::set<StringPiece> &dic);
+  explicit PrefixMatcher(const std::set<absl::string_view> &dic);
 
   // Finds the longest string in dic, which is a prefix of `w`.
   // Returns the UTF8 byte length of matched string.
   // `found` is set if a prefix match exists.
   // If no entry is found, consumes one Unicode character.
-  int PrefixMatch(StringPiece w, bool *found = nullptr) const;
+  int PrefixMatch(absl::string_view w, bool *found = nullptr) const;
 
   // Replaces entries in `w` with `out`.
-  std::string GlobalReplace(StringPiece w, StringPiece out) const;
+  std::string GlobalReplace(absl::string_view w, absl::string_view out) const;
 
  private:
   std::unique_ptr<Darts::DoubleArray> trie_;
@@ -61,7 +62,8 @@ class PrefixMatcher {
 // Given a normalized string, returns a sequence of sentence pieces with ids.
 class ModelInterface {
  public:
-  using PieceToIdMap = std::unordered_map<StringPiece, int, StringPieceHash>;
+  using PieceToIdMap =
+      std::unordered_map<absl::string_view, int, string_util::string_view_hash>;
 
   // `model_proto` should not be deleted until ModelInterface is destroyed.
   explicit ModelInterface(const ModelProto &model_proto);
@@ -77,16 +79,17 @@ class ModelInterface {
 
   // Given a normalized string, returns a sequence of sentence pieces with ids.
   // The concatenation of pieces must be the same as `normalized`.
-  virtual EncodeResult Encode(StringPiece normalized) const = 0;
+  virtual EncodeResult Encode(absl::string_view normalized) const = 0;
 
   // The same as above, but returns nbest result with score.
-  virtual NBestEncodeResult NBestEncode(StringPiece normalized,
+  virtual NBestEncodeResult NBestEncode(absl::string_view normalized,
                                         int nbest_size) const {
     LOG(ERROR) << "Not implemented.";
     return NBestEncodeResult();
   }
 
-  virtual EncodeResult SampleEncode(StringPiece normalized, float alpha) const {
+  virtual EncodeResult SampleEncode(absl::string_view normalized,
+                                    float alpha) const {
     LOG(ERROR) << "Not implemented.";
     return EncodeResult();
   }
@@ -97,7 +100,7 @@ class ModelInterface {
 
   // Returns the vocab id of `piece`.
   // Returns UNK(0) if `piece` is unknown
-  virtual int PieceToId(StringPiece piece) const;
+  virtual int PieceToId(absl::string_view piece) const;
 
   // Returns the string representation of vocab with `id`.
   // id must be 0 <= id < GetPieceSize().

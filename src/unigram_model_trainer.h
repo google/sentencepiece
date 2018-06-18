@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "sentencepiece_model.pb.h"
-#include "stringpiece.h"
+#include "third_party/absl/strings/string_view.h"
 #include "trainer_interface.h"
 #include "unigram_model.h"
 #include "util.h"
@@ -67,7 +67,7 @@ class TrainerModel : public ModelBase {
 
   bool IsUserDefined(int id) const override { return false; }
 
-  EncodeResult Encode(StringPiece normalized) const override { return {}; }
+  EncodeResult Encode(absl::string_view normalized) const override { return {}; }
 
  private:
   SentencePieces sentencepieces_;

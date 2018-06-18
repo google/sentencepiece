@@ -20,6 +20,10 @@
 #include <utility>
 #include <vector>
 
+namespace absl {
+class string_view;
+}  // namespace absl
+
 namespace sentencepiece {
 
 // SentencePieceProcessor:
@@ -80,10 +84,9 @@ class SentencePieceText;
 class NBestSentencePieceText;
 class ModelInterface;
 class ModelProto;
-class StringPiece;
 
 #ifndef SWIG
-using EncodeResult = std::vector<std::pair<StringPiece, int>>;
+using EncodeResult = std::vector<std::pair<absl::string_view, int>>;
 #endif  // SWIG
 
 namespace normalizer {

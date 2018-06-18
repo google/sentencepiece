@@ -20,7 +20,7 @@
 
 namespace sentencepiece {
 
-PrefixMatcher::PrefixMatcher(const std::set<StringPiece> &dic) {
+PrefixMatcher::PrefixMatcher(const std::set<absl::string_view> &dic) {
   if (dic.empty()) return;
   std::vector<const char *> key;
   key.reserve(dic.size());
@@ -30,7 +30,7 @@ PrefixMatcher::PrefixMatcher(const std::set<StringPiece> &dic) {
                            nullptr));
 }
 
-int PrefixMatcher::PrefixMatch(StringPiece w, bool *found) const {
+int PrefixMatcher::PrefixMatch(absl::string_view w, bool *found) const {
   if (trie_ == nullptr) {
     if (found) *found = false;
     return std::min<int>(w.size(), string_util::OneCharLen(w.data()));
@@ -54,7 +54,8 @@ int PrefixMatcher::PrefixMatch(StringPiece w, bool *found) const {
   return mblen;
 }
 
-std::string PrefixMatcher::GlobalReplace(StringPiece w, StringPiece out) const {
+std::string PrefixMatcher::GlobalReplace(absl::string_view w,
+                                         absl::string_view out) const {
   std::string result;
   while (!w.empty()) {
     bool found = false;
@@ -73,7 +74,7 @@ ModelInterface::ModelInterface(const ModelProto &model_proto)
     : model_proto_(&model_proto), status_(util::OkStatus()) {}
 ModelInterface::~ModelInterface() {}
 
-int ModelInterface::PieceToId(StringPiece piece) const {
+int ModelInterface::PieceToId(absl::string_view piece) const {
   auto it = reserved_id_map_.find(piece);
   if (it != reserved_id_map_.end()) {
     return it->second;
@@ -119,7 +120,7 @@ void ModelInterface::InitializePieces(bool use_prefix_matcher) {
   reserved_id_map_.clear();
   unk_id_ = -1;
 
-  std::set<StringPiece> user_defined_symbols;
+  std::set<absl::string_view> user_defined_symbols;
 
   for (int i = 0; i < model_proto_->pieces_size(); ++i) {
     const auto &sp = model_proto_->pieces(i);
@@ -162,22 +163,23 @@ void ModelInterface::InitializePieces(bool use_prefix_matcher) {
   }
 }
 
-std::vector<StringPiece> SplitIntoWords(StringPiece text) {
+std::vector<absl::string_view> SplitIntoWords(absl::string_view text) {
   const char *begin = text.data();
   const char *end = text.data() + text.size();
 
   // Space symbol (U+2581)
-  const StringPiece kSpaceSymbol = "\xe2\x96\x81";
+  const absl::string_view kSpaceSymbol = "\xe2\x96\x81";
 
-  std::vector<StringPiece> result;
+  std::vector<absl::string_view> result;
   while (begin < end) {
     const int mblen =
         std::min<int>(string_util::OneCharLen(begin), end - begin);
-    if (begin == text.data() || StringPiece(begin, mblen) == kSpaceSymbol) {
+    if (begin == text.data() ||
+        absl::string_view(begin, mblen) == kSpaceSymbol) {
       result.emplace_back(begin, 0);  // add empty string piece.
     }
     result.back() =
-        StringPiece(result.back().data(), result.back().size() + mblen);
+        absl::string_view(result.back().data(), result.back().size() + mblen);
     begin += mblen;
   }
 

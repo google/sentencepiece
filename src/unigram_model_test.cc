@@ -175,7 +175,7 @@ TEST(LatticeTest, ViterbiFromIncompleteLatticeTest) {
 std::string GetTokenized(const std::vector<Lattice::Node *> &nodes) {
   std::vector<std::string> tokens;
   for (auto *node : nodes) {
-    tokens.push_back(node->piece.to_string());
+    tokens.push_back(std::string(node->piece));
   }
   return string_util::Join(tokens, " ");
 }

@@ -27,7 +27,7 @@
 #include <vector>
 #include "common.h"
 #include "sentencepiece_processor.h"
-#include "stringpiece.h"
+#include "third_party/absl/strings/string_view.h"
 
 namespace sentencepiece {
 
@@ -42,31 +42,42 @@ std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
 // String utilities
 namespace string_util {
 
-inline std::string ToLower(StringPiece arg) {
-  std::string lower_value = arg.ToString();
+struct string_view_hash {
+  // DJB hash function.
+  inline size_t operator()(const absl::string_view &sp) const {
+    size_t hash = 5381;
+    for (size_t i = 0; i < sp.size(); ++i) {
+      hash = ((hash << 5) + hash) + sp[i];
+    }
+    return hash;
+  }
+};
+
+inline std::string ToLower(absl::string_view arg) {
+  std::string lower_value = std::string(arg);
   std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(),
                  ::tolower);
   return lower_value;
 }
 
-inline std::string ToUpper(StringPiece arg) {
-  std::string upper_value = arg.ToString();
+inline std::string ToUpper(absl::string_view arg) {
+  std::string upper_value = std::string(arg);
   std::transform(upper_value.begin(), upper_value.end(), upper_value.begin(),
                  ::toupper);
   return upper_value;
 }
 
 template <typename Target>
-inline bool lexical_cast(StringPiece arg, Target *result) {
+inline bool lexical_cast(absl::string_view arg, Target *result) {
   std::stringstream ss;
   return (ss << arg.data() && ss >> *result);
 }
 
 template <>
-inline bool lexical_cast(StringPiece arg, bool *result) {
+inline bool lexical_cast(absl::string_view arg, bool *result) {
   const char *kTrue[] = {"1", "t", "true", "y", "yes"};
   const char *kFalse[] = {"0", "f", "false", "n", "no"};
-  std::string lower_value = arg.ToString();
+  std::string lower_value = std::string(arg);
   std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(),
                  ::tolower);
   for (size_t i = 0; i < 5; ++i) {
@@ -83,29 +94,32 @@ inline bool lexical_cast(StringPiece arg, bool *result) {
 }
 
 template <>
-inline bool lexical_cast(StringPiece arg, std::string *result) {
-  *result = arg.ToString();
+inline bool lexical_cast(absl::string_view arg, std::string *result) {
+  *result = std::string(arg);
   return true;
 }
 
 std::vector<std::string> Split(const std::string &str, const std::string &delim,
                                bool allow_empty = false);
 
-std::vector<StringPiece> SplitPiece(StringPiece str, StringPiece delim,
-                                    bool allow_empty = false);
+std::vector<absl::string_view> SplitPiece(absl::string_view str,
+                                          absl::string_view delim,
+                                          bool allow_empty = false);
 
-std::string Join(const std::vector<std::string> &tokens, StringPiece delim);
+std::string Join(const std::vector<std::string> &tokens,
+                 absl::string_view delim);
 
-std::string Join(const std::vector<int> &tokens, StringPiece delim);
+std::string Join(const std::vector<int> &tokens, absl::string_view delim);
 
-std::string StringReplace(StringPiece s, StringPiece oldsub, StringPiece newsub,
-                          bool replace_all);
+std::string StringReplace(absl::string_view s, absl::string_view oldsub,
+                          absl::string_view newsub, bool replace_all);
 
-void StringReplace(StringPiece s, StringPiece oldsub, StringPiece newsub,
-                   bool replace_all, std::string *res);
+void StringReplace(absl::string_view s, absl::string_view oldsub,
+                   absl::string_view newsub, bool replace_all,
+                   std::string *res);
 
 template <typename T>
-inline bool DecodePOD(StringPiece str, T *result) {
+inline bool DecodePOD(absl::string_view str, T *result) {
   CHECK_NOTNULL(result);
   if (sizeof(*result) != str.size()) {
     return false;
@@ -122,12 +136,22 @@ inline std::string EncodePOD(const T &value) {
   return s;
 }
 
-inline bool StartsWith(const StringPiece str, StringPiece prefix) {
-  return str.starts_with(prefix);
+inline bool StartsWith(absl::string_view text, absl::string_view prefix) {
+  return prefix.empty() ||
+         (text.size() >= prefix.size() &&
+          memcmp(text.data(), prefix.data(), prefix.size()) == 0);
 }
 
-inline bool EndsWith(const StringPiece str, StringPiece suffix) {
-  return str.ends_with(suffix);
+inline bool EndsWith(absl::string_view text, absl::string_view suffix) {
+  return suffix.empty() || (text.size() >= suffix.size() &&
+                            memcmp(text.data() + (text.size() - suffix.size()),
+                                   suffix.data(), suffix.size()) == 0);
+}
+
+inline bool ConsumePrefix(absl::string_view *str, absl::string_view expected) {
+  if (!StartsWith(*str, expected)) return false;
+  str->remove_prefix(expected.size());
+  return true;
 }
 
 template <typename T>
@@ -138,7 +162,7 @@ inline std::string IntToHex(T value) {
 }
 
 template <typename T>
-inline T HexToInt(StringPiece value) {
+inline T HexToInt(absl::string_view value) {
   T n;
   std::istringstream is(value.data());
   is >> std::hex >> n;
@@ -191,17 +215,17 @@ inline bool IsValidCodepoint(char32 c) {
   return (static_cast<uint32>(c) < 0xD800) || (c >= 0xE000 && c <= 0x10FFFF);
 }
 
-bool IsStructurallyValid(StringPiece str);
+bool IsStructurallyValid(absl::string_view str);
 
 using UnicodeText = std::vector<char32>;
 
 char32 DecodeUTF8(const char *begin, const char *end, size_t *mblen);
 
-inline char32 DecodeUTF8(StringPiece input, size_t *mblen) {
+inline char32 DecodeUTF8(absl::string_view input, size_t *mblen) {
   return DecodeUTF8(input.data(), input.data() + input.size(), mblen);
 }
 
-inline bool IsValidDecodeUTF8(StringPiece input, size_t *mblen) {
+inline bool IsValidDecodeUTF8(absl::string_view input, size_t *mblen) {
   const char32 c = DecodeUTF8(input, mblen);
   return c != kUnicodeError || *mblen == 3;
 }
@@ -210,7 +234,7 @@ size_t EncodeUTF8(char32 c, char *output);
 
 std::string UnicodeCharToUTF8(const char32 c);
 
-UnicodeText UTF8ToUnicodeText(StringPiece utf8);
+UnicodeText UTF8ToUnicodeText(absl::string_view utf8);
 
 std::string UnicodeTextToUTF8(const UnicodeText &utext);
 
@@ -220,7 +244,7 @@ std::string UnicodeTextToUTF8(const UnicodeText &utext);
 namespace io {
 class InputBuffer {
  public:
-  explicit InputBuffer(StringPiece filename);
+  explicit InputBuffer(absl::string_view filename);
   util::Status status() const;
   ~InputBuffer();
   bool ReadLine(std::string *line);
@@ -232,11 +256,11 @@ class InputBuffer {
 
 class OutputBuffer {
  public:
-  explicit OutputBuffer(StringPiece filename);
+  explicit OutputBuffer(absl::string_view filename);
   util::Status status() const;
   ~OutputBuffer();
-  bool Write(StringPiece text);
-  bool WriteLine(StringPiece text);
+  bool Write(absl::string_view text);
+  bool WriteLine(absl::string_view text);
 
  private:
   util::Status status_;
@@ -396,12 +420,12 @@ inline const std::string StrError(int n) {
 
 inline Status OkStatus() { return Status(); }
 
-#define DECLARE_ERROR(FUNC, CODE)                    \
-  inline util::Status FUNC##Error(StringPiece str) { \
-    return util::Status(error::CODE, str.data());    \
-  }                                                  \
-  inline bool Is##FUNC(const util::Status &status) { \
-    return status.code() == error::CODE;             \
+#define DECLARE_ERROR(FUNC, CODE)                          \
+  inline util::Status FUNC##Error(absl::string_view str) { \
+    return util::Status(error::CODE, str.data());          \
+  }                                                        \
+  inline bool Is##FUNC(const util::Status &status) {       \
+    return status.code() == error::CODE;                   \
   }
 
 DECLARE_ERROR(Cancelled, CANCELLED)

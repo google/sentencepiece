@@ -92,9 +92,9 @@ void TrainerModel::SetSentencePieces(SentencePieces &&sentencepieces) {
   CHECK(!sentencepieces_.empty());
 
   min_score_ = FLT_MAX;
-  std::vector<std::pair<StringPiece, int>> pieces;
+  std::vector<std::pair<absl::string_view, int>> pieces;
   for (size_t i = 0; i < sentencepieces_.size(); ++i) {
-    const StringPiece w = sentencepieces_[i].first;  // piece
+    const absl::string_view w = sentencepieces_[i].first;  // piece
     const float score = sentencepieces_[i].second;   // score.
     CHECK(!std::isnan(score));
     pieces.emplace_back(w, i);

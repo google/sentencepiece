@@ -332,7 +332,7 @@ TEST(NormalizerTest, NormalizeFullTest) {
 
 TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest) {
   const std::string blob = Normalizer::EncodePrecompiledCharsMap("foo", "bar");
-  StringPiece trie_blob, normalized_blob;
+  absl::string_view trie_blob, normalized_blob;
   EXPECT_OK(Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob,
                                                   &normalized_blob));
   EXPECT_EQ("foo", trie_blob);

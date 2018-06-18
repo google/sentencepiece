@@ -1,6 +1,7 @@
 lib_LTLIBRARIES = libsentencepiece.la libsentencepiece_train.la
 
 AM_CXXFLAS = -I($srcdir)
+AUTOMAKE_OPTIONS = subdir-objects
 
 libsentencepiece_la_SOURCES = \
 	error.cc \
@@ -8,7 +9,7 @@ libsentencepiece_la_SOURCES = \
 	sentencepiece_processor.cc \
 	util.cc \
 	normalizer.cc \
-	stringpiece.h unicode_script_map.h util.h \
+	unicode_script_map.h util.h \
 	common.h \
 	flags.h  normalizer.h sentencepiece_processor.h  \
 	model_factory.h model_factory.cc \
@@ -16,7 +17,8 @@ libsentencepiece_la_SOURCES = \
 	unigram_model.h	unigram_model.cc  \
 	word_model.h word_model.cc \
 	char_model.h char_model.cc \
-	bpe_model.h bpe_model.cc
+	bpe_model.h bpe_model.cc \
+	../third_party/absl/strings/string_view.cc
 include_HEADERS = sentencepiece_processor.h sentencepiece_trainer.h
 
 # noinst_LIBRARIES = libsentencepiecetrain.a

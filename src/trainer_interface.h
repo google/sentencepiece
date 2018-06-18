@@ -126,13 +126,13 @@ class TrainerInterface {
   util::Status Serialize(ModelProto *model_proto) const;
 
   // Saves the best sentence split with the current model for debugging.
-  util::Status SaveSplits(StringPiece filename) const;
+  util::Status SaveSplits(absl::string_view filename) const;
 
   // Saves model file.
-  util::Status SaveModel(StringPiece filename) const;
+  util::Status SaveModel(absl::string_view filename) const;
 
   // Saves vocabulary file for NMT.
-  util::Status SaveVocab(StringPiece filename) const;
+  util::Status SaveVocab(absl::string_view filename) const;
 
   // Initializes `meta_pieces_` from TrainerSpec.
   util::Status InitMetaPieces();
