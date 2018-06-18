@@ -43,12 +43,12 @@ class SentencePieceTrainer {
   // Trains SentencePiece model with command-line string in `args`,
   // e.g.,
   // '--input=data --model_prefix=m --vocab_size=8192 model_type=unigram'
-  static util::Status Train(const std::string &args);
+  static util::Status Train(util::min_string_view args);
 
   // Handy function to make a normalizer spec from the pre-compiled
   // normalization name. Do not use this method in production as it crashes
   // when `name` is invalid. Useful for unittesting.
-  static NormalizerSpec GetNormalizerSpec(const std::string &name);
+  static NormalizerSpec GetNormalizerSpec(util::min_string_view name);
 
   // Populates necessary fields (precompiled_charmap) from
   // `NormalizerSpec::name` or `NormalizerSpec::normalization_rule_tsv`.
@@ -56,15 +56,15 @@ class SentencePieceTrainer {
 
   // Overrides `trainer_spec` and `normalizer_spec` with the
   // command-line string in `args`.
-  static util::Status MergeSpecsFromArgs(const std::string &args,
+  static util::Status MergeSpecsFromArgs(util::min_string_view args,
                                          TrainerSpec *trainer_spec,
                                          NormalizerSpec *normalizer_spec);
 
   // Helper function to set `field_name=value` in `message`.
   // When `field_name` is repeated, multiple values can be passed
   // with comma-separated values. `field_name` must not be a nested message.
-  static util::Status SetProtoField(const std::string &field_name,
-                                    const std::string &value,
+  static util::Status SetProtoField(util::min_string_view field_name,
+                                    util::min_string_view value,
                                     google::protobuf::Message *message);
 
   SentencePieceTrainer() = delete;

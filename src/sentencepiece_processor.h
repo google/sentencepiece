@@ -15,6 +15,7 @@
 #ifndef SENTENCEPIECE_PROCESSOR_H_
 #define SENTENCEPIECE_PROCESSOR_H_
 
+#include <cstring>
 #include <memory>
 #include <string>
 #include <utility>
@@ -139,6 +140,46 @@ class Status {
   struct Rep;
   std::unique_ptr<Rep> rep_;
 };
+
+// Minimum string_view class that is used only for
+// the argument of public APIs.
+class min_string_view {
+ public:
+  constexpr min_string_view() noexcept : ptr_(nullptr), length_(0) {}
+  min_string_view(const std::string &str)
+      : ptr_(str.data()), length_(str.size()) {}
+  constexpr min_string_view(const char *str)
+      : ptr_(str), length_(std::strlen(str)) {}
+  constexpr min_string_view(const char *data, size_t len)
+      : ptr_(data), length_(len) {}
+  const char *data() const { return ptr_; }
+  size_t size() const { return length_; }
+
+  void assign(const char *data, size_t len) {
+    ptr_ = data;
+    length_ = len;
+  }
+
+  void copy(const char *data, size_t len) {
+    rep_.reset(new std::string(data, len));
+    ptr_ = rep_->data();
+    length_ = rep_->size();
+  }
+
+  min_string_view(const min_string_view &s) {
+    if (s.rep_) {
+      copy(s.rep_->data(), s.rep_->size());
+    } else {
+      ptr_ = s.data();
+      length_ = s.size();
+    }
+  }
+
+ private:
+  const char *ptr_ = nullptr;
+  size_t length_ = 0;
+  std::unique_ptr<std::string> rep_;
+};
 }  // namespace util
 
 class SentencePieceProcessor {
@@ -148,11 +189,11 @@ class SentencePieceProcessor {
 
   // Loads model from `filename`.
   // Returns false if `filename` cannot be loaded.
-  virtual util::Status Load(const std::string &filename);
+  virtual util::Status Load(util::min_string_view filename);
 
   // Loads model from `filename`.
   // Crash if `filename` cannot be loaded.
-  virtual void LoadOrDie(const std::string &filename);
+  virtual void LoadOrDie(util::min_string_view filename);
 
   // Loads model from `is`.
   // Returns false if `is` cannot be loaded.
@@ -170,10 +211,12 @@ class SentencePieceProcessor {
   virtual util::Status status() const;
 
   // Sets encode extra_option sequence.
-  virtual util::Status SetEncodeExtraOptions(const std::string &extra_option);
+  virtual util::Status SetEncodeExtraOptions(
+      util::min_string_view extra_option);
 
   // Sets decode extra_option sequence.
-  virtual util::Status SetDecodeExtraOptions(const std::string &extra_option);
+  virtual util::Status SetDecodeExtraOptions(
+      util::min_string_view extra_option);
 
   //////////////////////////////////////////////////////////////
   // Vocabulary restriction.
@@ -191,18 +234,18 @@ class SentencePieceProcessor {
   // Loads the valid vocabulary set from `filename` in TSV format.
   // Format:  <token> <tab> <freq>.
   // Any token with frequency < threshold will be treated as OOV.
-  virtual util::Status LoadVocabulary(const std::string &filename,
+  virtual util::Status LoadVocabulary(util::min_string_view filename,
                                       int threshold);
 
   //////////////////////////////////////////////////////////////
   // Simple API.
   //
   // Given a UTF8 input, encodes it into a sequence of sentence pieces.
-  virtual util::Status Encode(const std::string &input,
+  virtual util::Status Encode(util::min_string_view input,
                               std::vector<std::string> *pieces) const;
 
   // Given a UTF8 input, encodes it into a sequence of ids.
-  virtual util::Status Encode(const std::string &input,
+  virtual util::Status Encode(util::min_string_view input,
                               std::vector<int> *ids) const;
 
   // Given a sequence of pieces, decodes it into a detokenized output.
@@ -217,11 +260,11 @@ class SentencePieceProcessor {
   // NBest API.
   // Same as Encode, but returns nbest results.
   virtual util::Status NBestEncode(
-      const std::string &input, int nbest_size,
+      util::min_string_view input, int nbest_size,
       std::vector<std::vector<std::string>> *pieces) const;
 
   // Same as Encode, but returns nbest results.
-  virtual util::Status NBestEncode(const std::string &input, int nbest_size,
+  virtual util::Status NBestEncode(util::min_string_view input, int nbest_size,
                                    std::vector<std::vector<int>> *ids) const;
 
   //////////////////////////////////////////////////////////////
@@ -237,12 +280,12 @@ class SentencePieceProcessor {
   // nbest or lattice.
   // `nbest_size` and `alpha` correspond to parameters `l` and `alpha`
   // in https://arxiv.org/abs/1804.10959  (nbest_size < 0 means l = infinity)
-  virtual util::Status SampleEncode(const std::string &input, int nbest_size,
+  virtual util::Status SampleEncode(util::min_string_view input, int nbest_size,
                                     float alpha,
                                     std::vector<std::string> *pieces) const;
 
   // Same as above, but returns a sequence of ids.
-  virtual util::Status SampleEncode(const std::string &input, int nbest_size,
+  virtual util::Status SampleEncode(util::min_string_view input, int nbest_size,
                                     float alpha, std::vector<int> *ids) const;
 
   //////////////////////////////////////////////////////////////
@@ -251,15 +294,15 @@ class SentencePieceProcessor {
   // and internal sentencepiece sequence.
   //
   // Given a UTF8 input, encodes it into SentencePieceText.
-  virtual util::Status Encode(const std::string &input,
+  virtual util::Status Encode(util::min_string_view input,
                               SentencePieceText *spt) const;
 
   // Same as above, but returns NBestSentencePieceText.
-  virtual util::Status NBestEncode(const std::string &input, int nbest_size,
+  virtual util::Status NBestEncode(util::min_string_view input, int nbest_size,
                                    NBestSentencePieceText *nbest_spt) const;
 
   // Same as above, but samples one segmentation from the hypotheses (Lattice).
-  virtual util::Status SampleEncode(const std::string &input, int nbest_size,
+  virtual util::Status SampleEncode(util::min_string_view input, int nbest_size,
                                     float alpha, SentencePieceText *spt) const;
 
   // Given a sequence of pieces, decodes it into SentencePieceText.
@@ -286,44 +329,40 @@ class SentencePieceProcessor {
   return output;
 #endif
 
-  // Encode
   virtual std::vector<std::string> EncodeAsPieces(
-      const std::string &input) const {
+      util::min_string_view input) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(Encode, std::vector<std::string>, input);
   }
 
-  virtual std::vector<int> EncodeAsIds(const std::string &input) const {
+  virtual std::vector<int> EncodeAsIds(util::min_string_view input) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(Encode, std::vector<int>, input);
   }
 
-  // NBestEncode
   virtual std::vector<std::vector<std::string>> NBestEncodeAsPieces(
-      const std::string &input, int nbest_size) const {
+      util::min_string_view input, int nbest_size) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(
         NBestEncode, std::vector<std::vector<std::string>>, input, nbest_size);
   }
 
   virtual std::vector<std::vector<int>> NBestEncodeAsIds(
-      const std::string &input, int nbest_size) const {
+      util::min_string_view input, int nbest_size) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(NBestEncode, std::vector<std::vector<int>>,
                                 input, nbest_size);
   }
 
-  // SampleEncode
   virtual std::vector<std::string> SampleEncodeAsPieces(
-      const std::string &input, int nbest_size, float alpha) const {
+      util::min_string_view input, int nbest_size, float alpha) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(SampleEncode, std::vector<std::string>, input,
                                 nbest_size, alpha);
   }
 
-  virtual std::vector<int> SampleEncodeAsIds(const std::string &input,
+  virtual std::vector<int> SampleEncodeAsIds(util::min_string_view input,
                                              int nbest_size,
                                              float alpha) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(SampleEncode, std::vector<int>, input,
                                 nbest_size, alpha);
   }
 
-  // Decode
   virtual std::string DecodePieces(
       const std::vector<std::string> &pieces) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(Decode, std::string, pieces);
@@ -344,7 +383,7 @@ class SentencePieceProcessor {
 
   // Returns the vocab id of `piece`.
   // Returns UNK(0) if `piece` is unknown.
-  virtual int PieceToId(const std::string &piece) const;
+  virtual int PieceToId(util::min_string_view piece) const;
 
   // Returns the string representation of vocab with `id`.
   virtual std::string IdToPiece(int id) const;
@@ -380,14 +419,14 @@ class SentencePieceProcessor {
  private:
   enum ExtraOption { REVERSE, BOS, EOS };
 
-  util::Status ParseExtraOptions(const std::string &extra_option,
+  util::Status ParseExtraOptions(util::min_string_view extra_option,
                                  std::vector<ExtraOption> *extra_options) const;
 
   util::Status ApplyExtraOptions(const std::vector<ExtraOption> &extra_options,
                                  SentencePieceText *spt) const;
 
   util::Status PopulateSentencePieceText(
-      const std::string &input, const std::string &normalized,
+      util::min_string_view input, util::min_string_view normalized,
       const std::vector<size_t> &norm_to_orig, const EncodeResult &result,
       SentencePieceText *spt) const;
 

@@ -42,6 +42,10 @@ std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
 // String utilities
 namespace string_util {
 
+inline absl::string_view ToSV(util::min_string_view data) {
+  return absl::string_view(data.data(), data.size());
+}
+
 struct string_view_hash {
   // DJB hash function.
   inline size_t operator()(const absl::string_view &sp) const {

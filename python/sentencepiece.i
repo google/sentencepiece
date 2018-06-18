@@ -38,9 +38,10 @@ class PyInputString {
   virtual ~PyInputString() {
     Py_XDECREF(utf8_obj_);
   }
-  const char* str() const { return str_; }
+  const char* data() const { return str_; }
   Py_ssize_t size() const { return size_; }
   bool IsAvalable() const { return str_ != nullptr; }
+  bool IsCopy() const { return utf8_obj_ != nullptr; }
   PyObject *input_type() const { return input_type_; }
 
  private:
@@ -75,14 +76,7 @@ int ToSwigError(sentencepiece::util::error::Code code) {
   }
   return SWIG_RuntimeError;
 }
-
-#define THROW_IF_ERROR(expr)                            \
-  do {                                                  \
-    const sentencepiece::util::Status _status = expr;   \
-    if (!_status.ok()) throw _status;                   \
-  } while (0)
-
-}  // namespace
+}
 %}
 
 %exception {
@@ -94,53 +88,46 @@ int ToSwigError(sentencepiece::util::error::Code code) {
 
 %ignore sentencepiece::util::Status;
 %ignore sentencepiece::util::error::Code;
+%ignore sentencepiece::SentencePieceText;
+%ignore sentencepiece::NormalizerSpec;
+%ignore sentencepiece::TrainerSpec;
 
-%ignore sentencepiece::SentencePieceProcessor::status() const;
-%ignore sentencepiece::SentencePieceProcessor::Encode(std::string const &, std::vector<std::string>*) const;
-%ignore sentencepiece::SentencePieceProcessor::Encode(std::string const &, std::vector<int>*) const;
-%ignore sentencepiece::SentencePieceProcessor::Encode(std::string const &, SentencePieceText *) const;
-%ignore sentencepiece::SentencePieceProcessor::SampleEncode(std::string const &,int,float, std::vector< std::string > *) const;
-%ignore sentencepiece::SentencePieceProcessor::SampleEncode(std::string const &,int,float, std::vector< int > *) const;
-%ignore sentencepiece::SentencePieceProcessor::SampleEncode(std::string const &,int,float, SentencePieceText *) const;
-%ignore sentencepiece::SentencePieceProcessor::NBestEncode(std::string const &,int, NBestSentencePieceText *) const;
-%ignore sentencepiece::SentencePieceProcessor::NBestEncode(std::string const &,int,std::vector< std::vector< std::string > > *) const;
-%ignore sentencepiece::SentencePieceProcessor::NBestEncode(std::string const &,int,std::vector< std::vector< int > > *) const;
-%ignore sentencepiece::SentencePieceProcessor::Decode(std::vector<std::string> const &, std::string *) const;
-%ignore sentencepiece::SentencePieceProcessor::Decode(std::vector<int> const &, std::string *) const;
-%ignore sentencepiece::SentencePieceProcessor::Decode(std::vector<std::string> const &, SentencePieceText *) const;
-%ignore sentencepiece::SentencePieceProcessor::Decode(std::vector<int> const &, SentencePieceText *) const;
+%ignore sentencepiece::SentencePieceProcessor::status;
+%ignore sentencepiece::SentencePieceProcessor::Encode;
+%ignore sentencepiece::SentencePieceProcessor::Encode;
+%ignore sentencepiece::SentencePieceProcessor::SampleEncode;
+%ignore sentencepiece::SentencePieceProcessor::NBestEncode;
+%ignore sentencepiece::SentencePieceProcessor::Decode;
 %ignore sentencepiece::SentencePieceProcessor::model_proto;
 %ignore sentencepiece::SentencePieceProcessor::Load(std::istream *);
 %ignore sentencepiece::SentencePieceProcessor::LoadOrDie(std::istream *);
 %ignore sentencepiece::SentencePieceProcessor::Load(const ModelProto &);
 %ignore sentencepiece::SentencePieceProcessor::Load(std::unique_ptr<ModelProto> &&);
-%ignore sentencepiece::SentencePieceProcessor::model_proto();
 %ignore sentencepiece::SentencePieceTrainer::Train(const TrainerSpec &);
 %ignore sentencepiece::SentencePieceTrainer::Train(const TrainerSpec &, const NormalizerSpec &);
-%ignore sentencepiece::SentencePieceTrainer::GetNormalizerSpec(const std::string &);
-%ignore sentencepiece::SentencePieceTrainer::PopulateNormalizerSpec(NormalizerSpec *);
-%ignore sentencepiece::SentencePieceTrainer::MergeSpecsFromArgs(const std::string &,
-                                                                TrainerSpec *, NormalizerSpec *);
-%ignore sentencepiece::SentencePieceTrainer::SetProtoField(const std::string &,
-                                                           const std::string &,
-                                                           google::protobuf::Message *message);
+%ignore sentencepiece::SentencePieceTrainer::GetNormalizerSpec;
+%ignore sentencepiece::SentencePieceTrainer::PopulateNormalizerSpec;
+%ignore sentencepiece::SentencePieceTrainer::MergeSpecsFromArgs;
+%ignore sentencepiece::SentencePieceTrainer::SetProtoField;
 
 %extend sentencepiece::SentencePieceTrainer {
-  static util::Status train(const std::string &args) {
+  static util::Status train(sentencepiece::util::min_string_view args) {
     return sentencepiece::SentencePieceTrainer::Train(args);
   }
 }
 
 %extend sentencepiece::SentencePieceProcessor {
-  util::Status load(const std::string &filename) {
+  util::Status load(sentencepiece::util::min_string_view filename) {
     return $self->Load(filename);
   }
 
-  util::Status _set_encode_extra_options(const std::string &extra_option) {
+  util::Status set_encode_extra_options(
+      sentencepiece::util::min_string_view extra_option) {
     return $self->SetEncodeExtraOptions(extra_option);
   }
 
-  util::Status _set_decode_extra_options(const std::string &extra_option) {
+  util::Status set_decode_extra_options(
+      sentencepiece::util::min_string_view extra_option) {
     return $self->SetDecodeExtraOptions(extra_option);
   }
 
@@ -153,55 +140,42 @@ int ToSwigError(sentencepiece::util::error::Code code) {
     return $self->ResetVocabulary();
   }
 
-  util::Status load_vocabulary(const std::string &filename,
+  util::Status load_vocabulary(sentencepiece::util::min_string_view filename,
                                int threshold) {
     return $self->LoadVocabulary(filename, threshold);
   }
 
-  std::vector<std::string> encode(const std::string& input) const {
+  std::vector<std::string> encode_as_pieces(
+      sentencepiece::util::min_string_view input) const {
     return $self->EncodeAsPieces(input);
   }
 
-  std::vector<std::string> encode_as_pieces(const std::string& input) const {
-    return $self->EncodeAsPieces(input);
-  }
-
-  std::vector<int> encode_as_ids(const std::string& input) const {
+  std::vector<int> encode_as_ids(
+      sentencepiece::util::min_string_view input) const {
     return $self->EncodeAsIds(input);
   }
 
-  std::vector<std::vector<std::string>> nbest_encode(const std::string& input,
-                                                       int nbest_size) const {
-    return $self->NBestEncodeAsPieces(input, nbest_size);
-  }
-
   std::vector<std::vector<std::string>> nbest_encode_as_pieces(
-      const std::string& input, int nbest_size) const {
+      sentencepiece::util::min_string_view input, int nbest_size) const {
     return $self->NBestEncodeAsPieces(input, nbest_size);
   }
 
-  std::vector<std::vector<int>> nbest_encode_as_ids(const std::string& input,
-                                                    int nbest_size) const {
+  std::vector<std::vector<int>> nbest_encode_as_ids(
+      sentencepiece::util::min_string_view input,
+      int nbest_size) const {
     return $self->NBestEncodeAsIds(input, nbest_size);
   }
 
-  std::vector<std::string> sample_encode(const std::string& input,
-                                         int nbest_size, float alpha) const {
+  std::vector<std::string> sample_encode_as_pieces(
+      sentencepiece::util::min_string_view input,
+      int nbest_size, float alpha) const {
     return $self->SampleEncodeAsPieces(input, nbest_size, alpha);
   }
 
-  std::vector<std::string> sample_encode_as_pieces(const std::string& input,
-                                            int nbest_size, float alpha) const {
-    return $self->SampleEncodeAsPieces(input, nbest_size, alpha);
-  }
-
-  std::vector<int> sample_encode_as_ids(const std::string& input,
-                                 int nbest_size, float alpha) const {
+  std::vector<int> sample_encode_as_ids(
+      sentencepiece::util::min_string_view input,
+      int nbest_size, float alpha) const {
     return $self->SampleEncodeAsIds(input, nbest_size, alpha);
-  }
-
-  std::string decode(const std::vector<std::string>& input) const {
-    return $self->DecodePieces(input);
   }
 
   std::string decode_pieces(const std::vector<std::string>& input) const {
@@ -212,15 +186,11 @@ int ToSwigError(sentencepiece::util::error::Code code) {
     return $self->DecodeIds(input);
   }
 
-  std::vector<std::string> Encode(const std::string& input) const {
-    return $self->EncodeAsPieces(input);
-  }
-
   int get_piece_size() const {
     return $self->GetPieceSize();
   }
 
-  int piece_to_id(const std::string &piece) const {
+  int piece_to_id(sentencepiece::util::min_string_view piece) const {
     return $self->PieceToId(piece);
   }
 
@@ -244,23 +214,11 @@ int ToSwigError(sentencepiece::util::error::Code code) {
     return $self->IsUnused(id);
   }
 
-  std::vector<std::vector<std::string>> NBestEncode(const std::string& input, int nbest_size) const {
-    return $self->NBestEncodeAsPieces(input, nbest_size);
-  }
-
-  std::vector<std::string> SampleEncode(const std::string& input, int nbest_size, float alpha) const {
-    return $self->SampleEncodeAsPieces(input, nbest_size, alpha);
-  }
-
-  std::string Decode(const std::vector<std::string>& input) const {
-    return $self->DecodePieces(input);
-  }
-
   int __len__() {
     return $self->GetPieceSize();
   }
 
-  int __getitem__(const std::string& key) const {
+  int __getitem__(sentencepiece::util::min_string_view key) const {
     return $self->PieceToId(key);
   }
 }
@@ -322,8 +280,25 @@ int ToSwigError(sentencepiece::util::error::Code code) {
     return nullptr;
   }
   resultobj = ustring.input_type();
-  $1 = new std::string(ustring.str(), ustring.size());
+  $1 = new std::string(ustring.data(), ustring.size());
 }
+
+%typemap(typecheck) sentencepiece::util::min_string_view = char *;
+
+%typemap(in) sentencepiece::util::min_string_view {
+  const PyInputString ustring($input);
+  if (!ustring.IsAvalable()) {
+    PyErr_SetString(PyExc_TypeError, "not a string");
+    return nullptr;
+  }
+  resultobj = ustring.input_type();
+  if (ustring.IsCopy()) {
+    $1.copy(ustring.data(), ustring.size());
+  } else {
+    $1.assign(ustring.data(), ustring.size());
+  }
+}
+
 
 %typemap(in) const std::vector<std::string>& {
   std::vector<std::string> *out = nullptr;
@@ -333,7 +308,7 @@ int ToSwigError(sentencepiece::util::error::Code code) {
     for (size_t i = 0; i < size; ++i) {
       const PyInputString ustring(PyList_GetItem($input, i));
       if (ustring.IsAvalable()) {
-        (*out)[i] = std::string(ustring.str(), ustring.size());
+        (*out)[i] = std::string(ustring.data(), ustring.size());
       } else {
         PyErr_SetString(PyExc_TypeError, "list must contain strings");
         return nullptr;

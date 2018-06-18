@@ -42,17 +42,17 @@ const char kUnknownSymbol[] = " \xE2\x81\x87 ";
 SentencePieceProcessor::SentencePieceProcessor() {}
 SentencePieceProcessor::~SentencePieceProcessor() {}
 
-util::Status SentencePieceProcessor::Load(const std::string &filename) {
-  std::ifstream ifs(filename.c_str(), std::ios::binary | std::ios::in);
+util::Status SentencePieceProcessor::Load(util::min_string_view filename) {
+  std::ifstream ifs(filename.data(), std::ios::binary | std::ios::in);
   if (!ifs) {
     return util::StatusBuilder(util::error::NOT_FOUND)
-           << "\"" << filename << "\": " << util::StrError(errno);
+           << "\"" << filename.data() << "\": " << util::StrError(errno);
   }
 
   return Load(&ifs);
 }
 
-void SentencePieceProcessor::LoadOrDie(const std::string &filename) {
+void SentencePieceProcessor::LoadOrDie(util::min_string_view filename) {
   CHECK_OK(Load(filename));
 }
 
@@ -79,12 +79,12 @@ util::Status SentencePieceProcessor::Load(
 }
 
 util::Status SentencePieceProcessor::SetEncodeExtraOptions(
-    const std::string &extra_options) {
+    util::min_string_view extra_options) {
   return ParseExtraOptions(extra_options, &encode_extra_options_);
 }
 
 util::Status SentencePieceProcessor::SetDecodeExtraOptions(
-    const std::string &extra_options) {
+    util::min_string_view extra_options) {
   return ParseExtraOptions(extra_options, &decode_extra_options_);
 }
 
@@ -131,9 +131,9 @@ util::Status SentencePieceProcessor::ResetVocabulary() {
   return util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::LoadVocabulary(const std::string &filename,
-                                                    int threshold) {
-  io::InputBuffer input(filename);
+util::Status SentencePieceProcessor::LoadVocabulary(
+    util::min_string_view filename, int threshold) {
+  io::InputBuffer input(string_util::ToSV(filename));
   RETURN_IF_ERROR(input.status());
 
   std::string line;
@@ -164,7 +164,7 @@ util::Status SentencePieceProcessor::LoadVocabulary(const std::string &filename,
 //////////////////////////////////////////////////////////////
 // Simple API.
 util::Status SentencePieceProcessor::Encode(
-    const std::string &input, std::vector<std::string> *pieces) const {
+    util::min_string_view input, std::vector<std::string> *pieces) const {
   CHECK_OR_RETURN_STATUS_STL(pieces);
 
   SentencePieceText spt;
@@ -176,7 +176,7 @@ util::Status SentencePieceProcessor::Encode(
   return util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::Encode(const std::string &input,
+util::Status SentencePieceProcessor::Encode(util::min_string_view input,
                                             std::vector<int> *ids) const {
   CHECK_OR_RETURN_STATUS_STL(ids);
 
@@ -212,7 +212,7 @@ util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
 }
 
 util::Status SentencePieceProcessor::NBestEncode(
-    const std::string &input, int nbest_size,
+    util::min_string_view input, int nbest_size,
     std::vector<std::vector<std::string>> *pieces) const {
   CHECK_OR_RETURN_STATUS_STL(pieces);
 
@@ -230,7 +230,7 @@ util::Status SentencePieceProcessor::NBestEncode(
 }
 
 util::Status SentencePieceProcessor::NBestEncode(
-    const std::string &input, int nbest_size,
+    util::min_string_view input, int nbest_size,
     std::vector<std::vector<int>> *ids) const {
   CHECK_OR_RETURN_STATUS_STL(ids);
 
@@ -248,7 +248,7 @@ util::Status SentencePieceProcessor::NBestEncode(
 }
 
 util::Status SentencePieceProcessor::SampleEncode(
-    const std::string &input, int nbest_size, float alpha,
+    util::min_string_view input, int nbest_size, float alpha,
     std::vector<std::string> *pieces) const {
   CHECK_OR_RETURN_STATUS_STL(pieces);
 
@@ -261,7 +261,7 @@ util::Status SentencePieceProcessor::SampleEncode(
   return util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::SampleEncode(const std::string &input,
+util::Status SentencePieceProcessor::SampleEncode(util::min_string_view input,
                                                   int nbest_size, float alpha,
                                                   std::vector<int> *ids) const {
   CHECK_OR_RETURN_STATUS_STL(ids);
@@ -276,7 +276,7 @@ util::Status SentencePieceProcessor::SampleEncode(const std::string &input,
 }
 
 util::Status SentencePieceProcessor::PopulateSentencePieceText(
-    const std::string &input, const std::string &normalized,
+    util::min_string_view input, util::min_string_view normalized,
     const std::vector<size_t> &norm_to_orig, const EncodeResult &result,
     SentencePieceText *spt) const {
   size_t consumed = 0;
@@ -307,7 +307,7 @@ util::Status SentencePieceProcessor::PopulateSentencePieceText(
       CHECK_LE_OR_RETURN(orig_end, input.size());
       CHECK_LE_OR_RETURN(orig_begin, orig_end);
       const auto surface =
-          absl::ClippedSubstr(input, orig_begin, orig_end - orig_begin);
+          absl::ClippedSubstr(input.data(), orig_begin, orig_end - orig_begin);
       // Merges continuous run of unknown pieces so that decoder
       // can copy or generate unknown tokens easily.
       // Note that merged tokens are still unknown,
@@ -335,18 +335,19 @@ util::Status SentencePieceProcessor::PopulateSentencePieceText(
 
   RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, spt));
 
-  spt->set_text(input);
+  spt->set_text(input.data(), input.size());
 
   return util::OkStatus();
 }  // namespace sentencepiece
 
-util::Status SentencePieceProcessor::Encode(const std::string &input,
+util::Status SentencePieceProcessor::Encode(util::min_string_view input,
                                             SentencePieceText *spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+  RETURN_IF_ERROR(normalizer_->Normalize(string_util::ToSV(input), &normalized,
+                                         &norm_to_orig));
 
   const auto result = model_->Encode(normalized);
   RETURN_IF_ERROR(
@@ -356,13 +357,14 @@ util::Status SentencePieceProcessor::Encode(const std::string &input,
 }
 
 util::Status SentencePieceProcessor::NBestEncode(
-    const std::string &input, int nbest_size,
+    util::min_string_view input, int nbest_size,
     NBestSentencePieceText *nbest_spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(nbest_spt);
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+  RETURN_IF_ERROR(normalizer_->Normalize(string_util::ToSV(input), &normalized,
+                                         &norm_to_orig));
 
   const auto nbests = model_->NBestEncode(normalized, nbest_size);
   CHECK_OR_RETURN(!nbests.empty()) << "NBestEncode returns empty result.";
@@ -378,7 +380,7 @@ util::Status SentencePieceProcessor::NBestEncode(
 }
 
 util::Status SentencePieceProcessor::SampleEncode(
-    const std::string &input, int nbest_size, float alpha,
+    util::min_string_view input, int nbest_size, float alpha,
     SentencePieceText *spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
@@ -386,7 +388,8 @@ util::Status SentencePieceProcessor::SampleEncode(
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+  RETURN_IF_ERROR(normalizer_->Normalize(string_util::ToSV(input), &normalized,
+                                         &norm_to_orig));
 
   if (nbest_size == 1 || nbest_size == 0) {
     const auto result = model_->Encode(normalized);
@@ -480,9 +483,9 @@ int SentencePieceProcessor::GetPieceSize() const {
   return model_->GetPieceSize();
 }
 
-int SentencePieceProcessor::PieceToId(const std::string &piece) const {
+int SentencePieceProcessor::PieceToId(util::min_string_view piece) const {
   CHECK_STATUS_OR_RETURN_DEFAULT(0);
-  return model_->PieceToId(piece);
+  return model_->PieceToId(string_util::ToSV(piece));
 }
 
 std::string SentencePieceProcessor::IdToPiece(int id) const {
@@ -545,18 +548,20 @@ util::Status SentencePieceProcessor::ApplyExtraOptions(
 
 // static
 util::Status SentencePieceProcessor::ParseExtraOptions(
-    const std::string &extra_option,
+    util::min_string_view _extra_option,
     std::vector<SentencePieceProcessor::ExtraOption> *extra_options) const {
+  absl::string_view extra_option(_extra_option.data(), _extra_option.size());
+
   extra_options->clear();
   if (extra_option.empty()) return util::OkStatus();
 
   RETURN_IF_ERROR(status());
 
-  static std::map<std::string, SentencePieceProcessor::ExtraOption>
+  static std::map<absl::string_view, SentencePieceProcessor::ExtraOption>
       extra_option_map = {{"bos", SentencePieceProcessor::BOS},
                           {"eos", SentencePieceProcessor::EOS},
                           {"reverse", SentencePieceProcessor::REVERSE}};
-  for (const auto &s : string_util::Split(extra_option, ":")) {
+  for (const auto &s : string_util::SplitPiece(extra_option, ":")) {
     const auto it = extra_option_map.find(s);
     CHECK_OR_RETURN(it != extra_option_map.end())
         << "option \"" << s << "\" is not available.";
