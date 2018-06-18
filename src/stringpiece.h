@@ -21,21 +21,21 @@
 
 namespace sentencepiece {
 
-class StringPiece {
+class absl::string_view {
  public:
   typedef size_t size_type;
 
   // Create an empty slice.
-  StringPiece() : data_(""), size_(0) {}
+  absl::string_view() : data_(""), size_(0) {}
 
   // Create a slice that refers to d[0,n-1].
-  StringPiece(const char *d, size_t n) : data_(d), size_(n) {}
+  absl::string_view(const char *d, size_t n) : data_(d), size_(n) {}
 
   // Create a slice that refers to the contents of "s"
-  StringPiece(const std::string &s) : data_(s.data()), size_(s.size()) {}
+  absl::string_view(const std::string &s) : data_(s.data()), size_(s.size()) {}
 
   // Create a slice that refers to s[0,strlen(s)-1]
-  StringPiece(const char *s) : data_(s), size_(strlen(s)) {}
+  absl::string_view(const char *s) : data_(s), size_(strlen(s)) {}
 
   void set(const void *data, size_t len) {
     data_ = reinterpret_cast<const char *>(data);
@@ -79,7 +79,7 @@ class StringPiece {
 
   void remove_suffix(size_t n) { size_ -= n; }
 
-  size_type find(StringPiece s, size_type pos = 0) const {
+  size_type find(absl::string_view s, size_type pos = 0) const {
     if (size_ <= 0 || pos > static_cast<size_type>(size_)) {
       if (size_ == 0 && pos == 0 && s.size_ == 0) {
         return 0;
@@ -103,7 +103,7 @@ class StringPiece {
     return find(c, pos);
   }
 
-  size_type find_first_of(StringPiece s, size_type pos = 0) const {
+  size_type find_first_of(absl::string_view s, size_type pos = 0) const {
     if (size_ <= 0 || s.size_ <= 0) {
       return npos;
     }
@@ -125,7 +125,7 @@ class StringPiece {
     return npos;
   }
 
-  bool Consume(StringPiece x) {
+  bool Consume(absl::string_view x) {
     if (starts_with(x)) {
       remove_prefix(x.size_);
       return true;
@@ -133,11 +133,11 @@ class StringPiece {
     return false;
   }
 
-  StringPiece substr(size_type pos, size_type n = npos) const {
+  absl::string_view substr(size_type pos, size_type n = npos) const {
     size_type size = static_cast<size_type>(size_);
     if (pos > size) pos = size;
     if (n > size - pos) n = size - pos;
-    return StringPiece(data_ + pos, n);
+    return absl::string_view(data_ + pos, n);
   }
 
   // Return a string that contains the copy of the referenced data.
@@ -148,14 +148,14 @@ class StringPiece {
   //   <  0 iff "*this" <  "b",
   //   == 0 iff "*this" == "b",
   //   >  0 iff "*this" >  "b"
-  int compare(StringPiece b) const;
+  int compare(absl::string_view b) const;
 
   // Return true iff "x" is a prefix of "*this"
-  bool starts_with(StringPiece x) const {
+  bool starts_with(absl::string_view x) const {
     return ((size_ >= x.size_) && (memcmp(data_, x.data_, x.size_) == 0));
   }
   // Return true iff "x" is a suffix of "*this"
-  bool ends_with(StringPiece x) const {
+  bool ends_with(absl::string_view x) const {
     return ((size_ >= x.size_) &&
             (memcmp(data_ + (size_ - x.size_), x.data_, x.size_) == 0));
   }
@@ -186,23 +186,23 @@ class StringPiece {
   size_t size_;
 };
 
-inline bool operator==(StringPiece x, StringPiece y) {
+inline bool operator==(absl::string_view x, absl::string_view y) {
   return ((x.size() == y.size()) &&
           (memcmp(x.data(), y.data(), x.size()) == 0));
 }
 
-inline bool operator!=(StringPiece x, StringPiece y) { return !(x == y); }
+inline bool operator!=(absl::string_view x, absl::string_view y) { return !(x == y); }
 
-inline bool operator<(StringPiece x, StringPiece y) { return x.compare(y) < 0; }
-inline bool operator>(StringPiece x, StringPiece y) { return x.compare(y) > 0; }
-inline bool operator<=(StringPiece x, StringPiece y) {
+inline bool operator<(absl::string_view x, absl::string_view y) { return x.compare(y) < 0; }
+inline bool operator>(absl::string_view x, absl::string_view y) { return x.compare(y) > 0; }
+inline bool operator<=(absl::string_view x, absl::string_view y) {
   return x.compare(y) <= 0;
 }
-inline bool operator>=(StringPiece x, StringPiece y) {
+inline bool operator>=(absl::string_view x, absl::string_view y) {
   return x.compare(y) >= 0;
 }
 
-inline int StringPiece::compare(StringPiece b) const {
+inline int absl::string_view::compare(absl::string_view b) const {
   const size_t min_len = (size_ < b.size_) ? size_ : b.size_;
   int r = memcmp(data_, b.data_, min_len);
   if (r == 0) {
@@ -215,13 +215,13 @@ inline int StringPiece::compare(StringPiece b) const {
   return r;
 }
 
-inline std::ostream &operator<<(std::ostream &o, StringPiece piece) {
+inline std::ostream &operator<<(std::ostream &o, absl::string_view piece) {
   return o.write(piece.data(), static_cast<std::streamsize>(piece.size()));
 }
 
-struct StringPieceHash {
+struct absl::string_viewHash {
   // DJB hash function.
-  inline size_t operator()(const StringPiece &sp) const {
+  inline size_t operator()(const absl::string_view &sp) const {
     size_t hash = 5381;
     for (size_t i = 0; i < sp.size(); ++i) {
       hash = ((hash << 5) + hash) + sp[i];

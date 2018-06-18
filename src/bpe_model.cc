@@ -32,8 +32,8 @@ Model::Model(const ModelProto &model_proto) {
 
 Model::~Model() {}
 
-std::vector<std::pair<StringPiece, int>> Model::Encode(
-    StringPiece normalized) const {
+std::vector<std::pair<absl::string_view, int>> Model::Encode(
+    absl::string_view normalized) const {
   if (!status().ok() || normalized.empty()) {
     return {};
   }
@@ -57,7 +57,7 @@ std::vector<std::pair<StringPiece, int>> Model::Encode(
     int prev;     // prev index of this symbol. -1 for BOS.
     int next;     // next index of tihs symbol. -1 for EOS.
     bool freeze;  // this symbol is never be merged.
-    StringPiece piece;
+    absl::string_view piece;
   };
 
   using Agenda = std::priority_queue<SymbolPair *, std::vector<SymbolPair *>,
@@ -68,8 +68,9 @@ std::vector<std::pair<StringPiece, int>> Model::Encode(
 
   // Reverse merge rules.
   // key: merged symbol, value: pair of original symbols.
-  std::unordered_map<StringPiece, std::pair<StringPiece, StringPiece>,
-                     StringPieceHash>
+  std::unordered_map<absl::string_view,
+                     std::pair<absl::string_view, absl::string_view>,
+                     string_util::string_view_hash>
       rev_merge;
 
   // Lookup new symbol pair at [left, right] and inserts it to agenda.
@@ -78,7 +79,7 @@ std::vector<std::pair<StringPiece, int>> Model::Encode(
     if (left == -1 || right == -1 || symbols[left].freeze ||
         symbols[right].freeze)
       return;
-    const StringPiece piece(
+    const absl::string_view piece(
         symbols[left].piece.data(),
         symbols[left].piece.size() + symbols[right].piece.size());
     const auto it = pieces_.find(piece);
@@ -104,7 +105,7 @@ std::vector<std::pair<StringPiece, int>> Model::Encode(
   while (!normalized.empty()) {
     Symbol s;
     const int mblen = matcher_->PrefixMatch(normalized, &s.freeze);
-    s.piece = StringPiece(normalized.data(), mblen);
+    s.piece = absl::string_view(normalized.data(), mblen);
     s.prev = index == 0 ? -1 : index - 1;
     normalized.remove_prefix(mblen);
     s.next = normalized.empty() ? -1 : index + 1;
@@ -134,7 +135,7 @@ std::vector<std::pair<StringPiece, int>> Model::Encode(
     }
 
     // Replaces symbols with `top` rule.
-    symbols[top->left].piece = StringPiece(
+    symbols[top->left].piece = absl::string_view(
         symbols[top->left].piece.data(),
         symbols[top->left].piece.size() + symbols[top->right].piece.size());
 
@@ -143,15 +144,15 @@ std::vector<std::pair<StringPiece, int>> Model::Encode(
     if (symbols[top->right].next >= 0) {
       symbols[symbols[top->right].next].prev = top->left;
     }
-    symbols[top->right].piece = StringPiece("");
+    symbols[top->right].piece = absl::string_view("");
 
     // Adds new symbol pairs which are newly added after symbol replacement.
     MaybeAddNewSymbolPair(symbols[top->left].prev, top->left);
     MaybeAddNewSymbolPair(top->left, symbols[top->left].next);
   }
 
-  std::function<void(StringPiece, EncodeResult *)> resegment;
-  resegment = [this, &resegment, &rev_merge](StringPiece w,
+  std::function<void(absl::string_view, EncodeResult *)> resegment;
+  resegment = [this, &resegment, &rev_merge](absl::string_view w,
                                              EncodeResult *output) -> void {
     const int id = PieceToId(w);
     if (id == -1 || !IsUnused(id)) {

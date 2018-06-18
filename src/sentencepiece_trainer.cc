@@ -136,14 +136,14 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
   if (args.empty()) return util::OkStatus();
 
   for (auto arg : string_util::SplitPiece(args, " ")) {
-    arg.Consume("--");
+    string_util::ConsumePrefix(&arg, "--");
     std::string key, value;
     auto pos = arg.find("=");
-    if (pos == StringPiece::npos) {
-      key = arg.ToString();
+    if (pos == absl::string_view::npos) {
+      key = std::string(arg);
     } else {
-      key = arg.substr(0, pos).ToString();
-      value = arg.substr(pos + 1).ToString();
+      key = std::string(arg.substr(0, pos));
+      value = std::string(arg.substr(pos + 1));
     }
 
     // Exception.

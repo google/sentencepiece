@@ -25,7 +25,7 @@ Model::Model(const ModelProto &model_proto) {
 
 Model::~Model() {}
 
-EncodeResult Model::Encode(StringPiece normalized) const {
+EncodeResult Model::Encode(absl::string_view normalized) const {
   if (!status().ok() || normalized.empty()) {
     return {};
   }
@@ -34,7 +34,7 @@ EncodeResult Model::Encode(StringPiece normalized) const {
   EncodeResult output;
   while (!normalized.empty()) {
     const int mblen = matcher_->PrefixMatch(normalized);
-    StringPiece w(normalized.data(), mblen);
+    absl::string_view w(normalized.data(), mblen);
     output.emplace_back(w, PieceToId(w));
     normalized.remove_prefix(mblen);
   }

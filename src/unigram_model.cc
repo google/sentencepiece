@@ -24,7 +24,7 @@
 #include <utility>
 #include <vector>
 
-#include "stringpiece.h"
+#include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -88,13 +88,13 @@ Lattice::Node *Lattice::NewNode() {
 void Lattice::Clear() {
   begin_nodes_.clear();
   end_nodes_.clear();
-  sentence_.clear();
+  sentence_ = absl::string_view("");
   surface_.clear();
   port::STLDeleteElements(&all_nodes_);
   all_nodes_.clear();
 }
 
-void Lattice::SetSentence(StringPiece sentence) {
+void Lattice::SetSentence(absl::string_view sentence) {
   Clear();
 
   sentence_ = sentence;
@@ -133,7 +133,7 @@ Lattice::Node *Lattice::Insert(int pos, int length) {
   node->length = length;
   const int utf8_length =
       static_cast<int>(surface(pos + length) - surface(pos));
-  node->piece.set(surface(pos), utf8_length);
+  node->piece = absl::string_view(surface(pos), utf8_length);
   begin_nodes_[pos].push_back(node);
   end_nodes_[pos + node->length].push_back(node);
 
@@ -424,7 +424,7 @@ void ModelBase::PopulateNodes(Lattice *lattice) const {
   }
 }
 
-int ModelBase::PieceToId(StringPiece piece) const {
+int ModelBase::PieceToId(absl::string_view piece) const {
   auto it = reserved_id_map_.find(piece);
   if (it != reserved_id_map_.end()) {
     return it->second;
@@ -434,7 +434,8 @@ int ModelBase::PieceToId(StringPiece piece) const {
   return id == -1 ? unk_id_ : id;
 }
 
-void ModelBase::BuildTrie(std::vector<std::pair<StringPiece, int>> *pieces) {
+void ModelBase::BuildTrie(
+    std::vector<std::pair<absl::string_view, int>> *pieces) {
   if (!status().ok()) return;
 
   if (pieces->empty()) {
@@ -492,7 +493,7 @@ Model::Model(const ModelProto &model_proto) {
     }
   }
 
-  std::vector<std::pair<StringPiece, int>> pieces;
+  std::vector<std::pair<absl::string_view, int>> pieces;
   for (const auto &it : pieces_) pieces.emplace_back(it.first, it.second);
 
   BuildTrie(&pieces);
@@ -500,7 +501,7 @@ Model::Model(const ModelProto &model_proto) {
 
 Model::~Model() {}
 
-EncodeResult Model::Encode(StringPiece normalized) const {
+EncodeResult Model::Encode(absl::string_view normalized) const {
   if (!status().ok() || normalized.empty()) {
     return {};
   }
@@ -517,7 +518,7 @@ EncodeResult Model::Encode(StringPiece normalized) const {
   return results;
 }
 
-NBestEncodeResult Model::NBestEncode(StringPiece normalized,
+NBestEncodeResult Model::NBestEncode(absl::string_view normalized,
                                      int nbest_size) const {
   if (!status().ok() || normalized.empty()) {
     return {{{}, 0.0}};
@@ -543,7 +544,8 @@ NBestEncodeResult Model::NBestEncode(StringPiece normalized,
   return nbest_results;
 }
 
-EncodeResult Model::SampleEncode(StringPiece normalized, float theta) const {
+EncodeResult Model::SampleEncode(absl::string_view normalized,
+                                 float theta) const {
   if (!status().ok() || normalized.empty()) {
     return {};
   }

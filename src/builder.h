@@ -21,7 +21,7 @@
 #include "common.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "stringpiece.h"
+#include "third_party/absl/strings/string_view.h"
 
 namespace sentencepiece {
 namespace normalizer {
@@ -46,7 +46,7 @@ class Builder {
                                       std::string *output);
 
   // Decompiles `blob` into `chars_map`.
-  static util::Status DecompileCharsMap(StringPiece blob, CharsMap *chars_map);
+  static util::Status DecompileCharsMap(absl::string_view blob, CharsMap *chars_map);
 
   // Returns a pre-compiled binary index with `name`.
   static util::Status GetPrecompiledCharsMap(const std::string &name,
@@ -97,10 +97,10 @@ class Builder {
   // Format:
   // src_uchar1 src_uchar2 ... <tab> trg_uchar1 trg_uchar2...
   // (src|trg)_ucharX must be a hex of Unicode code point.
-  static util::Status LoadCharsMap(StringPiece filename, CharsMap *chars_map);
+  static util::Status LoadCharsMap(absl::string_view filename, CharsMap *chars_map);
 
   // Saves Chars map to `filename` as TSV.
-  static util::Status SaveCharsMap(StringPiece filename,
+  static util::Status SaveCharsMap(absl::string_view filename,
                                    const CharsMap &chars_map);
 
  private:

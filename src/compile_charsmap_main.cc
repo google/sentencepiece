@@ -19,7 +19,7 @@
 #include "builder.h"
 #include "flags.h"
 #include "sentencepiece_processor.h"
-#include "stringpiece.h"
+#include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
 using sentencepiece::normalizer::Builder;
@@ -30,7 +30,7 @@ DEFINE_bool(output_precompiled_header, false, "make normalization_rule.h file");
 namespace sentencepiece {
 namespace {
 
-std::string ToHexData(StringPiece data) {
+std::string ToHexData(absl::string_view data) {
   const char *begin = data.data();
   const char *end = data.data() + data.size();
   constexpr char kHex[] = "0123456789ABCDEF";

@@ -23,8 +23,8 @@
 #include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_trainer.h"
-#include "stringpiece.h"
 #include "testharness.h"
+#include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -35,28 +35,29 @@ using port::MakeUnique;
 
 class MockModel : public ModelInterface {
  public:
-  void SetEncodeResult(StringPiece input, const EncodeResult &output) {
+  void SetEncodeResult(absl::string_view input, const EncodeResult &output) {
     input_ = input;
     output_ = output;
   }
 
-  void SetNBestEncodeResult(StringPiece input,
+  void SetNBestEncodeResult(absl::string_view input,
                             const NBestEncodeResult &output) {
     input_ = input;
     nbest_output_ = output;
   }
 
-  EncodeResult Encode(StringPiece normalized) const {
+  EncodeResult Encode(absl::string_view normalized) const {
     EXPECT_EQ(normalized, input_);
     return output_;
   }
 
-  EncodeResult SampleEncode(StringPiece normalized, float alpha) const {
+  EncodeResult SampleEncode(absl::string_view normalized, float alpha) const {
     EXPECT_EQ(normalized, input_);
     return output_;
   }
 
-  NBestEncodeResult NBestEncode(StringPiece normalized, int nbest_size) const {
+  NBestEncodeResult NBestEncode(absl::string_view normalized,
+                                int nbest_size) const {
     EXPECT_EQ(normalized, input_);
     return nbest_output_;
   }
@@ -67,14 +68,14 @@ class MockModel : public ModelInterface {
 
   int GetPieceSize() const { return 10; }
 
-  int PieceToId(StringPiece piece) const { return 0; }
+  int PieceToId(absl::string_view piece) const { return 0; }
 
   std::string IdToPiece(int id) const { return ""; }
 
   float GetScore(int id) const { return 0.0; }
 
  private:
-  StringPiece input_;
+  absl::string_view input_;
   EncodeResult output_;
   NBestEncodeResult nbest_output_;
 };
@@ -82,7 +83,7 @@ class MockModel : public ModelInterface {
 std::vector<std::string> GetSpVec(const EncodeResult &pieces) {
   std::vector<std::string> sps;
   for (const auto &p : pieces) {
-    sps.emplace_back(p.first.to_string());
+    sps.emplace_back(std::string(p.first));
   }
   return sps;
 }
@@ -116,7 +117,7 @@ TEST(SentencepieceProcessorTest, StatusTest) {
 }
 
 TEST(SentencepieceProcessorTest, EncodeTest) {
-  const StringPiece kInput = WS "ABC" WS "DEF";
+  const absl::string_view kInput = WS "ABC" WS "DEF";
   SentencePieceProcessor sp;
 
   const auto normalization_spec = MakeDefaultNormalizerSpec();
@@ -259,7 +260,7 @@ TEST(SentencepieceProcessorTest, EncodeTest) {
   {
     auto mock = MakeUnique<MockModel>();
     const EncodeResult result = {{WS "グー", 3}, {"グル", 4}, {"</s>", 2}};
-    const StringPiece input = WS "グーグル";
+    const absl::string_view input = WS "グーグル";
     mock->SetEncodeResult(input, result);
     sp.SetModel(std::move(mock));
     std::vector<std::string> output;
@@ -293,7 +294,7 @@ TEST(SentencepieceProcessorTest, EncodeTest) {
   {
     auto mock = MakeUnique<MockModel>();
     const EncodeResult result = {{WS "株式", 3}, {"会社", 4}, {"</s>", 2}};
-    const StringPiece input = WS "株式会社";
+    const absl::string_view input = WS "株式会社";
     mock->SetEncodeResult(input, result);
     sp.SetModel(std::move(mock));
     std::vector<std::string> output;
@@ -437,14 +438,17 @@ TEST(SentencepieceProcessorTest, SampleEncodeTest) {
 TEST(SentencepieceProcessorTest, DecodeTest) {
   class DecodeMockModel : public ModelInterface {
    public:
-    EncodeResult Encode(StringPiece normalized) const override { return {}; }
+    EncodeResult Encode(absl::string_view normalized) const override {
+      return {};
+    }
 
     int GetPieceSize() const override { return 7; }
 
-    int PieceToId(StringPiece piece) const override {
-      static std::unordered_map<StringPiece, int, StringPieceHash> kMap = {
-          {"<unk>", 0}, {"<s>", 1}, {"</s>", 2},    {WS "ABC", 3},
-          {WS "DE", 4}, {"F", 5},   {"G" WS "H", 6}};
+    int PieceToId(absl::string_view piece) const override {
+      static std::unordered_map<absl::string_view, int,
+                                string_util::string_view_hash>
+          kMap = {{"<unk>", 0}, {"<s>", 1}, {"</s>", 2},    {WS "ABC", 3},
+                  {WS "DE", 4}, {"F", 5},   {"G" WS "H", 6}};
       return port::FindWithDefault(kMap, piece, 0);
     }
 
@@ -508,9 +512,10 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
   EXPECT_EQ(16, spt.pieces(7).end());
 }
 
-void AddPiece(ModelProto *model_proto, StringPiece piece, float score = 0.0) {
+void AddPiece(ModelProto *model_proto, absl::string_view piece,
+              float score = 0.0) {
   auto *sp = model_proto->add_pieces();
-  sp->set_piece(piece.to_string());
+  sp->set_piece(std::string(piece));
   sp->set_score(score);
 }
 

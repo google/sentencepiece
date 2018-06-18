@@ -32,7 +32,7 @@ class Model : public ModelInterface {
   explicit Model(const ModelProto &model_proto);
   ~Model() override;
 
-  EncodeResult Encode(StringPiece normalized) const override;
+  EncodeResult Encode(absl::string_view normalized) const override;
 };
 }  // namespace bpe
 }  // namespace sentencepiece

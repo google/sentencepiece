@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 #include "common.h"
-#include "stringpiece.h"
+#include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
 #include "util.h"
 
@@ -28,11 +28,11 @@ constexpr int Normalizer::kMaxTrieResultsSize;
 
 Normalizer::Normalizer(const NormalizerSpec &spec)
     : spec_(&spec), status_(util::OkStatus()) {
-  StringPiece index = spec.precompiled_charsmap();
+  absl::string_view index = spec.precompiled_charsmap();
   if (index.empty()) {
     LOG(INFO) << "precompiled_charsmap is empty. use identity normalization.";
   } else {
-    StringPiece trie_blob, normalized;
+    absl::string_view trie_blob, normalized;
     status_ = DecodePrecompiledCharsMap(index, &trie_blob, &normalized);
     if (!status_.ok()) return;
 
@@ -50,7 +50,8 @@ Normalizer::Normalizer(const NormalizerSpec &spec)
 
 Normalizer::~Normalizer() {}
 
-util::Status Normalizer::Normalize(StringPiece input, std::string *normalized,
+util::Status Normalizer::Normalize(absl::string_view input,
+                                   std::string *normalized,
                                    std::vector<size_t> *norm_to_orig) const {
   norm_to_orig->clear();
   normalized->clear();
@@ -87,7 +88,7 @@ util::Status Normalizer::Normalize(StringPiece input, std::string *normalized,
 
   // Replaces white space with U+2581 (LOWER ONE EIGHT BLOCK)
   // if escape_whitespaces() is set (default = true).
-  const StringPiece kSpaceSymbol = "\xe2\x96\x81";
+  const absl::string_view kSpaceSymbol = "\xe2\x96\x81";
 
   // Adds a space symbol as a prefix (default is true)
   // With this prefix, "world" and "hello world" are converted into
@@ -108,11 +109,11 @@ util::Status Normalizer::Normalize(StringPiece input, std::string *normalized,
   bool is_prev_space = spec_->remove_extra_whitespaces();
   while (!input.empty()) {
     auto p = NormalizePrefix(input);
-    StringPiece sp = p.first;
+    absl::string_view sp = p.first;
 
     // Removes heading spaces in sentence piece,
     // if the previous sentence piece ends with whitespace.
-    while (is_prev_space && sp.Consume(" ")) {
+    while (is_prev_space && string_util::ConsumePrefix(&sp, " ")) {
     }
 
     if (!sp.empty()) {
@@ -130,7 +131,7 @@ util::Status Normalizer::Normalize(StringPiece input, std::string *normalized,
         }
       }
       // Checks whether the last character of sp is whitespace.
-      is_prev_space = sp.ends_with(" ");
+      is_prev_space = string_util::EndsWith(sp, " ");
     }
 
     consumed += p.second;
@@ -142,7 +143,8 @@ util::Status Normalizer::Normalize(StringPiece input, std::string *normalized,
 
   // Ignores tailing space.
   if (spec_->remove_extra_whitespaces()) {
-    const StringPiece space = spec_->escape_whitespaces() ? kSpaceSymbol : " ";
+    const absl::string_view space =
+        spec_->escape_whitespaces() ? kSpaceSymbol : " ";
     while (string_util::EndsWith(*normalized, space)) {
       const int length = normalized->size() - space.size();
       CHECK_GE_OR_RETURN(length, 0);
@@ -159,16 +161,16 @@ util::Status Normalizer::Normalize(StringPiece input, std::string *normalized,
   return util::OkStatus();
 }
 
-std::string Normalizer::Normalize(StringPiece input) const {
+std::string Normalizer::Normalize(absl::string_view input) const {
   std::vector<size_t> norm_to_orig;
   std::string normalized;
   Normalize(input, &normalized, &norm_to_orig);
   return normalized;
 }
 
-std::pair<StringPiece, int> Normalizer::NormalizePrefix(
-    StringPiece input) const {
-  std::pair<StringPiece, int> result;
+std::pair<absl::string_view, int> Normalizer::NormalizePrefix(
+    absl::string_view input) const {
+  std::pair<absl::string_view, int> result;
 
   if (input.empty()) return result;
 
@@ -205,24 +207,24 @@ std::pair<StringPiece, int> Normalizer::NormalizePrefix(
       // but here we only consume one byte.
       result.second = 1;
       static const char kReplacementChar[] = "\xEF\xBF\xBD";
-      result.first.set(kReplacementChar, 3);
+      result.first = absl::string_view(kReplacementChar);
     } else {
       result.second = length;
-      result.first.set(input.data(), result.second);
+      result.first = absl::string_view(input.data(), result.second);
     }
   } else {
     result.second = longest_length;
     // No need to pass the size of normalized sentence,
     // since |normalized| is delimitered by "\0".
-    result.first.set(&normalized_[longest_value]);
+    result.first = absl::string_view(&normalized_[longest_value]);
   }
 
   return result;
 }
 
 // static
-std::string Normalizer::EncodePrecompiledCharsMap(StringPiece trie_blob,
-                                                  StringPiece normalized) {
+std::string Normalizer::EncodePrecompiledCharsMap(
+    absl::string_view trie_blob, absl::string_view normalized) {
   // <trie size(4byte)><double array trie><normalized string>
   std::string blob;
   blob.append(string_util::EncodePOD<uint32>(trie_blob.size()));
@@ -232,22 +234,23 @@ std::string Normalizer::EncodePrecompiledCharsMap(StringPiece trie_blob,
 }
 
 // static
-util::Status Normalizer::DecodePrecompiledCharsMap(StringPiece blob,
-                                                   StringPiece *trie_blob,
-                                                   StringPiece *normalized) {
+util::Status Normalizer::DecodePrecompiledCharsMap(
+    absl::string_view blob, absl::string_view *trie_blob,
+    absl::string_view *normalized) {
   uint32 trie_blob_size = 0;
   if (blob.size() <= sizeof(trie_blob_size) ||
       !string_util::DecodePOD<uint32>(
-          StringPiece(blob.data(), sizeof(trie_blob_size)), &trie_blob_size) ||
+          absl::string_view(blob.data(), sizeof(trie_blob_size)),
+          &trie_blob_size) ||
       trie_blob_size >= blob.size()) {
     return util::InternalError("Blob for normalization rule is broken.");
   }
 
   blob.remove_prefix(sizeof(trie_blob_size));
-  *trie_blob = StringPiece(blob.data(), trie_blob_size);
+  *trie_blob = absl::string_view(blob.data(), trie_blob_size);
 
   blob.remove_prefix(trie_blob_size);
-  *normalized = StringPiece(blob.data(), blob.size());
+  *normalized = absl::string_view(blob.data(), blob.size());
 
   return util::OkStatus();
 }

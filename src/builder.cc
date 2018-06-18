@@ -204,8 +204,8 @@ util::Status Builder::CompileCharsMap(const CharsMap &chars_map,
       << "The number of shared prefix must be less than "
       << Normalizer::kMaxTrieResultsSize;
 
-  StringPiece trie_blob(static_cast<const char *>(trie.array()),
-                        trie.size() * trie.unit_size());
+  absl::string_view trie_blob(static_cast<const char *>(trie.array()),
+                              trie.size() * trie.unit_size());
   *output = Normalizer::EncodePrecompiledCharsMap(trie_blob, normalized);
 
   LOG(INFO) << "Generated normalizer blob. size=" << output->size();
@@ -214,12 +214,12 @@ util::Status Builder::CompileCharsMap(const CharsMap &chars_map,
 }
 
 // static
-util::Status Builder::DecompileCharsMap(StringPiece blob,
+util::Status Builder::DecompileCharsMap(absl::string_view blob,
                                         Builder::CharsMap *chars_map) {
   CHECK_OR_RETURN(chars_map);
   chars_map->clear();
 
-  StringPiece trie_blob, normalized;
+  absl::string_view trie_blob, normalized;
   RETURN_IF_ERROR(
       Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob, &normalized));
 
@@ -245,7 +245,7 @@ util::Status Builder::DecompileCharsMap(StringPiece blob,
           key.data(), copied_node_pos, copied_key_pos, key.size());
       if (result >= -1) {   // node exists.
         if (result >= 0) {  // has a value after transition.
-          const StringPiece value = normalized.data() + result;
+          const absl::string_view value = normalized.data() + result;
           Chars key_chars, value_chars;
           for (const auto c : string_util::UTF8ToUnicodeText(key))
             key_chars.push_back(c);
@@ -384,7 +384,8 @@ util::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
 }
 
 // static
-util::Status Builder::LoadCharsMap(StringPiece filename, CharsMap *chars_map) {
+util::Status Builder::LoadCharsMap(absl::string_view filename,
+                                   CharsMap *chars_map) {
   LOG(INFO) << "Loading maping file: " << filename.data();
   CHECK_OR_RETURN(chars_map);
 
@@ -400,12 +401,12 @@ util::Status Builder::LoadCharsMap(StringPiece filename, CharsMap *chars_map) {
     std::vector<char32> src, trg;
     for (auto &s : string_util::SplitPiece(fields[0], " ")) {
       if (s.empty()) continue;
-      s.Consume("U+");
+      string_util::ConsumePrefix(&s, "U+");
       src.push_back(string_util::HexToInt<char32>(s));
     }
     for (auto &s : string_util::SplitPiece(fields[1], " ")) {
       if (s.empty()) continue;
-      s.Consume("U+");
+      string_util::ConsumePrefix(&s, "U+");
       trg.push_back(string_util::HexToInt<char32>(s));
     }
     CHECK_OR_RETURN(!src.empty());
@@ -416,7 +417,7 @@ util::Status Builder::LoadCharsMap(StringPiece filename, CharsMap *chars_map) {
 }
 
 // static
-util::Status Builder::SaveCharsMap(StringPiece filename,
+util::Status Builder::SaveCharsMap(absl::string_view filename,
                                    const Builder::CharsMap &chars_map) {
   io::OutputBuffer output(filename);
   RETURN_IF_ERROR(output.status());

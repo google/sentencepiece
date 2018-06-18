@@ -18,7 +18,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "stringpiece.h"
+#include "third_party/absl/strings/string_view.h"
 #include "util.h"
 #include "word_model.h"
 
@@ -38,7 +38,7 @@ util::Status Trainer::Train() {
   std::unordered_map<std::string, uint64> freq;
   for (const auto &it : sentences_) {
     for (const auto &s : SplitIntoWords(it.first)) {
-      freq[s.to_string()] += it.second;
+      freq[std::string(s)] += it.second;
     }
   }
 

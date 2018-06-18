@@ -129,7 +129,7 @@ TEST(UtilTest, SplitTest) {
 }
 
 TEST(UtilTest, SplitPieceTest) {
-  std::vector<StringPiece> tokens;
+  std::vector<absl::string_view> tokens;
 
   tokens = string_util::SplitPiece("this is a\ttest", " \t");
   EXPECT_EQ(4, tokens.size());
@@ -195,8 +195,8 @@ TEST(UtilTest, JoinIntTest) {
   EXPECT_EQ(string_util::Join(tokens, ""), "102-45");
 }
 
-TEST(UtilTest, StringPieceTest) {
-  StringPiece s;
+TEST(UtilTest, StringViewTest) {
+  absl::string_view s;
   EXPECT_EQ(0, s.find("", 0));
 }
 
@@ -410,7 +410,7 @@ TEST(UtilTest, UnicodeCharToUTF8Test) {
 TEST(UtilTest, IsStructurallyValidTest) {
   EXPECT_TRUE(string_util::IsStructurallyValid("abcd"));
   EXPECT_TRUE(
-      string_util::IsStructurallyValid(StringPiece("a\0cd", 4)));     // NUL
+      string_util::IsStructurallyValid(absl::string_view("a\0cd", 4)));  // NUL
   EXPECT_TRUE(string_util::IsStructurallyValid("ab\xc3\x81"));        // 2-byte
   EXPECT_TRUE(string_util::IsStructurallyValid("a\xe3\x81\x81"));     // 3-byte
   EXPECT_TRUE(string_util::IsStructurallyValid("\xf2\x82\x81\x84"));  // 4

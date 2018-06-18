@@ -282,8 +282,8 @@ util::Status SentencePieceProcessor::PopulateSentencePieceText(
   size_t consumed = 0;
   bool is_prev_unk = false;
   for (const auto &p : result) {
-    const StringPiece w = p.first;  // piece
-    const int id = p.second;        // id
+    const absl::string_view w = p.first;  // piece
+    const int id = p.second;              // id
 
     CHECK_OR_RETURN(!w.empty()) << "Empty piece is not allowed.";
 
@@ -292,7 +292,7 @@ util::Status SentencePieceProcessor::PopulateSentencePieceText(
     if (IsControl(id)) {
       // Control symbol has no corresponding source surface, so begin == end.
       auto *sp = spt->add_pieces();
-      sp->set_piece(w.to_string());
+      sp->set_piece(w.data(), w.size());
       sp->set_id(id);
       sp->set_begin(norm_to_orig[consumed]);
       sp->set_end(norm_to_orig[consumed]);
@@ -306,21 +306,22 @@ util::Status SentencePieceProcessor::PopulateSentencePieceText(
       CHECK_LE_OR_RETURN(orig_begin, input.size());
       CHECK_LE_OR_RETURN(orig_end, input.size());
       CHECK_LE_OR_RETURN(orig_begin, orig_end);
-      const auto surface = input.substr(orig_begin, orig_end - orig_begin);
+      const auto surface =
+          absl::ClippedSubstr(input, orig_begin, orig_end - orig_begin);
       // Merges continuous run of unknown pieces so that decoder
       // can copy or generate unknown tokens easily.
       // Note that merged tokens are still unknown,
       // since known pieces never consist of unknown characters.
       if (is_prev_unk && is_unk) {
         auto *sp = spt->mutable_pieces(spt->pieces_size() - 1);
-        sp->set_piece(sp->piece() + w.to_string());
-        sp->set_surface(sp->surface() + surface);
+        sp->set_piece(sp->piece() + std::string(w));
+        sp->set_surface(sp->surface() + std::string(surface));
         sp->set_end(orig_end);
       } else {
         auto *sp = spt->add_pieces();
-        sp->set_piece(w.to_string());
+        sp->set_piece(w.data(), w.size());
         sp->set_id(id);
-        sp->set_surface(surface);
+        sp->set_surface(surface.data(), surface.size());
         sp->set_begin(orig_begin);
         sp->set_end(orig_end);
       }
@@ -418,7 +419,7 @@ util::Status SentencePieceProcessor::Decode(
     const std::vector<std::string> &pieces, SentencePieceText *spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
-  auto DecodeSentencePiece = [&](StringPiece piece, int id,
+  auto DecodeSentencePiece = [&](absl::string_view piece, int id,
                                  bool is_bos_ws) -> std::string {
     if (IsControl(id)) {  // <s>, </s>
       return "";          // invisible symbol.
@@ -426,14 +427,14 @@ util::Status SentencePieceProcessor::Decode(
       if (IdToPiece(id) == piece) {  // <unk>
         return kUnknownSymbol;
       } else {  // return piece when piece is not <unk>.
-        return piece.to_string();
+        return std::string(piece);
       }
     }
 
     if (is_bos_ws) {
       // Consume if the current position is bos and
       // piece starts with kSpaceSymbol.
-      piece.Consume(kSpaceSymbol);
+      string_util::ConsumePrefix(&piece, kSpaceSymbol);
     }
 
     return string_util::StringReplace(piece, kSpaceSymbol, " ", true);

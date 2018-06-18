@@ -35,7 +35,7 @@ class Lattice {
   virtual ~Lattice();
 
   struct Node {
-    StringPiece piece;      // Sentence piece representation.
+    absl::string_view piece;      // Sentence piece representation.
     uint32 pos;             // Unicode position in the sentence.
     uint32 length;          // Unicode length, not UT8 byte.
     uint32 node_id;         // unique id in the current lattice.
@@ -75,7 +75,7 @@ class Lattice {
   void Clear();
 
   // Sets new sentence.
-  void SetSentence(StringPiece sentence);
+  void SetSentence(absl::string_view sentence);
 
   // Inserts a new node at [pos, pos + length - 1].
   // After calling this method, The caller must set Node::score and Node::id.
@@ -105,7 +105,7 @@ class Lattice {
   // Lattice class has the ownership of the returned value.
   Node *NewNode();
 
-  StringPiece sentence_;
+  absl::string_view sentence_;
   std::vector<const char *> surface_;
   std::vector<std::vector<Node *>> begin_nodes_;
   std::vector<std::vector<Node *>> end_nodes_;
@@ -135,11 +135,11 @@ class ModelBase : public ModelInterface {
   void PopulateNodes(Lattice *lattice) const;
 
   // Returns a vocab id of |piece|.
-  int PieceToId(StringPiece piece) const override;
+  int PieceToId(absl::string_view piece) const override;
 
  protected:
   // Builds a Trie index.
-  void BuildTrie(std::vector<std::pair<StringPiece, int>> *pieces);
+  void BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces);
 
   float min_score_ = 0.0;
   float max_score_ = 0.0;
@@ -156,12 +156,12 @@ class Model : public ModelBase {
   explicit Model(const ModelProto &model_proto);
   ~Model() override;
 
-  EncodeResult Encode(StringPiece normalized) const override;
+  EncodeResult Encode(absl::string_view normalized) const override;
 
-  NBestEncodeResult NBestEncode(StringPiece normalized,
+  NBestEncodeResult NBestEncode(absl::string_view normalized,
                                 int nbest_size) const override;
 
-  EncodeResult SampleEncode(StringPiece normalized, float theta) const override;
+  EncodeResult SampleEncode(absl::string_view normalized, float theta) const override;
 };
 }  // namespace unigram
 }  // namespace sentencepiece

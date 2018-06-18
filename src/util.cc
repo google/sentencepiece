@@ -41,12 +41,14 @@ std::vector<std::string> Split(const std::string &str, const std::string &delim,
   return SplitInternal<std::string>(str, delim, allow_empty);
 }
 
-std::vector<StringPiece> SplitPiece(StringPiece str, StringPiece delim,
-                                    bool allow_empty) {
-  return SplitInternal<StringPiece>(str, delim, allow_empty);
+std::vector<absl::string_view> SplitPiece(absl::string_view str,
+                                          absl::string_view delim,
+                                          bool allow_empty) {
+  return SplitInternal<absl::string_view>(str, delim, allow_empty);
 }
 
-std::string Join(const std::vector<std::string> &tokens, StringPiece delim) {
+std::string Join(const std::vector<std::string> &tokens,
+                 absl::string_view delim) {
   std::string result;
   if (!tokens.empty()) {
     result.append(tokens[0]);
@@ -58,7 +60,7 @@ std::string Join(const std::vector<std::string> &tokens, StringPiece delim) {
   return result;
 }
 
-std::string Join(const std::vector<int> &tokens, StringPiece delim) {
+std::string Join(const std::vector<int> &tokens, absl::string_view delim) {
   std::string result;
   char buf[32];
   if (!tokens.empty()) {
@@ -73,24 +75,25 @@ std::string Join(const std::vector<int> &tokens, StringPiece delim) {
   return result;
 }
 
-std::string StringReplace(StringPiece s, StringPiece oldsub, StringPiece newsub,
-                          bool replace_all) {
+std::string StringReplace(absl::string_view s, absl::string_view oldsub,
+                          absl::string_view newsub, bool replace_all) {
   std::string ret;
   StringReplace(s, oldsub, newsub, replace_all, &ret);
   return ret;
 }
 
-void StringReplace(StringPiece s, StringPiece oldsub, StringPiece newsub,
-                   bool replace_all, std::string *res) {
+void StringReplace(absl::string_view s, absl::string_view oldsub,
+                   absl::string_view newsub, bool replace_all,
+                   std::string *res) {
   if (oldsub.empty()) {
     res->append(s.data(), s.size());
     return;
   }
 
-  StringPiece::size_type start_pos = 0;
+  absl::string_view::size_type start_pos = 0;
   do {
-    const StringPiece::size_type pos = s.find(oldsub, start_pos);
-    if (pos == StringPiece::npos) {
+    const absl::string_view::size_type pos = s.find(oldsub, start_pos);
+    if (pos == absl::string_view::npos) {
       break;
     }
     res->append(s.data() + start_pos, pos - start_pos);
@@ -136,7 +139,7 @@ char32 DecodeUTF8(const char *begin, const char *end, size_t *mblen) {
   return kUnicodeError;
 }
 
-bool IsStructurallyValid(StringPiece str) {
+bool IsStructurallyValid(absl::string_view str) {
   const char *begin = str.data();
   const char *end = str.data() + str.size();
   size_t mblen = 0;
@@ -188,7 +191,7 @@ size_t EncodeUTF8(char32 c, char *output) {
 
 std::string UnicodeCharToUTF8(const char32 c) { return UnicodeTextToUTF8({c}); }
 
-UnicodeText UTF8ToUnicodeText(StringPiece utf8) {
+UnicodeText UTF8ToUnicodeText(absl::string_view utf8) {
   UnicodeText uc;
   const char *begin = utf8.data();
   const char *end = utf8.data() + utf8.size();
@@ -214,7 +217,7 @@ std::string UnicodeTextToUTF8(const UnicodeText &utext) {
 
 namespace io {
 
-InputBuffer::InputBuffer(StringPiece filename)
+InputBuffer::InputBuffer(absl::string_view filename)
     : is_(filename.empty() ? &std::cin
                            : new std::ifstream(WPATH(filename.data()))) {
   if (!*is_)
@@ -234,7 +237,7 @@ bool InputBuffer::ReadLine(std::string *line) {
   return static_cast<bool>(std::getline(*is_, *line));
 }
 
-OutputBuffer::OutputBuffer(StringPiece filename)
+OutputBuffer::OutputBuffer(absl::string_view filename)
     : os_(filename.empty()
               ? &std::cout
               : new std::ofstream(WPATH(filename.data()), OUTPUT_MODE)) {
@@ -251,12 +254,12 @@ OutputBuffer::~OutputBuffer() {
 
 util::Status OutputBuffer::status() const { return status_; }
 
-bool OutputBuffer::Write(StringPiece text) {
+bool OutputBuffer::Write(absl::string_view text) {
   os_->write(text.data(), text.size());
   return os_->good();
 }
 
-bool OutputBuffer::WriteLine(StringPiece text) {
+bool OutputBuffer::WriteLine(absl::string_view text) {
   return Write(text) && Write("\n");
 }
 }  // namespace io
