@@ -93,8 +93,8 @@ build_linux_clang_ubuntu() {
 build_osx() {
   brew update
   brew install protobuf || brew link --overwrite protobuf
-  brew install python@2 || brew link --force python@2
-  brew install python
+  brew link --force python@2
+  brew upgrade python
   build_generic
   make install
   cd python
