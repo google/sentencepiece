@@ -105,8 +105,8 @@ build_osx() {
   /usr/local/bin/python setup.py clean
   # Upgrade to Python3
   brew upgrade python
-  /usr/local/bin/python setup.py test
-  /usr/local/bin/python setup.py clean
+  /usr/local/bin/python3 setup.py test
+  /usr/local/bin/python3 setup.py clean
   cd ..
 }
 
