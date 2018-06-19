@@ -145,40 +145,18 @@ class Status {
 // the argument of public APIs.
 class min_string_view {
  public:
-  min_string_view() noexcept : ptr_(nullptr), length_(0) {}
+  min_string_view() : ptr_(nullptr), length_(0) {}
   min_string_view(const std::string &str)
       : ptr_(str.data()), length_(str.size()) {}
-  min_string_view(const char *str)
-      : ptr_(str), length_(std::strlen(str)) {}
-  min_string_view(const char *data, size_t len)
-      : ptr_(data), length_(len) {}
+  min_string_view(const char *str) : ptr_(str), length_(std::strlen(str)) {}
+  min_string_view(const char *data, size_t len) : ptr_(data), length_(len) {}
+
   const char *data() const { return ptr_; }
   size_t size() const { return length_; }
-
-  void assign(const char *data, size_t len) {
-    ptr_ = data;
-    length_ = len;
-  }
-
-  void copy(const char *data, size_t len) {
-    rep_.reset(new std::string(data, len));
-    ptr_ = rep_->data();
-    length_ = rep_->size();
-  }
-
-  min_string_view(const min_string_view &s) {
-    if (s.rep_) {
-      copy(s.rep_->data(), s.rep_->size());
-    } else {
-      ptr_ = s.data();
-      length_ = s.size();
-    }
-  }
 
  private:
   const char *ptr_ = nullptr;
   size_t length_ = 0;
-  std::unique_ptr<std::string> rep_;
 };
 }  // namespace util
 
