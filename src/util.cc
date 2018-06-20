@@ -263,4 +263,23 @@ bool OutputBuffer::WriteLine(absl::string_view text) {
   return Write(text) && Write("\n");
 }
 }  // namespace io
+
+namespace util {
+
+std::string StrError(int errnum) {
+  constexpr int kStrErrorSize = 1024;
+  char buffer[kStrErrorSize];
+  char *str = nullptr;
+#if defined(__GLIBC__) && defined(_GNU_SOURCE)
+  str = strerror_r(errnum, buffer, kStrErrorSize - 1);
+#else
+  strerror_r(errnum, buffer, kStrErrorSize - 1);
+  str = buffer;
+#endif
+  std::ostringstream os;
+  os << str << " Error #" << errnum;
+  return os.str();
+}
+
+}  // namespace util
 }  // namespace sentencepiece
