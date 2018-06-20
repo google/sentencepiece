@@ -93,10 +93,20 @@ build_linux_clang_ubuntu() {
 build_osx() {
   brew update
   brew install protobuf || brew link --overwrite protobuf
+  brew link --overwrite python@2
   build_generic
   make install
   cd python
+  # Test default Python
   python setup.py test
+  python setup.py clean
+  # Test Python2
+  /usr/local/bin/python setup.py test
+  /usr/local/bin/python setup.py clean
+  # Upgrade to Python3
+  brew upgrade python
+  /usr/local/bin/python3 setup.py test
+  /usr/local/bin/python3 setup.py clean
   cd ..
 }
 

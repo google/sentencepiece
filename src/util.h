@@ -416,11 +416,7 @@ void STLDeleteElements(std::vector<T *> *vec) {
 
 namespace util {
 
-inline const std::string StrError(int n) {
-  char buf[1024];
-  strerror_r(n, buf, sizeof(buf) - 1);
-  return std::string(buf);
-}
+std::string StrError(int errnum);
 
 inline Status OkStatus() { return Status(); }
 

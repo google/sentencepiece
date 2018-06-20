@@ -1,53 +1,23 @@
 ﻿Project Gutenberg's Botchan (Master Darling), by Kin-nosuke Natsume
-
 This eBook is for the use of anyone anywhere at no cost and with
 almost no restrictions whatsoever.  You may copy it, give it away or
 re-use it under the terms of the Project Gutenberg License included
 with this eBook or online at www.gutenberg.org
-
-
 Title: Botchan (Master Darling)
-
 Author: Kin-nosuke Natsume
-
 Translator: Yasotaro Morri
-
 Posting Date: October 14, 2012 [EBook #8868]
 Release Date: September, 2005
 First Posted: August 17, 2003
-
 Language: English
-
-
 *** START OF THIS PROJECT GUTENBERG EBOOK BOTCHAN (MASTER DARLING) ***
-
-
-
-
 Produced by David Starner and the Online Distributed Proofreading Team
-
-
-
-
-
-
-
-
-
 BOTCHAN (MASTER DARLING)
-
 By The Late Mr. Kin-nosuke Natsume
-
 TRANSLATED By Yasotaro Morri
-
 Revised by J. R. KENNEDY
-
 1919
-
-
-
 A NOTE BY THE TRANSLATOR
-
 No translation can expect to equal, much less to excel, the original.
 The excellence of a translation can only be judged by noting how far it
 has succeeded in reproducing the original tone, colors, style, the
@@ -63,7 +33,6 @@ work is probably wanted the subtle vitality natural to the original
 language, for it defies an attempt, however elaborate, to transmit all
 there is in the original. Correctness of diction may be there, but
 spontaneity is gone; it cannot be helped.
-
 The task of the translator becomes doubly hazardous in case of
 translating a European language into Japanese, or vice versa. Between
 any of the European languages and Japanese there is no visible kinship
@@ -74,7 +43,6 @@ sentiments and traits makes the work of translation all the more
 difficult. A novel written in Japanese which had attained national
 popularity might, when rendered into English, lose its captivating
 vividness, alluring interest and lasting appeal to the reader.
-
 These remarks are made not in way of excuse for any faulty dictions that
 may be found in the following pages. Neither are they made out of
 personal modesty nor of a desire to add undue weight to the present
@@ -87,7 +55,6 @@ unfavorable comment on the original based upon this translation. If
 there be any deserving merits in the following pages the credit is due
 to the original. Any fault found in its interpretation or in the English
 version, the whole responsibility is on the translator.
-
 For the benefit of those who may not know the original, it must be
 stated that "Botchan" by the late Mr. K. Natsume was an epoch-making
 piece of work. On its first appearance, Mr. Natsume's place and name as
@@ -97,7 +64,6 @@ and of more enduring merits, but it was this "Botchan" that secured him
 the lasting fame. Its quaint style, dash and vigor in its narration
 appealed to the public who had become somewhat tired of the stereotyped
 sort of manner with which all stories had come to be handled.
-
 In its simplest understanding, "Botchan" may be taken as an episode in
 the life of a son born in Tokyo, hot-blooded, simple-hearted, pure as
 crystal and sturdy as a towering rock, honest and straight to a fault,
@@ -113,7 +79,6 @@ the story is made a victim of their annoying intrigues, but finally
 comes out triumphant by smashing the petty red tapism, knocking down the
 sham pretentions and by actual use of the fist on the Head Instructor
 and his henchman.
-
 The story will be found equally entertaining as a means of studying the
 peculiar traits of the native of Tokyo which are characterised by their
 quick temper, dashing spirit, generosity and by their readiness to
@@ -126,7 +91,6 @@ story becomes doubly interesting by the fact that Mr. K. Natsume, when
 quite young, held a position of teacher of English at a middle school
 somewhere about the same part of the country described in the story,
 while he himself was born and brought up in Tokyo.
-
 It may be added that the original is written in an autobiographical
 style. It is profusely interladed with spicy, catchy colloquials patent
 to the people of Tokyo for the equals of which we may look to the
@@ -145,23 +109,15 @@ printing such short ugly words be questioned, the translator is sorry to
 say that no means now exists of directly bringing him to account for he
 met untimely death on board the Lusitania when it was sunk by the German
 submarine.
-
 Thanks are due to Mr. J. R. Kennedy, General Manager, and Mr. Henry
 Satoh, Editor-in-Chief, both of the Kokusai Tsushin-sha (the
 International News Agency) of Tokyo and a host of personal friends of
 the translator whose untiring assistance and kind suggestions have made
 the present translation possible. Without their sympathetic interests,
 this translation may not have seen the daylight.
-
 Tokyo, September, 1918.
-
-
-
 BOTCHAN (MASTER DARLING)
-
-
 CHAPTER I
-
 Because of an hereditary recklessness, I have been playing always a
 losing game since my childhood. During my grammar school days, I was
 once laid up for about a week by jumping from the second story of the
@@ -174,21 +130,16 @@ chicken-heart, ha, ha!" So I jumped down. The janitor of the school had
 to carry me home on his back, and when my father saw me, he yelled
 derisively, "What a fellow you are to go and get your bones dislocated
 by jumping only from a second story!"
-
 "I'll see I don't get dislocated next time," I answered.
-
 One of my relatives once presented me with a pen-knife. I was showing it
 to my friends, reflecting its pretty blades against the rays of the sun,
 when one of them chimed in that the blades gleamed all right, but seemed
 rather dull for cutting with.
-
 "Rather dull? See if they don't cut!" I retorted.
-
 "Cut your finger, then," he challenged. And with "Finger nothing! Here
 goes!" I cut my thumb slant-wise. Fortunately the knife was small and
 the bone of the thumb hard enough, so the thumb is still there, but the
 scar will be there until my death.
-
 About twenty steps to the east edge of our garden, there was a
 moderate-sized vegetable yard, rising toward the south, and in the
 centre of which stood a chestnut tree which was dearer to me than life.
@@ -200,7 +151,6 @@ called Yamashiro-ya. This shopkeeper's son was a boy about 13 or 14
 years old named Kantaro. Kantaro was, it happens, a mollycoddle.
 Nevertheless he had the temerity to come over the fence to our yard and
 steal my chestnuts.
-
 One certain evening I hid myself behind a folding-gate of the fence and
 caught him in the act. Having his retreat cut off he grappled with me in
 desperation. He was about two years older than I, and, though
@@ -216,7 +166,6 @@ yard, he fell headlong to his own territory with a thud. As he rolled
 off he tore away the sleeve in which his head had been enwrapped, and my
 arm recovered a sudden freedom of movement. That night when my mother
 went to Yamashiro-ya to apologize, she brought back that sleeve.
-
 Besides the above, I did many other mischiefs. With Kaneko of a
 carpenter shop and Kaku of a fishmarket, I once ruined a carrot patch of
 one Mosaku. The sprouts were just shooting out and the patch was covered
@@ -231,19 +180,15 @@ I stuffed the bamboo pole with stones and sticks, and satisfied that no
 more water came up, I returned home and was eating supper when Furukawa,
 fiery red with anger, burst into our house with howling protests. I
 believe the affair was settled on our paying for the damage.
-
 Father did not like me in the least, and mother always sided with my big
 brother. This brother's face was palish white, and he had a fondness for
 taking the part of an actress at the theatre.
-
 "This fellow will never amount to much," father used to remark when
 he saw me.
-
 "He's so reckless that I worry about his future," I often heard mother
 say of me. Exactly; I have never amounted to much. I am just as you see
 me; no wonder my future used to cause anxiety to my mother. I am living
 without becoming but a jailbird.
-
 Two or three days previous to my mother's death, I took it into my head
 to turn a somersault in the kitchen, and painfully hit my ribs against
 the corner of the stove. Mother was very angry at this and told me not
@@ -255,7 +200,6 @@ conditions were so serious as that. Then that big brother of mine
 denounced me as wanting in filial piety, and that I had caused her
 untimely death. Mortified at this, I slapped his face, and thereupon
 received a sound scolding from father.
-
 After the death of mother, I lived with father and brother. Father did
 nothing, and always said "You're no good" to my face. What he meant by
 "no good" I am yet to understand. A funny dad he was. My brother was to
@@ -267,7 +211,6 @@ days. When we played a chess game one day, he placed a chessman as a
 me in a fix. His manner was so trying that time that I banged a chessman
 on his forehead which was injured a little bit and bled. He told all
 about this to father, who said he would disinherit me.
-
 Then I gave up myself for lost, and expected to be really disinherited.
 But our maid Kiyo, who had been with us for ten years or so, interceded
 on my behalf, and tearfully apologized for me, and by her appeal my
@@ -294,7 +237,6 @@ she would remark; "That's the very reason I say you are of a good
 disposition," and would gaze at me with absorbing tenderness. She seemed
 to recreate me by her own imagination, and was proud of the fact. I felt
 even chilled through my marrow at her constant attention to me.
-
 After my mother was dead, Kiyo loved me still more. In my simple
 reasoning, I wondered why she had taken such a fancy to me. Sometimes I
 thought it quite futile on her part, that she had better quit that sort
@@ -319,13 +261,11 @@ and found the edict of the three one-yen bills turned to faint yellow
 and designs fading. Kiyo dried them at an open fire and handed them over
 to me, asking if they were all right. I smelled them and said; "They
 stink yet."
-
 "Give them to me; I'll get them changed." She took those three bills,
 and,--I do not know how she went about it,--brought three yen in silver.
 I forget now upon what I spent the three yen. "I'll pay you back soon,"
 I said at the time, but didn't. I could not now pay it back even if I
 wished to do so with ten times the amount.
-
 When Kiyo gave me anything she did so always when both father and
 brother were out. Many things I do not like, but what I most detest is
 the monopolizing of favors behind some one else's back. Bad as my
@@ -353,7 +293,6 @@ How absurd it seems to me now when I recall those days. I asked her once
 what kind of a man I should be, but she seemed to have formed no
 concrete idea as to that; only she said that I was sure to live in a
 house with grand entrance hall, and ride in a private rikisha.
-
 And Kiyo seemed to have decided for herself to live with me when I
 became independent and occupy my own house. "Please let me live with
 you,"--she repeatedly asked of me. Feeling somewhat that I should
@@ -366,7 +305,6 @@ fancy. I did not then care a straw for anything like a house; so neither
 Japanese nor European style was much of use to me, and I told her to
 that effect. Then she would praise me as uncovetous and clean of heart.
 Whatever I said, she had praise for me.
-
 I lived, after the death of mother, in this fashion for five or six
 years. I had kicks from father, had rows with brother, and had candies
 and praise from Kiyo. I cared for nothing more; I thought this was
@@ -375,7 +313,6 @@ life. As Kiyo frequently told me, however, that I was to be pitied, and
 was unfortunate, I imagined that that might be so. There was nothing
 that particularly worried me except that father was too tight with my
 pocket money, and this was rather hard on me.
-
 In January of the 6th year after mother's death, father died of
 apoplexy. In April of the same year, I graduated from a middle school,
 and two months later, my brother graduated from a business college. Soon
@@ -393,20 +330,16 @@ all the bric-a-bric which had been handed down from ages ago in our
 family. Our house and lot were sold, through the efforts of a middleman
 to a wealthy person. This transaction seemed to have netted a goodly sum
 to him, but I know nothing as to the detail.
-
 For one month previous to this, I had been rooming in a boarding house
 in Kanda-ku, pending a decision as to my future course. Kiyo was greatly
 grieved to see the house in which she had lived so many years change
 ownership, but she was helpless in the matter.
-
 "If you were a little older, you might have inherited this house," she
 once remarked in earnest.
-
 If I could have inherited the house through being a little older, I
 ought to have been able to inherit the house right then. She knew
 nothing, and believed the lack of age only prevented my coming into the
 possession of the house.
-
 Thus I parted from my brother, but the disposal of Kiyo was a difficult
 proposition. My brother was, of course, unable to take her along, nor
 was there any danger of her following him so far away as Kyushu, while I
@@ -422,7 +355,6 @@ better to go over to her nephew than to start a new life as servant in a
 strange house. Be that as it may, she advised me to have my own
 household soon, or get married, so she would come and help me in
 housekeeping. I believe she liked me more than she did her own kin.
-
 My brother came to me, two days previous to his departure for Kyushu,
 and giving me 600 yen, said that I might begin a business with it, or go
 ahead with my study, or spend it in any way I liked, but that that would
@@ -433,7 +365,6 @@ with thanks. Then he produced 50 yen, requesting me to give it to Kiyo
 next time I saw her, which I readily complied with. Two days after, I
 saw him off at the Shimbashi Station, and have not set my eyes on him
 ever since.
-
 Lying in my bed, I meditated on the best way to spend that 600 yen. A
 business is fraught with too much trouble, and besides it was not my
 calling. Moreover with only 600 yen no one could open a business worth
@@ -452,13 +383,11 @@ admittance of more students, I thought this might be a kind of
 "affinity," and having asked for the prospectus, at once filed my
 application for entrance. When I think of it now, it was a blunder due
 to my hereditary recklessness.
-
 For three years I studied about as diligently as ordinary fellows, but
 not being of a particularly brilliant quality, my standing in the class
 was easier to find by looking up from the bottom. Strange, isn't it,
 that when three years were over, I graduated? I had to laugh at myself,
 but there being no reason for complaint, I passed out.
-
 Eight days after my graduation, the principal of the school asked me to
 come over and see him. I wondered what he wanted, and went. A middle
 school in Shikoku was in need of a teacher of mathematics for forty yen
@@ -467,7 +396,6 @@ three years, but to tell the truth, I had no intention of either
 teaching or going to the country. Having nothing in sight, however,
 except teaching, I readily accepted the offer. This too was a blunder
 due to hereditary recklessness.
-
 I accepted the position, and so must go there. The three years of my
 school life I had seen confined in a small room, but with no kick coming
 or having no rough house. It was a comparatively easy going period in my
@@ -480,7 +408,6 @@ of a needle-point on the map. It would not be much to look at anyway. I
 knew nothing about the place or the people there. It did not worry me or
 cause any anxiety. I had simply to travel there and that was the
 annoying part.
-
 Once in a while, since our house was no more, I went to Kiyo's
 nephew's to see her. Her nephew was unusually good-natured, and
 whenever I called upon her, he treated me well if he happened to be at
@@ -493,13 +420,10 @@ not know how her nephew weighed her tales of self-indulgence on me.
 Kiyo was a woman of the old type, and seemed, as if it was still the
 days of Feudal Lords, to regard her nephew equally under obligation to
 me even as she was herself.
-
 After settling about my new position, I called upon her three days
 previous to my departure. She was sick abed in a small room, but, on
 seeing me she got up and immediately inquired;
-
 "Master Darling, when do you begin housekeeping?"
-
 She evidently thought as soon as a fellow finishes school, money comes
 to his pocket by itself. But then how absurd to call such a "great man"
 "Darling." I told her simply that I should let the house proposition go
@@ -508,39 +432,27 @@ disappointed, and blankly smoothed her gray-haired sidelocks. I felt
 sorry for her, and said comfortingly; "I am going away but will come
 back soon. I'll return in the vacation next summer, sure." Still as she
 appeared not fully satisfied, I added;
-
 "Will bring you back a surprise. What do you like?"
-
 She wished to eat "sasa-ame"[1] of Echigo province. I had never heard of
 "sasa-ame" of Echigo. To begin with, the location is entirely different.
-
 [Footnote 1: Sasa-ame is a kind of rice-jelly wrapped with sasa, or the
 bamboo leaves, well-known as a product of Echigo province.]
-
 "There seems to be no 'sasa-ame' in the country where I'm going," I
 explained, and she rejoined; "Then, in what direction?" I answered
 "westward" and she came back with "Is it on the other side of Hakone?"
 This give-and-take conversation proved too much for me.
-
 On the day of my departure, she came to my room early in the morning and
 helped me to pack up. She put into my carpet-bag tooth powder,
 tooth-brush and towels which she said she had bought at a dry goods
 store on her way. I protested that I did not want them, but she was
 insistent.[A] We rode in rikishas to the station. Coming up the
 platform, she gazed at me from outside the car, and said in a low voice;
-
 "This may be our last good-by. Take care of yourself."
-
 Her eyes were full of tears. I did not cry, but was almost going to.
 After the train had run some distance, thinking it would be all right
 now, I poked my head out of the window and looked back. She was still
 there. She looked very small.
-
-
-
 CHAPTER II.
-
-
 With a long, sonorous whistle the steamer which I was aboard came to a
 standstill, and a boat was seen making toward us from the shore. The man
 rowing the boat was stark naked, except for a piece of red cloth girt
@@ -567,7 +479,6 @@ four miles away by rail, I became still more discouraged at putting up
 there. I snatched my two valises from the man with queer-shaped [B]
 sleeves who had guided me so far, and strode away. The people of the inn
 looked after me with a dazed expression.
-
 The station was easily found, and a ticket bought without any fuss. The
 coach I got in was about as dignified as a match-box. The train rambled
 on for about five minutes, and then I had to get off. No wonder the fare
@@ -579,7 +490,6 @@ principal, but being tired, ordered the rikishaman to take me to a
 hotel. He did this with much alacrity and led me to a hotel called
 Yamashiro-ya. I felt it rather amusing to find the name Yamashiro-ya the
 same as that of Kantaro's house.
-
 They ushered me to a dark room below the stairway. No one could stay in
 such a hot place! I said I did not like such a warm room, but the maid
 dumped my valises on the floor and left me, mumbling that all the other
@@ -601,7 +511,6 @@ do her harm, but she replied, "O, no, these leaves are very helpful for
 the health," and ate them with much relish. Astounded, I laughed "Ha,
 ha, ha!"--and so awoke. The maid was opening the outside shutters. The
 weather was just as clear as the previous day.
-
 I had heard once before that when travelling, one should give "tea
 money" to the hotel or inn where he stops; that unless this "tea
 money" is given, the hostelry would accord him rather rough treatment.
@@ -624,7 +533,6 @@ breakfast, but I became disgusted, and taking out one 5-yen bill told
 her to take it to the office later. The face of the maid became then
 shy and awkward. After the meal, I left for the school. The maid did
 not have my shoes polished.
-
 I had had vague idea of the direction of the school as I rode to it the
 previous day, so turning two or three corners, I came to the front gate.
 From the gate to the entrance the walk was paved with granite. When I
@@ -643,7 +551,6 @@ to Tokyo. He said he would introduce me to all my fellow teachers, and I
 was to show to each one of them the note of appointment. What a bother!
 It would be far better to stick this note up in the teachers' room for
 three days instead of going through such a monkey process.
-
 The teachers would not be all in the room until the bugle for the first
 hour was sounded. There was plenty of time. The principal took out his
 watch, and saying that he would acquaint me particularly with the school
@@ -668,18 +575,13 @@ tipping the hotel 5 yen. Nine yen would not take me back to Tokyo. I had
 better not have tipped the hotel; what a pity! However, I would be able
 to manage it somehow. I considered it better to run short in my return
 expenses than to tell a lie.
-
 "I cannot do it the way you want me to. I return this appointment."
-
 I shoved back the note. The principal winked his badger-like eyes and
 gazed at me. Then he said;
-
 "What I have said just now is what I desire of you. I know well that you
 cannot do all I want, So don't worry."
-
 And he laughed. If he knew it so well already, what on earth did he
 scare me for?
-
 Meanwhile the bugle sounded, being followed by bustling noises in the
 direction of the class rooms. All the teachers would be now ready, I was
 told, and I followed the principal to the teachers' room. In a spacious
@@ -694,7 +596,6 @@ performances at a rural show! When I came to the fifteenth, who was the
 teacher of physical training, I became impatient at repeating the same
 old thing so often. The other side had to do it only once, but my side
 had to do it fifteen times. They ought to have had some sympathy.
-
 Among those I met in the room there was Mr. Blank who was head teacher.
 Said he was a Bachelor of Arts. I suppose he was a great man since he
 was a graduate from Imperial University and had such a title. He talked
@@ -723,45 +624,35 @@ mathematics, there was one named Hotta. This was a fellow of massive
 body, with hair closely cropped. He looked like one of the old-time
 devilish priests who made the Eizan temple famous. I showed him the note
 politely, but he did not even look at it, and blurted out;
-
 "You're the man newly appointed, eh? Come and see me sometime,
 ha, ha, ha!"
-
 [Footnote 2: Means the last crop.]
-
 Devil take his "Ha, ha, ha!" Who would go to see a fellow so void of the
 sense of common decency! I gave this priest from this time the nickname
 of Porcupine.
-
 The Confucian teacher was strict in his manner as becoming to his
 profession. "Arrived yesterday? You must be tired. Start teaching
 already? Working hard, indeed!"--and so on. He was an old man, quite
 sociable and talkative.
-
 The teacher of drawing was altogether like a cheap actor. He wore a
 thin, flappy haori of sukiya, and, toying with a fan, he giggled; "Where
 from? eh? Tokyo? Glad to hear that. You make another of our group. I'm a
 Tokyo kid myself."
-
 If such a fellow prided himself on being a Tokyo kid, I wished I had
 never been born in Tokyo. I might go on writing about each one of
 them, for there are many, but I stop here otherwise there will be no
 end to it.
-
 When my formal introduction was over, the principal said that I might go
 for the day, but I should make arrangements as to the class hours, etc.,
 with the head teacher of mathematics and begin teaching from the day
 after the morrow. Asked who was the head teacher of mathematics, I found
 that he was no other than that Porcupine. Holy smokes! was I to serve
 under him? I was disappointed.
-
 "Say, where are you stopping? Yamashiro-ya? Well, I'll come and
 talk it over."
-
 So saying, Porcupine, chalk in hand, left the room to his class. That
 was rather humiliating for a head-teacher to come over and see his
 subordinate, but it was better than to call me over to him.
-
 After leaving the school, I thought of returning straight to the hotel,
 but as there was nothing to do, I decided to take in a little of the
 town, and started walking about following my nose. I saw prefectural
@@ -771,10 +662,8 @@ Tokyo. I passed through the main street. The width of the street is
 about one half that of Kagurazaka, and its aspect is inferior. What
 about a castle-town of 250,000-koku Lord! Pity the fellows who get
 swell-headed in such a place as a castle-town!
-
 While I walked about musing like this, I found myself in front of
 Yamashiro-ya. The town was much narrower than I had been led to believe.
-
 "I think I have seen nearly all. Guess I'll return and eat." And I
 entered the gate. The mistress of the hotel who was sitting at the
 counter, jumped out of her place at my appearance and with "Are you
@@ -787,7 +676,6 @@ took off my European dress, and with only a single Japanese summer coat
 on, sprawled in the centre of the room in the shape of the Japanese
 letter "big" (arms stretched out and legs spread wide[D]). I found it
 very refreshing.
-
 After luncheon I at once wrote a letter to Kiyo. I hate most to write
 letters because I am poor at sentence-making and also poor in my stock
 of words. Neither did I have any place to which to address my letters.
@@ -795,7 +683,6 @@ However, Kiyo might be getting anxious. It would not do to let her worry
 lest she think the steamer which I boarded had been wrecked and I was
 drowned,--so I braced up and wrote a long one. The body of the letter
 was as follows:
-
   "Arrived yesterday. A dull place. Am sleeping in a room of 15 mats.
   Tipped the hotel five yen as tea money. The house-wife of the hotel
   scraped the floor with her forehead. Couldn't sleep last night.
@@ -805,14 +692,11 @@ was as follows:
   'Hubbard Squash' for the teacher of English, 'Porcupine' the teacher
   of mathematics and 'Clown' for that of drawing. Will write you many
   other things soon. Good bye."
-
 When I finished writing the letter, I felt better and sleepy. So I slept
 in the centre of the room, as I had done before, in the letter "big"
 shape ([D]). No dream this time, and I had a sound sleep.
-
 "Is this the room?"--a loud voice was heard,--a voice which woke me up,
 and Porcupine entered.
-
 "How do you do? What you have to do in the school----" he began talking
 shop as soon as I got up and rattled me much. On learning my duties in
 the school, there seemed to be no difficulty, and I decided to accept.
@@ -821,12 +705,10 @@ I told to start not only two days hence but even from the following day.
 The talk on business over, Porcupine said that he did not think it was
 my intention to stay in such a hotel all the time, that he would find a
 room for me in a good boarding house, and that I should move.
-
 "They wouldn't take in another from anybody else but I can do it
 right away. The sooner the better. Go and look at the room to-day,
 move tomorrow and start teaching from the next day. That'll be all
 nice and settled."
-
 He seemed satisfied by arranging all by himself. Indeed, I should not be
 able to occupy such a room for long. I might have to blow in all of my
 salary for the hotel bill and yet be short of squaring it. It was pity
@@ -846,11 +728,7 @@ fellow, but judging by the way he had looked after me so far, he
 appeared not so bad after all. Only he seemed, like me, impatient by
 nature and of quick-temper. I heard afterward that he was liked most by
 all the students in the school.
-
-
-
 CHAPTER III.
-
 My teaching began at last. When I entered the class-room and stepped
 upon the platform for the first time, I felt somewhat strange. While
 lecturing, I wondered if a fellow like me could keep up the profession
@@ -865,7 +743,6 @@ hearing the noon-gun in Marunouchi when I was hungry. The first hour
 passed away in a dashing manner. And it passed away without encountering
 any knotty questions. As I returned to the teachers' room, Porcupine
 asked me how it was. I simply answered "well," and he seemed satisfied.
-
 When I left the teachers' room, chalk in hand, for the second hour
 class, I felt as if I was invading the enemy's territory. On entering
 the room, I found the students for this hour were all big fellows. I am
@@ -881,14 +758,11 @@ on you!" I thought. Elated by my success, I kept on in this tone, when
 one who looked the strongest, sitting in the middle of the front row,
 stood up suddenly, and called "Teacher!" There it goes!--I thought, and
 asked him what it was.
-
 "A-ah sa-ay, you talk too quick. A-ah ca-an't you make it a leetle slow?
 A-ah?" "A-ah ca-an't you?" "A-ah?" was altogether dull.
-
 "If I talk too fast, I'll make it slow, but I'm a Tokyo fellow, and
 can't talk the way you do. If you don't understand it, better wait
 until you do."
-
 So I answered him. In this way the second hour was closed better than I
 had expected. Only, as I was about to leave the class, one of the
 students asked me, "A-ah say, won't you please do them for me?" and
@@ -900,11 +774,9 @@ Some of them were heard saying "He doesn't know much." Don't take a
 teacher for an encyclopaedia! If I could work out such hard questions as
 these easily, I would not be in such a backwoods town for forty yen a
 month. I returned to the teachers' room.
-
 "How was it this time?" asked Porcupine. I said "Umh." But not satisfied
 with "Umh" only, I added that all the students in this school were
 boneheads. He put up a whimsical face.
-
 The third and the fourth hour and the first hour in the afternoon were
 more or less the same. In all the classes I attended, I made some kind
 of blunder. I realised that the profession of teaching not quite so easy
@@ -922,12 +794,9 @@ the absurdity of keeping me there till three o'clock regardless of my
 having nothing to do in the school. He said "Yes" and laughed. But he
 became serious and in an advisory manner told me not to make many
 complaints about the school.
-
 "Talk to me only, if you want to. There are some queer guys around."
-
 As we parted at the next corner, I did not have time to hear more from
 him.
-
 On reaching my room, the boss of the house came to me saying, "Let me
 serve you tea." I expected he was going to treat me to some good tea
 since he said "Let me serve you," but he simply made himself at home
@@ -935,10 +804,8 @@ and drank my own tea. Judging by this, I thought he might be
 practising "Let me serve you" during my absence. The boss said that he
 was fond of antique drawings and curios and finally had decided to
 start in that business.
-
 "You look like one quite taken about art. Suppose you begin patronizing
 my business just for fun as er--connoisseur of art?"
-
 It was the least expected kind of solicitation. Two years ago, I went to
 the Imperial Hotel (Tokyo) on an errand, and I was taken for a
 locksmith. When I went to see the Daibutsu at Kamakura, haying wrapped
@@ -960,10 +827,8 @@ kind not so bitter as that, and he answered "All right, Sir," and drank
 another cup. The fellow seemed never to know of having enough of
 anything so long as it was another man's. After he left the room, I
 prepared for the morrow and went to bed.
-
 [Footnote 3: A tanzaku is a long, narrow strip of stiff paper on which a
 Japanese poem is written.]
-
 Everyday thereafter I attended at the school and worked as per
 regulations. Every day on my return, the boss came to my room with the
 same old "Let me serve you tea." In about a week I understood the school
@@ -979,12 +844,10 @@ my blunders in the class room affected the students, or how much further
 they affected the principal or the head-teacher. As I mentioned before,
 I am not a fellow of much audacity to speak of, but I am quick to give
 up anything when I see its finish.
-
 I had resolved to go elsewhere at once if the school did not suit me. In
 consequence, neither Badger nor Red Shirt wielded any influence over me.
 And still less did I feel like coaxing or coddling the youngsters in the
 class room.
-
 So far it was O.K. with the school, but not so easy as that at my
 boarding house. I could have stood it if it had been only the boss
 coming to my room after my tea. But he would fetch many things to my
@@ -1000,17 +863,14 @@ is Kazan anything, and that this picture was the work of that Kazan
 something. After this nonsensical lecture, he insisted that he would
 make it fifteen yen for me to buy it. I declined the offer saying that I
 was shy of the money.
-
 [Footnote 4: Artists have several seals of stone with which to stamp on
 the picture they draw as a guarantee of their personal work or for
 identification. The shape and kind of seals are quite a hobby among
 artists, and sales or exchange are of common occurrence.]
-
 "You can pay any time." He was insistent. I settled him by telling him
 of my having no intention of purchasing it even if I had the necessary
 money. Again next time, he yanked in a big writing stone slab about the
 size of a ridge-tile.
-
 "This is a tankei,"[5] he said. As he "tankeied" two or three times, I
 asked for fun what was a tankei. Right away he commenced lecturing on
 the subject. "There are the upper, the middle and the lower stratum in
@@ -1024,13 +884,10 @@ wishing to sell if as soon as possible, he would make it very cheap,
 that I could have it for thirty yen. I was sure he was a fool. I seemed
 to be able to get through the school somehow, but I would soon give out
 if this "curio siege" kept on long.
-
 [Footnote 5: Tankei is the name of a place in China where a certain kind
 of stone suitable for writing purposes was produced.]
-
 [Footnote 6: "Gan" may be understood as a kind of natural mark on the
 stone peculiar to the stone from Tankei.]
-
 Shortly afterwards, I began to get sick of the school. One certain
 night, while I was strolling about a street named Omachi, I happened to
 notice a sign of noodles below of which was annotated "Tokyo" in the
@@ -1052,7 +909,6 @@ pasted on the wall, was entirely new. I was certain that they bought an
 old house and opened the business just two or three days before. At the
 head of the price-list appeared "tempura" (noodles served with shrimp
 fried in batter).
-
 "Say, fetch me some tempura," I ordered in a loud voice. Then three
 fellows who had been making a chewing noise together in a corner, looked
 in my direction. As the room was dark I did not notice them at first.
@@ -1060,7 +916,6 @@ But when we looked at each other, I found them all to be boys in our
 school. They "how d'ye do'd" me and I acknowledged it. That night,
 having come across the noodle after so long a time, it tasted so fine
 that I ate four bowls.
-
 The next day as I entered the class room quite unconcernedly, I saw on
 the black board written in letters so large as to take up the whole
 space; "Professor Tempura." The boys all glanced at my face and made
@@ -1072,7 +927,6 @@ finishing up my class, I returned to the teachers' room. After ten
 minutes' recess, I went to the next class, and there on the black board
 was newly written quite as large as before; "Four bowls of tempura
 noodles, but don't laugh."
-
 The first one did not arouse any ill-temper in me, but this time it made
 me feel irritating mad. A joke carried too far becomes mischievous. It
 is like the undue jealousy of some women who, like coal, look black and
@@ -1093,7 +947,6 @@ joke and if they knew the meaning of "cowardice." Some of them answered
 that to get angry on being laughed at over one's own doing, was
 cowardice. What made them so disgusting as this? I pitied myself for
 coming from far off Tokyo to teach such a lot.
-
 "Keep your mouth shut, and study hard," I snapped, and started the
 class. In the next class again there was written: "When one eats tempura
 noodles it makes him drawl nonsense." There seemed no end to it. I was
@@ -1101,7 +954,6 @@ thoroughly aroused with anger, and declaring that I would not teach such
 sassies, went home straight. The boys were glad of having an unexpected
 holiday, so I heard. When things had come to this pass, the antique
 curious seemed far more preferable to the school.
-
 My return home and sleep over night greatly rounded off my rugged temper
 over the tempura affair. I went to the school, and they were there also.
 I could not tell what was what. The three days thereafter were pacific,
@@ -1118,7 +970,6 @@ It is true that I ate two dishes and paid seven sen. Troublesome kids! I
 declare. I expected with certainty that there would be something at the
 second hour, and there it was; "The dango in the tenderloin taste fine."
 Stupid wretches!
-
 No sooner I thought, the dango incident closed than the red towel became
 the topic for widespread gossip. Inquiry as to the story revealed it to
 be something unusually absurd. Since, my arrival here, I had made it a
@@ -1134,7 +985,6 @@ not fast enough, streaked about so that the towel now looked as if it
 were dyed red. This towel hung down from my hand on both ways whether
 afoot or riding in the train. For this reason, the students nicknamed me
 Red Towel. Honest, it is exasperating to live in a little town.
-
 There is some more. The bath house I patronized was a newly built
 three-story house, and for the patrons of the first class the house
 provided a bath-robe, in addition to an attendant, and the cost was only
@@ -1143,7 +993,6 @@ fashion. I always paid the first class. Then those gossipy spotters
 started saying that for one who made only forty yen a month to take a
 first class bath every day was extravagant. Why the devil should they
 care? It was none of their business.
-
 There is still some more. The bath-tub,--or the tank in this case,--was
 built of granite, and measured about thirty square feet. Usually there
 were thirteen or fourteen people in the tank, but sometimes there was
@@ -1163,12 +1012,7 @@ a fellow to stop doing whatever I had started upon no matter what
 students might say, but I became thoroughly disgusted when I meditated
 on why I had come to such a narrow, suffocating place. And, then, when I
 returned home, the "antique curio siege" was still going on.
-
-
-
 CHAPTER IV
-
-
 For us teachers there was a duty of night watch in the school, and we
 had to do it in turn. But Badger and Red Shirt were not in it. On
 asking why these two were exempt from this duty, I was told that they
@@ -1194,7 +1038,6 @@ never stayed out overnight. When I did not find sleeping under the roof
 of my friends inviting, night watch in the school, you may be sure, was
 still worse. However repulsive, if this was a part of the forty yen a
 month, there was no alternative. I had to do it.
-
 To remain alone in the school after the faculty and students had gone
 home, was something particularly awkward. The room for the night watch
 was in the rear of the school building at the west end of the dormitory.
@@ -1218,7 +1061,6 @@ to go out. I told the janitor that I was going out for a minute. He
 asked me "on business?" and I answered "No," but to take a bath at the
 hot springs, and went out straight. It was too bad that I had left my
 red towel at home, but I would borrow one over there for to-day.
-
 I took plenty of time in dipping in the bath and as it became dark at
 last, I came to the Furumachi Station on a train. It was only about four
 blocks to the school; I could cover it in no time. When I started
@@ -1226,35 +1068,27 @@ walking schoolwards, Badger was seen coming from the opposite direction.
 Badger, I presumed, was going to the hot springs by this train. He came
 with brisk steps, and as we passed by, I nodded my courtesy. Then
 Badger, with a studiously owlish countenance, asked:
-
 "Am I wrong to understand that you are night watch?"
-
 Chuck that "Am-I-wrong-to-understand"! Two hours ago, did he not say to
 me "You're on first night watch to-night. Now, take care of yourself?"
 What makes one use such a roundabout, twisted way of saying anything
 when he becomes a principal? I was far from smiling.
-
 "Yes, Sir," I said, "I'm night watch to-night, and as I am night watch I
 will return to the school and stay there overnight, sure." With this
 parting shot, I left him where we met. Coming then to the cross-streets
 of Katamachi, I met Porcupine. This is a narrow place, I tell you.
 Whenever one ventures out, he is sure to come across some familiar face.
-
 "Say, aren't you night watch?" he hallooed, and I said "Yes, I am." "Tis
 wrong for night watch to leave his post at his pleasure," he added, and
 to this I blurted out with a bold front; "Nothing wrong at all. It is
 wrong not to go out."
-
 "Say, old man, your slap-dash is going to the limit. Wouldn't look well
 for the principal or the head teacher to see you out like this."
-
 The submissive tone of his remark was contrary to Porcupine as I had
 known him so far, so I cut him short by saying:
-
 "I have met the principal just now. Why, he approved my taking a stroll
 about the town. Said it would be hard on night watch unless he took a
 walk when it is hot." Then I made a bee-line for the school.
-
 Soon it was night. I called the janitor to my room and had a chat for
 about two hours. I grew tired of this, and thought I would get into bed
 anyway, even if I could not sleep. I put on my night shirt, lifted the
@@ -1272,7 +1106,6 @@ solid base, and that if he had any fuss to make, make it to the house,
 not to me. This room for night watch was not on the second floor, so
 nobody cared how much I banged. I do not feel well-rested unless I go to
 bed with the loudest bang I can make.
-
 "This is bully!" and I straightened out my feet, when something jumped
 and clung to them. They felt coarse, and seemed not to be fleas. I was a
 bit surprised, and shook my feet inside the blanket two or three times.
@@ -1296,67 +1129,48 @@ where they made a fluffy jerk and remained, far from being dead. At
 last, in about half an hour the slaughter of the grasshoppers was ended.
 I fetched a broom and swept them out. The janitor came along and asked
 what was the matter.
-
 "Damn the matter! Where in thunder are the fools who keep grasshoppers
 in bed! You pumpkinhead!"
-
 The janitor answered by explaining that he did not know anything about
 it. "You can't get away with Did-not-know," and I followed this
 thundering by throwing away the broom. The awe-struck janitor shouldered
 the broom and faded away.
-
 At once I summoned three of the students to my room as the
 "representatives," and six of them reported. Six or ten made no
 difference; I rolled up the sleeves of my night-shirt and fired away.
-
 "What do you mean by putting grasshoppers in my bed!"
-
 "Grasshoppers? What are they?" said one in front, in a tone disgustingly
 quiet. In this school, not only the principal, but the students as well,
 were addicted to using twisted-round expressions.
-
 "Don't know grasshoppers! You shall see!" To my chagrin, there was none;
 I had swept them all out. I called the janitor again and told him to
 fetch those grasshoppers he had taken away. The janitor said he had
 thrown them into the garbage box, but that he would pick them out again.
 "Yes, hurry up," I said, and he sped away. After a while he brought back
 about ten grasshoppers on a white paper, remarking:
-
 "I'm sorry, Sir. It's dark outside and I can't find out more. I'll find
 some tomorrow." All fools here, down to the janitor. I showed one
 grasshopper to the students.
-
 "This is a grasshopper. What's the matter for as big idiots as you not
 to know a grasshopper." Then the one with a round face sitting on the
 left saucily shot back:
-
 "A-ah say, that's a locust, a-ah----."
-
 "Shut up. They're the same thing. In the first place, what do you
 mean by answering your teacher 'A-ah say'? Ah-Say or Ah-Sing is a
 Chink's name!"
-
 For this counter-shot, he answered:
-
 "A-ah say and Ah-Sing is different,--A-ah say." They never got rid of
 "A-ah say."
-
 "Grasshoppers or locusts, why did you put them into my bed? When I
 asked you to?"
-
 "Nobody put them in."
-
 "If not, how could they get into the bed?"
-
 "Locusts are fond of warm places and probably they got in there
 respectfully by themselves."
-
 "You fools! Grasshoppers getting into bed respectfully! I should smile
 at them getting in there respectfully! Now, what's the reason for doing
 this mischief? Speak out."
-
 "But there is no way to explain it because we didn't do it."
-
 Shrimps! If they were afraid of making a clean breast of their own deed,
 they should not have done it at all. They looked defiant, and appeared
 to insist on their innocence as long as no evidence was brought up. I
@@ -1376,14 +1190,11 @@ anyway? They enter a school, tattle round lies, play silly jokes behind
 some one by sneaking and cheating and get wrongly swell-headed when they
 finish the school thinking they have received an education. A common lot
 of jackasses they are.
-
 My hatred of talking with these scamps became intense, so I dismissed
 them by saying:
-
 "If you fellows have nothing to say, let it go at that. You deserve
 pity for not knowing the decent from the vulgar after coming to a
 middle school."
-
 I am not very decent in my own language or manner, but am sure that my
 moral standard is far more decent than that of these gangs. Those six
 boys filed out leisurely. Outwardly they appeared more dignified than I
@@ -1410,7 +1221,6 @@ and if I go to Echigo for the purpose of buying that sweetmeat to let
 her eat it, she is fully worth that trouble. Kiyo has been praising me
 as unselfish and straight, but she is a person of sterling qualities far
 more than I whom she praises. I began to feel like meeting her.
-
 While I was thus meditating about Kiyo, all of a sudden, on the floor
 above my head, about thirty to forty people, if I guess by the number,
 started stamping the floor with bang, bang, bang that well threatened to
@@ -1423,9 +1233,7 @@ done. It should be proper that they repent their folly after going to
 bed and to come and beg me pardon the next morning. Even if they could
 not go so far as to apologize they should have kept quiet. Then what
 does this racket mean? Where we keeping hogs in our dormitory?
-
 "This crazy thing got to stop. See what you get!"
-
 I ran out of the room in my night shirt, and flew upstairs in three and
 half steps. Then, strange to say, thunderous rumbling, of which I was
 sure of hearing in the act, was hushed. Not only a whisper but even
@@ -1449,9 +1257,7 @@ roar was raised, coming from about thirty or forty throats, "One, two,
 three,--Whee-ee!" The roar had hardly subsided, when, as before, the
 stamping of the floor commenced with furious rhythm. Ah, it was not a
 dream, but a real thing!
-
 "Quit making the noise! 'Tis midnight!"
-
 I shouted to beat the band, and started in their direction. My passage
 was dark; the moonlight yonder was only my guide. About twelve feet
 past, I stumbled squarely against some hard object; ere the "Ouch!" has
@@ -1461,7 +1267,6 @@ would not obey the command. Growing impatient, I hobbled on one foot,
 and found both voice and stamping already ceased and perfectly quiet.
 Men can be cowards but I never expected them capable of becoming such
 dastardly cowards as this. They challenged hogs.
-
 Now the situation having developed to this pretty mess, I would not give
 it up until I had dragged them out from hiding and forced them to
 apologize. With this determination, I tried to open one of the doors and
@@ -1492,7 +1297,6 @@ think,--if the honest does not win, what else is there in this world
 that will win? If I cannot beat them to-night, I will tomorrow; if not
 tomorrow, then the day after tomorrow. If not the day after tomorrow, I
 will sit down right here, get my meals from my home until I beat them.
-
 Thus resolved, I squatted in the middle of the corridor and waited for
 the dawn. Myriads of mosquitoes swarmed about me, but I did not mind
 them. I felt my leg where I hit it a while ago; it seemed bespattered
@@ -1505,21 +1309,17 @@ nearest to me, and yanked it with all my might. He fell down prone. Look
 at what you're getting now! I flew at the other fellow, who was much
 confused; gave him vigorous shaking twice or thrice, and he only kept
 open his bewildering eyes.
-
 "Come up to my room." Evidently they were mollycoddles, for they obeyed
 my command without a murmur. The day had become already clear.
-
 I began questioning those two in my room, but,--you cannot pound out the
 leopard's spots no matter how you may try,--they seemed determined to
 push it through by an insistent declaration of "not guilty," that they
 would not confess. While this questioning was going on, the students
 upstairs came down, one by one, and began congregating in my room. I
 noticed all their eyes were swollen from want of sleep.
-
 "Blooming nice faces you got for not sleeping only one night. And you
 call yourselves men! Go, wash your face and come back to hear what I've
 got to tell you."
-
 I hurled this shot at them, but none of them went to wash his face. For
 about one hour, I had been talking and back-talking with about fifty
 students when suddenly Badger put in his appearance. I heard afterward
@@ -1527,7 +1327,6 @@ that the janitor ran to Badger for the purpose of reporting to him that
 there was a trouble in the school. What a weak-knee of the janitor to
 fetch the principal for so trifling an affair as this! No wonder he
 cannot see better times than a janitor.
-
 The principal listened to my explanation, and also to brief remarks from
 the students. "Attend school as usual till further notice. Hurry up with
 washing your face and breakfast; there isn't much time left." So the
@@ -1535,39 +1334,29 @@ principal let go all the students. Decidedly slow way of handling, this.
 If I were the principal, I would expel them right away. It is because
 the school accords them such luke-warm treatment that they get "fresh"
 and start "guying" the night watch.
-
 He said to me that it must have been trying on my nerves, and that
 I might be tired, and also that I need not teach that day. To this
 I replied:
-
 "No, Sir, no worrying at all. Such things may happen every night,
 but it would not disturb me in the least as long as I breathe. I
 will do the teaching. If I were not able to teach on account of lack
 of sleep for only one single night, I would make a rebate of my
 salary to the school."
-
 I do not know how this impressed him, but he gazed at me for a while,
 and called my attention to the fact that my face was rather swollen.
 Indeed, I felt it heavy. Besides, it itched all over. I was sure the
 mosquitoes must have stung me there to their hearts' content. I
 further added:
-
 "My face may be swollen, but I can talk all right; so I will teach;"
 thus scratching my face with some warmth. The principal smiled and
 remarked, "Well, you have the strength." To tell the truth, he did not
 intend remark to be a compliment, but, I think, a sneer.
-
-
-
 CHAPTER V.
-
-
 "Won't you go fishing?" asked Red Shirt He talks in a strangely womanish
 voice. One would not be able to tell whether he was a man or a woman. As
 a man he should talk like one. Is he not a college graduate? I can talk
 man-like enough, and am a graduate from a school of physics at that. It
 is a shame for a B.A. to have such a squeak.
-
 I answered with the smallest enthusiasm, whereupon he further asked me
 an impolite question if I ever did fishing. I told him not much, that I
 once caught three gibels when I was a boy, at a fishing game pond at
@@ -1579,7 +1368,6 @@ stuck out his chin and laughed "ho, ho." Why could he not laugh just
 like an ordinary person? "Then you are not well acquainted with the
 spirit of the game," he cried. "I'll show you if you like." He seemed
 highly elated.
-
 Not for me! I take it this way that generally those who are fond of
 fishing or shooting have cruel hearts. Otherwise, there is no reason why
 they could derive pleasure in murdering innocent creatures. Surely, fish
@@ -1612,12 +1400,10 @@ I returned home and got ready, and having joined Red Shirt and Clown at
 the station, we three started to the shore. There was only one boatman
 to row; the boat was long and narrow, a kind we do not have in Tokyo. I
 looked for fishing rods but could find none.
-
 "How can we fish without rods? How are we going to manage it?" I asked
 Clown and he told me with the air of a professional fisherman that no
 rods were needed in the deep-sea fishing, but only lines. I had better
 not asked him if I was to be talked down in this way.
-
 The boatman was rowing very slowly, but his skill was something
 wonderful. We had already come far out to sea, and on turning back, saw
 the shore minimized, fading in far distance. The five-storied pagoda of
@@ -1630,7 +1416,6 @@ absolutely fine view." I don't know whether it is so fine as to be
 absolute, but there was no doubt as to the exhilarating air. I realized
 it as the best tonic to be thus blown by the fresh sea breeze upon a
 wide expanse of water. I felt hungry.
-
 "Look at that pine; its trunk is straight and spreads its top branches
 like an umbrella. Isn't it a Turnersque picture?" said Red Shirt. "Yes,
 just like Turner's," responded Clown, "Isn't the way it curves just
@@ -1648,14 +1433,11 @@ call it so hereafter," seconded Red Shirt. If I was included in that
 "We," it was something I least cared for. Aoshima was good enough for
 me. "By the way, how would it look," said Clown, "if we place Madonna by
 Raphael upon that rock? It would make a fine picture."
-
 "Let's quit talking about Madonna, ho, ho, ho," and Red Shirt emitted a
 spooky laugh.
-
 "That's all right. Nobody's around," remarked Clown as he glanced at me,
 and turning his face to other direction significantly, smiled
 devilishly. I felt sickened.
-
 As it was none of my business whether it was a Madonna or a kodanna
 (young master), they let pose there any old way, but it was vulgar to
 feign assurance that one's subject is in no danger of being understood
@@ -1665,16 +1447,12 @@ favorite geisha of Red Shirt. I should smile at the idea of his gazing
 at his tootsy-wootsy standing beneath a pine tree. It would be better
 if Clown would make an oil painting of the scene and exhibit it for
 the public.
-
 "This will be about the best place." So saying the boatman stopped
 rowing the boat and dropped an anchor.
-
 "How deep is it?" asked Red Shirt, and was told about six fathoms.
-
 "Hard to fish sea-breams in six fathoms," said Red Shirt as he dropped a
 line into the water. The old sport appeared to expect to fetch some
 bream. Bravo!
-
 "It wouldn't be hard for you. Besides it is calm," Clown fawningly
 remarked, and he too dropped a line. The line had only a tiny bit of
 lead that looked like a weight. It had no float. To fish without a float
@@ -1682,16 +1460,13 @@ seemed as nearly reasonable as to measure the heat without a
 thermometer, which was something impossible for me. So I looked on. They
 then told me to start, and asked me if I had any line. I told them I had
 more than I could use, but that I had no float.
-
 "To say that one is unable to fish without a float shows that he is a
 novice," piped up Clown.
-
 "See? When the line touches the bottom, you just manage it with your
 finger on the edge. If a fish bites, you could tell in a minute. There
 it goes," and Red Shirt hastily started taking out the line. I wondered
 what he had got, but I saw no fish, only the bait was gone. Ha, good for
 you, Gov'nur!
-
 "Wasn't it too bad! I'm sure it was a big one. If you miss that way,
 with your ability, we would have to keep a sharper watch to-day. But,
 say, even if we miss the fish, it's far better than staring at a float,
@@ -1700,7 +1475,6 @@ has been getting rather gay, and I was almost tempted to swat him. I'm
 just as good as they are. The sea isn't leased by Red Shirt, and there
 might be one obliging bonito which might get caught by my line. I
 dropped my line then, and toyed it with my finger carelessly.
-
 After a while something shook my line with successive jerks. I thought
 it must be a fish. Unless it was something living, it would not give
 that tremulous shaking. Good! I have it, and I commenced drawing in the
@@ -1717,10 +1491,8 @@ died. Red Shirt and Clown watched me with surprise. I washed my hands in
 the water but they still smelled "fishy." No more for me! I don't care
 what fish I might get, I don't want to grab a fish. And I presume the
 fish doesn't want to be grabbed either. I hastily rolled up the line.
-
 "Splendid for the first honor, but that's goruki," Clown again made a
 "fresh" remark.
-
 "Goruki sounds like the name of a Russian literator," said Red Shirt.
 "Yes, just like a Russian literator," Clown at once seconded Red Shirt.
 Gorky for a Russian literator, Maruki a photographer of Shibaku, and
@@ -1735,24 +1507,19 @@ a magazine with a red cover entitled Imperial Literature to the school
 and poring over it with reverence. I heard it from Porcupine that Red
 Shirt gets his supply of all foreign names from that magazine. Well, I
 should say!
-
 For some time, Red Shirt and Clown fished assiduously and within about
 an hour they caught about fifteen fish. The funny part of it was that
 all they caught were goruki; of sea-bream there was not a sign.
-
 "This is a day of bumper crop of Russian literature," Red Shirt said,
 and Clown answered:
-
 "When one as skilled as you gets nothing but goruki, it's natural for me
 to get nothing else."
-
 The boatman told me that this small-sized fish goruki has too many
 tiny bones and tastes too poor to be fit for eating, but they could be
 used for fertilising. So Red Shirt and Clown were fishing fertilisers
 with vim and vigor. As for me, one goruki was enough and I laid down
 myself on the bottom, and looked up at the sky. This was far more
 dandy than fishing.
-
 Then the two began whispering. I could not hear well, nor did I care to.
 I was looking up at the sky and thinking about Kiyo. If I had enough of
 money, I thought, and came with Kiyo to such a picturesque place, how
@@ -1771,7 +1538,6 @@ but I could not make out what they were talking about. "Eh? I don't
 know......" "...... That's true ...... he doesn't know ...... isn't it
 pity, though ......." "Can that be......." "With grasshoppers ......
 that's a fact."
-
 I did not listen to what they were talking, but when I heard Clown say
 "grasshoppers," I cocked my ear instinctively. Clown emphasized, for
 what reason I do not know the word "grasshopers" so that it would be
@@ -1779,7 +1545,6 @@ sure to reach my ear plainly, and he blurred the rest on purpose. I did
 not move, and kept on listening. "That same old Hotta," "that may be the
 case...." "Tempura ...... ha, ha, ha ......" "...... incited ......"
 "...... dango also? ......"
-
 The words were thus choppy, but judging by their saying "grasshoppers,"
 "tempura" or "dango," I was sure they were secretly talking something
 about me. If they wanted to talk, they should do it louder. If they
@@ -1797,7 +1562,6 @@ sunlight gradually waned and chilly winds commenced stirring. The clouds
 that resembled the streaky smokes of joss sticks were slowly extending
 over a clear sky, and by degrees they were absorbed, melted and changed
 to a faint fog.
-
 "Well, let's be going," said Red Shirt suddenly. "Yes, this is the time
 we were going. See your Madonna to-night?" responded Clown. "Cut out
 nonsense ...... might mean a serious trouble," said Red Shirt who was
@@ -1806,89 +1570,66 @@ all right if he hears.......," and when Clown, so saying, turned himself
 my way, I glared squarely in his face. Clown turned back as if to keep
 away from a dazzling light, and with "Ha, this is going some," shrugged
 his shoulders and scratched his head.
-
 The boat was now being rowed shore-ward over the calm sea. "You don't
 seem much fond of fishing," asked Red Shirt. "No, I'd rather prefer
 lying and looking at the sky," I answered, and threw the stub of
 cigarette I had been smoking into the water; it sizzled and floated on
 the waves parted by the oar.
-
 "The students are all glad because you have come. So we want you do your
 best." Red Shirt this time started something quite alien to fishing. "I
 don't think they are," I said. "Yes; I don't mean it as flattery. They
 are, sure. Isn't it so, Mr. Yoshikawa?"
-
 "I should say they are. They're crazy over it," said Clown with an
 unctuous smile. Strange that whatever Clown says, it makes me itching
 mad. "But, if you don't look out, there is danger," warned Red Shirt.
-
 "I am fully prepared for all dangers," I replied. In fact, I had made up
 my mind either to get fired or to make all the students in the dormitory
 apologize to me.
-
 "If you talk that way, that cuts everything out. Really, as a head
 teacher, I've been considering what is good for you, and wouldn't like
 you to mistake it."
-
 "The head teacher is really your friend. And I'm doing what I can for
 you, though mighty little, because you and I are Yedo kids, and I would
 like to have you stay with us as long as possible and we can help each
 other." So said Clown and it sounded almost human. I would sooner hang
 myself than to get helped by Clown.
-
 "And the students are all glad because you had come, but there are many
 circumstances," continued Red Shirt. "You may feel angry sometimes but
 be patient for the present, and I will never do anything to hurt your
 interests."
-
 "You say 'many circumstances'; what are they?"
-
 "They're rather complicated. Well, they'll be clear to you by and by.
 You'll understand them naturally without my talking them over. What do
 you say, Mr. Yoshikawa?"
-
 "Yes, they're pretty complicated; hard to get them cleared up in a
 jiffy. But they'll become clear by-the-bye. Will be understood naturally
 without my explaining them," Clown echoed Red Shirt.
-
 "If they're such a bother, I don't mind not hearing them. I only asked
 you because you sprang the subject."
-
 "That's right. I may seem irresponsible in not concluding the thing I
 had started. Then this much I'll tell you. I mean no offense, but you
 are fresh from school, and teaching is a new experience. And a school is
 a place where somewhat complicated private circumstances are common and
 one cannot do everything straight and simple".
-
 "If can't get it through straight and simple, how does it go?"
-
 "Well, there you are so straight as that. As I was saying, you're short
 of experience........"
-
 "I should be. As I wrote it down in my record-sheet, I'm 23 years and
 four months."
-
 "That's it. So you'd be done by some one in unexpected quarter."
-
 "I'm not afraid who might do me as long as I'm honest."
-
 "Certainly not. No need be afraid, but I do say you look sharp; your
 predecessor was done."
-
 I noticed Clown had become quiet, and turning round, saw him at the
 stern talking with the boatman. Without Clown, I found our conversation
 running smoothly.
-
 "By whom was my predecessor done?"
-
 "If I point out the name, it would reflect on the honor of that person,
 so I can't mention it. Besides there is no evidence to prove it and I
 may be in a bad fix if I say it. At any rate, since you're here, my
 efforts will prove nothing if you fail. Keep a sharp look-out, please."
-
 "You say look-out, but I can't be more watchful than I'm now. If I don't
 do anything wrong, after all, that's all right isn't it?"
-
 Red Shirt laughed. I did not remember having said anything provocative
 of laughter. Up to this very minute, I have been firm in my conviction
 that I'm right. When I come to consider the situation, it appears that a
@@ -1905,7 +1646,6 @@ simplicity. My word! what chances have the simple-hearted or the pure in
 a society where they are made objects of contempt! Kiyo would never
 laugh at such a time; she would listen with profound respect. Kiyo is
 far superior to Red Shirt.
-
 "Of course, that't all right as long as you don't do anything wrong. But
 although you may not do anything wrong, they will do you just the same
 unless you can see the wrong of others. There are fellows you have got
@@ -1914,21 +1654,14 @@ get boarding house for you...... Getting rather cold. 'Tis already
 autumn, isn't it. The beach looks beer-color in the fog. A fine view.
 Say, Mr. Yoshikawa, what do you think of the scene along the
 beach?......" This in a loud voice was addressed to Clown.
-
 "Indeed, this is a fine view. I'd get a sketch of it if I had time.
 Seems a pity to leave it there," answered Clown.
-
 A light was seen upstairs at Minato-ya, and just as the whistle of a
 train was sounded, our boat pushed its nose deep into the sand. "Well,
 so you're back early," courtesied the wife of the boatman as she stepped
 upon the sand. I stood on the edge of the boat; and whoop! I jumped out
 to the beach.
-
-
-
 CHAPTER VI.
-
-
 I heartily despise Clown. It would be beneficial for Japan if such a
 fellow were tied to a quernstone and dumped into the sea. As to Red
 Shirt, his voice did not suit my fancy. I believe he suppresses his
@@ -1960,7 +1693,6 @@ is nothing that cannot be settled by talking it over. If what he says
 sounds reasonable, I would resign even tomorrow. This is not the only
 town where I can get bread and butter; I ought not to die homeless
 wherever I go. I thought Porcupine was a better sport.
-
 When I came here, Porcupine was the first to treat me to ice water. To
 be treated by such a fellow, even if it is so trifling a thing as ice
 water, affects my honor. I had only one glass then and had him pay only
@@ -2016,7 +1748,6 @@ should step into the thick of the fight between Porcupine and me, and
 side with me with all his colors flying. By so doing, he might be worthy
 the position of the head teacher, and vindicate the principle of wearing
 red shirts.
-
 I told the head teacher that I had not divulged the secret to anybody
 but was going to fight it out with Porcupine. Red Shirt was greatly
 perturbed, and stuttered out; "Say, don't do anything so rash as that. I
@@ -2033,10 +1764,8 @@ If Red Shirt was typical of Bachelors of Arts, I did not see much in
 them. He appeared composed after having requested me to do something
 self-contradictory and wanting logic, and on top of that suspects my
 sincerity.
-
 "Don't you mistake," I said to myself, "I'm a man to the marrow, and
 haven't the idea of breaking my own promises; mark that!"
-
 Meanwhile the occupants of the desks on both my sides came to the room,
 and Red Shirt hastily withdrew to his own desk. Red Shirt shows some air
 even in his walk. In stepping about the room, he places down his shoes
@@ -2046,7 +1775,6 @@ not training himself for a burglar, I suppose. He should cut out such
 nonsense before it gets worse. Then the bugle for the opening of classes
 was heard. Porcupine did not appear after all. There was no other way
 but to leave the coins upon the desk and attend the class.
-
 When I returned to the room a little late after the first hour class,
 all the teachers were there at their desks, and Porcupine too was
 there. The moment Porcupine saw my face, he said that he was late on
@@ -2056,60 +1784,44 @@ desk and told him to take it. "Don't josh me," he said, and began
 laughing, but as I appeared unusually serious, he swept the coins back
 to my desk, and flung back, "Quit fooling." So he really meant to
 treat me, eh?
-
 "No fooling; I mean it," I said. "I have no reason to accept your treat,
 and that's why I pay you back. Why don't you take it?"
-
 "If you're so worried about that one sen and a half, I will take it, but
 why do you pay it at this time so suddenly?"
-
 "This time or any time, I want to pay it back. I pay it back because I
 don't like you treat me."
-
 Porcupine coldly gazed at me and ejaculated "H'm." If I had not been
 requested by Red Shirt, here was the chance to show up his cowardice and
 make it hot for him. But since I had promised not to reveal the secret,
 I could do nothing. What the deuce did he mean by "H'm" when I was red
 with anger.
-
 "I'll take the price of the ice water, but I want you leave your
 boarding house."
-
 "Take that coin; that's all there is to it. To leave or not,--that's my
 pleasure."
-
 "But that is not your pleasure. The boss of your boarding house came to
 me yesterday and wanted me to tell you leave the house, and when I heard
 his explanation, what he said was reasonable. And I dropped there on my
 way here this morning to hear more details and make sure of everything."
-
 What Porcupine was trying to get at was all dark to me.
-
 "I don't care a snap what the boss was damn well pleased to tell you," I
 cried. "What do you mean by deciding everything by yourself! If there is
 any reason, tell me first. What's the matter with you, deciding what the
 boss says is reasonable without hearing me."
-
 "Then you shall hear," he said. "You're too tough and been regarded
 a nuisance over there. Say, the wife of a boarding house is a wife,
 not a maid, and you've been such a four-flusher as to make her wipe
 your feet."
-
 "When did I make her wipe my feet?" I asked.
-
 "I don't know whether you did or did not, but anyway they're pretty sore
 about you. He said he can make ten or fifteen yen easily if he sell a
 roll of panel-picture."
-
 "Damn the chap! Why did he take me for a boarder then!"
-
 "I don't know why. They took you but they want you leave because they
 got tired of you. So you'd better get out."
-
 "Sure, I will. Who'd stay in such a house even if they beg me on their
 knees. You're insolent to have induced me to go to such a false accuser
 in the first place."
-
 "Might be either I'm insolent or you're tough." Porcupine is no less
 hot-tempered than I am, and spoke with equally loud voice. All the other
 teachers in the room, surprised, wondering what has happened, looked in
@@ -2119,7 +1831,6 @@ was laughing amused. The moment he met my glaring stare as if to say
 "You too want to fight?" he suddenly assumed a grave face and became
 serious. He seemed to be a little cowed. Meanwhile the bugle was heard,
 and Porcupine and I stopped the quarrel and went to the class rooms.
-
 In the afternoon, a meeting of the teachers was going to be held to
 discuss the question of punishment of those students in the dormitory
 who offended me the other night. This meeting was a thing I had to
@@ -2134,7 +1845,6 @@ doubting the facts. It would have been better if the principal had
 decided at once on such a plain case; he is surely wanting in decision.
 If all principals are like this, a principal is a synonym of a
 "dilly-dally."
-
 The meeting hall was a long, narrow room next to that of the principal,
 and was used for dining room. About twenty chairs, with black leather
 seat, were lined around a narrow table, and the whole scene looked like
@@ -2154,7 +1864,6 @@ can't bulldoze me with that," I thought, and rolled my own in defiance
 and stared back at him. My eyes are not well-shaped but their large size
 is seldom beaten by others. Kiyo even once suggested that I should make
 a fine actor because I had big eyes.
-
 "All now here?" asked the principal, and the clerk named Kawamura
 counted one, two, three and one was short. "Just one more," said the
 clerk, and it ought to be; Hubbard Squash was not there. I don't know
@@ -2168,7 +1877,6 @@ teacher so quiet as he. He seldom, if ever, laughs or talks. I knew the
 word "gentleman" from books, and thought it was found only in the
 dictionary, but not a thing alive. But since I met Hubbard Squash, I was
 impressed for the first time that the word represented a real substance.
-
 As he is a man so attached to me, I had noticed his absence as soon as I
 entered the meeting hall. To tell the truth, I came to the hall with the
 intention of sitting next to him. The principal said that the absentee
@@ -2180,7 +1888,6 @@ others were writing nothings upon the table with the erasers at the end
 of their pencils. Clown talked to Porcupine once in a while, but he was
 not responsive. He only said "Umh" or "Ahm," and stared at me with
 wrathful eyes. I stared back with equal ferocity.
-
 Then the tardy Hubbard Squash apologetically entered, and politely
 explained that he was unavoidably detained. "Well, then the meeting is
 called to order," said Badger. On these sheets was printed, first the
@@ -2188,7 +1895,6 @@ question of the punishment of the offending students, second that of
 superintending the students, and two or three other matters. Badger,
 putting on airs as usual, as if he was an incarnation of education,
 spoke to the following effect.
-
 "Any misdeeds or faults among the teachers or the students in this
 school are due to the lack of virtues in my person, and whenever
 anything happens, I inwardly feel ashamed that a man like me could hold
@@ -2197,7 +1903,6 @@ have to apologize from my heart. But since it has happened, it cannot be
 helped; we must settle it one way or other. The facts are as you already
 know, and I ask you gentlemen to state frankly the best means by which
 the affair may be settled."
-
 When I heard the principal speak, I was impressed that indeed the
 principal, or Badger, was saying something "grand." If the principal was
 willing to assume all responsibilities, saying it was his fault or his
@@ -2216,13 +1921,11 @@ had hopped on the roof of the nearby building. The teacher of Confucius
 was folding and unfolding the hectograph sheet. Porcupine was still
 staring at me. If a meeting was so nonsensical an affair as this, I
 would have been better absent taking a nap at home.
-
 I became irritated, and half raised myself, intending to make a
 convincing speech, but just then Red Shirt began saying something and I
 stopped. I saw him say something, having put away his pipe, and wiping
 his face with a striped silk handkerchief. I'm sure he copped that
 handkerchief from the Madonna; men should use white linen. He said:
-
 "When I heard of the rough affairs in the dormitory, I was greatly
 ashamed as the head teacher of my lack of discipline and influence. When
 such an affair takes place there is underlying cause somewhere. Looking
@@ -2236,7 +1939,6 @@ due regard as to their good or bad. As to the mode of punishment itself,
 I have no right to suggest since it is a matter entirely in the hand of
 the principal, but I should ask, considering these points, that some
 leniency be shown toward the students."
-
 Well, as Badger, so was Red Shirt. He declares the "Rough Necks" among
 the students is not their fault but the fault of the teachers. A crazy
 person beats other people because the beaten are wrong. Very grateful,
@@ -2245,7 +1947,6 @@ into the campus and let them wrestle their heads off. Who would have
 grasshoppers put into his bed unconsciously! If things go on like this,
 they may stab some one asleep, and get freed as having done the deed
 unconsciously.
-
 Having figured it out in this wise, I thought I would state my own views
 on the matter, but I wanted to give them an eloquent speech and fairly
 take away their breath. I have an affection of the windpipe which clog
@@ -2255,21 +1956,17 @@ speech-making, and it would not do to have them see my awkwardness. I'll
 make a rough note of composition first, I thought, and started mentally
 making a sentence, when, to my surprise, Clown stood up suddenly. It was
 unusual for Clown to state his opinion. He spoke in his flippant tone:
-
 "Really the grasshopper incident and the whoop-la affair are peculiar
 happenings which are enough to make us doubt our own future. We teachers
 at this time must strive to clear the atmosphere of the school. And
 what the principal and the head teacher have said just now are fit and
 proper. I entirely agree with their opinions. I wish the punishment be
 moderate."
-
 In what Clown had said there were words but no meaning. It was a
 juxtaposition of high-flown words making no sense. All that I understood
 was the words, "I entirely agree with their opinions."
-
 Clown's meaning was not clear to me, but as I was thoroughly angered, I
 rose without completing my rough note.
-
 "I am entirely opposed to......." I said, but the rest did not come at
 once. ".......I don't like such a topsy-turvy settlement," I added and
 the fellows began laughing. "The students are absolutely wrong from the
@@ -2290,12 +1987,10 @@ pack up. I had no ability of out-talking such fellows, or even if I had,
 I was in no humor to keeping their company for long. Since I don't
 expect to remain in the school, the devil may take care of the rest. If
 I said anything, they would only laugh; so I shut my mouth tight.
-
 Porcupine, who up to this time had been listening to the others, stood
 up with some show of spirit. Ha, the fellow was going to endorse the
 views of Red Shirt, eh? You and I got to fight it out anyway, I thought,
 so do any way you darn please. Porcupine spoke in a thunderous voice:
-
 "I entirely differ from the opinions of the head teacher and other
 gentlemen. Because, viewed from whatever angle, this incident cannot be
 other than an attempt by those fifty students in the dormitory to make
@@ -2319,12 +2014,10 @@ eradicate this very evil. If we mean to countenance it, we had better
 not accepted our positions here. For these reasons, I believe it proper
 to punish the students in the dormitory to the fullest extent and also
 make them apologize to that teacher in the open."
-
 All were quiet. Red Shirt again began polishing his pipe. I was greatly
 elated. He spoke almost what I had wanted to. I'm such a simple-hearted
 fellow that I forgot all about the bickerings with Porcupine, and looked
 at him with a grateful face, but he appeared to take no notice of me.
-
 After a while, Porcupine again stood up, and said. "I forgot to mention
 just now, so I wish to add. The teacher on night duty that night seems
 to have gone to the hot springs during his duty hours, and I think it a
@@ -2333,7 +2026,6 @@ being in sole charge of the school, to slip out to a hot springs. The
 bad behavior of the students is one thing; this blunder is another, and
 I wish the principal to call attention of the responsible person to
 that matter."
-
 A strange fellow! No sooner had he backed me up than he began talking me
 down. I knew the other night watch went out during his duty hours, and
 thought it was a custom, so I went as far out as to the hot springs
@@ -2343,7 +2035,6 @@ said; "I really went to the hot springs. It was wrong and I apologize."
 Then all again laughed. Whatever I say, they laugh. What a lot of boobs!
 See if you fellows can make a clean breast of your own fault like this!
 You fellows laugh because you can't talk straight.
-
 After that the principal said that since it appeared that there will be
 no more opinions, he will consider the matter well and administer what
 he may deem a proper punishment. I may here add the result of the
@@ -2360,7 +2051,6 @@ would like no teacher to go singly to eating houses of lower kind--for
 instance, noodle-house or dango shop.... And again all laughed. Clown
 looked at Porcupine, said "tempura" and winked his eyes, but Porcupine
 regarded him in silence. Good!
-
 My "think box" is not of superior quality, so things said by Badger were
 not clear to me, but I thought if a fellow can't hold the job of teacher
 in a middle school because he patronizes a noodle-house or dango shop,
@@ -2370,7 +2060,6 @@ teacher one who does not eat noodle and dango. To give an appointment
 without reference to the matter at first, and then to proclaim that
 noodle or dango should not be eaten was a blow to a fellow like me who
 has no other petty hobby. Then Red Shirt again opened his mouth.
-
 "Teachers of the middle school belong to the upper class of society and
 they should not be looking after material pleasures only, for it would
 eventually have effect upon their personal character. But we are human,
@@ -2378,7 +2067,6 @@ and it would be intolerable in a small town like this to live without
 any means of affording some pleasure to ourselves, such as fishing,
 reading literary products, composing new style poems, or haiku
 (17-syllable poem). We should seek mental consolation of higher order."
-
 There seemed no prospect that he would quit the hot air. If it was a
 mental consolation to fish fertilisers on the sea, have goruki for
 Russian literature, or to pose a favorite geisha beneath pine tree, it
@@ -2390,12 +2078,7 @@ Madonna?" No one laughed this time and looked at each other with queer
 faces, and Red Shirt himself hung his head, apparently embarrassed. Look
 at that! A good shot, eh? Only I was sorry for Hubbard Squash who,
 having heard the remark, became still paler.
-
-
-
 CHAPTER VII.
-
-
 That very night I left the boarding house. While I was packing up, the
 boss came to me and asked if there was anything wrong in the way I was
 treated. He said he would be pleased to correct it and suit me if I was
@@ -2404,7 +2087,6 @@ boneheads to be in this world! I could not tell whether they wanted me
 to stay or get out. They're crazy. It would be disgrace for a Yedo kid
 to fuss about with such a fellow; so I hired a rikishaman and speedily
 left the house.
-
 I got out of the house all right, but had no place to go. The rikishaman
 asked me where I was going. I told him to follow me with his mouth shut,
 then he shall see and I kept on walking. I thought of going to
@@ -2437,13 +2119,11 @@ couple called Hagino, living in the rear of the street, who had asked
 him sometime ago to get some boarders for them as there are only two in
 the house and they had some vacant rooms. Hubbard Squash was kind enough
 to go along with me and find out if the rooms were vacant. They were.
-
 From that night I boarded at the house of the Haginos. What surprised me
 was that on the day after I left the house of Ikagin, Clown stepped in
 and took the room I had been occupying. Well used to all sorts of tricks
 and crooks as I might have been, this audacity fairly knocked me off my
 feet. It was sickening.
-
 I saw that I would be an easy mark for such people unless I brace up
 and try to come up, or down, to their level. It would be a high time
 indeed for me to be alive if it were settled that I would not get three
@@ -2469,7 +2149,6 @@ samurai class, unlike the Ikagin couple, were both refined. The old
 man's recital of "utai" in a queer voice at night was somewhat telling
 on my nerves, but it was much easier on me as he did not frequent my
 room like Ikagin with the remark of "let me serve you tea."
-
 The old lady once in a while would come to my room and chat on many
 things. She questioned me why I had not brought my wife with me. I asked
 her if I looked like one married, reminding her that I was only twenty
@@ -2479,89 +2158,56 @@ Mr. So-and-So has already two children at twenty two, and marshalled
 altogether about half a dozen examples,--quite a damper on my youthful
 theory. I will then get marred at twenty four, I said, and requested her
 to find me a good wife, and she asked me if I really meant it.
-
 "Really? You bet! I can't help wanting to get married."
-
 "I should suppose so. Everybody is just like that when young." This
 remark was a knocker; I could not say anything to that.
-
 "But I'm sure you have a Madam already. I have seen to that with my
 own eyes."
-
 "Well, they are sharp eyes. How have you seen it?"
-
 "How? Aren't you often worried to death, asking if there's no letter
 from Tokyo?"
-
 "By Jupiter! This beats me!"
-
 "Hit the mark, haven't I?"
-
 "Well, you probably have."
-
 "But the girls of these days are different from what they used to be and
 you need a sharp look-out on them. So you'd better be careful."
-
 "Do you mean that my Madam in Tokyo is behaving badly?"
-
 "No, your Madam is all right."
-
 "That makes me feel safe. Then about what shall I be careful?"
-
 "Yours is all right. Though yours is all right......."
-
 "Where is one not all right?"
-
 "Rather many right in this town. You know the daughter of the Toyamas?
-
 "No, I do not."
-
 "You don't know her yet? She is the most beautiful girl about here. She
 is so beautiful that the teachers in the school call her Madonna. You
 haven't heard that?
-
 "Ah, the Madonna! I thought it was the name of a geisha."
-
 "No, Sir. Madonna is a foreign word and means a beautiful girl,
 doesn't it?"
-
 "That may be. I'm surprised."
-
 "Probably the name was given by the teacher of drawing."
-
 "Was it the work of Clown?"
-
 "No, it was given by Professor Yoshikawa."
-
 "Is that Madonna not all right?"
-
 "That Madonna-san is a Madonna not all right."
-
 "What a bore! We haven't any decent woman among those with nicknames
 from old days. I should suppose the Madonna is not all right."
-
 "Exactly. We have had awful women such as O-Matsu the Devil or Ohyaku
 the Dakki.
-
 "Does the Madonna belong to that ring?"
-
 "That Madonna-san, you know, was engaged to Professor Koga,--who brought
 you here,--yes, was promised to him."
-
 "Ha, how strange! I never knew our friend Hubbard Squash was a fellow of
 such gallantry. We can't judge a man by his appearance. I'll be a bit
 more careful."
-
 "The father of Professor Koga died last year,--up to that time they had
 money and shares in a bank and were well off,--but since then things
 have grown worse, I don't know why. Professor Koga was too good-natured,
 in short, and was cheated, I presume. The wedding was delayed by one
 thing or another and there appeared the head teacher who fell in love
 with the Madonna head over heels and wanted to many her."
-
 "Red Shirt? He ought be hanged. I thought that shirt was not an ordinary
 kind of shirt. Well?"
-
 "The head-teacher proposed marriage through a go-between, but the
 Toyamas could not give a definite answer at once on account of their
 relations with the Kogas. They replied that they would consider the
@@ -2571,10 +2217,8 @@ Miss. Red Shirt-san is bad, but so is Miss Toyama; they all talk bad of
 them. She had agreed to be married to Professor Koga and changed her
 mind because a Bachelor of Arts began courting her,--why, that would be
 an offense to the God of To-day."
-
 "Of course. Not only of To-day but also of tomorrow and the day after;
 in fact, of time without end."
-
 "So Hotta-san a friend of Koga-san, felt sorry for him and went to the
 head teacher to remonstrate with him. But Red Shirt-san said that he had
 no intention of taking away anybody who is promised to another. He may
@@ -2582,12 +2226,9 @@ get married if the engagement is broken, he said, but at present he was
 only being acquainted with the Toyamas and he saw nothing wrong in his
 visiting the Toyamas. Hotta-san couldn't do anything and returned. Since
 then they say Red Shirt-san and Hotta-san are on bad terms."
-
 "You do know many things, I should say. How did you get such details?
 I'm much impressed."
-
 "The town is so small that I can know everything."
-
 Yes, everything seems to be known more than one cares. Judging by her
 way, this woman probably knows about my tempura and dango affairs. Here
 was a pot that would make peas rattle! The meaning of the Madonna, the
@@ -2595,24 +2236,16 @@ relations between Porcupine and Red Shirt became clear and helped me a
 deal. Only what puzzled me was the uncertainty as to which of the two
 was wrong. A fellow simple-hearted like me could not tell which side he
 should help unless the matter was presented in black and white.
-
 "Of Red Shirt and Porcupine, which is a better fellow?"
-
 "What is Porcupine, Sir?"
-
 "Porcupine means Hotta."
-
 "Well, Hotta-san is physically strong, as strength goes, but Red
 Shirt-san is a Bachelor of Arts and has more ability. And Red Shirt-san
 is more gentle, as gentleness goes, but Hotta-san is more popular among
 the students."
-
 "After all, which is better?"
-
 "After all, the one who gets a bigger salary is greater, I suppose?"
-
 There was no use of going on further in this way, and I closed the talk.
-
 Two or three days after this, when I returned from the school, the old
 lady with a beaming smile, brought me a letter, saying, "Here you are
 Sir, at last. Take your time and enjoy it." I took it up and found it
@@ -2621,7 +2254,6 @@ by these I saw the letter was sent from Yamashiro-ya to the Iagins, then
 to the Haginos. Besides, it stayed at Yamashiro-ya for about one week;
 even letters seemed to stop in a hotel. I opened it, and it was a very
 long letter.
-
 "When I received the letter from my Master Darling, I intended to write
 an answer at once. But I caught cold and was sick abed for about one
 week and the answer was delayed for which I beg your pardon. I am not
@@ -2633,7 +2265,6 @@ myself. So I made a rough copy once, and then a clean copy. I finished
 the clean copy, in two days, but the rough copy took me four days. It
 may be difficult for you to read, but as I have written this letter with
 all my might, please read it to the end."
-
 This was the introductory part of the letter in which, about four feet
 long, were written a hundred and one things. Well, it was difficult to
 read. Not only was it poorly written but it was a sort of juxtaposition
@@ -2649,7 +2280,6 @@ The early autumn breeze wafted through the leaves of the banana trees,
 bathed me with cool evening air, rustled the letter I was holding and
 would have blown it clear to the hedge if I let it go. I did not mind
 anything like this, but kept on reading.
-
 "Master Darling is simple and straight like a split bamboo by
 disposition," it says, "only too explosive. That's what worries me. If
 you brand other people with nicknames you will only make enemies of
@@ -2666,15 +2296,11 @@ sending you ten yen by postal money order. I have that fifty yen my
 Master Darling gave me deposited in the Postal Savings to help you start
 housekeeping when you return to Tokyo, and taking out this ten, I have
 still forty yen left,--quite safe."
-
 I should say women are very particular on many things.
-
 When I was meditating with the letter flapping in my hand on the porch,
 the old lady opened the sliding partition and brought in my supper.
-
 "Still poring over the letter? Must be a very long one, I
 imagine," she said.
-
 "Yes, this is an important letter, so I'm reading it with the wind
 blowing it about," I replied--the reply which was nonsense even for
 myself,--and I sat down for supper. I looked in the dish on the tray,
@@ -2697,7 +2323,6 @@ potatoes, then took out two raw eggs from the drawer of my desk, broke
 them on the edge of the rice bowl, to tide it over. I have to get
 nourishment by eating raw eggs or something, or how can I stand the
 teaching of twenty one hours a week?
-
 I was late for my bath to-day on account of the letter from Kiyo. But I
 would not like to drop off a single day since I had been there everyday.
 I thought I would take a train to-day, and coming to the station with
@@ -2711,13 +2336,10 @@ more than that. I was wishing to get his salary doubled, if possible,
 and have him marry Miss Toyama and send them to Tokyo for about one
 month on a pleasure trip. Seeing him, therefore, I motioned him to a
 seat beside me, addressing him cheerfully:
-
 "Hello[H], going to bath? Come and sit down here."
-
 Hubbard Squash, appearing much awe-struck, said; "Don't mind me,
 Sir," and whether out of polite reluctance or I don't know what,
 remained standing.
-
 "You have to wait for a little while before the next train starts; sit
 down; you'll be tired," I persuaded him again. In fact, I was so
 sympathetic for him that I wished to have him sit down by me somehow.
@@ -2734,17 +2356,11 @@ Madonna to cast off such a splendid fellow and give preference to Red
 Shirt, was frivolous beyond my understanding. Put how many dozens of
 Red Shirt you like together, it will not make one husband of stuff to
 beat Hubbard Squash.
-
 "Is anything wrong with you? You look quite fatigued," I asked.
-
 "No, I have no particular ailments......."
-
 "That's good. Poor health is the worst thing one can get."
-
 "You appear very strong."
-
 "Yes, I'm thin, but never got sick. That's something I don't like."
-
 Hubbard Squash smiled at my words. Just then I heard some young girlish
 laughs at the entrance, and incidentally looking that way, I saw a
 "peach." A beautiful girl, tall, white-skinned, with her head done up
@@ -2760,7 +2376,6 @@ suddenly get up and start walking slowly toward them. I wondered if she
 was not the Madonna. The three were courtesying in front of the ticket
 window, some distance away from me, and I could not hear what they were
 talking about.
-
 The clock at the station showed the next train to start in five
 minutes. Having lost my partner, I became impatient and longed for the
 train to start as soon as possible, when a fellow rushed into the
@@ -2772,17 +2387,14 @@ Shirt stopped short, stared around, and then after bowing politely to
 the three still in front of the ticket window, made a remark or two,
 and hastily turned toward me. He came up to me, walking in his usual
 cat's style, and hallooed.
-
 "You too going to bath? I was afraid of missing the train and
 hurried up, but we have three or four minutes yet. Wonder if that
 clock is right?"
-
 He took out his gold watch, and remarking it wrong about two minutes sat
 down beside me. He never turned toward the belle, but with his chin on
 the top of a cane, steadily looked straight before him. The older woman
 would occasionally glance toward Red Shirt, but the younger kept her
 profile away. Surely she was the Madonna.
-
 The train now arrived with a shrill whistle and the passengers hastened
 to board. Red Shirt jumped into the first class coach ahead of all. One
 cannot brag much about boarding the first class coach here. It cost only
@@ -2796,7 +2408,6 @@ class coach and appeared somewhat hesitating, but seeing me coming, took
 decisive steps and jumped into the second. I felt sorry for him--I do
 not know why--and followed him into the same coach. Nothing wrong in
 riding on the second with a ticket for the first, I believe.
-
 At the hot springs, going down from the third floor to the bath room in
 bathing gown, again I met Hubbard Squash. I feel my throat clogged up
 and unable to speak at a formal gathering, but otherwise I am rather
@@ -2806,7 +2417,6 @@ of a Yedo kid to console him to the best of my ability. But Hubbard
 Squash was not responsive. Whatever I said, he would only answer "eh?"
 or "umh," and even these with evident effort. Finally I gave up my
 sympathetic attempt and cut off the conversation.
-
 I did not meet Red Shirt at the bath. There are many bath rooms, and one
 does not necessarily meet the fellows at the same bath room though he
 might come on the same train. I thought it nothing strange. When I got
@@ -2823,7 +2433,6 @@ entrance, near the gate, is the place where I ate dango and committed
 the blunder. A round lantern with the signs of sweet meats hung outside
 and its light fell on the trunk of a willow tree close by. I hungered to
 have a bite of dango, but went away forbearing.
-
 To be unable to eat dango one is so fond of eating, is tragic. But to
 have one's betrothed change her love to another, would be more tragic.
 When I think of Hubbard Squash, I believe that I should, not complain if
@@ -2844,10 +2453,8 @@ room. Viewed from any angle, man is unreliable. If I write these things
 to Kiyo, it would surprise her. She would perhaps say that because it is
 the west side of Hakone that the town had all the freaks and crooks
 dumped in together.[7]
-
 [Footnote 7: An old saying goes that east of the Hakone pass, there are
 no apparitions or freaks.]
-
 I do not by nature worry about little things, and had come so far
 without minding anything. But hardly a month had passed since I came
 here, and I have begun to regard the world quite uneasily. I have not
@@ -2858,7 +2465,6 @@ matters, I had passed the stone bridge and come up to the levy of the
 Nozeri river. The word river sounds too big; it is a shallow stream of
 about six feet wide. If one goes on along the levy for about twelve
 blocks, he reaches the Aioi village where there is a temple of Kwanon.
-
 Looking back at the town of the hot springs, I see red lights gleaming
 amid the pale moon beams. Where the sound of the drum is heard must be
 the tenderloin. The stream is shallow but fast, whispering incessantly.
@@ -2867,7 +2473,6 @@ I perceived a shadow ahead. Through the light of the moon, I found
 there were two shadows. They were probably village youngsters returning
 from the hot springs, though they did not sing, and were exceptionally
 quiet for that.
-
 I kept on walking, and I was faster than they. The two shadows became
 larger. One appeared like a woman. When I neared them within about sixty
 feet, the man, on hearing my footsteps, turned back. The moon was
@@ -2880,16 +2485,10 @@ turning back gazed squarely into the face of the man. The moon
 generously bathed my face with its beaming light. The fellow uttered a
 low "ah," and suddenly turning sideway, said to the woman "Let's go
 back." They traced their way back toward the hot springs town.
-
 Was it the intention of Red Shirt to hush the matter up by pretending
 ignorance, or was it lack of nerve? I was not the only fellow who
 suffered the consequence of living in a small narrow town.
-
-
-
 CHAPTER VIII.
-
-
 On my way back from the fishing to which I was invited by Red Shirt, and
 since then, I began to suspect Porcupine. When the latter wanted me to
 get out of Ikagin's house on sham pretexts, I regarded him a decidedly
@@ -2920,14 +2519,12 @@ the feline voice of Red Shirt. To tell the truth, I tried to get
 reconciled with Porcupine, and after the meeting, spoke a word or two to
 him, but he shut up like a clam and kept glaring at me. So I became
 sore, and let it go at that.
-
 Porcupine has not spoken to me since. The one sen and a half which I
 paid him back upon the desk, is still there, well covered with dust. I
 could not touch it, nor would Porcupine take it. This one sen and a
 half has become a barrier between us two. We two were cursed with this
 one sen and a half. Later indeed I got sick of its sight that I hated
 to see it.
-
 While Porcupine and I were thus estranged, Red Shirt and I continued
 friendly relations and associated together. On the day following my
 accidental meeting with him near the Nozeri river, for instance, Red
@@ -2939,7 +2536,6 @@ at the station. Do you go there at that time every day? Isn't it late?"
 I startled him with the remark; "I met you on the levy of the Nozeri
 river too, didn't I?" and he replied, "No, I didn't go in that
 direction. I returned right after my bath."
-
 What is the use of trying to keep it dark. Didn't we meet actually face
 to face? He tells too many lies. If one can hold the job of a head
 teacher and act in this fashion, I should be able to run the position of
@@ -2947,7 +2543,6 @@ Chancellor of a university. From this time on, my confidence in Red
 Shirt became still less. I talk with Red Shirt whom I do not trust, and
 I keep silent with Porcupine whom I respect. Funny things do happen in
 this world.
-
 One day Red Shirt asked me to come over to his house as he had something
 to tell me, and much as I missed the trip to the hot springs, I started
 for his house at about 4 o'clock. Red Shirt is single, but in keeping
@@ -2960,70 +2555,47 @@ her heart glad. The younger brother of Red Shirt answered my bell. This
 brother gets his lessons on algebra and mathematics from me at the
 school. He stands no show in his school work, and being a "migratory
 bird" is more wicked than the native boys.
-
 I met Red Shirt. Smoking the same old unsavory amber pipe, he said
 something to the following effect:
-
 "Since you've been with us, our work has been more satisfactory than it
 was under your predecessor, and the principal is very glad to have got
 the right person in the right place. I wish you to work as hard as you
 can, for the school is depending upon you."
-
 "Well, is that so. I don't think I can work any harder than now......."
-
 "What you're doing now is enough. Only don't forget what I told you the
 other day."
-
 "Meaning that one who helps me find a boarding house is dangerous?"
-
 "If you state it so baldly, there is no meaning to it....... But that's
 all right,...... I believe you understand the spirit of my advice. And
 if you keep on in the way you're going to-day ...... We have not been
 blind ...... we might offer you a better treatment later on if we can
 manage it."
-
 "In salary? I don't care about the salary, though the more the better."
-
 "And fortunately there is going to be one teacher transferred,......
 however, I can't guarantee, of course, until I talk it over with the
 principal ...... and we might give you something out of his salary."
-
 "Thank you. Who is going to be transferred?"
-
 "I think I may tell you now; 'tis going to be Announced soon. Koga
 is the man."
-
 "But isn't Koga-san a native of this town?"
-
 "Yes, he is. But there are some circumstances ...... and it is partly by
 his own preference."
-
 "Where is he going?"
-
 "To Nobeoka in Hiuga province. As the place is so far away, he is going
 there with his salary raised a grade higher."
-
 "Is some one coming to take his place?"
-
 "His successor is almost decided upon."
-
 "Well, that's fine, though I'm not very anxious to have my salary
 raised."
-
 "I'm going to talk to the principal about that anyway. And, we may have
 to ask you to work more some time later ...... and the principal appears
 to be of the same opinion....... I want you to go[I] ahead with that in
 your mind."
-
 "Going to increase my working hours?"
-
 "No. The working hours may be reduced......"
-
 "The working hours shortened and yet work more? Sounds funny."
-
 "It does sound funny ...... I can't say definitely just yet ...... it
 means that we way have to ask you to assume more responsibility."
-
 I could not make out what he meant. To assume more responsibility might
 mean my appointment to the senior instructor of mathematics, but
 Porcupine is the senior instructor and there is no danger of his
@@ -3038,14 +2610,10 @@ is where I beat it, I thought, and, saying "No, I don't, good by,"
 hastily left the house. The "haiku" should be a diversion of Baseo[9] or
 the boss of a barbershop. It would not do for the teacher of mathematics
 to rave over the old wooden bucket and the morning glory.[10]
-
 [Footnote 8: The 17-syllable poem]
-
 [Footnote 9: A famous composer of the poem.]
-
 [Footnote 10: There is a well-known 17-syllable poem describing the
 scene of morning glories entwining around the wooden bucket.]
-
 I returned home and thought it over. Here is a man whose mental process
 defies a layman's understanding. He is going to court hardships in a
 strange part of the country in preference of his home and the school
@@ -3062,44 +2630,29 @@ alone does not commend itself as civilized. It sounds like a town
 inhabited by men and monkeys in equal numbers. However sage-like Hubbard
 Squash might be I thought he would not become a friend of monkeys of his
 own choice. What a curious slant!
-
 Just then the old lady brought in my supper--"Sweet potatoes again?" I
 asked, and she said, "No, Sir, it is tofu to-night." They are about the
 same thing.
-
 "Say, I understand Koga-san is going to Nobeoka."
-
 "Isn't it too bad?"
-
 "Too bad? But it can't be helped if he goes there by his own
 preference."
-
 "Going there by his own preference? Who, Sir?"
-
 "Who? Why, he! Isn't Professor Koga going there by his own choice?"
-
 "That's wrong Mr. Wright, Sir."
-
 "Ha, Mr. Wright, is it? But Red Shirt told me so just now. If that's
 wrong Mr. Wright, then Red Shirt is blustering Mr. Bluff."
-
 "What the head-teacher says is believable, but so Koga-san does not
 wish to go."
-
 "Our old lady is impartial, and that is good. Well, what's the matter?"
-
 "The mother of Koga-san was here this morning, and told me all the
 circumstances."
-
 "Told you what circumstances?"
-
 "Since the father of Koga-san died, they have not been quite well off as
 we might have supposed, and the mother asked the principal if his salary
 could not be raised a little as Koga-san has been in service for four
 years. See?"
-
 "Well?"
-
 "The principal said that he would consider the matter, and she felt
 satisfied and expected the announcement of the increase before long. She
 hoped for its coming this month or next. Then the principal called
@@ -3108,45 +2661,33 @@ was short of money and could not raise his salary. But he said there is
 an opening in Nobeoka which would give him five yen extra a month and he
 thought that would suit his purpose, and the principal had made all
 arrangements and told Koga-san he had better go......."
-
 "That wasn't a friendly talk but a command. Wasn't it?"
-
 "Yes, Sir, Koga-san told the principal that he liked to stay here better
 at the old salary than go elsewhere on an increased salary, because he
 has his own house and is living with his mother. But the matter has all
 been settled, and his successor already appointed and it couldn't be
 helped, said the principal."
-
 "Hum, that's a jolly good trick, I should say. Then Koga-san has no
 liking to go there? No wonder I thought it strange. We would have to go
 a long way to find any blockhead to do a job in such a mountain village
 and get acquainted with monkeys for five yen extra."
-
 "What is a blockhead, Sir?"
-
 "Well, let go at that. It was all the scheme of Red Shirt. Deucedly
 underhand scheme, I declare. It was a stab from behind. And he means to
 raise my salary by that; that's not right. I wouldn't take that raise.
 Let's see if he can raise it."
-
 "Is your salary going to be raised, Sir?"
-
 "Yes, they said they would raise mine, but I'm thinking of refusing it."
-
 "Why do you refuse?"
-
 "Why or no why, it's going to be refused. Say, Red Shirt is a fool; he
 is a coward."
-
 "He may be a coward, but if he raises your salary, it would be best for
 you to make no fuss, but accept it. One is apt to get grouchy when
 young, but will always repent when he is grown up and thinks that it was
 pity he hadn't been a little more patient. Take an old woman's advice
 for once, and if Red Shirt-san says he will raise your salary, just take
 it with thanks."
-
 "It's none of business of you old people."
-
 The old lady withdrew in silence. The old man is heard singing "utai" in
 the off-key voice. "Utai," I think, is a stunt which purposely makes a
 whole show a hard nut to crack by giving to it difficult tunes, whereas
@@ -3162,9 +2703,7 @@ the fellow prefers to remain in his old position? Even
 Dazai-no-Gonnosutsu did not have to go farther than about Hakata; even
 Matagoro Kawai [11] stopped at Sagara. I shall not feel satisfied unless
 I see Red Shirt and tell him I refuse the raise.
-
 [Footnote 11: The persons in exile, well-known in Japanese history.]
-
 I dressed again and went to his house. The same younger brother of Red
 Shirt again answered the bell, and looked at me with eyes which plainly
 said, "You here again?" I will come twice or thrice or as many times as
@@ -3177,50 +2716,35 @@ about my feet, I found a pair of thin, matted wooden clogs, and I heard
 some one in the house saying, "Now we're banzai." I noticed that the
 visitor was Clown. Nobody but Clown could make such a squeaking voice
 and wear such clogs as are worn by cheap actors.
-
 After a while Red Shirt appeared at the door with a lamp in his hand,
 and said, "Come in; it's no other than Mr. Yoshikawa."
-
 "This is good enough," I said, "it won't take long." I looked at his
 face which was the color of a boiled lobster. He seemed to have been
 drinking with Clown.
-
 "You told me that you would raise my salary, but I've changed my mind,
 and have come here to decline the offer."
-
 Red Shirt, thrusting out the lamp forward, and intently staring at me,
 was unable to answer at the moment. He appeared blank. Did he think it
 strange that here was one fellow, only one in the world, who does not
 want his salary raised, or was he taken aback that I should come back so
 soon even if I wished to decline it, or was it both combined, he stood
 there silent with his mouth in a queer shape.
-
 "I accepted your offer because I understood that Mr. Koga was being
 transferred by his own preference......."
-
 "Mr. Koga is really going to be transferred by his own preference."
-
 "No, Sir. He would like to stay here. He doesn't mind his present salary
 if he can stay."
-
 "Have you heard it from Mr. Koga himself?"
-
 "No, not from him."
-
 "Then, from who?"
-
 "The old lady in my boarding house told me what she heard from the
 mother of Mr. Koga."
-
 "Then the old woman in your boarding house told you so?"
-
 "Well, that's about the size of it."
-
 "Excuse me, but I think you are wrong. According to what you say, it
 seems as if you believe what the old woman in the boarding house tells
 you, but would not believe what your head teacher tells you. Am I right
 to understand it that way?"
-
 I was stuck. A Bachelor of Arts is confoundedly good in oratorical
 combat. He gets hold of unexpected point, and pushes the other backward.
 My father used to tell me that I am too careless and no good, and now
@@ -3229,34 +2753,25 @@ when I heard the story from the old lady, and in fact I had not heard
 the story from either Hubbard Squash or his mother. In consequence, when
 I was challenged in this Bachelor-of-Arts fashion, it was a bit
 difficult to defend myself.
-
 I could not defend his frontal attack, but I had already declared in my
 mind a lack of confidence on Red Shirt. The old lady in the boarding
 house may be tight and a grabber, I do not doubt it, but she is a woman
 who tells no lie. She is not double faced like Red Shirt, I was
 helpless, so I answered.
-
 "What you say might be right,--anyway, I decline the raise."
-
 "That's still funnier. I thought your coming here now was because you
 had found a certain reason for which you could not accept the raise.
 Then it is hard to understand to see you still insisting on declining
 the raise in spite of the reason having been eradicated by my
 explanation."
-
 "It may be hard to understand, but anyway I don't want it."
-
 "If you don't like it so much, I wouldn't force it on you. But if you
 change your mind within two or three hours with no particular reason, it
 would affect your credit in future."
-
 "I don't care if it does affect it."
-
 "That can't be. Nothing is more important than credit for us. Supposing,
 the boss of the boarding house......."
-
 "Not the boss, but the old lady."
-
 "Makes no difference,--suppose what the old woman in the boarding house
 told you was true, the raise of your salary is not to be had by reducing
 the income of Mr. Koga, is it? Mr. Koga is going to Nobeoka; his
@@ -3266,7 +2781,6 @@ need not be shy. Mr. Koga will be promoted; the successor is to start on
 less pay, and if you could be raised, I think everything be satisfactory
 to all concerned. If you don't like it, that's all right, but suppose
 you think it over once more at home?"
-
 My brain is not of the best stuff, and if another fellow flourishes his
 eloquence like this, I usually think, "Well, perhaps I was wrong," and
 consider myself defeated, but not so to-night. From the time I came to
@@ -3284,19 +2798,12 @@ reasoning can command admiration, loansharks, police officers or college
 professors should be liked best by all. I cannot be moved in the least
 by the logic by so insignificant a fellow as the head teacher of a
 middle school. Man works by preference, not by logic.
-
 "What you say is right, but I have begun to dislike the raise, so I
 decline. It will be the same if I think it over. Good by." And I left
 the house of Red Shirt. The solitary milky way hung high in the sky.
-
-
-
 CHAPTER IX.
-
-
 When I went to the school, in the morning of the day the farewell dinner
 party was to be held, Porcupine suddenly spoke to me;
-
 "The other day I asked you to quit the Ikagins because Ikagin begged of
 me to have you leave there as you were too tough, and I believed him.
 But I heard afterward that Ikagin is a crook and often passes imitation
@@ -3305,51 +2812,36 @@ be a lie. He tried to sell pictures and curios to you, but as you shook
 him off, he told some false stories on you. I did very wrong by you
 because I did not know his character, and wish you would forgive me."
 And he offered me a lengthy apology.
-
 Without saying a word, I took up the one sen and a half which was lying
 on the desk of Porcupine, and put it into my purse. He asked me in a
 wondering tone, if I meant to take it back. I explained, "Yes. I didn't
 like to have you treat me and expected to pay this back at all hazard,
 but as I think about it, I would rather have you treated me after all;
 so I'm going to take it back."
-
 Porcupine laughed heartily and asked me why I had not taken it back
 sooner. I told him that I wanted to more than once, in fact, but somehow
 felt shy and left it there. I was sick of that one sen and a half these
 days that I shunned the sight of it when I came to the school, I said.
 He said "You're a deucedly unyielding sport," and I answered "You're
 obstinate." Then ensued the following give-and-take between us two;
-
 "Where were you born anyway?"
-
 "I'm a Yedo kid."
-
 "Ah, a Yedo kid, eh? No wonder I thought you a pretty stiff neck."
-
 "And you?"
-
 "I'm from Aizu."
-
 "Ha, Aizu guy, eh? You've got reason to be obstinate. Going to the
 farewell dinner to-day?"
-
 "Sure. You?"
-
 "Of course I am. I intend to go down to the beach to see Koga-san off
 when he leaves."
-
 "The farewell dinner should be a big blow-out. You come and see. I'm
 going to get soused to the neck."
-
 "You get loaded all you want. I quit the place right after I finish my
 plates. Only fools fight booze."
-
 "You're a fellow who picks up a fight too easy. It shows up the
 characteristic of the Yedo kid well."
-
 "I don't care. Say, before you go to the farewell dinner, come to see
 me. I want to tell you something."
-
 Porcupine came to my room as promised. I had been in full sympathy with
 Hubbard Squash these days, and when it came to his farewell dinner, my
 pity for him welled up so much that I wished I could go to Nobeoka for
@@ -3359,7 +2851,6 @@ like that of the excited spieler of New York would not become the place.
 I planned to take the breath out of Red Shirt by employing Porcupine who
 has a thunderous voice. Hence my invitation to him before we started for
 the party.
-
 I commenced by explaining the Madonna affair, but Porcupine, needless to
 say, knew more about it than I. Telling about my meeting Red Shirt on
 the Nozeri river, I called him a fool. Porcupine then said; "You call
@@ -3369,7 +2860,6 @@ with Red Shirt. "Then Red Shirt may be a four-flusher," I said and he
 approved this new alias with enthusiasm. Porcupine is physically strong,
 but when it comes to such terms, he knows less than I do. I guess all
 Aizu guys are about the same.
-
 Then, when I disclosed to him about the raise of my salary and the
 advance hint on my promotion by Red Shirt, Porcupine pished, and said,
 "Then he means to discharge me." "Means to discharge you? But you mean
@@ -3380,7 +2870,6 @@ answered that he had not thought so far yet. Yes, Porcupine looks
 strong, but seems to be possessed of no abundance of brain power. I told
 him about my refusal of the raise of my salary, and the Gov'nur was much
 pleased, praising me with the remark, "That's the stuff for Yedo kids."
-
 "If Hubbard Squash does not like to go down to Nobeoka, why didn't you
 do something to enable him remain here," I asked, and Porcupine said
 that when he heard the story from Hubbard Squash, everything had been
@@ -3393,20 +2882,16 @@ transfer, it would have been better for him. But he was fooled by the
 oily tongue of Red Shirt, had accepted the transfer outright, and all
 efforts by Porcupine who was moved by the tearful appeal of the mother,
 proved unavailing.
-
 I said; "The transfer of Koga is nothing but a trick of Red Shirt to cop
 the Madonna by sending Hubbard Squash away."
-
 "Yes," said Porcupine "That must be. Red Shirt looks gentle, but plays
 nasty tricks. He is a sonovagun for when some one finds fault with him,
 he has excuses prepared already. Nothing but a sound thumping will be
 effective for fellows like him."
-
 He rolled up his sleeves over his plump arms as he spoke. I asked him,
 by the way, if he knew jiujitsu, because his arms looked powerful. Then
 he put force in his forearm, and told me to touch it. I felt its swelled
 muscle which was hard as the pumic stone in the public bathhouse.
-
 I was deeply impressed by his massive strength, and asked him if he
 could not knock five or six of Red Shirt in a bunch. "Of course," he
 said, and as he extended and bent back the arm, the lumpy muscle rolled
@@ -3416,24 +2901,19 @@ would snap a paper-string wound around it twice. I said I might do the
 same thing if it were a paper-string, and he challenged me. "No, you
 can't," he said. "See if you can." As it would not look well if I
 failed, I did not try.
-
 "Say, after you have drunk all you want to-night at the dinner, take a
 fall out of Red Shirt and Clown, eh?" I suggested to him for fun.
 Porcupine thought for a moment and said, "Not to-night, I guess." I
 wanted to know why, and he pointed out that it would be bad for Koga.
-
 "Besides, if I'm going to give it to them at all, I've to get them red
 handed in their dirty scheme, or all the blame will be on me," he added
 discretely. Even Porcupine seems to have wiser judgment than I.
-
 "Then make a speech and praise Mr. Koga sky-high. My speech becomes sort
 of jumpy, wanting dignity. And at any formal gathering, I get lumpy in
 my throat, and can't speak. So I leave it to you," I said.
-
 "That's a strange disease. Then you can't speak in the presence of other
 people? It would be awkward, I suppose," he said, and I told him not
 quite as much awkward as he might think.
-
 About then, the time for the farewell dinner party arrived, and I went
 to the hall with Porcupine. The dinner party was to be held at
 Kashin-tei which is said to be the leading restaurant in the town, but I
@@ -3442,7 +2922,6 @@ formerly the private residence of the chief retainer of the daimyo of
 the province, and its condition seemed to confirm the story. The
 residence of a chief retainer transformed into a restaurant was like
 making a saucepan out of warrior's armor.
-
 When we two came there, about all of the guests were present. They
 formed two or three groups in the spacious room of fifty mats. The
 alcove in this room, in harmony with its magnificence, was very large.
@@ -3463,7 +2942,6 @@ enquired of the teacher of Confucius why such a poor work be hung in
 apparent show of pride. He explained that it was written by Kaioku a
 famous artist in the writing, but Kaioku or anyone else, I still declare
 the work poorly done.
-
 By and by, Kawamura, the clerk, requested all to be seated. I chose one
 in front of a pillar so I could lean against it. Badger sat in front of
 the panel of Kaioku in Japanese full dress. On his left sat Red Shirt
@@ -3489,11 +2967,9 @@ the first time would be sure to be misled. Probably he won the Madonna
 by this same trick. While Red Shirt was uttering his farewell buncomb,
 Porcupine who sat on the other side across me, winked at me. As an
 answer of this, I "snooked" at him.
-
 No sooner had Red Shirt sat down than Porcupine stood up, and highly
 rejoiced, I clapped hands. At this Badger and others glanced at me, and
 I felt that I blushed a little.
-
 "Our principal and other gentlemen," he said, "particularly the head
 teacher, expressed their sincere regret at Mr. Koga's transfer. I am of
 a different opinion, and hope to see him leave the town at the earliest
@@ -3511,21 +2987,18 @@ that when he is settled down at Nobeoka, he will find a lady qualified
 to become his wife, and form a sweet home at an early date and
 incidentally let the inconstant, unchaste sassy old wench die ashamed
 ...... a'hum, a'hum!"
-
 He coughed twice significantly and sat down. I thought of clapping my
 hands again, but as it would draw attention, I refrained. When
 Porcupine finished his speech, Hubbard Squash arose politely, slipped
 out of his seat, went to the furthest end of the room, and having bowed
 to all in a most respectful manner, acknowledged the compliments in the
 following way;
-
 "On the occasion of my going to Kyushu for my personal convenience, I am
 deeply impressed and appreciate the way my friends have honored me with
 this magnificent dinner....... The farewell addresses by our principal
 and other gentlemen will be long held in my fondest recollection.......
 I am going far away now, but I hope my name be included in the future as
 in the past in the list of friends of the gentlemen here to-night."
-
 Then again bowing, he returned to his seat. There was no telling how far
 the "good-naturedness" of Hubbard Squash might go. He had respectfully
 thanked the principal and the head teacher who had been fooling him. And
@@ -3534,7 +3007,6 @@ tone and face, he appeared to have been really grateful from his heart.
 Badger and Red Shirt should have blushed when they were addressed so
 seriously by so good a man as Hubbard Squash, but they only listened
 with long faces.
-
 After the exchange of addresses, a sizzling sound was heard here and
 there, and I too tried the soup which tasted like anything but soup.
 There was kamaboko in the kuchitori dish, but instead of being snow
@@ -3543,80 +3015,59 @@ cooked chikuwa. The sliced tunny was there, but not having been sliced
 fine, passed the throat like so many pieces of chopped raw tunny. Those
 around me, however, ate with ravenous appetite. They have not tasted, I
 guess, the real Yedo dinner.
-
 Meanwhile the bottles began passing round, and all became more or less
 "jacked up." Clown proceeded to the front of the principal and
 submissively drank to his health. A beastly fellow, this! Hubbard Squash
 made a round of all the guests, drinking to their health. A very onerous
 job, indeed. When he came to me and proposed my health, I abandoned the
 squatting posture and sat up straight.
-
 "Too bad to see you go away so soon. When are you going? I want to see
 you off at the beach," I said.
-
 "Thank you, Sir. But never mind that. You're busy," he declined. He
 might decline, but I was determined to get excused for the day and give
 him a rousing send-off.
-
 Within about an hour from this, the room became pretty lively.
-
 "Hey, have another, hic; ain't goin', hic, have one on me?" One or two
 already in a pickled state appeared on the scene. I was little tired,
 and going out to the porch, was looking at the old fashioned garden by
 the dim star light, when Porcupine came.
-
 "How did you like my speech? Wasn't it grand, though!" he remarked in a
 highly elated tone. I protested that while I approved 99 per cent, of
 his speech, there was one per cent, that I did not. "What's that one per
 cent?" he asked.
-
 "Well, you said,...... there is not a single high-collared guy who with
 smooth face entraps innocent people......."
-
 "Yes."
-
 "A 'high-collared guy' isn't enough."
-
 "Then what should I say?"
-
 "Better say,--'a high-collared guy; swindler, bastard,
 super-swanker, doubleface, bluffer, totempole, spotter, who looks
 like a dog as he yelps.'"
-
 "I can't get my tongue to move so fast. You're eloquent. In the first
 place, you know a great many simple words. Strange that you can't make
 a speech."
-
 "I reserve these words for use when I chew the rag. If it comes to
 speech-making, they don't come out so smoothly."
-
 "Is that so? But they simply come a-running. Repeat that again for me."
-
 "As many times as you like. Listen,--a high-collared guy, swindler,
 bastard, super-swanker ..."
-
 While I was repeating this, two shaky fellows came out of the room
 hammering the floor.
-
 "Hey, you two gents, if won't do to run away. Won't let you off while
 I'm here. Come and have a drink. Bastard? That's fine. Bastardly fine.
 Now, come on."
-
 And they pulled Porcupine and me away. These two fellows really had come
 to the lavatory, but soaked as they were, in booze bubbles, they
 apparently forgot to proceed to their original destination, and were
 pulling us hard. All booze fighters seem to be attracted by whatever
 comes directly under their eyes for the moment and forget what they had
 been proposing to do.
-
 "Say, fellows, we've got bastards. Make them drink. Get them loaded. You
 gents got to stay here."
-
 And they pushed me who never attempted to escape against the wall.
 Surveying the scene, I found there was no dish in which any edibles were
 left. Some one had eaten all his share, and gone on a foraging
 expedition. The principal was not there,--I did not know when he left.
-
 At that time, preceded by a coquetish voice, three or four geishas
 entered the room. I was a bit surprised, but having been pushed against
 the wall, I had to look on quietly. At the instant, Red Shirt who had
@@ -3628,13 +3079,11 @@ prettiest of the bunch. They were some distance away from me and I could
 not see very well, but it seemed that she might have said "Good
 evening." Red Shirt brushed past as if unconscious, and never showed
 again. Probably he followed the principal.
-
 The sight of the geishas set the room immediately in a buzz and it
 became noisy as they all raised howls of welcome. Some started the game
 of "nanko" with a force that beat the sword-drawing practice. Others
 began playing morra, and the way they shook their hands, intently
 absorbed in the game, was a better spectacle than a puppet show.
-
 One in the corner was calling "Hey, serve me here," but shaking the
 bottle, corrected it to "Hey, fetch me more sake." The whole room
 became so infernally noisy that I could scarcely stand it. Amid this
@@ -3644,51 +3093,39 @@ party was not in order to bid him a farewell, but because they wanted
 to have a jolly good time for themselves with John Barleycorn. He had
 come to suffer only. Such a dinner party would have been better had it
 not been started at all.
-
 After a while, they began singing ditties in outlandish voices. One of
 the geishas came in front of me, and taking up a samisen, asked me to
 sing something. I told her I didn't sing, but I'd like to hear, and she
 droned out:
-
 "If one can go round and meet the one he wants, banging gongs and drums
 ...... bang, bang, bang, bang, bing, shouting after wandering Santaro,
 there is some one I'd like to meet by banging round gongs and drums
 ...... bang, bang, bang, bang, b-i-n-g."
-
 She dashed this off in two breaths, and sighed, "O, dear!" She should
 have sung something easier.
-
 Clown who had come near us meanwhile, remarked in his flippant tone:
-
 "Hello, dear Miss Su-chan, too bad to see your beau go away so soon."
 The geisha pouted, "I don't know." Clown, regardless, began imitating
 "gidayu" with a dismal voice,--"What a luck, when she met her sweet
 heart by a rare chance...."
-
 The geisha slapped the lap of Clown with a "Cut that out," and Clown
 gleefully laughed. This geisha is the one who made goo-goo eyes[J] at
 Red Shirt. What a simpleton, to be pleased by the slap of a geisha, this
 Clown. He said:
-
 "Say, Su-chan, strike up the string. I'm going to dance the Kiino-kuni."
 He seemed yet to dance.
-
 On other side of the room, the old man of Confucius, twisting round his
 toothless mouth, had finished as far as "...... dear Dembei-san" and is
 asking a geisha who sat in front of him to couch him for the rest. Old
 people seem to need polishing up their memorizing system. One geisha is
 talking to the teacher of natural history:
-
 "Here's the latest. I'll sing it. Just listen. 'Margaret, the
 high-collared head with a white ribbon; she rides on a bike, plays a
 violin, and talks in broken English,--I am glad to see you.'" Natural
 history appears impressed, and says;
-
 "That's an interesting piece. English in it too."
-
 Porcupine called "geisha, geisha," in a loud voice, and commanded; "Bang
 your samisen; I'm going to dance a sword-dance."
-
 His manner was so rough that the geishas were startled and did not
 answer. Porcupine, unconcerned, brought out a cane, and began performing
 the sword-dance in the center of the room. Then Clown, having danced the
@@ -3696,7 +3133,6 @@ Kii-no-kuni, the Kap-pore[K] and the Durhma-san on the Shelf, almost
 stark-naked, with a palm-fibre broom, began turkey-trotting about the
 room, shouting "The Sino-Japanese negotiations came to a break......."
 The whole was a crazy sight.
-
 I had been feeling sorry for Hubbard Squash, who up to this time had sat
 up straight in his full dress. Even were this a farewell dinner held in
 his honor, I thought he was under no obligation to look patiently in a
@@ -3704,44 +3140,31 @@ formal dress at the naked dance. So I went to him and persuaded him with
 "Say, Koga-san, let's go home." Hubbard Squash said the dinner was in
 his honor, and it would be improper for him to leave the room before the
 guests. He seemed to be determined to remain.
-
 "What do you care!" I said, "If this is a farewell dinner, make it like
 one. Look at those fellows; they're just like the inmates of a lunatic
 asylum. Let's go."
-
 And having forced hesitating Hubbard Squash to his feet, we were
 just leaving the room, when Clown, marching past, brandishing the
 broom, saw us.
-
 "This won't do for the guest of honor to leave before us," he hollered,
 "this is the Sino-Japanese negotiations. Can't let you off." He enforced
 his declaration by holding the broom across our way. My temper had been
 pretty well aroused for some time, and I felt impatient.
-
 "The Sino-Japanese negotiation, eh? Then you're a Chink," and I whacked
 his head with a knotty fist.
-
 This sudden blow left Clown staring blankly speechless for a second or
 two; then he stammered out:
-
 "This is going some! Mighty pity to knock my head. What a blow on this
 Yoshikawa! This makes the Sino-Japanese negotiations the sure stuff."
-
 While Clown was mumbling these incoherent remarks, Porcupine, believing
 some kind of row had been started, ceased his sword-dance and came
 running toward us. On seeing us, he grabbed the neck of Clown and
 pulled him back.
-
 "The Sino-Japane......ouch!......ouch! This is outrageous," and Clown
 writhed under the grip of Porcupine who twisted him sideways and threw
 him down on the floor with a bang. I do not know the rest. I parted from
 Hubbard Squash on the way, and it was past eleven when I returned home.
-
-
-
 CHAPTER X.
-
-
 The town is going to celebrate a Japanese victory to-day, and there is
 no school. The celebration is to be held at the parade ground, and
 Badger is to take out all the students and attend the ceremony. As one
@@ -3775,7 +3198,6 @@ he takes seriously the apologies others might offer. We should regard
 all apologies a sham and forgiving also as a sham; then everything would
 be all right. If one wants to make another apologize from his heart, he
 has to pound him good and strong until he begs for mercy from his heart.
-
 As I walked along between the sections, I could hear constantly the
 voices mentioning "tempura" or "dango." And as there were so many of
 them, I could not tell which one mentioned it. Even if I succeeded in
@@ -3809,7 +3231,6 @@ of the advisability of returning to Tokyo quickly and living with Kiyo.
 To live long in such a countrytown would be like degrading myself for a
 purpose. Newspaper delivering would be preferable to being degraded so
 far as that.
-
 I walked along with a sinking heart, thinking like this, when the head
 of our procession became suddenly noisy, and the whole came to a full
 stop. I thought something has happened, stepped to the right out of the
@@ -3819,7 +3240,6 @@ canned sardines, alternately pushing back and forth. The teacher of
 physical culture came down the line hoarsely shouting to all to be
 quiet. I asked him what was the matter, and he said the middle school
 and the normal had come to a clash at the corner.
-
 The middle school and the normal, I understood, are as much friendly as
 dogs and monkeys. It is not explained why but their temper was
 hopelessly crossed, and each would try to knock the chip off the
@@ -3834,10 +3254,8 @@ began marching on. The clash which had resulted from contending for the
 right of way was settled, but it was settled by the middle school giving
 way to the normal. From the point of school-standing the normal is said
 to rank above the middle.
-
 [Footnote 12: The normal school in the province maintains the students
 mostly on the advance-expense system, supported by the country tax.]
-
 The ceremony was quite simple. The commander of the local brigade read a
 congratulatory address, and so did the governor, and the audience
 shouted banzais. That was all. The entertainments were scheduled for the
@@ -3846,7 +3264,6 @@ answer which had been in my mind for some days. Her request had been
 that I should write her a letter with more detailed news; so I must get
 it done with care. But as I took up the rolled letter-paper, I did not
 know with what I should begin, though I have many things to write about.
-
 Should I begin with that? That is too much trouble. Or with this? It is
 not interesting. Isn't there something which will come out smoothly, I
 reflected, without taxing my head too much, and which will interest
@@ -3859,7 +3276,6 @@ write a letter was a bother. It would be much simpler to go back to
 Tokyo and see Kiyo. Not that I am unconcerned about the anxiety of Kiyo,
 but to get up a letter to please the fancy of Kiyo is a harder job than
 to fast for three weeks.
-
 I threw down the brush and letter-paper, and lying down with my bent
 arms as a pillow, gazed at the garden. But the thought of the letter to
 Kiyo would come back in my mind. Then I thought this way; If I am
@@ -3868,7 +3284,6 @@ would find responsive appreciation in Kiyo. If it does find response,
 there is no need of sending letters. She will regard the absence of
 letters from me as a sign of my being in good health. If I write in case
 of illness or when something unusual happens, that will be sufficient.
-
 The garden is about thirty feet square, with no particular plants worthy
 of name. There is one orange tree which is so tall as to be seen above
 the board fence from outside. Whenever I returned from the school I used
@@ -3880,31 +3295,25 @@ me that they are juicy, sweet oranges. "They will all soon be ripe, and
 then help yourself to all you want," she said. I think I will enjoy a
 few every day. They will be just right in about three weeks. I do not
 think I will have to leave the town in so short a time as three weeks.
-
 While my attention was centered on the oranges, Porcupine[M] came in.
-
 "Say, to-day being the celebration[N] of victory, I thought I would get
 something good to eat with you, and bought some beef."
-
 So saying, he took out a package covered with a bamboo-wrapper, and
 threw it down in the center of the room. I had been denied the pleasure
 of patronizing the noodle house or dango shop, on top of getting sick of
 the sweet potatoes and tofu, and I welcomed the suggestion with "That's
 fine," and began cooking it with a frying pan and some sugar borrowed
 from the old lady.
-
 Porcupine, munching the beef to the full capacity of his mouth, asked me
 if I knew Red Shirt having a favorite geisha. I asked if that was not
 one of the geishas who came to our dinner the other night, and he
 answered, "Yes, I got the wind of the fact only recently; you're sharp."
-
 "Red Shirt always speaks of refinement of character or of mental
 consolation, but he is making a fool of himself by chasing round a
 geisha. What a dandy rogue. We might let that go if he wouldn't make
 fuss about others making fools of themselves. I understand through the
 principal he stopped your going even to noodle houses or dango shops as
 unbecoming to the dignity of the school, didn't he?"
-
 "According to his idea, running after a geisha is a mental consolation
 but tempura or dango is a material pleasure, I guess. If that's mental
 consolation, why doesn't the fool do it above board? You ought to see
@@ -3915,63 +3324,44 @@ literature or that the haiku is a half-brother of the new poetry, and
 expect to hush it up by twaddling soft nonsense. A weak-knee like him is
 not a man. I believe he lived the life of a court-maid in former life.
 Perhaps his daddy might have been a kagema at Yushima in old days."
-
 "What is a kagema?"
-
 "I suppose something very unmanly,--sort of emasculated chaps. Say, that
 part isn't cooked enough. It might give you tape worm."
-
 "So? I think it's all right. And, say, Red Shirt is said to frequent
 Kadoya at the springs town and meet his geisha there, but he keeps
 it in dark."
-
 "Kadoya? That hotel?"
-
 "Also a restaurant. So we've got to catch him there with his geisha and
 make it hot for him right to his face."
-
 "Catch him there? Suppose we begin a kind of night watch?"
-
 "Yes, you know there is a rooming house called Masuya in front of
 Kadoya. We'll rent one room upstairs of the house, and keep peeping
 through a loophole we could make in the shoji."
-
 "Will he come when we keep peeping at him?"
-
 "He may. We will have to do it more than one night. Must expect to keep
 it up for at least two weeks."
-
 "Say, that would make one pretty well tired, I tell you. I sat up every
 night for about one week attending my father when he died, and it left
 me thoroughly down and out for some time afterward."
-
 "I don't care if I do get tired some. A crook like Red Shirt should not
 go unpunished that way for the honor of Japan, and I am going to
 administer a chastisement in behalf of heaven."
-
 "Hooray! If things are decided upon that way, I am game. And we are
 going to start from to-night?"
-
 "I haven't rented a room at Masuya yet, so can't start it to-night."
-
 "Then when?"
-
 "Will start before long. I'll let you know, and want you help me."
-
 "Right-O. I will help you any time. I am not much myself at scheming,
 but I am IT when it comes to fighting."
-
 While Porcupine and I were discussing the plan of subjugating Red Shirt,
 the old lady appeared at the door, announcing that a student was wanting
 to see Professor Hotta. The student had gone to his house, but seeing
 him out, had come here as probable to find him. Porcupine went to the
 front door himself, and returning to the room after a while, said:
-
 "Say, the boy came to invite us to go and see the entertainment of the
 celebration. He says there is a big bunch of dancers from Kochi to dance
 something, and it would be a long time before we could see the like of
 it again. Let's go."
-
 Porcupine seemed enthusiastic over the prospect of seeing that dance,
 and induced me to go with him. I have seen many kinds of dance in Tokyo.
 At the annual festival of the Hachiman Shrine, moving stages come around
@@ -3981,7 +3371,6 @@ from Tosa province, but as Porcupine was so insistent, I changed my mind
 and followed him out. I did not know the student who came to invite
 Porcupine, but found he was the younger brother of Red Shirt. Of all
 students, what a strange choice for a messenger!
-
 The celebration ground was decorated, like the wrestling amphitheater at
 Ryogoku during the season, or the annual festivity of the Hommonji
 temple, with long banners planted here and there, and on the ropes that
@@ -3996,7 +3385,6 @@ display seemingly much impressed, but it failed to impress me. If
 twisted grasses or bamboos afforded so much pleasure, the gallantry of a
 hunchback or the husband of a wrong pair should give as much pleasure to
 their eyes.
-
 In the opposite direction, aerial bombs and fire works were steadily
 going on. A balloon shot out on which was written "Long Live the
 Empire!" It floated leisurely over the pine trees near the castle
@@ -4007,7 +3395,6 @@ and finally faded. Then another balloon. It was red with "Long Live the
 Army and Navy" in white. The wind slowly carried it from the town
 toward the Aioi village. Probably it would fall into the yard of Kwanon
 temple there.
-
 At the formal celebration this morning there were not quite so many as
 here now. It was surging mass that made me wonder how so many people
 lived in the place. There were not many attractive faces among the
@@ -4015,7 +3402,6 @@ crowd, but as far as the numerical strength went, it was a formidable
 one. In the meantime that dance had begun. I took it for granted that
 since they call it a dance, it would be something similar to the kind of
 dance by the Fujita troupe, but I was greatly mistaken.
-
 Thirty fellows, dressed up in a martial style, in three rows of ten
 each, stood with glittering drawn swords. The sight was an eye-opener,
 indeed. The space between the rows measured about two feet, and that
@@ -4026,7 +3412,6 @@ which suggested a mighty easy-life, and then croaking a strange song, he
 would strike the drum. The tune was outlandishly unfamiliar. One might
 form the idea by thinking it a combination of the Mikawa Banzai and the
 Fudarakuya.
-
 The song was drowsy, and like syrup in summer is dangling and slovenly.
 He struck the drum to make stops at certain intervals. The tune was kept
 with regular rhythmical order, though it appeared to have neither head
@@ -4054,21 +3439,17 @@ fellows were entirely directed by the tune with which he kept them
 going. To the spectators this fellow's part appeared the easiest. He
 sang in a lazy tune, but it was strange that he was the fellow who takes
 the heaviest responsibility.
-
 While Porcupine and I, deeply impressed, were looking at the dance with
 absorbing interest, a sudden hue and cry was raised about half a block
 off. A commotion was started among those who had been quietly enjoying
 the sights and all ran pell-mell in every direction. Some one was heard
 saying "fight!" Then the younger brother of Red Shirt came running
 forward through the crowd.
-
 "Please, Sir," he panted, "a row again! The middles are going to get
 even with the normals and have just begun fighting. Come quick, Sir!"
 And he melted somewhere into the crowd.
-
 "What troublesome brats! So they're at it again, eh? Why can't
 they stop it!"
-
 Porcupine, as he spoke, dashed forward, dodging among the running crowd.
 He meant, I think, to stop the fight, because he could not be an idle
 spectator once he was informed of the fact. I of course had no intention
@@ -4079,26 +3460,19 @@ middles had discarded their uniform and put on Japanese civilian
 clothes, which made the distinction between the two hostile camps easy.
 But they were so mixed up, and wrangling with such violence, that we did
 not know how and where we could separate them.
-
 Porcupine, apparently at a loss what to do, looked at the wild scene
 awhile, then turned to me, saying:
-
 "Let's jump in and separate them. It will be hell if cops get on them."
-
 I did not answer, but rushed to the spot where the scuffle appeared
 most violent.
-
 "Stop there! Cut this out! You're ruining the name of the school! Stop
 this, dash you!"
-
 Shouting at the top of my voice, I attempted to penetrate the line which
 seemed to separate the hostile sides, but this attempt did not succeed.
 When about ten feet into the turmoil, I could neither advance nor
 retreat. Right in my front, a comparatively large normal was grappling
 with a middle about sixteen years of ago.
-
 "Stop that!"
-
 I grabbed the shoulder of the normal and tried to force them apart when
 some one whacked my feet. On this sudden attack, I let go the normal and
 fell down sideways. Some one stepped on my back with heavy shoes. With
@@ -4106,18 +3480,13 @@ both hands and knees upon the ground, I jumped up and the fellow on my
 back rolled off to my right. I got up, and saw the big body of Porcupine
 about twenty feet away, sandwiched between the students, being pushed
 back and forth, shouting, "Stop the fight! Stop that!"
-
 "Say, we can't do anything!" I hollered at him, but unable to hear, I
 think, he did not answer.
-
 A pebble-stone whiffled through the air and hit squarely on my cheek
 bone; the same moment some one banged my back with a heavy stick
 from behind.
-
 "Profs mixing in!" "Knock them down!" was shouted.
-
 "Two of them; big one and small. Throw stones at them!" Another shout.
-
 "Drat you fresh jackanapes!" I cried as I wallopped the head of a normal
 nearby. Another stone grazed my head, and passed behind me. I did not
 know what had become of Porcupine, I could not find him. Well, I could
@@ -4131,25 +3500,18 @@ wading through a pond of molasses, I could hardly move, but the next I
 felt suddenly released and both sides scampered off simultaneously. Even
 the country fellows do creditable work when it comes to retreating, more
 masterly than General Kuropatkin, I might say.
-
 I searched for Porcupine who, I found his overgown torn to shreds, was
 wiping his nose. He bled considerably, and his nose having swollen was a
 sight. My clothes were pretty well massed with dirt, but I had not
 suffered quite as much damage as Porcupine. I felt pain in my cheek and
 as Porcupine said, it bled some.
-
 About sixteen police officers arrived at the scene but, all the students
 having beat it in opposite directions, all they were able to catch were
 Porcupine and me. We gave them our names and explained the whole story.
 The officers requested us to follow them to the police station which we
 did, and after stating to the chief of police what had happened, we
 returned home.
-
-
-
 CHAPTER XI.
-
-
 The next morning on awakening I felt pains all over my body, due, I
 thought, to having had no fight for a long time. This is not creditable
 to my fame as regards fighting, so I thought while in bed, when the old
@@ -4165,7 +3527,6 @@ trouble by inciting the students, but were actually present at the scene
 of the trouble, directing the students and engaged themselves against
 the students of the Normal School. On top of this, something of the
 following effect was added.
-
 "The Middle School in this prefecture has been an object of admiration
 by all other schools for its good and ideal behavior. But since this
 long-cherished honor has been sullied by these two irresponsible
@@ -4173,12 +3534,10 @@ persons, and this city made to suffer the consequent indignity, we have
 to bring the perpetrators to full account. We trust that before we take
 any step in this matter, the authorities will have those 'toughs'
 properly punished, barring them forever from our educational circles."
-
 All the types were italicized, as if they meant to administer
 typographical chastisement upon us. "What the devil do I care!" I
 shouted, and up I jumped out of bed. Strange to say, the pain in my
 joints became tolerable.
-
 I rolled up the newspaper and threw it into the garden. Not satisfied, I
 took that paper to the cesspool and dumped it there. Newspapers tell
 such reckless lies. There is nothing so adept, I believe, as the
@@ -4194,7 +3553,6 @@ dumped it in the cesspool; go and pick it up if you want it,"--and she
 withdrew with a startled look. Looking in the mirror, I saw bruises on
 my cheek. Mine is a precious face to me. I get my face bruised, and am
 called a saucy Somebody as if I were nobody. That is enough.
-
 It will be a reflection on my honor to the end of my days if it is said
 that I shunned the public gaze and kept out of the school on account of
 the write-up in the paper. So, after the breakfast, I attended the
@@ -4202,21 +3560,16 @@ school ahead of all. One after the other, all coming to the school would
 grin at my face. What is there to laugh about! This face is my own,
 gotten up, I am sure, without the least obligation on their part. By and
 by, Clown appeared.
-
 "Ha, heroic action yesterday. Wounds of honor, eh?"
-
 He made this sarcastic remark, I suppose, in revenge for the knock he
 received on his head from me at the farewell dinner.
-
 "Cut out nonsense; you get back there and suck your old drawing
 brushes!" Then he answered "that was going some," and enquired if it
 pained much?
-
 "Pain or no pain, this is my face. That's none of your business," I
 snapped back in a furious temper. Then Clown took his seat on the other
 side, and still keeping his eye on me, whispered and laughed with the
 teacher of history next to him.
-
 Then came Porcupine. His nose had swollen and was purple,--it was a
 tempting object for a surgeon's knife. His face showed far worse (is it
 my conceit that make this comparison?) than mine. I and Porcupine are
@@ -4231,7 +3584,6 @@ their hands when I entered; two or three of them banzaied. I could not
 tell whether it was an enthusiastic approval or open insult. While I and
 Porcupine were thus being made the cynosures of the whole school, Red
 Shirt came to me as usual.
-
 "Too bad, my friend; I am very sorry indeed for you gentlemen," he said
 in a semi-apologetic manner. "I've talked with the principal in regard
 to the story in the paper, and have arranged to demand that the paper
@@ -4242,7 +3594,6 @@ you gentlemen please depend on that." At the third hour recess the
 principal came out of his room, and seemed more or less perturbed,
 saying, "The paper made a bad mess of it, didn't it? I hope the matter
 will not become serious."
-
 As to anxiety, I have none. If they propose to relieve me, I intend
 to tender my resignation before I get fired,--that's all. However, if
 I resign with no fault on my part, I would be simply giving the paper
@@ -4251,7 +3602,6 @@ had said, and stick to my position. I was going to the newspaper
 office to give them a piece of my mind on my way back but having been
 told that the school had already taken steps to have the story
 retracted, I did not.
-
 Porcupine and I saw the principal and Red Shirt at a convenient hour,
 giving them a faithful version of the incident. The principal and Red
 Shirt agreed that the incident must have been as we said and that the
@@ -4261,7 +3611,6 @@ room, defending and explaining our action in the affair. Particularly he
 dwelt upon the fact that his brother invited Porcupine and it was his
 fault. All teachers denounced the paper as infamous and agreed that we
 two deserved sympathy.
-
 On our way home, Porcupine warned me that Red Shirt smelt suspicious,
 and we would be done unless we looked out. I said he had been smelling
 some anyway,--it was not necessarily so just from to-day. Then he said
@@ -4269,57 +3618,39 @@ that it was his trick to have us invited and mixed in the fight
 yesterday,--"Aren't you on to that yet?" Well, I was not. Porcupine was
 quite a Grobian but he was endowed, I was impressed, with a better
 brain than I.
-
 "He made us mix into the trouble, and slipped behind and contrived to
 have the paper publish the story. What a devil!"
-
 "Even the newspaper in the band wagon of Red Shirt? That surprises me.
 But would the paper listen to Red Shirt so easily?"
-
 "Wouldn't it, though. Darn easy thing if one has friends in the
 paper."[P]
-
 "Has he any?"
-
 "Suppose he hasn't, still that's easy. Just tell lies and say such and
 such are facts, and the paper will take it up."
-
 "A startling revelation, this. If that was really a trick of Red Shirt,
 we're likely to be discharged on account of this affair."
-
 "Quite likely we may be discharged."
-
 "Then I'll tender my resignation tomorrow, and back to Tokyo I go. I am
 sick of staying in such a wretched hole."
-
 "Your resignation wouldn't make Red Shirt squeal."
-
 "That's so. How can he be made to squeal?"
-
 "A wily guy like him always plots not to leave any trace behind, and it
 would be difficult to follow his track."
-
 "What a bore! Then we have to stand in a false light, eh? Damn it! I
 call all kinds of god to witness if this is just and right!"
-
 "Let's wait for two or three days and see how it turns out. And if
 we can't do anything else, we will have to catch him at the hot
 springs town."
-
 "Leaving this fight affair a separate case?"
-
 "Yes. We'll have to his hit weak spot with our own weapon."
-
 "That may be good. I haven't much to say in planning it out; I leave it
 to you and will do anything at your bidding."
-
 I parted from Porcupine then. If Red Shirt was really instrumental in
 bringing us two into the trouble as Porcupine supposed, he certainly
 deserves to be called down. Red Shirt outranks us in brainy work. And
 there is no other course open but to appeal to physical force. No wonder
 we never see the end of war in the world. Among individuals, it is,
 after all, the question of superiority of the fist.
-
 Next day I impatiently glanced over the paper, the arrival of which I
 had been waiting with eagerness, but not a correction of the news or
 even a line of retraction could be found. I pressed the matter on
@@ -4333,20 +3664,17 @@ influence. He has not even as much power as to bring down a country
 newspaper, which had printed a false story. I was so thoroughly
 indignant that I declared I would go alone to the office and see the
 editor-in-chief on the subject, but Badger said no.
-
 "If you go there and have a blowup with the editor," he continued, "it
 would only mean of your being handed out worse stuff in the paper again.
 Whatever is published in a paper, right or wrong, nothing can be done
 with it." And he wound up with a remark that sounded like a piece of
 sermon by a Buddhist bonze that "We must be contented by speedily
 despatching the matter from our minds and forgetting it."
-
 If newspapers are of that character, it would be beneficial for us all
 to have them suspended,--the sooner the better. The similarity of the
 unpleasant sensation of being written-up in a paper and being
 bitten-down by a turtle became plain for the first time by the
 explanation of Badger.
-
 About three days afterward, Porcupine came to me excited, and said that
 the time has now come, that he proposes to execute that thing we had
 planned out. Then I will do so, I said, and readily agreed to join him.
@@ -4355,7 +3683,6 @@ why, and he asked if I had been requested by the principal to tender my
 resignation. No, I said, and asked if he had. He told me that he was
 called by the principal who was very, very sorry for him but under the
 circumstance requested him to decide to resign.
-
 "That isn't fair. Badger probably had been pounding his belly-drum too
 much and his stomach is upside down," I said, "you and I went to the
 celebration, looked at the glittering sword dance together, and jumped
@@ -4363,82 +3690,59 @@ into the fight together to stop it. Wasn't it so? If he wants you to
 tender your resignation, he should be impartial and should have asked me
 to also. What makes everything in the country school so dull-head. This
 is irritating!"
-
 "That's wire-pulling by Red Shirt," he said. "I and Red Shirt cannot go
 along together, but they think you can be left as harmless."
-
 "I wouldn't get along with that Red Shirt either. Consider me harmless,
 eh? They're getting too gay with me."
-
 "You're so simple and straight that they think they can handle you in
 any old way."
-
 "Worse still. I wouldn't get along with him, I tell you."
-
 "Besides, since the departure of Koga, his successor has not arrived.
 Furthermore, if they fire me and you together, there will be blank spots
 in the schedule hours at the school."
-
 "Then they expect me to play their game. Darn the fellow! See if they
 can make me."
-
 On going to the school next day I made straightway for the room of the
 principal and started firing;
-
 "Why don't you ask me to put in my resignation?" I said.
-
 "Eh?" Badger stared blankly.
-
 "You requested Hotta to resign, but not me. Is that right?"
-
 "That is on account of the condition of the school......"
-
 "That condition is wrong, I dare say. If I don't have to resign, there
 should be no necessity for Hotta to resign either."
-
 "I can't offer a detailed explanation about that......as to Hotta, it
 cannot be helped if he goes...... ......we see no need of your
 resigning."
-
 Indeed, he is a badger. He jabbers something, dodging the point, but
 appears complacent. So I had to say:
-
 "Then, I will tender my resignation. You might have thought that I
 would remain peacefully while Mr. Hotta is forced to resign, but I
 cannot do it"
-
 "That leaves us in a bad fix. If Hotta goes away and you follow him, we
 can't teach mathematics here."
-
 "None of my business if you can't."
-
 "Say, don't be so selfish. You ought to consider the condition of the
 school. Besides, if it is said that you resigned within one month of
 starting a new job, it would affect your record in the future. You
 should consider that point also."
-
 "What do I care about my record. Obligation is more important
 than record."
-
 "That's right. What you say is right, but be good enough to take our
 position into consideration. If you insist on resigning, then resign,
 but please stay until we get some one to take your place. At any rate,
 think the matter over once more, please."
-
 The reason was so plain as to discourage any attempt to think it over,
 but as I took some pity on Badger whose face reddened or paled
 alternately as he spoke, I withdrew on the condition that I would think
 the matter over. I did not talk with Red Shirt. If I have to land him
 one, it was better, I thought, to have it bunched together and make it
 hot and strong.
-
 I acquainted Porcupine with the details of my meeting with Badger. He
 said he had expected it to be about so, and added that the matter of
 resignation can be left alone without causing me any embarrassment
 until the time comes. So I followed his advice. Porcupine appears
 somewhat smarter than I, and I have decided to accept whatever advices
 he may give.
-
 Porcupine finally tendered his resignation, and having bidden farewell
 of all the fellow teachers, went down to Minato-ya on the beach. But he
 stealthily returned to the hot springs town, and having rented a front
@@ -4469,7 +3773,6 @@ Shirt seems never to be coming, I said, and he would fold his arms,
 audibly sighing, "Well, he ought to." If Red Shirt would not come just
 for once, Porcupine would be deprived of the chance of handing out a
 deserved and just punishment.
-
 I left my boarding house about 7 o'clock on the eighth night and after
 having enjoyed my bath, I bought eight raw eggs. This would counteract
 the attack of sweet potatoes by the old lady. I put the eggs into my
@@ -4477,70 +3780,48 @@ right and left pockets, four in each, with the same old red towel hung
 over my shoulder, my hands inside my coat, went to Masuya. I opened the
 shoji of the room and Porcupine greeted me with his Idaten-like face
 suddenly radiant, saying:
-
 "Say, there's hope! There's hope!" Up to last night, he had been
 downcast, and even I felt gloomy. But at his cheerful countenance, I too
 became cheerful, and before hearing anything, I cried, "Hooray! Hooray!"
-
 "About half past seven this evening," he said, "that geisha named Kosuzu
 has gone into Kadoya."
-
 "With Red Shirt?"
-
 "No."
-
 "That's no good then."
-
 "There were two geishas......seems to me somewhat hopeful."
-
 "How?"
-
 "How? Why, the sly old fox is likely to send his girls ahead[Q], and
 sneak round behind later."
-
 "That may be the case. About nine now, isn't it?"
-
 "About twelve minutes past nine," said he, pulling out a watch with
 a nickel case, "and, say put out the light. It would be funny to
 have two silhouettes of bonze heads on the shoji. The fox is too
 ready to suspect."
-
 I blew out the lamp which stood upon the lacquer-enameled table. The
 shoji alone was dimly plain by the star light. The moon has not come up
 yet. I and Porcupine put our faces close to the shoji, watching almost
 breathless. A wall clock somewhere rang half past nine.
-
 "Say, will he come to-night, do you think? If he doesn't show up, I
 quit."
-
 "I'm going to keep this up while my money lasts."
-
 "Money? How much have you?"
-
 "I've paid five yen and sixty sen up to to-day for eight days. I pay my
 bill every night, so I can jump out anytime."
-
 "That's well arranged. The people of this hotel must have been rather
 put out, I suppose."
-
 "That's all right with the hotel; only I can't take my mind off
 the house."
-
 "But you take some sleep in daytime."
-
 "Yes, I take a nap, but it's nuisance because I can't go out."
-
 "Heavenly chastisement is a hard job, I'm sure," I said. "If he gives
 us the slip after giving us such trouble, it would have been a
 thankless task."
-
 "Well, I'm sure he will come to-night...--... Look, look!" His voice
 changed to whisper and I was alert in a moment. A fellow with a black
 hat looked up at the gas light of Kadoya and passed on into the
 darkness. No, it was not Red Shirt. Disappointing, this! Meanwhile the
 clock at the office below merrily tinkled off ten. It seems to be
 another bum watch to-night.
-
 The streets everywhere had become quiet. The drum playing in the
 tenderloin reached our ears distinctively. The moon had risen from
 behind the hills of the hot springs. It is very light outside. Then
@@ -4548,37 +3829,24 @@ voices were heard below. We could not poke our heads out of the window,
 so were unable to see the owners of the voices, but they were evidently
 coming nearer. The dragging of komageta (a kind of wooden footwear) was
 heard. They approached so near we could see their shadows.
-
 "Everything is all right now. We've got rid of the stumbling block." It
 was undoubtedly the voice of Clown.
-
 "He only glories in bullying but has no tact." This from Red Shirt.
-
 "He is like that young tough, isn't he? Why, as to that young tough, he
 is a winsome, sporty Master Darling."
-
 "I don't want my salary raised, he says, or I want to tender
 resignation,--I'm sure something is wrong with his nerves."
-
 I was greatly inclined to open the window, jump out of the second story
 and make them see more stars than they cared to, but I restrained myself
 with some effort. The two laughed, and passed below the gas light, and
 into Kadoya.
-
 "Say."
-
 "Well."
-
 "He's here."
-
 "Yes, he has come at last."
-
 "I feel quite easy now."
-
 "Damned Clown called me a sporty Master Darling."
-
 "The stumbling[R] block means me. Hell!"
-
 I and Porcupine had to waylay them on their return. But we knew no more
 than the man in the moon when they would come out. Porcupine went down
 to the hotel office, notifying them to the probability of our going out
@@ -4586,7 +3854,6 @@ at midnight, and requesting them to leave the door unfastened so we
 could get out anytime. As I think about it now, it is wonderful how the
 hotel people complied with our request. In most cases, we would have
 been taken for burglars.
-
 It was trying to wait for the coming of Red Shirt, but it was still more
 trying to wait for his coming out again. We could not go to sleep, nor
 could we remain with our faces stuck to the shoji all the time our minds
@@ -4600,7 +3867,6 @@ different room. Supposing we do break into a room, we cannot tell of all
 those many rooms, where we can find him. There is no other way but to
 wait for him to come out, however tiresome it may be. So we sat up till
 five in the morning.
-
 The moment we saw them emerging from Kadoya, I and Porcupine followed
 them. It was some time before the first train started and they had to
 walk up to town. Beyond the limit of the hot springs town, there is a
@@ -4615,23 +3881,17 @@ double-quick time, and caught up with them. Wondering what was coming
 after them, they turned back, and we grabbed their shoulders. We cried,
 "Wait!" Clown, greatly rattled, attempted to escape, but I stepped in
 front of him to cut off his retreat.
-
 "What makes one holding the job of a head teacher stay over night at
 Kadoya!" Porcupine directly fired the opening gun.
-
 "Is there any rule that a head teacher should not stay over night at
 Kadoya?" Red Shirt met the attack in a polite manner. He looked a
 little pale.
-
 "Why the one who is so strict as to forbid others from going even to
 noodle house or dango shop as unbecoming to instructors, stayed over
 night at a hotel with a geisha!"
-
 Clown was inclined to run at the first opportunity; so kept I
 before him.
-
 "What's that Master Darling of a young tough!" I roared.
-
 "I didn't mean you. Sir. No, Sir, I didn't mean you, sure." He insisted
 on this brazen excuse. I happened to notice at that moment that I had
 held my pockets with both hands. The eggs in both pockets jerked so when
@@ -4646,24 +3906,17 @@ before I knew what I was doing. But seeing Clown down and finding my
 hand grenade successful, I banged the rest of the eggs on him,
 intermingled with "Darn you, you sonovagun!" The face of Clown was
 soaked in yellow.
-
 While I was bombarding Clown with the eggs, Porcupine was firing at
 Red[S] Shirt.
-
 "Is there any evidence that I stayed there over night with a geisha?"
-
 "I saw your favorite old chicken go there early in the evening, and am
 telling you so. You can't fool me!"
-
 "No need for us of fooling anybody. I stayed there with Mr. Yoshikawa,
 and whether any geisha had gone there early in the evening or not,
 that's none of my business."
-
 "Shut up!" Porcupine wallopped him one. Red Shirt tottered.
-
 "This is outrageous! It is rough to resort to force before deciding the
 right or wrong of it!"
-
 "Outrageous indeed!" Another clout. "Nothing but wallopping will be
 effective on you scheming guys." The remark was followed by a shower
 of blows. I soaked Clown at the same time, and made him think he saw
@@ -4671,26 +3924,20 @@ the way to the Kingdom-Come. Finally the two crawled and crouched at
 the foot of a cedar tree, and either from inability to move or to
 see, because their eyes had become hazy, they did not even attempt to
 break away.
-
 "Want more? If so, here goes some more!" With that we gave him more
 until he cried enough. "Want more? You?" we turned to Clown, and he
 answered "Enough, of course."
-
 "This is the punishment of heaven on you grovelling wretches. Keep
 this in your head and be more careful hereafter. You can never talk
 down justice."
-
 The two said nothing. They were so thoroughly cowed that they could
 not speak.
-
 "I'm going to neither, run away nor hide. You'll find me at Minato-ya on
 the beach up to five this evening. Bring police officers or any old
 thing you want," said Porcupine.
-
 "I'm not going to run away or hide either. Will wait for you at the same
 place with Hotta. Take the case to the police station if you like, or do
 as you damn please," I said, and we two walked our own way.
-
 It was a little before seven when I returned to my room. I started
 packing as soon as I was in the room, and the astonished old lady asked
 me what I was trying to do. I'm going to Tokyo to fetch my Madam, I
@@ -4699,26 +3946,21 @@ beach and found Porcupine asleep upstairs. I thought of writing my
 resignation, but not knowing how, just scribbled off that "because of
 personal affairs, I have to resign and return, to Tokyo. Yours truly,"
 and addressed and mailed it to the principal.
-
 The steamer leaves the harbor at six in the evening. Porcupine and I,
 tired out, slept like logs, and when we awoke it was two o'clock. We
 asked the maid if the police had called on us, and she said no. Red
 Shirt and Clown had not taken it to the police, eh? We laughed.
-
 That night I and Porcupine left the town. The farther the vessel steamed
 away from the shore, the more refreshed we felt. From Kobe to Tokyo we
 boarded a through train and when we made Shimbashi, we breathed as if we
 were once more in congenial human society. I parted from Porcupine at
 the station, and have not had the chance of meeting him since.
-
 I forgot to tell you about Kiyo. On my arrival at Tokyo, I rushed into
 her house swinging my valise, before going to a hotel, with "Hello,
 Kiyo, I'm back!"
-
 "How good of you to return so soon!" she cried and hot tears streamed
 down her cheeks. I was overjoyed, and declared that I would not go to
 the country any more but would start housekeeping with Kiyo in Tokyo.
-
 Some time afterward, some one helped me to a job as assistant engineer
 at the tram car office. The salary was 25 yen a month, and the house
 rent six. Although the house had not a magnificent front entrance, Kiyo
@@ -4727,11 +3969,8 @@ pneumonia and died in February this year. On the day preceding her
 death, she asked me to bedside, and said, "Please, Master Darling, if
 Kiyo is dead, bury me in the temple yard of Master Darling. I will be
 glad to wait in the grave for my Master Darling."
-
 So Kiyo's grave is in the Yogen temple at Kobinata.
-
 --(THE END)--
-
 [A: Insitent]
 [B: queershaped]
 [C: The original just had the Japanese character, Unicode U+5927, sans
@@ -4751,29 +3990,14 @@ So Kiyo's grave is in the Yogen temple at Kobinata.
 [P: girl shead]
 [Q: stumblieg]
 [R: Rad]
-
-
-
-
-
-
-
-
-
-
 End of Project Gutenberg's Botchan (Master Darling), by Kin-nosuke Natsume
-
 *** END OF THIS PROJECT GUTENBERG EBOOK BOTCHAN (MASTER DARLING) ***
-
 ***** This file should be named 8868.txt or 8868.zip *****
 This and all associated files of various formats will be found in:
         http://www.gutenberg.org/8/8/6/8868/
-
 Produced by David Starner and the Online Distributed Proofreading Team
-
 Updated editions will replace the previous one--the old editions
 will be renamed.
-
 Creating the works from public domain print editions means that no
 one owns a United States copyright in these works, so the Foundation
 (and you!) can copy and distribute it in the United States without
@@ -4790,25 +4014,17 @@ research.  They may be modified and printed and given away--you may do
 practically ANYTHING with public domain eBooks.  Redistribution is
 subject to the trademark license, especially commercial
 redistribution.
-
-
-
 *** START: FULL LICENSE ***
-
 THE FULL PROJECT GUTENBERG LICENSE
 PLEASE READ THIS BEFORE YOU DISTRIBUTE OR USE THIS WORK
-
 To protect the Project Gutenberg-tm mission of promoting the free
 distribution of electronic works, by using or distributing this work
 (or any other work associated in any way with the phrase "Project
 Gutenberg"), you agree to comply with all the terms of the Full Project
 Gutenberg-tm License available with this file or online at
   www.gutenberg.org/license.
-
-
 Section 1.  General Terms of Use and Redistributing Project Gutenberg-tm
 electronic works
-
 1.A.  By reading or using any part of this Project Gutenberg-tm
 electronic work, you indicate that you have read, understand, agree to
 and accept all the terms of this license and intellectual property
@@ -4819,7 +4035,6 @@ If you paid a fee for obtaining a copy of or access to a Project
 Gutenberg-tm electronic work and you do not agree to be bound by the
 terms of this agreement, you may obtain a refund from the person or
 entity to whom you paid the fee as set forth in paragraph 1.E.8.
-
 1.B.  "Project Gutenberg" is a registered trademark.  It may only be
 used on or associated in any way with an electronic work by people who
 agree to be bound by the terms of this agreement.  There are a few
@@ -4829,7 +4044,6 @@ paragraph 1.C below.  There are a lot of things you can do with Project
 Gutenberg-tm electronic works if you follow the terms of this agreement
 and help preserve free future access to Project Gutenberg-tm electronic
 works.  See paragraph 1.E below.
-
 1.C.  The Project Gutenberg Literary Archive Foundation ("the Foundation"
 or PGLAF), owns a compilation copyright in the collection of Project
 Gutenberg-tm electronic works.  Nearly all the individual works in the
@@ -4845,7 +4059,6 @@ this agreement for keeping the Project Gutenberg-tm name associated with
 the work.  You can easily comply with the terms of this agreement by
 keeping this work in the same format with its attached full Project
 Gutenberg-tm License when you share it without charge with others.
-
 1.D.  The copyright laws of the place where you are located also govern
 what you can do with this work.  Copyright laws in most countries are in
 a constant state of change.  If you are outside the United States, check
@@ -4855,21 +4068,17 @@ creating derivative works based on this work or any other Project
 Gutenberg-tm work.  The Foundation makes no representations concerning
 the copyright status of any work in any country outside the United
 States.
-
 1.E.  Unless you have removed all references to Project Gutenberg:
-
 1.E.1.  The following sentence, with active links to, or other immediate
 access to, the full Project Gutenberg-tm License must appear prominently
 whenever any copy of a Project Gutenberg-tm work (any work on which the
 phrase "Project Gutenberg" appears, or with which the phrase "Project
 Gutenberg" is associated) is accessed, displayed, performed, viewed,
 copied or distributed:
-
 This eBook is for the use of anyone anywhere at no cost and with
 almost no restrictions whatsoever.  You may copy it, give it away or
 re-use it under the terms of the Project Gutenberg License included
 with this eBook or online at www.gutenberg.org
-
 1.E.2.  If an individual Project Gutenberg-tm electronic work is derived
 from the public domain (does not contain a notice indicating that it is
 posted with permission of the copyright holder), the work can be copied
@@ -4880,24 +4089,20 @@ work, you must comply either with the requirements of paragraphs 1.E.1
 through 1.E.7 or obtain permission for the use of the work and the
 Project Gutenberg-tm trademark as set forth in paragraphs 1.E.8 or
 1.E.9.
-
 1.E.3.  If an individual Project Gutenberg-tm electronic work is posted
 with the permission of the copyright holder, your use and distribution
 must comply with both paragraphs 1.E.1 through 1.E.7 and any additional
 terms imposed by the copyright holder.  Additional terms will be linked
 to the Project Gutenberg-tm License for all works posted with the
 permission of the copyright holder found at the beginning of this work.
-
 1.E.4.  Do not unlink or detach or remove the full Project Gutenberg-tm
 License terms from this work, or any files containing a part of this
 work or any other work associated with Project Gutenberg-tm.
-
 1.E.5.  Do not copy, display, perform, distribute or redistribute this
 electronic work, or any part of this electronic work, without
 prominently displaying the sentence set forth in paragraph 1.E.1 with
 active links or immediate access to the full terms of the Project
 Gutenberg-tm License.
-
 1.E.6.  You may convert to and distribute this work in any binary,
 compressed, marked up, nonproprietary or proprietary form, including any
 word processing or hypertext form.  However, if you provide access to or
@@ -4909,15 +4114,12 @@ copy, a means of exporting a copy, or a means of obtaining a copy upon
 request, of the work in its original "Plain Vanilla ASCII" or other
 form.  Any alternate format must include the full Project Gutenberg-tm
 License as specified in paragraph 1.E.1.
-
 1.E.7.  Do not charge a fee for access to, viewing, displaying,
 performing, copying or distributing any Project Gutenberg-tm works
 unless you comply with paragraph 1.E.8 or 1.E.9.
-
 1.E.8.  You may charge a reasonable fee for copies of or providing
 access to or distributing Project Gutenberg-tm electronic works provided
 that
-
 - You pay a royalty fee of 20% of the gross profits you derive from
      the use of Project Gutenberg-tm works calculated using the method
      you already use to calculate your applicable taxes.  The fee is
@@ -4930,7 +4132,6 @@ that
      sent to the Project Gutenberg Literary Archive Foundation at the
      address specified in Section 4, "Information about donations to
      the Project Gutenberg Literary Archive Foundation."
-
 - You provide a full refund of any money paid by a user who notifies
      you in writing (or by e-mail) within 30 days of receipt that s/he
      does not agree to the terms of the full Project Gutenberg-tm
@@ -4938,24 +4139,19 @@ that
      destroy all copies of the works possessed in a physical medium
      and discontinue all use of and all access to other copies of
      Project Gutenberg-tm works.
-
 - You provide, in accordance with paragraph 1.F.3, a full refund of any
      money paid for a work or a replacement copy, if a defect in the
      electronic work is discovered and reported to you within 90 days
      of receipt of the work.
-
 - You comply with all other terms of this agreement for free
      distribution of Project Gutenberg-tm works.
-
 1.E.9.  If you wish to charge a fee or distribute a Project Gutenberg-tm
 electronic work or group of works on different terms than are set
 forth in this agreement, you must obtain permission in writing from
 both the Project Gutenberg Literary Archive Foundation and Michael
 Hart, the owner of the Project Gutenberg-tm trademark.  Contact the
 Foundation as set forth in Section 3 below.
-
 1.F.
-
 1.F.1.  Project Gutenberg volunteers and employees expend considerable
 effort to identify, do copyright research on, transcribe and proofread
 public domain works in creating the Project Gutenberg-tm
@@ -4966,7 +4162,6 @@ corrupt data, transcription errors, a copyright or other intellectual
 property infringement, a defective or damaged disk or other medium, a
 computer virus, or computer codes that damage or cannot be read by
 your equipment.
-
 1.F.2.  LIMITED WARRANTY, DISCLAIMER OF DAMAGES - Except for the "Right
 of Replacement or Refund" described in paragraph 1.F.3, the Project
 Gutenberg Literary Archive Foundation, the owner of the Project
@@ -4980,7 +4175,6 @@ TRADEMARK OWNER, AND ANY DISTRIBUTOR UNDER THIS AGREEMENT WILL NOT BE
 LIABLE TO YOU FOR ACTUAL, DIRECT, INDIRECT, CONSEQUENTIAL, PUNITIVE OR
 INCIDENTAL DAMAGES EVEN IF YOU GIVE NOTICE OF THE POSSIBILITY OF SUCH
 DAMAGE.
-
 1.F.3.  LIMITED RIGHT OF REPLACEMENT OR REFUND - If you discover a
 defect in this electronic work within 90 days of receiving it, you can
 receive a refund of the money (if any) you paid for it by sending a
@@ -4993,12 +4187,10 @@ providing it to you may choose to give you a second opportunity to
 receive the work electronically in lieu of a refund.  If the second copy
 is also defective, you may demand a refund in writing without further
 opportunities to fix the problem.
-
 1.F.4.  Except for the limited right of replacement or refund set forth
 in paragraph 1.F.3, this work is provided to you 'AS-IS', WITH NO OTHER
 WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
 WARRANTIES OF MERCHANTABILITY OR FITNESS FOR ANY PURPOSE.
-
 1.F.5.  Some states do not allow disclaimers of certain implied
 warranties or the exclusion or limitation of certain types of damages.
 If any disclaimer or limitation set forth in this agreement violates the
@@ -5006,7 +4198,6 @@ law of the state applicable to this agreement, the agreement shall be
 interpreted to make the maximum disclaimer or limitation permitted by
 the applicable state law.  The invalidity or unenforceability of any
 provision of this agreement shall not void the remaining provisions.
-
 1.F.6.  INDEMNITY - You agree to indemnify and hold the Foundation, the
 trademark owner, any agent or employee of the Foundation, anyone
 providing copies of Project Gutenberg-tm electronic works in accordance
@@ -5017,16 +4208,12 @@ that arise directly or indirectly from any of the following which you do
 or cause to occur: (a) distribution of this or any Project Gutenberg-tm
 work, (b) alteration, modification, or additions or deletions to any
 Project Gutenberg-tm work, and (c) any Defect you cause.
-
-
 Section  2.  Information about the Mission of Project Gutenberg-tm
-
 Project Gutenberg-tm is synonymous with the free distribution of
 electronic works in formats readable by the widest variety of computers
 including obsolete, old, middle-aged and new computers.  It exists
 because of the efforts of hundreds of volunteers and donations from
 people in all walks of life.
-
 Volunteers and financial support to provide volunteers with the
 assistance they need are critical to reaching Project Gutenberg-tm's
 goals and ensuring that the Project Gutenberg-tm collection will
@@ -5036,11 +4223,8 @@ and permanent future for Project Gutenberg-tm and future generations.
 To learn more about the Project Gutenberg Literary Archive Foundation
 and how your efforts and donations can help, see Sections 3 and 4
 and the Foundation information page at www.gutenberg.org
-
-
 Section 3.  Information about the Project Gutenberg Literary Archive
 Foundation
-
 The Project Gutenberg Literary Archive Foundation is a non profit
 501(c)(3) educational corporation organized under the laws of the
 state of Mississippi and granted tax exempt status by the Internal
@@ -5048,22 +4232,18 @@ Revenue Service.  The Foundation's EIN or federal tax identification
 number is 64-6221541.  Contributions to the Project Gutenberg
 Literary Archive Foundation are tax deductible to the full extent
 permitted by U.S. federal laws and your state's laws.
-
 The Foundation's principal office is located at 4557 Melan Dr. S.
 Fairbanks, AK, 99712., but its volunteers and employees are scattered
 throughout numerous locations.  Its business office is located at 809
 North 1500 West, Salt Lake City, UT 84116, (801) 596-1887.  Email
 contact links and up to date contact information can be found at the
 Foundation's web site and official page at www.gutenberg.org/contact
-
 For additional contact information:
      Dr. Gregory B. Newby
      Chief Executive and Director
      gbnewby@pglaf.org
-
 Section 4.  Information about Donations to the Project Gutenberg
 Literary Archive Foundation
-
 Project Gutenberg-tm depends upon and cannot survive without wide
 spread public support and donations to carry out its mission of
 increasing the number of public domain and licensed works that can be
@@ -5071,7 +4251,6 @@ freely distributed in machine readable form accessible by the widest
 array of equipment including outdated equipment.  Many small donations
 ($1 to $5,000) are particularly important to maintaining tax exempt
 status with the IRS.
-
 The Foundation is committed to complying with the laws regulating
 charities and charitable donations in all 50 states of the United
 States.  Compliance requirements are not uniform and it takes a
@@ -5080,39 +4259,29 @@ with these requirements.  We do not solicit donations in locations
 where we have not received written confirmation of compliance.  To
 SEND DONATIONS or determine the status of compliance for any
 particular state visit www.gutenberg.org/donate
-
 While we cannot and do not solicit contributions from states where we
 have not met the solicitation requirements, we know of no prohibition
 against accepting unsolicited donations from donors in such states who
 approach us with offers to donate.
-
 International donations are gratefully accepted, but we cannot make
 any statements concerning tax treatment of donations received from
 outside the United States.  U.S. laws alone swamp our small staff.
-
 Please check the Project Gutenberg Web pages for current donation
 methods and addresses.  Donations are accepted in a number of other
 ways including checks, online payments and credit card donations.
 To donate, please visit:  www.gutenberg.org/donate
-
-
 Section 5.  General Information About Project Gutenberg-tm electronic
 works.
-
 Professor Michael S. Hart was the originator of the Project Gutenberg-tm
 concept of a library of electronic works that could be freely shared
 with anyone.  For forty years, he produced and distributed Project
 Gutenberg-tm eBooks with only a loose network of volunteer support.
-
 Project Gutenberg-tm eBooks are often created from several printed
 editions, all of which are confirmed as Public Domain in the U.S.
 unless a copyright notice is included.  Thus, we do not necessarily
 keep eBooks in compliance with any particular paper edition.
-
 Most people start at our Web site which has the main PG search facility:
-
      www.gutenberg.org
-
 This Web site includes information about Project Gutenberg-tm,
 including how to make donations to the Project Gutenberg Literary
 Archive Foundation, how to help produce our new eBooks, and how to

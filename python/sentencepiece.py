@@ -98,36 +98,6 @@ except __builtin__.Exception:
         pass
     _newclass = 0
 
-class min_string_view(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, min_string_view, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, min_string_view, name)
-    __repr__ = _swig_repr
-
-    def data(self):
-        return _sentencepiece.min_string_view_data(self)
-
-    def size(self):
-        return _sentencepiece.min_string_view_size(self)
-
-    def assign(self, data, len):
-        return _sentencepiece.min_string_view_assign(self, data, len)
-
-    def copy(self, data, len):
-        return _sentencepiece.min_string_view_copy(self, data, len)
-
-    def __init__(self, *args):
-        this = _sentencepiece.new_min_string_view(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-    __swig_destroy__ = _sentencepiece.delete_min_string_view
-    __del__ = lambda self: None
-min_string_view_swigregister = _sentencepiece.min_string_view_swigregister
-min_string_view_swigregister(min_string_view)
-
 class SentencePieceProcessor(_object):
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, SentencePieceProcessor, name, value)
