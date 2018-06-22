@@ -185,6 +185,11 @@ class SentencePieceProcessor {
   // `model_proto` is moved.
   virtual util::Status Load(std::unique_ptr<ModelProto> &&model_proto);
 
+  // Loads model from `serialized`, which is a string-serialized model proto.
+  // Useful to load the model from a platform independent blob object.
+  virtual util::Status LoadFromSerializedProto(
+      util::min_string_view serialized);
+
   // Returns the status. Encode/Decode methods are valid when status is OK.
   virtual util::Status status() const;
 
