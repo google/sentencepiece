@@ -529,6 +529,21 @@ TEST(SentencePieceProcessorTest, LoadInvalidModelTest) {
   EXPECT_NOT_OK(sp.Load(&ss));
 }
 
+TEST(SentencePieceProcessorTest, LoadSerializedProtoTest) {
+  ModelProto model_proto;
+  auto *sp1 = model_proto.add_pieces();
+  sp1->set_type(ModelProto::SentencePiece::UNKNOWN);
+  sp1->set_piece("<unk>");
+  AddPiece(&model_proto, WS, 0.0);
+  *(model_proto.mutable_normalizer_spec()) = MakeDefaultNormalizerSpec();
+
+  SentencePieceProcessor sp;
+  EXPECT_NOT_OK(sp.LoadFromSerializedProto("__NOT_A_PROTO__"));
+  EXPECT_OK(sp.LoadFromSerializedProto(model_proto.SerializeAsString()));
+  EXPECT_EQ(model_proto.SerializeAsString(),
+            sp.model_proto().SerializeAsString());
+}
+
 TEST(SentencePieceProcessorTest, EndToEndTest) {
   ModelProto model_proto;
   auto *sp1 = model_proto.add_pieces();

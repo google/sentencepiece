@@ -69,6 +69,14 @@ util::Status SentencePieceProcessor::Load(const ModelProto &model_proto) {
   return Load(std::move(model_proto_copy));
 }
 
+util::Status SentencePieceProcessor::LoadFromSerializedProto(
+    util::min_string_view serialized) {
+  auto model_proto = port::MakeUnique<ModelProto>();
+  CHECK_OR_RETURN(
+      model_proto->ParseFromArray(serialized.data(), serialized.size()));
+  return Load(std::move(model_proto));
+}
+
 util::Status SentencePieceProcessor::Load(
     std::unique_ptr<ModelProto> &&model_proto) {
   model_proto_ = std::move(model_proto);
