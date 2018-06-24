@@ -129,6 +129,10 @@ int ToSwigError(sentencepiece::util::error::Code code) {
     return $self->Load(filename);
   }
 
+  util::Status load_from_serialized_proto(sentencepiece::util::min_string_view filename) {
+    return $self->LoadFromSerializedProto(filename);
+  }
+
   util::Status set_encode_extra_options(
       sentencepiece::util::min_string_view extra_option) {
     return $self->SetEncodeExtraOptions(extra_option);

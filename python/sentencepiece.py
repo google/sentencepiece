@@ -120,6 +120,9 @@ class SentencePieceProcessor(_object):
     def LoadOrDie(self, filename):
         return _sentencepiece.SentencePieceProcessor_LoadOrDie(self, filename)
 
+    def LoadFromSerializedProto(self, serialized):
+        return _sentencepiece.SentencePieceProcessor_LoadFromSerializedProto(self, serialized)
+
     def SetEncodeExtraOptions(self, extra_option):
         return _sentencepiece.SentencePieceProcessor_SetEncodeExtraOptions(self, extra_option)
 
@@ -182,6 +185,9 @@ class SentencePieceProcessor(_object):
 
     def load(self, filename):
         return _sentencepiece.SentencePieceProcessor_load(self, filename)
+
+    def load_from_serialized_proto(self, filename):
+        return _sentencepiece.SentencePieceProcessor_load_from_serialized_proto(self, filename)
 
     def set_encode_extra_options(self, extra_option):
         return _sentencepiece.SentencePieceProcessor_set_encode_extra_options(self, extra_option)
