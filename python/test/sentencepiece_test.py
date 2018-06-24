@@ -13,9 +13,12 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertTrue(self.sp_.Load('test/test_model.model'))
     self.jasp_ = spm.SentencePieceProcessor()
     self.assertTrue(self.jasp_.Load('test/test_ja_model.model'))
-    self.assertTrue(self.sp_.load('test/test_model.model'))
+    self.assertTrue(self.sp_.LoadFromSerializedProto(
+        open('test/test_model.model', 'rb').read()))
     self.jasp_ = spm.SentencePieceProcessor()
-    self.assertTrue(self.jasp_.load('test/test_ja_model.model'))
+    self.assertTrue(self.jasp_.LoadFromSerializedProto(
+        open('test/test_ja_model.model', 'rb').read()))
+
 
   def test_load(self):
     self.assertEqual(1000, self.sp_.GetPieceSize())

@@ -3545,6 +3545,9 @@ SWIGINTERNINLINE PyObject*
 SWIGINTERN sentencepiece::util::Status sentencepiece_SentencePieceProcessor_load(sentencepiece::SentencePieceProcessor *self,sentencepiece::util::min_string_view filename){
     return self->Load(filename);
   }
+SWIGINTERN sentencepiece::util::Status sentencepiece_SentencePieceProcessor_load_from_serialized_proto(sentencepiece::SentencePieceProcessor *self,sentencepiece::util::min_string_view filename){
+    return self->LoadFromSerializedProto(filename);
+  }
 SWIGINTERN sentencepiece::util::Status sentencepiece_SentencePieceProcessor_set_encode_extra_options(sentencepiece::SentencePieceProcessor *self,sentencepiece::util::min_string_view extra_option){
     return self->SetEncodeExtraOptions(extra_option);
   }
@@ -3747,6 +3750,52 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_LoadOrDie(PyObject *SWIGUNUSED
     }
   }
   resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceProcessor_LoadFromSerializedProto(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
+  sentencepiece::util::min_string_view arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  sentencepiece::util::Status result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:SentencePieceProcessor_LoadFromSerializedProto",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor_LoadFromSerializedProto" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
+  {
+    const PyInputString ustring(obj1);
+    if (!ustring.IsAvalable()) {
+      PyErr_SetString(PyExc_TypeError, "not a string");
+      SWIG_fail;
+    }
+    resultobj = ustring.input_type();
+    arg2 = sentencepiece::util::min_string_view(ustring.data(), ustring.size());
+  }
+  {
+    try {
+      result = (arg1)->LoadFromSerializedProto(arg2);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    if (!(&result)->ok()) {
+      SWIG_exception(ToSwigError((&result)->code()), (&result)->ToString().c_str());
+    }
+    resultobj = SWIG_From_bool((&result)->ok());
+  }
   return resultobj;
 fail:
   return NULL;
@@ -4760,6 +4809,52 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_load(PyObject *SWIGUNUSEDPARM(
   {
     try {
       result = sentencepiece_SentencePieceProcessor_load(arg1,arg2);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    if (!(&result)->ok()) {
+      SWIG_exception(ToSwigError((&result)->code()), (&result)->ToString().c_str());
+    }
+    resultobj = SWIG_From_bool((&result)->ok());
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceProcessor_load_from_serialized_proto(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
+  sentencepiece::util::min_string_view arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  sentencepiece::util::Status result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:SentencePieceProcessor_load_from_serialized_proto",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor_load_from_serialized_proto" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
+  {
+    const PyInputString ustring(obj1);
+    if (!ustring.IsAvalable()) {
+      PyErr_SetString(PyExc_TypeError, "not a string");
+      SWIG_fail;
+    }
+    resultobj = ustring.input_type();
+    arg2 = sentencepiece::util::min_string_view(ustring.data(), ustring.size());
+  }
+  {
+    try {
+      result = sentencepiece_SentencePieceProcessor_load_from_serialized_proto(arg1,arg2);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -5922,6 +6017,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"delete_SentencePieceProcessor", _wrap_delete_SentencePieceProcessor, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_Load", _wrap_SentencePieceProcessor_Load, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_LoadOrDie", _wrap_SentencePieceProcessor_LoadOrDie, METH_VARARGS, NULL},
+	 { (char *)"SentencePieceProcessor_LoadFromSerializedProto", _wrap_SentencePieceProcessor_LoadFromSerializedProto, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_SetEncodeExtraOptions", _wrap_SentencePieceProcessor_SetEncodeExtraOptions, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_SetDecodeExtraOptions", _wrap_SentencePieceProcessor_SetDecodeExtraOptions, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_SetVocabulary", _wrap_SentencePieceProcessor_SetVocabulary, METH_VARARGS, NULL},
@@ -5943,6 +6039,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"SentencePieceProcessor_IsControl", _wrap_SentencePieceProcessor_IsControl, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_IsUnused", _wrap_SentencePieceProcessor_IsUnused, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_load", _wrap_SentencePieceProcessor_load, METH_VARARGS, NULL},
+	 { (char *)"SentencePieceProcessor_load_from_serialized_proto", _wrap_SentencePieceProcessor_load_from_serialized_proto, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_set_encode_extra_options", _wrap_SentencePieceProcessor_set_encode_extra_options, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_set_decode_extra_options", _wrap_SentencePieceProcessor_set_decode_extra_options, METH_VARARGS, NULL},
 	 { (char *)"SentencePieceProcessor_set_vocabulary", _wrap_SentencePieceProcessor_set_vocabulary, METH_VARARGS, NULL},
