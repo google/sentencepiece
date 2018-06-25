@@ -45,10 +45,9 @@ make_wheel() {
   git clone https://github.com/google/protobuf.git
   cd protobuf
   ./autogen.sh
-  ./configure
+  ./configure --disable-shared --with-pic
   make -j4
   make install
-  strip /usr/local/lib/*protobuf* || true
   cd ..
 
   cd ../../
@@ -57,15 +56,15 @@ make_wheel() {
   grep -v PKG_CHECK_MODULES configure > tmp
   mv tmp -f configure
   chmod +x configure
-  LIBS+="-lprotobuf -pthread" ./configure
+  LIBS+="-pthread -L/usr/local/lib -lprotobuf" ./configure --disable-shared --with-pic
   make -j4
   make install
-  make distclean
-  strip /usr/local/lib/*sentencepiece* || true
 
   cd python
   for i in /opt/python/*
   do
+    $i/bin/python setup.py bdist
+    strip build/*/*.so
     $i/bin/python setup.py bdist_wheel
     $i/bin/python setup.py test
     rm -fr build
