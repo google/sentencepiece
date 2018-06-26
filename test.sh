@@ -49,12 +49,23 @@ build_python() {
   cd ..
 }
 
+build_tensorflow() {
+  cd tensorflow
+  pip install tensorflow
+  pip install sentencepiece
+  python setup.py bdist_wheel
+  python setup.py sdist
+  python setup.py test
+  cd ..
+}
+
 build_linux_gcc_coverall_ubuntu() {
   setup_debian
   pip install cpp-coveralls
   pip install 'requests[security]'
   build_generic
   build_python
+  build_tensorflow
   make distclean
   ./configure --enable-gcov
   make check -j2
@@ -65,18 +76,27 @@ build_linux_gcc_ubuntu() {
   setup_ubuntu
   build_generic
   build_python
+  build_tensorflow
+}
+
+build_linux_gcc_ubuntu_i386() {
+  setup_ubuntu
+  build_generic
+  build_python
 }
 
 build_linux_gcc_debian() {
   setup_debian
   build_generic
   build_python
+  build_tensorflow
 }
 
 build_linux_gcc_fedora() {
   setup_fedora
   build_generic
   build_python
+  build_tensorflow
 }
 
 build_linux_clang_ubuntu() {

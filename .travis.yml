@@ -5,7 +5,7 @@ matrix:
       env: IMAGE=ubuntu:rolling COMMAND=build_linux_gcc_coverall_ubuntu
       services: docker
     - os: linux
-      env: IMAGE=i386/ubuntu:rolling COMMAND=build_linux_gcc_ubuntu
+      env: IMAGE=i386/ubuntu:rolling COMMAND=build_linux_gcc_ubuntu_i386
       services: docker
     - os: linux
       env: IMAGE=ubuntu:xenial COMMAND=build_linux_gcc_ubuntu
@@ -33,7 +33,7 @@ matrix:
       env: IMAGE=x86_64 COMMAND=make_py_wheel
       script:
         - $TRAVIS_BUILD_DIR/tensorflow/make_py_wheel.sh
-      services: docker      
+      services: docker
     - os: osx
       osx_image: xcode9.3
       env: IMAGE=native COMMAND=build_osx
