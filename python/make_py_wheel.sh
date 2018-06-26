@@ -25,11 +25,12 @@ run_docker() {
   docker run --rm -ti --name py_sentencepiece \
     -v `pwd`/../:/sentencepiece -w /sentencepiece/python \
     -td $1 /bin/bash
-  docker exec py_sentencepiece bash -c "./make_py_wheel.sh native"
+  docker exec py_sentencepiece bash -c "./make_py_wheel.sh native $2"
   docker stop py_sentencepiece
 }
 
 build() {
+  TRG=$1
   rm -fr tmp
   mkdir -p tmp
 
@@ -90,10 +91,10 @@ build() {
 }
 
 if [ "$1" = "native" ]; then
-  build
+  build $2
 elif [ "$#" -eq 1 ]; then
   run_docker quay.io/pypa/manylinux1_${1}  ${1}
 else
-  run_docker quay.io/pypa/manylinux1_i686
-  run_docker quay.io/pypa/manylinux1_x86_64
+  run_docker quay.io/pypa/manylinux1_i686 i686
+  run_docker quay.io/pypa/manylinux1_x86_64 x86_64
 fi

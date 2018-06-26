@@ -89,7 +89,7 @@ build() {
   strip tf_sentencepiece/_sentencepiece_processor_ops.so
 
   # Builds Python manylinux wheel package.
-  python setup.py bdist_wheel --universal --plat-name=linux_x86_64
+  python setup.py bdist_wheel --universal --plat-name=manylinux1_x86_64
   python setup.py sdist
 
   rm -fr build tf_sentencepiece.egg-info tmp
