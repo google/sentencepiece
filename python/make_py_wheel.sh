@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright 2018 Google Inc.
 #
@@ -14,27 +14,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
-# Usage:
-# > sudo sh make_py_wheel.sh
-# wheel packages are built under <pwd>/manylinux_wh dir
-
 set -e  # exit immediately on error
 set -x  # display all commands
 
+PROTOBUF_VERSION=3.6.0
+
 run_docker() {
-  rm -fr manylinux_wh/$2
-  mkdir -p manylinux_wh/$2
-  docker pull "$1"
-  docker run --rm -ti --name manylinux -v `pwd`:/sentencepiece -w /sentencepiece/manylinux_wh/$2 -td "$1" /bin/bash
-  docker exec manylinux bash -c "../../make_py_wheel.sh make_wheel $2"
-  docker stop manylinux
+  cd `dirname $0`
+  docker pull $1
+  docker run --rm -ti --name py_sentencepiece \
+    -v `pwd`/../:/sentencepiece -w /sentencepiece/python \
+    -td $1 /bin/bash
+  docker exec py_sentencepiece bash -c "./make_py_wheel.sh native"
+  docker stop py_sentencepiece
 }
 
-make_wheel() {
-  export PATH="/usr/local/bin:$PATH"
-  TRG=$1
+build() {
+  rm -fr tmp
+  mkdir -p tmp
 
-  wget http://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz
+  # Installs necessary libraries under `tmp` sub directory.
+  cd tmp
+
+  # Install libtool
+  curl -L -O http://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz
   tar zxfv libtool-2.4.6.tar.gz
   cd libtool-2.4.6
   ./configure
@@ -42,23 +45,27 @@ make_wheel() {
   make install
   cd ..
 
-  git clone https://github.com/google/protobuf.git
-  cd protobuf
-  ./autogen.sh
+  # Install protobuf
+  curl -L -O https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
+  tar zxfv protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
+  cd protobuf-${PROTOBUF_VERSION}
   ./configure --disable-shared --with-pic
-  make -j4
-  make install
-  cd ..
+  make CXXFLAGS+="-std=c++11 -O3" \
+       CFLAGS+="-std=c++11 -O3" -j4
+  make install || true
+  cd ../..
 
-  cd ../../
+  # Install sentencepiece
+  cd ..
   make distclean || true
   ./autogen.sh
   grep -v PKG_CHECK_MODULES configure > tmp
   mv tmp -f configure
   chmod +x configure
   LIBS+="-pthread -L/usr/local/lib -lprotobuf" ./configure --disable-shared --with-pic
-  make -j4
-  make install
+  make CXXFLAGS+="-std=c++11 -O3" \
+       CFLAGS+="-std=c++11 -O3 -D_GLIBCXX_USE_CXX11_ABI=0" -j4
+  make install || true
 
   cd python
   for i in /opt/python/*
@@ -77,14 +84,16 @@ make_wheel() {
     auditwheel repair $i
   done
 
-  mv -f wheelhouse/*${TRG}.whl ../../manylinux_wh
+  mv -f wheelhouse/*${TRG}.whl .
+  cd .. && rm -fr tmp
+  cd .. && make distclean
 }
 
-if [ "$#" -eq 2 ]; then
-  eval "$1" $2
+if [ "$1" = "native" ]; then
+  build
 elif [ "$#" -eq 1 ]; then
   run_docker quay.io/pypa/manylinux1_${1}  ${1}
 else
-  run_docker quay.io/pypa/manylinux1_i686   i686
-  run_docker quay.io/pypa/manylinux1_x86_64 x86_64
+  run_docker quay.io/pypa/manylinux1_i686
+  run_docker quay.io/pypa/manylinux1_x86_64
 fi

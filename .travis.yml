@@ -22,12 +22,17 @@ matrix:
     - os: linux
       env: IMAGE=x86_64 COMMAND=make_py_wheel
       script:
-        - $TRAVIS_BUILD_DIR/make_py_wheel.sh ${IMAGE}
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
       services: docker
     - os: linux
       env: IMAGE=i686 COMMAND=make_py_wheel
       script:
-        - $TRAVIS_BUILD_DIR/make_py_wheel.sh ${IMAGE}
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
+      services: docker
+    - os: linux
+      env: IMAGE=x86_64 COMMAND=make_py_wheel
+      script:
+        - $TRAVIS_BUILD_DIR/tensorflow/make_py_wheel.sh
       services: docker      
     - os: osx
       osx_image: xcode9.3
