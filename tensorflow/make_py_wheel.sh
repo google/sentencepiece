@@ -25,7 +25,7 @@ run_docker() {
   docker run --rm -ti --name tf_sentencepiece \
     -v `pwd`/../:/sentencepiece -w /sentencepiece/tensorflow \
     -td $1 /bin/bash
-  docker exec tf_sentencepiece bash -c "./build.sh native"
+  docker exec tf_sentencepiece bash -c "./make_py_wheel.sh native"
   docker stop tf_sentencepiece
 }
 
