@@ -34,6 +34,12 @@ def cmd(line):
         sys.exit(1)
     return output.strip().split()
 
+# Fix compile on some versions of Mac OSX
+# See: https://github.com/neulab/xnmt/issues/199
+extra_compile_args = ["-std=c++11"]
+if sys.platform == "darwin":
+  extra_compile_args.append("-mmacosx-version-min=10.9")
+
 setup(name = 'sentencepiece',
       author = 'Taku Kudo',
       author_email='taku@google.com',
@@ -46,7 +52,7 @@ setup(name = 'sentencepiece',
       py_modules=['sentencepiece'],
       ext_modules = [Extension('_sentencepiece',
                                sources=['sentencepiece_wrap.cxx'],
-                               extra_compile_args=['-std=c++11'] +
+                               extra_compile_args=extra_compile_args +
                                cmd('pkg-config sentencepiece --cflags'),
                                extra_link_args=cmd('pkg-config sentencepiece --libs'))
                      ],
