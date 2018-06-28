@@ -17,11 +17,11 @@ with the extension of direct training from raw sentences. SentencePiece allows u
 **This is not an official Google product.**
 
 ## Technical highlights
-- **Multiple subword algorithms**: **BPE**  [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)] are supported.
-- **Subword regularization**: SentencePiece implements subword sampling for [subword regularization](https://arxiv.org/abs/1804.10959) which helps to improve the robustness and accuracy of NMT models.
 - **Purely data driven**: SentencePiece trains tokenization and detokenization
   models from only raw sentences. No pre-tokenization ([Moses tokenizer](https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/tokenizer.perl)/[MeCab](http://taku910.github.io/mecab/)/[KyTea](http://www.phontron.com/kytea/)) is required.
 - **Language independent**: SentencePiece treats the sentences just as sequences of Unicode characters. There is no language-dependent logic.
+bh- **Multiple subword algorithms**: **BPE**  [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)] are supported.
+- **Subword regularization**: SentencePiece implements subword sampling for [subword regularization](https://arxiv.org/abs/1804.10959) which helps to improve the robustness and accuracy of NMT models.
 - **Fast and lightweight**: Segmentation speed is around 50k sentences/sec, and memory footprint is around 6MB.
 - **Self-contained**: The same tokenization/detokenization is obtained as long as the same model file is used.
 - **Direct vocabulary id generation**: SentencePiece manages vocabulary to id mapping and can directly generate vocabulary id sequences from raw sentences.
@@ -286,5 +286,7 @@ Then segment train/test corpus with ```--vocabulary``` option
 * [SentencePiece Experiments](doc/experiments.md)
 * [SentencePieceProcessor C++ API](doc/api.md)
 * [Use custom text normalization rules](doc/normalization.md)
+- **Multiple subword algorithms**: **BPE**  [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)] are supported.
+- **Subword regularization**: SentencePiece implements subword sampling for [subword regularization](https://arxiv.org/abs/1804.10959) which helps to improve the robustness and accuracy of NMT models.
 * [Use custom symbols](doc/special_symbols.md)
 * [Segmentation and training algorithms in detail]
