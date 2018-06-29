@@ -58,7 +58,7 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
   CHECK_RANGE(trainer_spec.character_coverage(), 0.98, 1.0);
   CHECK_RANGE(trainer_spec.input_sentence_size(), 100, 100000000);
   CHECK_RANGE(trainer_spec.max_sentencepiece_length(), 1, 512);
-  CHECK_RANGE(trainer_spec.mining_sentence_size(), 100, 5000000);
+  CHECK_RANGE(trainer_spec.mining_sentence_size(), 100, 100000000);
   CHECK_RANGE(trainer_spec.num_sub_iterations(), 1, 10);
   CHECK_RANGE(trainer_spec.num_threads(), 1, 128);
   CHECK_RANGE(trainer_spec.seed_sentencepiece_size(), 1000, 5000000);
