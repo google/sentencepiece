@@ -286,7 +286,5 @@ Then segment train/test corpus with ```--vocabulary``` option
 * [SentencePiece Experiments](doc/experiments.md)
 * [SentencePieceProcessor C++ API](doc/api.md)
 * [Use custom text normalization rules](doc/normalization.md)
-- **Multiple subword algorithms**: **BPE**  [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)] are supported.
-- **Subword regularization**: SentencePiece implements subword sampling for [subword regularization](https://arxiv.org/abs/1804.10959) which helps to improve the robustness and accuracy of NMT models.
 * [Use custom symbols](doc/special_symbols.md)
 * [Segmentation and training algorithms in detail]
