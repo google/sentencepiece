@@ -42,7 +42,7 @@ std::string ToHexData(absl::string_view data) {
     const size_t bucket_size =
         std::min<size_t>(end - begin, kNumOfBytesOnOneLine -
                                           output_count % kNumOfBytesOnOneLine);
-    if (output_count % kNumOfBytesOnOneLine == 0) {
+    if (output_count % kNumOfBytesOnOneLine == 0 && bucket_size > 0) {
       os << "\"";
     }
     for (size_t i = 0; i < bucket_size; ++i) {
@@ -50,7 +50,7 @@ std::string ToHexData(absl::string_view data) {
       ++begin;
     }
     output_count += bucket_size;
-    if (output_count % kNumOfBytesOnOneLine == 0) {
+    if (output_count % kNumOfBytesOnOneLine == 0 && bucket_size > 0) {
       os << "\"\n";
     }
   }
@@ -67,7 +67,9 @@ int main(int argc, char **argv) {
   const std::vector<
       std::pair<std::string, std::function<Status(Builder::CharsMap *)>>>
       kRuleList = {{"nfkc", Builder::BuildNFKCMap},
-                   {"nmt_nfkc", Builder::BuildNmtNFKCMap}};
+                   {"nmt_nfkc", Builder::BuildNmtNFKCMap},
+                   {"nfkc_cf", Builder::BuildNmtNFKC_CFMap},
+                   {"nmt_nfkc_cf", Builder::BuildNmtNFKC_CFMap}};
 
   constexpr char kHeader[] =
       R"(#ifndef NORMALIZATION_RULE_H_
