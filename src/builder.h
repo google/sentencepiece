@@ -46,7 +46,8 @@ class Builder {
                                       std::string *output);
 
   // Decompiles `blob` into `chars_map`.
-  static util::Status DecompileCharsMap(absl::string_view blob, CharsMap *chars_map);
+  static util::Status DecompileCharsMap(absl::string_view blob,
+                                        CharsMap *chars_map);
 
   // Returns a pre-compiled binary index with `name`.
   static util::Status GetPrecompiledCharsMap(const std::string &name,
@@ -93,11 +94,21 @@ class Builder {
   // whitespaces.
   static util::Status BuildNmtNFKCMap(CharsMap *chars_map);
 
+  // Merge Unicode case folding mapping into `chars_map`.
+  static util::Status MergeUnicodeCaseFoldMap(CharsMap *chars_map);
+
+  // Makes NFKC with Unicode case folding.
+  static util::Status BuildNFKC_CFMap(CharsMap *chars_map);
+
+  // Makes NMT NFKC with Unicode case folding.
+  static util::Status BuildNmtNFKC_CFMap(CharsMap *chars_map);
+
   // Builds Chars map save in `filename`.
   // Format:
   // src_uchar1 src_uchar2 ... <tab> trg_uchar1 trg_uchar2...
   // (src|trg)_ucharX must be a hex of Unicode code point.
-  static util::Status LoadCharsMap(absl::string_view filename, CharsMap *chars_map);
+  static util::Status LoadCharsMap(absl::string_view filename,
+                                   CharsMap *chars_map);
 
   // Saves Chars map to `filename` as TSV.
   static util::Status SaveCharsMap(absl::string_view filename,

@@ -384,6 +384,61 @@ util::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
 }
 
 // static
+util::Status Builder::MergeUnicodeCaseFoldMap(Builder::CharsMap *chars_map) {
+#ifdef ENABLE_NFKC_COMPILE
+  for (auto &c : *chars_map) {
+    std::vector<char32> trg;
+    for (char32 c : c.second) trg.push_back(u_foldCase(c, U_FOLD_CASE_DEFAULT));
+    c.second = trg;
+  }
+
+  constexpr int kMaxUnicode = 0x10FFFF;
+  for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
+    if (!U_IS_UNICODE_CHAR(cp)) {
+      continue;
+    }
+    if (chars_map->find({cp}) != chars_map->end()) continue;
+    const char32 trg = u_foldCase(cp, U_FOLD_CASE_DEFAULT);
+    if (trg != cp) (*chars_map)[{cp}] = {trg};
+  }
+
+  RETURN_IF_ERROR(RemoveRedundantMap(chars_map));
+#endif
+
+  return util::OkStatus();
+}
+
+// static
+util::Status Builder::BuildNFKC_CFMap(CharsMap *chars_map) {
+#ifdef ENABLE_NFKC_COMPILE
+  CharsMap nfkc_map;
+  RETURN_IF_ERROR(Builder::BuildNFKCMap(&nfkc_map));
+  RETURN_IF_ERROR(Builder::MergeUnicodeCaseFoldMap(&nfkc_map));
+  *chars_map = std::move(nfkc_map);
+#else
+  LOG(ERROR) << "NFKC_CF compile is not enabled."
+             << " rebuild with ./configure --enable-nfkc-compile";
+#endif
+
+  return util::OkStatus();
+}
+
+//  static
+util::Status Builder::BuildNmtNFKC_CFMap(CharsMap *chars_map) {
+#ifdef ENABLE_NFKC_COMPILE
+  CharsMap nfkc_map;
+  RETURN_IF_ERROR(Builder::BuildNmtNFKCMap(&nfkc_map));
+  RETURN_IF_ERROR(Builder::MergeUnicodeCaseFoldMap(&nfkc_map));
+  *chars_map = std::move(nfkc_map);
+#else
+  LOG(ERROR) << "NMT_NFKC_CF compile is not enabled."
+             << " rebuild with ./configure --enable-nfkc-compile";
+#endif
+
+  return util::OkStatus();
+}
+
+// static
 util::Status Builder::LoadCharsMap(absl::string_view filename,
                                    CharsMap *chars_map) {
   LOG(INFO) << "Loading maping file: " << filename.data();

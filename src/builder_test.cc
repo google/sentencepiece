@@ -70,6 +70,22 @@ TEST(BuilderTest, GetPrecompiledCharsMapTest) {
 
   {
     const NormalizerSpec spec =
+        SentencePieceTrainer::GetNormalizerSpec("nfkc_cf");
+    const Normalizer normalizer(spec);
+    EXPECT_EQ(WS "abc", normalizer.Normalize("ＡＢＣ"));
+    EXPECT_EQ(WS "abc", normalizer.Normalize("ABC"));
+  }
+
+  {
+    const NormalizerSpec spec =
+        SentencePieceTrainer::GetNormalizerSpec("nmt_nfkc_cf");
+    const Normalizer normalizer(spec);
+    EXPECT_EQ(WS "abc", normalizer.Normalize("ＡＢＣ"));
+    EXPECT_EQ(WS "abc", normalizer.Normalize("ABC"));
+  }
+
+  {
+    const NormalizerSpec spec =
         SentencePieceTrainer::GetNormalizerSpec("identity");
     EXPECT_TRUE(spec.precompiled_charsmap().empty());
     const Normalizer normalizer(spec);
