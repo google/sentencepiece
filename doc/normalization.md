@@ -9,6 +9,8 @@ SentencePiece provides the following pre-defined normalization rule. It is recom
 
 * **nmt_nfkc**: [NFKC](https://en.wikipedia.org/wiki/Unicode_equivalence) normalization with some additional normalization around spaces. (default)
 * **nfkc**:  original NFKC normalization.
+* **nmt_nfkc_cf**: nmt_nfkc + [Unicode case folding](https://www.w3.org/International/wiki/Case_folding) (mostly lower casing)
+* **nfkc_cf**: nfkc + [Unicode case folding](https://www.w3.org/International/wiki/Case_folding).
 * **identity**: no normalization
 
 You can choose the normalization rule with `--normalization_rule_name` flag.
