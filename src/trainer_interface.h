@@ -59,11 +59,6 @@ class TrainerInterface {
   static const char kUNKStr[];
   static const char kUPPBoundaryStr[];
 
-  static const char kUNK[];
-  static const char kBOS[];
-  static const char kEOS[];
-  static const char kPAD[];
-
   TrainerInterface(const TrainerSpec &trainer_spec,
                    const NormalizerSpec &normalizer_spec);
 

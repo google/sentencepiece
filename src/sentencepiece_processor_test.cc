@@ -624,6 +624,11 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
   EXPECT_FALSE(sp.IsControl(6));
   EXPECT_FALSE(sp.IsControl(7));
 
+  EXPECT_EQ(0, sp.unk_id());
+  EXPECT_EQ(1, sp.bos_id());
+  EXPECT_EQ(2, sp.eos_id());
+  EXPECT_EQ(-1, sp.pad_id());
+
   {
     std::vector<std::string> sps;
     const std::vector<std::string> expected_str = {WS, "ab", "c"};

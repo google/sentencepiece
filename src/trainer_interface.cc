@@ -41,11 +41,6 @@ const char TrainerInterface::kUNKStr[] = "\xe2\x96\x85";
 const char32 TrainerInterface::kUPPBoundaryChar = L'\u0009';
 const char TrainerInterface::kUPPBoundaryStr[] = "\t";
 
-const char TrainerInterface::kUNK[] = "<unk>";
-const char TrainerInterface::kBOS[] = "<s>";
-const char TrainerInterface::kEOS[] = "</s>";
-const char TrainerInterface::kPAD[] = "<pad>";
-
 namespace {
 util::Status VerifySpec(const TrainerSpec &trainer_spec) {
   CHECK_OR_RETURN(!trainer_spec.model_prefix().empty());
@@ -385,21 +380,22 @@ util::Status TrainerInterface::InitMetaPieces() {
   auto insert_id = [&has_unk, this](int id, const std::string &w) -> bool {
     if (id < 0) return true;
     if (id >= trainer_spec_.vocab_size() ||
-        meta_pieces_.find(id) != meta_pieces_.end() || (has_unk && w == kUNK))
+        meta_pieces_.find(id) != meta_pieces_.end() ||
+        (has_unk && w == ModelInterface::kUNK))
       return false;
-    if (w == kUNK) has_unk = true;
-    meta_pieces_[id] =
-        std::make_pair(w, w == kUNK ? ModelProto::SentencePiece::UNKNOWN
-                                    : ModelProto::SentencePiece::CONTROL);
+    if (w == ModelInterface::kUNK) has_unk = true;
+    meta_pieces_[id] = std::make_pair(
+        w, w == ModelInterface::kUNK ? ModelProto::SentencePiece::UNKNOWN
+                                     : ModelProto::SentencePiece::CONTROL);
     return true;
   };
 
-  CHECK_OR_RETURN(insert_id(trainer_spec_.unk_id(), kUNK));
-  CHECK_OR_RETURN(insert_id(trainer_spec_.bos_id(), kBOS));
-  CHECK_OR_RETURN(insert_id(trainer_spec_.eos_id(), kEOS));
-  CHECK_OR_RETURN(insert_id(trainer_spec_.pad_id(), kPAD));
+  CHECK_OR_RETURN(insert_id(trainer_spec_.unk_id(), ModelInterface::kUNK));
+  CHECK_OR_RETURN(insert_id(trainer_spec_.bos_id(), ModelInterface::kBOS));
+  CHECK_OR_RETURN(insert_id(trainer_spec_.eos_id(), ModelInterface::kEOS));
+  CHECK_OR_RETURN(insert_id(trainer_spec_.pad_id(), ModelInterface::kPAD));
 
-  CHECK_OR_RETURN(has_unk) << kUNK << " must be defined.";
+  CHECK_OR_RETURN(has_unk) << ModelInterface::kUNK << " must be defined.";
 
   std::set<std::string> dup;
 
@@ -412,17 +408,17 @@ util::Status TrainerInterface::InitMetaPieces() {
       return false;
     }
 
-    if (w == kUNK) {
+    if (w == ModelInterface::kUNK) {
       LOG(ERROR) << "<unk> must not be defined with --control_symbols and "
                     "--user_defined_symbols.";
       return false;
     }
 
-    if (w == kBOS && trainer_spec_.bos_id() >= 0) {
+    if (w == ModelInterface::kBOS && trainer_spec_.bos_id() >= 0) {
       meta_pieces_[trainer_spec_.bos_id()].second = type;
-    } else if (w == kEOS && trainer_spec_.eos_id() >= 0) {
+    } else if (w == ModelInterface::kEOS && trainer_spec_.eos_id() >= 0) {
       meta_pieces_[trainer_spec_.eos_id()].second = type;
-    } else if (w == kPAD && trainer_spec_.pad_id() >= 0) {
+    } else if (w == ModelInterface::kPAD && trainer_spec_.pad_id() >= 0) {
       meta_pieces_[trainer_spec_.pad_id()].second = type;
     } else {
       while (meta_pieces_.find(id) != meta_pieces_.end()) ++id;
