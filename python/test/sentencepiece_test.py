@@ -42,6 +42,10 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual('<unk>', self.sp_.IdToPiece(0))
     self.assertEqual('<s>', self.sp_.IdToPiece(1))
     self.assertEqual('</s>', self.sp_.IdToPiece(2))
+    self.assertEqual(0, self.sp_.unk_id())
+    self.assertEqual(1, self.sp_.bos_id())
+    self.assertEqual(2, self.sp_.eos_id())
+    self.assertEqual(-1, self.sp_.pad_id())
     for i in range(self.sp_.GetPieceSize()):
       piece = self.sp_.IdToPiece(i)
       self.assertEqual(i, self.sp_.PieceToId(piece))

@@ -189,6 +189,32 @@ class SentencePieceProcssorOpTest(unittest.TestCase):
         self.assertEqual(ids.eval().tolist(), expected_ids)
         self.assertEqual(pieces.eval().tolist(), expected_pieces)
 
+  def testGetPieceType(self):
+    sentencepiece_model_file = self._getSentencePieceModelFile()
+    processor = spm.SentencePieceProcessor()
+    processor.Load(sentencepiece_model_file)
+    expected_is_unknown = []
+    expected_is_control = []
+    expected_is_unused = []
+    ids = []
+
+    for i in range(processor.GetPieceSize()):
+      ids.append(i)
+      expected_is_unknown.append(processor.IsUnknown(i))
+      expected_is_control.append(processor.IsControl(i))
+      expected_is_unused.append(processor.IsUnused(i))
+
+    with tf.Session():
+      s = tf.constant(ids)
+      is_unknown = tfspm.is_unknown(s, model_file=sentencepiece_model_file)
+      is_control = tfspm.is_control(s, model_file=sentencepiece_model_file)
+      is_unused = tfspm.is_unused(s, model_file=sentencepiece_model_file)
+
+      self.assertEqual(is_unknown.eval().tolist(), expected_is_unknown)
+      self.assertEqual(is_control.eval().tolist(), expected_is_control)
+      self.assertEqual(is_unused.eval().tolist(), expected_is_unused)
+
+
   def testLoadModelProto(self):
     # Makes a serialized model proto.
     model_proto = open(self._getSentencePieceModelFile(), 'rb').read()

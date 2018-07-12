@@ -21,6 +21,7 @@
 
 #include "common.h"
 #include "model_factory.h"
+#include "model_interface.h"
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
 #include "unigram_model.h"
@@ -519,6 +520,30 @@ bool SentencePieceProcessor::IsUnknown(int id) const {
 bool SentencePieceProcessor::IsUnused(int id) const {
   CHECK_STATUS_OR_RETURN_DEFAULT(false);
   return model_->IsUnused(id);
+}
+
+int SentencePieceProcessor::unk_id() const {
+  const int id = PieceToId(ModelInterface::kUNK);
+  if (IsUnknown(id)) return id;
+  return -1;
+}
+
+int SentencePieceProcessor::bos_id() const {
+  const int id = PieceToId(ModelInterface::kBOS);
+  if (IsControl(id)) return id;
+  return -1;
+}
+
+int SentencePieceProcessor::eos_id() const {
+  const int id = PieceToId(ModelInterface::kEOS);
+  if (IsControl(id)) return id;
+  return -1;
+}
+
+int SentencePieceProcessor::pad_id() const {
+  const int id = PieceToId(ModelInterface::kPAD);
+  if (IsControl(id)) return id;
+  return -1;
 }
 
 // static

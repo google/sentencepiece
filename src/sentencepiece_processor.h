@@ -384,6 +384,21 @@ class SentencePieceProcessor {
   // Returns true if `id` is unused symbol.
   virtual bool IsUnused(int id) const;
 
+  // Returns the reserved id.
+  // Returns -1 if not defined.
+
+  // Returns unknown (<unk>) id.
+  virtual int unk_id() const;
+
+  // Returns BOS (<s>) id.
+  virtual int bos_id() const;
+
+  // Returns EOS (</s>) id.
+  virtual int eos_id() const;
+
+  // Returns PAD (<pad>) id.
+  virtual int pad_id() const;
+
 #ifndef SWIG
   //////////////////////////////////////////////////////////////
   // Model management.

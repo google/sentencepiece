@@ -183,6 +183,18 @@ class SentencePieceProcessor(_object):
     def IsUnused(self, id):
         return _sentencepiece.SentencePieceProcessor_IsUnused(self, id)
 
+    def unk_id(self):
+        return _sentencepiece.SentencePieceProcessor_unk_id(self)
+
+    def bos_id(self):
+        return _sentencepiece.SentencePieceProcessor_bos_id(self)
+
+    def eos_id(self):
+        return _sentencepiece.SentencePieceProcessor_eos_id(self)
+
+    def pad_id(self):
+        return _sentencepiece.SentencePieceProcessor_pad_id(self)
+
     def load(self, filename):
         return _sentencepiece.SentencePieceProcessor_load(self, filename)
 
