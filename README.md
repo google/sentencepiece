@@ -178,7 +178,7 @@ If want to use self-prepared protobuf library, setup below environment variables
 % sudo make install
 $ sudo ldconfig -v
 ```
-On OSX/macOS, replace the last command with: 
+On OSX/macOS, replace the last command with the following: 
 ```$ sudo update_dyld_shared_cache```
 
 ## Usage instructions
