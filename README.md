@@ -18,7 +18,7 @@ with the extension of direct training from raw sentences. SentencePiece allows u
 
 ## Technical highlights
 - **Purely data driven**: SentencePiece trains tokenization and detokenization
-  models from from sentences. Pre-tokenization ([Moses tokenizer](https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/tokenizer.perl)/[MeCab](http://taku910.github.io/mecab/)/[KyTea](http://www.phontron.com/kytea/)) is not always required.
+  models from sentences. Pre-tokenization ([Moses tokenizer](https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/tokenizer.perl)/[MeCab](http://taku910.github.io/mecab/)/[KyTea](http://www.phontron.com/kytea/)) is not always required.
 - **Language independent**: SentencePiece treats the sentences just as sequences of Unicode characters. There is no language-dependent logic.
 - **Multiple subword algorithms**: **BPE**  [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)] are supported.
 - **Subword regularization**: SentencePiece implements subword sampling for [subword regularization](https://arxiv.org/abs/1804.10959) which helps to improve the robustness and accuracy of NMT models.
