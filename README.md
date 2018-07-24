@@ -157,7 +157,7 @@ On ubuntu 17.10 (Artful Aardvark) and Later:
 
 On OSX, you can use brew:
 ```
-% brew install protobuf autoconf automake libtool
+% brew install protobuf cmake
 ```
 
 If want to use self-prepared protobuf library, setup below environment variables before build:
