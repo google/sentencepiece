@@ -17,6 +17,8 @@
 #include <functional>
 #include <utility>
 
+#include "config.h"
+
 #ifdef ENABLE_NFKC_COMPILE
 #include <unicode/errorcode.h>
 #include <unicode/locid.h>
@@ -326,7 +328,8 @@ util::Status Builder::BuildNFKCMap(CharsMap *chars_map) {
     if (nfkc == nfkd) {
       continue;
     }
-    // Expand all possible sequences which are normalized into the same `nfkd`.
+    // Expand all possible sequences which are normalized into the same
+    // `nfkd`.
     for (const auto &nfkd_orig : ExpandUnnormalized(nfkd, norm2orig)) {
       if (nfkd_orig != nfkc) {
         nfkc_map[nfkd_orig] = nfkc;
