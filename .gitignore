@@ -26,6 +26,11 @@ Makefile.in
 /autogen.sh
 /ltmain.sh
 
+CMakeFiles
+CMakeCache.txt
+config.h
+sentencepiece.pc
+
 *.o
 *.lo
 *.a

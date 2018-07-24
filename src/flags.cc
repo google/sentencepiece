@@ -23,11 +23,8 @@
 #include <utility>
 
 #include "common.h"
-#include "util.h"
-
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
+#include "util.h"
 
 namespace sentencepiece {
 namespace flags {

@@ -12,9 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "flags.h"
 #include "testharness.h"
 
+DEFINE_string(data_dir, "../data", "Data directory");
+
 int main(int argc, char **argv) {
+  std::vector<std::string> rest_args;
+  sentencepiece::flags::ParseCommandLineFlags(argc, argv, &rest_args);
+
   sentencepiece::test::RunAllTests();
   return 0;
 }

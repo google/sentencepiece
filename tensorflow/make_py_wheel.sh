@@ -18,6 +18,7 @@ set -e  # exit immediately on error
 set -x  # display all commands
 
 PROTOBUF_VERSION=3.6.0
+CMAKE_VERSION=3.12.0
 
 run_docker() {
   cd `dirname $0`
@@ -30,19 +31,18 @@ run_docker() {
 }
 
 build() {
-  rm -fr tmp
-  mkdir -p tmp
-
+  TRG=$1
+  rm -fr build
+  mkdir -p build
+  cd build
+  
   export PATH="/opt/python/cp27-cp27mu/bin:${PATH}"
 
-  # Installs necessary libraries under `tmp` sub directory.
-  cd tmp
-
-  # Install libtool
-  curl -L -O http://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz
-  tar zxfv libtool-2.4.6.tar.gz
-  cd libtool-2.4.6
-  ./configure
+  # Install cmake
+  curl -L -O https://cmake.org/files/v3.12/cmake-${CMAKE_VERSION}.tar.gz
+  tar zxfv cmake-${CMAKE_VERSION}.tar.gz
+  cd cmake-${CMAKE_VERSION}
+  ./bootstrap
   make -j4
   make install
   cd ..
@@ -53,30 +53,23 @@ build() {
   cd protobuf-${PROTOBUF_VERSION}
   ./configure --disable-shared --with-pic
   make CXXFLAGS+="-std=c++11 -O3 -D_GLIBCXX_USE_CXX11_ABI=0" \
-       CFLAGS+="-std=c++11 -O3 -D_GLIBCXX_USE_CXX11_ABI=0" -j4
-  make install || true
-  cd ../..
+    CFLAGS+="-std=c++11 -O3 -D_GLIBCXX_USE_CXX11_ABI=0" -j4
+  make install
+  cd ..
 
   # Install sentencepiece
+  cmake ../.. -DSPM_ENABLE_SHARED=OFF -DSPM_ENABLE_TENSORFLOW_SHARED=ON
+  make -j4
+  make install
   cd ..
-  make distclean || true
-  ./autogen.sh
-  grep -v PKG_CHECK_MODULES configure > tmp
-  mv tmp -f configure
-  chmod +x configure
-  LIBS+="-pthread -L/usr/local/lib -lprotobuf" ./configure --disable-shared --with-pic
-  make CXXFLAGS+="-std=c++11 -O3 -D_GLIBCXX_USE_CXX11_ABI=0" \
-       CFLAGS+="-std=c++11 -O3 -D_GLIBCXX_USE_CXX11_ABI=0" -j4
-  make install || true
 
   # Builds _sentencepiece_processor_ops.so
-  cd tensorflow
   pip install tensorflow
   TF_CFLAGS="-I/opt/python/cp27-cp27mu/lib/python2.7/site-packages/tensorflow/include"
   TF_LFLAGS="-L/opt/python/cp27-cp27mu/lib/python2.7/site-packages/tensorflow -ltensorflow_framework"
 
   g++ -std=c++11 -shared \
-    -I../src \
+    -I../../src \
     -fPIC ${TF_CFLAGS[@]} -O2 \
     -D_GLIBCXX_USE_CXX11_ABI=0 \
     -Wl,--whole-archive \
@@ -92,8 +85,7 @@ build() {
   python setup.py bdist_wheel --universal --plat-name=manylinux1_x86_64
   python setup.py sdist
 
-  rm -fr build tf_sentencepiece.egg-info tmp
-  cd .. && make distclean
+  rm -fr build tf_sentencepiece.egg-info
 }
 
 if [ "$1" = "native" ]; then
