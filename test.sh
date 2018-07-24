@@ -19,7 +19,7 @@ set -x  # display all commands
 
 setup_ubuntu() {
   apt-get update
-  apt-get install -y build-essential autoconf automake libtool git \
+  apt-get install -y build-essential cmake git \
       pkg-config libprotobuf-c++ protobuf-compiler libprotobuf-dev python-pip python3-pip
 }
 
@@ -29,18 +29,22 @@ setup_debian() {
 
 setup_fedora() {
   dnf update -y
-  dnf install -y rpm-build gcc-c++ make protobuf-devel autoconf automake libtool pkg-config python-pip python-devel
+  dnf install -y rpm-build gcc-c++ make protobuf-devel cmake pkg-config python-pip python-devel
 }
 
 build_generic() {
-  ./autogen.sh
-  ./configure
+  mkdir -p build
+  cd build
+  cmake .. -DSPM_BUILD_TEST=ON
   make -j2
-  make check -j2
+  make test
+  cd ..
 }
 
 build_python() {
+  cd build
   make install
+  cd ..
   export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
   export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
   ldconfig -v
@@ -61,15 +65,19 @@ build_tensorflow() {
 
 build_linux_gcc_coverall_ubuntu() {
   setup_debian
+  apt-get install -y lcov
   pip install cpp-coveralls
   pip install 'requests[security]'
   build_generic
   build_python
   build_tensorflow
-  make distclean
-  ./configure --enable-gcov
-  make check -j2
+  mkdir -p build
+  cd build
+  cmake .. -DSPM_COVERAGE=ON
+  make -j2
+  make coverage
   coveralls --exclude-pattern '.*(include|usr|test|third_party|pb|_main).*' --gcov-options '\-lp' --gcov gcov
+  cd ..
 }
 
 build_linux_gcc_ubuntu() {
@@ -106,8 +114,8 @@ build_linux_clang_ubuntu() {
     apt-get install -y clang-${v}
     export CXX="clang++-${v}" CC="clang-${v}"
     build_generic
-    make distclean
-  done
+    rm -fr build
+   done
 }
 
 build_osx() {
@@ -115,7 +123,9 @@ build_osx() {
   brew install protobuf || brew link --overwrite protobuf
   brew link --overwrite python@2
   build_generic
+  cd build
   make install
+  cd ..
   cd python
   # Test default Python
   python setup.py test

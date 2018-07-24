@@ -3,8 +3,8 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: @PACKAGE@
+Name: @PROJECT_NAME@
 Description: Unsupervised text tokenizer and detokenizer for Neural Network-based text generation.
-Version: @VERSION@
-Libs: -L${libdir} -lsentencepiece -lsentencepiece_train @pkgconfiglibs@
+Version: @PROJECT_VERSION@
+Libs: -L${libdir} -lsentencepiece -lsentencepiece_train -lprotobuf @pkgconfiglibs@
 Cflags: -I${includedir} @pkgconfigcflags@

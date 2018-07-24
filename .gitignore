@@ -12,7 +12,6 @@ Makefile.in
 /aclocal.m4
 /compile
 /config.guess
-/config.h.in
 /config.sub
 /configure
 /configure.scan
@@ -25,6 +24,11 @@ Makefile.in
 /config.status
 /autogen.sh
 /ltmain.sh
+
+CMakeFiles
+CMakeCache.txt
+config.h
+sentencepiece.pc
 
 *.o
 *.lo
