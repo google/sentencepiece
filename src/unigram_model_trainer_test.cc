@@ -13,11 +13,15 @@
 // limitations under the License.!
 
 #include "unigram_model_trainer.h"
+
+#include "flags.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
 #include "util.h"
+
+DECLARE_string(data_dir);
 
 namespace sentencepiece {
 namespace unigram {
@@ -38,7 +42,8 @@ TEST(UnigramTrainerTest, EndToEndTest) {
 
   EXPECT_OK(SentencePieceTrainer::Train(
       std::string("--model_prefix=") + sf.filename() +
-      " --input=../data/wagahaiwa_nekodearu.txt"
+      " --input=" + FLAGS_data_dir +
+      "/wagahaiwa_nekodearu.txt"
       " --vocab_size=8000"
       " --normalization_rule_name=identity"
       " --model_type=unigram"

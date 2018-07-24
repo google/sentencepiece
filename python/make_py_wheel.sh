@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Copyright 2018 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +17,7 @@ set -e  # exit immediately on error
 set -x  # display all commands
 
 PROTOBUF_VERSION=3.6.0
+CMAKE_VERSION=3.12.0
 
 run_docker() {
   cd `dirname $0`
@@ -31,17 +31,15 @@ run_docker() {
 
 build() {
   TRG=$1
-  rm -fr tmp
-  mkdir -p tmp
+  rm -fr build
+  mkdir -p build
+  cd build
 
-  # Installs necessary libraries under `tmp` sub directory.
-  cd tmp
-
-  # Install libtool
-  curl -L -O http://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz
-  tar zxfv libtool-2.4.6.tar.gz
-  cd libtool-2.4.6
-  ./configure
+  # Install cmake
+  curl -L -O https://cmake.org/files/v3.12/cmake-${CMAKE_VERSION}.tar.gz
+  tar zxfv cmake-${CMAKE_VERSION}.tar.gz
+  cd cmake-${CMAKE_VERSION}
+  ./bootstrap
   make -j4
   make install
   cd ..
@@ -51,24 +49,16 @@ build() {
   tar zxfv protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
   cd protobuf-${PROTOBUF_VERSION}
   ./configure --disable-shared --with-pic
-  make CXXFLAGS+="-std=c++11 -O3" \
-       CFLAGS+="-std=c++11 -O3" -j4
+  make CXXFLAGS+="-std=c++11 -O3" CFLAGS+="-std=c++11 -O3" -j4
   make install || true
-  cd ../..
+  cd ..
 
   # Install sentencepiece
+  cmake ../.. -DSPM_ENABLE_SHARED=OFF
+  make -j4
+  make install
   cd ..
-  make distclean || true
-  ./autogen.sh
-  grep -v PKG_CHECK_MODULES configure > tmp
-  mv tmp -f configure
-  chmod +x configure
-  LIBS+="-pthread -L/usr/local/lib -lprotobuf" ./configure --disable-shared --with-pic
-  make CXXFLAGS+="-std=c++11 -O3" \
-       CFLAGS+="-std=c++11 -O3 -D_GLIBCXX_USE_CXX11_ABI=0" -j4
-  make install || true
 
-  cd python
   for i in /opt/python/*
   do
     $i/bin/python setup.py bdist
@@ -86,8 +76,9 @@ build() {
   done
 
   mv -f wheelhouse/*${TRG}.whl .
-  cd .. && rm -fr tmp
-  cd .. && make distclean
+
+  cd ..
+  rm -fr build
 }
 
 if [ "$1" = "native" ]; then

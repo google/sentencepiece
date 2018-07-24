@@ -14,10 +14,13 @@
 
 #include "builder.h"
 #include "common.h"
+#include "flags.h"
 #include "normalizer.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
 #include "util.h"
+
+DECLARE_string(data_dir);
 
 namespace sentencepiece {
 namespace normalizer {
@@ -135,7 +138,7 @@ TEST(BuilderTest, CompileCharsMap) {
 
 TEST(BuilderTest, LoadCharsMapTest) {
   Builder::CharsMap chars_map;
-  EXPECT_OK(Builder::LoadCharsMap("../data/nfkc.tsv", &chars_map));
+  EXPECT_OK(Builder::LoadCharsMap(FLAGS_data_dir + "/nfkc.tsv", &chars_map));
 
   std::string precompiled, expected;
   EXPECT_OK(Builder::CompileCharsMap(chars_map, &precompiled));
