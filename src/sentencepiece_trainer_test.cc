@@ -13,31 +13,36 @@
 // limitations under the License.!
 
 #include "sentencepiece_trainer.h"
+#include "flags.h"
 #include "sentencepiece_model.pb.h"
 #include "testharness.h"
 #include "util.h"
+
+DECLARE_string(data_dir);
 
 namespace sentencepiece {
 namespace {
 
 TEST(SentencePieceTrainerTest, TrainFromArgsTest) {
-  SentencePieceTrainer::Train(
-      "--input=../data/botchan.txt --model_prefix=m --vocab_size=1000");
-  SentencePieceTrainer::Train(
-      "--input=../data/botchan.txt --model_prefix=m --vocab_size=1000 "
-      "--model_type=bpe");
-  SentencePieceTrainer::Train(
-      "--input=../data/botchan.txt --model_prefix=m --vocab_size=1000 "
-      "--model_type=char");
-  SentencePieceTrainer::Train(
-      "--input=../data/botchan.txt --model_prefix=m --vocab_size=1000 "
-      "--model_type=word");
+  std::string input = FLAGS_data_dir + "/botchan.txt";
+  SentencePieceTrainer::Train(std::string("--input=") + input +
+                              " --model_prefix=m --vocab_size=1000");
+  SentencePieceTrainer::Train(std::string("--input=") + input +
+                              " --model_prefix=m --vocab_size=1000 "
+                              "--model_type=bpe");
+  SentencePieceTrainer::Train(std::string("--input=") + input +
+                              " --model_prefix=m --vocab_size=1000 "
+                              "--model_type=char");
+  SentencePieceTrainer::Train(std::string("--input=") + input +
+                              " --model_prefix=m --vocab_size=1000 "
+                              "--model_type=word");
 }
 
 TEST(SentencePieceTrainerTest, TrainWithCustomNormalizationRule) {
-  SentencePieceTrainer::Train(
-      "--input=../data/botchan.txt --model_prefix=m --vocab_size=1000 "
-      "--normalization_rule_tsv=../data/nfkc.tsv");
+  SentencePieceTrainer::Train("--input=" + FLAGS_data_dir +
+                              "/botchan.txt --model_prefix=m --vocab_size=1000 "
+                              "--normalization_rule_tsv=" +
+                              FLAGS_data_dir + "/nfkc.tsv");
 }
 
 TEST(SentencePieceTrainerTest, TrainErrorTest) {
@@ -50,7 +55,7 @@ TEST(SentencePieceTrainerTest, TrainErrorTest) {
 
 TEST(SentencePieceTrainerTest, TrainTest) {
   TrainerSpec trainer_spec;
-  trainer_spec.add_input("../data/botchan.txt");
+  trainer_spec.add_input(FLAGS_data_dir + "/botchan.txt");
   trainer_spec.set_model_prefix("m");
   trainer_spec.set_vocab_size(1000);
   NormalizerSpec normalizer_spec;
