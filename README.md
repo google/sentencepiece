@@ -130,13 +130,13 @@ For more detail, see [Python module](python/README.md)
 ### C++ (from source)
 The following tools and libraries are required to build SentencePiece:
 
-* GNU autotools (autoconf automake libtool)
+* [cmake](https://cmake.org/)
 * C++11 compiler
 * [protobuf](https://github.com/google/protobuf) library
 
 On Ubuntu, autotools can be installed with apt-get:
 ```
-% sudo apt-get install autoconf automake libtool pkg-config libprotobuf9v5 protobuf-compiler libprotobuf-dev
+% sudo apt-get install cmake pkg-config libprotobuf9v5 protobuf-compiler libprotobuf-dev
 ```
 The name of the protobuf library is different between ubuntu distros. Please enter appropriate command for your Ubuntu version.
 
@@ -171,10 +171,10 @@ If want to use self-prepared protobuf library, setup below environment variables
 ### Build and Install SentencePiece
 ```
 % cd /path/to/sentencepiece
-% ./autogen.sh
-% ./configure
+% mkdir build
+% cd build
+% cmake ..
 % make
-% make check
 % sudo make install
 $ sudo ldconfig -v
 ```
