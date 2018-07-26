@@ -83,6 +83,9 @@ DEFINE_int32(eos_id, kDefaultTrainerSpec.eos_id(),
              "Override EOS (</s>) id. Set -1 to disable EOS.");
 DEFINE_int32(pad_id, kDefaultTrainerSpec.pad_id(),
              "Override PAD (<pad>) id. Set -1 to disable PAD.");
+DEFINE_string(unk_surface, kDefaultTrainerSpec.unk_surface(),
+              "Dummy surface string for <unk>. In decoding <unk> is decoded to "
+              "`unk_surface`.");
 
 int main(int argc, char *argv[]) {
   sentencepiece::flags::ParseCommandLineFlags(argc, argv);
@@ -125,6 +128,7 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(bos_id);
   SetTrainerSpecFromFlag(eos_id);
   SetTrainerSpecFromFlag(pad_id);
+  SetTrainerSpecFromFlag(unk_surface);
   SetRepeatedTrainerSpecFromFlag(input);
   SetRepeatedTrainerSpecFromFlag(accept_language);
   SetRepeatedTrainerSpecFromFlag(control_symbols);

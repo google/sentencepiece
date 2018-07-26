@@ -465,51 +465,110 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
     float GetScore(int id) const override { return 0.0; }
   };
 
-  SentencePieceProcessor sp;
-  auto mock = MakeUnique<DecodeMockModel>();
-  //  std::unique_ptr<ModelInterface> mock(new DecodeMockModel);
-  sp.SetModel(std::move(mock));
-
-  const auto normalizaiton_spec = MakeDefaultNormalizerSpec();
-  sp.SetNormalizer(MakeUnique<normalizer::Normalizer>(normalizaiton_spec));
-
   const std::vector<std::string> input = {"<s>", WS "ABC",   "<unk>", WS "DE",
                                           "F",   "G" WS "H", "I",     "</s>"};
-  SentencePieceText spt;
 
-  sp.Decode(input, &spt);
-  EXPECT_EQ("ABC \xE2\x81\x87  DEFG HI", spt.text());
-  EXPECT_EQ(8, spt.pieces_size());
+  {
+    SentencePieceProcessor sp;
+    auto mock = MakeUnique<DecodeMockModel>();
+    sp.SetModel(std::move(mock));
 
-  for (int i = 0; i < 6; ++i) {
-    EXPECT_EQ(input[i], spt.pieces(i).piece());
+    const auto normalizaiton_spec = MakeDefaultNormalizerSpec();
+    sp.SetNormalizer(MakeUnique<normalizer::Normalizer>(normalizaiton_spec));
+
+    SentencePieceText spt;
+
+    sp.Decode(input, &spt);
+    EXPECT_EQ("ABC \xE2\x81\x87  DEFG HI", spt.text());
+    EXPECT_EQ(8, spt.pieces_size());
+
+    for (int i = 0; i < 6; ++i) {
+      EXPECT_EQ(input[i], spt.pieces(i).piece());
+    }
+
+    EXPECT_EQ("", spt.pieces(0).surface());
+    EXPECT_EQ("ABC", spt.pieces(1).surface());
+    EXPECT_EQ(" \xE2\x81\x87 ", spt.pieces(2).surface());
+    EXPECT_EQ(" DE", spt.pieces(3).surface());
+    EXPECT_EQ("F", spt.pieces(4).surface());
+    EXPECT_EQ("G H", spt.pieces(5).surface());
+    EXPECT_EQ("I", spt.pieces(6).surface());
+    EXPECT_EQ("", spt.pieces(7).surface());
+
+    EXPECT_EQ(0, spt.pieces(0).begin());
+    EXPECT_EQ(0, spt.pieces(0).end());
+    EXPECT_EQ(0, spt.pieces(1).begin());
+    EXPECT_EQ(3, spt.pieces(1).end());
+    EXPECT_EQ(3, spt.pieces(2).begin());
+    EXPECT_EQ(8, spt.pieces(2).end());
+    EXPECT_EQ(8, spt.pieces(3).begin());
+    EXPECT_EQ(11, spt.pieces(3).end());
+    EXPECT_EQ(11, spt.pieces(4).begin());
+    EXPECT_EQ(12, spt.pieces(4).end());
+    EXPECT_EQ(12, spt.pieces(5).begin());
+    EXPECT_EQ(15, spt.pieces(5).end());
+    EXPECT_EQ(15, spt.pieces(6).begin());
+    EXPECT_EQ(16, spt.pieces(6).end());
+    EXPECT_EQ(16, spt.pieces(7).begin());
+    EXPECT_EQ(16, spt.pieces(7).end());
   }
 
-  EXPECT_EQ("", spt.pieces(0).surface());
-  EXPECT_EQ("ABC", spt.pieces(1).surface());
-  EXPECT_EQ(" \xE2\x81\x87 ", spt.pieces(2).surface());
-  EXPECT_EQ(" DE", spt.pieces(3).surface());
-  EXPECT_EQ("F", spt.pieces(4).surface());
-  EXPECT_EQ("G H", spt.pieces(5).surface());
-  EXPECT_EQ("I", spt.pieces(6).surface());
-  EXPECT_EQ("", spt.pieces(7).surface());
+  // unk_surface is not defined.
+  {
+    SentencePieceProcessor sp;
+    auto proto = MakeUnique<ModelProto>();
+    sp.Load(std::move(proto));
 
-  EXPECT_EQ(0, spt.pieces(0).begin());
-  EXPECT_EQ(0, spt.pieces(0).end());
-  EXPECT_EQ(0, spt.pieces(1).begin());
-  EXPECT_EQ(3, spt.pieces(1).end());
-  EXPECT_EQ(3, spt.pieces(2).begin());
-  EXPECT_EQ(8, spt.pieces(2).end());
-  EXPECT_EQ(8, spt.pieces(3).begin());
-  EXPECT_EQ(11, spt.pieces(3).end());
-  EXPECT_EQ(11, spt.pieces(4).begin());
-  EXPECT_EQ(12, spt.pieces(4).end());
-  EXPECT_EQ(12, spt.pieces(5).begin());
-  EXPECT_EQ(15, spt.pieces(5).end());
-  EXPECT_EQ(15, spt.pieces(6).begin());
-  EXPECT_EQ(16, spt.pieces(6).end());
-  EXPECT_EQ(16, spt.pieces(7).begin());
-  EXPECT_EQ(16, spt.pieces(7).end());
+    auto mock = MakeUnique<DecodeMockModel>();
+    sp.SetModel(std::move(mock));
+
+    const auto normalizaiton_spec = MakeDefaultNormalizerSpec();
+    sp.SetNormalizer(MakeUnique<normalizer::Normalizer>(normalizaiton_spec));
+
+    SentencePieceText spt;
+
+    sp.Decode(input, &spt);
+    EXPECT_EQ("ABC \xE2\x81\x87  DEFG HI", spt.text());
+    EXPECT_EQ(8, spt.pieces_size());
+  }
+
+  {
+    SentencePieceProcessor sp;
+    auto proto = MakeUnique<ModelProto>();
+    proto->mutable_trainer_spec()->set_unk_surface("");
+    sp.Load(std::move(proto));
+
+    auto mock = MakeUnique<DecodeMockModel>();
+    sp.SetModel(std::move(mock));
+
+    const auto normalizaiton_spec = MakeDefaultNormalizerSpec();
+    sp.SetNormalizer(MakeUnique<normalizer::Normalizer>(normalizaiton_spec));
+
+    SentencePieceText spt;
+
+    sp.Decode(input, &spt);
+    EXPECT_EQ("ABC DEFG HI", spt.text());
+    EXPECT_EQ(8, spt.pieces_size());
+  }
+
+  {
+    SentencePieceProcessor sp;
+    auto proto = MakeUnique<ModelProto>();
+    proto->mutable_trainer_spec()->set_unk_surface("<UNK>");
+    sp.Load(std::move(proto));
+
+    auto mock = MakeUnique<DecodeMockModel>();
+    sp.SetModel(std::move(mock));
+
+    const auto normalizaiton_spec = MakeDefaultNormalizerSpec();
+    sp.SetNormalizer(MakeUnique<normalizer::Normalizer>(normalizaiton_spec));
+
+    SentencePieceText spt;
+
+    sp.Decode(input, &spt);
+    EXPECT_EQ("ABC<UNK> DEFG HI", spt.text());
+    EXPECT_EQ(8, spt.pieces_size());
+  }
 }
 
 void AddPiece(ModelProto *model_proto, absl::string_view piece,

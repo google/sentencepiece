@@ -36,8 +36,7 @@ const char kSpaceSymbol[] = "\xe2\x96\x81";
 // Encodes <unk> into U+2047 (DOUBLE QUESTION MARK),
 // since this character can be useful both for user and
 // developer. We can easily figure out that <unk> is emitted.
-const char kUnknownSymbol[] = " \xE2\x81\x87 ";
-
+const char kDefaultUnknownSymbol[] = " \xE2\x81\x87 ";
 }  // namespace
 
 SentencePieceProcessor::SentencePieceProcessor() {}
@@ -431,13 +430,17 @@ util::Status SentencePieceProcessor::Decode(
     const std::vector<std::string> &pieces, SentencePieceText *spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
+  const char *unk_surface = kDefaultUnknownSymbol;
+  if (model_proto_ && model_proto_->trainer_spec().has_unk_surface())
+    unk_surface = model_proto_->trainer_spec().unk_surface().c_str();
+
   auto DecodeSentencePiece = [&](absl::string_view piece, int id,
                                  bool is_bos_ws) -> std::string {
     if (IsControl(id)) {  // <s>, </s>
       return "";          // invisible symbol.
     } else if (IsUnknown(id)) {
       if (IdToPiece(id) == piece) {  // <unk>
-        return kUnknownSymbol;
+        return unk_surface;
       } else {  // return piece when piece is not <unk>.
         return std::string(piece);
       }

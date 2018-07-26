@@ -149,6 +149,11 @@ message TrainerSpec {
   optional int32 eos_id = 42 [ default = 2 ];    // </s>
   optional int32 pad_id = 43 [ default = -1 ];   // <pad> (padding)
 
+  // Encodes <unk> into U+2047 (DOUBLE QUESTION MARK),
+  // since this character can be useful both for user and
+  // developer. We can easily figure out that <unk> is emitted.
+  optional string unk_surface = 44 [ default = " \xE2\x81\x87 " ];
+
   // Customized extensions: the range of field numbers
   // are open to third-party extensions.
   extensions 200 to max;
