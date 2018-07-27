@@ -123,7 +123,7 @@ bool TrainerInterface::IsValidSentencePiece(
       }
       // Do not allow a piece to include multiple Unicode scripts
       // when split_by_unicode_script() is true (default = true).
-      if (prev_script != -1 && prev_script != s &&
+      if (prev_script != static_cast<unicode_script::ScriptType>(-1) && prev_script != s &&
           trainer_spec_.split_by_unicode_script()) {
         return false;
       }
