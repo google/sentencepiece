@@ -155,7 +155,10 @@ std::vector<Lattice::Node *> Lattice::Viterbi() {
           best_score = score;
         }
       }
-      CHECK(best_node);
+      if (best_node == nullptr) {
+        LOG(ERROR) << "Failed to find the best path in Viterbi.";
+        return {};
+      }
       rnode->prev = best_node;
       rnode->backtrace_score = best_score;
     }

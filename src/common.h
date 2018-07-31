@@ -95,25 +95,12 @@ std::string WideToUtf8(const std::wstring &input);
 #endif
 
 namespace error {
-extern jmp_buf gTestJmp;
-extern bool gTestMode;
 
-inline void Abort() {
-  if (error::gTestMode) {
-    longjmp(error::gTestJmp, 0);
-  } else {
-    std::cerr << "Program terminated with an unrecoverable error." << std::endl;
-    exit(-1);
-  }
-}
-
-inline void Exit(int code) {
-  if (error::gTestMode) {
-    longjmp(error::gTestJmp, 0);
-  } else {
-    exit(code);
-  }
-}
+void Abort();
+void Exit(int code);
+void SetTestCounter(int c);
+void ResetTestMode();
+bool GetTestCounter();
 
 class Die {
  public:
