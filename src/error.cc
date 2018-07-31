@@ -18,8 +18,27 @@
 
 namespace sentencepiece {
 namespace error {
-jmp_buf gTestJmp;
-bool gTestMode = false;
+int gTestCounter = 0;
+
+void Abort() {
+  if (GetTestCounter() == 1) {
+    SetTestCounter(2);
+  } else {
+    std::cerr << "Program terminated with an unrecoverable error." << std::endl;
+    exit(-1);
+  }
+}
+
+void Exit(int code) {
+  if (GetTestCounter() == 1) {
+    SetTestCounter(2);
+  } else {
+    exit(code);
+  }
+}
+
+void SetTestCounter(int c) { gTestCounter = c; }
+bool GetTestCounter() { return gTestCounter; }
 }  // namespace error
 
 namespace util {

@@ -135,17 +135,11 @@ class Tester {
 #define EXPECT_OK(c) EXPECT_EQ(c, ::sentencepiece::util::OkStatus())
 #define EXPECT_NOT_OK(c) EXPECT_NE(c, ::sentencepiece::util::OkStatus())
 
-#define EXPECT_DEATH(statement)         \
-  {                                     \
-    error::gTestMode = true;            \
-    if (setjmp(error::gTestJmp) == 0) { \
-      do {                              \
-        statement;                      \
-      } while (false);                  \
-      EXPECT_TRUE(false);               \
-    } else {                            \
-      error::gTestMode = false;         \
-    }                                   \
+#define EXPECT_DEATH(statement) \
+  {                             \
+    error::SetTestCounter(1);   \
+    statement;                  \
+    error::SetTestCounter(0);   \
   };
 
 #define TCONCAT(a, b, c) TCONCAT1(a, b, c)

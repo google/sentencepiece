@@ -161,11 +161,11 @@ TEST(LatticeTest, InsertTest) {
 TEST(LatticeTest, ViterbiFromIncompleteLatticeTest) {
   Lattice lattice;
   lattice.SetSentence("ABC");
-  EXPECT_DEATH(lattice.Viterbi());
+  EXPECT_TRUE(lattice.Viterbi().empty());
 
   // Still incomplete
   lattice.Insert(0, 1);
-  EXPECT_DEATH(lattice.Viterbi());
+  EXPECT_TRUE(lattice.Viterbi().empty());
 
   lattice.Insert(1, 1);
   lattice.Insert(2, 1);
