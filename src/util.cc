@@ -270,8 +270,11 @@ std::string StrError(int errnum) {
   constexpr int kStrErrorSize = 1024;
   char buffer[kStrErrorSize];
   char *str = nullptr;
-#if defined(__GLIBC__) && defined(_GNU_SOURCE)
+#if defined(_GLIBC__) && defined(_GNU_SOURCE)
   str = strerror_r(errnum, buffer, kStrErrorSize - 1);
+#elif defined(_WIN32)
+  strerror_s(buffer, kStrErrorSize - 1, errnum);
+  str = buffer;
 #else
   strerror_r(errnum, buffer, kStrErrorSize - 1);
   str = buffer;
