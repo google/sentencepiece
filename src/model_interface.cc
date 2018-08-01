@@ -70,10 +70,10 @@ std::string PrefixMatcher::GlobalReplace(absl::string_view w,
   return result;
 }
 
-const char ModelInterface::kUNK[] = "<unk>";
-const char ModelInterface::kBOS[] = "<s>";
-const char ModelInterface::kEOS[] = "</s>";
-const char ModelInterface::kPAD[] = "<pad>";
+const char *ModelInterface::kUNK() { return "<unk>"; }
+const char *ModelInterface::kBOS() { return "<s>"; }
+const char *ModelInterface::kEOS() { return "</s>"; }
+const char *ModelInterface::kPAD() { return "<pad>"; };
 
 ModelInterface::ModelInterface(const ModelProto &model_proto)
     : model_proto_(&model_proto), status_(util::OkStatus()) {}
