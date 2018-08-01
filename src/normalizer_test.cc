@@ -41,7 +41,7 @@ TEST(NormalizerTest, NormalizeTest) {
   // Empty strings.
   EXPECT_EQ("", normalizer.Normalize(""));
   EXPECT_EQ("", normalizer.Normalize("      "));
-  EXPECT_EQ("", normalizer.Normalize("　"));
+  EXPECT_EQ("", normalizer.Normalize(u8"　"));
 
   // Sentence with heading/tailing/redundant spaces.
   EXPECT_EQ(WS "ABC", normalizer.Normalize("ABC"));
@@ -53,13 +53,13 @@ TEST(NormalizerTest, NormalizeTest) {
   EXPECT_EQ(WS "ABC", normalizer.Normalize("　　ABC　　"));
 
   // NFKC char to char normalization.
-  EXPECT_EQ(WS "123", normalizer.Normalize("①②③"));
+  EXPECT_EQ(WS "123", normalizer.Normalize(u8"①②③"));
 
   // NFKC char to multi-char normalization.
-  EXPECT_EQ(WS "株式会社", normalizer.Normalize("㍿"));
+  EXPECT_EQ(WS u8"株式会社", normalizer.Normalize(u8"㍿"));
 
   // Half width katakana, character composition happens.
-  EXPECT_EQ(WS "グーグル", normalizer.Normalize(" ｸﾞｰｸﾞﾙ "));
+  EXPECT_EQ(WS u8"グーグル", normalizer.Normalize(" ｸﾞｰｸﾞﾙ "));
 
   EXPECT_EQ(WS "I" WS "saw" WS "a" WS "girl",
             normalizer.Normalize(" I  saw a　 　girl　　"));
@@ -73,7 +73,7 @@ TEST(NormalizerTest, NormalizeWithoutDummyPrefixTest) {
   // Empty strings.
   EXPECT_EQ("", normalizer.Normalize(""));
   EXPECT_EQ("", normalizer.Normalize("      "));
-  EXPECT_EQ("", normalizer.Normalize("　"));
+  EXPECT_EQ("", normalizer.Normalize(u8"　"));
 
   // Sentence with heading/tailing/redundant spaces.
   EXPECT_EQ("ABC", normalizer.Normalize("ABC"));
@@ -93,7 +93,7 @@ TEST(NormalizerTest, NormalizeWithoutRemoveExtraWhitespacesTest) {
   // Empty strings.
   EXPECT_EQ("", normalizer.Normalize(""));
   EXPECT_EQ(WS WS WS WS WS WS WS, normalizer.Normalize("      "));
-  EXPECT_EQ(WS WS, normalizer.Normalize("　"));
+  EXPECT_EQ(WS WS, normalizer.Normalize(u8"　"));
 
   // Sentence with heading/tailing/redundant spaces.
   EXPECT_EQ(WS "ABC", normalizer.Normalize("ABC"));
@@ -112,7 +112,7 @@ TEST(NormalizerTest, NormalizeWithoutEscapeWhitespacesTest) {
   // Empty strings.
   EXPECT_EQ("", normalizer.Normalize(""));
   EXPECT_EQ("", normalizer.Normalize("      "));
-  EXPECT_EQ("", normalizer.Normalize("　"));
+  EXPECT_EQ("", normalizer.Normalize(u8"　"));
 
   // Sentence with heading/tailing/redundant spaces.
   EXPECT_EQ("ABC", normalizer.Normalize("ABC"));
@@ -291,7 +291,7 @@ TEST(NormalizerTest, NormalizeFullTest) {
   {
     const std::string input = " ｸﾞｰｸﾞﾙ ";  // halfwidth katakana
     normalizer.Normalize(input, &output, &n2i);
-    EXPECT_EQ(WS "グーグル", output);
+    EXPECT_EQ(WS u8"グーグル", output);
     const std::vector<size_t> expected = {1,  1,  1,   // WS (3byte)
                                           1,  1,  1,   // グ
                                           7,  7,  7,   // ー
@@ -302,7 +302,7 @@ TEST(NormalizerTest, NormalizeFullTest) {
   }
 
   {
-    const std::string input = "①②③";
+    const std::string input = u8"①②③";
     normalizer.Normalize(input, &output, &n2i);
     EXPECT_EQ(WS "123", output);
     const std::vector<size_t> expected = {0, 0, 0,  // WS (3byte)
@@ -314,17 +314,17 @@ TEST(NormalizerTest, NormalizeFullTest) {
   }
 
   {
-    const std::string input = "㍿";
+    const std::string input = u8"㍿";
     normalizer.Normalize(input, &output, &n2i);
-    EXPECT_EQ(WS "株式会社", output);
+    EXPECT_EQ(WS u8"株式会社", output);
     const std::vector<size_t> expected = {0, 0, 0,  // WS (3byte)
                                           0, 0, 0,  // 株
                                           0, 0, 0,  // 式
                                           0, 0, 0,  // 会
                                           0, 0, 0,  // 社
                                           3};
-    // When "株式" is one piece, this has no alignment to the input.
-    // Sentencepieces which includes the last character ("会社" or "社")
+    // When u8"株式" is one piece, this has no alignment to the input.
+    // Sentencepieces which includes the last character (u8"会社" or u8"社")
     // have the alignment to the input.
     EXPECT_EQ(expected, n2i);
   }

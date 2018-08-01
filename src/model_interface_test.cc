@@ -187,7 +187,7 @@ TEST(ModelInterfaceTest, InvalidModelTest) {
 std::string RandomString(int length) {
   const char kAlphaNum[] =
       "0123456789"
-      "!@#$%^&*"
+      u8"!@#$%^&*"
       "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
       "abcdefghijklmnopqrstuvwxyz";
   const int kAlphaSize = sizeof(kAlphaNum) - 1;
@@ -266,7 +266,7 @@ TEST(ModelInterfaceTest, SplitIntoWordsTest) {
 }
 
 TEST(ModelInterfaceTest, PrefixMatcherTest) {
-  const PrefixMatcher matcher({"abc", "ab", "xy", "京都"});
+  const PrefixMatcher matcher({"abc", "ab", "xy", u8"京都"});
   bool found;
   EXPECT_EQ(1, matcher.PrefixMatch("test", &found));
   EXPECT_FALSE(found);
@@ -278,14 +278,14 @@ TEST(ModelInterfaceTest, PrefixMatcherTest) {
   EXPECT_FALSE(found);
   EXPECT_EQ(2, matcher.PrefixMatch("xyz", &found));
   EXPECT_TRUE(found);
-  EXPECT_EQ(6, matcher.PrefixMatch("京都大学", &found));
+  EXPECT_EQ(6, matcher.PrefixMatch(u8"京都大学", &found));
   EXPECT_TRUE(found);
-  EXPECT_EQ(3, matcher.PrefixMatch("東京大学", &found));
+  EXPECT_EQ(3, matcher.PrefixMatch(u8"東京大学", &found));
   EXPECT_FALSE(found);
 
   EXPECT_EQ("", matcher.GlobalReplace("", ""));
   EXPECT_EQ("", matcher.GlobalReplace("abc", ""));
-  EXPECT_EQ("--de-pqr", matcher.GlobalReplace("xyabcdeabpqr", "-"));
+  EXPECT_EQ("--de-pqr", matcher.GlobalReplace("xyabcdeabpqr", u8"-"));
 }
 
 TEST(ModelInterfaceTest, PrefixMatcherWithEmptyTest) {
@@ -301,9 +301,9 @@ TEST(ModelInterfaceTest, PrefixMatcherWithEmptyTest) {
   EXPECT_FALSE(found);
   EXPECT_EQ(1, matcher.PrefixMatch("xyz", &found));
   EXPECT_FALSE(found);
-  EXPECT_EQ(3, matcher.PrefixMatch("京都大学", &found));
+  EXPECT_EQ(3, matcher.PrefixMatch(u8"京都大学", &found));
   EXPECT_FALSE(found);
-  EXPECT_EQ(3, matcher.PrefixMatch("東京大学", &found));
+  EXPECT_EQ(3, matcher.PrefixMatch(u8"東京大学", &found));
   EXPECT_FALSE(found);
 
   EXPECT_EQ("", matcher.GlobalReplace("", ""));
