@@ -526,25 +526,25 @@ bool SentencePieceProcessor::IsUnused(int id) const {
 }
 
 int SentencePieceProcessor::unk_id() const {
-  const int id = PieceToId(ModelInterface::kUNK);
+  const int id = PieceToId(ModelInterface::kUNK());
   if (IsUnknown(id)) return id;
   return -1;
 }
 
 int SentencePieceProcessor::bos_id() const {
-  const int id = PieceToId(ModelInterface::kBOS);
+  const int id = PieceToId(ModelInterface::kBOS());
   if (IsControl(id)) return id;
   return -1;
 }
 
 int SentencePieceProcessor::eos_id() const {
-  const int id = PieceToId(ModelInterface::kEOS);
+  const int id = PieceToId(ModelInterface::kEOS());
   if (IsControl(id)) return id;
   return -1;
 }
 
 int SentencePieceProcessor::pad_id() const {
-  const int id = PieceToId(ModelInterface::kPAD);
+  const int id = PieceToId(ModelInterface::kPAD());
   if (IsControl(id)) return id;
   return -1;
 }

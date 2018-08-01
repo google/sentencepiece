@@ -125,13 +125,10 @@ struct BinaryBlob {
   os << "constexpr unsigned long long int kNormalizationRules_blob_uint64[] = "
         "{\n";
   std::vector<size_t> offset;
-  os << sentencepiece::ToHexUInt64Array(data, &offset);
+  os << ToHexUInt64Array(data, &offset);
   CHECK_EQ(offset.size(), data.size());
-  os << "};\n";
-  os << "#endif\n";
-
-  os << "constexpr BinaryBlob kNormalizationRules_blob[] = {\n";
-  os << "#if defined(_WIN32) && !defined(__CYGWIN__)\n";
+  os << "};\n\n";
+  os << "const BinaryBlob kNormalizationRules_blob[] = {\n";
   for (size_t i = 0; i < data.size(); ++i) {
     os << "{ \"" << data[i].first << "\", " << data[i].second.size() << ", ";
     os << "reinterpret_cast<const char *>(kNormalizationRules_blob_uint64 + "
@@ -139,11 +136,13 @@ struct BinaryBlob {
   }
   os << "};\n";
   os << "#else\n";
+  os << "constexpr BinaryBlob kNormalizationRules_blob[] = {\n";
   for (size_t i = 0; i < data.size(); ++i) {
-    os << "{ \"" << data[i].first << "\", " << data[i].second.size() << ",\n";
-    os << sentencepiece::ToHexData(data[i].second) << "},\n";
+    os << "{ \"" << data[i].first << "\", " << data[i].second.size() << ", ";
+    os << ToHexData(data[i].second) << "},\n";
   }
-  os << "#endif\n};\n";
+  os << "};\n";
+  os << "#endif\n";
 
   os << "constexpr size_t kNormalizationRules_size = " << data.size() << ";\n";
   os << kFooter;

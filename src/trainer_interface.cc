@@ -381,21 +381,21 @@ util::Status TrainerInterface::InitMetaPieces() {
     if (id < 0) return true;
     if (id >= trainer_spec_.vocab_size() ||
         meta_pieces_.find(id) != meta_pieces_.end() ||
-        (has_unk && w == ModelInterface::kUNK))
+        (has_unk && w == ModelInterface::kUNK()))
       return false;
-    if (w == ModelInterface::kUNK) has_unk = true;
+    if (w == ModelInterface::kUNK()) has_unk = true;
     meta_pieces_[id] = std::make_pair(
-        w, w == ModelInterface::kUNK ? ModelProto::SentencePiece::UNKNOWN
-                                     : ModelProto::SentencePiece::CONTROL);
+        w, w == ModelInterface::kUNK() ? ModelProto::SentencePiece::UNKNOWN
+                                       : ModelProto::SentencePiece::CONTROL);
     return true;
   };
 
-  CHECK_OR_RETURN(insert_id(trainer_spec_.unk_id(), ModelInterface::kUNK));
-  CHECK_OR_RETURN(insert_id(trainer_spec_.bos_id(), ModelInterface::kBOS));
-  CHECK_OR_RETURN(insert_id(trainer_spec_.eos_id(), ModelInterface::kEOS));
-  CHECK_OR_RETURN(insert_id(trainer_spec_.pad_id(), ModelInterface::kPAD));
+  CHECK_OR_RETURN(insert_id(trainer_spec_.unk_id(), ModelInterface::kUNK()));
+  CHECK_OR_RETURN(insert_id(trainer_spec_.bos_id(), ModelInterface::kBOS()));
+  CHECK_OR_RETURN(insert_id(trainer_spec_.eos_id(), ModelInterface::kEOS()));
+  CHECK_OR_RETURN(insert_id(trainer_spec_.pad_id(), ModelInterface::kPAD()));
 
-  CHECK_OR_RETURN(has_unk) << ModelInterface::kUNK << " must be defined.";
+  CHECK_OR_RETURN(has_unk) << ModelInterface::kUNK() << " must be defined.";
 
   std::set<std::string> dup;
 
@@ -408,17 +408,17 @@ util::Status TrainerInterface::InitMetaPieces() {
       return false;
     }
 
-    if (w == ModelInterface::kUNK) {
+    if (w == ModelInterface::kUNK()) {
       LOG(ERROR) << "<unk> must not be defined with --control_symbols and "
                     "--user_defined_symbols.";
       return false;
     }
 
-    if (w == ModelInterface::kBOS && trainer_spec_.bos_id() >= 0) {
+    if (w == ModelInterface::kBOS() && trainer_spec_.bos_id() >= 0) {
       meta_pieces_[trainer_spec_.bos_id()].second = type;
-    } else if (w == ModelInterface::kEOS && trainer_spec_.eos_id() >= 0) {
+    } else if (w == ModelInterface::kEOS() && trainer_spec_.eos_id() >= 0) {
       meta_pieces_[trainer_spec_.eos_id()].second = type;
-    } else if (w == ModelInterface::kPAD && trainer_spec_.pad_id() >= 0) {
+    } else if (w == ModelInterface::kPAD() && trainer_spec_.pad_id() >= 0) {
       meta_pieces_[trainer_spec_.pad_id()].second = type;
     } else {
       while (meta_pieces_.find(id) != meta_pieces_.end()) ++id;
