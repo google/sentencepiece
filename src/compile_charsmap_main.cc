@@ -13,6 +13,7 @@
 // limitations under the License.!
 
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -29,6 +30,40 @@ DEFINE_bool(output_precompiled_header, false, "make normalization_rule.h file");
 
 namespace sentencepiece {
 namespace {
+
+std::string ToHexUInt64Array(
+    const std::vector<std::pair<std::string, std::string>> &data,
+    std::vector<size_t> *offset) {
+  std::stringstream os;
+  os.setf(std::ios_base::hex, std::ios_base::basefield);
+  os.setf(std::ios_base::uppercase);
+  os.setf(std::ios_base::right);
+  os.fill('0');
+  os.unsetf(std::ios_base::showbase);
+
+  size_t num = 0;
+  for (const auto &p : data) {
+    const char *begin = p.second.data();
+    const char *end = p.second.data() + p.second.size();
+
+    offset->push_back(num);
+    while (begin < end) {
+      unsigned long long int n = 0;
+      unsigned char *buf = reinterpret_cast<unsigned char *>(&n);
+      const size_t size = std::min<size_t>(end - begin, sizeof(n));
+      for (size_t i = 0; i < size; ++i) {
+        buf[i] = static_cast<unsigned char>(begin[i]);
+      }
+      begin += sizeof(n);
+      os << "0x" << std::setw(2 * sizeof(n)) << n << ", ";
+      if (++num % 8 == 0) {
+        os << "\n";
+      }
+    }
+  }
+
+  return os.str();
+}
 
 std::string ToHexData(absl::string_view data) {
   const char *begin = data.data();
@@ -50,7 +85,8 @@ std::string ToHexData(absl::string_view data) {
       ++begin;
     }
     output_count += bucket_size;
-    if (output_count % kNumOfBytesOnOneLine == 0 && bucket_size > 0) {
+    if (output_count % kNumOfBytesOnOneLine == 0 && bucket_size > 0 &&
+        begin < end) {
       os << "\"\n";
     }
   }
@@ -58,6 +94,63 @@ std::string ToHexData(absl::string_view data) {
 
   return os.str();
 }
+
+std::string MakeHeader(
+    const std::vector<std::pair<std::string, std::string>> &data) {
+  constexpr char kHeader[] =
+      R"(#ifndef NORMALIZATION_RULE_H_
+#define NORMALIZATION_RULE_H_
+#include <cstdio>
+namespace sentencepiece {
+namespace {
+
+struct BinaryBlob {
+ const char *name;
+ size_t size;
+ const char *data;
+};
+
+)";
+
+  constexpr char kFooter[] = R"(
+}  // namespace
+}  // namespace sentencepiece
+#endif  // NORMALIZATION_RULE_H_
+)";
+
+  std::stringstream os;
+  os << kHeader;
+
+  os << "#if defined(_WIN32) && !defined(__CYGWIN__)\n";
+  os << "constexpr unsigned long long int kNormalizationRules_blob_uint64[] = "
+        "{\n";
+  std::vector<size_t> offset;
+  os << sentencepiece::ToHexUInt64Array(data, &offset);
+  CHECK_EQ(offset.size(), data.size());
+  os << "};\n";
+  os << "#endif\n";
+
+  os << "constexpr BinaryBlob kNormalizationRules_blob[] = {\n";
+  os << "#if defined(_WIN32) && !defined(__CYGWIN__)\n";
+  for (size_t i = 0; i < data.size(); ++i) {
+    os << "{ \"" << data[i].first << "\", " << data[i].second.size() << ", ";
+    os << "reinterpret_cast<const char *>(kNormalizationRules_blob_uint64 + "
+       << offset[i] << ") },\n";
+  }
+  os << "};\n";
+  os << "#else\n";
+  for (size_t i = 0; i < data.size(); ++i) {
+    os << "{ \"" << data[i].first << "\", " << data[i].second.size() << ",\n";
+    os << sentencepiece::ToHexData(data[i].second) << "},\n";
+  }
+  os << "#endif\n};\n";
+
+  os << "constexpr size_t kNormalizationRules_size = " << data.size() << ";\n";
+  os << kFooter;
+
+  return os.str();
+}
+
 }  // namespace
 }  // namespace sentencepiece
 
@@ -71,27 +164,7 @@ int main(int argc, char **argv) {
                    {"nfkc_cf", Builder::BuildNmtNFKC_CFMap},
                    {"nmt_nfkc_cf", Builder::BuildNmtNFKC_CFMap}};
 
-  constexpr char kHeader[] =
-      R"(#ifndef NORMALIZATION_RULE_H_
-#define NORMALIZATION_RULE_H_
-#include <cstdio>
-namespace sentencepiece {
-namespace {
-struct BinaryBlob {
- const char *name;
- size_t size;
- const char *data;
-};
-constexpr BinaryBlob kNormalizationRules_blob[] = {)";
-
-  constexpr char kFooter[] = R"(
-}  // namespace
-}  // namespace sentencepiece
-#endif  // NORMALIZATION_RULE_H_)";
-
-  std::stringstream os;
-  os << kHeader;
-
+  std::vector<std::pair<std::string, std::string>> data;
   for (const auto &p : kRuleList) {
     Builder::CharsMap normalized_map;
     CHECK_OK(p.second(&normalized_map));
@@ -99,24 +172,17 @@ constexpr BinaryBlob kNormalizationRules_blob[] = {)";
     // Write Header.
     std::string index;
     CHECK_OK(Builder::CompileCharsMap(normalized_map, &index));
-    os << "{ \"" << p.first << "\", " << index.size() << ",\n";
-    os << sentencepiece::ToHexData(index);
-    os << " },";
+    data.emplace_back(p.first, index);
 
     // Write TSV file.
     CHECK_OK(Builder::SaveCharsMap(p.first + ".tsv", normalized_map));
   }
 
-  os << "};\n";
-  os << "constexpr size_t kNormalizationRules_size = " << kRuleList.size()
-     << ";\n";
-  os << kFooter;
-
   if (FLAGS_output_precompiled_header) {
     constexpr char kPrecompiledHeaderFileName[] = "normalization_rule.h";
     sentencepiece::io::OutputBuffer output(kPrecompiledHeaderFileName);
     CHECK_OK(output.status());
-    output.Write(os.str());
+    output.Write(sentencepiece::MakeHeader(data));
   }
 
   return 0;
