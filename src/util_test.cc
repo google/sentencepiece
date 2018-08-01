@@ -178,7 +178,7 @@ TEST(UtilTest, JoinTest) {
   tokens.push_back("a");
   tokens.push_back("test");
   EXPECT_EQ(string_util::Join(tokens, " "), "this is a test");
-  EXPECT_EQ(string_util::Join(tokens, ":"), "this:is:a:test");
+  EXPECT_EQ(string_util::Join(tokens, u8":"), "this:is:a:test");
   EXPECT_EQ(string_util::Join(tokens, ""), "thisisatest");
   tokens[2] = "";
   EXPECT_EQ(string_util::Join(tokens, " "), "this is  test");
@@ -191,7 +191,7 @@ TEST(UtilTest, JoinIntTest) {
   tokens.push_back(-4);
   tokens.push_back(5);
   EXPECT_EQ(string_util::Join(tokens, " "), "10 2 -4 5");
-  EXPECT_EQ(string_util::Join(tokens, ":"), "10:2:-4:5");
+  EXPECT_EQ(string_util::Join(tokens, u8":"), "10:2:-4:5");
   EXPECT_EQ(string_util::Join(tokens, ""), "102-45");
 }
 
@@ -274,7 +274,7 @@ TEST(UtilTest, ItoaTest) {
 
 TEST(UtilTest, OneCharLenTest) {
   EXPECT_EQ(1, string_util::OneCharLen("abc"));
-  EXPECT_EQ(3, string_util::OneCharLen("テスト"));
+  EXPECT_EQ(3, string_util::OneCharLen(u8"テスト"));
 }
 
 TEST(UtilTest, DecodeUTF8Test) {
@@ -438,8 +438,8 @@ TEST(UtilTest, UnicodeTextToUTF8Test) {
   ut = string_util::UTF8ToUnicodeText("test");
   EXPECT_EQ("test", string_util::UnicodeTextToUTF8(ut));
 
-  ut = string_util::UTF8ToUnicodeText("テスト");
-  EXPECT_EQ("テスト", string_util::UnicodeTextToUTF8(ut));
+  ut = string_util::UTF8ToUnicodeText(u8"テスト");
+  EXPECT_EQ(u8"テスト", string_util::UnicodeTextToUTF8(ut));
 
   ut = string_util::UTF8ToUnicodeText("これはtest");
   EXPECT_EQ("これはtest", string_util::UnicodeTextToUTF8(ut));

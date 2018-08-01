@@ -259,23 +259,23 @@ TEST(SentencepieceProcessorTest, EncodeTest) {
   // Halfwidth to Fullwidith katakana normalization.
   {
     auto mock = MakeUnique<MockModel>();
-    const EncodeResult result = {{WS "グー", 3}, {"グル", 4}, {"</s>", 2}};
-    const absl::string_view input = WS "グーグル";
+    const EncodeResult result = {{WS u8"グー", 3}, {u8"グル", 4}, {"</s>", 2}};
+    const absl::string_view input = WS u8"グーグル";
     mock->SetEncodeResult(input, result);
     sp.SetModel(std::move(mock));
     std::vector<std::string> output;
-    EXPECT_OK(sp.Encode("ｸﾞｰｸﾞﾙ", &output));
+    EXPECT_OK(sp.Encode(u8"ｸﾞｰｸﾞﾙ", &output));
     EXPECT_EQ(GetSpVec(result), output);
 
     SentencePieceText spt;
-    EXPECT_OK(sp.Encode("ｸﾞｰｸﾞﾙ", &spt));
+    EXPECT_OK(sp.Encode(u8"ｸﾞｰｸﾞﾙ", &spt));
     EXPECT_EQ(3, spt.pieces_size());
     for (int i = 0; i < 3; ++i) {
       EXPECT_EQ(result[i].first, spt.pieces(i).piece());
     }
 
-    EXPECT_EQ("ｸﾞｰ", spt.pieces(0).surface());
-    EXPECT_EQ("ｸﾞﾙ", spt.pieces(1).surface());
+    EXPECT_EQ(u8"ｸﾞｰ", spt.pieces(0).surface());
+    EXPECT_EQ(u8"ｸﾞﾙ", spt.pieces(1).surface());
     EXPECT_EQ("", spt.pieces(2).surface());
 
     EXPECT_EQ(3, spt.pieces(0).id());
@@ -293,23 +293,23 @@ TEST(SentencepieceProcessorTest, EncodeTest) {
   // One to many normalization.
   {
     auto mock = MakeUnique<MockModel>();
-    const EncodeResult result = {{WS "株式", 3}, {"会社", 4}, {"</s>", 2}};
-    const absl::string_view input = WS "株式会社";
+    const EncodeResult result = {{WS u8"株式", 3}, {u8"会社", 4}, {"</s>", 2}};
+    const absl::string_view input = WS u8"株式会社";
     mock->SetEncodeResult(input, result);
     sp.SetModel(std::move(mock));
     std::vector<std::string> output;
-    EXPECT_OK(sp.Encode("㍿", &output));
+    EXPECT_OK(sp.Encode(u8"㍿", &output));
     EXPECT_EQ(GetSpVec(result), output);
 
     SentencePieceText spt;
-    EXPECT_OK(sp.Encode("㍿", &spt));
+    EXPECT_OK(sp.Encode(u8"㍿", &spt));
     EXPECT_EQ(3, spt.pieces_size());
     for (int i = 0; i < 3; ++i) {
       EXPECT_EQ(result[i].first, spt.pieces(i).piece());
     }
 
     EXPECT_EQ("", spt.pieces(0).surface());
-    EXPECT_EQ("㍿", spt.pieces(1).surface());
+    EXPECT_EQ(u8"㍿", spt.pieces(1).surface());
     EXPECT_EQ("", spt.pieces(2).surface());
 
     EXPECT_EQ(3, spt.pieces(0).id());

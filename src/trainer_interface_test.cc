@@ -49,9 +49,9 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_FALSE(IsValid(WS "a" WS));
   EXPECT_FALSE(IsValid("a" WS "b"));
   EXPECT_FALSE(IsValid("a" WS "b" WS));
-  EXPECT_TRUE(IsValid("あいう"));
-  EXPECT_TRUE(IsValid("グーグル"));  // "ー" is a part of Katakana
-  EXPECT_TRUE(IsValid("食べる"));
+  EXPECT_TRUE(IsValid(u8"あいう"));
+  EXPECT_TRUE(IsValid(u8"グーグル"));  // u8"ー" is a part of Katakana
+  EXPECT_TRUE(IsValid(u8"食べる"));
   EXPECT_FALSE(IsValid("漢字ABC"));  // mixed CJK scripts
   EXPECT_FALSE(IsValid("F1"));
   EXPECT_TRUE(IsValid("$10"));  // $ and 1 are both "common" script.
@@ -70,9 +70,9 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_FALSE(IsValid("a" WS "b" WS));
 
   trainer_spec.set_split_by_unicode_script(false);
-  EXPECT_TRUE(IsValid("あいう"));
-  EXPECT_TRUE(IsValid("グーグル"));
-  EXPECT_TRUE(IsValid("食べる"));
+  EXPECT_TRUE(IsValid(u8"あいう"));
+  EXPECT_TRUE(IsValid(u8"グーグル"));
+  EXPECT_TRUE(IsValid(u8"食べる"));
   EXPECT_TRUE(IsValid("漢字ABC"));
   EXPECT_TRUE(IsValid("F1"));
   EXPECT_TRUE(IsValid("$10"));
