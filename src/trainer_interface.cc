@@ -123,8 +123,8 @@ bool TrainerInterface::IsValidSentencePiece(
       }
       // Do not allow a piece to include multiple Unicode scripts
       // when split_by_unicode_script() is true (default = true).
-      if (prev_script != static_cast<unicode_script::ScriptType>(-1) && prev_script != s &&
-          trainer_spec_.split_by_unicode_script()) {
+      if (prev_script != static_cast<unicode_script::ScriptType>(-1) &&
+          prev_script != s && trainer_spec_.split_by_unicode_script()) {
         return false;
       }
       prev_script = s;
@@ -344,7 +344,7 @@ util::Status TrainerInterface::SaveModel(absl::string_view filename) const {
   LOG(INFO) << "Saving model: " << filename;
   ModelProto model_proto;
   RETURN_IF_ERROR(Serialize(&model_proto));
-  std::ofstream ofs(filename.data(), OUTPUT_MODE);
+  std::ofstream ofs(WPATH(filename.data()), OUTPUT_MODE);
   CHECK_OR_RETURN(ofs) << "\"" << filename.data()
                        << "\": " << util::StrError(errno);
   CHECK_OR_RETURN(model_proto.SerializeToOstream(&ofs));

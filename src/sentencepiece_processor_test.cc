@@ -334,8 +334,10 @@ TEST(SentencepieceProcessorTest, NBestEncodeTest) {
   auto mock = MakeUnique<MockModel>();
 
   const NBestEncodeResult result = {
-      {{{WS "ABC", 3}, {WS "DE", 4}, {"F", 0}, {"</s>", 2}}, 1.0},
-      {{{WS "AB", 5}, {WS "CD", 6}, {"EF", 7}, {"</s>", 2}}, 0.9}};
+      {{{WS "ABC", 3}, {WS "DE", 4}, {"F", 0}, {"</s>", 2}},
+       static_cast<float>(1.0)},
+      {{{WS "AB", 5}, {WS "CD", 6}, {"EF", 7}, {"</s>", 2}},
+       static_cast<float>(0.9)}};
 
   mock->SetNBestEncodeResult(kInput, result);
   sp.SetModel(std::move(mock));
@@ -382,8 +384,10 @@ TEST(SentencepieceProcessorTest, SampleEncodeTest) {
   const EncodeResult result = {
       {WS "ABC", 3}, {WS "DE", 4}, {"F", 0}, {"</s>", 2}};
   const NBestEncodeResult nbest_result = {
-      {{{WS "ABC", 3}, {WS "DE", 4}, {"F", 0}, {"</s>", 2}}, 1.0},
-      {{{WS "AB", 5}, {WS "CD", 6}, {"EF", 7}, {"</s>", 2}}, 0.1}};
+      {{{WS "ABC", 3}, {WS "DE", 4}, {"F", 0}, {"</s>", 2}},
+       static_cast<float>(1.0)},
+      {{{WS "AB", 5}, {WS "CD", 6}, {"EF", 7}, {"</s>", 2}},
+       static_cast<float>(0.1)}};
 
   mock->SetNBestEncodeResult(kInput, nbest_result);
   mock->SetEncodeResult(kInput, result);
@@ -627,7 +631,7 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
   test::ScopedTempFile sf("model");
 
   {
-    std::ofstream ofs(sf.filename(), OUTPUT_MODE);
+    std::ofstream ofs(WPATH(sf.filename()), OUTPUT_MODE);
     CHECK(model_proto.SerializeToOstream(&ofs));
   }
 

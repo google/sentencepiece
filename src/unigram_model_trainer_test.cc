@@ -39,19 +39,17 @@ TEST(UnigramTrainerTest, TrainerModelTest) {
 
 TEST(UnigramTrainerTest, EndToEndTest) {
   const test::ScopedTempFile sf("tmp_model");
+  const std::string input =
+      util::JoinPath(FLAGS_data_dir, "wagahaiwa_nekodearu.txt");
 
-  EXPECT_OK(SentencePieceTrainer::Train(
-      std::string("--model_prefix=") + sf.filename() +
-      " --input=" + FLAGS_data_dir +
-      "/wagahaiwa_nekodearu.txt"
-      " --vocab_size=8000"
-      " --normalization_rule_name=identity"
-      " --model_type=unigram"
-      " --user_defined_symbols=<user>"  // Allows duplicated symbol
-      " --control_symbols=<ctrl>"));
+  EXPECT_OK(SentencePieceTrainer::Train(string_util::StrCat(
+      "--model_prefix=", sf.filename(), " --input=", input,
+      " --vocab_size=8000 --normalization_rule_name=identity",
+      " --model_type=unigram --user_defined_symbols=<user>",
+      " --control_symbols=<ctrl>")));
 
   SentencePieceProcessor sp;
-  EXPECT_OK(sp.Load(std::string(sf.filename()) + ".model"));
+  EXPECT_OK(sp.Load(string_util::StrCat(sf.filename(), ".model")));
   EXPECT_EQ(8000, sp.GetPieceSize());
 
   const int cid = sp.PieceToId("<ctrl>");
@@ -71,10 +69,10 @@ TEST(UnigramTrainerTest, EndToEndTest) {
       u8"。",
       &tok));
   EXPECT_EQ(WS
-            " 吾輩 《 わが はい 》 は 猫 である 。 名前 はまだ 無い 。 "
-            "どこ で 生 れた か とん と 見当 《 けん とう 》 が つか ぬ 。 "
-            "何でも 薄 暗 い じめ じめ した 所で ニャーニャー "
-            "泣 い ていた 事 だけは 記憶 している 。",
+            u8" 吾輩 《 わが はい 》 は 猫 である 。 名前 はまだ 無い 。 "
+            u8"どこ で 生 れた か とん と 見当 《 けん とう 》 が つか ぬ 。 "
+            u8"何でも 薄 暗 い じめ じめ した 所で ニャーニャー "
+            u8"泣 い ていた 事 だけは 記憶 している 。",
             string_util::Join(tok, " "));
 }
 

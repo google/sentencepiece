@@ -43,7 +43,7 @@ SentencePieceProcessor::SentencePieceProcessor() {}
 SentencePieceProcessor::~SentencePieceProcessor() {}
 
 util::Status SentencePieceProcessor::Load(util::min_string_view filename) {
-  std::ifstream ifs(filename.data(), std::ios::binary | std::ios::in);
+  std::ifstream ifs(WPATH(filename.data()), std::ios::binary | std::ios::in);
   if (!ifs) {
     return util::StatusBuilder(util::error::NOT_FOUND)
            << "\"" << filename.data() << "\": " << util::StrError(errno);

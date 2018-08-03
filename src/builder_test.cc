@@ -138,7 +138,8 @@ TEST(BuilderTest, CompileCharsMap) {
 
 TEST(BuilderTest, LoadCharsMapTest) {
   Builder::CharsMap chars_map;
-  EXPECT_OK(Builder::LoadCharsMap(FLAGS_data_dir + "/nfkc.tsv", &chars_map));
+  EXPECT_OK(Builder::LoadCharsMap(util::JoinPath(FLAGS_data_dir, "nfkc.tsv"),
+                                  &chars_map));
 
   std::string precompiled, expected;
   EXPECT_OK(Builder::CompileCharsMap(chars_map, &precompiled));
