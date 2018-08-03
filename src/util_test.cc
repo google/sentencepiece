@@ -195,6 +195,17 @@ TEST(UtilTest, JoinIntTest) {
   EXPECT_EQ(string_util::Join(tokens, ""), "102-45");
 }
 
+TEST(UtilTest, StrCatTest) {
+  EXPECT_EQ("", string_util::StrCat(""));
+  EXPECT_EQ("ab", string_util::StrCat("ab"));
+  EXPECT_EQ("ab", string_util::StrCat("ab", ""));
+  EXPECT_EQ("abc", string_util::StrCat("ab", "c"));
+  EXPECT_EQ("abc", string_util::StrCat("ab", "", "", "c"));
+  std::string a = "foo";
+  std::string b = "bar";
+  EXPECT_EQ("foobar", string_util::StrCat(a, b));
+}
+
 TEST(UtilTest, StringViewTest) {
   absl::string_view s;
   EXPECT_EQ(0, s.find("", 0));
@@ -547,5 +558,17 @@ TEST(UtilTest, StatusTest) {
     util::Status s(static_cast<util::error::Code>(i), "message");
     EXPECT_TRUE(s.ToString().find("message") != std::string::npos);
   }
+}
+
+TEST(UtilTest, JoinPathTest) {
+#ifdef OS_WIN
+  EXPECT_EQ("foo\\bar\\buz", util::JoinPath("foo", "bar", "buz"));
+  EXPECT_EQ("foo\\\\buz", util::JoinPath("foo", "", "buz"));
+#else
+  EXPECT_EQ("foo/bar/buz", util::JoinPath("foo", "bar", "buz"));
+  EXPECT_EQ("foo//buz", util::JoinPath("foo", "", "buz"));
+#endif
+  EXPECT_EQ("foo", util::JoinPath("foo"));
+  EXPECT_EQ("", util::JoinPath(""));
 }
 }  // namespace sentencepiece

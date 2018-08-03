@@ -20,6 +20,7 @@
 #include <sstream>
 #include <string>
 #include "common.h"
+#include "third_party/absl/strings/string_view.h"
 
 namespace sentencepiece {
 namespace test {
@@ -33,7 +34,7 @@ int RunAllTests();
 
 class ScopedTempFile {
  public:
-  explicit ScopedTempFile(const std::string &filename);
+  explicit ScopedTempFile(absl::string_view filename);
   ~ScopedTempFile();
 
   const char *filename() const { return filename_.c_str(); }

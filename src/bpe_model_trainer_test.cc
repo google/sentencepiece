@@ -89,15 +89,13 @@ TEST(BPETrainerTest, BasicTest) {
 
 TEST(BPETrainerTest, EndToEndTest) {
   const test::ScopedTempFile sf("tmp_model");
+  const std::string input =
+      util::JoinPath(FLAGS_data_dir, "wagahaiwa_nekodearu.txt");
 
-  EXPECT_OK(SentencePieceTrainer::Train(std::string("--model_prefix=") +
-                                        sf.filename() +
-                                        " --input=" + FLAGS_data_dir +
-                                        "/wagahaiwa_nekodearu.txt"
-                                        " --vocab_size=8000"
-                                        " --normalization_rule_name=identity"
-                                        " --model_type=bpe"
-                                        " --control_symbols=<ctrl>"));
+  EXPECT_OK(SentencePieceTrainer::Train(string_util::StrCat(
+      "--model_prefix=", sf.filename(), " --input=", input,
+      " --vocab_size=8000 --normalization_rule_name=identity"
+      " --model_type=bpe --control_symbols=<ctrl>")));
 
   SentencePieceProcessor sp;
   EXPECT_OK(sp.Load(std::string(sf.filename()) + ".model"));
@@ -117,10 +115,10 @@ TEST(BPETrainerTest, EndToEndTest) {
       u8"。",
       &tok));
   EXPECT_EQ(WS
-            " 吾輩 《 わが はい 》 は猫 である 。 名前 はまだ 無い 。 "
-            "どこで 生 れた か とん と見 当 《 けんとう 》 が つかぬ 。 "
-            "何でも 薄 暗 いじ め じ め した 所で ニャー ニャー 泣 いていた "
-            "事 だけは 記憶 している 。",
+            u8" 吾輩 《 わが はい 》 は猫 である 。 名前 はまだ 無い 。 "
+            u8"どこで 生 れた か とん と見 当 《 けんとう 》 が つかぬ 。 "
+            u8"何でも 薄 暗 いじ め じ め した 所で ニャー ニャー 泣 いていた "
+            u8"事 だけは 記憶 している 。",
             string_util::Join(tok, " "));
 }
 

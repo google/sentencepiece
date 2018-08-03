@@ -115,6 +115,15 @@ std::string Join(const std::vector<std::string> &tokens,
 
 std::string Join(const std::vector<int> &tokens, absl::string_view delim);
 
+inline std::string StrCat(absl::string_view str) {
+  return std::string(str.data(), str.size());
+}
+
+template <typename... T>
+inline std::string StrCat(absl::string_view first, const T &... rest) {
+  return std::string(first) + StrCat(rest...);
+}
+
 std::string StringReplace(absl::string_view s, absl::string_view oldsub,
                           absl::string_view newsub, bool replace_all);
 
@@ -415,6 +424,19 @@ void STLDeleteElements(std::vector<T *> *vec) {
 }  // namespace port
 
 namespace util {
+
+inline std::string JoinPath(absl::string_view path) {
+  return std::string(path.data(), path.size());
+}
+
+template <typename... T>
+inline std::string JoinPath(absl::string_view first, const T &... rest) {
+#ifdef OS_WIN
+  return JoinPath(first) + "\\" + JoinPath(rest...);
+#else
+  return JoinPath(first) + "/" + JoinPath(rest...);
+#endif
+}
 
 std::string StrError(int errnum);
 

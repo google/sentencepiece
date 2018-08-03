@@ -103,7 +103,7 @@ TEST(BPEModelTest, EncodeTest) {
   EXPECT_EQ("d", result[6].first);
 
   // all unknown.
-  result = model.Encode("xyz東京");
+  result = model.Encode(u8"xyz東京");
   EXPECT_EQ(5, result.size());
   EXPECT_EQ("x", result[0].first);
   EXPECT_EQ("y", result[1].first);

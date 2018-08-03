@@ -66,12 +66,24 @@ int RunAllTests() {
   return 0;
 }
 
-ScopedTempFile::ScopedTempFile(const std::string &filename) {
+ScopedTempFile::ScopedTempFile(absl::string_view filename) {
   char pid[64];
-  snprintf(pid, sizeof(pid), "%u", getpid());
-  filename_ = "/tmp/.XXX.tmp." + filename + "." + pid;
+  snprintf(pid, sizeof(pid), "%u",
+#ifdef OS_WIN
+           static_cast<uint32>(::GetCurrentProcessId())
+#else
+           ::getpid()
+#endif
+  );
+  filename_ = string_util::StrCat(".XXX.tmp.", filename, ".", pid);
 }
 
-ScopedTempFile::~ScopedTempFile() { ::unlink(filename_.c_str()); }
+ScopedTempFile::~ScopedTempFile() {
+#ifdef OS_WIN
+  ::DeleteFile(WPATH(filename_.c_str()));
+#else
+  ::unlink(filename_.c_str());
+#endif
+}
 }  // namespace test
 }  // namespace sentencepiece

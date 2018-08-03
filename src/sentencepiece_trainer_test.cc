@@ -24,25 +24,26 @@ namespace sentencepiece {
 namespace {
 
 TEST(SentencePieceTrainerTest, TrainFromArgsTest) {
-  std::string input = FLAGS_data_dir + "/botchan.txt";
-  SentencePieceTrainer::Train(std::string("--input=") + input +
-                              " --model_prefix=m --vocab_size=1000");
-  SentencePieceTrainer::Train(std::string("--input=") + input +
-                              " --model_prefix=m --vocab_size=1000 "
-                              "--model_type=bpe");
-  SentencePieceTrainer::Train(std::string("--input=") + input +
-                              " --model_prefix=m --vocab_size=1000 "
-                              "--model_type=char");
-  SentencePieceTrainer::Train(std::string("--input=") + input +
-                              " --model_prefix=m --vocab_size=1000 "
-                              "--model_type=word");
+  std::string input = util::JoinPath(FLAGS_data_dir, "botchan.txt");
+  SentencePieceTrainer::Train(string_util::StrCat(
+      "--input=", input, " --model_prefix=m --vocab_size=1000"));
+  SentencePieceTrainer::Train(string_util::StrCat(
+      "--input=", input, " --model_prefix=m --vocab_size=1000 ",
+      "--model_type=bpe"));
+  SentencePieceTrainer::Train(string_util::StrCat(
+      "--input=", input, " --model_prefix=m --vocab_size=1000 ",
+      "--model_type=char"));
+  SentencePieceTrainer::Train(string_util::StrCat(
+      "--input=", input, " --model_prefix=m --vocab_size=1000 ",
+      "--model_type=word"));
 }
 
 TEST(SentencePieceTrainerTest, TrainWithCustomNormalizationRule) {
-  SentencePieceTrainer::Train("--input=" + FLAGS_data_dir +
-                              "/botchan.txt --model_prefix=m --vocab_size=1000 "
-                              "--normalization_rule_tsv=" +
-                              FLAGS_data_dir + "/nfkc.tsv");
+  std::string input = util::JoinPath(FLAGS_data_dir, "botchan.txt");
+  std::string rule = util::JoinPath(FLAGS_data_dir, "nfkc.tsv");
+  SentencePieceTrainer::Train(string_util::StrCat(
+      "--input=", input, " --model_prefix=m --vocab_size=1000 ",
+      "--normalization_rule_tsv=", rule));
 }
 
 TEST(SentencePieceTrainerTest, TrainErrorTest) {
@@ -55,7 +56,7 @@ TEST(SentencePieceTrainerTest, TrainErrorTest) {
 
 TEST(SentencePieceTrainerTest, TrainTest) {
   TrainerSpec trainer_spec;
-  trainer_spec.add_input(FLAGS_data_dir + "/botchan.txt");
+  trainer_spec.add_input(util::JoinPath(FLAGS_data_dir, "botchan.txt"));
   trainer_spec.set_model_prefix("m");
   trainer_spec.set_vocab_size(1000);
   NormalizerSpec normalizer_spec;
