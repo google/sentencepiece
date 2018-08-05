@@ -87,19 +87,19 @@ TEST(LatticeTest, InsertTest) {
 
   EXPECT_EQ("A", node[0]->piece);
   EXPECT_EQ("B", node[1]->piece);
-  EXPECT_EQ(u8"あ", node[2]->piece);
-  EXPECT_EQ(u8"い", node[3]->piece);
+  EXPECT_EQ("あ", node[2]->piece);
+  EXPECT_EQ("い", node[3]->piece);
   EXPECT_EQ("AB", node[4]->piece);
   EXPECT_EQ("Bあ", node[5]->piece);
-  EXPECT_EQ(u8"あい", node[6]->piece);
+  EXPECT_EQ("あい", node[6]->piece);
 
   EXPECT_EQ("A", node[0]->piece);
   EXPECT_EQ("B", node[1]->piece);
-  EXPECT_EQ(u8"あ", node[2]->piece);
-  EXPECT_EQ(u8"い", node[3]->piece);
+  EXPECT_EQ("あ", node[2]->piece);
+  EXPECT_EQ("い", node[3]->piece);
   EXPECT_EQ("AB", node[4]->piece);
   EXPECT_EQ("Bあ", node[5]->piece);
-  EXPECT_EQ(u8"あい", node[6]->piece);
+  EXPECT_EQ("あい", node[6]->piece);
 
   EXPECT_EQ(0, node[0]->pos);
   EXPECT_EQ(1, node[1]->pos);
@@ -569,8 +569,8 @@ TEST(UnigramModelTest, EncodeTest) {
   EXPECT_EQ("x", result[0].first);
   EXPECT_EQ("y", result[1].first);
   EXPECT_EQ("z", result[2].first);
-  EXPECT_EQ(u8"東", result[3].first);
-  EXPECT_EQ(u8"京", result[4].first);
+  EXPECT_EQ("東", result[3].first);
+  EXPECT_EQ("京", result[4].first);
 
   // User defined
   result = model.Encode("ABC");

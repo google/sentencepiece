@@ -27,17 +27,17 @@ ScriptType GetScriptType(absl::string_view s) {
 }
 
 TEST(UnicodeScript, GetScriptTypeTest) {
-  EXPECT_EQ(U_Han, GetScriptType(u8"京"));
-  EXPECT_EQ(U_Han, GetScriptType(u8"太"));
-  EXPECT_EQ(U_Hiragana, GetScriptType(u8"い"));
-  EXPECT_EQ(U_Katakana, GetScriptType(u8"グ"));
-  EXPECT_EQ(U_Common, GetScriptType(u8"ー"));
+  EXPECT_EQ(U_Han, GetScriptType("京"));
+  EXPECT_EQ(U_Han, GetScriptType("太"));
+  EXPECT_EQ(U_Hiragana, GetScriptType("い"));
+  EXPECT_EQ(U_Katakana, GetScriptType("グ"));
+  EXPECT_EQ(U_Common, GetScriptType("ー"));
   EXPECT_EQ(U_Latin, GetScriptType("a"));
   EXPECT_EQ(U_Latin, GetScriptType("A"));
   EXPECT_EQ(U_Common, GetScriptType("0"));
-  EXPECT_EQ(U_Common, GetScriptType(u8"$"));
-  EXPECT_EQ(U_Common, GetScriptType(u8"@"));
-  EXPECT_EQ(U_Common, GetScriptType(u8"-"));
+  EXPECT_EQ(U_Common, GetScriptType("$"));
+  EXPECT_EQ(U_Common, GetScriptType("@"));
+  EXPECT_EQ(U_Common, GetScriptType("-"));
 }
 }  // namespace unicode_script
 }  // namespace sentencepiece
