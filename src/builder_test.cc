@@ -66,16 +66,16 @@ TEST(BuilderTest, GetPrecompiledCharsMapTest) {
     const NormalizerSpec spec =
         SentencePieceTrainer::GetNormalizerSpec("nmt_nfkc");
     const Normalizer normalizer(spec);
-    EXPECT_EQ(WS "ABC", normalizer.Normalize(u8"ＡＢＣ"));
-    EXPECT_EQ(WS u8"(株)", normalizer.Normalize(u8"㈱"));
-    EXPECT_EQ(WS u8"グーグル", normalizer.Normalize(u8"ｸﾞｰｸﾞﾙ"));
+    EXPECT_EQ(WS "ABC", normalizer.Normalize("ＡＢＣ"));
+    EXPECT_EQ(WS "(株)", normalizer.Normalize("㈱"));
+    EXPECT_EQ(WS "グーグル", normalizer.Normalize("ｸﾞｰｸﾞﾙ"));
   }
 
   {
     const NormalizerSpec spec =
         SentencePieceTrainer::GetNormalizerSpec("nfkc_cf");
     const Normalizer normalizer(spec);
-    EXPECT_EQ(WS "abc", normalizer.Normalize(u8"ＡＢＣ"));
+    EXPECT_EQ(WS "abc", normalizer.Normalize("ＡＢＣ"));
     EXPECT_EQ(WS "abc", normalizer.Normalize("ABC"));
   }
 
@@ -83,7 +83,7 @@ TEST(BuilderTest, GetPrecompiledCharsMapTest) {
     const NormalizerSpec spec =
         SentencePieceTrainer::GetNormalizerSpec("nmt_nfkc_cf");
     const Normalizer normalizer(spec);
-    EXPECT_EQ(WS "abc", normalizer.Normalize(u8"ＡＢＣ"));
+    EXPECT_EQ(WS "abc", normalizer.Normalize("ＡＢＣ"));
     EXPECT_EQ(WS "abc", normalizer.Normalize("ABC"));
   }
 
@@ -92,9 +92,9 @@ TEST(BuilderTest, GetPrecompiledCharsMapTest) {
         SentencePieceTrainer::GetNormalizerSpec("identity");
     EXPECT_TRUE(spec.precompiled_charsmap().empty());
     const Normalizer normalizer(spec);
-    EXPECT_EQ(WS u8"ＡＢＣ", normalizer.Normalize(u8"ＡＢＣ"));
-    EXPECT_EQ(WS u8"㈱", normalizer.Normalize(u8"㈱"));
-    EXPECT_EQ(WS u8"ｸﾞｰｸﾞﾙ", normalizer.Normalize(u8"ｸﾞｰｸﾞﾙ"));
+    EXPECT_EQ(WS "ＡＢＣ", normalizer.Normalize("ＡＢＣ"));
+    EXPECT_EQ(WS "㈱", normalizer.Normalize("㈱"));
+    EXPECT_EQ(WS "ｸﾞｰｸﾞﾙ", normalizer.Normalize("ｸﾞｰｸﾞﾙ"));
   }
 }
 
@@ -129,11 +129,11 @@ TEST(BuilderTest, CompileCharsMap) {
   EXPECT_EQ("ABC", normalizer.Normalize("ABC"));
   EXPECT_EQ("XY" WS "Z", normalizer.Normalize("xy z"));
 
-  EXPECT_EQ(u8"あ", normalizer.Normalize(u8"あ"));
-  EXPECT_EQ("abc", normalizer.Normalize(u8"あいう"));
-  EXPECT_EQ("abcえ", normalizer.Normalize(u8"あいうえ"));
+  EXPECT_EQ("あ", normalizer.Normalize("あ"));
+  EXPECT_EQ("abc", normalizer.Normalize("あいう"));
+  EXPECT_EQ("abcえ", normalizer.Normalize("あいうえ"));
   EXPECT_EQ("ABCabcD", normalizer.Normalize("abcあいうd"));
-  EXPECT_EQ("abcか", normalizer.Normalize(u8"あいうえおか"));
+  EXPECT_EQ("abcか", normalizer.Normalize("あいうえおか"));
 }
 
 TEST(BuilderTest, LoadCharsMapTest) {

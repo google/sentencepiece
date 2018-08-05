@@ -14,7 +14,10 @@
 
 #include "testharness.h"
 
+#ifndef OS_WIN
 #include <unistd.h>
+#endif
+
 #include <fstream>
 #include <iostream>
 #include <memory>

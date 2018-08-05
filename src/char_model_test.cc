@@ -93,7 +93,7 @@ TEST(ModelTest, EncodeTest) {
   EXPECT_EQ("c", result[9].first);
 
   // makes a broken utf-8
-  const std::string broken_utf8 = std::string(u8"あ").substr(0, 1);
+  const std::string broken_utf8 = std::string("あ").substr(0, 1);
   result = model.Encode(broken_utf8);
   EXPECT_EQ(1, result.size());
   EXPECT_EQ(broken_utf8, result[0].first);

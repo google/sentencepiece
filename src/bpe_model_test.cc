@@ -103,13 +103,13 @@ TEST(BPEModelTest, EncodeTest) {
   EXPECT_EQ("d", result[6].first);
 
   // all unknown.
-  result = model.Encode(u8"xyz東京");
+  result = model.Encode("xyz東京");
   EXPECT_EQ(5, result.size());
   EXPECT_EQ("x", result[0].first);
   EXPECT_EQ("y", result[1].first);
   EXPECT_EQ("z", result[2].first);
-  EXPECT_EQ(u8"東", result[3].first);
-  EXPECT_EQ(u8"京", result[4].first);
+  EXPECT_EQ("東", result[3].first);
+  EXPECT_EQ("京", result[4].first);
 
   // User defined
   result = model.Encode("ABC");
@@ -177,7 +177,7 @@ TEST(BPEModelTest, EncodeAmbiguousTest) {
   EXPECT_EQ("a", result[2].first);
 
   // makes a broken utf-8
-  const std::string broken_utf8 = std::string(u8"あ").substr(0, 1);
+  const std::string broken_utf8 = std::string("あ").substr(0, 1);
   result = model.Encode(broken_utf8);
   EXPECT_EQ(1, result.size());
   EXPECT_EQ(broken_utf8, result[0].first);
