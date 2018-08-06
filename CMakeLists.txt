@@ -37,10 +37,8 @@ if(MSVC)
     string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_MINSIZEREL     ${CMAKE_CXX_FLAGS_MINSIZEREL})
     string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE        ${CMAKE_CXX_FLAGS_RELEASE})
     string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_CXX_FLAGS_RELWITHDEBINFO})
-    add_definitions("/wd4267 /wd4244 /wd4305 /Zc:strictStrings /utf8")
+    add_definitions("/wd4267 /wd4244 /wd4305 /Zc:strictStrings /utf-8")
 endif(MSVC)
-
-
 
 if (APPLE)
   set(CMAKE_MACOSX_RPATH ON)

@@ -207,6 +207,8 @@ install(TARGETS ${SPM_INSTALLTARGETS}
 install(FILES sentencepiece_trainer.h sentencepiece_processor.h
   DESTINATION ${CMAKE_INSTALL_INCDIR})
 
+file(TO_NATIVE_PATH "${PROJECT_SOURCE_DIR}/data" data_dir)
+
 if (SPM_BUILD_TEST OR SPM_COVERAGE)
   enable_testing()
   add_executable(spm_test test_main.cc ${SPM_TEST_SRCS})
@@ -222,13 +224,13 @@ if (SPM_BUILD_TEST OR SPM_COVERAGE)
   include(Dart)
 
   add_test(NAME sentencepiece_test
-    COMMAND $<TARGET_FILE:spm_test> --data_dir=${PROJECT_SOURCE_DIR}/data)
+    COMMAND $<TARGET_FILE:spm_test> --data_dir=${data_dir})
 endif()
 
 if (SPM_COVERAGE)
   add_custom_target(coverage
     COMMAND mkdir -p coverage
-    COMMAND $<TARGET_FILE:spm_test> --data_dir=${PROJECT_SOURCE_DIR}/data
+    COMMAND $<TARGET_FILE:spm_test> --data_dir=${data_dir}
     COMMAND lcov -c -d . -o coverage.info
     COMMAND lcov --remove coverage.info "include*" "/c++" "_test*" "testharness*" "third_party*" ".pb.*" -o coverage.info
     COMMAND mkdir -p lcov_html
