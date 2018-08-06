@@ -15,7 +15,11 @@
 #include "flags.h"
 #include "testharness.h"
 
+#ifdef OS_WIN
+DEFINE_string(data_dir, "..\\data", "Data directory");
+#else
 DEFINE_string(data_dir, "../data", "Data directory");
+#endif
 
 int main(int argc, char **argv) {
   std::vector<std::string> rest_args;
