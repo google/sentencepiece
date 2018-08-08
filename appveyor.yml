@@ -1,0 +1,10 @@
+version: '{branch} build {build}'
+skip_tags: true
+image: Visual Studio 2017
+platform: x64
+configuration: Release
+clone_depth: 50
+clone_folder: c:\projects\sentencepiece
+init:
+build_script:
+- cmd: call test.bat
