@@ -1,6 +1,7 @@
 # SentencePiece
 
-[![Build Status](https://travis-ci.org/google/sentencepiece.svg?branch=master)](https://travis-ci.org/google/sentencepiece) 
+[![Build Status](https://travis-ci.org/google/sentencepiece.svg?branch=master)](https://travis-ci.org/google/sentencepiece)
+[![Build status](https://ci.appveyor.com/api/projects/status/vxoub3qx4fwpysyq?svg=true)](https://ci.appveyor.com/project/taku910/sentencepiece)
 [![Coverage Status](https://coveralls.io/repos/github/google/sentencepiece/badge.svg?branch=master)](https://coveralls.io/github/google/sentencepiece?branch=master)
 [![GitHub Issues](https://img.shields.io/github/issues/google/sentencepiece.svg)](https://github.com/google/sentencepiece/issues)
 [![PyPI version](https://badge.fury.io/py/sentencepiece.svg)](https://badge.fury.io/py/sentencepiece)
@@ -177,10 +178,10 @@ If want to use self-prepared protobuf library, setup below environment variables
 % cmake ..
 % make
 % sudo make install
-$ sudo ldconfig -v
+% sudo ldconfig -v
 ```
 On OSX/macOS, replace the last command with the following: 
-```$ sudo update_dyld_shared_cache```
+``% sudo update_dyld_shared_cache```
 
 ## Usage instructions
 ### Train SentencePiece Model
