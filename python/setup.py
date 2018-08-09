@@ -15,13 +15,15 @@
 # limitations under the License.!
 
 from setuptools import setup, Extension
+import codecs
 import string
 import subprocess
 import sys
+import os
 
-sys.path.append('./test')
+sys.path.append(os.path.join('.', 'test'))
 
-with open("README.md") as f:
+with codecs.open('README.md', 'r', 'utf-8') as f:
     long_description = f.read()
 
 def cmd(line):
@@ -36,9 +38,22 @@ def cmd(line):
 
 # Fix compile on some versions of Mac OSX
 # See: https://github.com/neulab/xnmt/issues/199
-extra_compile_args = ["-std=c++11"]
-if sys.platform == "darwin":
-  extra_compile_args.append("-mmacosx-version-min=10.9")
+def cflags():
+  if sys.platform == 'win32':
+    return ['/MT', '/I..\\build\\root\\x64\\include']
+  args = ['-std=c++11']
+  if sys.platform == 'darwin':
+    args.append('-mmacosx-version-min=10.9')
+  args = args + cmd('pkg-config sentencepiece --cflags')
+  return args
+
+def libs():
+  if sys.platform == 'win32':
+    return ['..\\build\\root\\x64\\lib\\sentencepiece.lib',
+            '..\\build\\root\\x64\\lib\\sentencepiece_train.lib',
+            '..\\build\\root\\x64\\lib\\libprotobuf.lib']
+
+  return cmd('pkg-config sentencepiece --libs')
 
 setup(name = 'sentencepiece',
       author = 'Taku Kudo',
@@ -52,9 +67,8 @@ setup(name = 'sentencepiece',
       py_modules=['sentencepiece'],
       ext_modules = [Extension('_sentencepiece',
                                sources=['sentencepiece_wrap.cxx'],
-                               extra_compile_args=extra_compile_args +
-                               cmd('pkg-config sentencepiece --cflags'),
-                               extra_link_args=cmd('pkg-config sentencepiece --libs'))
+                               extra_compile_args=cflags(),
+                               extra_link_args=libs())
                      ],
       classifiers = [
         'Development Status :: 5 - Production/Stable',

@@ -19,3 +19,19 @@ cmake .. -A %ARC% -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PR
 cmake --build . --config Release
 ctest -C Release
 cmake --build . --config Release --target install
+
+cd ..\python
+call :BuildPython C:\Python27-x64
+call :BuildPython C:\Python35-x64
+call :BuildPython C:\Python36-x64
+call :BuildPython C:\Python37-x64
+c:\Python37-x64\python setup.py sdist
+exit
+
+:BuildPython
+%1\python setup.py build
+%1\python setup.py test
+%1\python setup.py bdist_wheel
+rmdir /Q /S build
+del /S *.pyd
+exit /b

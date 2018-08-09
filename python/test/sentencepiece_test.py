@@ -18,20 +18,25 @@
 import sentencepiece as spm
 import unittest
 import sys
+import os
+
+data_dir = 'test'
+if sys.platform == 'win32':
+  data_dir = os.path.join('..', 'data')
 
 class TestSentencepieceProcessor(unittest.TestCase):
   """Test case for SentencePieceProcessor"""
 
   def setUp(self):
     self.sp_ = spm.SentencePieceProcessor()
-    self.assertTrue(self.sp_.Load('test/test_model.model'))
+    self.assertTrue(self.sp_.Load(os.path.join('test', 'test_model.model')))
     self.jasp_ = spm.SentencePieceProcessor()
-    self.assertTrue(self.jasp_.Load('test/test_ja_model.model'))
+    self.assertTrue(self.jasp_.Load(os.path.join('test', 'test_ja_model.model')))
     self.assertTrue(self.sp_.LoadFromSerializedProto(
-        open('test/test_model.model', 'rb').read()))
+        open(os.path.join('test', 'test_model.model'), 'rb').read()))
     self.jasp_ = spm.SentencePieceProcessor()
     self.assertTrue(self.jasp_.LoadFromSerializedProto(
-        open('test/test_ja_model.model', 'rb').read()))
+        open(os.path.join('test', 'test_ja_model.model'), 'rb').read()))
 
 
   def test_load(self):
@@ -113,10 +118,11 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
   def test_train(self):
     spm.SentencePieceTrainer.Train(
-        "--input=test/botchan.txt --model_prefix=m --vocab_size=1000")
+        '--input=' + os.path.join(data_dir, 'botchan.txt') +
+        ' --model_prefix=m --vocab_size=1000')
     sp = spm.SentencePieceProcessor()
     sp.Load('m.model')
-    with open("test/botchan.txt") as file:
+    with open(os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
       for line in file:
         sp.DecodePieces(sp.EncodeAsPieces(line))
         sp.DecodeIds(sp.EncodeAsIds(line))
@@ -194,10 +200,11 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
   def test_train_snake(self):
     spm.SentencePieceTrainer.train(
-        "--input=test/botchan.txt --model_prefix=m --vocab_size=1000")
+        '--input=' + os.path.join(data_dir, 'botchan.txt') +
+        ' --model_prefix=m --vocab_size=1000')
     sp = spm.SentencePieceProcessor()
     sp.load('m.model')
-    with open("test/botchan.txt") as file:
+    with open(os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
       for line in file:
         sp.decode_pieces(sp.encode_as_pieces(line))
         sp.decode_ids(sp.encode_as_ids(line))
