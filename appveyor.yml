@@ -13,3 +13,4 @@ build_script:
 artifacts:
  - path: build\sentencepiece*.exe
  - path: build\sentencepiece*.zip
+ - path: python\dist\*.whl
