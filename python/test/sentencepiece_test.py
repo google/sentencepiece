@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
+import codecs
 import sentencepiece as spm
 import unittest
 import sys
@@ -122,7 +123,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
         ' --model_prefix=m --vocab_size=1000')
     sp = spm.SentencePieceProcessor()
     sp.Load('m.model')
-    with open(os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
+    with codecs.open(os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
       for line in file:
         sp.DecodePieces(sp.EncodeAsPieces(line))
         sp.DecodeIds(sp.EncodeAsIds(line))
@@ -204,7 +205,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
         ' --model_prefix=m --vocab_size=1000')
     sp = spm.SentencePieceProcessor()
     sp.load('m.model')
-    with open(os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
+    with codecs.open(os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
       for line in file:
         sp.decode_pieces(sp.encode_as_pieces(line))
         sp.decode_ids(sp.encode_as_ids(line))
