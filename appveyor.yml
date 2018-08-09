@@ -10,3 +10,6 @@ clone_folder: c:\projects\sentencepiece
 init:
 build_script:
 - cmd: call test.bat %platform%
+artifacts:
+ - path c:\projects\sentencepiece\build\sentencepiece*.exe
+ - path c:\projects\sentencepiece\build\sentencepiece*.zip
