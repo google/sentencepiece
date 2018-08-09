@@ -38,6 +38,7 @@ build_generic() {
   cmake .. -DSPM_BUILD_TEST=ON
   make -j2
   make test
+  make package_source
   cd ..
 }
 

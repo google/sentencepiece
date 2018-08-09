@@ -82,3 +82,7 @@ if (SPM_BUILD_TEST)
 endif()
 
 add_subdirectory(src)
+
+SET(CPACK_SOURCE_GENERATOR "TXZ")
+set(CPACK_SOURCE_IGNORE_FILES "/build/;/.git/;~$;${CPACK_SOURCE_IGNORE_FILES}")
+include(CPack)
