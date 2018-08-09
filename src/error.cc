@@ -150,7 +150,5 @@ std::string Status::ToString() const {
 
 void Status::IgnoreError() {}
 
-Status OkStatus() { return Status(); }
-
 }  // namespace util
 }  // namespace sentencepiece

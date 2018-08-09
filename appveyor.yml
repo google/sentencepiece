@@ -1,10 +1,12 @@
 version: '{branch} build {build}'
 skip_tags: true
 image: Visual Studio 2015
-platform: x64
+platform:
+  - x64
+  - Win32
 configuration: Release
 clone_depth: 50
 clone_folder: c:\projects\sentencepiece
 init:
 build_script:
-- cmd: call test.bat
+- cmd: call test.bat %platform%
