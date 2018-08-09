@@ -19,7 +19,7 @@ cmake --build . --config Release --target install
 
 cd ..\..
 cmake .. -A %PLATFORM% -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH%
-cmake --build . --config Release -target install
+cmake --build . --config Release --target install
 ctest -C Release
 cpack
 
