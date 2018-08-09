@@ -16,16 +16,21 @@
 
 from setuptools import setup
 from setuptools import find_packages
+import codecs
 import string
 import sys
+import os
 
-sys.path.append('./test')
+sys.path.append(os.path.join('.', 'test'))
+
+with codecs.open(os.path.join('..', 'VERSION'), 'r', 'utf-8') as f:
+  version = f.read()
 
 setup(name = 'tf_sentencepiece',
       author = 'Taku Kudo',
       author_email='taku@google.com',
       description = 'SentencePiece Encode/Decode ops for TensorFlow',
-      version='0.1.3',
+      version=version,
       url = 'https://github.com/google/sentencepiece',
       license = 'Apache',
       platforms = 'Unix',

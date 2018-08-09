@@ -13,7 +13,9 @@
 # limitations under the License.!
 
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(sentencepiece VERSION 0.1.3 LANGUAGES CXX)
+file(STRINGS "VERSION" SPM_VERSION)
+message(STATUS "VERSION: ${SPM_VERSION}")
+project(sentencepiece VERSION ${SPM_VERSION} LANGUAGES CXX)
 
 option(SPM_ENABLE_NFKC_COMPILE "Enables NFKC compile" OFF)
 option(SPM_ENABLE_SHARED "Builds shared libaries in addition to static libraries." ON)
@@ -25,6 +27,7 @@ option(SPM_TCMALLOC_STATIC "Link static library of TCMALLOC." OFF)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 
 set(prefix ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix "\${prefix}")
@@ -85,6 +88,7 @@ add_subdirectory(src)
 
 set(CPACK_SOURCE_GENERATOR "TXZ")
 set(CPACK_GENERATOR "ZIP;NSIS")
+set(CPACK_PACKAGE_VERSION "${SPM_VERSION}")
 set(CPACK_STRIP_FILES TRUE)
 set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README.md")

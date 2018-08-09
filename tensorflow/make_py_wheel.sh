@@ -17,7 +17,7 @@
 set -e  # exit immediately on error
 set -x  # display all commands
 
-PROTOBUF_VERSION=3.6.0
+PROTOBUF_VERSION=3.6.1
 CMAKE_VERSION=3.12.0
 
 run_docker() {

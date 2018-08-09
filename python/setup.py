@@ -24,17 +24,20 @@ import os
 sys.path.append(os.path.join('.', 'test'))
 
 with codecs.open('README.md', 'r', 'utf-8') as f:
-    long_description = f.read()
+  long_description = f.read()
+
+with codecs.open(os.path.join('..', 'VERSION'), 'r', 'utf-8') as f:
+  version = f.read()
 
 def cmd(line):
-    try:
-        output = subprocess.check_output(line, shell=True)
-        if sys.version_info >= (3,0,0):
-            output = output.decode('utf-8')
-    except subprocess.CalledProcessError:
-        sys.stderr.write('Failed to find sentencepiece pkgconfig\n')
-        sys.exit(1)
-    return output.strip().split()
+  try:
+    output = subprocess.check_output(line, shell=True)
+    if sys.version_info >= (3,0,0):
+      output = output.decode('utf-8')
+  except subprocess.CalledProcessError:
+    sys.stderr.write('Failed to find sentencepiece pkgconfig\n')
+    sys.exit(1)
+  return output.strip().split()
 
 # Fix compile on some versions of Mac OSX
 # See: https://github.com/neulab/xnmt/issues/199
@@ -60,7 +63,7 @@ setup(name = 'sentencepiece',
       author_email='taku@google.com',
       description = 'SentencePiece python wrapper',
       long_description = long_description,
-      version='0.1.3',
+      version=version,
       url = 'https://github.com/google/sentencepiece',
       license = 'Apache',
       platforms = 'Unix',
