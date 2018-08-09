@@ -29,6 +29,7 @@ c:\Python37-x64\python setup.py sdist
 exit
 
 :BuildPython
+%1\python -m pip install wheel
 %1\python setup.py build
 %1\python setup.py test
 %1\python setup.py bdist_wheel
