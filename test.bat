@@ -6,7 +6,7 @@ if "%PLATFORM%"=="x64" set PLATFORM_PREFIX=-x64
 set _CL_=/utf-8
 set PATH=c:\Program Files\Git\usr\bin;c:\MinGW\bin;%PATH%
 set CURRENT_PATH=%~dp0
-set LIBRARY_PATH=%CURRENT_PATH%build\root\%PLATFORM%
+set LIBRARY_PATH=%CURRENT_PATH%build\root
 
 mkdir build
 cd build
@@ -24,7 +24,7 @@ ctest -C Release
 cmake --build . --config Release --target install
 
 cd ..\python
-call :BuildPython C:\Python27%PLATFORM_PREFIX%
+rem call :BuildPython C:\Python27%PLATFORM_PREFIX%
 call :BuildPython C:\Python35%PLATFORM_PREFIX%
 call :BuildPython C:\Python36%PLATFORM_PREFIX%
 call :BuildPython C:\Python37%PLATFORM_PREFIX%

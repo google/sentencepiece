@@ -40,7 +40,7 @@ def cmd(line):
 # See: https://github.com/neulab/xnmt/issues/199
 def cflags():
   if sys.platform == 'win32':
-    return ['/MT', '/I..\\build\\root\\x64\\include']
+    return ['/MT', '/I..\\build\\root\\include']
   args = ['-std=c++11']
   if sys.platform == 'darwin':
     args.append('-mmacosx-version-min=10.9')
@@ -49,9 +49,9 @@ def cflags():
 
 def libs():
   if sys.platform == 'win32':
-    return ['..\\build\\root\\x64\\lib\\sentencepiece.lib',
-            '..\\build\\root\\x64\\lib\\sentencepiece_train.lib',
-            '..\\build\\root\\x64\\lib\\libprotobuf.lib']
+    return ['..\\build\\root\\lib\\sentencepiece.lib',
+            '..\\build\\root\\lib\\sentencepiece_train.lib',
+            '..\\build\\root\\lib\\libprotobuf.lib']
 
   return cmd('pkg-config sentencepiece --libs')
 
