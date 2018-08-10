@@ -34,8 +34,8 @@ exit
 :BuildPython
 %1\python -m pip install wheel || goto :error
 %1\python setup.py build || goto :error
-%1\python setup.py test || goto :error
 %1\python setup.py bdist_wheel || goto :error
+%1\python setup.py test || goto :error
 rmdir /Q /S build
 del /S *.pyd
 exit /b
