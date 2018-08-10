@@ -14,28 +14,31 @@ cd build
 curl -O -L https://github.com/google/protobuf/releases/download/v%PROTOBUF_VERSION%/protobuf-cpp-%PROTOBUF_VERSION%.zip
 unzip protobuf-cpp-%PROTOBUF_VERSION%.zip
 cd protobuf-%PROTOBUF_VERSION%\cmake
-cmake . -A %PLATFORM% -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH%
-cmake --build . --config Release --target install
+cmake . -A %PLATFORM% -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH% || goto :error
+cmake --build . --config Release --target install || goto :error
 
 cd ..\..
 cmake .. -A %PLATFORM% -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH%
-cmake --build . --config Release --target install
-ctest -C Release
-cpack
+cmake --build . --config Release --target install || goto :error
+ctest -C Release || goto :error
+cpack || goto :error
 
 cd ..\python
 rem call :BuildPython C:\Python27%PLATFORM_PREFIX%
 call :BuildPython C:\Python35%PLATFORM_PREFIX%
 call :BuildPython C:\Python36%PLATFORM_PREFIX%
 call :BuildPython C:\Python37%PLATFORM_PREFIX%
-c:\Python37%PLATFORM_PREFIX%\python setup.py sdist
+c:\Python37%PLATFORM_PREFIX%\python setup.py sdist || goto :error
 exit
 
 :BuildPython
-%1\python -m pip install wheel
-%1\python setup.py build
-%1\python setup.py test
-%1\python setup.py bdist_wheel
+%1\python -m pip install wheel || goto :error
+%1\python setup.py build || goto :error
+%1\python setup.py test || goto :error
+%1\python setup.py bdist_wheel || goto :error
 rmdir /Q /S build
 del /S *.pyd
 exit /b
+
+:error
+exit /b %errorlevel%
