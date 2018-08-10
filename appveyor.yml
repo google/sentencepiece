@@ -11,6 +11,5 @@ init:
 build_script:
 - cmd: call test.bat %platform%
 artifacts:
- - path: build\sentencepiece*.exe
- - path: build\sentencepiece*.zip
+ - path: build\sentencepiece*.7z
  - path: python\dist\*.whl
