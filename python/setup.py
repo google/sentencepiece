@@ -27,7 +27,7 @@ with codecs.open('README.md', 'r', 'utf-8') as f:
   long_description = f.read()
 
 with codecs.open(os.path.join('..', 'VERSION'), 'r', 'utf-8') as f:
-  version = f.read()
+  version = f.read().rstrip()
 
 def cmd(line):
   try:
