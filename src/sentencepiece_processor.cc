@@ -412,7 +412,8 @@ util::Status SentencePieceProcessor::SampleEncode(
       probs[i] = std::exp(alpha * nbests[i].second);
     }
 
-    thread_local static std::mt19937 mt(std::random_device{}());
+    //    thread_local static std::mt19937 mt(std::random_device{}());
+    static std::mt19937 mt(std::random_device{}());
     std::discrete_distribution<int> dist(probs.begin(), probs.end());
     RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
                                               nbests[dist(mt)].first, spt));
