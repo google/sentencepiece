@@ -43,6 +43,11 @@ matrix:
     - os: osx
       osx_image: xcode9.2
       env: IMAGE=native COMMAND=build_osx
+    - os: osx
+      osx_image: xcode9.4
+      env: IMAGE=native COMMAND=make_py_wheel_mac
+      script:
+        - $TRAVIS_BUILD_DIR/tensorflow/make_py_wheel_mac.sh
 script:
   - $TRAVIS_BUILD_DIR/test.sh ${IMAGE} ${COMMAND}
 env:
