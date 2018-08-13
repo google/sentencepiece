@@ -345,7 +345,8 @@ std::vector<Lattice::Node *> Lattice::Sample(float theta) {
     }
   }
 
-  thread_local static std::mt19937 mt(std::random_device{}());
+  // thread_local static std::mt19937 mt(std::random_device{}());
+  static std::mt19937 mt(std::random_device{}());
 
   std::vector<Node *> results;
   std::vector<float> probs;
