@@ -20,17 +20,17 @@ matrix:
       env: IMAGE=ubuntu:rolling COMMAND=build_linux_clang_ubuntu
       services: docker
     - os: linux
-      env: IMAGE=x86_64 COMMAND=make_py_wheel
+      env: IMAGE=x86_64 COMMAND=make_py_wheel_py
       script:
         - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
       services: docker
     - os: linux
-      env: IMAGE=i686 COMMAND=make_py_wheel
+      env: IMAGE=i686 COMMAND=make_py_wheel_py
       script:
         - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
       services: docker
     - os: linux
-      env: IMAGE=x86_64 COMMAND=make_py_wheel
+      env: IMAGE=x86_64 COMMAND=make_py_wheel_tf
       script:
         - $TRAVIS_BUILD_DIR/tensorflow/make_py_wheel.sh
       services: docker
@@ -45,9 +45,14 @@ matrix:
       env: IMAGE=native COMMAND=build_osx
     - os: osx
       osx_image: xcode9.4
-      env: IMAGE=native COMMAND=make_py_wheel_mac
+      env: IMAGE=native COMMAND=make_py_wheel_mac_py
       script:
         - $TRAVIS_BUILD_DIR/python/make_py_wheel_mac.sh
+    - os: osx
+      osx_image: xcode9.4
+      env: IMAGE=native COMMAND=make_py_wheel_mac_tf
+      script:
+        - $TRAVIS_BUILD_DIR/tensorflow/make_py_wheel_mac.sh
 script:
   - $TRAVIS_BUILD_DIR/test.sh ${IMAGE} ${COMMAND}
 env:
