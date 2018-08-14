@@ -15,7 +15,6 @@
 #include "sentencepiece_processor.h"
 
 #include <map>
-#include <random>
 #include <set>
 #include <utility>
 
@@ -412,10 +411,10 @@ util::Status SentencePieceProcessor::SampleEncode(
       probs[i] = std::exp(alpha * nbests[i].second);
     }
 
-    thread_local static std::mt19937 mt(std::random_device{}());
+    auto *mt = random::GetRandomGenerator();
     std::discrete_distribution<int> dist(probs.begin(), probs.end());
     RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
-                                              nbests[dist(mt)].first, spt));
+                                              nbests[dist(*mt)].first, spt));
 
   } else if (nbest_size < 0) {
     const auto result = model_->SampleEncode(normalized, alpha);
