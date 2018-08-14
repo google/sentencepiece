@@ -24,6 +24,7 @@ option(SPM_COVERAGE "Runs gcov to test coverage." OFF)
 option(SPM_ENABLE_TENSORFLOW_SHARED "Makes a tensorflow compatible shared file." OFF)
 option(SPM_ENABLE_TCMALLOC "Enable TCMalloc if available." ON)
 option(SPM_TCMALLOC_STATIC "Link static library of TCMALLOC." OFF)
+option(SPM_SPM_NO_THREADLOCAL "Disable thread_local operator" OFF)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
