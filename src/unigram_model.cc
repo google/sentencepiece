@@ -19,7 +19,6 @@
 #include <cmath>
 #include <map>
 #include <queue>
-#include <random>
 #include <string>
 #include <utility>
 #include <vector>
@@ -345,7 +344,7 @@ std::vector<Lattice::Node *> Lattice::Sample(float theta) {
     }
   }
 
-  thread_local static std::mt19937 mt(std::random_device{}());
+  auto *mt = random::GetRandomGenerator();
 
   std::vector<Node *> results;
   std::vector<float> probs;
@@ -358,7 +357,7 @@ std::vector<Lattice::Node *> Lattice::Sample(float theta) {
       probs.push_back(exp(alpha[lnode->node_id] + theta * lnode->score - Z));
     }
     std::discrete_distribution<int> dist(probs.begin(), probs.end());
-    node = end_nodes_[node->pos][dist(mt)];
+    node = end_nodes_[node->pos][dist(*mt)];
     if (node == bos_node()) break;
 
     Z = alpha[node->node_id];

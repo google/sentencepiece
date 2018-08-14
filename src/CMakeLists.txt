@@ -160,7 +160,7 @@ endif()
 set_target_properties(sentencepiece-static PROPERTIES OUTPUT_NAME "sentencepiece")
 set_target_properties(sentencepiece_train-static PROPERTIES OUTPUT_NAME "sentencepiece_train")
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+if (NOT MSVC)
   if (SPM_COVERAGE)
     set(CMAKE_CXX_FLAGS "-O0 -Wall -fPIC -coverage ${CMAKE_CXX_FLAGS}")
   else()
@@ -168,6 +168,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" ST
   endif()
   if (SPM_ENABLE_TENSORFLOW_SHARED)
     add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
+  endif()
+  if (SPM_NO_THREADLOCAL)
+    add_definitions(-DSPM_NO_THREADLOCAL=1)
   endif()
   set_source_files_properties(
     sentencepiece.pb.cc sentencepiece_model.pb.cc
