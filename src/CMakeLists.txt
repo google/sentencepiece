@@ -169,6 +169,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" ST
   if (SPM_ENABLE_TENSORFLOW_SHARED)
     add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
   endif()
+  if (SPM_NO_THREADLOCAL)
+    add_definitions(-DSPM_NO_THREADLOCAL=1)
+  endif()
   set_source_files_properties(
     sentencepiece.pb.cc sentencepiece_model.pb.cc
     PROPERTIES COMPILE_FLAGS "-Wno-misleading-indentation")

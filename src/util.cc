@@ -264,6 +264,43 @@ bool OutputBuffer::WriteLine(absl::string_view text) {
 }
 }  // namespace io
 
+namespace random {
+#ifdef SPM_NO_THREADLOCAL
+namespace {
+class RandomGeneratorStorage {
+ public:
+  RandomGeneratorStorage() {
+    pthread_key_create(&key_, &RandomGeneratorStorage::Delete);
+  }
+  virtual ~RandomGeneratorStorage() { pthread_key_delete(key_); }
+
+  std::mt19937 *Get() {
+    auto *result = static_cast<std::mt19937 *>(pthread_getspecific(key_));
+    if (result == nullptr) {
+      result = new std::mt19937(std::random_device{}());
+      pthread_setspecific(key_, result);
+    }
+    return result;
+  }
+
+ private:
+  static void Delete(void *value) { delete static_cast<std::mt19937 *>(value); }
+  pthread_key_t key_;
+};
+}  // namespace
+
+std::mt19937 *GetRandomGenerator() {
+  static RandomGeneratorStorage *storage = new RandomGeneratorStorage;
+  return storage->Get();
+}
+#else
+std::mt19937 *GetRandomGenerator() {
+  thread_local static std::mt19937 mt(std::random_device{}());
+  return &mt;
+}
+#endif
+}  // namespace random
+
 namespace util {
 
 std::string StrError(int errnum) {
