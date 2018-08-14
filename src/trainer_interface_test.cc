@@ -58,6 +58,9 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_FALSE(IsValid("$ABC"));
   EXPECT_FALSE(IsValid("ab\tbc"));  // "\t" is UPP boundary.
   EXPECT_FALSE(IsValid("ab cd"));
+  EXPECT_FALSE(IsValid("ab\0"));
+  EXPECT_FALSE(IsValid("\0\0"));
+  EXPECT_FALSE(IsValid("\0"));
 
   trainer_spec.set_split_by_whitespace(false);
   EXPECT_TRUE(IsValid(WS));

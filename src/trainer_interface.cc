@@ -90,6 +90,9 @@ bool TrainerInterface::IsValidSentencePiece(
     if (*it == kUNKChar) {  // UNK must not be included
       return false;
     }
+    if (*it == 0x0000) {  // NULL is not allowed for Darts (TRIE).
+      return false;
+    }
     // kUPPBoundaryChar is included when split_by_upp_for_training is true.
     if (*it == kUPPBoundaryChar) {
       return false;
