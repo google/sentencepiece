@@ -3124,10 +3124,12 @@ namespace swig {
 
 namespace {
 PyObject* kUnicodeInput = reinterpret_cast<PyObject* >(0x1);
+PyObject* kByteInput = reinterpret_cast<PyObject* >(0x2);
 
 inline void ReleaseResultObject(PyObject *obj) {
-  if (obj != nullptr && obj != kUnicodeInput)
+  if (obj != nullptr && obj != kUnicodeInput && obj != kByteInput) {
     Py_XDECREF(obj);
+  }
 }
 
 class PyInputString {
@@ -3141,7 +3143,7 @@ class PyInputString {
     } else if (PyBytes_Check(obj)) {
        // Python3, Bytes
       PyBytes_AsStringAndSize(obj, &str_, &size_);
-      input_type_ = nullptr;
+      input_type_ = kByteInput;
     }
 #else
     if (PyUnicode_Check(obj)) {
@@ -3152,7 +3154,7 @@ class PyInputString {
     } else if (PyString_Check(obj)) {
       // Python2, Bytes,
       PyString_AsStringAndSize(obj, &str_, &size_);
-      input_type_ = nullptr;
+      input_type_ = kByteInput;
     }
 #endif
     else {
@@ -3164,6 +3166,14 @@ class PyInputString {
   bool IsAvalable() const { return str_ != nullptr; }
   PyObject *input_type() const { return input_type_; }
 
+  static bool IsUnicode(PyObject *resultobj) {
+#if PY_VERSION_HEX >= 0x03000000
+    return (resultobj == nullptr || resultobj == kUnicodeInput);
+#else
+    return (resultobj != nullptr && resultobj != kByteInput);
+#endif
+  }
+
  private:
   PyObject* input_type_ = nullptr;
   char* str_ = nullptr;
@@ -3172,14 +3182,13 @@ class PyInputString {
 
 PyObject* MakePyOutputString(const std::string& output,
                              PyObject *resultobj) {
+  if (PyInputString::IsUnicode(resultobj)) {
+    return PyUnicode_FromStringAndSize(output.data(), output.size());
+  }
 #if PY_VERSION_HEX >= 0x03000000
-  return resultobj != nullptr ?
-      PyBytes_FromStringAndSize(output.data(), output.size()) :
-      PyUnicode_FromStringAndSize(output.data(), output.size());
+  return PyBytes_FromStringAndSize(output.data(), output.size());
 #else
-   return resultobj == nullptr ?
-       PyString_FromStringAndSize(output.data(), output.size()) :
-       PyUnicode_FromStringAndSize(output.data(), output.size());
+  return PyString_FromStringAndSize(output.data(), output.size());
 #endif
 }
 
