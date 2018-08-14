@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <fstream>
 #include <memory>
+#include <random>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -28,6 +29,10 @@
 #include "common.h"
 #include "sentencepiece_processor.h"
 #include "third_party/absl/strings/string_view.h"
+
+#ifdef SPM_NO_THREADLOCAL
+#include <pthread.h>
+#endif
 
 namespace sentencepiece {
 
@@ -422,6 +427,12 @@ void STLDeleteElements(std::vector<T *> *vec) {
   vec->clear();
 }
 }  // namespace port
+
+namespace random {
+
+std::mt19937 *GetRandomGenerator();
+
+}  // namespace random
 
 namespace util {
 
