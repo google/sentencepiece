@@ -39,6 +39,11 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
     return trainer.IsValidSentencePiece(text);
   };
 
+  EXPECT_FALSE(trainer.IsValidSentencePiece({0x01, 0x00, 0x01}));
+  EXPECT_FALSE(trainer.IsValidSentencePiece({0x01, 0x00}));
+  EXPECT_FALSE(trainer.IsValidSentencePiece({0x00, 0x01}));
+  EXPECT_FALSE(trainer.IsValidSentencePiece({0x00}));
+
   // Default trainer spec.
   EXPECT_FALSE(IsValid(""));
   EXPECT_FALSE(IsValid("12345678912345678"));  // too long
@@ -58,7 +63,6 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_FALSE(IsValid("$ABC"));
   EXPECT_FALSE(IsValid("ab\tbc"));  // "\t" is UPP boundary.
   EXPECT_FALSE(IsValid("ab cd"));
-  EXPECT_FALSE(IsValid("ab\0"));
   EXPECT_FALSE(IsValid("\0\0"));
   EXPECT_FALSE(IsValid("\0"));
 

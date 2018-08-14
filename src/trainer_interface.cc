@@ -173,13 +173,13 @@ util::Status TrainerInterface::LoadSentences() {
 
       constexpr int kMaxLines = 2048;
       if (sentence.size() > kMaxLines) {
+        LOG(INFO) << "Too long lines (>=" << kMaxLines << " bytes). Skipped.";
         continue;
       }
       if (sentence.find(kUNKStr) != std::string::npos) {
         LOG(INFO) << "Reserved chars are found. Skipped: " << sentence;
         continue;
       }
-
       // Escapes meta symbols so that they are not extract as normal pieces.
       sentence = meta_pieces_matcher.GlobalReplace(sentence, " ");
 
@@ -216,6 +216,11 @@ END:
   for (const auto &w : sentences_) {
     for (const char32 c : string_util::UTF8ToUnicodeText(w.first)) {
       if (!string_util::IsValidCodepoint(c)) continue;
+      if (c == 0x0000) {
+        LOG(INFO)
+            << "Found null character. The corpus must be encoded in utf-8.";
+        continue;
+      }
       if (c == 0x0020) {
         // UTF8ToUnicodeText returns a white space if the text
         // contains an interchange-invalid character.
