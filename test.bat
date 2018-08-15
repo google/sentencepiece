@@ -1,31 +1,24 @@
 set PROTOBUF_VERSION=3.6.1
-set NINJA_URL="https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-win.zip"
 set PLATFORM=%1
 if "%PLATFORM%"=="" set PLATFORM=x64
 set PLATFORM_PREFIX=
 if "%PLATFORM%"=="x64" set PLATFORM_PREFIX=-x64
 set _CL_=/utf-8
-set PATH=C:\projects\deps\ninja;c:\Program Files\Git\usr\bin;c:\MinGW\bin;%PATH%
+set PATH=c:\Program Files\Git\usr\bin;c:\MinGW\bin;%PATH%
 set CURRENT_PATH=%~dp0
 set LIBRARY_PATH=%CURRENT_PATH%build\root
 
 mkdir build
 cd build
 
-if "%PLATFORM%"=="x64" "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
-
-curl -O -L %NINJA_URL%
-7z x ninja-win.zip -oC:\projects\deps\ninja
-ninja --version
-
 curl -O -L https://github.com/google/protobuf/releases/download/v%PROTOBUF_VERSION%/protobuf-cpp-%PROTOBUF_VERSION%.zip
 unzip protobuf-cpp-%PROTOBUF_VERSION%.zip
 cd protobuf-%PROTOBUF_VERSION%\cmake
-cmake . -G Ninja -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH% || goto :error
+cmake . -A %PLATFORM% -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH% || goto :error
 cmake --build . --config Release --target install || goto :error
 
 cd ..\..
-cmake .. -GNinja -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH%
+cmake .. -A %PLATFORM% -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH%
 cmake --build . --config Release --target install || goto :error
 ctest -C Release || goto :error
 cpack || goto :error
