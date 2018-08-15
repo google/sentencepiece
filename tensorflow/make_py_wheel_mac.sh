@@ -49,7 +49,6 @@ build() {
   sudo python get-pip.py --no-setuptools --no-wheel --ignore-installed
   pip install --upgrade setuptools
   pip install wheel
-  pip install delocate
   pip install tensorflow
 
   TF_CFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
@@ -70,7 +69,10 @@ build() {
   strip -x tf_sentencepiece/_sentencepiece_processor_ops.so
 
   # Builds Python manylinux wheel package.
-  PLAT_NAME=$(python -c 'import distutils.util; print(distutils.util.get_platform())')
+  # Platform name is determined by the tensorflow pip package.
+  # TODO(taku): Automatically detect the platname of tensoflow-pip
+  # PLAT_NAME=$(python -c 'import distutils.util; print(distutils.util.get_platform())')
+  PLAT_NAME=macosx_10_10_x86_64
   python setup.py bdist_wheel --universal --plat-name=${PLAT_NAME}
   python setup.py sdist
 
