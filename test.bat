@@ -12,7 +12,7 @@ set LIBRARY_PATH=%CURRENT_PATH%build\root
 mkdir build
 cd build
 
-curl -O -L %NINJYA_URL%
+curl -O -L %NINJA_URL%
 7z x ninja-win.zip -oC:\projects\deps\ninja
 ninja --version
 
