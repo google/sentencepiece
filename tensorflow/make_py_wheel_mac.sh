@@ -72,7 +72,6 @@ build() {
   # Builds Python manylinux wheel package.
   PLAT_NAME=$(python -c 'import distutils.util; print(distutils.util.get_platform())')
   python setup.py bdist_wheel --universal --plat-name=${PLAT_NAME}
-  delocate-listdeps dist/*.whl
   delocate-addplat -x 10_10 -x 10_11 -x 10_12 dist/*.whl
   python setup.py sdist
 
