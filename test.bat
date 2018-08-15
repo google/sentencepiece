@@ -12,6 +12,8 @@ set LIBRARY_PATH=%CURRENT_PATH%build\root
 mkdir build
 cd build
 
+if "%PLATFORM%"=="x64" "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
+
 curl -O -L %NINJA_URL%
 7z x ninja-win.zip -oC:\projects\deps\ninja
 ninja --version
@@ -19,11 +21,11 @@ ninja --version
 curl -O -L https://github.com/google/protobuf/releases/download/v%PROTOBUF_VERSION%/protobuf-cpp-%PROTOBUF_VERSION%.zip
 unzip protobuf-cpp-%PROTOBUF_VERSION%.zip
 cd protobuf-%PROTOBUF_VERSION%\cmake
-cmake . -GNinja -A %PLATFORM% -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH% || goto :error
+cmake . -G Ninja -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH% || goto :error
 cmake --build . --config Release --target install || goto :error
 
 cd ..\..
-cmake .. -GNinja -A %PLATFORM% -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH%
+cmake .. -GNinja -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH%
 cmake --build . --config Release --target install || goto :error
 ctest -C Release || goto :error
 cpack || goto :error
