@@ -72,7 +72,7 @@ build() {
   # Platform name is determined by the tensorflow pip package.
   # TODO(taku): Automatically detect the platname of tensoflow-pip
   # PLAT_NAME=$(python -c 'import distutils.util; print(distutils.util.get_platform())')
-  PLAT_NAME=macosx_10_10_x86_64.whl
+  PLAT_NAME=macosx_10_10_x86_64
   python setup.py bdist_wheel --universal --plat-name=${PLAT_NAME}
   python setup.py sdist
 
