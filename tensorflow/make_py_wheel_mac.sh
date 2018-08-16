@@ -30,13 +30,13 @@ build() {
   tar zxfv protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
   cd protobuf-${PROTOBUF_VERSION}
   ./configure --disable-shared --with-pic
-  make CXXFLAGS+="-std=c++11 -O3 -DGOOGLE_PROTOBUF_NO_THREADLOCAL=1 -D_GLIBCXX_USE_CXX11_ABI=0" \
-    CFLAGS+="-std=c++11 -O3 -DGOOGLE_PROTOBUF_NO_THREADLOCAL=1 -D_GLIBCXX_USE_CXX11_ABI=0" -j4
+  make CXXFLAGS+="-std=c++11 -O3 -D_GLIBCXX_USE_CXX11_ABI=0" \
+    CFLAGS+="-std=c++11 -O3 -D_GLIBCXX_USE_CXX11_ABI=0" -j4
   make install || true
   cd ..
 
   # Install sentencepiece
-  cmake ../.. -DSPM_ENABLE_SHARED=OFF -DSPM_ENABLE_TENSORFLOW_SHARED=ON -DSPM_NO_THREADLOCAL=ON
+  cmake ../.. -DSPM_ENABLE_SHARED=OFF -DSPM_ENABLE_TENSORFLOW_SHARED=ON
   make -j4 VERBOSE=1
   make install
   cd ..
