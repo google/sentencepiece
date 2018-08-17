@@ -201,7 +201,7 @@ if (SPM_ENABLE_NFKC_COMPILE)
 endif()
 
 list(APPEND SPM_INSTALLTARGETS
-  spm_encode spm_decode spm_normalize spm_train spm_export_vocab)
+  spm_encode spm_decode spm_normalize spm_train spm_export_vocab ${PROTOBUF_LIBRARY})
 
 install(TARGETS ${SPM_INSTALLTARGETS}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
