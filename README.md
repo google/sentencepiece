@@ -186,13 +186,14 @@ On OSX/macOS, replace the last command with the following:
 ## Usage instructions
 ### Train SentencePiece Model
 ```
-% spm_train --input=<input> --model_prefix=<model_name> --vocab_size=8000 --model_type=<type>
+% spm_train --input=<input> --model_prefix=<model_name> --vocab_size=8000 --character_coverage=1.0 --model_type=<type>
 ```
 * `--input`: one-sentence-per-line **raw** corpus file. No need to run
   tokenizer, normalizer or preprocessor. By default, SentencePiece normalizes
   the input with Unicode NFKC. You can pass a comma-separated list of files.
 * `--model_prefix`: output model name prefix. `<model_name>.model` and `<model_name>.vocab` are generated.
 * `--vocab_size`: vocabulary size, e.g., 8000, 16000, or 32000
+* `--character_coverage`: amount of characters covered by the model, good defaults are: `0.9995` for languages with rich character set like Japanse or Chinese and `1.0` for other languages with small character set.
 * `--model_type`: model type. Choose from `unigram` (default), `bpe`, `char`, or `word`. The input sentence must be pretokenized when using `word` type.
 
 Note that `spm_train` loads only the first `--input_sentence_size` sentences (default value is 10M).
@@ -259,7 +260,7 @@ You can find that the original input sentence is restored from the vocabulary id
   By default, SentencePiece uses Unknown (&lt;unk&gt;), BOS (&lt;s&gt;) and EOS (&lt;/s&gt;) tokens which have the ids of 0, 1, and 2 respectively. We can redefine this mapping in the training phase as follows.
   
 ```
-% spm_train --bos_id=0 --eos_id=1 --unk_id=5 --input=... --model_prefix=...
+% spm_train --bos_id=0 --eos_id=1 --unk_id=5 --input=... --model_prefix=... --character_coverage=... 
 ```
 When setting -1 id e.g., ```bos_id=-1```, this special token is disabled. Note that the unknow id cannot be disabled.  We can define an id for padding (&lt;pad&gt;) as ```--pad_id=3```.  
 
@@ -272,7 +273,7 @@ The usage is basically the same as that of ```subword-nmt```. Assming that L1 an
 
 ```
 % cat {train_file}.L1 {train_file}.L2 | shuffle > train
-% spm_train --input=train --model_prefix=spm --vocab_size=8000 
+% spm_train --input=train --model_prefix=spm --vocab_size=8000 --character_coverage=0.9995
 % spm_encode --model=spm.model --generate_vocabulary < {train_file}.L1 > {vocab_file}.L1
 % spm_encode --model=spm.model --generate_vocabulary < {train_file}.L2 > {vocab_file}.L2
 ```
