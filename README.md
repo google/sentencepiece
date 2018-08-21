@@ -176,7 +176,7 @@ If want to use self-prepared protobuf library, setup below environment variables
 % mkdir build
 % cd build
 % cmake ..
-% make
+% make -j $(nproc)
 % sudo make install
 % sudo ldconfig -v
 ```
