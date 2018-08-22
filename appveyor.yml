@@ -13,3 +13,13 @@ build_script:
 artifacts:
  - path: build\sentencepiece*.7z
  - path: python\dist\*.whl
+deploy:
+  description: 'SentencePiece Windows release'
+  provider: GitHub
+  auth_token:
+    secure: WQph3aOhH3YsXaZw9VbtNa79tEeh1W/7r76RhEja63+uthhBSp5zV1jw9sQXnRDxasPmhuu1QV/i3tq0tQ6QotmZFoFcVIuvC88/ijKoTdk349Ion12XMuf2swRbGrHuEyVfHlSrpLQWcSTylqVJwf8PO+gUmydQ5WDuqfYMV0MSIq+QOlm6TzQzESJ5WN7E7d9FcysLtoFocAU9QImSI7oy4WDo/smOkkekFPATSKhdCaiWPbNMrqNIEmPnYrIy18s2QCp5P0zzIj4FQawTkVuH3DxrJDbHRf1lVa4lqYecXTTrmLJV8KR8o6MlU5thzIlWBY4FzP4LbYBv9q1mjO3He95DlNL6XGsT2lPQKsoN1G/Cv26R8fpYVK4tFDUEWkz3TD8DhEp5mkU5IyO+8KrbSVkzyAU9nqNSk+6wu54c0cYHnNcITMPS5YuD6XRxE0eEZdQquaXel/qHZbtk5nlBsedNAqRTjIZU7nagLKJEewBbuE8t1tfgfGZPqbLYPdO0klD5nnJ+9oImrAvVQVjL/McH/Nz3MobTIdHzgx29LCexLoA7PfbSXNMysgnjQYT3BVPvJnomY/QBtnZ33aXTONve0fjZhTY0O/zOY4cIkfvGOEhQdWth2IWfxq1KxHOXvHU7b1qCg3+7Ow10pIQg1XNHyuhY3sSPGXWcTyg=
+  draft: false
+  prerelease: false
+  on:
+    branch: master
+    appveyor_repo_tag: true
