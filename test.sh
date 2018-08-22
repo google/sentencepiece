@@ -57,7 +57,6 @@ build_python() {
 build_tensorflow() {
   cd tensorflow
   pip install tensorflow
-  pip install sentencepiece
   python setup.py bdist_wheel
   python setup.py sdist
   python setup.py test
