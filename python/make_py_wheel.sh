@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.!
-
+11;rgb:ffff/ffff/dddd
 set -e  # exit immediately on error
 set -x  # display all commands
 
@@ -48,6 +48,7 @@ build() {
   curl -L -O https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
   tar zxfv protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
   cd protobuf-${PROTOBUF_VERSION}
+  cp -f ../../once.h src/google/protobuf/stubs/once.h
   ./configure --disable-shared --with-pic
   make CXXFLAGS+="-std=c++11 -O3" CFLAGS+="-std=c++11 -O3" -j4
   make install || true
