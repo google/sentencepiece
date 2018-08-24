@@ -34,7 +34,7 @@ matrix:
     - os: linux
       env: IMAGE=x86_64 COMMAND=make_py_wheel_tf
       script:
-        - $TRAVIS_BUILD_DIR/tensorflow/make_py_wheel.sh RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*.whl"
+        - $TRAVIS_BUILD_DIR/tensorflow/make_py_wheel.sh RELEASE_FILES="$TRAVIS_BUILD_DIR/tensorflow/dist/*.whl"
         - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
       services: docker
     - os: osx
@@ -54,7 +54,7 @@ matrix:
         - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
     - os: osx
       osx_image: xcode9.4
-      env: IMAGE=native COMMAND=make_py_wheel_mac_tf RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*.whl"
+      env: IMAGE=native COMMAND=make_py_wheel_mac_tf RELEASE_FILES="$TRAVIS_BUILD_DIR/tensorflow/dist/*.whl"
       script:
         - $TRAVIS_BUILD_DIR/tensorflow/make_py_wheel_mac.sh
         - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
