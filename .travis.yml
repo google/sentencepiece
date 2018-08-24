@@ -55,9 +55,7 @@ matrix:
         - $TRAVIS_BUILD_DIR/tensorflow/make_py_wheel_mac.sh
 script:
   - $TRAVIS_BUILD_DIR/test.sh ${IMAGE} ${COMMAND}
-  - if [ -n "$RELEASE_FILES" ]; then
-      ls -l $RELEASE_FILES
-    fi
+  - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
 deploy:
   provider: releases
   skip_cleanup: true
