@@ -1,5 +1,4 @@
 version: '{branch} build {build}'
-skip_tags: true
 image: Visual Studio 2015
 platform:
   - x64
