@@ -120,7 +120,7 @@ To enable subword regularization, you would like to integrate SentencePiece libr
 
 ### Python module
 SentencePiece provides Python wrapper that supports both SentencePiece training and segmentation.
-For Linux (x64/i686) environment, you can install Python binary package of SentencePiece with.
+You can install Python binary package of SentencePiece with.
 
 ```
 % pip install sentencepiece
