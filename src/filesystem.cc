@@ -17,20 +17,17 @@
 
 #include "util.h"
 
-#ifdef OS_WIN
-#define OUTPUT_MODE std::ios::binary | std::ios::out
-#else
-#define OUTPUT_MODE std::ios::out
-#endif
-
 namespace sentencepiece {
 namespace filesystem {
 
 class PosixReadableFile : public ReadableFile {
  public:
-  PosixReadableFile(absl::string_view filename)
-      : is_(filename.empty() ? &std::cin
-                             : new std::ifstream(WPATH(filename.data()))) {
+  PosixReadableFile(absl::string_view filename, bool is_binary = false)
+      : is_(filename.empty()
+                ? &std::cin
+                : new std::ifstream(WPATH(filename.data()),
+                                    is_binary ? std::ios::binary | std::ios::in
+                                              : std::ios::out)) {
     if (!*is_)
       status_ = util::StatusBuilder(util::error::NOT_FOUND)
                 << "\"" << filename.data() << "\": " << util::StrError(errno);
@@ -63,10 +60,12 @@ class PosixReadableFile : public ReadableFile {
 
 class PosixWritableFile : public WritableFile {
  public:
-  PosixWritableFile(absl::string_view filename)
+  PosixWritableFile(absl::string_view filename, bool is_binary = false)
       : os_(filename.empty()
                 ? &std::cout
-                : new std::ofstream(WPATH(filename.data()), OUTPUT_MODE)) {
+                : new std::ofstream(WPATH(filename.data()),
+                                    is_binary ? std::ios::binary | std::ios::out
+                                              : std::ios::out)) {
     if (!*os_)
       status_ = util::StatusBuilder(util::error::PERMISSION_DENIED)
                 << "\"" << filename.data() << "\": " << util::StrError(errno);
@@ -90,12 +89,14 @@ class PosixWritableFile : public WritableFile {
   std::ostream *os_;
 };
 
-std::unique_ptr<ReadableFile> NewReadableFile(absl::string_view filename) {
-  return port::MakeUnique<PosixReadableFile>(filename);
+std::unique_ptr<ReadableFile> NewReadableFile(absl::string_view filename,
+                                              bool is_binary) {
+  return port::MakeUnique<PosixReadableFile>(filename, is_binary);
 }
 
-std::unique_ptr<WritableFile> NewWritableFile(absl::string_view filename) {
-  return port::MakeUnique<PosixWritableFile>(filename);
+std::unique_ptr<WritableFile> NewWritableFile(absl::string_view filename,
+                                              bool is_binary) {
+  return port::MakeUnique<PosixWritableFile>(filename, is_binary);
 }
 
 }  // namespace filesystem

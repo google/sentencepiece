@@ -43,7 +43,7 @@ SentencePieceProcessor::SentencePieceProcessor() {}
 SentencePieceProcessor::~SentencePieceProcessor() {}
 
 util::Status SentencePieceProcessor::Load(util::min_string_view filename) {
-  auto input = filesystem::NewReadableFile(string_util::ToSV(filename));
+  auto input = filesystem::NewReadableFile(string_util::ToSV(filename), true);
   RETURN_IF_ERROR(input->status());
   std::string proto;
   CHECK_OR_RETURN(input->ReadAll(&proto));
