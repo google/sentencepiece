@@ -15,11 +15,11 @@
 #include <functional>
 #include <unordered_map>
 #include "common.h"
+#include "filesystem.h"
 #include "flags.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
 #include "trainer_interface.h"
-#include "util.h"
 
 DEFINE_string(model, "", "model file name");
 DEFINE_string(
@@ -56,8 +56,8 @@ int main(int argc, char *argv[]) {
     CHECK_OK(sp.LoadVocabulary(FLAGS_vocabulary, FLAGS_vocabulary_threshold));
   }
 
-  sentencepiece::io::OutputBuffer output(FLAGS_output);
-  CHECK_OK(output.status());
+  auto output = sentencepiece::filesystem::NewWritableFile(FLAGS_output);
+  CHECK_OK(output->status());
 
   if (rest_args.empty()) {
     rest_args.push_back("");  // empty means that reading from stdin.
@@ -84,68 +84,68 @@ int main(int argc, char *argv[]) {
   } else if (FLAGS_output_format == "piece") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.Encode(line, &sps));
-      output.WriteLine(sentencepiece::string_util::Join(sps, " "));
+      output->WriteLine(sentencepiece::string_util::Join(sps, " "));
     };
   } else if (FLAGS_output_format == "id") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.Encode(line, &ids));
-      output.WriteLine(sentencepiece::string_util::Join(ids, " "));
+      output->WriteLine(sentencepiece::string_util::Join(ids, " "));
     };
   } else if (FLAGS_output_format == "proto") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.Encode(line, &spt));
-      output.WriteLine(spt.Utf8DebugString());
+      output->WriteLine(spt.Utf8DebugString());
     };
   } else if (FLAGS_output_format == "sample_piece") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &sps));
-      output.WriteLine(sentencepiece::string_util::Join(sps, " "));
+      output->WriteLine(sentencepiece::string_util::Join(sps, " "));
     };
   } else if (FLAGS_output_format == "sample_id") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &ids));
-      output.WriteLine(sentencepiece::string_util::Join(ids, " "));
+      output->WriteLine(sentencepiece::string_util::Join(ids, " "));
     };
   } else if (FLAGS_output_format == "sample_proto") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &spt));
-      output.WriteLine(spt.Utf8DebugString());
+      output->WriteLine(spt.Utf8DebugString());
     };
   } else if (FLAGS_output_format == "nbest_piece") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.NBestEncode(line, FLAGS_nbest_size, &nbest_sps));
       for (const auto &result : nbest_sps) {
-        output.WriteLine(sentencepiece::string_util::Join(result, " "));
+        output->WriteLine(sentencepiece::string_util::Join(result, " "));
       }
     };
   } else if (FLAGS_output_format == "nbest_id") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.NBestEncode(line, FLAGS_nbest_size, &nbest_ids));
       for (const auto &result : nbest_ids) {
-        output.WriteLine(sentencepiece::string_util::Join(result, " "));
+        output->WriteLine(sentencepiece::string_util::Join(result, " "));
       }
     };
   } else if (FLAGS_output_format == "nbest_proto") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.NBestEncode(line, FLAGS_nbest_size, &nbest_spt));
-      output.WriteLine(nbest_spt.Utf8DebugString());
+      output->WriteLine(nbest_spt.Utf8DebugString());
     };
   } else {
     LOG(FATAL) << "Unknown output format: " << FLAGS_output_format;
   }
 
   for (const auto &filename : rest_args) {
-    sentencepiece::io::InputBuffer input(filename);
-    CHECK_OK(input.status());
-    while (input.ReadLine(&line)) {
+    auto input = sentencepiece::filesystem::NewReadableFile(filename);
+    CHECK_OK(input->status());
+    while (input->ReadLine(&line)) {
       process(line);
     }
   }
 
   if (FLAGS_generate_vocabulary) {
     for (const auto &it : sentencepiece::Sorted(vocab)) {
-      output.WriteLine(it.first + "\t" +
-                       sentencepiece::string_util::SimpleItoa(it.second));
+      output->WriteLine(it.first + "\t" +
+                        sentencepiece::string_util::SimpleItoa(it.second));
     }
   }
 

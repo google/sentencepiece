@@ -215,55 +215,6 @@ std::string UnicodeTextToUTF8(const UnicodeText &utext) {
 }
 }  // namespace string_util
 
-namespace io {
-
-InputBuffer::InputBuffer(absl::string_view filename)
-    : is_(filename.empty() ? &std::cin
-                           : new std::ifstream(WPATH(filename.data()))) {
-  if (!*is_)
-    status_ = util::StatusBuilder(util::error::NOT_FOUND)
-              << "\"" << filename.data() << "\": " << util::StrError(errno);
-}
-
-InputBuffer::~InputBuffer() {
-  if (is_ != &std::cin) {
-    delete is_;
-  }
-}
-
-util::Status InputBuffer::status() const { return status_; }
-
-bool InputBuffer::ReadLine(std::string *line) {
-  return static_cast<bool>(std::getline(*is_, *line));
-}
-
-OutputBuffer::OutputBuffer(absl::string_view filename)
-    : os_(filename.empty()
-              ? &std::cout
-              : new std::ofstream(WPATH(filename.data()), OUTPUT_MODE)) {
-  if (!*os_)
-    status_ = util::StatusBuilder(util::error::PERMISSION_DENIED)
-              << "\"" << filename.data() << "\": " << util::StrError(errno);
-}
-
-OutputBuffer::~OutputBuffer() {
-  if (os_ != &std::cout) {
-    delete os_;
-  }
-}
-
-util::Status OutputBuffer::status() const { return status_; }
-
-bool OutputBuffer::Write(absl::string_view text) {
-  os_->write(text.data(), text.size());
-  return os_->good();
-}
-
-bool OutputBuffer::WriteLine(absl::string_view text) {
-  return Write(text) && Write("\n");
-}
-}  // namespace io
-
 namespace random {
 #ifdef SPM_NO_THREADLOCAL
 namespace {
@@ -307,7 +258,7 @@ std::string StrError(int errnum) {
   constexpr int kStrErrorSize = 1024;
   char buffer[kStrErrorSize];
   char *str = nullptr;
-#if defined(_GLIBC__) && defined(_GNU_SOURCE)
+#if defined(__GLIBC__) && defined(_GNU_SOURCE)
   str = strerror_r(errnum, buffer, kStrErrorSize - 1);
 #elif defined(_WIN32)
   strerror_s(buffer, kStrErrorSize - 1, errnum);

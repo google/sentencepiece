@@ -14,7 +14,6 @@
 
 #include "unigram_model.h"
 
-#include <fstream>
 #include <map>
 #include <string>
 #include <unordered_map>

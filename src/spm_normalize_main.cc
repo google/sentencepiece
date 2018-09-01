@@ -14,13 +14,13 @@
 
 #include "builder.h"
 #include "common.h"
+#include "filesystem.h"
 #include "flags.h"
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
-#include "util.h"
 
 DEFINE_string(model, "", "Model file name");
 DEFINE_bool(use_internal_normalization, false,
@@ -78,8 +78,8 @@ int main(int argc, char *argv[]) {
     CHECK_OK(Builder::SaveCharsMap(FLAGS_output, chars_map));
   } else {
     const Normalizer normalizer(spec);
-    sentencepiece::io::OutputBuffer output(FLAGS_output);
-    CHECK_OK(output.status());
+    auto output = sentencepiece::filesystem::NewWritableFile(FLAGS_output);
+    CHECK_OK(output->status());
 
     if (rest_args.empty()) {
       rest_args.push_back("");  // empty means that read from stdin.
@@ -87,10 +87,10 @@ int main(int argc, char *argv[]) {
 
     std::string line;
     for (const auto &filename : rest_args) {
-      sentencepiece::io::InputBuffer input(filename);
-      CHECK_OK(input.status());
-      while (input.ReadLine(&line)) {
-        output.WriteLine(normalizer.Normalize(line));
+      auto input = sentencepiece::filesystem::NewReadableFile(filename);
+      CHECK_OK(input->status());
+      while (input->ReadLine(&line)) {
+        output->WriteLine(normalizer.Normalize(line));
       }
     }
   }

@@ -15,6 +15,7 @@
 #include "char_model_trainer.h"
 #include <string>
 #include <vector>
+#include "filesystem.h"
 #include "sentencepiece_processor.h"
 #include "testharness.h"
 #include "util.h"
@@ -32,9 +33,9 @@ std::string RunTrainer(const std::vector<std::string> &input, int size) {
   const std::string input_file = input_scoped_file.filename();
   const std::string model_prefix = model_scoped_file.filename();
   {
-    io::OutputBuffer output(input_file);
+    auto output = filesystem::NewWritableFile(input_file);
     for (const auto &line : input) {
-      output.WriteLine(line);
+      output->WriteLine(line);
     }
   }
 

@@ -1,4 +1,3 @@
-
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +14,7 @@
 
 #include "util.h"
 #include <map>
+#include "filesystem.h"
 #include "testharness.h"
 
 namespace sentencepiece {
@@ -492,26 +492,26 @@ TEST(UtilTest, InputOutputBufferTest) {
       "test"};
 
   {
-    io::OutputBuffer output(sf.filename());
+    auto output = filesystem::NewWritableFile(sf.filename());
     for (size_t i = 0; i < arraysize(kData); ++i) {
-      output.WriteLine(kData[i]);
+      output->WriteLine(kData[i]);
     }
   }
 
   {
-    io::InputBuffer input(sf.filename());
+    auto input = filesystem::NewReadableFile(sf.filename());
     std::string line;
     for (size_t i = 0; i < arraysize(kData); ++i) {
-      EXPECT_TRUE(input.ReadLine(&line));
+      EXPECT_TRUE(input->ReadLine(&line));
       EXPECT_EQ(kData[i], line);
     }
-    EXPECT_FALSE(input.ReadLine(&line));
+    EXPECT_FALSE(input->ReadLine(&line));
   }
 }
 
 TEST(UtilTest, InputOutputBufferInvalidFileTest) {
-  io::InputBuffer input("__UNKNOWN__FILE__");
-  EXPECT_NOT_OK(input.status());
+  auto input = filesystem::NewReadableFile("__UNKNOWN__FILE__");
+  EXPECT_NOT_OK(input->status());
 }
 
 TEST(UtilTest, STLDeleteELementsTest) {

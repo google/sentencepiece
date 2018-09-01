@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "filesystem.h"
 #include "model_factory.h"
 #include "model_interface.h"
 #include "normalizer.h"
@@ -158,9 +159,9 @@ util::Status TrainerInterface::LoadSentences() {
   for (const auto &filename : trainer_spec_.input()) {
     LOG(INFO) << "Loading corpus: " << filename;
     std::string sentence;
-    io::InputBuffer input(filename);
-    RETURN_IF_ERROR(input.status());
-    while (input.ReadLine(&sentence)) {
+    auto input = filesystem::NewReadableFile(filename);
+    RETURN_IF_ERROR(input->status());
+    while (input->ReadLine(&sentence)) {
       int64 freq = 1;
       if (is_tsv) {
         const std::vector<std::string> v = string_util::Split(sentence, "\t");
@@ -352,10 +353,9 @@ util::Status TrainerInterface::SaveModel(absl::string_view filename) const {
   LOG(INFO) << "Saving model: " << filename;
   ModelProto model_proto;
   RETURN_IF_ERROR(Serialize(&model_proto));
-  std::ofstream ofs(WPATH(filename.data()), OUTPUT_MODE);
-  CHECK_OR_RETURN(ofs) << "\"" << filename.data()
-                       << "\": " << util::StrError(errno);
-  CHECK_OR_RETURN(model_proto.SerializeToOstream(&ofs));
+  auto output = filesystem::NewWritableFile(filename.data());
+  RETURN_IF_ERROR(output->status());
+  output->Write(model_proto.SerializeAsString());
   return util::OkStatus();
 }
 
@@ -363,13 +363,13 @@ util::Status TrainerInterface::SaveVocab(absl::string_view filename) const {
   LOG(INFO) << "Saving vocabs: " << filename;
   ModelProto model_proto;
   Serialize(&model_proto);
-  io::OutputBuffer output(filename);
-  RETURN_IF_ERROR(output.status());
+  auto output = filesystem::NewWritableFile(filename);
+  RETURN_IF_ERROR(output->status());
 
   for (const auto &piece : model_proto.pieces()) {
     std::ostringstream os;
     os << piece.piece() << "\t" << piece.score();
-    CHECK_OR_RETURN(output.WriteLine(os.str()));
+    CHECK_OR_RETURN(output->WriteLine(os.str()));
   }
 
   return util::OkStatus();

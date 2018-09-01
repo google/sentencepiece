@@ -18,6 +18,7 @@
 #include <utility>
 
 #include "builder.h"
+#include "filesystem.h"
 #include "model_interface.h"
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
@@ -631,8 +632,8 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
   test::ScopedTempFile sf("model");
 
   {
-    std::ofstream ofs(WPATH(sf.filename()), OUTPUT_MODE);
-    CHECK(model_proto.SerializeToOstream(&ofs));
+    auto output = filesystem::NewWritableFile(sf.filename());
+    output->Write(model_proto.SerializeAsString());
   }
 
   SentencePieceProcessor sp;
@@ -1029,8 +1030,8 @@ TEST(SentencePieceProcessorTest, VocabularyTest) {
   test::ScopedTempFile sf("vocab.txt");
   auto GetInlineFilename = [&sf](const std::string content) {
     {
-      io::OutputBuffer out(sf.filename());
-      out.Write(content);
+      auto out = filesystem::NewWritableFile(sf.filename());
+      out->Write(content);
     }
     return sf.filename();
   };

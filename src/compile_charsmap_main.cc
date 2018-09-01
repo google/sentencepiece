@@ -18,10 +18,10 @@
 #include <sstream>
 #include <string>
 #include "builder.h"
+#include "filesystem.h"
 #include "flags.h"
 #include "sentencepiece_processor.h"
 #include "third_party/absl/strings/string_view.h"
-#include "util.h"
 
 using sentencepiece::normalizer::Builder;
 using sentencepiece::util::Status;
@@ -179,9 +179,10 @@ int main(int argc, char **argv) {
 
   if (FLAGS_output_precompiled_header) {
     constexpr char kPrecompiledHeaderFileName[] = "normalization_rule.h";
-    sentencepiece::io::OutputBuffer output(kPrecompiledHeaderFileName);
-    CHECK_OK(output.status());
-    output.Write(sentencepiece::MakeHeader(data));
+    auto output =
+        sentencepiece::filesystem::NewWritableFile(kPrecompiledHeaderFileName);
+    CHECK_OK(output->status());
+    output->Write(sentencepiece::MakeHeader(data));
   }
 
   return 0;
