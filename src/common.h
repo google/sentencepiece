@@ -64,12 +64,6 @@ static constexpr int64 kint64max = ((int64)(0x7FFFFFFFFFFFFFFF));
 
 static constexpr uint32 kUnicodeError = 0xFFFD;
 
-#ifdef OS_WIN
-#define OUTPUT_MODE std::ios::binary | std::ios::out
-#else
-#define OUTPUT_MODE std::ios::out
-#endif
-
 #if defined(OS_WIN) && defined(UNICODE) && defined(_UNICODE)
 #define WPATH(path) (::sentencepiece::win32::Utf8ToWide(path).c_str())
 #else

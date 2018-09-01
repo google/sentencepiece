@@ -13,7 +13,15 @@
 // limitations under the License.!
 
 #include "filesystem.h"
+#include <iostream>
+
 #include "util.h"
+
+#ifdef OS_WIN
+#define OUTPUT_MODE std::ios::binary | std::ios::out
+#else
+#define OUTPUT_MODE std::ios::out
+#endif
 
 namespace sentencepiece {
 namespace filesystem {
@@ -38,7 +46,15 @@ class PosixReadableFile : public ReadableFile {
     return static_cast<bool>(std::getline(*is_, *line));
   }
 
-  bool ReadAll(std::string *line) { return true; }
+  bool ReadAll(std::string *line) {
+    if (is_ == &std::cin) {
+      LOG(ERROR) << "ReadAll is not supported for stdin.";
+      return false;
+    }
+    line->assign(std::istreambuf_iterator<char>(*is_),
+                 std::istreambuf_iterator<char>());
+    return true;
+  }
 
  private:
   util::Status status_;
@@ -72,7 +88,7 @@ class PosixWritableFile : public WritableFile {
  private:
   util::Status status_;
   std::ostream *os_;
-};  // namespace filesystem
+};
 
 std::unique_ptr<ReadableFile> NewReadableFile(absl::string_view filename) {
   return port::MakeUnique<PosixReadableFile>(filename);

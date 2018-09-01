@@ -43,13 +43,11 @@ SentencePieceProcessor::SentencePieceProcessor() {}
 SentencePieceProcessor::~SentencePieceProcessor() {}
 
 util::Status SentencePieceProcessor::Load(util::min_string_view filename) {
-  std::ifstream ifs(WPATH(filename.data()), std::ios::binary | std::ios::in);
-  if (!ifs) {
-    return util::StatusBuilder(util::error::NOT_FOUND)
-           << "\"" << filename.data() << "\": " << util::StrError(errno);
-  }
-
-  return Load(&ifs);
+  auto input = filesystem::NewReadableFile(string_util::ToSV(filename));
+  RETURN_IF_ERROR(input->status());
+  std::string proto;
+  CHECK_OR_RETURN(input->ReadAll(&proto));
+  return LoadFromSerializedProto(proto);
 }
 
 void SentencePieceProcessor::LoadOrDie(util::min_string_view filename) {
@@ -57,10 +55,9 @@ void SentencePieceProcessor::LoadOrDie(util::min_string_view filename) {
 }
 
 util::Status SentencePieceProcessor::Load(std::istream *is) {
-  CHECK_OR_RETURN(is) << "input ifstream is null";
-  auto model_proto = port::MakeUnique<ModelProto>();
-  CHECK_OR_RETURN(model_proto->ParseFromIstream(is)) << "Model file is broken";
-  return Load(std::move(model_proto));
+  return util::StatusBuilder(util::error::UNIMPLEMENTED)
+         << "std::stream API is deprecated. Use LoadFromSerializedProto() "
+         << "to load model from any serialized blob object.";
 }
 
 util::Status SentencePieceProcessor::Load(const ModelProto &model_proto) {
