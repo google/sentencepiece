@@ -632,7 +632,7 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
   test::ScopedTempFile sf("model");
 
   {
-    auto output = filesystem::NewWritableFile(sf.filename());
+    auto output = filesystem::NewWritableFile(sf.filename(), true);
     output->Write(model_proto.SerializeAsString());
   }
 
