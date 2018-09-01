@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "common.h"
+#include "filesystem.h"
 #include "model_factory.h"
 #include "model_interface.h"
 #include "normalizer.h"
@@ -140,13 +141,13 @@ util::Status SentencePieceProcessor::ResetVocabulary() {
 
 util::Status SentencePieceProcessor::LoadVocabulary(
     util::min_string_view filename, int threshold) {
-  io::InputBuffer input(string_util::ToSV(filename));
-  RETURN_IF_ERROR(input.status());
+  auto input = filesystem::NewReadableFile(string_util::ToSV(filename));
+  RETURN_IF_ERROR(input->status());
 
   std::string line;
   std::vector<std::string> vocab;
 
-  while (input.ReadLine(&line)) {
+  while (input->ReadLine(&line)) {
     const std::vector<std::string> v = string_util::Split(line, "\t");
     CHECK_GE_OR_RETURN(v.size(), 1);
     CHECK_OR_RETURN(!v[0].empty());

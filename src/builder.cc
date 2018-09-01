@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <functional>
 #include <utility>
+#include "filesystem.h"
 
 #include "config.h"
 
@@ -447,12 +448,13 @@ util::Status Builder::LoadCharsMap(absl::string_view filename,
   LOG(INFO) << "Loading maping file: " << filename.data();
   CHECK_OR_RETURN(chars_map);
 
-  io::InputBuffer input(filename);
-  RETURN_IF_ERROR(input.status());
+  auto input = filesystem::NewReadableFile(filename);
+
+  RETURN_IF_ERROR(input->status());
 
   std::string line;
   chars_map->clear();
-  while (input.ReadLine(&line)) {
+  while (input->ReadLine(&line)) {
     auto fields = string_util::SplitPiece(line, "\t", true /* allow empty*/);
     CHECK_GE(fields.size(), 1);
     if (fields.size() == 1) fields.push_back("");  // Deletion rule.
@@ -477,8 +479,8 @@ util::Status Builder::LoadCharsMap(absl::string_view filename,
 // static
 util::Status Builder::SaveCharsMap(absl::string_view filename,
                                    const Builder::CharsMap &chars_map) {
-  io::OutputBuffer output(filename);
-  RETURN_IF_ERROR(output.status());
+  auto output = filesystem::NewWritableFile(filename);
+  RETURN_IF_ERROR(output->status());
 
   for (const auto &c : chars_map) {
     std::vector<std::string> src, trg;
@@ -497,7 +499,7 @@ util::Status Builder::SaveCharsMap(absl::string_view filename,
                        string_util::UnicodeTextToUTF8(c.second);
     line = string_util::StringReplace(line, "\n", " ", true);
     line = string_util::StringReplace(line, "\r", " ", true);
-    output.WriteLine(line);
+    output->WriteLine(line);
   }
 
   return util::OkStatus();

@@ -14,6 +14,7 @@
 
 #include <functional>
 #include "common.h"
+#include "filesystem.h"
 #include "flags.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
@@ -36,8 +37,8 @@ int main(int argc, char *argv[]) {
   CHECK_OK(sp.Load(FLAGS_model));
   CHECK_OK(sp.SetDecodeExtraOptions(FLAGS_extra_options));
 
-  sentencepiece::io::OutputBuffer output(FLAGS_output);
-  CHECK_OK(output.status());
+  auto output = sentencepiece::filesystem::NewWritableFile(FLAGS_output);
+  CHECK_OK(output->status());
 
   if (rest_args.empty()) {
     rest_args.push_back("");  // empty means that reading from stdin.
@@ -59,12 +60,12 @@ int main(int argc, char *argv[]) {
     if (FLAGS_output_format == "string") {
       process = [&](const std::vector<std::string> &pieces) {
         CHECK_OK(sp.Decode(pieces, &detok));
-        output.WriteLine(detok);
+        output->WriteLine(detok);
       };
     } else if (FLAGS_output_format == "proto") {
       process = [&](const std::vector<std::string> &pieces) {
         CHECK_OK(sp.Decode(pieces, &spt));
-        output.WriteLine(spt.Utf8DebugString());
+        output->WriteLine(spt.Utf8DebugString());
       };
     } else {
       LOG(FATAL) << "Unknown output format: " << FLAGS_output_format;
@@ -73,12 +74,12 @@ int main(int argc, char *argv[]) {
     if (FLAGS_output_format == "string") {
       process = [&](const std::vector<std::string> &pieces) {
         CHECK_OK(sp.Decode(ToIds(pieces), &detok));
-        output.WriteLine(detok);
+        output->WriteLine(detok);
       };
     } else if (FLAGS_output_format == "proto") {
       process = [&](const std::vector<std::string> &pieces) {
         CHECK_OK(sp.Decode(ToIds(pieces), &spt));
-        output.WriteLine(spt.Utf8DebugString());
+        output->WriteLine(spt.Utf8DebugString());
       };
     } else {
       LOG(FATAL) << "Unknown output format: " << FLAGS_output_format;
@@ -88,9 +89,9 @@ int main(int argc, char *argv[]) {
   }
 
   for (const auto &filename : rest_args) {
-    sentencepiece::io::InputBuffer input(filename);
-    CHECK_OK(input.status());
-    while (input.ReadLine(&line)) {
+    auto input = sentencepiece::filesystem::NewReadableFile(filename);
+    CHECK_OK(input->status());
+    while (input->ReadLine(&line)) {
       const auto pieces = sentencepiece::string_util::Split(line, " ");
       process(pieces);
     }

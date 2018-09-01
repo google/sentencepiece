@@ -16,6 +16,7 @@
 
 #include <string>
 #include <vector>
+#include "filesystem.h"
 #include "flags.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
@@ -39,9 +40,9 @@ std::string RunTrainer(
   const std::string input_file = input_scoped_file.filename();
   const std::string model_prefix = model_scoped_file.filename();
   {
-    io::OutputBuffer output(input_file);
+    auto output = filesystem::NewWritableFile(input_file);
     for (const auto &line : input) {
-      output.WriteLine(line);
+      output->WriteLine(line);
     }
   }
 

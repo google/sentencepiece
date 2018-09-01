@@ -1,0 +1,86 @@
+// Copyright 2016 Google Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.!
+
+#include "filesystem.h"
+#include "util.h"
+
+namespace sentencepiece {
+namespace filesystem {
+
+class PosixReadableFile : public ReadableFile {
+ public:
+  PosixReadableFile(absl::string_view filename)
+      : is_(filename.empty() ? &std::cin
+                             : new std::ifstream(WPATH(filename.data()))) {
+    if (!*is_)
+      status_ = util::StatusBuilder(util::error::NOT_FOUND)
+                << "\"" << filename.data() << "\": " << util::StrError(errno);
+  }
+
+  ~PosixReadableFile() {
+    if (is_ != &std::cin) delete is_;
+  }
+
+  util::Status status() const { return status_; }
+
+  bool ReadLine(std::string *line) {
+    return static_cast<bool>(std::getline(*is_, *line));
+  }
+
+  bool ReadAll(std::string *line) { return true; }
+
+ private:
+  util::Status status_;
+  std::istream *is_;
+};
+
+class PosixWritableFile : public WritableFile {
+ public:
+  PosixWritableFile(absl::string_view filename)
+      : os_(filename.empty()
+                ? &std::cout
+                : new std::ofstream(WPATH(filename.data()), OUTPUT_MODE)) {
+    if (!*os_)
+      status_ = util::StatusBuilder(util::error::PERMISSION_DENIED)
+                << "\"" << filename.data() << "\": " << util::StrError(errno);
+  }
+
+  ~PosixWritableFile() {
+    if (os_ != &std::cout) delete os_;
+  }
+
+  util::Status status() const { return status_; }
+
+  bool Write(absl::string_view text) {
+    os_->write(text.data(), text.size());
+    return os_->good();
+  }
+
+  bool WriteLine(absl::string_view text) { return Write(text) && Write("\n"); }
+
+ private:
+  util::Status status_;
+  std::ostream *os_;
+};  // namespace filesystem
+
+std::unique_ptr<ReadableFile> NewReadableFile(absl::string_view filename) {
+  return port::MakeUnique<PosixReadableFile>(filename);
+}
+
+std::unique_ptr<WritableFile> NewWritableFile(absl::string_view filename) {
+  return port::MakeUnique<PosixWritableFile>(filename);
+}
+
+}  // namespace filesystem
+}  // namespace sentencepiece

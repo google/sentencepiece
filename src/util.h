@@ -258,34 +258,6 @@ std::string UnicodeTextToUTF8(const UnicodeText &utext);
 
 }  // namespace string_util
 
-// IO related utilities.
-namespace io {
-class InputBuffer {
- public:
-  explicit InputBuffer(absl::string_view filename);
-  util::Status status() const;
-  ~InputBuffer();
-  bool ReadLine(std::string *line);
-
- private:
-  util::Status status_;
-  std::istream *is_;
-};
-
-class OutputBuffer {
- public:
-  explicit OutputBuffer(absl::string_view filename);
-  util::Status status() const;
-  ~OutputBuffer();
-  bool Write(absl::string_view text);
-  bool WriteLine(absl::string_view text);
-
- private:
-  util::Status status_;
-  std::ostream *os_;
-};
-}  // namespace io
-
 // other map/ptr utilties
 namespace port {
 

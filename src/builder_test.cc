@@ -14,6 +14,7 @@
 
 #include "builder.h"
 #include "common.h"
+#include "filesystem.h"
 #include "flags.h"
 #include "normalizer.h"
 #include "sentencepiece_trainer.h"
@@ -167,10 +168,10 @@ TEST(BuilderTest, LoadCharsMapWithEmptyeTest) {
   test::ScopedTempFile test_tsv("test.tsv");
   test::ScopedTempFile test_out_tsv("test_out.tsv");
   {
-    io::OutputBuffer output(test_tsv.filename());
-    output.WriteLine("0061\t0041");
-    output.WriteLine("0062");
-    output.WriteLine("0063\t\t#foo=>bar");
+    auto output = filesystem::NewWritableFile(test_tsv.filename());
+    output->WriteLine("0061\t0041");
+    output->WriteLine("0062");
+    output->WriteLine("0063\t\t#foo=>bar");
   }
 
   Builder::CharsMap chars_map;

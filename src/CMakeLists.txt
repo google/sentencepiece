@@ -29,6 +29,7 @@ set(SPM_SRCS
   common.h
   normalizer.h
   util.h
+  filesystem.h
   flags.h
   sentencepiece_processor.h
   word_model.h
@@ -40,6 +41,7 @@ set(SPM_SRCS
   bpe_model.cc
   char_model.cc
   error.cc
+  filesystem.cc
   flags.cc
   model_factory.cc
   model_interface.cc
@@ -83,6 +85,7 @@ set(SPM_TEST_SRCS
   builder_test.cc
   char_model_test.cc
   char_model_trainer_test.cc
+  filesystem_test.cc
   flags_test.cc
   model_factory_test.cc
   model_interface_test.cc
