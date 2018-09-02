@@ -35,6 +35,8 @@ DEFINE_string(model_type, "unigram",
 DEFINE_int32(vocab_size, kDefaultTrainerSpec.vocab_size(), "vocabulary size");
 DEFINE_string(accept_language, "",
               "comma-separated list of languages this model can accept");
+DEFINE_int32(self_test_sample_size, kDefaultTrainerSpec.self_test_sample_size(),
+             "the size of self test samples");
 DEFINE_double(character_coverage, kDefaultTrainerSpec.character_coverage(),
               "character coverage to determine the minimum symbols");
 DEFINE_int32(input_sentence_size, kDefaultTrainerSpec.input_sentence_size(),
@@ -112,6 +114,7 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(input_format);
   SetTrainerSpecFromFlag(model_prefix);
   SetTrainerSpecFromFlag(vocab_size);
+  SetTrainerSpecFromFlag(self_test_sample_size);
   SetTrainerSpecFromFlag(character_coverage);
   SetTrainerSpecFromFlag(input_sentence_size);
   SetTrainerSpecFromFlag(mining_sentence_size);

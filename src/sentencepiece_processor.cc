@@ -80,7 +80,31 @@ util::Status SentencePieceProcessor::Load(
   model_ = ModelFactory::Create(*model_proto_);
   normalizer_ =
       port::MakeUnique<normalizer::Normalizer>(model_proto_->normalizer_spec());
-  return status();
+
+  RETURN_IF_ERROR(status());
+
+  // Running self-testing.
+  std::vector<std::string> errors, sps;
+  for (const auto &s : model_proto_->self_test_data().samples()) {
+    RETURN_IF_ERROR(Encode(s.input(), &sps));
+    const std::string result = string_util::Join(sps, " ");
+    if (s.expected() != result) {
+      errors.emplace_back(
+          string_util::StrCat(s.input(), "\t", s.expected(), "\t", result));
+    }
+  }
+
+  if (!errors.empty()) {
+    LOG(INFO) << errors.size() << "/"
+              << model_proto_->self_test_data().samples_size()
+              << " samples did not pass the test.";
+    for (const auto &e : errors) {
+      LOG(INFO) << e;
+    }
+    return util::InternalError("Self-test failures. See LOG(INFO).");
+  }
+
+  return util::OkStatus();
 }
 
 util::Status SentencePieceProcessor::SetEncodeExtraOptions(

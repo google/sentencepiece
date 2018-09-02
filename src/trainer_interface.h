@@ -131,6 +131,9 @@ class TrainerInterface {
 
   // Initializes `meta_pieces_` from TrainerSpec.
   util::Status InitMetaPieces();
+
+  // Randomly sampled raw sentences for self-testing.
+  std::vector<std::string> self_test_samples_;
 };
 }  // namespace sentencepiece
 #endif  // TRAINER_INTERFACE_H_
