@@ -56,6 +56,9 @@ message TrainerSpec {
   // Since the model is language-agnostic, this field is used as a reference.
   repeated string accept_language = 5;
 
+  // Size of self-test samples, which are encoded in the model file.
+  optional int32  self_test_sample_size = 6  [ default = 0 ];
+
   ///////////////////////////////////////////////////////////////////
   // Training parameters.
   //
@@ -191,6 +194,19 @@ message NormalizerSpec {
   extensions 200 to max;
 }
 
+// Proto to store samples for self-testing.
+message SelfTestData {
+  message Sample {
+    optional string input = 1;
+    optional string expected = 2;
+  }
+  repeated Sample samples = 1;
+
+  // Customized extensions: the range of field numbers
+  // are open to third-party extensions.
+  extensions 200 to max;
+}
+
 // ModelProto stores model parameters.
 // SentencePieceProcessor is supposed to be self-contained.
 // All settings/parameters which may change the behavior must be encoded
@@ -223,6 +239,9 @@ message ModelProto {
 
   // Spec for text normalization.
   optional NormalizerSpec normalizer_spec = 3;
+
+  // Stores sample input and its expected segmentation to verify the model.
+  optional SelfTestData self_test_data = 4;
 
   // Customized extensions: the range of field numbers
   // are open to third-party extensions.

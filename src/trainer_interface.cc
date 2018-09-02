@@ -58,6 +58,7 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
   CHECK_RANGE(trainer_spec.num_sub_iterations(), 1, 10);
   CHECK_RANGE(trainer_spec.num_threads(), 1, 128);
   CHECK_RANGE(trainer_spec.seed_sentencepiece_size(), 1000, 5000000);
+  CHECK_RANGE(trainer_spec.self_test_sample_size(), 0, 1000);
   CHECK_RANGE(trainer_spec.shrinking_factor(), 0.5, 0.95);
   CHECK_RANGE(trainer_spec.training_sentence_size(), 100, 100000000);
 #undef CHECK_RANGE
@@ -156,6 +157,9 @@ util::Status TrainerInterface::LoadSentences() {
   for (const auto &it : meta_pieces_) meta_pieces_set.insert(it.second.first);
   const PrefixMatcher meta_pieces_matcher(meta_pieces_set);
 
+  random::ReservoirSampler<std::string> sampler(
+      trainer_spec_.self_test_sample_size());
+
   for (const auto &filename : trainer_spec_.input()) {
     LOG(INFO) << "Loading corpus: " << filename;
     std::string sentence;
@@ -200,6 +204,7 @@ util::Status TrainerInterface::LoadSentences() {
       }
 
       sentences_.emplace_back(normalized, freq);
+      sampler.Add(sentence);
 
       if (sentences_.size() ==
           static_cast<size_t>(trainer_spec_.input_sentence_size())) {
@@ -209,7 +214,10 @@ util::Status TrainerInterface::LoadSentences() {
   }
 
 END:
+  self_test_samples_ = sampler.sampled();
+
   LOG(INFO) << "Loaded " << sentences_.size() << " sentences";
+  LOG(INFO) << "Loaded " << self_test_samples_.size() << " test sentences";
 
   // Count character frequencies.
   int64 all_chars_count = 0;
@@ -353,6 +361,20 @@ util::Status TrainerInterface::SaveModel(absl::string_view filename) const {
   LOG(INFO) << "Saving model: " << filename;
   ModelProto model_proto;
   RETURN_IF_ERROR(Serialize(&model_proto));
+
+  // Saves self-testing data.
+  if (!self_test_samples_.empty()) {
+    SentencePieceProcessor sp;
+    RETURN_IF_ERROR(sp.Load(model_proto));
+    for (const auto &input : self_test_samples_) {
+      std::vector<std::string> sps;
+      RETURN_IF_ERROR(sp.Encode(input, &sps));
+      auto *sample = model_proto.mutable_self_test_data()->add_samples();
+      sample->set_input(input);
+      sample->set_expected(string_util::Join(sps, " "));
+    }
+  }
+
   auto output = filesystem::NewWritableFile(filename.data(), true);
   RETURN_IF_ERROR(output->status());
   output->Write(model_proto.SerializeAsString());

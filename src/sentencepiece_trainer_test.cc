@@ -28,6 +28,9 @@ TEST(SentencePieceTrainerTest, TrainFromArgsTest) {
   SentencePieceTrainer::Train(string_util::StrCat(
       "--input=", input, " --model_prefix=m --vocab_size=1000"));
   SentencePieceTrainer::Train(string_util::StrCat(
+      "--input=", input,
+      " --model_prefix=m --vocab_size=1000 --self_test_sample_size=100"));
+  SentencePieceTrainer::Train(string_util::StrCat(
       "--input=", input, " --model_prefix=m --vocab_size=1000 ",
       "--model_type=bpe"));
   SentencePieceTrainer::Train(string_util::StrCat(
