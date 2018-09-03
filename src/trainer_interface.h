@@ -71,6 +71,7 @@ class TrainerInterface {
   FRIEND_TEST(TrainerInterfaceTest, IsValidSentencePieceTest);
   FRIEND_TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest);
   FRIEND_TEST(TrainerInterfaceTest, SerializeTest);
+  FRIEND_TEST(TrainerInterfaceTest, LoadSentencesTest);
 
  protected:
   // Returns true if |piece| is valid sentence piece.

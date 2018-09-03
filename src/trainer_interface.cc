@@ -241,22 +241,38 @@ END:
       all_chars_count += w.second;
     }
   }
-  LOG(INFO) << "all chars count=" << all_chars_count;
+  LOG(INFO) << "All chars count=" << all_chars_count;
 
   // Determines required_chars which must be included in the vocabulary.
   int64 accumulated_chars_count = 0;
+  bool allowable_character_vocab_size_message = false;
   for (const auto &w : Sorted(chars_count)) {
     const float coverage = 1.0 * accumulated_chars_count / all_chars_count;
     if (coverage >= trainer_spec_.character_coverage()) {
-      LOG(INFO) << "Done: " << 100.0 * coverage << "% characters are covered.";
-      break;
+      if (static_cast<int>(required_chars_.size()) >=
+          trainer_spec_.allowable_character_vocab_size()) {
+        LOG(INFO) << "Done: " << 100.0 * coverage
+                  << "% characters are covered.";
+        break;
+      } else {
+        if (!allowable_character_vocab_size_message) {
+          LOG(INFO)
+              << "|required_chars| < allowable_character_vocab_size("
+              << trainer_spec_.allowable_character_vocab_size() << ") "
+              << "Increases the coverage up to allowable_character_vocab_size.";
+        }
+        allowable_character_vocab_size_message = true;
+      }
     }
     accumulated_chars_count += w.second;
     CHECK_NE_OR_RETURN(w.first, 0x0020)
         << "space must not be included in normalized string.";
     required_chars_.insert(w);
   }
-  LOG(INFO) << "alphabet size=" << required_chars_.size();
+
+  LOG(INFO) << "Alphabet size=" << required_chars_.size();
+  LOG(INFO) << "Final character coverage="
+            << 1.0 * accumulated_chars_count / all_chars_count;
 
   CHECK_OR_RETURN(!port::ContainsKey(required_chars_, kUNKChar));
 
@@ -290,7 +306,7 @@ END:
   LOG(INFO) << "Done! " << sentences_.size() << " sentences are loaded";
 
   return util::OkStatus();
-}
+}  // namespace sentencepiece
 
 void TrainerInterface::SplitSentencesByWhitespace() {
   LOG(INFO) << "Tokenizing input sentences with whitespace: "
