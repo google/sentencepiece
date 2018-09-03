@@ -27,7 +27,7 @@ message TrainerSpec {
   //  B) Bilingual:   TSV, source sentence <tab> target sentence
   //  When bilingual data is passed, shared vocabulary model is built.
   //  Note that the input file must be raw corpus, not a preprocessed corpus.
-  //  Trainer only loads the first |input_sentence_size| sentences specified
+  //  Trainer only loads the first `input_sentence_size` sentences specified
   //  with this parameter.
   repeated string input  = 1;
 
@@ -62,13 +62,24 @@ message TrainerSpec {
   ///////////////////////////////////////////////////////////////////
   // Training parameters.
   //
-  // Uses characters which cover the corpus with the ratio of |chars_coverage|.
+  // Uses characters which cover the corpus with the ratio of `chars_coverage`.
   // This parameter determines the set of basic Alphabet of sentence piece.
-  // 1.0 - |chars_coverage| characters are treated as UNK.
+  // 1.0 - `chars_coverage` characters are treated as UNK.
   optional float character_coverage = 10 [ default = 0.9995 ];
 
-  // Maximum size of sentences the trainer loads from |input| parameter.
-  // Trainer simply loads the |input| files in sequence.
+  // If the size of basic Alphabet specified with `character_coverage` is
+  // smaller than `allowable_character_vocab_size`, allow to increase
+  // the vocab size up to `allowable_character_vocab_size`.
+  // This is useful for Latin-based languages where the number of
+  // unique Alphabets are relatively small. In these languages, it is not
+  // harmful to use all the characters in the training data instead of
+  // restricting the vocabulary with `character_coverage`.
+  // However, this parameter is almost ignored on Chinese/Japanese as
+  // the unique characters will amount to several thousands.
+  optional int32 allowable_character_vocab_size = 18 [ default = 300];
+
+  // Maximum size of sentences the trainer loads from `input` parameter.
+  // Trainer simply loads the `input` files in sequence.
   // It is better to shuffle the input corpus randomly.
   optional int32 input_sentence_size = 11 [ default = 10000000 ];
 
@@ -82,11 +93,11 @@ message TrainerSpec {
   optional int32  training_sentence_size = 13 [ default = 10000000 ];
 
   // The size of seed sentencepieces.
-  // |seed_sentencepiece_size| must be larger than |vocab_size|.
+  // `seed_sentencepiece_size` must be larger than `vocab_size`.
   optional int32  seed_sentencepiece_size = 14 [ default = 1000000 ];
 
   // In every EM sub-iterations, keeps top
-  // |shrinking_factor| * |current sentencepieces size| with respect to
+  // `shrinking_factor` * `current sentencepieces size` with respect to
   // the loss of the sentence piece. This value should be smaller than 1.0.
   optional float  shrinking_factor = 15 [ default = 0.75 ];
 
@@ -103,7 +114,7 @@ message TrainerSpec {
   optional int32  max_sentencepiece_length = 20 [ default = 16 ];
 
   // Uses Unicode script to split sentence pieces.
-  // When |split_by_unicode_script| is true, we do not allow sentence piece to
+  // When `split_by_unicode_script` is true, we do not allow sentence piece to
   // include multiple Unicode scripts, e.g. "F1" is not a valid piece.
   // Exception: CJ characters (Hiragana/Katakana/Han) are all handled
   // as one script type, since Japanese word can consist of multiple scripts.
@@ -112,7 +123,7 @@ message TrainerSpec {
   optional bool split_by_unicode_script = 21 [ default = true ];
 
   // Use a white space to split sentence pieces.
-  // When |split_by_whitespace| is false, we may have the piece containing
+  // When `split_by_whitespace` is false, we may have the piece containing
   // a white space in the middle. e.g., "in_the".
   optional bool split_by_whitespace = 22 [ default = true ];
 

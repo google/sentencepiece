@@ -14,9 +14,12 @@
 
 #include "trainer_interface.h"
 #include <utility>
+#include "flags.h"
 
 #include "testharness.h"
 #include "util.h"
+
+DECLARE_string(data_dir);
 
 namespace sentencepiece {
 
@@ -322,6 +325,45 @@ TEST(TrainerInterfaceTest, SerializeTest) {
       EXPECT_EQ(final_pieces[i - 3].first, model_proto.pieces(i).piece());
       EXPECT_EQ(final_pieces[i - 3].second, model_proto.pieces(i).score());
     }
+  }
+}
+
+TEST(TrainerInterfaceTest, LoadSentencesTest) {
+  TrainerSpec trainer_spec;
+  NormalizerSpec normalizer_spec;
+  trainer_spec.set_model_prefix("model");
+
+  trainer_spec.add_input(util::JoinPath(FLAGS_data_dir, "botchan.txt"));
+
+  // Three patterns for determining the initial alphabets.
+
+  {
+    trainer_spec.set_character_coverage(0.98);
+    trainer_spec.set_allowable_character_vocab_size(300);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    trainer.LoadSentences();
+    // Can increase the vocab up to 300 (default).
+    // Since botchan contains 85 unique characters,
+    // the coverage is 1.0.
+    EXPECT_EQ(85, trainer.required_chars_.size());
+  }
+
+  {
+    // 33 chars are extracted when character_coverage is 0.98
+    trainer_spec.set_character_coverage(0.98);
+    trainer_spec.set_allowable_character_vocab_size(10);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    trainer.LoadSentences();
+    EXPECT_EQ(33, trainer.required_chars_.size());
+  }
+
+  {
+    // Allow to have at least 80 characters.
+    trainer_spec.set_character_coverage(0.98);
+    trainer_spec.set_allowable_character_vocab_size(80);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    trainer.LoadSentences();
+    EXPECT_EQ(80, trainer.required_chars_.size());
   }
 }
 
