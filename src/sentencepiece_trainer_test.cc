@@ -23,22 +23,50 @@ DECLARE_string(data_dir);
 namespace sentencepiece {
 namespace {
 
+void CheckVocab(absl::string_view filename, int expected_vocab_size) {
+  SentencePieceProcessor sp;
+  CHECK_OK(sp.Load(filename.data()));
+  EXPECT_EQ(expected_vocab_size, sp.model_proto().trainer_spec().vocab_size());
+  EXPECT_EQ(sp.model_proto().pieces_size(),
+            sp.model_proto().trainer_spec().vocab_size());
+}
+
 TEST(SentencePieceTrainerTest, TrainFromArgsTest) {
   std::string input = util::JoinPath(FLAGS_data_dir, "botchan.txt");
-  SentencePieceTrainer::Train(string_util::StrCat(
-      "--input=", input, " --model_prefix=m --vocab_size=1000"));
-  SentencePieceTrainer::Train(string_util::StrCat(
+
+  EXPECT_OK(SentencePieceTrainer::Train(string_util::StrCat(
+      "--input=", input, " --model_prefix=m --vocab_size=1000")));
+  CheckVocab("m.model", 1000);
+
+  EXPECT_OK(SentencePieceTrainer::Train(string_util::StrCat(
       "--input=", input,
-      " --model_prefix=m --vocab_size=1000 --self_test_sample_size=100"));
-  SentencePieceTrainer::Train(string_util::StrCat(
+      " --model_prefix=m --vocab_size=1000 --self_test_sample_size=100")));
+  CheckVocab("m.model", 1000);
+
+  EXPECT_OK(SentencePieceTrainer::Train(string_util::StrCat(
       "--input=", input, " --model_prefix=m --vocab_size=1000 ",
-      "--model_type=bpe"));
-  SentencePieceTrainer::Train(string_util::StrCat(
+      "--model_type=bpe")));
+  CheckVocab("m.model", 1000);
+
+  EXPECT_OK(SentencePieceTrainer::Train(string_util::StrCat(
       "--input=", input, " --model_prefix=m --vocab_size=1000 ",
-      "--model_type=char"));
-  SentencePieceTrainer::Train(string_util::StrCat(
+      "--model_type=char")));
+  CheckVocab("m.model", 72);
+
+  EXPECT_OK(SentencePieceTrainer::Train(string_util::StrCat(
       "--input=", input, " --model_prefix=m --vocab_size=1000 ",
-      "--model_type=word"));
+      "--model_type=word")));
+  CheckVocab("m.model", 1000);
+
+  EXPECT_OK(SentencePieceTrainer::Train(string_util::StrCat(
+      "--input=", input, " --model_prefix=m --vocab_size=1000 ",
+      "--model_type=char --use_all_vocab=true")));
+  CheckVocab("m.model", 86);
+
+  EXPECT_OK(SentencePieceTrainer::Train(string_util::StrCat(
+      "--input=", input, " --model_prefix=m --vocab_size=1000 ",
+      "--model_type=word --use_all_vocab=true")));
+  CheckVocab("m.model", 9186);
 }
 
 TEST(SentencePieceTrainerTest, TrainWithCustomNormalizationRule) {

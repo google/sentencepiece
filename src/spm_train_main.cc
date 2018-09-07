@@ -78,6 +78,9 @@ DEFINE_bool(remove_extra_whitespaces,
             "duplicate internal whitespace");
 DEFINE_bool(hard_vocab_limit, kDefaultTrainerSpec.hard_vocab_limit(),
             "If set to false, --vocab_size is considered as a soft limit.");
+DEFINE_bool(use_all_vocab, kDefaultTrainerSpec.use_all_vocab(),
+            "If set to true, use all tokens as vocab. "
+            "Valid for word/char models.");
 DEFINE_int32(unk_id, kDefaultTrainerSpec.unk_id(), "Override UNK (<unk>) id.");
 DEFINE_int32(bos_id, kDefaultTrainerSpec.bos_id(),
              "Override BOS (<s>) id. Set -1 to disable BOS.");
@@ -127,6 +130,7 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(split_by_unicode_script);
   SetTrainerSpecFromFlag(split_by_whitespace);
   SetTrainerSpecFromFlag(hard_vocab_limit);
+  SetTrainerSpecFromFlag(use_all_vocab);
   SetTrainerSpecFromFlag(unk_id);
   SetTrainerSpecFromFlag(bos_id);
   SetTrainerSpecFromFlag(eos_id);

@@ -48,6 +48,12 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
   CHECK_GT_OR_RETURN(trainer_spec.input().size(), 0);
   CHECK_GT_OR_RETURN(trainer_spec.vocab_size(), 0);
 
+  if (trainer_spec.model_type() == TrainerSpec::UNIGRAM ||
+      trainer_spec.model_type() == TrainerSpec::BPE) {
+    CHECK_OR_RETURN(!trainer_spec.use_all_vocab())
+        << "--use_all_vocab=true is valid for WORD/CHAR model.";
+  }
+
 #define CHECK_RANGE(variable, minval, maxval) \
   CHECK_OR_RETURN(variable >= minval && variable <= maxval)
 
@@ -247,7 +253,8 @@ END:
   int64 accumulated_chars_count = 0;
   for (const auto &w : Sorted(chars_count)) {
     const float coverage = 1.0 * accumulated_chars_count / all_chars_count;
-    if (coverage >= trainer_spec_.character_coverage()) {
+    if (!trainer_spec_.use_all_vocab() &&
+        coverage >= trainer_spec_.character_coverage()) {
       LOG(INFO) << "Done: " << 100.0 * coverage << "% characters are covered.";
       break;
     }
@@ -256,7 +263,10 @@ END:
         << "space must not be included in normalized string.";
     required_chars_.insert(w);
   }
-  LOG(INFO) << "alphabet size=" << required_chars_.size();
+
+  LOG(INFO) << "Alphabet size=" << required_chars_.size();
+  LOG(INFO) << "Final character coverage="
+            << 1.0 * accumulated_chars_count / all_chars_count;
 
   CHECK_OR_RETURN(!port::ContainsKey(required_chars_, kUNKChar));
 

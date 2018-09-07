@@ -177,6 +177,7 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
 
 // static
 util::Status SentencePieceTrainer::Train(util::min_string_view args) {
+  LOG(INFO) << "Running command: " << args.data();
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
   RETURN_IF_ERROR(MergeSpecsFromArgs(args, &trainer_spec, &normalizer_spec));
