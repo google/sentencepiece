@@ -44,12 +44,19 @@ util::Status Trainer::Train() {
 
   CHECK_OR_RETURN(final_pieces_.empty());
   for (const auto &it : Sorted(required_chars_)) {
-    if (final_pieces_.size() == static_cast<size_t>(vocab_size)) {
+    if (!trainer_spec_.use_all_vocab() &&
+        final_pieces_.size() == static_cast<size_t>(vocab_size)) {
       break;
     }
     final_pieces_.emplace_back(string_util::UnicodeCharToUTF8(it.first),
                                log(it.second) - logsum);
   }
+
+  if (trainer_spec_.use_all_vocab()) {
+    trainer_spec_.set_vocab_size(final_pieces_.size() + meta_pieces_.size());
+  }
+
+  LOG(INFO) << trainer_spec_.Utf8DebugString();
 
   return Save();
 }

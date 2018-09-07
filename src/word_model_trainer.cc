@@ -57,10 +57,15 @@ util::Status Trainer::Train() {
     if (it.first.find(kUNKStr) != std::string::npos) {
       continue;
     }
-    if (final_pieces_.size() == static_cast<size_t>(vocab_size)) {
+    if (!trainer_spec_.use_all_vocab() &&
+        final_pieces_.size() == static_cast<size_t>(vocab_size)) {
       break;
     }
     final_pieces_.emplace_back(it.first, log(it.second) - logsum);
+  }
+
+  if (trainer_spec_.use_all_vocab()) {
+    trainer_spec_.set_vocab_size(final_pieces_.size() + meta_pieces_.size());
   }
 
   return Save();
