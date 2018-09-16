@@ -91,35 +91,6 @@ int ModelInterface::PieceToId(absl::string_view piece) const {
   return unk_id_;
 }
 
-int ModelInterface::GetPieceSize() const { return model_proto_->pieces_size(); }
-
-std::string ModelInterface::IdToPiece(int id) const {
-  return model_proto_->pieces(id).piece();
-}
-
-float ModelInterface::GetScore(int id) const {
-  return model_proto_->pieces(id).score();
-}
-
-bool ModelInterface::IsControl(int id) const {
-  return (model_proto_->pieces(id).type() ==
-          ModelProto::SentencePiece::CONTROL);
-}
-
-bool ModelInterface::IsUnknown(int id) const {
-  return (model_proto_->pieces(id).type() ==
-          ModelProto::SentencePiece::UNKNOWN);
-}
-
-bool ModelInterface::IsUnused(int id) const {
-  return (model_proto_->pieces(id).type() == ModelProto::SentencePiece::UNUSED);
-}
-
-bool ModelInterface::IsUserDefined(int id) const {
-  return (model_proto_->pieces(id).type() ==
-          ModelProto::SentencePiece::USER_DEFINED);
-}
-
 void ModelInterface::InitializePieces(bool use_prefix_matcher) {
   pieces_.clear();
   reserved_id_map_.clear();

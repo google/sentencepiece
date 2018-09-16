@@ -81,6 +81,7 @@ class ThreadPool {
 TrainerModel::TrainerModel(const TrainerSpec &trainer_spec,
                            const NormalizerSpec &normalizer_spec)
     : trainer_spec_(trainer_spec), normalizer_spec_(normalizer_spec) {}
+
 TrainerModel::~TrainerModel() {}
 
 const TrainerModel::SentencePieces &TrainerModel::GetSentencePieces() const {
@@ -92,13 +93,19 @@ void TrainerModel::SetSentencePieces(SentencePieces &&sentencepieces) {
   CHECK(!sentencepieces_.empty());
 
   min_score_ = FLT_MAX;
+  model_proto_data_.Clear();
+  model_proto_ = &model_proto_data_;
   std::vector<std::pair<absl::string_view, int>> pieces;
+
   for (size_t i = 0; i < sentencepieces_.size(); ++i) {
     const absl::string_view w = sentencepieces_[i].first;  // piece
-    const float score = sentencepieces_[i].second;   // score.
+    const float score = sentencepieces_[i].second;         // score.
     CHECK(!std::isnan(score));
     pieces.emplace_back(w, i);
     min_score_ = std::min(min_score_, score);
+    auto *piece = model_proto_data_.add_pieces();
+    piece->set_piece(w.data(), w.size());
+    piece->set_score(score);
   }
 
   BuildTrie(&pieces);

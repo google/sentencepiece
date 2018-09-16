@@ -71,7 +71,7 @@ class MockModel : public ModelInterface {
 
   int PieceToId(absl::string_view piece) const { return 0; }
 
-  std::string IdToPiece(int id) const { return ""; }
+  const std::string &IdToPiece(int id) const { return kEmptyString; }
 
   float GetScore(int id) const { return 0.0; }
 
@@ -79,6 +79,7 @@ class MockModel : public ModelInterface {
   absl::string_view input_;
   EncodeResult output_;
   NBestEncodeResult nbest_output_;
+  const std::string kEmptyString;
 };
 
 std::vector<std::string> GetSpVec(const EncodeResult &pieces) {
@@ -457,7 +458,7 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
       return port::FindWithDefault(kMap, piece, 0);
     }
 
-    std::string IdToPiece(int id) const override {
+    const std::string &IdToPiece(int id) const override {
       static std::vector<std::string> kMap = {
           "<unk>", "<s>", "</s>", WS "ABC", WS "DE", "F", "G" WS "H"};
       return kMap[id];

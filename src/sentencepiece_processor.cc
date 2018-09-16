@@ -521,8 +521,9 @@ int SentencePieceProcessor::PieceToId(util::min_string_view piece) const {
   return model_->PieceToId(string_util::ToSV(piece));
 }
 
-std::string SentencePieceProcessor::IdToPiece(int id) const {
-  CHECK_STATUS_OR_RETURN_DEFAULT("");
+const std::string &SentencePieceProcessor::IdToPiece(int id) const {
+  static const std::string *kEmptyString = new std::string;
+  CHECK_STATUS_OR_RETURN_DEFAULT(*kEmptyString);
   return model_->IdToPiece(id);
 }
 

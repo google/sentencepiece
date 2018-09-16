@@ -30,6 +30,9 @@ namespace sentencepiece {
 namespace unigram {
 namespace {
 
+// Size of nodes pre-allocated in Lattice.
+constexpr size_t kPreallocateLatticeNodeSize = 1024;
+
 // Returns log(exp(x) + exp(y)).
 // if init_mode is true, returns log(exp(y)) == y.
 // log(\sum_i exp(a[i])) can be computed as
@@ -50,8 +53,8 @@ inline float LogSumExp(float x, float y, bool init_mode) {
 }
 }  // namespace
 
-Lattice::Lattice() {}
-Lattice::~Lattice() { Clear(); }
+Lattice::Lattice() : node_allocator_(kPreallocateLatticeNodeSize) {}
+Lattice::~Lattice() {}
 
 const std::vector<Lattice::Node *> &Lattice::begin_nodes(int pos) const {
   return begin_nodes_[pos];
@@ -77,10 +80,8 @@ Lattice::Node *Lattice::bos_node() const { return end_nodes_[0][0]; }
 Lattice::Node *Lattice::eos_node() const { return begin_nodes_[size()][0]; }
 
 Lattice::Node *Lattice::NewNode() {
-  Node *node = new Node;
-  memset(node, 0, sizeof(*node));
-  node->node_id = all_nodes_.size();
-  all_nodes_.push_back(node);
+  Node *node = node_allocator_.Allocate();
+  node->node_id = node_allocator_.size() - 1;
   return node;
 }
 
@@ -89,14 +90,14 @@ void Lattice::Clear() {
   end_nodes_.clear();
   sentence_ = absl::string_view("");
   surface_.clear();
-  port::STLDeleteElements(&all_nodes_);
-  all_nodes_.clear();
+  node_allocator_.Free();
 }
 
 void Lattice::SetSentence(absl::string_view sentence) {
   Clear();
 
   sentence_ = sentence;
+  surface_.reserve(sentence.size() + 1);
 
   while (!sentence.empty()) {
     const int mblen = std::min<int>(string_util::OneCharLen(sentence.data()),
@@ -110,9 +111,10 @@ void Lattice::SetSentence(absl::string_view sentence) {
   begin_nodes_.resize(len + 1);
   end_nodes_.resize(len + 1);
 
+  constexpr size_t kReservedNodeSize = 16;
   for (int i = 0; i <= len; ++i) {
-    begin_nodes_[i].reserve(16);
-    end_nodes_[i].reserve(16);
+    begin_nodes_[i].reserve(kReservedNodeSize);
+    end_nodes_[i].reserve(kReservedNodeSize);
   }
 
   Node *bos = NewNode();
@@ -183,8 +185,8 @@ float Lattice::PopulateMarginal(float freq,
 
   // alpha and beta (accumulative log prob) in Forward Backward.
   // the index of alpha/beta is Node::node_id.
-  std::vector<float> alpha(all_nodes_.size(), 0.0);
-  std::vector<float> beta(all_nodes_.size(), 0.0);
+  std::vector<float> alpha(node_allocator_.size(), 0.0);
+  std::vector<float> beta(node_allocator_.size(), 0.0);
 
   for (int pos = 0; pos <= len; ++pos) {
     for (Node *rnode : begin_nodes_[pos]) {
@@ -256,19 +258,13 @@ std::vector<std::vector<Lattice::Node *>> Lattice::NBest(size_t nbest_size) {
 
   using Agenda = std::priority_queue<Hypothesis *, std::vector<Hypothesis *>,
                                      HypothesisComparator>;
+  constexpr size_t kPreallocatedHypothesisSize = 512;
+  model::FreeList<Hypothesis> hypothesis_allocator(kPreallocatedHypothesisSize);
 
   Agenda agenda;
-  std::vector<Hypothesis *> allocated;
   std::vector<std::vector<Node *>> results;
 
-  auto NewHypothesis = [&allocated]() {
-    Hypothesis *h = new Hypothesis;
-    memset(h, 0, sizeof(*h));
-    allocated.push_back(h);
-    return h;
-  };
-
-  auto *eos = NewHypothesis();
+  auto *eos = hypothesis_allocator.Allocate();
   eos->node = eos_node();
   eos->next = nullptr;
   eos->fx = eos->node->score;
@@ -297,7 +293,7 @@ std::vector<std::vector<Lattice::Node *>> Lattice::NBest(size_t nbest_size) {
 
     // Expands new node ending at node->pos
     for (Node *lnode : end_nodes(node->pos)) {
-      auto *hyp = NewHypothesis();
+      auto *hyp = hypothesis_allocator.Allocate();
       hyp->node = lnode;
       hyp->gx = lnode->score + top->gx;  // just adds node->score
       hyp->fx =
@@ -324,7 +320,6 @@ std::vector<std::vector<Lattice::Node *>> Lattice::NBest(size_t nbest_size) {
     }
   }
 
-  port::STLDeleteElements(&allocated);
   return results;
 }
 
@@ -332,7 +327,7 @@ std::vector<Lattice::Node *> Lattice::Sample(float theta) {
   const int len = size();
   if (len == 0) return {};
 
-  std::vector<float> alpha(all_nodes_.size(), 0.0);
+  std::vector<float> alpha(node_allocator_.size(), 0.0);
 
   for (int pos = 0; pos <= len; ++pos) {
     for (Node *rnode : begin_nodes_[pos]) {
@@ -368,18 +363,14 @@ std::vector<Lattice::Node *> Lattice::Sample(float theta) {
   return results;
 }
 
-ModelBase::ModelBase() {}
-ModelBase::~ModelBase() {}
+// Model::Model() {}
+// Model::~Model() {}
 
-void ModelBase::PopulateNodes(Lattice *lattice) const {
-  auto GetCharsLength = [](const char *begin, int len) {
-    const char *end = begin + len;
-    int result = 0;
-    while (begin < end) {
-      begin += std::min<int>(string_util::OneCharLen(begin), end - begin);
-      ++result;
-    }
-    return result;
+void Model::PopulateNodes(Lattice *lattice) const {
+  auto get_chars_length = [&lattice](int begin_pos, const char *end) {
+    int pos = begin_pos;
+    while (lattice->surface(pos) < end) ++pos;
+    return pos - begin_pos;
   };
 
   constexpr float kUnkPenalty = 10.0;
@@ -405,14 +396,15 @@ void ModelBase::PopulateNodes(Lattice *lattice) const {
 
     // Inserts pieces to the lattice.
     for (size_t k = 0; k < num_nodes; ++k) {
-      const int length = GetCharsLength(begin, trie_results[k].length);
+      const int length =
+          get_chars_length(begin_pos, begin + trie_results[k].length);
       const int id = trie_results[k].value;
-      if (IsUnused(id)) continue;
+      if (IsUnusedInlined(id)) continue;
       Lattice::Node *node = lattice->Insert(begin_pos, length);
       node->id = id;  // the value of Trie stores vocab_id.
       // User defined symbol receives extra bonus to always be selected.
-      node->score =
-          IsUserDefined(id) ? (length * max_score_ + 1.0) : GetScore(id);
+      node->score = IsUserDefinedInlined(id) ? (length * max_score_ + 1.0)
+                                             : GetScoreInlined(id);
       if (!has_single_node && node->length == 1) {
         has_single_node = true;
       }
@@ -426,7 +418,7 @@ void ModelBase::PopulateNodes(Lattice *lattice) const {
   }
 }
 
-int ModelBase::PieceToId(absl::string_view piece) const {
+int Model::PieceToId(absl::string_view piece) const {
   auto it = reserved_id_map_.find(piece);
   if (it != reserved_id_map_.end()) {
     return it->second;
@@ -436,8 +428,7 @@ int ModelBase::PieceToId(absl::string_view piece) const {
   return id == -1 ? unk_id_ : id;
 }
 
-void ModelBase::BuildTrie(
-    std::vector<std::pair<absl::string_view, int>> *pieces) {
+void Model::BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces) {
   if (!status().ok()) return;
 
   if (pieces->empty()) {

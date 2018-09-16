@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include "freelist.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -73,9 +74,13 @@ std::vector<std::pair<absl::string_view, int>> Model::Encode(
                      string_util::string_view_hash>
       rev_merge;
 
+  // Pre-allocates SymbolPair for efficiency.
+  constexpr size_t kPreallocateSymbolPairSize = 256;
+  model::FreeList<SymbolPair> symbol_pair_allocator(kPreallocateSymbolPairSize);
+
   // Lookup new symbol pair at [left, right] and inserts it to agenda.
-  auto MaybeAddNewSymbolPair = [this, &symbols, &agenda, &rev_merge](
-                                   int left, int right) {
+  auto MaybeAddNewSymbolPair = [this, &symbol_pair_allocator, &symbols, &agenda,
+                                &rev_merge](int left, int right) {
     if (left == -1 || right == -1 || symbols[left].freeze ||
         symbols[right].freeze)
       return;
@@ -86,7 +91,7 @@ std::vector<std::pair<absl::string_view, int>> Model::Encode(
     if (it == pieces_.end()) {
       return;
     }
-    auto *h = new SymbolPair;
+    auto *h = symbol_pair_allocator.Allocate();
     h->left = left;
     h->right = right;
     h->score = GetScore(it->second);
@@ -94,7 +99,7 @@ std::vector<std::pair<absl::string_view, int>> Model::Encode(
     agenda.push(h);
 
     // Makes `rev_merge` for resegmentation.
-    if (IsUnused(it->second)) {
+    if (IsUnusedInlined(it->second)) {
       rev_merge[piece] =
           std::make_pair(symbols[left].piece, symbols[right].piece);
     }
@@ -124,7 +129,7 @@ std::vector<std::pair<absl::string_view, int>> Model::Encode(
 
   // Main loop.
   while (!agenda.empty()) {
-    std::unique_ptr<SymbolPair> top(agenda.top());
+    SymbolPair *top = agenda.top();
     agenda.pop();
 
     // `top` is no longer available.
@@ -155,7 +160,7 @@ std::vector<std::pair<absl::string_view, int>> Model::Encode(
   resegment = [this, &resegment, &rev_merge](absl::string_view w,
                                              EncodeResult *output) -> void {
     const int id = PieceToId(w);
-    if (id == -1 || !IsUnused(id)) {
+    if (id == -1 || !IsUnusedInlined(id)) {
       output->emplace_back(w, id);
       return;
     }
