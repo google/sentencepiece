@@ -7,16 +7,13 @@ Python wrapper for SentencePiece with SWIG. This module wraps sentencepiece::Sen
 * Added __len__ and __getitem__ methods. len(obj) and obj[key] returns vocab size and vocab id respectively.
 
 ## Build and Install SentencePiece
-For Linux (x64/i686) environment, you can simply use pip comand to install SentencePiece python module.
+For Linux (x64/i686), macOS, and Windows(win32/x64) environment, you can simply use pip comand to install SentencePiece python module.
 
 ```
 % pip install sentencepiece
 ```
 
-Note that binary wheel package is not avaialble for non-Linux environment, including macOS, Windows, and Linux (arm).
-You need to install [SentencePiece C++](https://github.com/google/sentencepiece#c-from-source) library in advance.
-
-To build and install the Python wrapper manually, please install [SentencePiece C++](https://github.com/google/sentencepiece#c-from-source) and try the following commands:
+To build and install the Python wrapper from source, please install [SentencePiece C++](https://github.com/google/sentencepiece#c-from-source) and try the following commands:
 ```
 % python setup.py build
 % sudo python setup.py install
