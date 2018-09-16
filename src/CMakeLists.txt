@@ -29,6 +29,7 @@ set(SPM_SRCS
   common.h
   normalizer.h
   util.h
+  freelist.h
   filesystem.h
   flags.h
   sentencepiece_processor.h

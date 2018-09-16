@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "common.h"
+#include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
@@ -99,37 +100,78 @@ class ModelInterface {
     return EncodeResult();
   }
 
-  // Returns the size of sentence pieces, which is the same
-  // as the size of vocabulary for NMT.
-  virtual int GetPieceSize() const;
-
   // Returns the vocab id of `piece`.
   // Returns UNK(0) if `piece` is unknown
   virtual int PieceToId(absl::string_view piece) const;
 
   // Returns the string representation of vocab with `id`.
   // id must be 0 <= id < GetPieceSize().
-  virtual std::string IdToPiece(int id) const;
+  virtual const std::string &IdToPiece(int id) const {
+    return model_proto_->pieces(id).piece();
+  }
+
+  // Returns the size of sentence pieces, which is the same
+  // as the size of vocabulary for NMT.
+  virtual int GetPieceSize() const { return model_proto_->pieces_size(); }
 
   // Returns the score of `id`.
   // Score represents a log probability of the piece.
   // We can roughly estimate the unigram frequency of the piece.
-  virtual float GetScore(int id) const;
+  virtual float GetScore(int id) const {
+    return model_proto_->pieces(id).score();
+  }
 
   // Returns true if `id` is unknown symbol.
-  virtual bool IsUnknown(int id) const;
+  virtual bool IsUnknown(int id) const {
+    return (model_proto_->pieces(id).type() ==
+            ModelProto::SentencePiece::UNKNOWN);
+  }
 
   // Returns true if `id` is control symbol.
-  virtual bool IsControl(int id) const;
+  virtual bool IsControl(int id) const {
+    return (model_proto_->pieces(id).type() ==
+            ModelProto::SentencePiece::CONTROL);
+  }
 
   // Returns true if `id` is unused symbol.
-  virtual bool IsUnused(int id) const;
+  virtual bool IsUnused(int id) const {
+    return (model_proto_->pieces(id).type() ==
+            ModelProto::SentencePiece::UNUSED);
+  }
 
   // Returns true if `id` is user defined symbol.
-  virtual bool IsUserDefined(int id) const;
+  virtual bool IsUserDefined(int id) const {
+    return (model_proto_->pieces(id).type() ==
+            ModelProto::SentencePiece::USER_DEFINED);
+  }
 
  protected:
   void InitializePieces(bool use_prefix_matcher);
+
+  // Non-virtual (inlined) implementation for faster execution.
+  inline float GetScoreInlined(int id) const {
+    return model_proto_->pieces(id).score();
+  }
+
+  inline bool IsUnknownInlined(int id) const {
+    return (model_proto_->pieces(id).type() ==
+            ModelProto::SentencePiece::UNKNOWN);
+  }
+
+  inline bool IsControlInlined(int id) const {
+    return (model_proto_->pieces(id).type() ==
+            ModelProto::SentencePiece::CONTROL);
+  }
+
+  inline bool IsUnusedInlined(int id) const {
+    return (model_proto_->pieces(id).type() ==
+            ModelProto::SentencePiece::UNUSED);
+  }
+
+  inline bool IsUserDefinedInlined(int id) const {
+    return (model_proto_->pieces(id).type() ==
+            ModelProto::SentencePiece::USER_DEFINED);
+  }
 
   const ModelProto *model_proto_ = nullptr;
 

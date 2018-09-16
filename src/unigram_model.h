@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "common.h"
+#include "freelist.h"
 #include "model_interface.h"
 #include "sentencepiece_model.pb.h"
 #include "third_party/darts_clone/darts.h"
@@ -35,14 +36,14 @@ class Lattice {
   virtual ~Lattice();
 
   struct Node {
-    absl::string_view piece;      // Sentence piece representation.
-    uint32 pos;             // Unicode position in the sentence.
-    uint32 length;          // Unicode length, not UT8 byte.
-    uint32 node_id;         // unique id in the current lattice.
-    int id;                 // vocab id. (maybe -1 for UNK)
-    float score;            // logprob of this sentencepiece.
-    float backtrace_score;  // backtrace info used in Viterbi.
-    Node *prev;             // best previous node on Viterbi path.
+    absl::string_view piece;  // Sentence piece representation.
+    uint32 pos;               // Unicode position in the sentence.
+    uint32 length;            // Unicode length, not UT8 byte.
+    uint32 node_id;           // unique id in the current lattice.
+    int id;                   // vocab id. (maybe -1 for UNK)
+    float score;              // logprob of this sentencepiece.
+    float backtrace_score;    // backtrace info used in Viterbi.
+    Node *prev;               // best previous node on Viterbi path.
 
     std::string DebugString() const;
   };
@@ -109,17 +110,22 @@ class Lattice {
   std::vector<const char *> surface_;
   std::vector<std::vector<Node *>> begin_nodes_;
   std::vector<std::vector<Node *>> end_nodes_;
-  std::vector<Node *> all_nodes_;
+  model::FreeList<Node> node_allocator_;
 };
 
-// Base class for Unigram Model.
-// We have base Model class because we will have different
-// implementations for training and testing.
-// Trie management part is shared by training and testing.
-class ModelBase : public ModelInterface {
+class Model : public ModelInterface {
  public:
-  ModelBase();
-  ~ModelBase() override;
+  explicit Model(const ModelProto &model_proto);
+  Model() {}
+  ~Model() override;
+
+  EncodeResult Encode(absl::string_view normalized) const override;
+
+  NBestEncodeResult NBestEncode(absl::string_view normalized,
+                                int nbest_size) const override;
+
+  EncodeResult SampleEncode(absl::string_view normalized,
+                            float theta) const override;
 
   // Returns the minimum score in sentence pieces.
   // min_score() - 10 is used for the cost of unknown sentence.
@@ -150,19 +156,6 @@ class ModelBase : public ModelInterface {
   int trie_results_size_;
 };
 
-// Unigram model class for decoding.
-class Model : public ModelBase {
- public:
-  explicit Model(const ModelProto &model_proto);
-  ~Model() override;
-
-  EncodeResult Encode(absl::string_view normalized) const override;
-
-  NBestEncodeResult NBestEncode(absl::string_view normalized,
-                                int nbest_size) const override;
-
-  EncodeResult SampleEncode(absl::string_view normalized, float theta) const override;
-};
 }  // namespace unigram
 }  // namespace sentencepiece
 #endif  // UNIGRAM_MODEL_H_

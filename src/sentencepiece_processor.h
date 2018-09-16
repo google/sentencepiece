@@ -369,7 +369,7 @@ class SentencePieceProcessor {
   virtual int PieceToId(util::min_string_view piece) const;
 
   // Returns the string representation of vocab with `id`.
-  virtual std::string IdToPiece(int id) const;
+  virtual const std::string &IdToPiece(int id) const;
 
   // Returns the score of `id`.
   // Usually score is an emission log probability of unigram language model.
