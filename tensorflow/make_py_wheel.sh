@@ -35,17 +35,9 @@ build() {
   rm -fr build
   mkdir -p build
   cd build
-  
-  export PATH="/opt/python/cp27-cp27mu/bin:${PATH}"
 
-  # Install cmake
-  curl -L -O https://cmake.org/files/v3.12/cmake-${CMAKE_VERSION}.tar.gz
-  tar zxfv cmake-${CMAKE_VERSION}.tar.gz
-  cd cmake-${CMAKE_VERSION}
-  ./bootstrap
-  make -j4
-  make install
-  cd ..
+  apt-get update
+  apt-get install -y curl build-essential cmake git pkg-config python-pip python3-pip
 
   # Install protobuf
   curl -L -O https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
@@ -64,9 +56,9 @@ build() {
   cd ..
 
   # Builds _sentencepiece_processor_ops.so
-  pip install tensorflow
-  TF_CFLAGS="-I/opt/python/cp27-cp27mu/lib/python2.7/site-packages/tensorflow/include"
-  TF_LFLAGS="-L/opt/python/cp27-cp27mu/lib/python2.7/site-packages/tensorflow -ltensorflow_framework"
+#  pip install tensorflow
+  TF_CFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
+  TF_LFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
 
   g++ -std=c++11 -shared \
     -I../../src \
@@ -91,5 +83,5 @@ build() {
 if [ "$1" = "native" ]; then
   build
 else
-  run_docker quay.io/pypa/manylinux1_x86_64
+  run_docker tensorflow/tensorflow:latest
 fi
