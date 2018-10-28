@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
       std::pair<std::string, std::function<Status(Builder::CharsMap *)>>>
       kRuleList = {{"nfkc", Builder::BuildNFKCMap},
                    {"nmt_nfkc", Builder::BuildNmtNFKCMap},
-                   {"nfkc_cf", Builder::BuildNmtNFKC_CFMap},
+                   {"nfkc_cf", Builder::BuildNFKC_CFMap},
                    {"nmt_nfkc_cf", Builder::BuildNmtNFKC_CFMap}};
 
   std::vector<std::pair<std::string, std::string>> data;

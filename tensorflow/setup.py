@@ -16,6 +16,7 @@
 
 from setuptools import setup
 from setuptools import find_packages
+import tensorflow as tf
 import codecs
 import string
 import sys
@@ -25,6 +26,12 @@ sys.path.append(os.path.join('.', 'test'))
 
 with codecs.open(os.path.join('..', 'VERSION'), 'r', 'utf-8') as f:
   version = f.read()
+
+tf_version = tf.__version__
+if tf_version[0] == '.':
+  tf_version = tf_version[1:]
+
+version = tf_version + '.' + version
 
 setup(name = 'tf_sentencepiece',
       author = 'Taku Kudo',
