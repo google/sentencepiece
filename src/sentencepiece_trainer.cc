@@ -158,6 +158,11 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
       continue;
     }
 
+    if (key == "minloglevel") {
+      flags::SetMinLogLevel(atoi(value.c_str()));
+      continue;
+    }
+
     const auto status_train = SetProtoField(key, value, trainer_spec);
     if (status_train.ok()) continue;
     if (!util::IsNotFound(status_train)) return status_train;
