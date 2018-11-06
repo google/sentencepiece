@@ -36,6 +36,11 @@ struct Flag {
   std::string help;
 };
 
+static int32 g_minloglevel = 0;
+
+int GetMinLogLevel() { return g_minloglevel; }
+void SetMinLogLevel(int minloglevel) { g_minloglevel = minloglevel; }
+
 namespace {
 using FlagMap = std::map<std::string, Flag *>;
 
@@ -205,6 +210,8 @@ void ParseCommandLineFlags(int argc, char **argv,
     } else if (key == "version") {
       std::cout << PACKAGE_STRING << " " << VERSION << std::endl;
       error::Exit(0);
+    } else if (key == "minloglevel") {
+      flags::SetMinLogLevel(atoi(value.c_str()));
     } else if (!SetFlag(key, value)) {
       std::cerr << "Unknown/Invalid flag " << key << "\n\n"
                 << PrintHelp(argv[0]);

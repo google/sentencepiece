@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "config.h"
+#include "flags.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #define OS_WIN
@@ -88,6 +89,11 @@ std::string WideToUtf8(const std::wstring &input);
 }  // namespace win32
 #endif
 
+namespace flags {
+int GetMinLogLevel();
+void SetMinLogLevel(int minloglevel);
+}  // namespace flags
+
 namespace error {
 
 void Abort();
@@ -132,11 +138,15 @@ enum LogSeverity {
 }  // namespace logging
 }  // namespace sentencepiece
 
-#define LOG(severity)                                                     \
-  ::sentencepiece::error::Die(::sentencepiece::logging::LOG_##severity >= \
-                              ::sentencepiece::logging::LOG_FATAL) &      \
-      std::cerr << __FILE__ << "(" << __LINE__ << ") "                    \
-                << "LOG(" << #severity << ") "
+#define LOG(severity)                                        \
+  (sentencepiece::flags::GetMinLogLevel() >                  \
+   ::sentencepiece::logging::LOG_##severity)                 \
+      ? 0                                                    \
+      : ::sentencepiece::error::Die(                         \
+            ::sentencepiece::logging::LOG_##severity >=      \
+            ::sentencepiece::logging::LOG_FATAL) &           \
+            std::cerr << __FILE__ << "(" << __LINE__ << ") " \
+                      << "LOG(" << #severity << ") "
 
 #define CHECK(condition)                                              \
   (condition) ? 0                                                     \
