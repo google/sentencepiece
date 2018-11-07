@@ -81,6 +81,9 @@ util::Status SentencePieceProcessor::Load(
   normalizer_ =
       port::MakeUnique<normalizer::Normalizer>(model_proto_->normalizer_spec());
 
+  // Escapes user-defined-symbols in normalizer.
+  normalizer_->SetPrefixMatcher(model_->prefix_matcher());
+
   RETURN_IF_ERROR(status());
 
   // Running self-testing.

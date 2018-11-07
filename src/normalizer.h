@@ -29,6 +29,26 @@
 namespace sentencepiece {
 namespace normalizer {
 
+// Given a list of strings, finds the longest string which is a
+// prefix of a query.
+class PrefixMatcher {
+ public:
+  // Initializes the PrefixMatcher with `dic`.
+  explicit PrefixMatcher(const std::set<absl::string_view> &dic);
+
+  // Finds the longest string in dic, which is a prefix of `w`.
+  // Returns the UTF8 byte length of matched string.
+  // `found` is set if a prefix match exists.
+  // If no entry is found, consumes one Unicode character.
+  int PrefixMatch(absl::string_view w, bool *found = nullptr) const;
+
+  // Replaces entries in `w` with `out`.
+  std::string GlobalReplace(absl::string_view w, absl::string_view out) const;
+
+ private:
+  std::unique_ptr<Darts::DoubleArray> trie_;
+};
+
 // Normalizer implements a simple text normalizer with
 // user-defined string-to-string rules and leftmost longest
 // matching. The rules of Normalizer are built with
@@ -46,6 +66,10 @@ class Normalizer {
   explicit Normalizer(const NormalizerSpec &spec);
   virtual ~Normalizer();
 
+  virtual void SetPrefixMatcher(const PrefixMatcher *matcher) {
+    matcher_ = matcher;
+  }
+
   // Returns Status.
   // Normalizes function is valid only when status is OK.
   virtual util::Status status() const { return status_; }
@@ -59,7 +83,8 @@ class Normalizer {
   // - Adds a prefix space.
   // - Replaces a space with a meta symbol.
   // - Removing heading, tailing and other redundant spaces.
-  virtual util::Status Normalize(absl::string_view input, std::string *normalized,
+  virtual util::Status Normalize(absl::string_view input,
+                                 std::string *normalized,
                                  std::vector<size_t> *norm_to_orig) const;
 
   // Returns a normalized string without alignments.
@@ -83,7 +108,8 @@ class Normalizer {
   //   output.append(p.first.data(), p.first.size());
   //   input.remove_prefix(p.second);
   // }
-  std::pair<absl::string_view, int> NormalizePrefix(absl::string_view input) const;
+  std::pair<absl::string_view, int> NormalizePrefix(
+      absl::string_view input) const;
 
   // Encodes trie_blob and normalized string and return compiled blob.
   static std::string EncodePrecompiledCharsMap(absl::string_view trie_blob,
@@ -107,6 +133,9 @@ class Normalizer {
 
   // Spec for normalization.
   const NormalizerSpec *spec_;
+
+  // Prefix matcher;
+  const PrefixMatcher *matcher_ = nullptr;
 
   // Normalizer's status.
   util::Status status_;

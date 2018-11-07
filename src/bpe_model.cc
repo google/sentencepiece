@@ -28,7 +28,7 @@ namespace bpe {
 
 Model::Model(const ModelProto &model_proto) {
   model_proto_ = &model_proto;
-  InitializePieces(true /* use prefix matcher */);
+  InitializePieces();
 }
 
 Model::~Model() {}

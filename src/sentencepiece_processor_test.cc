@@ -1002,6 +1002,40 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
   }
 }
 
+TEST(SentencePieceProcessorTest, SkipNormalizationTest) {
+  ModelProto model_proto;
+  auto *sp1 = model_proto.add_pieces();
+  auto *sp2 = model_proto.add_pieces();
+
+  sp1->set_type(ModelProto::SentencePiece::UNKNOWN);
+  sp1->set_piece("<unk>");
+  sp2->set_type(ModelProto::SentencePiece::USER_DEFINED);
+  sp2->set_piece("<USER>");
+
+  AddPiece(&model_proto, "a", 0.0);
+  AddPiece(&model_proto, "b", 0.3);
+  AddPiece(&model_proto, "c", 0.2);
+
+  *(model_proto.mutable_normalizer_spec()) =
+      SentencePieceTrainer::GetNormalizerSpec("nmt_nfkc_cf");
+
+  SentencePieceProcessor sp;
+  sp.Load(model_proto);
+
+  std::vector<std::string> pieces;
+  EXPECT_OK(sp.Encode("AB<USER>C<user>", &pieces));
+  EXPECT_EQ("a", pieces[0]);
+  EXPECT_EQ("b", pieces[1]);
+  EXPECT_EQ("<USER>", pieces[2]);
+  EXPECT_EQ("c", pieces[3]);
+  EXPECT_EQ("<", pieces[4]);
+  EXPECT_EQ("u", pieces[5]);
+  EXPECT_EQ("s", pieces[6]);
+  EXPECT_EQ("e", pieces[7]);
+  EXPECT_EQ("r", pieces[8]);
+  EXPECT_EQ(">", pieces[9]);
+}
+
 TEST(SentencePieceProcessorTest, ExtraOptionsUndefinedTest) {
   ModelProto model_proto;
   auto *sp1 = model_proto.add_pieces();

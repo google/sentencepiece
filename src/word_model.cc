@@ -20,7 +20,7 @@ namespace word {
 
 Model::Model(const ModelProto &model_proto) {
   model_proto_ = &model_proto;
-  InitializePieces(false /* enable string matcher */);
+  InitializePieces();
 }
 
 Model::~Model() {}
