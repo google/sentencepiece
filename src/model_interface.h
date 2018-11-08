@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "common.h"
+#include "normalizer.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "third_party/absl/strings/string_view.h"
@@ -38,26 +39,6 @@ using EncodeResult = std::vector<std::pair<absl::string_view, int>>;
 using NBestEncodeResult = std::vector<std::pair<EncodeResult, float>>;
 
 class ModelProto;
-
-// Given a list of strings, finds the longest string which is a
-// prefix of a query.
-class PrefixMatcher {
- public:
-  // Initializes the PrefixMatcher with `dic`.
-  explicit PrefixMatcher(const std::set<absl::string_view> &dic);
-
-  // Finds the longest string in dic, which is a prefix of `w`.
-  // Returns the UTF8 byte length of matched string.
-  // `found` is set if a prefix match exists.
-  // If no entry is found, consumes one Unicode character.
-  int PrefixMatch(absl::string_view w, bool *found = nullptr) const;
-
-  // Replaces entries in `w` with `out`.
-  std::string GlobalReplace(absl::string_view w, absl::string_view out) const;
-
- private:
-  std::unique_ptr<Darts::DoubleArray> trie_;
-};
 
 // Underlying model interface.
 // Given a normalized string, returns a sequence of sentence pieces with ids.
@@ -82,6 +63,10 @@ class ModelInterface {
   virtual util::Status status() const { return status_; }
 
   virtual const ModelProto &model_proto() const { return *model_proto_; }
+
+  virtual const normalizer::PrefixMatcher *prefix_matcher() const {
+    return matcher_.get();
+  }
 
   // Given a normalized string, returns a sequence of sentence pieces with ids.
   // The concatenation of pieces must be the same as `normalized`.
@@ -146,7 +131,7 @@ class ModelInterface {
   }
 
  protected:
-  void InitializePieces(bool use_prefix_matcher);
+  void InitializePieces();
 
   // Non-virtual (inlined) implementation for faster execution.
   inline float GetScoreInlined(int id) const {
@@ -176,7 +161,7 @@ class ModelInterface {
   const ModelProto *model_proto_ = nullptr;
 
   // PrefixMatcher for user defined symbols.
-  std::unique_ptr<PrefixMatcher> matcher_;
+  std::unique_ptr<normalizer::PrefixMatcher> matcher_;
 
   // piece -> id map for normal pieces
   PieceToIdMap pieces_;

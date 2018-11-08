@@ -475,7 +475,7 @@ void Model::BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces) {
 Model::Model(const ModelProto &model_proto) {
   model_proto_ = &model_proto;
 
-  InitializePieces(false /* enable prefix matcher */);
+  InitializePieces();
 
   min_score_ = FLT_MAX;
   max_score_ = FLT_MIN;
