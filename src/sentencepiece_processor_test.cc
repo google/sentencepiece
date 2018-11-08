@@ -1002,6 +1002,38 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
   }
 }
 
+TEST(SentencePieceProcessorTest, SkipNormalizationTest) {
+  ModelProto model_proto;
+  auto *sp1 = model_proto.add_pieces();
+  auto *sp2 = model_proto.add_pieces();
+
+  sp1->set_type(ModelProto::SentencePiece::UNKNOWN);
+  sp1->set_piece("<unk>");
+  sp2->set_type(ModelProto::SentencePiece::USER_DEFINED);
+  sp2->set_piece("<USER>");
+
+  AddPiece(&model_proto, "a", 0.0);
+  AddPiece(&model_proto, "b", 0.3);
+  AddPiece(&model_proto, "c", 0.2);
+  AddPiece(&model_proto, "u", 0.2);
+  AddPiece(&model_proto, "s", 0.2);
+  AddPiece(&model_proto, "e", 0.2);
+  AddPiece(&model_proto, "r", 0.2);
+
+  *(model_proto.mutable_normalizer_spec()) =
+      SentencePieceTrainer::GetNormalizerSpec("nmt_nfkc_cf");
+
+  SentencePieceProcessor sp;
+  sp.Load(model_proto);
+
+  std::vector<std::string> pieces;
+  EXPECT_OK(sp.Encode("AB<USER>C<uSEr>", &pieces));
+  for (const auto &sp : pieces) LOG(INFO) << sp;
+  EXPECT_EQ(std::vector<std::string>(
+                {WS, "a", "b", "<USER>", "c", "<", "u", "s", "e", "r", ">"}),
+            pieces);
+}
+
 TEST(SentencePieceProcessorTest, ExtraOptionsUndefinedTest) {
   ModelProto model_proto;
   auto *sp1 = model_proto.add_pieces();

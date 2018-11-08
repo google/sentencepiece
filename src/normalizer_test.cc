@@ -361,5 +361,51 @@ TEST(NormalizerTest, StatusTest) {
     EXPECT_TRUE(normalizer.status().ok());
   }
 }
+
+TEST(NormalizerTest, PrefixMatcherTest) {
+  const PrefixMatcher matcher({"abc", "ab", "xy", "京都"});
+  bool found;
+  EXPECT_EQ(1, matcher.PrefixMatch("test", &found));
+  EXPECT_FALSE(found);
+  EXPECT_EQ(3, matcher.PrefixMatch("abcd", &found));
+  EXPECT_TRUE(found);
+  EXPECT_EQ(2, matcher.PrefixMatch("abxy", &found));
+  EXPECT_TRUE(found);
+  EXPECT_EQ(1, matcher.PrefixMatch("x", &found));
+  EXPECT_FALSE(found);
+  EXPECT_EQ(2, matcher.PrefixMatch("xyz", &found));
+  EXPECT_TRUE(found);
+  EXPECT_EQ(6, matcher.PrefixMatch("京都大学", &found));
+  EXPECT_TRUE(found);
+  EXPECT_EQ(3, matcher.PrefixMatch("東京大学", &found));
+  EXPECT_FALSE(found);
+
+  EXPECT_EQ("", matcher.GlobalReplace("", ""));
+  EXPECT_EQ("", matcher.GlobalReplace("abc", ""));
+  EXPECT_EQ("--de-pqr", matcher.GlobalReplace("xyabcdeabpqr", "-"));
+}
+
+TEST(NormalizerTest, PrefixMatcherWithEmptyTest) {
+  const PrefixMatcher matcher({});
+  bool found;
+  EXPECT_EQ(1, matcher.PrefixMatch("test", &found));
+  EXPECT_FALSE(found);
+  EXPECT_EQ(1, matcher.PrefixMatch("abcd", &found));
+  EXPECT_FALSE(found);
+  EXPECT_EQ(1, matcher.PrefixMatch("abxy", &found));
+  EXPECT_FALSE(found);
+  EXPECT_EQ(1, matcher.PrefixMatch("x", &found));
+  EXPECT_FALSE(found);
+  EXPECT_EQ(1, matcher.PrefixMatch("xyz", &found));
+  EXPECT_FALSE(found);
+  EXPECT_EQ(3, matcher.PrefixMatch("京都大学", &found));
+  EXPECT_FALSE(found);
+  EXPECT_EQ(3, matcher.PrefixMatch("東京大学", &found));
+  EXPECT_FALSE(found);
+
+  EXPECT_EQ("", matcher.GlobalReplace("", ""));
+  EXPECT_EQ("abc", matcher.GlobalReplace("abc", ""));
+}
+
 }  // namespace normalizer
 }  // namespace sentencepiece

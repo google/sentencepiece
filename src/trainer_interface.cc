@@ -161,7 +161,7 @@ util::Status TrainerInterface::LoadSentences() {
 
   std::set<absl::string_view> meta_pieces_set;
   for (const auto &it : meta_pieces_) meta_pieces_set.insert(it.second.first);
-  const PrefixMatcher meta_pieces_matcher(meta_pieces_set);
+  const normalizer::PrefixMatcher meta_pieces_matcher(meta_pieces_set);
 
   random::ReservoirSampler<std::string> sampler(
       trainer_spec_.self_test_sample_size());

@@ -174,6 +174,12 @@ std::pair<absl::string_view, int> Normalizer::NormalizePrefix(
 
   if (input.empty()) return result;
 
+  if (matcher_ != nullptr) {
+    bool found = false;
+    const int mblen = matcher_->PrefixMatch(input, &found);
+    if (found) return std::make_pair(input.substr(0, mblen), mblen);
+  }
+
   size_t longest_length = 0;
   int longest_value = 0;
 
@@ -254,5 +260,56 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
 
   return util::OkStatus();
 }
+
+PrefixMatcher::PrefixMatcher(const std::set<absl::string_view> &dic) {
+  if (dic.empty()) return;
+  std::vector<const char *> key;
+  key.reserve(dic.size());
+  for (const auto &it : dic) key.push_back(it.data());
+  trie_ = port::MakeUnique<Darts::DoubleArray>();
+  CHECK_EQ(0, trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
+                           nullptr));
+}
+
+int PrefixMatcher::PrefixMatch(absl::string_view w, bool *found) const {
+  if (trie_ == nullptr) {
+    if (found) *found = false;
+    return std::min<int>(w.size(), string_util::OneCharLen(w.data()));
+  }
+
+  constexpr int kResultSize = 64;
+  Darts::DoubleArray::result_pair_type trie_results[kResultSize];
+  const int num_nodes =
+      trie_->commonPrefixSearch(w.data(), trie_results, kResultSize, w.size());
+
+  if (found) *found = (num_nodes > 0);
+  if (num_nodes == 0) {
+    return std::min<int>(w.size(), string_util::OneCharLen(w.data()));
+  }
+
+  int mblen = 0;
+  for (int i = 0; i < num_nodes; ++i) {
+    mblen = std::max<int>(trie_results[i].length, mblen);
+  }
+
+  return mblen;
+}
+
+std::string PrefixMatcher::GlobalReplace(absl::string_view w,
+                                         absl::string_view out) const {
+  std::string result;
+  while (!w.empty()) {
+    bool found = false;
+    const int mblen = PrefixMatch(w, &found);
+    if (found) {
+      result.append(out.data(), out.size());
+    } else {
+      result.append(w.data(), mblen);
+    }
+    w.remove_prefix(mblen);
+  }
+  return result;
+}
+
 }  // namespace normalizer
 }  // namespace sentencepiece

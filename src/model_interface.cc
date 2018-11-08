@@ -20,56 +20,6 @@
 
 namespace sentencepiece {
 
-PrefixMatcher::PrefixMatcher(const std::set<absl::string_view> &dic) {
-  if (dic.empty()) return;
-  std::vector<const char *> key;
-  key.reserve(dic.size());
-  for (const auto &it : dic) key.push_back(it.data());
-  trie_ = port::MakeUnique<Darts::DoubleArray>();
-  CHECK_EQ(0, trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
-                           nullptr));
-}
-
-int PrefixMatcher::PrefixMatch(absl::string_view w, bool *found) const {
-  if (trie_ == nullptr) {
-    if (found) *found = false;
-    return std::min<int>(w.size(), string_util::OneCharLen(w.data()));
-  }
-
-  constexpr int kResultSize = 64;
-  Darts::DoubleArray::result_pair_type trie_results[kResultSize];
-  const int num_nodes =
-      trie_->commonPrefixSearch(w.data(), trie_results, kResultSize, w.size());
-
-  if (found) *found = (num_nodes > 0);
-  if (num_nodes == 0) {
-    return std::min<int>(w.size(), string_util::OneCharLen(w.data()));
-  }
-
-  int mblen = 0;
-  for (int i = 0; i < num_nodes; ++i) {
-    mblen = std::max<int>(trie_results[i].length, mblen);
-  }
-
-  return mblen;
-}
-
-std::string PrefixMatcher::GlobalReplace(absl::string_view w,
-                                         absl::string_view out) const {
-  std::string result;
-  while (!w.empty()) {
-    bool found = false;
-    const int mblen = PrefixMatch(w, &found);
-    if (found) {
-      result.append(out.data(), out.size());
-    } else {
-      result.append(w.data(), mblen);
-    }
-    w.remove_prefix(mblen);
-  }
-  return result;
-}
-
 const char *ModelInterface::kUNK() { return "<unk>"; }
 const char *ModelInterface::kBOS() { return "<s>"; }
 const char *ModelInterface::kEOS() { return "</s>"; }
@@ -91,7 +41,7 @@ int ModelInterface::PieceToId(absl::string_view piece) const {
   return unk_id_;
 }
 
-void ModelInterface::InitializePieces(bool use_prefix_matcher) {
+void ModelInterface::InitializePieces() {
   pieces_.clear();
   reserved_id_map_.clear();
   unk_id_ = -1;
@@ -115,8 +65,7 @@ void ModelInterface::InitializePieces(bool use_prefix_matcher) {
       return;
     }
 
-    if (use_prefix_matcher &&
-        sp.type() == ModelProto::SentencePiece::USER_DEFINED) {
+    if (sp.type() == ModelProto::SentencePiece::USER_DEFINED) {
       user_defined_symbols.insert(sp.piece());
     }
 
@@ -134,9 +83,7 @@ void ModelInterface::InitializePieces(bool use_prefix_matcher) {
     return;
   }
 
-  if (use_prefix_matcher) {
-    matcher_ = port::MakeUnique<PrefixMatcher>(user_defined_symbols);
-  }
+  matcher_ = port::MakeUnique<normalizer::PrefixMatcher>(user_defined_symbols);
 }
 
 std::vector<absl::string_view> SplitIntoWords(absl::string_view text) {
