@@ -191,12 +191,12 @@ util::Status TrainerInterface::LoadSentences() {
         LOG(INFO) << "Reserved chars are found. Skipped: " << sentence;
         continue;
       }
-      // Escapes meta symbols so that they are not extract as normal pieces.
-      sentence = meta_pieces_matcher.GlobalReplace(sentence, " ");
 
-      // Normalizes sentence with Normalizer.
-      // whitespaces are replaced with kWSChar.
-      const std::string normalized = normalizer.Normalize(sentence);
+      // * Normalizes sentence with Normalizer.
+      // * whitespaces are replaced with kWSChar.
+      // * Replaces user_defined_symbols with '\t'.
+      const std::string normalized = meta_pieces_matcher.GlobalReplace(
+          normalizer.Normalize(sentence), kUPPBoundaryStr);
       if (sentences_.size() % 100000 == 0) {
         LOG(INFO) << "Loading: " << normalized
                   << "\tsize=" << sentences_.size();
@@ -261,6 +261,7 @@ END:
     accumulated_chars_count += w.second;
     CHECK_NE_OR_RETURN(w.first, 0x0020)
         << "space must not be included in normalized string.";
+    if (w.first == kUPPBoundaryChar) continue;  // Tab is not included.
     required_chars_.insert(w);
   }
 
