@@ -84,7 +84,7 @@ TEST(BPETrainerTest, BasicTest) {
             RunTrainer({"pen", "pineapple", "apple"}, 20));
   EXPECT_EQ("he ll llo hello hellohe el lo oh hel ohe e h l o",
             RunTrainer({"hellohe"}, 20));
-  EXPECT_EQ("app le en in ine pen " WS "le pine e l n p i " WS,
+  EXPECT_EQ("app le en in ine pen pine ne pe e l n p i",
             RunTrainer({"pen", "pineapple", "apple"}, 20, {"app"}));
 }
 
