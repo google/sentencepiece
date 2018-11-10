@@ -111,6 +111,10 @@ message TrainerSpec {
   // parameter.
   optional bool split_by_unicode_script = 21 [ default = true ];
 
+  // When `split_by_number` is true, put a boundary between number and non-number
+  // transition. If we want to treat "F1" is one token, set this flag to be false.
+  optional bool split_by_number = 23 [ default = true ];
+
   // Use a white space to split sentence pieces.
   // When `split_by_whitespace` is false, we may have the piece containing
   // a white space in the middle. e.g., "in_the".

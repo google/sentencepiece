@@ -61,6 +61,8 @@ DEFINE_int32(max_sentencepiece_length,
 DEFINE_bool(split_by_unicode_script,
             kDefaultTrainerSpec.split_by_unicode_script(),
             "use Unicode script to split sentence pieces");
+DEFINE_bool(split_by_number, kDefaultTrainerSpec.split_by_number(),
+            "split tokens by numbers (0-9)");
 DEFINE_bool(split_by_whitespace, kDefaultTrainerSpec.split_by_whitespace(),
             "use a white space to split sentence pieces");
 DEFINE_string(control_symbols, "", "comma separated list of control symbols");

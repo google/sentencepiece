@@ -59,6 +59,8 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_TRUE(IsValid("食べる"));
   EXPECT_FALSE(IsValid("漢字ABC"));  // mixed CJK scripts
   EXPECT_FALSE(IsValid("F1"));
+  EXPECT_FALSE(IsValid("1F"));
+  EXPECT_FALSE(IsValid("1A2"));
   EXPECT_TRUE(IsValid("$10"));  // $ and 1 are both "common" script.
   EXPECT_FALSE(IsValid("$ABC"));
   EXPECT_FALSE(IsValid("ab\tbc"));  // "\t" is UPP boundary.
@@ -88,6 +90,18 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   trainer_spec.set_max_sentencepiece_length(4);
   EXPECT_TRUE(IsValid("1234"));
   EXPECT_FALSE(IsValid("12345"));
+
+  trainer_spec.set_max_sentencepiece_length(10);
+  trainer_spec.set_split_by_unicode_script(true);
+  trainer_spec.set_split_by_number(false);
+  EXPECT_TRUE(IsValid("F1"));
+  EXPECT_TRUE(IsValid("11"));
+  EXPECT_TRUE(IsValid("1F"));
+  EXPECT_TRUE(IsValid("ABC"));
+  EXPECT_TRUE(IsValid("1A2"));
+  EXPECT_TRUE(IsValid("1a234abc"));
+  EXPECT_FALSE(IsValid("9Aあ"));
+  EXPECT_TRUE(IsValid("9あい0A"));
 }
 
 TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {

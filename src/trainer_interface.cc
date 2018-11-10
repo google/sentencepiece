@@ -91,28 +91,34 @@ bool TrainerInterface::IsValidSentencePiece(
     return false;
   }
 
-  size_t pos = 0;
-  unicode_script::ScriptType prev_script =
+  constexpr unicode_script::ScriptType kAnyType =
       static_cast<unicode_script::ScriptType>(-1);
-  for (auto it = sentencepiece.begin(); it != sentencepiece.end(); ++it) {
-    if (*it == kUNKChar) {  // UNK must not be included
+
+  auto is_number = [](char32 c) { return (c >= 0x30 && c <= 0x39); };
+
+  unicode_script::ScriptType prev_script = kAnyType;
+
+  for (size_t pos = 0; pos < sentencepiece.size(); ++pos) {
+    const char32 c = sentencepiece[pos];
+    if (c == kUNKChar) {  // UNK must not be included
       return false;
     }
-    if (*it == 0x0000) {  // NULL is not allowed for Darts (TRIE).
+    if (c == 0x0000) {  // NULL is not allowed for Darts (TRIE).
       return false;
     }
     // kUPPBoundaryChar is included when split_by_upp_for_training is true.
-    if (*it == kUPPBoundaryChar) {
+    if (c == kUPPBoundaryChar) {
       return false;
     }
-    if (*it == 0x0020) {
+    if (c == 0x0020) {
       LOG(WARNING) << "space must not be included in normalized string.";
       return false;
     }
-    if (!string_util::IsValidCodepoint(*it)) {
+    if (!string_util::IsValidCodepoint(c)) {
       return false;
     }
-    if (*it == kWSChar) {
+
+    if (c == kWSChar) {
       // Only allows whitespace to appear as a prefix of piece.
       // When split_by_whitespace is false, we allow whitespaces to
       // appear in the middle, "foo_bar", but do not allow them
@@ -126,21 +132,27 @@ bool TrainerInterface::IsValidSentencePiece(
         return false;
       }
     } else {
-      auto s = unicode_script::GetScript(*it);
+      auto s = unicode_script::GetScript(c);
+
       // Merge Hiragana/Katakana into Han.
       if (s == unicode_script::U_Hiragana || s == unicode_script::U_Katakana ||
-          *it == 0x30FC) {  // long vowel sound (Katakana) should be Katakana
+          c == 0x30FC) {  // long vowel sound (Katakana) should be Katakana
         s = unicode_script::U_Han;
       }
+
+      if (!trainer_spec_.split_by_number() && is_number(c)) {
+        s = kAnyType;
+      }
+
       // Do not allow a piece to include multiple Unicode scripts
       // when split_by_unicode_script() is true (default = true).
-      if (prev_script != static_cast<unicode_script::ScriptType>(-1) &&
-          prev_script != s && trainer_spec_.split_by_unicode_script()) {
+      if (trainer_spec_.split_by_unicode_script() && s != kAnyType &&
+          prev_script != kAnyType && prev_script != s) {
         return false;
       }
+
       prev_script = s;
     }
-    ++pos;
   }
   return true;
 }
