@@ -90,6 +90,13 @@ message TrainerSpec {
   // the loss of the sentence piece. This value should be smaller than 1.0.
   optional float  shrinking_factor = 15 [ default = 0.75 ];
 
+  // The maximum sentence length in byte. The sentences with the length
+  // larger than `max_sentence_length` is simply ignored.
+  // Longer input tends to bring the following risks:
+  //  * Overflow during EM training (unigram language model only)
+  //  * Performance drop because of O(n log n) cost in BPE.
+  optional int32 max_sentence_length = 18 [ default = 2048 ];
+
   // Number of threads in the training.
   optional int32  num_threads = 16 [ default = 16 ];
 

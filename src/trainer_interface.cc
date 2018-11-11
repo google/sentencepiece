@@ -67,6 +67,7 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
   CHECK_RANGE(trainer_spec.self_test_sample_size(), 0, 1000);
   CHECK_RANGE(trainer_spec.shrinking_factor(), 0.5, 0.95);
   CHECK_RANGE(trainer_spec.training_sentence_size(), 100, 100000000);
+  CHECK_RANGE(trainer_spec.max_sentence_length(), 10, 1073741824);
 #undef CHECK_RANGE
 
   return util::OkStatus();
@@ -194,9 +195,11 @@ util::Status TrainerInterface::LoadSentences() {
         CHECK_GE_OR_RETURN(freq, 1);
       }
 
-      constexpr int kMaxLines = 2048;
-      if (sentence.size() > kMaxLines) {
-        LOG(INFO) << "Too long lines (>=" << kMaxLines << " bytes). Skipped.";
+      if (static_cast<int>(sentence.size()) >
+          trainer_spec_.max_sentence_length()) {
+        LOG(INFO) << "Too long lines (>=" << trainer_spec_.max_sentence_length()
+                  << " bytes (it can be changed with --max_sentence_length "
+                     "flag). Skipped.";
         continue;
       }
       if (sentence.find(kUNKStr) != std::string::npos) {

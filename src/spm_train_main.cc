@@ -58,6 +58,8 @@ DEFINE_int32(num_sub_iterations, kDefaultTrainerSpec.num_sub_iterations(),
 DEFINE_int32(max_sentencepiece_length,
              kDefaultTrainerSpec.max_sentencepiece_length(),
              "maximum length of sentence piece");
+DEFINE_int32(max_sentence_length, kDefaultTrainerSpec.max_sentence_length(),
+             "maximum length of sentence in byte");
 DEFINE_bool(split_by_unicode_script,
             kDefaultTrainerSpec.split_by_unicode_script(),
             "use Unicode script to split sentence pieces");
@@ -129,8 +131,10 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(num_threads);
   SetTrainerSpecFromFlag(num_sub_iterations);
   SetTrainerSpecFromFlag(max_sentencepiece_length);
+  SetTrainerSpecFromFlag(max_sentence_length);
   SetTrainerSpecFromFlag(split_by_unicode_script);
   SetTrainerSpecFromFlag(split_by_whitespace);
+  SetTrainerSpecFromFlag(split_by_number);
   SetTrainerSpecFromFlag(hard_vocab_limit);
   SetTrainerSpecFromFlag(use_all_vocab);
   SetTrainerSpecFromFlag(unk_id);
