@@ -19,12 +19,28 @@ r"""Ops for SentencePiece Encoding/Decoding."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from distutils.version import StrictVersion
 
+import warnings
+import glob
+import re
 import os
 import tensorflow as tf
 
-_gen_sentencepiece_processor_op = tf.load_op_library(
-    os.path.join(os.path.dirname(__file__), '_sentencepiece_processor_ops.so'))
+so_base = os.path.join(os.path.dirname(__file__), '_sentencepiece_processor_ops.so')
+so_file = so_base + '.' + tf.__version__
+
+if not os.path.exists(so_file):
+  versions = [re.search('[0-9]+\.[0-9\.]+$', n).group(0)
+              for n in glob.glob(so_base + '.*')]
+  latest = sorted(versions, key=StrictVersion)[-1]
+  warnings.warn('No so file is found for [%s] from [%s]' % (tf.__version__,
+                                                            ', '.join(versions)))
+  warnings.warn('use the latest version %s' % (latest))
+  so_file = so_base + '.' + latest
+
+
+_gen_sentencepiece_processor_op = tf.load_op_library(so_file)
 
 
 def piece_size(model_file=None, model_proto=None, name=None):
