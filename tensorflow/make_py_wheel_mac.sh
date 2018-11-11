@@ -19,6 +19,33 @@ set -x  # display all commands
 
 PROTOBUF_VERSION=3.6.1
 
+build_tf_wrapper() {
+  if [ "$1" != "" ]; then
+    pkg_name="==$1"
+  fi
+
+  # Builds _sentencepiece_processor_ops.so
+  pip install tensorflow${pkg_name} --upgrade
+
+  TF_CFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
+  TF_LFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
+  TF_VERSION=( $(python -c 'import tensorflow as tf; print(tf.__version__)') )
+
+  g++ -std=c++11 -shared \
+    -I../../src \
+    -fPIC ${TF_CFLAGS[@]} -O2 \
+    -D_GLIBCXX_USE_CXX11_ABI=0 \
+    -Wl,-all_load  \
+    /usr/local/lib/libprotobuf.a \
+    /usr/local/lib/libsentencepiece.a \
+    -Wl,-noall_load \
+    sentencepiece_processor_ops.cc \
+    -o tf_sentencepiece/_sentencepiece_processor_ops.so.${TF_VERSION} \
+    ${TF_LFLAGS[@]}
+
+  strip -x tf_sentencepiece/_sentencepiece_processor_ops.so.${TF_VERSION}
+}
+
 build() {
   cd tensorflow
   rm -fr build
@@ -49,24 +76,13 @@ build() {
   sudo python get-pip.py --no-setuptools --no-wheel --ignore-installed
   pip install --upgrade setuptools
   pip install wheel
-  pip install tensorflow
 
-  TF_CFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
-  TF_LFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
-
-  g++ -std=c++11 -shared \
-    -I../../src \
-    -fPIC ${TF_CFLAGS[@]} -O2 \
-    -D_GLIBCXX_USE_CXX11_ABI=0 \
-    -Wl,-all_load  \
-    /usr/local/lib/libprotobuf.a \
-    /usr/local/lib/libsentencepiece.a \
-    -Wl,-noall_load \
-    sentencepiece_processor_ops.cc \
-    -o tf_sentencepiece/_sentencepiece_processor_ops.so \
-    ${TF_LFLAGS[@]}
-
-  strip -x tf_sentencepiece/_sentencepiece_processor_ops.so
+  build_tf_wrapper ""
+  build_tf_wrapper "1.11.0"
+  build_tf_wrapper "1.10.0"
+  build_tf_wrapper "1.9.0"
+  build_tf_wrapper "1.8.0"
+  build_tf_wrapper "1.7.0"
 
   # Builds Python manylinux wheel package.
   # Platform name is determined by the tensorflow pip package.
