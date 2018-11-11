@@ -27,12 +27,6 @@ sys.path.append(os.path.join('.', 'test'))
 with codecs.open(os.path.join('..', 'VERSION'), 'r', 'utf-8') as f:
   version = f.read()
 
-tf_version = tf.__version__
-if tf_version[0] == '.':
-  tf_version = tf_version[1:]
-
-version = tf_version + '.' + version
-
 setup(name = 'tf_sentencepiece',
       author = 'Taku Kudo',
       author_email='taku@google.com',
@@ -42,7 +36,7 @@ setup(name = 'tf_sentencepiece',
       license = 'Apache',
       platforms = 'Unix',
       packages=find_packages(exclude=['test']),
-      package_data={'tf_sentencepiece':  ['_sentencepiece_processor_ops.so']},
+      package_data={'tf_sentencepiece':  ['_sentencepiece_processor_ops.so*']},
       classifiers = [
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',

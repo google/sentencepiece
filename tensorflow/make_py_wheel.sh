@@ -30,6 +30,33 @@ run_docker() {
   docker stop tf_sentencepiece
 }
 
+build_tf_wrapper() {
+  if [ "$1" != "" ]; then
+    pkg_name="==$1"
+  fi
+
+  # Builds _sentencepiece_processor_ops.so
+  pip install tensorflow${pkg_name} --upgrade
+
+  TF_CFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
+  TF_LFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
+  TF_VERSION=( $(python -c 'import tensorflow as tf; print(tf.__version__)') )
+
+  g++ -std=c++11 -shared \
+    -I../../src \
+    -fPIC ${TF_CFLAGS[@]} -O2 \
+    -D_GLIBCXX_USE_CXX11_ABI=0 \
+    -Wl,--whole-archive \
+    /usr/local/lib/libprotobuf.a \
+    /usr/local/lib/libsentencepiece.a \
+    -Wl,--no-whole-archive \
+    sentencepiece_processor_ops.cc \
+    -o tf_sentencepiece/_sentencepiece_processor_ops.so.${TF_VERSION} \
+    ${TF_LFLAGS[@]}
+
+  strip tf_sentencepiece/_sentencepiece_processor_ops.so.${TF_VERSION}
+}
+
 build() {
   TRG=$1
   rm -fr build
@@ -55,23 +82,12 @@ build() {
   make install
   cd ..
 
-  # Builds _sentencepiece_processor_ops.so
-#  pip install tensorflow
-  TF_CFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
-  TF_LFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
-
-  g++ -std=c++11 -shared \
-    -I../../src \
-    -fPIC ${TF_CFLAGS[@]} -O2 \
-    -D_GLIBCXX_USE_CXX11_ABI=0 \
-    -Wl,--whole-archive \
-    /usr/local/lib/libprotobuf.a \
-    /usr/local/lib/libsentencepiece.a \
-    -Wl,--no-whole-archive \
-    sentencepiece_processor_ops.cc \
-    -o tf_sentencepiece/_sentencepiece_processor_ops.so \
-    ${TF_LFLAGS[@]}
-  strip tf_sentencepiece/_sentencepiece_processor_ops.so
+  build_tf_wrapper ""
+  build_tf_wrapper "1.11.0"
+  build_tf_wrapper "1.10.0"
+  build_tf_wrapper "1.9.0"
+  build_tf_wrapper "1.8.0"
+  build_tf_wrapper "1.7.0"
 
   # Builds Python manylinux wheel package.
   python setup.py bdist_wheel --universal --plat-name=manylinux1_x86_64
