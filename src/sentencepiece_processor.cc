@@ -142,7 +142,7 @@ util::Status SentencePieceProcessor::SetVocabulary(
   for (int i = 0; i < model_proto_->pieces_size(); ++i) {
     auto *piece = model_proto_->mutable_pieces(i);
     if (piece->type() == ModelProto::SentencePiece::CONTROL ||
-        piece->type() == ModelProto::SentencePiece::UNUSED ||
+        piece->type() == ModelProto::SentencePiece::UNKNOWN ||
         piece->type() == ModelProto::SentencePiece::USER_DEFINED) {
       continue;
     }
