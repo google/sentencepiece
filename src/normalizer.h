@@ -16,6 +16,7 @@
 #define NORMALIZER_NORMALIZER_H_
 
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
