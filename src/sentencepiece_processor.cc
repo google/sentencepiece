@@ -141,6 +141,11 @@ util::Status SentencePieceProcessor::SetVocabulary(
 
   for (int i = 0; i < model_proto_->pieces_size(); ++i) {
     auto *piece = model_proto_->mutable_pieces(i);
+    if (piece->type() == ModelProto::SentencePiece::CONTROL ||
+        piece->type() == ModelProto::SentencePiece::UNUSED ||
+        piece->type() == ModelProto::SentencePiece::USER_DEFINED) {
+      continue;
+    }
     if (vocab.find(piece->piece()) != vocab.end() ||
         string_util::OneCharLen(piece->piece().c_str()) ==
             piece->piece().size()) {

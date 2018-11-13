@@ -1085,6 +1085,9 @@ TEST(SentencePieceProcessorTest, VocabularyTest) {
   SentencePieceProcessor sp;
   EXPECT_OK(sp.Load(model_proto));
 
+  EXPECT_FALSE(sp.IsUnused(0));
+  EXPECT_FALSE(sp.IsUnused(1));
+  EXPECT_FALSE(sp.IsUnused(2));
   EXPECT_FALSE(sp.IsUnused(3));
   EXPECT_FALSE(sp.IsUnused(4));
   EXPECT_FALSE(sp.IsUnused(5));
@@ -1093,6 +1096,9 @@ TEST(SentencePieceProcessorTest, VocabularyTest) {
 
   EXPECT_OK(sp.SetVocabulary({"aa", "dd", "e"}));
 
+  EXPECT_FALSE(sp.IsUnused(0));
+  EXPECT_FALSE(sp.IsUnused(1));
+  EXPECT_FALSE(sp.IsUnused(2));
   EXPECT_FALSE(sp.IsUnused(3));
   EXPECT_TRUE(sp.IsUnused(4));
   EXPECT_TRUE(sp.IsUnused(5));
