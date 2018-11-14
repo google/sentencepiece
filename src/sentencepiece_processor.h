@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "sentencepiece_export.h"
 
 namespace absl {
 class string_view;
@@ -117,7 +118,7 @@ enum Code {
 };
 }  // namespace error
 
-class Status {
+class SENTENCEPIECE_EXPORT Status {
  public:
   Status();
   ~Status();
@@ -160,7 +161,7 @@ class min_string_view {
 };
 }  // namespace util
 
-class SentencePieceProcessor {
+class SENTENCEPIECE_EXPORT SentencePieceProcessor {
  public:
   SentencePieceProcessor();
   virtual ~SentencePieceProcessor();

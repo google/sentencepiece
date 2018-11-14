@@ -14,6 +14,7 @@
 
 #ifndef UNIGRAM_MODEL_H_
 #define UNIGRAM_MODEL_H_
+#define NOMINMAX
 
 #include <memory>
 #include <string>
@@ -25,6 +26,7 @@
 #include "model_interface.h"
 #include "sentencepiece_model.pb.h"
 #include "third_party/darts_clone/darts.h"
+#include "sentencepiece_export.h"
 
 namespace sentencepiece {
 namespace unigram {
@@ -113,7 +115,7 @@ class Lattice {
   model::FreeList<Node> node_allocator_;
 };
 
-class Model : public ModelInterface {
+class SENTENCEPIECE_EXPORT Model : public ModelInterface {
  public:
   explicit Model(const ModelProto &model_proto);
   Model() {}

@@ -9,16 +9,19 @@ set CURRENT_PATH=%~dp0
 set LIBRARY_PATH=%CURRENT_PATH%build\root
 
 mkdir build
+copy protobuf-cpp-%PROTOBUF_VERSION%.zip build
 cd build
 
-curl -O -L https://github.com/google/protobuf/releases/download/v%PROTOBUF_VERSION%/protobuf-cpp-%PROTOBUF_VERSION%.zip
+rem curl -O -L https://github.com/google/protobuf/releases/download/v%PROTOBUF_VERSION%/protobuf-cpp-%PROTOBUF_VERSION%.zip
 unzip protobuf-cpp-%PROTOBUF_VERSION%.zip
 cd protobuf-%PROTOBUF_VERSION%\cmake
-cmake . -A %PLATFORM% -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH% || goto :error
+cmake . -A %PLATFORM% -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH% -DBUILD_SHARED_LIBS=true -Dprotobuf_MSVC_STATIC_RUNTIME=OFF -DCMAKE_SYSTEM_VERSION=8.1 || goto :error
+rem cmake . -A %PLATFORM% -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH% || goto :error
 cmake --build . --config Release --target install || goto :error
 
 cd ..\..
-cmake .. -A %PLATFORM% -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH%
+cmake .. -A %PLATFORM% -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=ON -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH% -DBUILD_SHARED_LIBS=true -DSPM_ENABLE_SHARED=true -DCMAKE_SYSTEM_VERSION=8.1
+rem cmake .. -A %PLATFORM% -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=%LIBRARY_PATH% 
 cmake --build . --config Release --target install || goto :error
 ctest -C Release || goto :error
 cpack || goto :error
