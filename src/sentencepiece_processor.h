@@ -20,7 +20,11 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "sentencepiece_export.h"
+#ifdef MINEXPORT
+#include "sentencepiece_minexport_export.h"
+#else
+#define SENTENCEPIECE_MINEXPORT_EXPORT
+#endif
 
 namespace absl {
 class string_view;
@@ -118,7 +122,7 @@ enum Code {
 };
 }  // namespace error
 
-class SENTENCEPIECE_EXPORT Status {
+class SENTENCEPIECE_MINEXPORT_EXPORT Status {
  public:
   Status();
   ~Status();
@@ -161,7 +165,7 @@ class min_string_view {
 };
 }  // namespace util
 
-class SENTENCEPIECE_EXPORT SentencePieceProcessor {
+class SENTENCEPIECE_MINEXPORT_EXPORT SentencePieceProcessor {
  public:
   SentencePieceProcessor();
   virtual ~SentencePieceProcessor();

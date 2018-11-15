@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 include(GenerateExportHeader)
-set(CMAKE_SYSTEM_VERSION 8.1)
 find_package(Protobuf REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS})
 protobuf_generate_cpp(SPM_PROTO_SRCS SPM_PROTO_HDRS sentencepiece.proto)
@@ -136,6 +135,13 @@ endif()
 #the standard library)
 if (SPM_ENABLE_SHARED_MINEXPORT)
     add_library(sentencepiece_minexport SHARED ${SPM_SRCS})
+    target_compile_definitions(sentencepiece_minexport PUBLIC PROTOBUF_USE_DLLS MINEXPORT)
+    generate_export_header(sentencepiece_minexport)
+    target_link_libraries(sentencepiece_minexport ${SPM_LIBS})
+    if(MSVC)
+        target_compile_options(sentencepiece_minexport PUBLIC /wd4251)
+        #set(CMAKE_CXX_FLAGS "/wd4251 ${CMAKE_CXX_FLAGS}")
+    endif()
 endif()
 
 if (SPM_ENABLE_SHARED)
@@ -154,24 +160,22 @@ if (SPM_ENABLE_SHARED)
   target_link_libraries(sentencepiece_train ${SPM_LIBS} sentencepiece)
   set(SPM_INSTALLTARGETS sentencepiece sentencepiece_train sentencepiece-static sentencepiece_train-static)
   set_target_properties(sentencepiece sentencepiece_train PROPERTIES SOVERSION 0 VERSION 0.0.0)
-# set_target_properties(sentencepiece PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
-# set_target_properties(sentencepiece_train PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
+  set_target_properties(sentencepiece PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
+  set_target_properties(sentencepiece_train PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
   if (MSVC)
     set_target_properties(sentencepiece PROPERTIES IMPORT_SUFFIX "_import.lib")
     set_target_properties(sentencepiece_train PROPERTIES IMPORT_SUFFIX "_import.lib")
-    set(CMAKE_CXX_FLAGS "/wd4251 ${CMAKE_CXX_FLAGS}")
+    target_compile_definitions(sentencepiece PUBLIC PROTOBUF_USE_DLLS)
   elseif (MINGW)
     set_target_properties(sentencepiece PROPERTIES IMPORT_SUFFIX ".dll.a")
     set_target_properties(sentencepiece_train PROPERTIES IMPORT_SUFFIX ".dll.a")
   endif()
-  add_definitions(-DPROTOBUF_USE_DLLS)
 else()
   add_library(sentencepiece ALIAS sentencepiece-static)
   add_library(sentencepiece_train ALIAS sentencepiece_train-static)
   set(SPM_INSTALLTARGETS sentencepiece-static sentencepiece_train-static)
 endif()
 
-generate_export_header(sentencepiece)
 
 set_target_properties(sentencepiece-static PROPERTIES OUTPUT_NAME "sentencepiece")
 set_target_properties(sentencepiece_train-static PROPERTIES OUTPUT_NAME "sentencepiece_train")
@@ -223,7 +227,13 @@ install(TARGETS ${SPM_INSTALLTARGETS}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(FILES sentencepiece_trainer.h sentencepiece_processor.h sentencepiece_exports.h
+install(FILES sentencepiece_trainer.h sentencepiece_processor.h
+  DESTINATION ${CMAKE_INSTALL_INCDIR})
+if (SPM_ENABLE_SHARED_MINEXPORT)
+install(FILES sentencepiece_minexport_export.h
+  DESTINATION ${CMAKE_INSTALL_INCDIR})
+endif()
+install(FILES sentencepiece_trainer.h sentencepiece_processor.h
   DESTINATION ${CMAKE_INSTALL_INCDIR})
 
 file(TO_NATIVE_PATH "${PROJECT_SOURCE_DIR}/data" data_dir)
