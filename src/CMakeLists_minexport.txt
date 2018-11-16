@@ -11,6 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.!
+
+# This can be used as a replacement to the existing CMakeLists.txt for
+# the purposes of building a shared sentencepiece dll with MSVC machines.
+# The default shared library build for MSVC exports all of the standard
+# library symbols, making it unlinkable for most purposes in practice.
+
+# To build on Windows with MSVC, rename CMakeLists_minexport.txt in 
+# both the root dir and the src dir to CMakeLists.txt and run test_minexport.bat.
+# Note that this only builds the new target, sentencepiece_export.dll|lib
+# correctly. I have not tested the other build targets.
+
 include(GenerateExportHeader)
 find_package(Protobuf REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS})

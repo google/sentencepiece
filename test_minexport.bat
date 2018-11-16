@@ -1,3 +1,11 @@
+rem This is a version of the Windows build script (test.bat) that builds a minimal
+rem export library of sentencepiece in a shared dll that is linkable to other projects
+rem on Windows machines. I tried for way too long to make my changes play nicely with
+rem the existing cmake files, but was unsuccessful, so I opted to change in parallel 
+rem files instead. This file and the two CMakeLists_minexport.txt files in the root
+rem directory and the src directory allow the creation of a shared Windows library
+rem that does not export all of the symbols in the standard library.
+
 set PROTOBUF_VERSION=3.6.1
 set PLATFORM=%1
 if "%PLATFORM%"=="" set PLATFORM=x64
