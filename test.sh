@@ -20,7 +20,12 @@ set -x  # display all commands
 setup_ubuntu() {
   apt-get update
   apt-get install -y build-essential cmake git \
-      pkg-config libprotobuf-c++ protobuf-compiler libprotobuf-dev python-pip python3-pip
+    pkg-config libprotobuf-c++ protobuf-compiler libprotobuf-dev python-pip python3-pip
+
+  . /etc/os-release
+  if [ "${VERSION_ID}" = "14.04" ]; then
+    apt-get install -y cmake3 python-dev
+  fi
 }
 
 setup_debian() {
@@ -85,6 +90,12 @@ build_linux_gcc_ubuntu() {
   build_generic
   build_python
   build_tensorflow
+}
+
+build_linux_gcc_ubuntu_trusty() {
+  setup_ubuntu
+  build_generic
+  build_python
 }
 
 build_linux_gcc_ubuntu_i386() {

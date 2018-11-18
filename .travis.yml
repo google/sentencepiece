@@ -11,6 +11,9 @@ matrix:
       env: IMAGE=ubuntu:xenial COMMAND=build_linux_gcc_ubuntu
       services: docker
     - os: linux
+      env: IMAGE=ubuntu:trusty COMMAND=build_linux_gcc_ubuntu_trusty
+      services: docker
+    - os: linux
       env: IMAGE=debian:stable COMMAND=build_linux_gcc_debian
       services: docker
     - os: linux
