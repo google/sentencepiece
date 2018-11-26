@@ -33,7 +33,7 @@ class FreeList {
 
   // `Free` doesn't free the object but reuse the allocated memory chunks.
   void Free() {
-    const int size = std::min<int>(chunk_index_ + 1, freelist_.size());
+    const int size = std::min(chunk_index_ + 1, freelist_.size());
     for (int i = 0; i < size; ++i) {
       T* chunk = freelist_[i];
       memset(chunk, 0, sizeof(*chunk) * chunk_size_);
