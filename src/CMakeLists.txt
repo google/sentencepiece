@@ -178,7 +178,7 @@ if (NOT MSVC)
   endif()
   set_source_files_properties(
     sentencepiece.pb.cc sentencepiece_model.pb.cc
-    PROPERTIES COMPILE_FLAGS "-Wno-misleading-indentation")
+    PROPERTIES COMPILE_FLAGS "-Wno-misleading-indentation -Wno-unused-variable")
   set_source_files_properties(${SPM_TEST_SRCS}
     PROPERTIES COMPILE_FLAGS "-Wno-sign-compare")
   if (SPM_ENABLE_SHARED)
