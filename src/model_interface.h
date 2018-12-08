@@ -47,10 +47,10 @@ class ModelInterface {
   using PieceToIdMap =
       std::unordered_map<absl::string_view, int, string_util::string_view_hash>;
 
-  static const char *kUNK();
-  static const char *kBOS();
-  static const char *kEOS();
-  static const char *kPAD();
+  absl::string_view unk_piece() const;
+  absl::string_view bos_piece() const;
+  absl::string_view eos_piece() const;
+  absl::string_view pad_piece() const;
 
   // `model_proto` should not be deleted until ModelInterface is destroyed.
   explicit ModelInterface(const ModelProto &model_proto);

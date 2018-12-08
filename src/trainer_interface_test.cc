@@ -288,6 +288,36 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     EXPECT_EQ(ModelProto::SentencePiece::USER_DEFINED,
               trainer.meta_pieces_[1].second);
   }
+
+  {
+    auto trainer_spec = base_trainer_spec;
+    trainer_spec.set_unk_piece("__UNK__");
+    trainer_spec.set_bos_piece("__BOS__");
+    trainer_spec.set_eos_piece("__EOS__");
+    trainer_spec.set_pad_piece("__PAD__");
+    trainer_spec.set_pad_id(3);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    EXPECT_TRUE(trainer.status().ok());
+    EXPECT_EQ("__UNK__", trainer.meta_pieces_[0].first);
+    EXPECT_EQ("__BOS__", trainer.meta_pieces_[1].first);
+    EXPECT_EQ("__EOS__", trainer.meta_pieces_[2].first);
+    EXPECT_EQ("__PAD__", trainer.meta_pieces_[3].first);
+  }
+
+  {
+    auto trainer_spec = base_trainer_spec;
+    trainer_spec.set_unk_piece("__UNK__");
+    trainer_spec.set_bos_piece("__UNK__");
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    EXPECT_FALSE(trainer.status().ok());
+  }
+
+  {
+    auto trainer_spec = base_trainer_spec;
+    trainer_spec.set_unk_piece("");
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    EXPECT_FALSE(trainer.status().ok());
+  }
 }
 
 TEST(TrainerInterfaceTest, SerializeTest) {
