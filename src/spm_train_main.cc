@@ -92,6 +92,14 @@ DEFINE_int32(eos_id, kDefaultTrainerSpec.eos_id(),
              "Override EOS (</s>) id. Set -1 to disable EOS.");
 DEFINE_int32(pad_id, kDefaultTrainerSpec.pad_id(),
              "Override PAD (<pad>) id. Set -1 to disable PAD.");
+DEFINE_string(unk_piece, kDefaultTrainerSpec.unk_piece(),
+              "Override UNK (<unk>) piece.");
+DEFINE_string(bos_piece, kDefaultTrainerSpec.bos_piece(),
+              "Override BOS (<s>) piece.");
+DEFINE_string(eos_piece, kDefaultTrainerSpec.eos_piece(),
+              "Override EOS (</s>) piece.");
+DEFINE_string(pad_piece, kDefaultTrainerSpec.pad_piece(),
+              "Override PAD (<pad>) piece.");
 DEFINE_string(unk_surface, kDefaultTrainerSpec.unk_surface(),
               "Dummy surface string for <unk>. In decoding <unk> is decoded to "
               "`unk_surface`.");
@@ -141,6 +149,10 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(bos_id);
   SetTrainerSpecFromFlag(eos_id);
   SetTrainerSpecFromFlag(pad_id);
+  SetTrainerSpecFromFlag(unk_piece);
+  SetTrainerSpecFromFlag(bos_piece);
+  SetTrainerSpecFromFlag(eos_piece);
+  SetTrainerSpecFromFlag(pad_piece);
   SetTrainerSpecFromFlag(unk_surface);
   SetRepeatedTrainerSpecFromFlag(input);
   SetRepeatedTrainerSpecFromFlag(accept_language);

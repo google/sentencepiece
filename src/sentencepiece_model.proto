@@ -166,6 +166,10 @@ message TrainerSpec {
   optional int32 bos_id = 41 [ default = 1 ];    // <s>
   optional int32 eos_id = 42 [ default = 2 ];    // </s>
   optional int32 pad_id = 43 [ default = -1 ];   // <pad> (padding)
+  optional string unk_piece = 45 [ default = "<unk>" ];
+  optional string bos_piece = 46 [ default = "<s>"   ];
+  optional string eos_piece = 47 [ default = "</s>"  ];
+  optional string pad_piece = 48 [ default = "<pad>" ];
 
   // Encodes <unk> into U+2047 (DOUBLE QUESTION MARK),
   // since this character can be useful both for user and

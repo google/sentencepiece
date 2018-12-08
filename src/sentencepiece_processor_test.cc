@@ -1054,6 +1054,40 @@ TEST(SentencePieceProcessorTest, ExtraOptionsUndefinedTest) {
   EXPECT_NOT_OK(sp.SetDecodeExtraOptions("eos"));
 }
 
+TEST(SentencePieceProcessorTest, OverrideSpecialPieceTest) {
+  ModelProto model_proto;
+  auto *sp1 = model_proto.add_pieces();
+  auto *sp2 = model_proto.add_pieces();
+  auto *sp3 = model_proto.add_pieces();
+
+  model_proto.mutable_trainer_spec()->set_unk_piece("__UNK__");
+  model_proto.mutable_trainer_spec()->set_bos_piece("__BOS__");
+  model_proto.mutable_trainer_spec()->set_eos_piece("__EOS__");
+  model_proto.mutable_trainer_spec()->set_pad_piece("__PAD__");
+
+  // No BOS/EOS.
+  sp1->set_type(ModelProto::SentencePiece::UNKNOWN);
+  sp1->set_piece("__UNK__");
+  sp2->set_type(ModelProto::SentencePiece::CONTROL);
+  sp2->set_piece("__BOS__");
+  sp3->set_type(ModelProto::SentencePiece::CONTROL);
+  sp3->set_piece("__EOS__");
+
+  AddPiece(&model_proto, "a", 0.0);
+  AddPiece(&model_proto, "b", 0.3);
+
+  SentencePieceProcessor sp;
+  EXPECT_OK(sp.Load(model_proto));
+  EXPECT_EQ(0, sp.unk_id());
+  EXPECT_EQ(1, sp.bos_id());
+  EXPECT_EQ(2, sp.eos_id());
+  EXPECT_EQ(-1, sp.pad_id());
+
+  EXPECT_EQ("__UNK__", sp.IdToPiece(sp.unk_id()));
+  EXPECT_EQ("__BOS__", sp.IdToPiece(sp.bos_id()));
+  EXPECT_EQ("__EOS__", sp.IdToPiece(sp.eos_id()));
+}
+
 TEST(SentencePieceProcessorTest, VocabularyTest) {
   ModelProto model_proto;
   auto *sp1 = model_proto.add_pieces();

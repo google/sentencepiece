@@ -50,6 +50,54 @@ void AddPiece(ModelProto *model_proto, const std::string &piece,
   sp->set_score(score);
 }
 
+TEST(ModelInterfaceTest, GetDefaultPieceTest) {
+  {
+    ModelProto model_proto;
+    EXPECT_EQ("<unk>", model_proto.trainer_spec().unk_piece());
+    EXPECT_EQ("<s>", model_proto.trainer_spec().bos_piece());
+    EXPECT_EQ("</s>", model_proto.trainer_spec().eos_piece());
+    EXPECT_EQ("<pad>", model_proto.trainer_spec().pad_piece());
+  }
+
+  {
+    ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
+    AddPiece(&model_proto, "a");
+    auto model = ModelFactory::Create(model_proto);
+    EXPECT_EQ("<unk>", model->unk_piece());
+    EXPECT_EQ("<s>", model->bos_piece());
+    EXPECT_EQ("</s>", model->eos_piece());
+    EXPECT_EQ("<pad>", model->pad_piece());
+  }
+
+  {
+    ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
+    AddPiece(&model_proto, "a");
+    model_proto.mutable_trainer_spec()->clear_unk_piece();
+    model_proto.mutable_trainer_spec()->clear_bos_piece();
+    model_proto.mutable_trainer_spec()->clear_eos_piece();
+    model_proto.mutable_trainer_spec()->clear_pad_piece();
+    auto model = ModelFactory::Create(model_proto);
+    EXPECT_EQ("<unk>", model->unk_piece());
+    EXPECT_EQ("<s>", model->bos_piece());
+    EXPECT_EQ("</s>", model->eos_piece());
+    EXPECT_EQ("<pad>", model->pad_piece());
+  }
+
+  {
+    ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
+    AddPiece(&model_proto, "a");
+    model_proto.mutable_trainer_spec()->set_unk_piece("UNK");
+    model_proto.mutable_trainer_spec()->set_bos_piece("BOS");
+    model_proto.mutable_trainer_spec()->set_eos_piece("EOS");
+    model_proto.mutable_trainer_spec()->set_pad_piece("PAD");
+    auto model = ModelFactory::Create(model_proto);
+    EXPECT_EQ("UNK", model->unk_piece());
+    EXPECT_EQ("BOS", model->bos_piece());
+    EXPECT_EQ("EOS", model->eos_piece());
+    EXPECT_EQ("PAD", model->pad_piece());
+  }
+}
+
 TEST(ModelInterfaceTest, SetModelInterfaceTest) {
   for (const auto type : kModelTypes) {
     ModelProto model_proto = MakeBaseModelProto(type);
