@@ -54,7 +54,7 @@
 |SentencePiece|8k  (shared)|0.1966|0.2162|25.0540|30.9734|
 |SentencePiece|16k (shared)|0.1996|0.2160|21.5326|27.1827|
 |SentencePiece|32k (shared)|0.1949|0.2159|19.0840|25.0592|
-|SentencePiece(BPE)|8k  (shaerd)|0.1977|0.2173|25.4331|31.7693|
+|SentencePiece(BPE)|8k  (shared)|0.1977|0.2173|25.4331|31.7693|
 |(KyTea/Moses)+SentencePiece|8k (shared)|0.1921|0.2086|29.9854|31.2719|
 |(MeCab/Moses)+SentencePiece|8k (shared)|0.1909|0.2049|28.9537|31.4743|
 |(neologd/Moses)+SentencePiece|8k (shared)|0.1938|0.2137|28.8645|31.2985|
@@ -69,7 +69,7 @@
 
 #### Discussion
 * **SentencePiece (Unigram/BPE)** outperforms word-based methods **(Moses/KyTea/MeCab/neologd)** even with a smaller vocabulary (10% of word-based methods).
-* The number of tokens to represent Japanese sentences is almost comparable between **SentencePiece (unigram)** and **KyTea**, though the vocabulary of **Sentencepice** is much smaller. It implies that Sentencepiece can effectively compress the sentences with a smaller vocabulary set.
+* The number of tokens to represent Japanese sentences is almost comparable between **SentencePiece (unigram)** and **KyTea**, though the vocabulary of **SentencePiece** is much smaller. It implies that Sentencepiece can effectively compress the sentences with a smaller vocabulary set.
 * Pretokenization can slightly improve the BLEU scores in English to Japanese. In Japanese to English translation, pretokenization doesn't help to improve BLEU.
 * **Neologd** shows poor BLEU score. Tokenizing sentences with a large named entity dictionary might not be effective in neural-based text processing.
 * **SentencePiece(Unigram)** shows slightly better text compression ratio than **BPE**, but no significant differences in BLEU score.

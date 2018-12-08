@@ -162,8 +162,8 @@ def encode_dense(input_sentences, nbest_size=0, alpha=1.0,
                 nbest_size < 0: assuming that nbest_size is infinite
                 and samples from the all hypothesis (lattice) using
                 forward-filtering-and-backward-sampling algorithm.
-    alpha: A scalar or 1D tensor for a moothing parameter.
-           Inverse temparature for probablity rescaling.
+    alpha: A scalar or 1D tensor for a smoothing parameter.
+           Inverse temperature for probability rescaling.
     model_file: The sentencepiece model file path.
     model_proto: The sentencepiece model serialized proto.
                  Either `model_file` or `model_proto` must be set.
@@ -201,8 +201,8 @@ def encode_sparse(input_sentences, nbest_size=0, alpha=1.0,
                 nbest_size < 0: assuming that nbest_size is infinite
                 and samples from the all hypothesis (lattice) using
                 forward-filtering-and-backward-sampling algorithm.
-    alpha: A scalar or 1D tensor for a moothing parameter.
-           Inverse temparature for probablity rescaling.
+    alpha: A scalar or 1D tensor for a smoothing parameter.
+           Inverse temperature for probability rescaling.
     model_file: The sentencepiece model file path.
     model_proto: The sentencepiece model serialized proto.
                  Either `model_file` or `model_proto` must be set.
@@ -229,7 +229,7 @@ def encode_sparse(input_sentences, nbest_size=0, alpha=1.0,
 
 def decode(pieces, sequence_length, model_file=None, model_proto=None,
            reverse=False, name=None):
-  """Decode pieces into postproecssed text.
+  """Decode pieces into postprocessed text.
 
   Args:
     pieces: A 2D int32 or string tensor [batch_size x max_length] of

@@ -53,7 +53,7 @@ vocabulary. Unlike most unsupervised word segmentation algorithms, which
 assume an infinite vocabulary, SentencePiece trains the segmentation model such
 that the final vocabulary size is fixed, e.g., 8k, 16k, or 32k.
 
-Note that SentencePices specifies the final vocabulary size for training, which is different from 
+Note that SentencePiece specifies the final vocabulary size for training, which is different from
 [subword-nmt](https://github.com/rsennrich/subword-nmt) that uses the number of merge operations.
 The number of merge operations is a BPE-specific parameter and not applicable to other segmentation algorithms, including unigram, word and character.
 
@@ -162,7 +162,7 @@ On OSX, you can use brew:
 % brew install protobuf cmake
 ```
 
-If want to use self-prepared protobuf library, specify protbof prefix before build:
+If want to use self-prepared protobuf library, specify protobuf prefix before build:
 ```
 % cmake .. -DCMAKE_PREFIX_PATH=<prefix_path_to_protobuf>
 ```
@@ -264,9 +264,9 @@ When setting -1 id e.g., ```bos_id=-1```, this special token is disabled. Note t
 If you want to assign another special tokens, please see [Use custom symbols](doc/special_symbols.md).
 
 ### Vocabulary restriction
-```spm_encode``` accepts a ```--vocabulary``` and a ```--vocabulary_threshold``` option so that ```spm_encode``` will only produce symbols which also appear in the vocabulary (with at least some frequency). The background of this feature is decribed in [subword-nmt page](https://github.com/rsennrich/subword-nmt#best-practice-advice-for-byte-pair-encoding-in-nmt).
+```spm_encode``` accepts a ```--vocabulary``` and a ```--vocabulary_threshold``` option so that ```spm_encode``` will only produce symbols which also appear in the vocabulary (with at least some frequency). The background of this feature is described in [subword-nmt page](https://github.com/rsennrich/subword-nmt#best-practice-advice-for-byte-pair-encoding-in-nmt).
 
-The usage is basically the same as that of ```subword-nmt```. Assming that L1 and L2 are the two languages (source/target languages), train the shared spm model, and get resulting vocabulary for each:
+The usage is basically the same as that of ```subword-nmt```. Assuming that L1 and L2 are the two languages (source/target languages), train the shared spm model, and get resulting vocabulary for each:
 
 ```
 % cat {train_file}.L1 {train_file}.L2 | shuffle > train
