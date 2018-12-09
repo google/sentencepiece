@@ -54,6 +54,16 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
         << "--use_all_vocab=true is valid for WORD/CHAR model.";
   }
 
+  if (trainer_spec.has_mining_sentence_size()) {
+    LOG(WARNING)
+        << "--mining_sentence_size() is deprecated. Use --input_sentence_size";
+  }
+
+  if (trainer_spec.has_training_sentence_size()) {
+    LOG(WARNING) << "--training_sentence_size() is deprecated. Use "
+                    "--input_sentence_size";
+  }
+
 #define CHECK_RANGE(variable, minval, maxval) \
   CHECK_OR_RETURN(variable >= minval && variable <= maxval)
 
@@ -66,10 +76,8 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
   CHECK_RANGE(trainer_spec.max_sentence_length(), 10, 1073741824);
 #undef CHECK_RANGE
 
-  CHECK_GE_OR_RETURN(trainer_spec.input_sentence_size(), 100);
-  CHECK_GE_OR_RETURN(trainer_spec.mining_sentence_size(), 100);
-  CHECK_GE_OR_RETURN(trainer_spec.seed_sentencepiece_size(), 1000);
-  CHECK_GE_OR_RETURN(trainer_spec.training_sentence_size(), 100);
+  CHECK_OR_RETURN(trainer_spec.input_sentence_size() <= 0 ||
+                  trainer_spec.input_sentence_size() > 100);
 
   CHECK_OR_RETURN(!trainer_spec.unk_piece().empty());
   CHECK_OR_RETURN(!trainer_spec.bos_piece().empty());
@@ -78,6 +86,67 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
 
   return util::OkStatus();
 }
+
+class SentenceSelector {
+ public:
+  using Sampler = random::ReservoirSampler<TrainerInterface::Sentence>;
+
+  SentenceSelector(TrainerInterface::Sentences *sentences,
+                   const TrainerSpec &spec)
+      : sentences_(sentences), spec_(&spec) {
+    if (spec_->input_sentence_size() > 0) {
+      if (spec_->shuffle_input_sentence()) {
+        constexpr size_t kSeed = 12345678;
+        sampler_ = port::MakeUnique<Sampler>(
+            sentences, spec_->input_sentence_size(), kSeed);
+      } else {
+        LOG(INFO)
+            << "First " << spec_->input_sentence_size()
+            << " sentences are select. Remaining sentences are discarded.";
+      }
+    }
+  }
+
+  bool Add(const std::pair<std::string, int64> &sentence) {
+    constexpr int64 kTooBigSentencesSize = 1000000;
+
+    if (spec_->input_sentence_size() <= 0) {
+      sentences_->emplace_back(sentence);
+      if (sentences_->size() > 0 &&
+          sentences_->size() % kTooBigSentencesSize == 0) {
+        LOG(INFO) << sentences_->size() << " sentences are loaded. ";
+        LOG(INFO)
+            << "Consider using "
+               "--input_sentence_size=SIZE and "
+               "--shuffle_input_sentence=true to avoid memory explosions.";
+      }
+    } else {
+      if (spec_->shuffle_input_sentence()) {
+        CHECK_NOTNULL(sampler_)->Add(sentence);
+      } else {
+        sentences_->emplace_back(sentence);
+        if (sentences_->size() >=
+            static_cast<size_t>(spec_->input_sentence_size()))
+          return false;
+      }
+    }
+
+    if (total_size() % 500000 == 0) {
+      LOG(INFO) << "Loaded " << total_size() << " lines";
+    }
+
+    return true;
+  }
+
+  size_t total_size() const {
+    return sampler_.get() ? sampler_->total_size() : sentences_->size();
+  }
+
+ private:
+  TrainerInterface::Sentences *sentences_ = nullptr;
+  const TrainerSpec *spec_ = nullptr;
+  std::unique_ptr<Sampler> sampler_;
+};
 }  // namespace
 
 TrainerInterface::TrainerInterface(const TrainerSpec &trainer_spec,
@@ -168,9 +237,6 @@ util::Status TrainerInterface::LoadSentences() {
   RETURN_IF_ERROR(status());
   CHECK_OR_RETURN(sentences_.empty());
   CHECK_OR_RETURN(required_chars_.empty());
-
-  const normalizer::Normalizer normalizer(normalizer_spec_);
-
   CHECK_OR_RETURN(trainer_spec_.input_format().empty() ||
                   trainer_spec_.input_format() == "text" ||
                   trainer_spec_.input_format() == "tsv")
@@ -178,12 +244,9 @@ util::Status TrainerInterface::LoadSentences() {
 
   const bool is_tsv = trainer_spec_.input_format() == "tsv";
 
-  std::set<absl::string_view> meta_pieces_set;
-  for (const auto &it : meta_pieces_) meta_pieces_set.insert(it.second.first);
-  const normalizer::PrefixMatcher meta_pieces_matcher(meta_pieces_set);
-
-  random::ReservoirSampler<std::string> sampler(
-      trainer_spec_.self_test_sample_size());
+  SentenceSelector selector(&sentences_, trainer_spec_);
+  random::ReservoirSampler<std::string> test_sentence_sampler(
+      &self_test_samples_, trainer_spec_.self_test_sample_size());
 
   for (const auto &filename : trainer_spec_.input()) {
     LOG(INFO) << "Loading corpus: " << filename;
@@ -201,6 +264,8 @@ util::Status TrainerInterface::LoadSentences() {
         CHECK_GE_OR_RETURN(freq, 1);
       }
 
+      if (sentence.empty()) continue;
+
       if (static_cast<int>(sentence.size()) >
           trainer_spec_.max_sentence_length()) {
         LOG(INFO) << "Too long lines (>=" << trainer_spec_.max_sentence_length()
@@ -208,43 +273,62 @@ util::Status TrainerInterface::LoadSentences() {
                      "flag). Skipped.";
         continue;
       }
+
       if (sentence.find(kUNKStr) != std::string::npos) {
         LOG(INFO) << "Reserved chars are found. Skipped: " << sentence;
         continue;
       }
 
-      // * Normalizes sentence with Normalizer.
-      // * whitespaces are replaced with kWSChar.
-      // * Replaces user_defined_symbols with '\t'.
-      const std::string normalized = meta_pieces_matcher.GlobalReplace(
-          normalizer.Normalize(sentence), kUPPBoundaryStr);
-      if (sentences_.size() % 100000 == 0) {
-        LOG(INFO) << "Loading: " << normalized
-                  << "\tsize=" << sentences_.size();
-      }
+      test_sentence_sampler.Add(sentence);
 
-      CHECK_OR_RETURN(normalized.find(" ") == std::string::npos)
-          << "Normalized string must not include spaces";
-      if (normalized.empty()) {
-        LOG(WARNING) << "Empty string found. removed";
-        continue;
-      }
-
-      sentences_.emplace_back(normalized, freq);
-      sampler.Add(sentence);
-
-      if (sentences_.size() ==
-          static_cast<size_t>(trainer_spec_.input_sentence_size())) {
+      if (!selector.Add(std::make_pair(sentence, freq))) {
         goto END;
       }
     }
   }
 
 END:
-  self_test_samples_ = sampler.sampled();
-
-  LOG(INFO) << "Loaded " << sentences_.size() << " sentences";
+  LOG(INFO) << "Loaded (Sampled) " << sentences_.size() << "/"
+            << selector.total_size() << " sentences";
   LOG(INFO) << "Loaded " << self_test_samples_.size() << " test sentences";
+
+  // Normalize and removes empty string.
+  {
+    const normalizer::Normalizer normalizer(normalizer_spec_);
+    std::set<absl::string_view> meta_pieces_set;
+    for (const auto &it : meta_pieces_) {
+      LOG(INFO) << "Adding meta_piece: " << it.second.first;
+      meta_pieces_set.insert(it.second.first);
+    }
+    const normalizer::PrefixMatcher meta_pieces_matcher(meta_pieces_set);
+
+    LOG(INFO) << "Normalizing sentences...";
+    CHECK_OR_RETURN(!sentences_.empty());
+    {
+      auto pool = port::MakeUnique<thread::ThreadPool>();
+      for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
+        pool->Schedule([&, n]() {
+          for (size_t i = n; i < sentences_.size();
+               i += trainer_spec_.num_threads()) {
+            auto *s = &sentences_[i].first;
+            *s = meta_pieces_matcher.GlobalReplace(normalizer.Normalize(*s),
+                                                   kUPPBoundaryStr);
+          }
+        });
+      }
+    }
+
+    for (size_t i = 0; i < sentences_.size(); ++i) {
+      auto *s = &sentences_[i].first;
+      CHECK_OR_RETURN(s->find(" ") == std::string::npos)
+          << "Normalized string must not include spaces";
+      if (s->empty()) {
+        LOG(WARNING) << "Empty string found. removed";
+        std::swap(sentences_[i], sentences_[sentences_.size() - 1]);
+        sentences_.resize(sentences_.size() - 1);
+      }
+    }
+  }
 
   // Count character frequencies.
   int64 all_chars_count = 0;
@@ -319,10 +403,10 @@ END:
         << "--character_coverage option.";
   }
 
-  LOG(INFO) << "Done! " << sentences_.size() << " sentences are loaded";
+  LOG(INFO) << "Done! preprocessed " << sentences_.size() << " sentences.";
 
   return util::OkStatus();
-}
+}  // namespace sentencepiece
 
 void TrainerInterface::SplitSentencesByWhitespace() {
   LOG(INFO) << "Tokenizing input sentences with whitespace: "

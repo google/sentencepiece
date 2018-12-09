@@ -571,4 +571,14 @@ TEST(UtilTest, JoinPathTest) {
   EXPECT_EQ("foo", util::JoinPath("foo"));
   EXPECT_EQ("", util::JoinPath(""));
 }
+
+TEST(UtilTest, ReservoirSamplerTest) {
+  std::vector<int> sampled;
+  random::ReservoirSampler<int> sampler(&sampled, 100);
+  for (int i = 0; i < 10000; ++i) {
+    sampler.Add(i);
+  }
+  EXPECT_EQ(100, sampled.size());
+  EXPECT_EQ(10000, sampler.total_size());
+}
 }  // namespace sentencepiece

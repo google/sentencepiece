@@ -41,11 +41,10 @@ DEFINE_double(character_coverage, kDefaultTrainerSpec.character_coverage(),
               "character coverage to determine the minimum symbols");
 DEFINE_int32(input_sentence_size, kDefaultTrainerSpec.input_sentence_size(),
              "maximum size of sentences the trainer loads");
-DEFINE_int32(mining_sentence_size, kDefaultTrainerSpec.mining_sentence_size(),
-             "maximum size of sentences to make seed sentence piece");
-DEFINE_int32(training_sentence_size,
-             kDefaultTrainerSpec.training_sentence_size(),
-             "maximum size of sentences to train sentence pieces");
+DEFINE_bool(shuffle_input_sentence,
+            kDefaultTrainerSpec.shuffle_input_sentence(),
+            "Randomly sample input sentences in advance. Valid when "
+            "--input_sentence_size > 0");
 DEFINE_int32(seed_sentencepiece_size,
              kDefaultTrainerSpec.seed_sentencepiece_size(),
              "the size of seed sentencepieces");
@@ -132,8 +131,7 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(self_test_sample_size);
   SetTrainerSpecFromFlag(character_coverage);
   SetTrainerSpecFromFlag(input_sentence_size);
-  SetTrainerSpecFromFlag(mining_sentence_size);
-  SetTrainerSpecFromFlag(training_sentence_size);
+  SetTrainerSpecFromFlag(shuffle_input_sentence);
   SetTrainerSpecFromFlag(seed_sentencepiece_size);
   SetTrainerSpecFromFlag(shrinking_factor);
   SetTrainerSpecFromFlag(num_threads);
