@@ -23,7 +23,6 @@
 #include <queue>
 #include <sstream>
 #include <string>
-#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -61,21 +60,6 @@ void ToLogProb(IT begin, IT end) {
     it->second = log(it->second) - logsum;
   }
 }
-
-class ThreadPool {
- public:
-  ThreadPool() {}
-  virtual ~ThreadPool() {
-    for (auto &task : tasks_) {
-      task.join();
-    }
-  }
-
-  void Schedule(std::function<void()> closure) { tasks_.emplace_back(closure); }
-
- private:
-  std::vector<std::thread> tasks_;
-};
 }  // namespace
 
 TrainerModel::TrainerModel(const TrainerSpec &trainer_spec,
@@ -122,21 +106,11 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
   std::unordered_map<std::string, int64> all_chars;
   constexpr char32 kSentenceBoundary = 0x0000;
 
-  const size_t mining_size =
-      std::min<size_t>(sentences_.size(), trainer_spec_.mining_sentence_size());
-  LOG(INFO) << "Using " << mining_size
-            << " sentences for making seed sentencepieces";
-
-  std::vector<std::string> mining_sentences(mining_size);
-  for (size_t i = 0; i < mining_size; ++i) {
-    mining_sentences[i] = sentences_[i].first;
-  }
-
-  for (const auto &w : mining_sentences) {
-    for (const auto &c : string_util::UTF8ToUnicodeText(w)) {
+  for (const auto &w : sentences_) {
+    for (const auto &c : string_util::UTF8ToUnicodeText(w.first)) {
       array.push_back(c);
       if (c != kUNKChar && c != kSentenceBoundary) {
-        ++all_chars[string_util::UnicodeCharToUTF8(c)];
+        all_chars[string_util::UnicodeCharToUTF8(c)] += w.second;
       }
     }
     array.push_back(kSentenceBoundary);  // sentence boundary marker.
@@ -219,7 +193,7 @@ std::vector<float> Trainer::RunEStep(const TrainerModel &model, float *obj,
   std::vector<float> objs(trainer_spec_.num_threads(), 0.0);
   std::vector<int64> ntokens(trainer_spec_.num_threads(), 0.0);
 
-  auto pool = port::MakeUnique<ThreadPool>();
+  auto pool = port::MakeUnique<thread::ThreadPool>();
 
   int64 all_sentence_freq = 0;
   for (const auto &w : sentences_) {
@@ -340,7 +314,7 @@ TrainerModel::SentencePieces Trainer::PruneSentencePieces(
     std::vector<std::vector<std::vector<int>>> inverteds(
         trainer_spec_.num_threads());
 
-    auto pool = port::MakeUnique<ThreadPool>();
+    auto pool = port::MakeUnique<thread::ThreadPool>();
     for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
       freqs[n].resize(sentencepieces.size(), 0.0);
       inverteds[n].resize(sentencepieces.size());
@@ -493,10 +467,6 @@ util::Status Trainer::Train() {
 
   if (trainer_spec_.split_by_whitespace()) {
     SplitSentencesByWhitespace();
-  } else {
-    const int training_size = std::min<size_t>(
-        sentences_.size(), trainer_spec_.training_sentence_size());
-    sentences_.resize(training_size);
   }
 
   LOG(INFO) << "Using " << sentences_.size() << " sentences for EM training";

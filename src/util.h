@@ -19,10 +19,12 @@
 #include <string.h>
 
 #include <algorithm>
+#include <functional>
 #include <memory>
 #include <random>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 #include "common.h"
@@ -406,32 +408,32 @@ std::mt19937 *GetRandomGenerator();
 template <typename T>
 class ReservoirSampler {
  public:
-  explicit ReservoirSampler(size_t size)
-      : size_(size), engine_(std::random_device{}()) {}
+  explicit ReservoirSampler(std::vector<T> *sampled, size_t size)
+      : sampled_(sampled), size_(size), engine_(std::random_device{}()) {}
+  explicit ReservoirSampler(std::vector<T> *sampled, size_t size, size_t seed)
+      : sampled_(sampled), size_(size), engine_(seed) {}
   virtual ~ReservoirSampler() {}
 
   void Add(const T &item) {
     if (size_ == 0) return;
 
     ++total_;
-    if (sampled_.size() < size_) {
-      sampled_.push_back(item);
+    if (sampled_->size() < size_) {
+      sampled_->push_back(item);
     } else {
-      std::uniform_int_distribution<> dist(0, total_ - 1);
-      const int n = dist(engine_);
-      if (n < static_cast<int>(sampled_.size())) {
-        sampled_[n] = item;
-      }
+      std::uniform_int_distribution<size_t> dist(0, total_ - 1);
+      const size_t n = dist(engine_);
+      if (n < sampled_->size()) (*sampled_)[n] = item;
     }
   }
 
-  const std::vector<T> &sampled() const { return sampled_; }
+  size_t total_size() const { return total_; }
 
  private:
+  std::vector<T> *sampled_ = nullptr;
   size_t size_ = 0;
   size_t total_ = 0;
   std::mt19937 engine_;
-  std::vector<T> sampled_;
 };
 
 }  // namespace random
@@ -511,5 +513,23 @@ class StatusBuilder {
 #define CHECK_LT_OR_RETURN(a, b) CHECK_OR_RETURN((a) < (b))
 
 }  // namespace util
+
+namespace thread {
+
+class ThreadPool {
+ public:
+  ThreadPool() {}
+  virtual ~ThreadPool() {
+    for (auto &task : tasks_) {
+      task.join();
+    }
+  }
+
+  void Schedule(std::function<void()> closure) { tasks_.emplace_back(closure); }
+
+ private:
+  std::vector<std::thread> tasks_;
+};
+}  // namespace thread
 }  // namespace sentencepiece
 #endif  // UTIL_H_

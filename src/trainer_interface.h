@@ -50,7 +50,8 @@ std::vector<std::pair<K, V>> Sorted(const std::unordered_map<K, V> &m) {
 // Base trainer class
 class TrainerInterface {
  public:
-  using Sentences = std::vector<std::pair<std::string, int64>>;
+  using Sentence = std::pair<std::string, int64>;
+  using Sentences = std::vector<Sentence>;
 
   static const char32 kWSChar;
   static const char32 kUNKChar;
