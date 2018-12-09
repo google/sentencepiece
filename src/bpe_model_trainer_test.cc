@@ -96,7 +96,8 @@ TEST(BPETrainerTest, EndToEndTest) {
   EXPECT_OK(SentencePieceTrainer::Train(string_util::StrCat(
       "--model_prefix=", sf.filename(), " --input=", input,
       " --vocab_size=8000 --normalization_rule_name=identity"
-      " --model_type=bpe --control_symbols=<ctrl>")));
+      " --model_type=bpe --control_symbols=<ctrl> "
+      "--max_sentence_length=2048")));
 
   SentencePieceProcessor sp;
   EXPECT_OK(sp.Load(std::string(sf.filename()) + ".model"));

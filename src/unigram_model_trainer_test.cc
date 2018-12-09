@@ -46,7 +46,7 @@ TEST(UnigramTrainerTest, EndToEndTest) {
       "--model_prefix=", sf.filename(), " --input=", input,
       " --vocab_size=8000 --normalization_rule_name=identity",
       " --model_type=unigram --user_defined_symbols=<user>",
-      " --control_symbols=<ctrl>")));
+      " --control_symbols=<ctrl> --max_sentence_length=2048")));
 
   SentencePieceProcessor sp;
   EXPECT_OK(sp.Load(string_util::StrCat(sf.filename(), ".model")));
