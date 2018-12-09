@@ -1,13 +1,13 @@
 # SentencePiece Python Wrapper
 
 Python wrapper for SentencePiece with SWIG. This module wraps sentencepiece::SentencePieceProcessor class with the following modifications:
-* Encode and Decode methods are re-defined as EncodeAsIds, EncodeAsPieces, DecodeIds and DecodePieces respectevely.
+* Encode and Decode methods are re-defined as EncodeAsIds, EncodeAsPieces, DecodeIds and DecodePieces respectively.
 * Support model training with SentencePieceTrainer.Train method.
 * SentencePieceText proto is not supported.
 * Added __len__ and __getitem__ methods. len(obj) and obj[key] returns vocab size and vocab id respectively.
 
 ## Build and Install SentencePiece
-For Linux (x64/i686), macOS, and Windows(win32/x64) environment, you can simply use pip comand to install SentencePiece python module.
+For Linux (x64/i686), macOS, and Windows(win32/x64) environment, you can simply use pip command to install SentencePiece python module.
 
 ```
 % pip install sentencepiece
@@ -69,7 +69,7 @@ True
 ```
 
 ### Model Training
-Training is peformed by passing parameters of [spm_train](https://github.com/google/sentencepiece#train-sentencepiece-model) to  SentencePieceTrainer.Train() function.
+Training is performed by passing parameters of [spm_train](https://github.com/google/sentencepiece#train-sentencepiece-model) to  SentencePieceTrainer.Train() function.
 
 ```
 >>> import sentencepiece as spm
