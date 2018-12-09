@@ -178,7 +178,7 @@ If want to use self-prepared protobuf library, specify protbof prefix before bui
 % sudo ldconfig -v
 ```
 On OSX/macOS, replace the last command with the following: 
-``% sudo update_dyld_shared_cache```
+`sudo update_dyld_shared_cache`
 
 ## Usage instructions
 ### Train SentencePiece Model
