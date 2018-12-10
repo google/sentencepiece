@@ -28,7 +28,7 @@ option(SPM_NO_THREADLOCAL "Disable thread_local operator" OFF)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(prefix ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix "\${prefix}")
@@ -86,6 +86,8 @@ if (SPM_BUILD_TEST)
 endif()
 
 add_subdirectory(src)
+add_subdirectory(third_party)
+add_subdirectory(third_party/absl/strings)
 
 set(CPACK_SOURCE_GENERATOR "TXZ")
 set(CPACK_GENERATOR "7Z")
