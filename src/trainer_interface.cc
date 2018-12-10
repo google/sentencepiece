@@ -102,7 +102,7 @@ class SentenceSelector {
       } else {
         LOG(INFO)
             << "First " << spec_->input_sentence_size()
-            << " sentences are select. Remaining sentences are discarded.";
+            << " sentences are selected. Remaining sentences are discarded.";
       }
     }
   }
