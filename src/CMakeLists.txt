@@ -51,7 +51,7 @@ set(SPM_SRCS
   unigram_model.cc
   util.cc
   word_model.cc
-  ../third_party/absl/strings/string_view.cc)
+  ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/strings/string_view.cc)
 
 set(SPM_TRAIN_SRCS
   ${SPM_PROTO_HDRS}
