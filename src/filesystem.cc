@@ -22,12 +22,10 @@ namespace filesystem {
 
 class PosixReadableFile : public ReadableFile {
  public:
-  PosixReadableFile(absl::string_view filename, bool is_binary = false)
+  PosixReadableFile(absl::string_view filename)
       : is_(filename.empty()
                 ? &std::cin
-                : new std::ifstream(WPATH(filename.data()),
-                                    is_binary ? std::ios::binary | std::ios::in
-                                              : std::ios::out)) {
+                : new std::ifstream(WPATH(filename.data()), std::ios::binary | std::ios::in)) {
     if (!*is_)
       status_ = util::StatusBuilder(util::error::NOT_FOUND)
                 << "\"" << filename.data() << "\": " << util::StrError(errno);
@@ -89,9 +87,8 @@ class PosixWritableFile : public WritableFile {
   std::ostream *os_;
 };
 
-std::unique_ptr<ReadableFile> NewReadableFile(absl::string_view filename,
-                                              bool is_binary) {
-  return port::MakeUnique<PosixReadableFile>(filename, is_binary);
+std::unique_ptr<ReadableFile> NewReadableFile(absl::string_view filename) {
+  return port::MakeUnique<PosixReadableFile>(filename);
 }
 
 std::unique_ptr<WritableFile> NewWritableFile(absl::string_view filename,

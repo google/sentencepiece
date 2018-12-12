@@ -48,8 +48,7 @@ class WritableFile {
   virtual bool WriteLine(absl::string_view text) = 0;
 };
 
-std::unique_ptr<ReadableFile> NewReadableFile(absl::string_view filename,
-                                              bool is_binary = false);
+std::unique_ptr<ReadableFile> NewReadableFile(absl::string_view filename);
 std::unique_ptr<WritableFile> NewWritableFile(absl::string_view filename,
                                               bool is_binary = false);
 
