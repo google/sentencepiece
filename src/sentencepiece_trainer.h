@@ -18,12 +18,6 @@
 #include <string>
 #include "sentencepiece_processor.h"
 
-namespace google {
-namespace protobuf {
-class Message;
-}  // namespace protobuf
-}  // namespace google
-
 namespace sentencepiece {
 
 class TrainerSpec;
@@ -63,9 +57,15 @@ class SentencePieceTrainer {
   // Helper function to set `field_name=value` in `message`.
   // When `field_name` is repeated, multiple values can be passed
   // with comma-separated values. `field_name` must not be a nested message.
-  static util::Status SetProtoField(util::min_string_view field_name,
-                                    util::min_string_view value,
-                                    google::protobuf::Message *message);
+  // The body of these functions are automatically generated with
+  // data/gen_spec_parser.pl
+  static util::Status SetProtoField(const std::string &name,
+                                    const std::string &value,
+                                    TrainerSpec *message);
+
+  static util::Status SetProtoField(const std::string &name,
+                                    const std::string &value,
+                                    NormalizerSpec *message);
 
   SentencePieceTrainer() = delete;
   ~SentencePieceTrainer() = delete;

@@ -902,7 +902,8 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
   EXPECT_NOT_OK(sp.SetDecodeExtraOptions("foo"));
 
   auto RunTest = [&model_proto](const SentencePieceProcessor &sp) {
-    EXPECT_EQ(model_proto.DebugString(), sp.model_proto().DebugString());
+    EXPECT_EQ(model_proto.SerializeAsString(),
+              sp.model_proto().SerializeAsString());
 
     EXPECT_EQ(8, sp.GetPieceSize());
     EXPECT_EQ(0, sp.PieceToId("<unk>"));

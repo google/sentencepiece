@@ -1,3 +1,5 @@
+
+
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +39,7 @@ int main(int argc, char *argv[]) {
       output->WriteLine(os.str());
     }
   } else if (FLAGS_output_format == "proto") {
-    output->Write(sp.model_proto().Utf8DebugString());
+    //    output->Write(sp.model_proto().Utf8DebugString());
   }
 
   return 0;

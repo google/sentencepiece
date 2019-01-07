@@ -17,7 +17,6 @@
 set -e  # exit immediately on error
 set -x  # display all commands
 
-PROTOBUF_VERSION=3.6.1
 CMAKE_VERSION=3.12.0
 
 run_docker() {
@@ -47,7 +46,6 @@ build_tf_wrapper() {
     -fPIC ${TF_CFLAGS[@]} -O2 \
     -D_GLIBCXX_USE_CXX11_ABI=0 \
     -Wl,--whole-archive \
-    /usr/local/lib/libprotobuf.a \
     /usr/local/lib/libsentencepiece.a \
     -Wl,--no-whole-archive \
     sentencepiece_processor_ops.cc \
@@ -65,16 +63,6 @@ build() {
 
   apt-get update
   apt-get install -y curl build-essential cmake git pkg-config python-pip python3-pip
-
-  # Install protobuf
-  curl -L -O https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
-  tar zxfv protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
-  cd protobuf-${PROTOBUF_VERSION}
-  ./configure --disable-shared --with-pic
-  make CXXFLAGS+="-std=c++11 -O3 -D_GLIBCXX_USE_CXX11_ABI=0" \
-    CFLAGS+="-std=c++11 -O3 -D_GLIBCXX_USE_CXX11_ABI=0" -j4
-  make install
-  cd ..
 
   # Install sentencepiece
   cmake ../.. -DSPM_ENABLE_SHARED=OFF -DSPM_ENABLE_TENSORFLOW_SHARED=ON

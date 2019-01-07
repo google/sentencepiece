@@ -16,8 +16,6 @@
 set -e  # exit immediately on error
 set -x  # display all commands
 
-PROTOBUF_VERSION=3.6.1
-
 build_python() {
   VERSION=$1
   URL=$2
@@ -60,16 +58,6 @@ build() {
   rm -fr build
   mkdir -p build
   cd build
-
-  # Install protobuf
-  curl -L -O https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
-  tar zxfv protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
-  cd protobuf-${PROTOBUF_VERSION}
-  ./configure --disable-shared --with-pic
-  make CXXFLAGS+="-std=c++11 -O3 -DGOOGLE_PROTOBUF_NO_THREADLOCAL=1" \
-    CFLAGS+="-std=c++11 -O3 -DGOOGLE_PROTOBUF_NO_THREADLOCAL=1" -j4
-  make install || true
-  cd ..
 
   # Install sentencepiece
   cmake ../.. -DSPM_ENABLE_SHARED=OFF -DSPM_NO_THREADLOCAL=ON
