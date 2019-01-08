@@ -137,7 +137,7 @@ The following tools and libraries are required to build SentencePiece:
 
 On Ubuntu, autotools can be installed with apt-get:
 ```
-% sudo apt-get install cmake pkg-config
+% sudo apt-get install cmake pkg-config libgoogle-perftools-dev
 ```
 ### Build and Install SentencePiece
 ```
