@@ -22,8 +22,6 @@ inline std::string PrintProto(const TrainerSpec &message) {
   os << "  character_coverage: " << message.character_coverage() << "\n";
   os << "  input_sentence_size: " << message.input_sentence_size() << "\n";
   os << "  shuffle_input_sentence: " << message.shuffle_input_sentence() << "\n";
-  os << "  mining_sentence_size: " << message.mining_sentence_size() << "\n";
-  os << "  training_sentence_size: " << message.training_sentence_size() << "\n";
   os << "  seed_sentencepiece_size: " << message.seed_sentencepiece_size() << "\n";
   os << "  shrinking_factor: " << message.shrinking_factor() << "\n";
   os << "  max_sentence_length: " << message.max_sentence_length() << "\n";
@@ -151,24 +149,6 @@ util::Status SentencePieceTrainer::SetProtoField(const std::string& name, const 
     if (!string_util::lexical_cast(val.empty() ? "true" : val, &v))
       return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as bool.";
     message->set_shuffle_input_sentence(v);
-    return util::OkStatus();
-  }
-
-  if (name == "mining_sentence_size") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_mining_sentence_size(v);
-    return util::OkStatus();
-  }
-
-  if (name == "training_sentence_size") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_training_sentence_size(v);
     return util::OkStatus();
   }
 

@@ -58,6 +58,7 @@ sub ProcessPrinter() {
         }
       }
     } elsif (/\s*(repeated|optional)\s+(\S+)\s+(\S+)\s*=\s*(\d+)/) {
+      next if (/deprecated = true/);
       next if (!$valid);
       my $opt = $1;
       my $type = $2;
@@ -128,6 +129,7 @@ sub ProcessParser() {
         }
       }
     } elsif (/\s*(repeated|optional)\s+(\S+)\s+(\S+)\s*=\s*(\d+)/) {
+      next if (/deprecated = true/);
       next if (!$valid);
       my $opt = $1;
       my $type = $2;
