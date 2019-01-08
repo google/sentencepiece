@@ -78,7 +78,6 @@
 #ifndef GOOGLE_PROTOBUF_STUBS_ONCE_H__
 #define GOOGLE_PROTOBUF_STUBS_ONCE_H__
 
-#include <sched.h>
 #include <atomic>
 #include <mutex>
 #include <utility>
@@ -109,7 +108,6 @@ void my_call_once(once_flag& once, Callable&& fn, Args&&... args) {
   }
 
   while (once.load() == ONCE_RUNNING) {
-    sched_yield();
   }
 }
 
