@@ -25,8 +25,6 @@ namespace character {
 util::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
-  LOG(INFO) << "Starts training with : \n" << trainer_spec_.Utf8DebugString();
-
   CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());
   CHECK_EQ_OR_RETURN(TrainerSpec::CHAR, trainer_spec_.model_type());
 
@@ -55,8 +53,6 @@ util::Status Trainer::Train() {
   if (trainer_spec_.use_all_vocab()) {
     trainer_spec_.set_vocab_size(final_pieces_.size() + meta_pieces_.size());
   }
-
-  LOG(INFO) << trainer_spec_.Utf8DebugString();
 
   return Save();
 }

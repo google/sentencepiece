@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     } else if (FLAGS_output_format == "proto") {
       process = [&](const std::vector<std::string> &pieces) {
         CHECK_OK(sp.Decode(pieces, &spt));
-        output->WriteLine(spt.Utf8DebugString());
+        //        output->WriteLine(spt.Utf8DebugString());
       };
     } else {
       LOG(FATAL) << "Unknown output format: " << FLAGS_output_format;
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
     } else if (FLAGS_output_format == "proto") {
       process = [&](const std::vector<std::string> &pieces) {
         CHECK_OK(sp.Decode(ToIds(pieces), &spt));
-        output->WriteLine(spt.Utf8DebugString());
+        //        output->WriteLine(spt.Utf8DebugString());
       };
     } else {
       LOG(FATAL) << "Unknown output format: " << FLAGS_output_format;

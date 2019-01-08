@@ -28,8 +28,6 @@ namespace word {
 util::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
-  LOG(INFO) << "Starts training with : \n" << trainer_spec_.Utf8DebugString();
-
   CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());
   CHECK_EQ_OR_RETURN(TrainerSpec::WORD, trainer_spec_.model_type());
 
