@@ -248,6 +248,8 @@ util::Status TrainerInterface::LoadSentences() {
   random::ReservoirSampler<std::string> test_sentence_sampler(
       &self_test_samples_, trainer_spec_.self_test_sample_size());
 
+  int too_long_lines = 0;
+
   for (const auto &filename : trainer_spec_.input()) {
     LOG(INFO) << "Loading corpus: " << filename;
     std::string sentence;
@@ -268,9 +270,14 @@ util::Status TrainerInterface::LoadSentences() {
 
       if (static_cast<int>(sentence.size()) >
           trainer_spec_.max_sentence_length()) {
-        LOG(INFO) << "Too long lines (>=" << trainer_spec_.max_sentence_length()
-                  << " bytes (it can be changed with --max_sentence_length "
-                     "flag). Skipped.";
+        if (too_long_lines == 0) {
+          LOG(INFO) << "Found too long line (" << sentence.size() << " > "
+                    << trainer_spec_.max_sentence_length() << ").";
+          LOG(INFO) << "Too long lines are skipped in the training.";
+          LOG(INFO) << "The maximum length can be changed with "
+                       "--max_sentence_length=<size> flag.";
+        }
+        ++too_long_lines;
         continue;
       }
 
@@ -289,7 +296,8 @@ util::Status TrainerInterface::LoadSentences() {
 
 END:
   LOG(INFO) << "Loaded (Sampled) " << sentences_.size() << "/"
-            << selector.total_size() << " sentences";
+            << selector.total_size() << " sentences.";
+  LOG(INFO) << "Skipped " << too_long_lines << " too long sentences.";
   LOG(INFO) << "Loaded " << self_test_samples_.size() << " test sentences";
 
   // Normalize and removes empty string.
