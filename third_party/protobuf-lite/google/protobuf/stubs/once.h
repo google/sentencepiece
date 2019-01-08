@@ -78,7 +78,12 @@
 #ifndef GOOGLE_PROTOBUF_STUBS_ONCE_H__
 #define GOOGLE_PROTOBUF_STUBS_ONCE_H__
 
+#ifdef _WIN32
+#include <winnt.h>
+#else
 #include <sched.h>
+#endif
+
 #include <atomic>
 #include <mutex>
 #include <utility>
@@ -109,7 +114,11 @@ void my_call_once(once_flag& once, Callable&& fn, Args&&... args) {
   }
 
   while (once.load() == ONCE_RUNNING) {
+#ifdef _WIN32
+    ::YieldProcessor();
+#else
     sched_yield();
+#endif
   }
 }
 
