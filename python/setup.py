@@ -53,8 +53,7 @@ def cflags():
 def libs():
   if sys.platform == 'win32':
     return ['..\\build\\root\\lib\\sentencepiece.lib',
-            '..\\build\\root\\lib\\sentencepiece_train.lib',
-            '..\\build\\root\\lib\\libprotobuf.lib']
+            '..\\build\\root\\lib\\sentencepiece_train.lib']
 
   return cmd('pkg-config sentencepiece --libs')
 

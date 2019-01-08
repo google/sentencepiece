@@ -53,9 +53,6 @@ spm_train
 spm_normalize
 spm_test
 
-*.pb.cc
-*.pb.h
-
 .DS_Store
 *.egg-info/
 dist/

@@ -15,7 +15,6 @@
 set -e  # exit immediately on error
 set -x  # display all commands
 
-PROTOBUF_VERSION=3.6.1
 CMAKE_VERSION=3.12.0
 
 run_docker() {
@@ -41,16 +40,6 @@ build() {
   ./bootstrap
   make -j4
   make install
-  cd ..
-
-  # Install protobuf
-  curl -L -O https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
-  tar zxfv protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
-  cd protobuf-${PROTOBUF_VERSION}
-  cp -f ../../once.h src/google/protobuf/stubs/once.h
-  ./configure --disable-shared --with-pic
-  make CXXFLAGS+="-std=c++11 -O3" CFLAGS+="-std=c++11 -O3" -j4
-  make install || true
   cd ..
 
   # Install sentencepiece

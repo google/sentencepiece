@@ -17,8 +17,6 @@
 set -e  # exit immediately on error
 set -x  # display all commands
 
-PROTOBUF_VERSION=3.6.1
-
 build_tf_wrapper() {
   if [ "$1" != "" ]; then
     pkg_name="==$1"
@@ -36,7 +34,6 @@ build_tf_wrapper() {
     -fPIC ${TF_CFLAGS[@]} -O2 \
     -D_GLIBCXX_USE_CXX11_ABI=0 \
     -Wl,-all_load  \
-    /usr/local/lib/libprotobuf.a \
     /usr/local/lib/libsentencepiece.a \
     -Wl,-noall_load \
     sentencepiece_processor_ops.cc \
@@ -51,16 +48,6 @@ build() {
   rm -fr build
   mkdir -p build
   cd build
-
-  # Install protobuf
-  curl -L -O https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
-  tar zxfv protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
-  cd protobuf-${PROTOBUF_VERSION}
-  ./configure --disable-shared --with-pic
-  make CXXFLAGS+="-std=c++11 -O3 -D_GLIBCXX_USE_CXX11_ABI=0" \
-    CFLAGS+="-std=c++11 -O3 -D_GLIBCXX_USE_CXX11_ABI=0" -j4
-  make install || true
-  cd ..
 
   # Install sentencepiece
   cmake ../.. -DSPM_ENABLE_SHARED=OFF -DSPM_ENABLE_TENSORFLOW_SHARED=ON
