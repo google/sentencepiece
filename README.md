@@ -135,7 +135,7 @@ The following tools and libraries are required to build SentencePiece:
 * C++11 compiler
 * [gperftool](https://github.com/gperftools/gperftools) library (optional, 10-40% performance improvement can be obtained.)
 
-On Ubuntu, autotools can be installed with apt-get:
+On Ubuntu, the build tools can be installed with apt-get:
 ```
 % sudo apt-get install cmake pkg-config libgoogle-perftools-dev
 ```
