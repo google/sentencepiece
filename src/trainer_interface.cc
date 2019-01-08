@@ -91,6 +91,8 @@ class SentenceSelector {
  public:
   using Sampler = random::ReservoirSampler<TrainerInterface::Sentence>;
 
+  static constexpr int64 kTooBigSentencesSize = 1000000;
+
   SentenceSelector(TrainerInterface::Sentences *sentences,
                    const TrainerSpec &spec)
       : sentences_(sentences), spec_(&spec) {
@@ -107,19 +109,21 @@ class SentenceSelector {
     }
   }
 
-  bool Add(const std::pair<std::string, int64> &sentence) {
-    constexpr int64 kTooBigSentencesSize = 1000000;
+  void Finish() const {
+    if (sentences_->size() > kTooBigSentencesSize) {
+      LOG(WARNING) << "Too many sentences are loaded! (" << sentences_->size()
+                   << "), which may slow down training.";
+      LOG(WARNING) << "Consider using "
+                      "--input_sentence_size=<size> and "
+                      "--shuffle_input_sentence=true.";
+      LOG(WARNING) << "They allow to randomly sample <size> sentences from "
+                      "the entire corpus.";
+    }
+  }
 
+  bool Add(const std::pair<std::string, int64> &sentence) {
     if (spec_->input_sentence_size() <= 0) {
       sentences_->emplace_back(sentence);
-      if (sentences_->size() > 0 &&
-          sentences_->size() % kTooBigSentencesSize == 0) {
-        LOG(INFO) << sentences_->size() << " sentences are loaded. ";
-        LOG(INFO)
-            << "Consider using "
-               "--input_sentence_size=SIZE and "
-               "--shuffle_input_sentence=true to avoid memory explosions.";
-      }
     } else {
       if (spec_->shuffle_input_sentence()) {
         CHECK_NOTNULL(sampler_)->Add(sentence);
@@ -131,7 +135,7 @@ class SentenceSelector {
       }
     }
 
-    if (total_size() % 500000 == 0) {
+    if (total_size() > 0 && total_size() % kTooBigSentencesSize == 0) {
       LOG(INFO) << "Loaded " << total_size() << " lines";
     }
 
@@ -271,11 +275,11 @@ util::Status TrainerInterface::LoadSentences() {
       if (static_cast<int>(sentence.size()) >
           trainer_spec_.max_sentence_length()) {
         if (too_long_lines == 0) {
-          LOG(INFO) << "Found too long line (" << sentence.size() << " > "
-                    << trainer_spec_.max_sentence_length() << ").";
-          LOG(INFO) << "Too long lines are skipped in the training.";
-          LOG(INFO) << "The maximum length can be changed with "
-                       "--max_sentence_length=<size> flag.";
+          LOG(WARNING) << "Found too long line (" << sentence.size() << " > "
+                       << trainer_spec_.max_sentence_length() << ").";
+          LOG(WARNING) << "Too long lines are skipped in the training.";
+          LOG(WARNING) << "The maximum length can be changed with "
+                          "--max_sentence_length=<size> flag.";
         }
         ++too_long_lines;
         continue;
@@ -295,10 +299,19 @@ util::Status TrainerInterface::LoadSentences() {
   }
 
 END:
-  LOG(INFO) << "Loaded (Sampled) " << sentences_.size() << "/"
-            << selector.total_size() << " sentences.";
-  LOG(INFO) << "Skipped " << too_long_lines << " too long sentences.";
-  LOG(INFO) << "Loaded " << self_test_samples_.size() << " test sentences";
+  // Emits error message if any.
+  selector.Finish();
+
+  if (sentences_.size() == selector.total_size()) {
+    LOG(INFO) << "Loaded all " << sentences_.size() << " sentences";
+  } else {
+    LOG(INFO) << "Sampled " << sentences_.size() << " sentences from "
+              << selector.total_size() << " sentences.";
+  }
+  if (too_long_lines > 0)
+    LOG(INFO) << "Skipped " << too_long_lines << " too long sentences.";
+  if (self_test_samples_.size() > 0)
+    LOG(INFO) << "Loaded " << self_test_samples_.size() << " test sentences";
 
   // Normalize and removes empty string.
   {
