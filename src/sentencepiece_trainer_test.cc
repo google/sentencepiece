@@ -96,47 +96,60 @@ TEST(SentencePieceTrainerTest, TrainTest) {
 }
 
 TEST(SentencePieceTrainerTest, SetProtoFieldTest) {
-  TrainerSpec spec;
+  {
+    TrainerSpec spec;
 
-  EXPECT_NOT_OK(SentencePieceTrainer::SetProtoField("dummy", "1000", &spec));
+    EXPECT_NOT_OK(SentencePieceTrainer::SetProtoField("dummy", "1000", &spec));
 
-  EXPECT_OK(SentencePieceTrainer::SetProtoField("vocab_size", "1000", &spec));
-  EXPECT_EQ(1000, spec.vocab_size());
-  EXPECT_NOT_OK(
-      SentencePieceTrainer::SetProtoField("vocab_size", "UNK", &spec));
+    EXPECT_OK(SentencePieceTrainer::SetProtoField("vocab_size", "1000", &spec));
+    EXPECT_EQ(1000, spec.vocab_size());
+    EXPECT_NOT_OK(
+        SentencePieceTrainer::SetProtoField("vocab_size", "UNK", &spec));
 
-  EXPECT_OK(SentencePieceTrainer::SetProtoField("input_format", "TSV", &spec));
-  EXPECT_EQ("TSV", spec.input_format());
-  EXPECT_OK(SentencePieceTrainer::SetProtoField("input_format", "123", &spec));
-  EXPECT_EQ("123", spec.input_format());
+    EXPECT_OK(
+        SentencePieceTrainer::SetProtoField("input_format", "TSV", &spec));
+    EXPECT_EQ("TSV", spec.input_format());
+    EXPECT_OK(
+        SentencePieceTrainer::SetProtoField("input_format", "123", &spec));
+    EXPECT_EQ("123", spec.input_format());
 
-  EXPECT_OK(SentencePieceTrainer::SetProtoField("split_by_whitespace", "false",
-                                                &spec));
-  EXPECT_FALSE(spec.split_by_whitespace());
-  EXPECT_OK(
-      SentencePieceTrainer::SetProtoField("split_by_whitespace", "", &spec));
-  EXPECT_TRUE(spec.split_by_whitespace());
+    EXPECT_OK(SentencePieceTrainer::SetProtoField("split_by_whitespace",
+                                                  "false", &spec));
+    EXPECT_FALSE(spec.split_by_whitespace());
+    EXPECT_OK(
+        SentencePieceTrainer::SetProtoField("split_by_whitespace", "", &spec));
+    EXPECT_TRUE(spec.split_by_whitespace());
 
-  EXPECT_OK(
-      SentencePieceTrainer::SetProtoField("character_coverage", "0.5", &spec));
-  EXPECT_NEAR(spec.character_coverage(), 0.5, 0.001);
-  EXPECT_NOT_OK(
-      SentencePieceTrainer::SetProtoField("character_coverage", "UNK", &spec));
+    EXPECT_OK(SentencePieceTrainer::SetProtoField("character_coverage", "0.5",
+                                                  &spec));
+    EXPECT_NEAR(spec.character_coverage(), 0.5, 0.001);
+    EXPECT_NOT_OK(SentencePieceTrainer::SetProtoField("character_coverage",
+                                                      "UNK", &spec));
 
-  EXPECT_OK(SentencePieceTrainer::SetProtoField("input", "foo,bar,buz", &spec));
-  EXPECT_EQ(3, spec.input_size());
-  EXPECT_EQ("foo", spec.input(0));
-  EXPECT_EQ("bar", spec.input(1));
-  EXPECT_EQ("buz", spec.input(2));
+    EXPECT_OK(
+        SentencePieceTrainer::SetProtoField("input", "foo,bar,buz", &spec));
+    EXPECT_EQ(3, spec.input_size());
+    EXPECT_EQ("foo", spec.input(0));
+    EXPECT_EQ("bar", spec.input(1));
+    EXPECT_EQ("buz", spec.input(2));
 
-  EXPECT_OK(SentencePieceTrainer::SetProtoField("model_type", "BPE", &spec));
-  EXPECT_NOT_OK(
-      SentencePieceTrainer::SetProtoField("model_type", "UNK", &spec));
+    EXPECT_OK(SentencePieceTrainer::SetProtoField("model_type", "BPE", &spec));
+    EXPECT_NOT_OK(
+        SentencePieceTrainer::SetProtoField("model_type", "UNK", &spec));
+  }
 
-  // Nested message is not supported.
-  ModelProto proto;
-  EXPECT_NOT_OK(
-      SentencePieceTrainer::SetProtoField("trainer_spec", "UNK", &proto));
+  {
+    NormalizerSpec spec;
+    EXPECT_OK(SentencePieceTrainer::SetProtoField("add_dummy_prefix", "false",
+                                                  &spec));
+    EXPECT_FALSE(spec.add_dummy_prefix());
+
+    EXPECT_OK(SentencePieceTrainer::SetProtoField("escape_whitespaces", "false",
+                                                  &spec));
+    EXPECT_FALSE(spec.escape_whitespaces());
+
+    EXPECT_NOT_OK(SentencePieceTrainer::SetProtoField("dummy", "1000", &spec));
+  }
 }
 
 TEST(SentencePieceTrainerTest, MergeSpecsFromArgs) {

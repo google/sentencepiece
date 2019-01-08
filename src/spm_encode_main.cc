@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
   } else if (FLAGS_output_format == "proto") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.Encode(line, &spt));
-      output->WriteLine(spt.Utf8DebugString());
+      //      output->WriteLine(spt.Utf8DebugString());
     };
   } else if (FLAGS_output_format == "sample_piece") {
     process = [&](const std::string &line) {
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
   } else if (FLAGS_output_format == "sample_proto") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &spt));
-      output->WriteLine(spt.Utf8DebugString());
+      //      output->WriteLine(spt.Utf8DebugString());
     };
   } else if (FLAGS_output_format == "nbest_piece") {
     process = [&](const std::string &line) {
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
   } else if (FLAGS_output_format == "nbest_proto") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.NBestEncode(line, FLAGS_nbest_size, &nbest_spt));
-      output->WriteLine(nbest_spt.Utf8DebugString());
+      //      output->WriteLine(nbest_spt.Utf8DebugString());
     };
   } else {
     LOG(FATAL) << "Unknown output format: " << FLAGS_output_format;

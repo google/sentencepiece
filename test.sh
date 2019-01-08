@@ -19,8 +19,7 @@ set -x  # display all commands
 
 setup_ubuntu() {
   apt-get update
-  apt-get install -y build-essential cmake git \
-    pkg-config libprotobuf-c++ protobuf-compiler libprotobuf-dev python-pip python3-pip
+  apt-get install -y build-essential cmake git pkg-config python-pip python3-pip
 
   . /etc/os-release
   if [ "${VERSION_ID}" = "14.04" ]; then
@@ -34,7 +33,7 @@ setup_debian() {
 
 setup_fedora() {
   dnf update -y
-  dnf install -y rpm-build gcc-c++ make protobuf-devel cmake pkg-config python-pip python-devel
+  dnf install -y rpm-build gcc-c++ make cmake pkg-config python-pip python-devel
 }
 
 build_generic() {

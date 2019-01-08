@@ -452,8 +452,6 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
 util::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
-  LOG(INFO) << "Starts training with : \n" << trainer_spec_.Utf8DebugString();
-
   CHECK_EQ_OR_RETURN(TrainerSpec::UNIGRAM, trainer_spec_.model_type());
   CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());
 

@@ -30,6 +30,9 @@ namespace {
 static constexpr char kDefaultNormalizerName[] = "nmt_nfkc";
 }  // namespace
 
+// this header is automatically generated.
+#include "spec_parser.h"
+
 // static
 util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec) {
   NormalizerSpec normalizer_spec;
@@ -42,6 +45,10 @@ util::Status SentencePieceTrainer::Train(
   auto copied_normalizer_spec = normalizer_spec;
   RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_normalizer_spec));
   auto trainer = TrainerFactory::Create(trainer_spec, copied_normalizer_spec);
+
+  LOG(INFO) << "Starts training with : \n"
+            << PrintProto(trainer_spec) << PrintProto(copied_normalizer_spec);
+
   return trainer->Train();
 }
 
@@ -53,82 +60,6 @@ NormalizerSpec SentencePieceTrainer::GetNormalizerSpec(
   CHECK_OK(normalizer::Builder::GetPrecompiledCharsMap(
       spec.name(), spec.mutable_precompiled_charsmap()));
   return spec;
-}
-
-// static
-util::Status SentencePieceTrainer::SetProtoField(
-    util::min_string_view _field_name, util::min_string_view _value,
-    google::protobuf::Message *message) {
-  const absl::string_view field_name(_field_name.data(), _field_name.size());
-  const absl::string_view value(_value.data(), _value.size());
-
-  const auto *descriptor = message->GetDescriptor();
-  const auto *reflection = message->GetReflection();
-
-  CHECK_OR_RETURN(descriptor != nullptr && reflection != nullptr)
-      << "reflection is not supported.";
-
-  const auto *field = descriptor->FindFieldByName(
-      std::string(field_name.data(), field_name.size()));
-
-  if (field == nullptr) {
-    return util::StatusBuilder(util::error::NOT_FOUND)
-           << "unknown field name \"" << field_name << "\" in\n"
-           << descriptor->DebugString();
-  }
-
-  std::vector<std::string> values = {std::string(value)};
-  if (field->is_repeated())
-    values = string_util::Split(std::string(value), ",");
-
-#define SET_FIELD(METHOD_TYPE, v)                    \
-  if (field->is_repeated())                          \
-    reflection->Add##METHOD_TYPE(message, field, v); \
-  else                                               \
-    reflection->Set##METHOD_TYPE(message, field, v);
-
-#define DEFINE_SET_FIELD(PROTO_TYPE, CPP_TYPE, FUNC_PREFIX, METHOD_TYPE,       \
-                         EMPTY)                                                \
-  case google::protobuf::FieldDescriptor::CPPTYPE_##PROTO_TYPE: {              \
-    CPP_TYPE v;                                                                \
-    if (!string_util::lexical_cast(value.empty() ? EMPTY : value, &v))         \
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT)                \
-             << "cannot parse \"" << value << "\" as \"" << field->type_name() \
-             << "\".";                                                         \
-    SET_FIELD(METHOD_TYPE, v);                                                 \
-    break;                                                                     \
-  }
-
-  for (const auto &value : values) {
-    switch (field->cpp_type()) {
-      DEFINE_SET_FIELD(INT32, int32, i, Int32, "");
-      DEFINE_SET_FIELD(INT64, int64, i, Int64, "");
-      DEFINE_SET_FIELD(UINT32, uint32, i, UInt32, "");
-      DEFINE_SET_FIELD(UINT64, uint64, i, UInt64, "");
-      DEFINE_SET_FIELD(DOUBLE, double, d, Double, "");
-      DEFINE_SET_FIELD(FLOAT, float, f, Float, "");
-      DEFINE_SET_FIELD(BOOL, bool, b, Bool, "true");
-      case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-        SET_FIELD(String, value);
-        break;
-      case google::protobuf::FieldDescriptor::CPPTYPE_ENUM: {
-        const auto *enum_value =
-            field->enum_type()->FindValueByName(string_util::ToUpper(value));
-        if (enum_value == nullptr)
-          return util::StatusBuilder(util::error::INVALID_ARGUMENT)
-                 << "unknown enumeration value of \"" << value
-                 << "\" for field \"" << field->name() << "\".";
-        SET_FIELD(Enum, enum_value);
-        break;
-      }
-      default:
-        return util::StatusBuilder(util::error::UNIMPLEMENTED)
-               << "proto type \"" << field->cpp_type_name()
-               << "\" is not supported.";
-    }
-  }
-
-  return util::OkStatus();
 }
 
 // static
