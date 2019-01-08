@@ -133,40 +133,12 @@ The following tools and libraries are required to build SentencePiece:
 
 * [cmake](https://cmake.org/)
 * C++11 compiler
-* [protobuf](https://github.com/google/protobuf) library
 * [gperftool](https://github.com/gperftools/gperftools) library (optional, 10-40% performance improvement can be obtained.)
 
 On Ubuntu, autotools can be installed with apt-get:
 ```
-% sudo apt-get install cmake pkg-config libprotobuf9v5 protobuf-compiler libprotobuf-dev libgoogle-perftools-dev 
+% sudo apt-get install cmake pkg-config
 ```
-The name of the protobuf library is different between ubuntu distros. Please enter appropriate command for your Ubuntu version.
-
-On ubuntu 14.04 LTS (Trusty Tahr):
-```
-% sudo apt-get install libprotobuf8
-```
-
-On ubuntu 16.04 LTS (Xenial Xerus):
-```
-% sudo apt-get install libprotobuf9v5
-```
-
-On ubuntu 17.10 (Artful Aardvark) and Later:
-```
-% sudo apt-get install libprotobuf10
-```
-
-On OSX, you can use brew:
-```
-% brew install protobuf cmake
-```
-
-If want to use self-prepared protobuf library, specify protobuf prefix before build:
-```
-% cmake .. -DCMAKE_PREFIX_PATH=<prefix_path_to_protobuf>
-```
-
 ### Build and Install SentencePiece
 ```
 % cd /path/to/sentencepiece
