@@ -208,6 +208,19 @@ class TestSentencepieceProcessor(unittest.TestCase):
         sp.decode_pieces(sp.encode_as_pieces(line))
         sp.decode_ids(sp.encode_as_ids(line))
 
+  def test_serialized_proto(self):
+    text = u'I saw a girl with a telescope.'
+    self.assertNotEqual('', self.sp_.EncodeAsSerializedProto(text))
+    self.assertNotEqual('', self.sp_.SampleEncodeAsSerializedProto(text, 10, 0.2))
+    self.assertNotEqual('', self.sp_.NBestEncodeAsSerializedProto(text, 10))
+    self.assertNotEqual('', self.sp_.DecodePiecesAsSerializedProto(['foo', 'bar']))
+    self.assertNotEqual('', self.sp_.DecodeIdsAsSerializedProto([20, 30]))
+    self.assertNotEqual('', self.sp_.encode_as_serialized_proto(text))
+    self.assertNotEqual('', self.sp_.sample_encode_as_serialized_proto(text, 10, 0.2))
+    self.assertNotEqual('', self.sp_.nbest_encode_as_serialized_proto(text, 10))
+    self.assertNotEqual('', self.sp_.decode_pieces_as_serialized_proto(['foo', 'bar']))
+    self.assertNotEqual('', self.sp_.decode_ids_as_serialized_proto([20, 30]))
+
 
 def suite():
   suite = unittest.TestSuite()

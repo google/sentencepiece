@@ -162,6 +162,21 @@ class SentencePieceProcessor(_object):
     def DecodeIds(self, ids):
         return _sentencepiece.SentencePieceProcessor_DecodeIds(self, ids)
 
+    def EncodeAsSerializedProto(self, input):
+        return _sentencepiece.SentencePieceProcessor_EncodeAsSerializedProto(self, input)
+
+    def SampleEncodeAsSerializedProto(self, input, nbest_size, alpha):
+        return _sentencepiece.SentencePieceProcessor_SampleEncodeAsSerializedProto(self, input, nbest_size, alpha)
+
+    def NBestEncodeAsSerializedProto(self, input, nbest_size):
+        return _sentencepiece.SentencePieceProcessor_NBestEncodeAsSerializedProto(self, input, nbest_size)
+
+    def DecodePiecesAsSerializedProto(self, pieces):
+        return _sentencepiece.SentencePieceProcessor_DecodePiecesAsSerializedProto(self, pieces)
+
+    def DecodeIdsAsSerializedProto(self, ids):
+        return _sentencepiece.SentencePieceProcessor_DecodeIdsAsSerializedProto(self, ids)
+
     def GetPieceSize(self):
         return _sentencepiece.SentencePieceProcessor_GetPieceSize(self)
 
@@ -239,6 +254,21 @@ class SentencePieceProcessor(_object):
 
     def decode_ids(self, input):
         return _sentencepiece.SentencePieceProcessor_decode_ids(self, input)
+
+    def encode_as_serialized_proto(self, input):
+        return _sentencepiece.SentencePieceProcessor_encode_as_serialized_proto(self, input)
+
+    def sample_encode_as_serialized_proto(self, input, nbest_size, alpha):
+        return _sentencepiece.SentencePieceProcessor_sample_encode_as_serialized_proto(self, input, nbest_size, alpha)
+
+    def nbest_encode_as_serialized_proto(self, input, nbest_size):
+        return _sentencepiece.SentencePieceProcessor_nbest_encode_as_serialized_proto(self, input, nbest_size)
+
+    def decode_pieces_as_serialized_proto(self, pieces):
+        return _sentencepiece.SentencePieceProcessor_decode_pieces_as_serialized_proto(self, pieces)
+
+    def decode_ids_as_serialized_proto(self, ids):
+        return _sentencepiece.SentencePieceProcessor_decode_ids_as_serialized_proto(self, ids)
 
     def get_piece_size(self):
         return _sentencepiece.SentencePieceProcessor_get_piece_size(self)

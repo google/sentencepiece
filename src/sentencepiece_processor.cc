@@ -512,6 +512,41 @@ util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
   return Decode(pieces, spt);
 }
 
+util::bytes SentencePieceProcessor::EncodeAsSerializedProto(
+    util::min_string_view input) const {
+  SentencePieceText spt;
+  if (!Encode(input, &spt).ok()) return "";
+  return spt.SerializeAsString();
+}
+
+util::bytes SentencePieceProcessor::SampleEncodeAsSerializedProto(
+    util::min_string_view input, int nbest_size, float alpha) const {
+  SentencePieceText spt;
+  if (!SampleEncode(input, nbest_size, alpha, &spt).ok()) return "";
+  return spt.SerializeAsString();
+}
+
+util::bytes SentencePieceProcessor::NBestEncodeAsSerializedProto(
+    util::min_string_view input, int nbest_size) const {
+  NBestSentencePieceText spt;
+  if (!NBestEncode(input, nbest_size, &spt).ok()) return "";
+  return spt.SerializeAsString();
+}
+
+util::bytes SentencePieceProcessor::DecodePiecesAsSerializedProto(
+    const std::vector<std::string> &pieces) const {
+  SentencePieceText spt;
+  if (!Decode(pieces, &spt).ok()) return "";
+  return spt.SerializeAsString();
+}
+
+util::bytes SentencePieceProcessor::DecodeIdsAsSerializedProto(
+    const std::vector<int> &ids) const {
+  SentencePieceText spt;
+  if (!Decode(ids, &spt).ok()) return "";
+  return spt.SerializeAsString();
+}
+
 #define CHECK_STATUS_OR_RETURN_DEFAULT(value)                            \
   if (!status().ok()) {                                                  \
     LOG(ERROR) << status().error_message() << "\nReturns default value " \

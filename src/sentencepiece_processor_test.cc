@@ -149,6 +149,10 @@ TEST(SentencepieceProcessorTest, EncodeTest) {
       EXPECT_EQ(result[i].first, spt.pieces(i).piece());
     }
 
+    SentencePieceText spt2;
+    EXPECT_TRUE(spt2.ParseFromString(sp.EncodeAsSerializedProto("ABC DEF")));
+    EXPECT_EQ(spt.SerializeAsString(), spt2.SerializeAsString());
+
     EXPECT_EQ("ABC", spt.pieces(0).surface());
     EXPECT_EQ(" DE", spt.pieces(1).surface());
     EXPECT_EQ("F", spt.pieces(2).surface());
@@ -369,6 +373,11 @@ TEST(SentencepieceProcessorTest, NBestEncodeTest) {
     EXPECT_EQ(result[1].first[i].first, spt.nbests(1).pieces(i).piece());
   }
 
+  NBestSentencePieceText spt2;
+  EXPECT_TRUE(
+      spt2.ParseFromString(sp.NBestEncodeAsSerializedProto("ABC DEF", 2)));
+  EXPECT_EQ(spt.SerializeAsString(), spt2.SerializeAsString());
+
   auto mock_empty = MakeUnique<MockModel>();
   mock_empty->SetNBestEncodeResult(kInput, {});
   sp.SetModel(std::move(mock_empty));
@@ -413,6 +422,11 @@ TEST(SentencepieceProcessorTest, SampleEncodeTest) {
     EXPECT_EQ(result[i].first, spt.pieces(i).piece());
     EXPECT_EQ(result[i].second, spt.pieces(i).id());
   }
+
+  SentencePieceText spt2;
+  EXPECT_TRUE(spt2.ParseFromString(
+      sp.SampleEncodeAsSerializedProto("ABC DEF", -1, 0.5)));
+  EXPECT_EQ(spt.SerializeAsString(), spt2.SerializeAsString());
 
   EXPECT_NOT_OK(sp.SampleEncode("ABC DEF", 1024, 0.5, &output));
   EXPECT_OK(sp.SampleEncode("ABC DEF", 0, 0.5, &output));
@@ -517,6 +531,10 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
     EXPECT_EQ(16, spt.pieces(6).end());
     EXPECT_EQ(16, spt.pieces(7).begin());
     EXPECT_EQ(16, spt.pieces(7).end());
+
+    SentencePieceText spt2;
+    EXPECT_TRUE(spt2.ParseFromString(sp.DecodePiecesAsSerializedProto(input)));
+    EXPECT_EQ(spt.SerializeAsString(), spt2.SerializeAsString());
   }
 
   // unk_surface is not defined.
