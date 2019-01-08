@@ -158,6 +158,11 @@ class min_string_view {
   const char *ptr_ = nullptr;
   size_t length_ = 0;
 };
+
+// Redefine std::string for serialized_proto interface as Python's string is
+// a Unicode string. We can enforce the return value to be raw byte sequence
+// with SWIG's typemap.
+using bytes = std::string;
 }  // namespace util
 
 class SentencePieceProcessor {
@@ -356,6 +361,25 @@ class SentencePieceProcessor {
   }
 
 #undef DEFINE_SPP_DIRECT_FUNC_IMPL
+
+  // They are used in Python interface. Returns serialized proto.
+  // In python module, we can get access to the full Proto after
+  // deserialzing the returned byte sequence.
+  virtual util::bytes EncodeAsSerializedProto(
+      util::min_string_view input) const;
+
+  virtual util::bytes SampleEncodeAsSerializedProto(util::min_string_view input,
+                                                    int nbest_size,
+                                                    float alpha) const;
+
+  virtual util::bytes NBestEncodeAsSerializedProto(util::min_string_view input,
+                                                   int nbest_size) const;
+
+  virtual util::bytes DecodePiecesAsSerializedProto(
+      const std::vector<std::string> &pieces) const;
+
+  virtual util::bytes DecodeIdsAsSerializedProto(
+      const std::vector<int> &ids) const;
 
   //////////////////////////////////////////////////////////////
   // Vocabulary management methods.

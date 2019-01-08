@@ -76,6 +76,14 @@ PyObject* MakePyOutputString(const std::string& output,
 #endif
 }
 
+PyObject* MakePyOutputBytes(const std::string& output) {
+#if PY_VERSION_HEX >= 0x03000000
+  return PyBytes_FromStringAndSize(output.data(), output.size());
+#else
+  return PyString_FromStringAndSize(output.data(), output.size());
+#endif
+}
+
 int ToSwigError(sentencepiece::util::error::Code code) {
   switch (code) {
     case sentencepiece::util::error::NOT_FOUND:
@@ -207,6 +215,29 @@ int ToSwigError(sentencepiece::util::error::Code code) {
     return $self->DecodeIds(input);
   }
 
+  util::bytes encode_as_serialized_proto(util::min_string_view input) const {
+    return $self->EncodeAsSerializedProto(input);
+  }
+
+  util::bytes sample_encode_as_serialized_proto(util::min_string_view input,
+                                          int nbest_size, float alpha) const {
+    return $self->SampleEncodeAsSerializedProto(input, nbest_size, alpha);
+  }
+
+  util::bytes nbest_encode_as_serialized_proto(util::min_string_view input,
+                                         int nbest_size) const {
+    return $self->NBestEncodeAsSerializedProto(input, nbest_size);
+  }
+
+  util::bytes decode_pieces_as_serialized_proto(
+      const std::vector<std::string> &pieces) const {
+    return $self->DecodePiecesAsSerializedProto(pieces);
+  }
+
+  util::bytes decode_ids_as_serialized_proto(const std::vector<int> &ids) const {
+    return $self->DecodeIdsAsSerializedProto(ids);
+  }
+
   int get_piece_size() const {
     return $self->GetPieceSize();
   }
@@ -287,6 +318,15 @@ int ToSwigError(sentencepiece::util::error::Code code) {
   $result = MakePyOutputString($1, input_type);
 }
 
+%typemap(out) const std::string& {
+  PyObject *input_type = resultobj;
+  $result = MakePyOutputString(*$1, input_type);
+}
+
+%typemap(out) sentencepiece::util::bytes {
+  $result = MakePyOutputBytes($1);
+}
+
 %typemap(out) sentencepiece::util::Status {
   if (!$1.ok()) {
     SWIG_exception(ToSwigError($1.code()), $1.ToString().c_str());
@@ -315,7 +355,6 @@ int ToSwigError(sentencepiece::util::error::Code code) {
   resultobj = ustring.input_type();
   $1 = sentencepiece::util::min_string_view(ustring.data(), ustring.size());
 }
-
 
 %typemap(in) const std::vector<std::string>& {
   std::vector<std::string> *out = nullptr;
