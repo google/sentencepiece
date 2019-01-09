@@ -433,6 +433,13 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   GOOGLE_PROTOBUF_DEPRECATED_ATTR ::google::protobuf::int32 training_sentence_size() const;
   GOOGLE_PROTOBUF_DEPRECATED_ATTR void set_training_sentence_size(::google::protobuf::int32 value);
 
+  // optional bool treat_whitespace_as_suffix = 24 [default = false];
+  bool has_treat_whitespace_as_suffix() const;
+  void clear_treat_whitespace_as_suffix();
+  static const int kTreatWhitespaceAsSuffixFieldNumber = 24;
+  bool treat_whitespace_as_suffix() const;
+  void set_treat_whitespace_as_suffix(bool value);
+
   // optional bool use_all_vocab = 34 [default = false];
   bool has_use_all_vocab() const;
   void clear_use_all_vocab();
@@ -607,6 +614,8 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   void clear_has_split_by_number();
   void set_has_split_by_whitespace();
   void clear_has_split_by_whitespace();
+  void set_has_treat_whitespace_as_suffix();
+  void clear_has_treat_whitespace_as_suffix();
   void set_has_hard_vocab_limit();
   void clear_has_hard_vocab_limit();
   void set_has_use_all_vocab();
@@ -665,6 +674,7 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   ::google::protobuf::int32 input_sentence_size_;
   ::google::protobuf::int32 mining_sentence_size_;
   ::google::protobuf::int32 training_sentence_size_;
+  bool treat_whitespace_as_suffix_;
   bool use_all_vocab_;
   ::google::protobuf::int32 unk_id_;
   int model_type_;
@@ -1676,13 +1686,13 @@ inline void TrainerSpec::set_allocated_model_prefix(::std::string* model_prefix)
 
 // optional .sentencepiece.TrainerSpec.ModelType model_type = 3 [default = UNIGRAM];
 inline bool TrainerSpec::has_model_type() const {
-  return (_has_bits_[0] & 0x00002000u) != 0;
+  return (_has_bits_[0] & 0x00004000u) != 0;
 }
 inline void TrainerSpec::set_has_model_type() {
-  _has_bits_[0] |= 0x00002000u;
+  _has_bits_[0] |= 0x00004000u;
 }
 inline void TrainerSpec::clear_has_model_type() {
-  _has_bits_[0] &= ~0x00002000u;
+  _has_bits_[0] &= ~0x00004000u;
 }
 inline void TrainerSpec::clear_model_type() {
   model_type_ = 1;
@@ -1701,13 +1711,13 @@ inline void TrainerSpec::set_model_type(::sentencepiece::TrainerSpec_ModelType v
 
 // optional int32 vocab_size = 4 [default = 8000];
 inline bool TrainerSpec::has_vocab_size() const {
-  return (_has_bits_[0] & 0x00004000u) != 0;
+  return (_has_bits_[0] & 0x00008000u) != 0;
 }
 inline void TrainerSpec::set_has_vocab_size() {
-  _has_bits_[0] |= 0x00004000u;
+  _has_bits_[0] |= 0x00008000u;
 }
 inline void TrainerSpec::clear_has_vocab_size() {
-  _has_bits_[0] &= ~0x00004000u;
+  _has_bits_[0] &= ~0x00008000u;
 }
 inline void TrainerSpec::clear_vocab_size() {
   vocab_size_ = 8000;
@@ -1818,13 +1828,13 @@ inline void TrainerSpec::set_self_test_sample_size(::google::protobuf::int32 val
 
 // optional float character_coverage = 10 [default = 0.9995];
 inline bool TrainerSpec::has_character_coverage() const {
-  return (_has_bits_[0] & 0x00008000u) != 0;
+  return (_has_bits_[0] & 0x00010000u) != 0;
 }
 inline void TrainerSpec::set_has_character_coverage() {
-  _has_bits_[0] |= 0x00008000u;
+  _has_bits_[0] |= 0x00010000u;
 }
 inline void TrainerSpec::clear_has_character_coverage() {
-  _has_bits_[0] &= ~0x00008000u;
+  _has_bits_[0] &= ~0x00010000u;
 }
 inline void TrainerSpec::clear_character_coverage() {
   character_coverage_ = 0.9995f;
@@ -1866,13 +1876,13 @@ inline void TrainerSpec::set_input_sentence_size(::google::protobuf::int32 value
 
 // optional bool shuffle_input_sentence = 19 [default = true];
 inline bool TrainerSpec::has_shuffle_input_sentence() const {
-  return (_has_bits_[0] & 0x00400000u) != 0;
+  return (_has_bits_[0] & 0x00800000u) != 0;
 }
 inline void TrainerSpec::set_has_shuffle_input_sentence() {
-  _has_bits_[0] |= 0x00400000u;
+  _has_bits_[0] |= 0x00800000u;
 }
 inline void TrainerSpec::clear_has_shuffle_input_sentence() {
-  _has_bits_[0] &= ~0x00400000u;
+  _has_bits_[0] &= ~0x00800000u;
 }
 inline void TrainerSpec::clear_shuffle_input_sentence() {
   shuffle_input_sentence_ = true;
@@ -1938,13 +1948,13 @@ inline void TrainerSpec::set_training_sentence_size(::google::protobuf::int32 va
 
 // optional int32 seed_sentencepiece_size = 14 [default = 1000000];
 inline bool TrainerSpec::has_seed_sentencepiece_size() const {
-  return (_has_bits_[0] & 0x00010000u) != 0;
+  return (_has_bits_[0] & 0x00020000u) != 0;
 }
 inline void TrainerSpec::set_has_seed_sentencepiece_size() {
-  _has_bits_[0] |= 0x00010000u;
+  _has_bits_[0] |= 0x00020000u;
 }
 inline void TrainerSpec::clear_has_seed_sentencepiece_size() {
-  _has_bits_[0] &= ~0x00010000u;
+  _has_bits_[0] &= ~0x00020000u;
 }
 inline void TrainerSpec::clear_seed_sentencepiece_size() {
   seed_sentencepiece_size_ = 1000000;
@@ -1962,13 +1972,13 @@ inline void TrainerSpec::set_seed_sentencepiece_size(::google::protobuf::int32 v
 
 // optional float shrinking_factor = 15 [default = 0.75];
 inline bool TrainerSpec::has_shrinking_factor() const {
-  return (_has_bits_[0] & 0x00020000u) != 0;
+  return (_has_bits_[0] & 0x00040000u) != 0;
 }
 inline void TrainerSpec::set_has_shrinking_factor() {
-  _has_bits_[0] |= 0x00020000u;
+  _has_bits_[0] |= 0x00040000u;
 }
 inline void TrainerSpec::clear_has_shrinking_factor() {
-  _has_bits_[0] &= ~0x00020000u;
+  _has_bits_[0] &= ~0x00040000u;
 }
 inline void TrainerSpec::clear_shrinking_factor() {
   shrinking_factor_ = 0.75f;
@@ -1986,13 +1996,13 @@ inline void TrainerSpec::set_shrinking_factor(float value) {
 
 // optional int32 max_sentence_length = 18 [default = 4192];
 inline bool TrainerSpec::has_max_sentence_length() const {
-  return (_has_bits_[0] & 0x00100000u) != 0;
+  return (_has_bits_[0] & 0x00200000u) != 0;
 }
 inline void TrainerSpec::set_has_max_sentence_length() {
-  _has_bits_[0] |= 0x00100000u;
+  _has_bits_[0] |= 0x00200000u;
 }
 inline void TrainerSpec::clear_has_max_sentence_length() {
-  _has_bits_[0] &= ~0x00100000u;
+  _has_bits_[0] &= ~0x00200000u;
 }
 inline void TrainerSpec::clear_max_sentence_length() {
   max_sentence_length_ = 4192;
@@ -2010,13 +2020,13 @@ inline void TrainerSpec::set_max_sentence_length(::google::protobuf::int32 value
 
 // optional int32 num_threads = 16 [default = 16];
 inline bool TrainerSpec::has_num_threads() const {
-  return (_has_bits_[0] & 0x00040000u) != 0;
+  return (_has_bits_[0] & 0x00080000u) != 0;
 }
 inline void TrainerSpec::set_has_num_threads() {
-  _has_bits_[0] |= 0x00040000u;
+  _has_bits_[0] |= 0x00080000u;
 }
 inline void TrainerSpec::clear_has_num_threads() {
-  _has_bits_[0] &= ~0x00040000u;
+  _has_bits_[0] &= ~0x00080000u;
 }
 inline void TrainerSpec::clear_num_threads() {
   num_threads_ = 16;
@@ -2034,13 +2044,13 @@ inline void TrainerSpec::set_num_threads(::google::protobuf::int32 value) {
 
 // optional int32 num_sub_iterations = 17 [default = 2];
 inline bool TrainerSpec::has_num_sub_iterations() const {
-  return (_has_bits_[0] & 0x00080000u) != 0;
+  return (_has_bits_[0] & 0x00100000u) != 0;
 }
 inline void TrainerSpec::set_has_num_sub_iterations() {
-  _has_bits_[0] |= 0x00080000u;
+  _has_bits_[0] |= 0x00100000u;
 }
 inline void TrainerSpec::clear_has_num_sub_iterations() {
-  _has_bits_[0] &= ~0x00080000u;
+  _has_bits_[0] &= ~0x00100000u;
 }
 inline void TrainerSpec::clear_num_sub_iterations() {
   num_sub_iterations_ = 2;
@@ -2058,13 +2068,13 @@ inline void TrainerSpec::set_num_sub_iterations(::google::protobuf::int32 value)
 
 // optional int32 max_sentencepiece_length = 20 [default = 16];
 inline bool TrainerSpec::has_max_sentencepiece_length() const {
-  return (_has_bits_[0] & 0x00200000u) != 0;
+  return (_has_bits_[0] & 0x00400000u) != 0;
 }
 inline void TrainerSpec::set_has_max_sentencepiece_length() {
-  _has_bits_[0] |= 0x00200000u;
+  _has_bits_[0] |= 0x00400000u;
 }
 inline void TrainerSpec::clear_has_max_sentencepiece_length() {
-  _has_bits_[0] &= ~0x00200000u;
+  _has_bits_[0] &= ~0x00400000u;
 }
 inline void TrainerSpec::clear_max_sentencepiece_length() {
   max_sentencepiece_length_ = 16;
@@ -2082,13 +2092,13 @@ inline void TrainerSpec::set_max_sentencepiece_length(::google::protobuf::int32 
 
 // optional bool split_by_unicode_script = 21 [default = true];
 inline bool TrainerSpec::has_split_by_unicode_script() const {
-  return (_has_bits_[0] & 0x00800000u) != 0;
+  return (_has_bits_[0] & 0x01000000u) != 0;
 }
 inline void TrainerSpec::set_has_split_by_unicode_script() {
-  _has_bits_[0] |= 0x00800000u;
+  _has_bits_[0] |= 0x01000000u;
 }
 inline void TrainerSpec::clear_has_split_by_unicode_script() {
-  _has_bits_[0] &= ~0x00800000u;
+  _has_bits_[0] &= ~0x01000000u;
 }
 inline void TrainerSpec::clear_split_by_unicode_script() {
   split_by_unicode_script_ = true;
@@ -2106,13 +2116,13 @@ inline void TrainerSpec::set_split_by_unicode_script(bool value) {
 
 // optional bool split_by_number = 23 [default = true];
 inline bool TrainerSpec::has_split_by_number() const {
-  return (_has_bits_[0] & 0x01000000u) != 0;
+  return (_has_bits_[0] & 0x02000000u) != 0;
 }
 inline void TrainerSpec::set_has_split_by_number() {
-  _has_bits_[0] |= 0x01000000u;
+  _has_bits_[0] |= 0x02000000u;
 }
 inline void TrainerSpec::clear_has_split_by_number() {
-  _has_bits_[0] &= ~0x01000000u;
+  _has_bits_[0] &= ~0x02000000u;
 }
 inline void TrainerSpec::clear_split_by_number() {
   split_by_number_ = true;
@@ -2130,13 +2140,13 @@ inline void TrainerSpec::set_split_by_number(bool value) {
 
 // optional bool split_by_whitespace = 22 [default = true];
 inline bool TrainerSpec::has_split_by_whitespace() const {
-  return (_has_bits_[0] & 0x02000000u) != 0;
+  return (_has_bits_[0] & 0x04000000u) != 0;
 }
 inline void TrainerSpec::set_has_split_by_whitespace() {
-  _has_bits_[0] |= 0x02000000u;
+  _has_bits_[0] |= 0x04000000u;
 }
 inline void TrainerSpec::clear_has_split_by_whitespace() {
-  _has_bits_[0] &= ~0x02000000u;
+  _has_bits_[0] &= ~0x04000000u;
 }
 inline void TrainerSpec::clear_split_by_whitespace() {
   split_by_whitespace_ = true;
@@ -2150,6 +2160,30 @@ inline void TrainerSpec::set_split_by_whitespace(bool value) {
   set_has_split_by_whitespace();
   split_by_whitespace_ = value;
   // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.split_by_whitespace)
+}
+
+// optional bool treat_whitespace_as_suffix = 24 [default = false];
+inline bool TrainerSpec::has_treat_whitespace_as_suffix() const {
+  return (_has_bits_[0] & 0x00000800u) != 0;
+}
+inline void TrainerSpec::set_has_treat_whitespace_as_suffix() {
+  _has_bits_[0] |= 0x00000800u;
+}
+inline void TrainerSpec::clear_has_treat_whitespace_as_suffix() {
+  _has_bits_[0] &= ~0x00000800u;
+}
+inline void TrainerSpec::clear_treat_whitespace_as_suffix() {
+  treat_whitespace_as_suffix_ = false;
+  clear_has_treat_whitespace_as_suffix();
+}
+inline bool TrainerSpec::treat_whitespace_as_suffix() const {
+  // @@protoc_insertion_point(field_get:sentencepiece.TrainerSpec.treat_whitespace_as_suffix)
+  return treat_whitespace_as_suffix_;
+}
+inline void TrainerSpec::set_treat_whitespace_as_suffix(bool value) {
+  set_has_treat_whitespace_as_suffix();
+  treat_whitespace_as_suffix_ = value;
+  // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.treat_whitespace_as_suffix)
 }
 
 // repeated string control_symbols = 30;
@@ -2292,13 +2326,13 @@ TrainerSpec::mutable_user_defined_symbols() {
 
 // optional bool hard_vocab_limit = 33 [default = true];
 inline bool TrainerSpec::has_hard_vocab_limit() const {
-  return (_has_bits_[0] & 0x04000000u) != 0;
+  return (_has_bits_[0] & 0x08000000u) != 0;
 }
 inline void TrainerSpec::set_has_hard_vocab_limit() {
-  _has_bits_[0] |= 0x04000000u;
+  _has_bits_[0] |= 0x08000000u;
 }
 inline void TrainerSpec::clear_has_hard_vocab_limit() {
-  _has_bits_[0] &= ~0x04000000u;
+  _has_bits_[0] &= ~0x08000000u;
 }
 inline void TrainerSpec::clear_hard_vocab_limit() {
   hard_vocab_limit_ = true;
@@ -2316,13 +2350,13 @@ inline void TrainerSpec::set_hard_vocab_limit(bool value) {
 
 // optional bool use_all_vocab = 34 [default = false];
 inline bool TrainerSpec::has_use_all_vocab() const {
-  return (_has_bits_[0] & 0x00000800u) != 0;
+  return (_has_bits_[0] & 0x00001000u) != 0;
 }
 inline void TrainerSpec::set_has_use_all_vocab() {
-  _has_bits_[0] |= 0x00000800u;
+  _has_bits_[0] |= 0x00001000u;
 }
 inline void TrainerSpec::clear_has_use_all_vocab() {
-  _has_bits_[0] &= ~0x00000800u;
+  _has_bits_[0] &= ~0x00001000u;
 }
 inline void TrainerSpec::clear_use_all_vocab() {
   use_all_vocab_ = false;
@@ -2340,13 +2374,13 @@ inline void TrainerSpec::set_use_all_vocab(bool value) {
 
 // optional int32 unk_id = 40 [default = 0];
 inline bool TrainerSpec::has_unk_id() const {
-  return (_has_bits_[0] & 0x00001000u) != 0;
+  return (_has_bits_[0] & 0x00002000u) != 0;
 }
 inline void TrainerSpec::set_has_unk_id() {
-  _has_bits_[0] |= 0x00001000u;
+  _has_bits_[0] |= 0x00002000u;
 }
 inline void TrainerSpec::clear_has_unk_id() {
-  _has_bits_[0] &= ~0x00001000u;
+  _has_bits_[0] &= ~0x00002000u;
 }
 inline void TrainerSpec::clear_unk_id() {
   unk_id_ = 0;
@@ -2364,13 +2398,13 @@ inline void TrainerSpec::set_unk_id(::google::protobuf::int32 value) {
 
 // optional int32 bos_id = 41 [default = 1];
 inline bool TrainerSpec::has_bos_id() const {
-  return (_has_bits_[0] & 0x08000000u) != 0;
+  return (_has_bits_[0] & 0x10000000u) != 0;
 }
 inline void TrainerSpec::set_has_bos_id() {
-  _has_bits_[0] |= 0x08000000u;
+  _has_bits_[0] |= 0x10000000u;
 }
 inline void TrainerSpec::clear_has_bos_id() {
-  _has_bits_[0] &= ~0x08000000u;
+  _has_bits_[0] &= ~0x10000000u;
 }
 inline void TrainerSpec::clear_bos_id() {
   bos_id_ = 1;
@@ -2388,13 +2422,13 @@ inline void TrainerSpec::set_bos_id(::google::protobuf::int32 value) {
 
 // optional int32 eos_id = 42 [default = 2];
 inline bool TrainerSpec::has_eos_id() const {
-  return (_has_bits_[0] & 0x10000000u) != 0;
+  return (_has_bits_[0] & 0x20000000u) != 0;
 }
 inline void TrainerSpec::set_has_eos_id() {
-  _has_bits_[0] |= 0x10000000u;
+  _has_bits_[0] |= 0x20000000u;
 }
 inline void TrainerSpec::clear_has_eos_id() {
-  _has_bits_[0] &= ~0x10000000u;
+  _has_bits_[0] &= ~0x20000000u;
 }
 inline void TrainerSpec::clear_eos_id() {
   eos_id_ = 2;
@@ -2412,13 +2446,13 @@ inline void TrainerSpec::set_eos_id(::google::protobuf::int32 value) {
 
 // optional int32 pad_id = 43 [default = -1];
 inline bool TrainerSpec::has_pad_id() const {
-  return (_has_bits_[0] & 0x20000000u) != 0;
+  return (_has_bits_[0] & 0x40000000u) != 0;
 }
 inline void TrainerSpec::set_has_pad_id() {
-  _has_bits_[0] |= 0x20000000u;
+  _has_bits_[0] |= 0x40000000u;
 }
 inline void TrainerSpec::clear_has_pad_id() {
-  _has_bits_[0] &= ~0x20000000u;
+  _has_bits_[0] &= ~0x40000000u;
 }
 inline void TrainerSpec::clear_pad_id() {
   pad_id_ = -1;

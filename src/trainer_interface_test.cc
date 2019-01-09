@@ -102,6 +102,25 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_TRUE(IsValid("1a234abc"));
   EXPECT_FALSE(IsValid("9Aあ"));
   EXPECT_TRUE(IsValid("9あい0A"));
+
+  trainer_spec.set_split_by_whitespace(true);
+  trainer_spec.set_treat_whitespace_as_suffix(true);
+  EXPECT_TRUE(IsValid(WS));
+  EXPECT_FALSE(IsValid(WS "a"));
+  EXPECT_TRUE(IsValid("a" WS));
+  EXPECT_FALSE(IsValid(WS "a" WS));
+  EXPECT_FALSE(IsValid("a" WS "b"));
+  EXPECT_FALSE(IsValid(WS "a" WS "b"));
+  EXPECT_FALSE(IsValid("a" WS "b" WS));
+
+  trainer_spec.set_split_by_whitespace(false);
+  EXPECT_TRUE(IsValid(WS));
+  EXPECT_FALSE(IsValid(WS "a"));
+  EXPECT_TRUE(IsValid("a" WS));
+  EXPECT_FALSE(IsValid(WS "a" WS));
+  EXPECT_TRUE(IsValid("a" WS "b"));
+  EXPECT_FALSE(IsValid(WS "a" WS "b"));
+  EXPECT_TRUE(IsValid("a" WS "b" WS));
 }
 
 TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {

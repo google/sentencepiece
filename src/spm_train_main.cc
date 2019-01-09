@@ -66,6 +66,8 @@ DEFINE_bool(split_by_number, kDefaultTrainerSpec.split_by_number(),
             "split tokens by numbers (0-9)");
 DEFINE_bool(split_by_whitespace, kDefaultTrainerSpec.split_by_whitespace(),
             "use a white space to split sentence pieces");
+DEFINE_bool(treat_whitespace_as_suffix, false,
+            "treat whitespace marker as suffix instead of prefix.");
 DEFINE_string(control_symbols, "", "comma separated list of control symbols");
 DEFINE_string(user_defined_symbols, "",
               "comma separated list of user defined symbols");
@@ -141,6 +143,7 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(split_by_unicode_script);
   SetTrainerSpecFromFlag(split_by_whitespace);
   SetTrainerSpecFromFlag(split_by_number);
+  SetTrainerSpecFromFlag(treat_whitespace_as_suffix);
   SetTrainerSpecFromFlag(hard_vocab_limit);
   SetTrainerSpecFromFlag(use_all_vocab);
   SetTrainerSpecFromFlag(unk_id);

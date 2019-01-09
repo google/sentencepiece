@@ -129,6 +129,11 @@ message TrainerSpec {
   // a white space in the middle. e.g., "in_the".
   optional bool split_by_whitespace = 22 [ default = true ];
 
+  // Adds whitespace symbol (_) as a suffix instead of prefix. e.g., _hello => hello_.
+  // When `treat_whitespace_as_suffix` is true, NormalizerSpec::add_dummy_prefix will
+  // add the dummy whitespace to the end of sentence.
+  optional bool treat_whitespace_as_suffix = 24 [ default = false ];
+
   ///////////////////////////////////////////////////////////////////
   // Vocabulary management
   //

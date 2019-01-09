@@ -313,5 +313,61 @@ TEST(ModelInterfaceTest, SplitIntoWordsTest) {
   }
 }
 
+TEST(ModelInterfaceTest, SplitIntoWordsSuffixTest) {
+  {
+    const auto v = SplitIntoWords("this" WS "is" WS "a" WS "pen" WS, true);
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ("this" WS, v[0]);
+    EXPECT_EQ("is" WS, v[1]);
+    EXPECT_EQ("a" WS, v[2]);
+    EXPECT_EQ("pen" WS, v[3]);
+  }
+
+  {
+    const auto v = SplitIntoWords("this" WS "is" WS "a" WS "pen", true);
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ("this" WS, v[0]);
+    EXPECT_EQ("is" WS, v[1]);
+    EXPECT_EQ("a" WS, v[2]);
+    EXPECT_EQ("pen", v[3]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS "this" WS WS "is", true);
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ(WS, v[0]);
+    EXPECT_EQ("this" WS, v[1]);
+    EXPECT_EQ(WS, v[2]);
+    EXPECT_EQ("is", v[3]);
+  }
+
+  {
+    const auto v = SplitIntoWords("", true);
+    EXPECT_TRUE(v.empty());
+  }
+
+  {
+    const auto v = SplitIntoWords("hello", true);
+    EXPECT_EQ(1, v.size());
+    EXPECT_EQ("hello", v[0]);
+  }
+
+  {
+    const auto v = SplitIntoWords("hello" WS WS, true);
+    EXPECT_EQ(2, v.size());
+    EXPECT_EQ("hello" WS, v[0]);
+    EXPECT_EQ(WS, v[1]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS "hello" WS WS, true);
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ(WS, v[0]);
+    EXPECT_EQ(WS, v[1]);
+    EXPECT_EQ("hello" WS, v[2]);
+    EXPECT_EQ(WS, v[3]);
+  }
+}
+
 }  // namespace
 }  // namespace sentencepiece

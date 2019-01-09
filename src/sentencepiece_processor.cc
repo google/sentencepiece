@@ -78,8 +78,8 @@ util::Status SentencePieceProcessor::Load(
     std::unique_ptr<ModelProto> &&model_proto) {
   model_proto_ = std::move(model_proto);
   model_ = ModelFactory::Create(*model_proto_);
-  normalizer_ =
-      port::MakeUnique<normalizer::Normalizer>(model_proto_->normalizer_spec());
+  normalizer_ = port::MakeUnique<normalizer::Normalizer>(
+      model_proto_->normalizer_spec(), model_proto_->trainer_spec());
 
   // Escapes user-defined-symbols in normalizer.
   normalizer_->SetPrefixMatcher(model_->prefix_matcher());

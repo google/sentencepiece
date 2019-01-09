@@ -85,6 +85,22 @@ TEST(NormalizerTest, NormalizeWithoutDummyPrefixTest) {
   EXPECT_EQ("ABC", normalizer.Normalize("　　ABC　　"));
 }
 
+TEST(NormalizerTest, NormalizeTreatWSAsSuffixTest) {
+  auto spec = MakeDefaultSpec();
+  TrainerSpec trainer_spec;
+  trainer_spec.set_treat_whitespace_as_suffix(true);
+  const Normalizer normalizer(spec, trainer_spec);
+
+  EXPECT_EQ("", normalizer.Normalize(""));
+  EXPECT_EQ("", normalizer.Normalize("      "));
+  EXPECT_EQ("", normalizer.Normalize("　"));
+
+  EXPECT_EQ("ABC" WS, normalizer.Normalize("ABC"));
+  EXPECT_EQ("ABC" WS, normalizer.Normalize(" ABC "));
+  EXPECT_EQ("A" WS "B" WS "C" WS, normalizer.Normalize(" A  B  C "));
+  EXPECT_EQ("ABC" WS, normalizer.Normalize("   ABC   "));
+}
+
 TEST(NormalizerTest, NormalizeWithoutRemoveExtraWhitespacesTest) {
   auto spec = MakeDefaultSpec();
   spec.set_remove_extra_whitespaces(false);

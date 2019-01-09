@@ -252,6 +252,7 @@ const int TrainerSpec::kMaxSentencepieceLengthFieldNumber;
 const int TrainerSpec::kSplitByUnicodeScriptFieldNumber;
 const int TrainerSpec::kSplitByNumberFieldNumber;
 const int TrainerSpec::kSplitByWhitespaceFieldNumber;
+const int TrainerSpec::kTreatWhitespaceAsSuffixFieldNumber;
 const int TrainerSpec::kControlSymbolsFieldNumber;
 const int TrainerSpec::kUserDefinedSymbolsFieldNumber;
 const int TrainerSpec::kHardVocabLimitFieldNumber;
@@ -414,9 +415,9 @@ void TrainerSpec::Clear() {
         reinterpret_cast<char*>(&input_sentence_size_)) + sizeof(unk_id_));
     model_type_ = 1;
     vocab_size_ = 8000;
-    character_coverage_ = 0.9995f;
   }
   if (cached_has_bits & 16711680u) {
+    character_coverage_ = 0.9995f;
     seed_sentencepiece_size_ = 1000000;
     shrinking_factor_ = 0.75f;
     num_threads_ = 16;
@@ -424,9 +425,9 @@ void TrainerSpec::Clear() {
     max_sentence_length_ = 4192;
     max_sentencepiece_length_ = 16;
     shuffle_input_sentence_ = true;
-    split_by_unicode_script_ = true;
   }
-  if (cached_has_bits & 1056964608u) {
+  if (cached_has_bits & 2130706432u) {
+    split_by_unicode_script_ = true;
     split_by_number_ = true;
     split_by_whitespace_ = true;
     hard_vocab_limit_ = true;
@@ -747,6 +748,20 @@ bool TrainerSpec::MergePartialFromCodedStream(
         break;
       }
 
+      // optional bool treat_whitespace_as_suffix = 24 [default = false];
+      case 24: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(192u /* 192 & 0xFF */)) {
+          set_has_treat_whitespace_as_suffix();
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &treat_whitespace_as_suffix_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       // repeated string control_symbols = 30;
       case 30: {
         if (static_cast< ::google::protobuf::uint8>(tag) ==
@@ -961,13 +976,13 @@ void TrainerSpec::SerializeWithCachedSizes(
   }
 
   // optional .sentencepiece.TrainerSpec.ModelType model_type = 3 [default = UNIGRAM];
-  if (cached_has_bits & 0x00002000u) {
+  if (cached_has_bits & 0x00004000u) {
     ::google::protobuf::internal::WireFormatLite::WriteEnum(
       3, this->model_type(), output);
   }
 
   // optional int32 vocab_size = 4 [default = 8000];
-  if (cached_has_bits & 0x00004000u) {
+  if (cached_has_bits & 0x00008000u) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(4, this->vocab_size(), output);
   }
 
@@ -989,7 +1004,7 @@ void TrainerSpec::SerializeWithCachedSizes(
   }
 
   // optional float character_coverage = 10 [default = 0.9995];
-  if (cached_has_bits & 0x00008000u) {
+  if (cached_has_bits & 0x00010000u) {
     ::google::protobuf::internal::WireFormatLite::WriteFloat(10, this->character_coverage(), output);
   }
 
@@ -1009,53 +1024,58 @@ void TrainerSpec::SerializeWithCachedSizes(
   }
 
   // optional int32 seed_sentencepiece_size = 14 [default = 1000000];
-  if (cached_has_bits & 0x00010000u) {
+  if (cached_has_bits & 0x00020000u) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(14, this->seed_sentencepiece_size(), output);
   }
 
   // optional float shrinking_factor = 15 [default = 0.75];
-  if (cached_has_bits & 0x00020000u) {
+  if (cached_has_bits & 0x00040000u) {
     ::google::protobuf::internal::WireFormatLite::WriteFloat(15, this->shrinking_factor(), output);
   }
 
   // optional int32 num_threads = 16 [default = 16];
-  if (cached_has_bits & 0x00040000u) {
+  if (cached_has_bits & 0x00080000u) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(16, this->num_threads(), output);
   }
 
   // optional int32 num_sub_iterations = 17 [default = 2];
-  if (cached_has_bits & 0x00080000u) {
+  if (cached_has_bits & 0x00100000u) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(17, this->num_sub_iterations(), output);
   }
 
   // optional int32 max_sentence_length = 18 [default = 4192];
-  if (cached_has_bits & 0x00100000u) {
+  if (cached_has_bits & 0x00200000u) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(18, this->max_sentence_length(), output);
   }
 
   // optional bool shuffle_input_sentence = 19 [default = true];
-  if (cached_has_bits & 0x00400000u) {
+  if (cached_has_bits & 0x00800000u) {
     ::google::protobuf::internal::WireFormatLite::WriteBool(19, this->shuffle_input_sentence(), output);
   }
 
   // optional int32 max_sentencepiece_length = 20 [default = 16];
-  if (cached_has_bits & 0x00200000u) {
+  if (cached_has_bits & 0x00400000u) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(20, this->max_sentencepiece_length(), output);
   }
 
   // optional bool split_by_unicode_script = 21 [default = true];
-  if (cached_has_bits & 0x00800000u) {
+  if (cached_has_bits & 0x01000000u) {
     ::google::protobuf::internal::WireFormatLite::WriteBool(21, this->split_by_unicode_script(), output);
   }
 
   // optional bool split_by_whitespace = 22 [default = true];
-  if (cached_has_bits & 0x02000000u) {
+  if (cached_has_bits & 0x04000000u) {
     ::google::protobuf::internal::WireFormatLite::WriteBool(22, this->split_by_whitespace(), output);
   }
 
   // optional bool split_by_number = 23 [default = true];
-  if (cached_has_bits & 0x01000000u) {
+  if (cached_has_bits & 0x02000000u) {
     ::google::protobuf::internal::WireFormatLite::WriteBool(23, this->split_by_number(), output);
+  }
+
+  // optional bool treat_whitespace_as_suffix = 24 [default = false];
+  if (cached_has_bits & 0x00000800u) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(24, this->treat_whitespace_as_suffix(), output);
   }
 
   // repeated string control_symbols = 30;
@@ -1071,32 +1091,32 @@ void TrainerSpec::SerializeWithCachedSizes(
   }
 
   // optional bool hard_vocab_limit = 33 [default = true];
-  if (cached_has_bits & 0x04000000u) {
+  if (cached_has_bits & 0x08000000u) {
     ::google::protobuf::internal::WireFormatLite::WriteBool(33, this->hard_vocab_limit(), output);
   }
 
   // optional bool use_all_vocab = 34 [default = false];
-  if (cached_has_bits & 0x00000800u) {
+  if (cached_has_bits & 0x00001000u) {
     ::google::protobuf::internal::WireFormatLite::WriteBool(34, this->use_all_vocab(), output);
   }
 
   // optional int32 unk_id = 40 [default = 0];
-  if (cached_has_bits & 0x00001000u) {
+  if (cached_has_bits & 0x00002000u) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(40, this->unk_id(), output);
   }
 
   // optional int32 bos_id = 41 [default = 1];
-  if (cached_has_bits & 0x08000000u) {
+  if (cached_has_bits & 0x10000000u) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(41, this->bos_id(), output);
   }
 
   // optional int32 eos_id = 42 [default = 2];
-  if (cached_has_bits & 0x10000000u) {
+  if (cached_has_bits & 0x20000000u) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(42, this->eos_id(), output);
   }
 
   // optional int32 pad_id = 43 [default = -1];
-  if (cached_has_bits & 0x20000000u) {
+  if (cached_has_bits & 0x40000000u) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(43, this->pad_id(), output);
   }
 
@@ -1259,6 +1279,11 @@ size_t TrainerSpec::ByteSizeLong() const {
           this->training_sentence_size());
     }
 
+    // optional bool treat_whitespace_as_suffix = 24 [default = false];
+    if (has_treat_whitespace_as_suffix()) {
+      total_size += 2 + 1;
+    }
+
     // optional bool use_all_vocab = 34 [default = false];
     if (has_use_all_vocab()) {
       total_size += 2 + 1;
@@ -1284,13 +1309,13 @@ size_t TrainerSpec::ByteSizeLong() const {
           this->vocab_size());
     }
 
+  }
+  if (_has_bits_[16 / 32] & 16711680u) {
     // optional float character_coverage = 10 [default = 0.9995];
     if (has_character_coverage()) {
       total_size += 1 + 4;
     }
 
-  }
-  if (_has_bits_[16 / 32] & 16711680u) {
     // optional int32 seed_sentencepiece_size = 14 [default = 1000000];
     if (has_seed_sentencepiece_size()) {
       total_size += 1 +
@@ -1336,13 +1361,13 @@ size_t TrainerSpec::ByteSizeLong() const {
       total_size += 2 + 1;
     }
 
+  }
+  if (_has_bits_[24 / 32] & 2130706432u) {
     // optional bool split_by_unicode_script = 21 [default = true];
     if (has_split_by_unicode_script()) {
       total_size += 2 + 1;
     }
 
-  }
-  if (_has_bits_[24 / 32] & 1056964608u) {
     // optional bool split_by_number = 23 [default = true];
     if (has_split_by_number()) {
       total_size += 2 + 1;
@@ -1448,66 +1473,69 @@ void TrainerSpec::MergeFrom(const TrainerSpec& from) {
       training_sentence_size_ = from.training_sentence_size_;
     }
     if (cached_has_bits & 0x00000800u) {
-      use_all_vocab_ = from.use_all_vocab_;
+      treat_whitespace_as_suffix_ = from.treat_whitespace_as_suffix_;
     }
     if (cached_has_bits & 0x00001000u) {
-      unk_id_ = from.unk_id_;
+      use_all_vocab_ = from.use_all_vocab_;
     }
     if (cached_has_bits & 0x00002000u) {
-      model_type_ = from.model_type_;
+      unk_id_ = from.unk_id_;
     }
     if (cached_has_bits & 0x00004000u) {
-      vocab_size_ = from.vocab_size_;
+      model_type_ = from.model_type_;
     }
     if (cached_has_bits & 0x00008000u) {
-      character_coverage_ = from.character_coverage_;
+      vocab_size_ = from.vocab_size_;
     }
     _has_bits_[0] |= cached_has_bits;
   }
   if (cached_has_bits & 16711680u) {
     if (cached_has_bits & 0x00010000u) {
-      seed_sentencepiece_size_ = from.seed_sentencepiece_size_;
+      character_coverage_ = from.character_coverage_;
     }
     if (cached_has_bits & 0x00020000u) {
-      shrinking_factor_ = from.shrinking_factor_;
+      seed_sentencepiece_size_ = from.seed_sentencepiece_size_;
     }
     if (cached_has_bits & 0x00040000u) {
-      num_threads_ = from.num_threads_;
+      shrinking_factor_ = from.shrinking_factor_;
     }
     if (cached_has_bits & 0x00080000u) {
-      num_sub_iterations_ = from.num_sub_iterations_;
+      num_threads_ = from.num_threads_;
     }
     if (cached_has_bits & 0x00100000u) {
-      max_sentence_length_ = from.max_sentence_length_;
+      num_sub_iterations_ = from.num_sub_iterations_;
     }
     if (cached_has_bits & 0x00200000u) {
-      max_sentencepiece_length_ = from.max_sentencepiece_length_;
+      max_sentence_length_ = from.max_sentence_length_;
     }
     if (cached_has_bits & 0x00400000u) {
-      shuffle_input_sentence_ = from.shuffle_input_sentence_;
+      max_sentencepiece_length_ = from.max_sentencepiece_length_;
     }
     if (cached_has_bits & 0x00800000u) {
-      split_by_unicode_script_ = from.split_by_unicode_script_;
+      shuffle_input_sentence_ = from.shuffle_input_sentence_;
     }
     _has_bits_[0] |= cached_has_bits;
   }
-  if (cached_has_bits & 1056964608u) {
+  if (cached_has_bits & 2130706432u) {
     if (cached_has_bits & 0x01000000u) {
-      split_by_number_ = from.split_by_number_;
+      split_by_unicode_script_ = from.split_by_unicode_script_;
     }
     if (cached_has_bits & 0x02000000u) {
-      split_by_whitespace_ = from.split_by_whitespace_;
+      split_by_number_ = from.split_by_number_;
     }
     if (cached_has_bits & 0x04000000u) {
-      hard_vocab_limit_ = from.hard_vocab_limit_;
+      split_by_whitespace_ = from.split_by_whitespace_;
     }
     if (cached_has_bits & 0x08000000u) {
-      bos_id_ = from.bos_id_;
+      hard_vocab_limit_ = from.hard_vocab_limit_;
     }
     if (cached_has_bits & 0x10000000u) {
-      eos_id_ = from.eos_id_;
+      bos_id_ = from.bos_id_;
     }
     if (cached_has_bits & 0x20000000u) {
+      eos_id_ = from.eos_id_;
+    }
+    if (cached_has_bits & 0x40000000u) {
       pad_id_ = from.pad_id_;
     }
     _has_bits_[0] |= cached_has_bits;
@@ -1557,6 +1585,7 @@ void TrainerSpec::InternalSwap(TrainerSpec* other) {
   swap(input_sentence_size_, other->input_sentence_size_);
   swap(mining_sentence_size_, other->mining_sentence_size_);
   swap(training_sentence_size_, other->training_sentence_size_);
+  swap(treat_whitespace_as_suffix_, other->treat_whitespace_as_suffix_);
   swap(use_all_vocab_, other->use_all_vocab_);
   swap(unk_id_, other->unk_id_);
   swap(model_type_, other->model_type_);
