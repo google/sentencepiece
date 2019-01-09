@@ -33,7 +33,8 @@
 namespace sentencepiece {
 
 // "_this_is_a_pen" => ["_this", "_is", "_a", "_pen"]
-std::vector<absl::string_view> SplitIntoWords(absl::string_view text);
+std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
+                                              bool add_ws_as_suffix = false);
 
 using EncodeResult = std::vector<std::pair<absl::string_view, int>>;
 using NBestEncodeResult = std::vector<std::pair<EncodeResult, float>>;

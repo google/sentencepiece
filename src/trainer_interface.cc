@@ -206,10 +206,19 @@ bool TrainerInterface::IsValidSentencePiece(
       // Regardless of the setting of split_by_whitespace,
       // whitespace is treated as a prefix/infix of symbol or
       // independent symbol.
-      if ((trainer_spec_.split_by_whitespace() && pos > 0) ||
-          (!trainer_spec_.split_by_whitespace() && pos > 0 &&
-           pos == sentencepiece.size() - 1)) {
-        return false;
+      if (trainer_spec_.treat_whitespace_as_suffix()) {
+        if ((trainer_spec_.split_by_whitespace() &&
+             pos < sentencepiece.size() - 1) ||
+            (!trainer_spec_.split_by_whitespace() &&
+             pos < sentencepiece.size() - 1 && pos == 0)) {
+          return false;
+        }
+      } else {
+        if ((trainer_spec_.split_by_whitespace() && pos > 0) ||
+            (!trainer_spec_.split_by_whitespace() && pos > 0 &&
+             pos == sentencepiece.size() - 1)) {
+          return false;
+        }
       }
     } else {
       auto s = unicode_script::GetScript(c);
@@ -434,7 +443,8 @@ void TrainerInterface::SplitSentencesByWhitespace() {
             << sentences_.size();
   std::unordered_map<std::string, int64> tokens;
   for (const auto &s : sentences_) {
-    for (const auto &w : SplitIntoWords(s.first)) {
+    for (const auto &w :
+         SplitIntoWords(s.first, trainer_spec_.treat_whitespace_as_suffix())) {
       tokens[std::string(w)] += s.second;
     }
   }

@@ -103,7 +103,8 @@ void ModelInterface::InitializePieces() {
   matcher_ = port::MakeUnique<normalizer::PrefixMatcher>(user_defined_symbols);
 }
 
-std::vector<absl::string_view> SplitIntoWords(absl::string_view text) {
+std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
+                                              bool treat_whitespace_as_suffix) {
   const char *begin = text.data();
   const char *end = text.data() + text.size();
 
@@ -111,16 +112,28 @@ std::vector<absl::string_view> SplitIntoWords(absl::string_view text) {
   const absl::string_view kSpaceSymbol = "\xe2\x96\x81";
 
   std::vector<absl::string_view> result;
-  while (begin < end) {
-    const int mblen =
-        std::min<int>(string_util::OneCharLen(begin), end - begin);
-    if (begin == text.data() ||
-        absl::string_view(begin, mblen) == kSpaceSymbol) {
-      result.emplace_back(begin, 0);  // add empty string piece.
+  if (treat_whitespace_as_suffix) {
+    if (begin < end) result.emplace_back(begin, 0);
+    while (begin < end) {
+      const int mblen =
+          std::min<int>(string_util::OneCharLen(begin), end - begin);
+      const bool is_ws = absl::string_view(begin, mblen) == kSpaceSymbol;
+      result.back() =
+          absl::string_view(result.back().data(), result.back().size() + mblen);
+      begin += mblen;
+      if (begin < end && is_ws) result.emplace_back(begin, 0);
     }
-    result.back() =
-        absl::string_view(result.back().data(), result.back().size() + mblen);
-    begin += mblen;
+  } else {
+    while (begin < end) {
+      const int mblen =
+          std::min<int>(string_util::OneCharLen(begin), end - begin);
+      if (begin == text.data() ||
+          absl::string_view(begin, mblen) == kSpaceSymbol)
+        result.emplace_back(begin, 0);  // add empty string piece.
+      result.back() =
+          absl::string_view(result.back().data(), result.back().size() + mblen);
+      begin += mblen;
+    }
   }
 
   return result;

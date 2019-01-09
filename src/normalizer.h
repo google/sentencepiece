@@ -65,6 +65,7 @@ class Normalizer {
   // Instantiates Normalizer with |spec|.
   // |spec| should not be deleted until Normalizer is destroyed.
   explicit Normalizer(const NormalizerSpec &spec);
+  Normalizer(const NormalizerSpec &spec, const TrainerSpec &trainer_Spec);
   virtual ~Normalizer();
 
   virtual void SetPrefixMatcher(const PrefixMatcher *matcher) {
@@ -96,6 +97,8 @@ class Normalizer {
 
  private:
   FRIEND_TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest);
+
+  void Init();
 
   // Normalizes the prefix of |input| and returns the pair of
   // normalized prefix and length we must consume after
@@ -137,6 +140,10 @@ class Normalizer {
 
   // Prefix matcher;
   const PrefixMatcher *matcher_ = nullptr;
+
+  // Split hello world into "hello_" and "world_" instead of
+  // "_hello" and "_world".
+  const bool treat_whitespace_as_suffix_ = false;
 
   // Normalizer's status.
   util::Status status_;

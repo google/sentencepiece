@@ -26,9 +26,23 @@ namespace normalizer {
 
 constexpr int Normalizer::kMaxTrieResultsSize;
 
+Normalizer::Normalizer(const NormalizerSpec &spec,
+                       const TrainerSpec &trainer_spec)
+    : spec_(&spec),
+      treat_whitespace_as_suffix_(trainer_spec.treat_whitespace_as_suffix()),
+      status_(util::OkStatus()) {
+  Init();
+}
+
 Normalizer::Normalizer(const NormalizerSpec &spec)
     : spec_(&spec), status_(util::OkStatus()) {
-  absl::string_view index = spec.precompiled_charsmap();
+  Init();
+}
+
+Normalizer::~Normalizer() {}
+
+void Normalizer::Init() {
+  absl::string_view index = spec_->precompiled_charsmap();
   if (index.empty()) {
     LOG(INFO) << "precompiled_charsmap is empty. use identity normalization.";
   } else {
@@ -47,8 +61,6 @@ Normalizer::Normalizer(const NormalizerSpec &spec)
     normalized_ = normalized.data();
   }
 }
-
-Normalizer::~Normalizer() {}
 
 util::Status Normalizer::Normalize(absl::string_view input,
                                    std::string *normalized,
@@ -90,11 +102,8 @@ util::Status Normalizer::Normalize(absl::string_view input,
   // if escape_whitespaces() is set (default = true).
   const absl::string_view kSpaceSymbol = "\xe2\x96\x81";
 
-  // Adds a space symbol as a prefix (default is true)
-  // With this prefix, "world" and "hello world" are converted into
-  // "_world" and "_hello_world", which help the trainer to extract
-  // "_world" as one symbol.
-  if (spec_->add_dummy_prefix()) {
+  // adds kSpaceSymbol to the current context.
+  auto add_ws = [this, &consumed, &normalized, &norm_to_orig, &kSpaceSymbol]() {
     if (spec_->escape_whitespaces()) {
       normalized->append(kSpaceSymbol.data(), kSpaceSymbol.size());
       for (size_t n = 0; n < kSpaceSymbol.size(); ++n) {
@@ -104,7 +113,13 @@ util::Status Normalizer::Normalize(absl::string_view input,
       normalized->append(" ");
       norm_to_orig->push_back(consumed);
     }
-  }
+  };
+
+  // Adds a space symbol as a prefix (default is true)
+  // With this prefix, "world" and "hello world" are converted into
+  // "_world" and "_hello_world", which help the trainer to extract
+  // "_world" as one symbol.
+  if (!treat_whitespace_as_suffix_ && spec_->add_dummy_prefix()) add_ws();
 
   bool is_prev_space = spec_->remove_extra_whitespaces();
   while (!input.empty()) {
@@ -153,6 +168,9 @@ util::Status Normalizer::Normalize(absl::string_view input,
       norm_to_orig->resize(length);
     }
   }
+
+  // Adds a space symbol as a suffix (default is false)
+  if (treat_whitespace_as_suffix_ && spec_->add_dummy_prefix()) add_ws();
 
   norm_to_orig->push_back(consumed);
 
