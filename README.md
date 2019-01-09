@@ -133,7 +133,7 @@ The following tools and libraries are required to build SentencePiece:
 
 * [cmake](https://cmake.org/)
 * C++11 compiler
-* [gperftool](https://github.com/gperftools/gperftools) library (optional, 10-40% performance improvement can be obtained.)
+* [gperftools](https://github.com/gperftools/gperftools) library (optional, 10-40% performance improvement can be obtained.)
 
 On Ubuntu, the build tools can be installed with apt-get:
 ```
