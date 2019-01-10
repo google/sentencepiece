@@ -138,7 +138,6 @@ Builder::Chars Normalize(const Builder::CharsMap &chars_map,
       normalized.push_back(src[i]);
       ++i;
     } else {
-      CHECK(!it->second.empty());
       std::copy(it->second.begin(), it->second.end(),
                 std::back_inserter(normalized));
       i += it->first.size();
@@ -357,10 +356,10 @@ util::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
   RETURN_IF_ERROR(Builder::BuildNFKCMap(&nfkc_map));
 
   // Other code points considered as whitespace.
-  nfkc_map[{0x9}] = {0x20};     // TAB
-  nfkc_map[{0xA}] = {0x20};     // LINE FEED
-  nfkc_map[{0xC}] = {0x20};     // FORM FEED
-  nfkc_map[{0xD}] = {0x20};     // CARRIAGE RETURN
+  nfkc_map[{0x0009}] = {0x20};  // TAB
+  nfkc_map[{0x000A}] = {0x20};  // LINE FEED
+  nfkc_map[{0x000C}] = {0x20};  // FORM FEED
+  nfkc_map[{0x000D}] = {0x20};  // CARRIAGE RETURN
   nfkc_map[{0x1680}] = {0x20};  // OGHAM SPACE MARK
   nfkc_map[{0x200B}] = {0x20};  // ZERO WIDTH SPACE
   nfkc_map[{0x200E}] = {0x20};  // LEFT-TO-RIGHT MARK
@@ -370,6 +369,42 @@ util::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
   nfkc_map[{0x2581}] = {0x20};  // LOWER ONE EIGHT BLOCK
   nfkc_map[{0xFEFF}] = {0x20};  // ZERO WIDTH NO-BREAK
   nfkc_map[{0xFFFD}] = {0x20};  // REPLACEMENT CHARACTER
+  nfkc_map[{0x200C}] = {0x20};  // ZERO WIDTH NON-JOINER
+  nfkc_map[{0x200D}] = {0x20};  // ZERO WIDTH JOINER
+
+  // Ascii Control characters
+  nfkc_map[{0x0001}] = {};
+  nfkc_map[{0x0002}] = {};
+  nfkc_map[{0x0003}] = {};
+  nfkc_map[{0x0004}] = {};
+  nfkc_map[{0x0005}] = {};
+  nfkc_map[{0x0006}] = {};
+  nfkc_map[{0x0007}] = {};
+  nfkc_map[{0x0008}] = {};
+  nfkc_map[{0x000B}] = {};
+  nfkc_map[{0x000E}] = {};
+  nfkc_map[{0x000F}] = {};
+  nfkc_map[{0x0010}] = {};
+  nfkc_map[{0x0011}] = {};
+  nfkc_map[{0x0012}] = {};
+  nfkc_map[{0x0013}] = {};
+  nfkc_map[{0x0014}] = {};
+  nfkc_map[{0x0015}] = {};
+  nfkc_map[{0x0016}] = {};
+  nfkc_map[{0x0017}] = {};
+  nfkc_map[{0x0018}] = {};
+  nfkc_map[{0x0019}] = {};
+  nfkc_map[{0x001A}] = {};
+  nfkc_map[{0x001B}] = {};
+  nfkc_map[{0x001C}] = {};
+  nfkc_map[{0x001D}] = {};
+  nfkc_map[{0x001E}] = {};
+  nfkc_map[{0x001F}] = {};
+
+  //  <control-007F>..<control-009F>
+  nfkc_map[{0x007F}] = {};
+  nfkc_map[{0x008F}] = {};
+  nfkc_map[{0x009F}] = {};
 
   // Do not normalize FULL_WIDTH TILDE, since FULL_WIDTH TILDE
   // and HALF_WIDTH TILDE are used differently in Japanese.
@@ -497,6 +532,9 @@ util::Status Builder::SaveCharsMap(absl::string_view filename,
                        string_util::Join(trg, " ") + "\t# " +
                        string_util::UnicodeTextToUTF8(c.first) + " => " +
                        string_util::UnicodeTextToUTF8(c.second);
+    line = string_util::StringReplace(line, "\b", " ", true);
+    line = string_util::StringReplace(line, "\v", " ", true);
+    line = string_util::StringReplace(line, "\f", " ", true);
     line = string_util::StringReplace(line, "\n", " ", true);
     line = string_util::StringReplace(line, "\r", " ", true);
     output->WriteLine(line);

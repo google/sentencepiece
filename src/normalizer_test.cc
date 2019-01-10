@@ -63,6 +63,15 @@ TEST(NormalizerTest, NormalizeTest) {
 
   EXPECT_EQ(WS "I" WS "saw" WS "a" WS "girl",
             normalizer.Normalize(" I  saw a　 　girl　　"));
+
+  // Remove control chars.
+  EXPECT_EQ("", normalizer.Normalize(string_util::UnicodeCharToUTF8(0x7F)));
+  EXPECT_EQ("", normalizer.Normalize(string_util::UnicodeCharToUTF8(0x8F)));
+  EXPECT_EQ("", normalizer.Normalize(string_util::UnicodeCharToUTF8(0x9F)));
+  EXPECT_EQ("", normalizer.Normalize(string_util::UnicodeCharToUTF8(0x0B)));
+  for (char32 c = 0x10; c <= 0x1F; ++c) {
+    EXPECT_EQ("", normalizer.Normalize(string_util::UnicodeCharToUTF8(c)));
+  }
 }
 
 TEST(NormalizerTest, NormalizeWithoutDummyPrefixTest) {
