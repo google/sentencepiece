@@ -137,7 +137,7 @@ The following tools and libraries are required to build SentencePiece:
 
 On Ubuntu, the build tools can be installed with apt-get:
 ```
-% sudo apt-get install cmake pkg-config libgoogle-perftools-dev
+% sudo apt-get install cmake build-essential pkg-config libgoogle-perftools-dev
 ```
 ### Build and Install SentencePiece
 ```
@@ -164,8 +164,6 @@ On OSX/macOS, replace the last command with the following:
 * `--vocab_size`: vocabulary size, e.g., 8000, 16000, or 32000
 * `--character_coverage`: amount of characters covered by the model, good defaults are: `0.9995` for languages with rich character set like Japanse or Chinese and `1.0` for other languages with small character set.
 * `--model_type`: model type. Choose from `unigram` (default), `bpe`, `char`, or `word`. The input sentence must be pretokenized when using `word` type.
-
-Note that `spm_train` loads only the first `--input_sentence_size` sentences (default value is 10M).
 
 Use `--help` flag to display all parameters for training.
 

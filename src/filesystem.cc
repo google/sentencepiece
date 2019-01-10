@@ -27,7 +27,7 @@ class PosixReadableFile : public ReadableFile {
                 ? &std::cin
                 : new std::ifstream(WPATH(filename.data()),
                                     is_binary ? std::ios::binary | std::ios::in
-                                              : std::ios::out)) {
+                                              : std::ios::in)) {
     if (!*is_)
       status_ = util::StatusBuilder(util::error::NOT_FOUND)
                 << "\"" << filename.data() << "\": " << util::StrError(errno);

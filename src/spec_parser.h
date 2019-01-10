@@ -31,6 +31,7 @@ inline std::string PrintProto(const TrainerSpec &message) {
   os << "  split_by_unicode_script: " << message.split_by_unicode_script() << "\n";
   os << "  split_by_number: " << message.split_by_number() << "\n";
   os << "  split_by_whitespace: " << message.split_by_whitespace() << "\n";
+  os << "  treat_whitespace_as_suffix: " << message.treat_whitespace_as_suffix() << "\n";
   for (const auto &v : message.control_symbols())
     os << "  control_symbols: " << v << "\n";
   for (const auto &v : message.user_defined_symbols())
@@ -230,6 +231,15 @@ util::Status SentencePieceTrainer::SetProtoField(const std::string& name, const 
     if (!string_util::lexical_cast(val.empty() ? "true" : val, &v))
       return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as bool.";
     message->set_split_by_whitespace(v);
+    return util::OkStatus();
+  }
+
+  if (name == "treat_whitespace_as_suffix") {
+    const auto &val = value;
+    bool v;
+    if (!string_util::lexical_cast(val.empty() ? "true" : val, &v))
+      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as bool.";
+    message->set_treat_whitespace_as_suffix(v);
     return util::OkStatus();
   }
 
