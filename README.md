@@ -139,7 +139,7 @@ On Ubuntu, the build tools can be installed with apt-get:
 ```
 % sudo apt-get install cmake build-essential pkg-config libgoogle-perftools-dev
 ```
-### Build and Install SentencePiece
+#### Build and Install SentencePiece
 ```
 % cd /path/to/sentencepiece
 % mkdir build
@@ -149,8 +149,10 @@ On Ubuntu, the build tools can be installed with apt-get:
 % sudo make install
 % sudo ldconfig -v
 ```
-On OSX/macOS, replace the last command with the following: 
-`sudo update_dyld_shared_cache`
+On OSX/macOS, replace the last command with `sudo update_dyld_shared_cache`
+
+### TensorFlow module
+See [tensorflow/README.md](tensorflow/README.md)
 
 ## Usage instructions
 ### Train SentencePiece Model
@@ -260,4 +262,6 @@ Then segment train/test corpus with ```--vocabulary``` option
 * [SentencePieceProcessor C++ API](doc/api.md)
 * [Use custom text normalization rules](doc/normalization.md)
 * [Use custom symbols](doc/special_symbols.md)
+* [Python Module](python/README.md)
+* [TensorFlow Module](tensorflow/README.md)
 * [Segmentation and training algorithms in detail]
