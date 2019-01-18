@@ -353,7 +353,6 @@ END:
       CHECK_OR_RETURN(s->find(" ") == std::string::npos)
           << "Normalized string must not include spaces";
       if (s->empty()) {
-        LOG(WARNING) << "Empty string found. removed";
         std::swap(sentences_[i], sentences_[sentences_.size() - 1]);
         sentences_.resize(sentences_.size() - 1);
       }
