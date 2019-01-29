@@ -422,7 +422,7 @@ END:
   // +3 for meta pieces.
   if (trainer_spec_.model_type() != TrainerSpec::WORD &&
       trainer_spec_.model_type() != TrainerSpec::CHAR) {
-    CHECK_LT_OR_RETURN(
+    CHECK_LE_OR_RETURN(
         static_cast<int>(required_chars_.size() + meta_pieces_.size()),
         trainer_spec_.vocab_size())
         << "Vocabulary size is smaller than required_chars. "
