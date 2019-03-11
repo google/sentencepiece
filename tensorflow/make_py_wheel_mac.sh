@@ -64,7 +64,8 @@ build() {
   pip install --upgrade setuptools
   pip install wheel
 
-  build_tf_wrapper ""
+  build_tf_wrapper "1.13.1"
+  build_tf_wrapper "1.12.0"  
   build_tf_wrapper "1.11.0"
   build_tf_wrapper "1.10.0"
   build_tf_wrapper "1.9.0"
