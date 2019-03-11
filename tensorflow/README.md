@@ -17,4 +17,4 @@ Use pydoc to see the usage instruction
 % pydoc sentencepiece_processor_ops
 ```
 
-[Sample code](https://colab.research.google.com/drive/1rQ0tgXmHv02sMO6VdTO0yYaTvc1Yv1yP?authuser=2#scrollTo=i_44FzFC0qwe)
+[Sample code](https://colab.research.google.com/drive/1rQ0tgXmHv02sMO6VdTO0yYaTvc1Yv1yP)
