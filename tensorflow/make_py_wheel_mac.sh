@@ -25,9 +25,9 @@ build_tf_wrapper() {
   # Builds _sentencepiece_processor_ops.so
   pip install tensorflow${pkg_name} --upgrade --no-cache-dir -I
   
-  pip uninstall numpy || true
-  pip uninstall numpy || true
-  pip uninstall numpy || true
+  pip uninstall numpy -y || true
+  pip uninstall numpy -y || true
+  pip uninstall numpy -y || true
   pip install numpy --upgrade --no-cache-dir -I
   
   TF_CFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
