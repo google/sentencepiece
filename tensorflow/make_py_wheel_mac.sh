@@ -25,7 +25,7 @@ build_tf_wrapper() {
   # Builds _sentencepiece_processor_ops.so
   pip install tensorflow${pkg_name} --upgrade --no-cache-dir -I
   
-  if [ "$1" == "1.31.1" ]; then
+  if [ "$1" = "1.31.1" ]; then
     pip uninstall numpy -y || true
     pip uninstall numpy -y || true
     pip uninstall numpy -y || true
