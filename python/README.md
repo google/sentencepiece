@@ -26,6 +26,8 @@ If you don’t have write permission to the global site-packages directory or do
 
 ## Usage
 
+See [this google colab page](https://github.com/google/sentencepiece/blob/master/python/sentencepiece_python_module_example.ipynb) to run sentencepiece interactively.
+
 ### Segmentation
 ```
 % python
