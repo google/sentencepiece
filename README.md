@@ -1,5 +1,6 @@
 # SentencePiece
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/5851945fc54947fc9e964f78c3b6bdfa)](https://app.codacy.com/app/taku910/sentencepiece?utm_source=github.com&utm_medium=referral&utm_content=google/sentencepiece&utm_campaign=Badge_Grade_Dashboard)
 [![Build Status](https://travis-ci.org/google/sentencepiece.svg?branch=master)](https://travis-ci.org/google/sentencepiece)
 [![Build status](https://ci.appveyor.com/api/projects/status/vxoub3qx4fwpysyq?svg=true)](https://ci.appveyor.com/project/taku910/sentencepiece)
 [![Coverage Status](https://coveralls.io/repos/github/google/sentencepiece/badge.svg?branch=master)](https://coveralls.io/github/google/sentencepiece?branch=master)
