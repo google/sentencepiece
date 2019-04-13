@@ -3632,7 +3632,7 @@ SWIGINTERN float sentencepiece_SentencePieceProcessor_get_score(sentencepiece::S
     return self->GetScore(id);
   }
 SWIGINTERN bool sentencepiece_SentencePieceProcessor_is_unknown(sentencepiece::SentencePieceProcessor const *self,int id){
-    return self->IsUnused(id);
+    return self->IsUnknown(id);
   }
 SWIGINTERN bool sentencepiece_SentencePieceProcessor_is_control(sentencepiece::SentencePieceProcessor const *self,int id){
     return self->IsControl(id);
