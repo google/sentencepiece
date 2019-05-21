@@ -15,7 +15,7 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 file(STRINGS "VERSION" SPM_VERSION)
 message(STATUS "VERSION: ${SPM_VERSION}")
-project(sentencepiece VERSION ${SPM_VERSION} LANGUAGES CXX)
+project(sentencepiece VERSION ${SPM_VERSION} LANGUAGES C CXX)
 
 option(SPM_ENABLE_NFKC_COMPILE "Enables NFKC compile" OFF)
 option(SPM_ENABLE_SHARED "Builds shared libaries in addition to static libraries." ON)
