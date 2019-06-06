@@ -13,14 +13,20 @@
 // limitations under the License.!
 
 #include <functional>
-#include "common.h"
-#include "filesystem.h"
-#include "flags.h"
-#include "sentencepiece.pb.h"
-#include "sentencepiece_processor.h"
-#include "util.h"
+#include <string>
+#include <vector>
+
+#include <gflags/gflags.h>
+
+#include "absl/strings/str_split.h"
+#include "src/common.h"
+#include "src/filesystem.h"
+#include "src/sentencepiece.pb.h"
+#include "src/sentencepiece_processor.h"
+#include "src/util.h"
 
 DEFINE_string(model, "", "model file name");
+DEFINE_string(input, "", "output filename");
 DEFINE_string(output, "", "output filename");
 DEFINE_string(input_format, "piece", "choose from piece or id");
 DEFINE_string(output_format, "string", "choose from string or proto");
@@ -28,10 +34,18 @@ DEFINE_string(extra_options, "",
               "':' separated encoder extra options, e.g., \"reverse:bos:eos\"");
 
 int main(int argc, char *argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   std::vector<std::string> rest_args;
-  sentencepiece::flags::ParseCommandLineFlags(argc, argv, &rest_args);
 
-  CHECK_OR_HELP(model);
+  if (FLAGS_input.empty()) {
+    for (int i = 1; i < argc; ++i) {
+      rest_args.push_back(std::string(argv[i]));
+    }
+  } else {
+    rest_args.push_back(FLAGS_input);
+  }
+
+  CHECK(!FLAGS_model.empty());
 
   sentencepiece::SentencePieceProcessor sp;
   CHECK_OK(sp.Load(FLAGS_model));
@@ -65,7 +79,6 @@ int main(int argc, char *argv[]) {
     } else if (FLAGS_output_format == "proto") {
       process = [&](const std::vector<std::string> &pieces) {
         CHECK_OK(sp.Decode(pieces, &spt));
-        //        output->WriteLine(spt.Utf8DebugString());
       };
     } else {
       LOG(FATAL) << "Unknown output format: " << FLAGS_output_format;
@@ -79,7 +92,6 @@ int main(int argc, char *argv[]) {
     } else if (FLAGS_output_format == "proto") {
       process = [&](const std::vector<std::string> &pieces) {
         CHECK_OK(sp.Decode(ToIds(pieces), &spt));
-        //        output->WriteLine(spt.Utf8DebugString());
       };
     } else {
       LOG(FATAL) << "Unknown output format: " << FLAGS_output_format;
@@ -88,11 +100,11 @@ int main(int argc, char *argv[]) {
     LOG(FATAL) << "Unknown input format: " << FLAGS_input_format;
   }
 
-  for (const auto &filename : rest_args) {
+  for (const auto filename : rest_args) {
     auto input = sentencepiece::filesystem::NewReadableFile(filename);
     CHECK_OK(input->status());
     while (input->ReadLine(&line)) {
-      const auto pieces = sentencepiece::string_util::Split(line, " ");
+      const auto pieces = absl::StrSplit(line, " ");
       process(pieces);
     }
   }

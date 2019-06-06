@@ -15,7 +15,7 @@
 #ifndef UNICODE_SCRIPT_H_
 #define UNICODE_SCRIPT_H_
 
-#include "common.h"
+#include "src/common.h"
 
 namespace sentencepiece {
 namespace unicode_script {

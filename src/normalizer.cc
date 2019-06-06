@@ -12,14 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "normalizer.h"
+#include "src/normalizer.h"
 
 #include <utility>
 #include <vector>
-#include "common.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/darts_clone/darts.h"
-#include "util.h"
+
+#include "absl/memory/memory.h"
+#include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
+#include "third_party/darts_clone/include/darts.h"
+#include "src/common.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace normalizer {
@@ -30,12 +34,12 @@ Normalizer::Normalizer(const NormalizerSpec &spec,
                        const TrainerSpec &trainer_spec)
     : spec_(&spec),
       treat_whitespace_as_suffix_(trainer_spec.treat_whitespace_as_suffix()),
-      status_(util::OkStatus()) {
+      status_(::util::OkStatus()) {
   Init();
 }
 
 Normalizer::Normalizer(const NormalizerSpec &spec)
-    : spec_(&spec), status_(util::OkStatus()) {
+    : spec_(&spec), status_(::util::OkStatus()) {
   Init();
 }
 
@@ -51,7 +55,7 @@ void Normalizer::Init() {
     if (!status_.ok()) return;
 
     // Reads the body of double array.
-    trie_ = port::MakeUnique<Darts::DoubleArray>();
+    trie_ = absl::make_unique<Darts::DoubleArray>();
 
     // The second arg of set_array is not the size of blob,
     // but the number of double array units.
@@ -62,14 +66,14 @@ void Normalizer::Init() {
   }
 }
 
-util::Status Normalizer::Normalize(absl::string_view input,
-                                   std::string *normalized,
-                                   std::vector<size_t> *norm_to_orig) const {
+::util::Status Normalizer::Normalize(absl::string_view input,
+                                     std::string *normalized,
+                                     std::vector<size_t> *norm_to_orig) const {
   norm_to_orig->clear();
   normalized->clear();
 
   if (input.empty()) {
-    return util::OkStatus();
+    return ::util::OkStatus();
   }
 
   RETURN_IF_ERROR(status());
@@ -90,7 +94,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
 
   // all chars are whitespace.
   if (input.empty()) {
-    return util::OkStatus();
+    return ::util::OkStatus();
   }
 
   // Reserves the output buffer to avoid re-allocations.
@@ -128,7 +132,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
 
     // Removes heading spaces in sentence piece,
     // if the previous sentence piece ends with whitespace.
-    while (is_prev_space && string_util::ConsumePrefix(&sp, " ")) {
+    while (is_prev_space && absl::ConsumePrefix(&sp, " ")) {
     }
 
     if (!sp.empty()) {
@@ -146,7 +150,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
         }
       }
       // Checks whether the last character of sp is whitespace.
-      is_prev_space = string_util::EndsWith(sp, " ");
+      is_prev_space = absl::EndsWith(sp, " ");
     }
 
     consumed += p.second;
@@ -160,7 +164,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
   if (spec_->remove_extra_whitespaces()) {
     const absl::string_view space =
         spec_->escape_whitespaces() ? kSpaceSymbol : " ";
-    while (string_util::EndsWith(*normalized, space)) {
+    while (absl::EndsWith(*normalized, space)) {
       const int length = normalized->size() - space.size();
       CHECK_GE_OR_RETURN(length, 0);
       consumed = (*norm_to_orig)[length];
@@ -176,13 +180,13 @@ util::Status Normalizer::Normalize(absl::string_view input,
 
   CHECK_EQ_OR_RETURN(norm_to_orig->size(), normalized->size() + 1);
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
 std::string Normalizer::Normalize(absl::string_view input) const {
   std::vector<size_t> norm_to_orig;
   std::string normalized;
-  Normalize(input, &normalized, &norm_to_orig);
+  Normalize(input, &normalized, &norm_to_orig).IgnoreError();
   return normalized;
 }
 
@@ -258,7 +262,7 @@ std::string Normalizer::EncodePrecompiledCharsMap(
 }
 
 // static
-util::Status Normalizer::DecodePrecompiledCharsMap(
+::util::Status Normalizer::DecodePrecompiledCharsMap(
     absl::string_view blob, absl::string_view *trie_blob,
     absl::string_view *normalized) {
   uint32 trie_blob_size = 0;
@@ -267,7 +271,7 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
           absl::string_view(blob.data(), sizeof(trie_blob_size)),
           &trie_blob_size) ||
       trie_blob_size >= blob.size()) {
-    return util::InternalError("Blob for normalization rule is broken.");
+    return ::util::InternalError("Blob for normalization rule is broken.");
   }
 
   blob.remove_prefix(sizeof(trie_blob_size));
@@ -276,7 +280,7 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
   blob.remove_prefix(trie_blob_size);
   *normalized = absl::string_view(blob.data(), blob.size());
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
 PrefixMatcher::PrefixMatcher(const std::set<absl::string_view> &dic) {
@@ -284,7 +288,7 @@ PrefixMatcher::PrefixMatcher(const std::set<absl::string_view> &dic) {
   std::vector<const char *> key;
   key.reserve(dic.size());
   for (const auto &it : dic) key.push_back(it.data());
-  trie_ = port::MakeUnique<Darts::DoubleArray>();
+  trie_ = absl::make_unique<Darts::DoubleArray>();
   CHECK_EQ(0, trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
                            nullptr));
 }

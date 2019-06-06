@@ -17,11 +17,11 @@
 
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
-#include "sentencepiece_model.pb.h"
-#include "trainer_interface.h"
+#include "absl/container/flat_hash_map.h"
+#include "src/sentencepiece_model.pb.h"
+#include "src/trainer_interface.h"
 
 namespace sentencepiece {
 namespace bpe {
@@ -33,7 +33,7 @@ class Trainer : public TrainerInterface {
           const NormalizerSpec &normalizer_spec)
       : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec) {}
 
-  util::Status Train() override;
+  ::util::Status Train() override;
 
  private:
   // Symbol represents a character or symbol bigram.
@@ -109,7 +109,7 @@ class Trainer : public TrainerInterface {
   void UpdateActiveSymbols();
 
   // All unique symbols. Key is a fingerprint of Symbol.
-  std::unordered_map<uint64, Symbol *> symbols_cache_;
+  absl::flat_hash_map<uint64, Symbol *> symbols_cache_;
 
   // Set of symbols from which we find the best symbol in each iteration.
   std::set<Symbol *> active_symbols_;

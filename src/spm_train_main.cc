@@ -13,10 +13,14 @@
 // limitations under the License.!
 
 #include <map>
-#include "flags.h"
-#include "sentencepiece_model.pb.h"
-#include "sentencepiece_trainer.h"
-#include "util.h"
+
+#include <gflags/gflags.h>
+
+#include "absl/strings/ascii.h"
+#include "absl/strings/str_split.h"
+#include "src/sentencepiece_model.pb.h"
+#include "src/sentencepiece_trainer.h"
+#include "src/util.h"
 
 using sentencepiece::NormalizerSpec;
 using sentencepiece::TrainerSpec;
@@ -66,11 +70,15 @@ DEFINE_bool(split_by_number, kDefaultTrainerSpec.split_by_number(),
             "split tokens by numbers (0-9)");
 DEFINE_bool(split_by_whitespace, kDefaultTrainerSpec.split_by_whitespace(),
             "use a white space to split sentence pieces");
-DEFINE_bool(treat_whitespace_as_suffix, false,
+DEFINE_bool(treat_whitespace_as_suffix,
+            kDefaultTrainerSpec.treat_whitespace_as_suffix(),
             "treat whitespace marker as suffix instead of prefix.");
 DEFINE_string(control_symbols, "", "comma separated list of control symbols");
 DEFINE_string(user_defined_symbols, "",
               "comma separated list of user defined symbols");
+DEFINE_bool(vocabulary_output_piece_score,
+            kDefaultTrainerSpec.vocabulary_output_piece_score(),
+            "Define score in vocab file");
 DEFINE_string(normalization_rule_name, "nmt_nfkc",
               "Normalization rule name. "
               "Choose from nfkc or identity");
@@ -105,13 +113,15 @@ DEFINE_string(unk_surface, kDefaultTrainerSpec.unk_surface(),
               "Dummy surface string for <unk>. In decoding <unk> is decoded to "
               "`unk_surface`.");
 
+
 int main(int argc, char *argv[]) {
-  sentencepiece::flags::ParseCommandLineFlags(argc, argv);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
   sentencepiece::TrainerSpec trainer_spec;
   sentencepiece::NormalizerSpec normalizer_spec;
 
-  CHECK_OR_HELP(input);
-  CHECK_OR_HELP(model_prefix);
+  CHECK(!FLAGS_input.empty());
+  CHECK(!FLAGS_model_prefix.empty());
 
 // Populates the value from flags to spec.
 #define SetTrainerSpecFromFlag(name) trainer_spec.set_##name(FLAGS_##name);
@@ -119,13 +129,14 @@ int main(int argc, char *argv[]) {
 #define SetNormalizerSpecFromFlag(name) \
   normalizer_spec.set_##name(FLAGS_##name);
 
-#define SetRepeatedTrainerSpecFromFlag(name)                     \
-  if (!FLAGS_##name.empty()) {                                   \
-    for (const auto v :                                          \
-         sentencepiece::string_util::Split(FLAGS_##name, ",")) { \
-      trainer_spec.add_##name(v);                                \
-    }                                                            \
+#define SetRepeatedTrainerSpecFromFlag(name)                                   \
+  if (!FLAGS_##name.empty()) {                                                 \
+    const std::vector<std::string> values = absl::StrSplit(FLAGS_##name, ','); \
+    for (const auto v : values) {                                              \
+      trainer_spec.add_##name(v);                                              \
+    }                                                                          \
   }
+
 
   SetTrainerSpecFromFlag(input_format);
   SetTrainerSpecFromFlag(model_prefix);
@@ -155,7 +166,6 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(eos_piece);
   SetTrainerSpecFromFlag(pad_piece);
   SetTrainerSpecFromFlag(unk_surface);
-  SetRepeatedTrainerSpecFromFlag(input);
   SetRepeatedTrainerSpecFromFlag(accept_language);
   SetRepeatedTrainerSpecFromFlag(control_symbols);
   SetRepeatedTrainerSpecFromFlag(user_defined_symbols);
@@ -165,14 +175,9 @@ int main(int argc, char *argv[]) {
   SetNormalizerSpecFromFlag(add_dummy_prefix);
   SetNormalizerSpecFromFlag(remove_extra_whitespaces);
 
-  const std::map<std::string, TrainerSpec::ModelType> kModelTypeMap = {
-      {"unigram", TrainerSpec::UNIGRAM},
-      {"bpe", TrainerSpec::BPE},
-      {"word", TrainerSpec::WORD},
-      {"char", TrainerSpec::CHAR}};
+  CHECK_OK(sentencepiece::SentencePieceTrainer::PopulateModelTypeFromString(
+      FLAGS_model_type, &trainer_spec));
 
-  trainer_spec.set_model_type(sentencepiece::port::FindOrDie(
-      kModelTypeMap, sentencepiece::string_util::ToLower(FLAGS_model_type)));
 
   CHECK_OK(sentencepiece::SentencePieceTrainer::Train(trainer_spec,
                                                       normalizer_spec));

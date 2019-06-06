@@ -41,7 +41,13 @@ matrix:
         - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
       services: docker
     - os: osx
+      osx_image: xcode9.3
+      env: IMAGE=native COMMAND=build_osx
+    - os: osx
       osx_image: xcode9.4
+      env: IMAGE=native COMMAND=build_osx
+    - os: osx
+      osx_image: xcode9.2
       env: IMAGE=native COMMAND=build_osx
     - os: osx
       osx_image: xcode9.4

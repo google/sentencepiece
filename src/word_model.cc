@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "word_model.h"
-#include "util.h"
+#include "src/word_model.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace word {

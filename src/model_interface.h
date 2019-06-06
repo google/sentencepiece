@@ -18,17 +18,17 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "common.h"
-#include "normalizer.h"
-#include "sentencepiece_model.pb.h"
-#include "sentencepiece_processor.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/darts_clone/darts.h"
-#include "util.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
+#include "third_party/darts_clone/include/darts.h"
+#include "src/common.h"
+#include "src/normalizer.h"
+#include "src/sentencepiece_model.pb.h"
+#include "src/sentencepiece_processor.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 
@@ -45,8 +45,8 @@ class ModelProto;
 // Given a normalized string, returns a sequence of sentence pieces with ids.
 class ModelInterface {
  public:
-  using PieceToIdMap =
-      std::unordered_map<absl::string_view, int, string_util::string_view_hash>;
+  using PieceToIdMap = absl::flat_hash_map<absl::string_view, int,
+                                           string_util::string_view_hash>;
 
   absl::string_view unk_piece() const;
   absl::string_view bos_piece() const;
@@ -61,7 +61,7 @@ class ModelInterface {
 
   // Returns Status.
   // Encode/Decode functions are valid only when status is OK.
-  virtual util::Status status() const { return status_; }
+  virtual ::util::Status status() const { return status_; }
 
   virtual const ModelProto &model_proto() const { return *model_proto_; }
 
@@ -174,7 +174,7 @@ class ModelInterface {
   int unk_id_ = 0;
 
   // status.
-  util::Status status_;
+  ::util::Status status_;
 };
 }  // namespace sentencepiece
 #endif  // MODEL_INTERFACE_H_

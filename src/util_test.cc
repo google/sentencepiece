@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "util.h"
+#include "src/util.h"
+
 #include <map>
-#include "filesystem.h"
-#include "testharness.h"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include "absl/strings/str_cat.h"
+#include "src/filesystem.h"
 
 namespace sentencepiece {
 namespace {
@@ -47,33 +51,6 @@ TEST(UtilTest, LexicalCastTest) {
   EXPECT_EQ("123.4", s);
 }
 
-TEST(UtilTest, CheckNotNullTest) {
-  int a = 0;
-  CHECK_NOTNULL(&a);
-  EXPECT_DEATH(CHECK_NOTNULL(nullptr));
-}
-
-TEST(UtilTest, StartsWith) {
-  const std::string str = "abcdefg";
-  EXPECT_TRUE(string_util::StartsWith(str, ""));
-  EXPECT_TRUE(string_util::StartsWith(str, "a"));
-  EXPECT_TRUE(string_util::StartsWith(str, "abc"));
-  EXPECT_TRUE(string_util::StartsWith(str, "abcdefg"));
-  EXPECT_FALSE(string_util::StartsWith(str, "abcdefghi"));
-  EXPECT_FALSE(string_util::StartsWith(str, "foobar"));
-}
-
-TEST(UtilTest, EndsWith) {
-  const std::string str = "abcdefg";
-  EXPECT_TRUE(string_util::EndsWith(str, ""));
-  EXPECT_TRUE(string_util::EndsWith(str, "g"));
-  EXPECT_TRUE(string_util::EndsWith(str, "fg"));
-  EXPECT_TRUE(string_util::EndsWith(str, "abcdefg"));
-  EXPECT_FALSE(string_util::EndsWith(str, "aaabcdefg"));
-  EXPECT_FALSE(string_util::EndsWith(str, "foobar"));
-  EXPECT_FALSE(string_util::EndsWith(str, "foobarbuzbuz"));
-}
-
 TEST(UtilTest, Hex) {
   for (char32 a = 0; a < 100000; ++a) {
     const std::string s = string_util::IntToHex<char32>(a);
@@ -85,143 +62,9 @@ TEST(UtilTest, Hex) {
   CHECK_EQ(n, string_util::HexToInt<int>("24F76"));
 }
 
-TEST(UtilTest, SplitTest) {
-  std::vector<std::string> tokens;
-
-  tokens = string_util::Split("this is a\ttest", " \t");
-  EXPECT_EQ(4, tokens.size());
-  EXPECT_EQ(tokens[0], "this");
-  EXPECT_EQ(tokens[1], "is");
-  EXPECT_EQ(tokens[2], "a");
-  EXPECT_EQ(tokens[3], "test");
-
-  tokens = string_util::Split("this is a  \t  test", " \t");
-  EXPECT_EQ(4, tokens.size());
-  EXPECT_EQ(tokens[0], "this");
-  EXPECT_EQ(tokens[1], "is");
-  EXPECT_EQ(tokens[2], "a");
-  EXPECT_EQ(tokens[3], "test");
-
-  tokens = string_util::Split("this is a\ttest", " ");
-  EXPECT_EQ(3, tokens.size());
-  EXPECT_EQ(tokens[0], "this");
-  EXPECT_EQ(tokens[1], "is");
-  EXPECT_EQ(tokens[2], "a\ttest");
-
-  tokens = string_util::Split("  this is a test  ", " ");
-  EXPECT_EQ(4, tokens.size());
-  EXPECT_EQ(tokens[0], "this");
-  EXPECT_EQ(tokens[1], "is");
-  EXPECT_EQ(tokens[2], "a");
-  EXPECT_EQ(tokens[3], "test");
-
-  tokens = string_util::Split("", "");
-  EXPECT_TRUE(tokens.empty());
-
-  tokens = string_util::Split(" this  is a test", " ", true);
-  EXPECT_EQ(6, tokens.size());
-  EXPECT_EQ(tokens[0], "");
-  EXPECT_EQ(tokens[1], "this");
-  EXPECT_EQ(tokens[2], "");
-  EXPECT_EQ(tokens[3], "is");
-  EXPECT_EQ(tokens[4], "a");
-  EXPECT_EQ(tokens[5], "test");
-}
-
-TEST(UtilTest, SplitPieceTest) {
-  std::vector<absl::string_view> tokens;
-
-  tokens = string_util::SplitPiece("this is a\ttest", " \t");
-  EXPECT_EQ(4, tokens.size());
-  EXPECT_EQ(tokens[0], "this");
-  EXPECT_EQ(tokens[1], "is");
-  EXPECT_EQ(tokens[2], "a");
-  EXPECT_EQ(tokens[3], "test");
-
-  tokens = string_util::SplitPiece("this is a  \t  test", " \t");
-  EXPECT_EQ(4, tokens.size());
-  EXPECT_EQ(tokens[0], "this");
-  EXPECT_EQ(tokens[1], "is");
-  EXPECT_EQ(tokens[2], "a");
-  EXPECT_EQ(tokens[3], "test");
-
-  tokens = string_util::SplitPiece("this is a\ttest", " ");
-  EXPECT_EQ(3, tokens.size());
-  EXPECT_EQ(tokens[0], "this");
-  EXPECT_EQ(tokens[1], "is");
-  EXPECT_EQ(tokens[2], "a\ttest");
-
-  tokens = string_util::SplitPiece("  this is a test  ", " ");
-  EXPECT_EQ(4, tokens.size());
-  EXPECT_EQ(tokens[0], "this");
-  EXPECT_EQ(tokens[1], "is");
-  EXPECT_EQ(tokens[2], "a");
-  EXPECT_EQ(tokens[3], "test");
-
-  tokens = string_util::SplitPiece("", "");
-  EXPECT_TRUE(tokens.empty());
-
-  tokens = string_util::SplitPiece(" this  is a test", " ", true);
-  EXPECT_EQ(6, tokens.size());
-  EXPECT_EQ(tokens[0], "");
-  EXPECT_EQ(tokens[1], "this");
-  EXPECT_EQ(tokens[2], "");
-  EXPECT_EQ(tokens[3], "is");
-  EXPECT_EQ(tokens[4], "a");
-  EXPECT_EQ(tokens[5], "test");
-}
-
-TEST(UtilTest, JoinTest) {
-  std::vector<std::string> tokens;
-  tokens.push_back("this");
-  tokens.push_back("is");
-  tokens.push_back("a");
-  tokens.push_back("test");
-  EXPECT_EQ(string_util::Join(tokens, " "), "this is a test");
-  EXPECT_EQ(string_util::Join(tokens, ":"), "this:is:a:test");
-  EXPECT_EQ(string_util::Join(tokens, ""), "thisisatest");
-  tokens[2] = "";
-  EXPECT_EQ(string_util::Join(tokens, " "), "this is  test");
-}
-
-TEST(UtilTest, JoinIntTest) {
-  std::vector<int> tokens;
-  tokens.push_back(10);
-  tokens.push_back(2);
-  tokens.push_back(-4);
-  tokens.push_back(5);
-  EXPECT_EQ(string_util::Join(tokens, " "), "10 2 -4 5");
-  EXPECT_EQ(string_util::Join(tokens, ":"), "10:2:-4:5");
-  EXPECT_EQ(string_util::Join(tokens, ""), "102-45");
-}
-
-TEST(UtilTest, StrCatTest) {
-  EXPECT_EQ("", string_util::StrCat(""));
-  EXPECT_EQ("ab", string_util::StrCat("ab"));
-  EXPECT_EQ("ab", string_util::StrCat("ab", ""));
-  EXPECT_EQ("abc", string_util::StrCat("ab", "c"));
-  EXPECT_EQ("abc", string_util::StrCat("ab", "", "", "c"));
-  std::string a = "foo";
-  std::string b = "bar";
-  EXPECT_EQ("foobar", string_util::StrCat(a, b));
-}
-
 TEST(UtilTest, StringViewTest) {
   absl::string_view s;
   EXPECT_EQ(0, s.find("", 0));
-}
-
-TEST(UtilTest, StringReplaceTest) {
-  EXPECT_EQ("fbb", string_util::StringReplace("foo", "o", "b", true));
-  EXPECT_EQ("fbo", string_util::StringReplace("foo", "o", "b", false));
-  EXPECT_EQ("abcDEf", string_util::StringReplace("abcdef", "de", "DE", true));
-  EXPECT_EQ("abcf", string_util::StringReplace("abcdef", "de", "", true));
-  EXPECT_EQ("aBCaBC", string_util::StringReplace("abcabc", "bc", "BC", true));
-  EXPECT_EQ("aBCabc", string_util::StringReplace("abcabc", "bc", "BC", false));
-  EXPECT_EQ("", string_util::StringReplace("", "bc", "BC", false));
-  EXPECT_EQ("", string_util::StringReplace("", "bc", "", false));
-  EXPECT_EQ("", string_util::StringReplace("", "", "", false));
-  EXPECT_EQ("abc", string_util::StringReplace("abc", "", "b", false));
 }
 
 TEST(UtilTest, EncodePODTet) {
@@ -467,41 +310,41 @@ TEST(UtilTest, MapUtilTest) {
 
   EXPECT_EQ("A", port::FindOrDie(kMap, "a"));
   EXPECT_EQ("B", port::FindOrDie(kMap, "b"));
-  EXPECT_DEATH(port::FindOrDie(kMap, "x"));
+  EXPECT_DEATH(port::FindOrDie(kMap, "x"), "");
 
   EXPECT_EQ("A", port::FindWithDefault(kMap, "a", "x"));
   EXPECT_EQ("B", port::FindWithDefault(kMap, "b", "x"));
   EXPECT_EQ("x", port::FindWithDefault(kMap, "d", "x"));
 
   EXPECT_EQ("A", port::FindOrDie(kMap, "a"));
-  EXPECT_DEATH(port::FindOrDie(kMap, "d"));
+  EXPECT_DEATH(port::FindOrDie(kMap, "d"), "");
 }
 
 TEST(UtilTest, MapUtilVecTest) {
   const std::map<std::vector<int>, std::string> kMap = {{{0, 1}, "A"}};
-  EXPECT_DEATH(port::FindOrDie(kMap, {0, 2}));
+  EXPECT_DEATH(port::FindOrDie(kMap, {0, 2}), "");
 }
 
 TEST(UtilTest, InputOutputBufferTest) {
-  test::ScopedTempFile sf("test_file");
-
-  const char *kData[] = {
+  const std::vector<std::string> kData = {
       "This"
       "is"
       "a"
       "test"};
 
   {
-    auto output = filesystem::NewWritableFile(sf.filename());
-    for (size_t i = 0; i < arraysize(kData); ++i) {
+    auto output = filesystem::NewWritableFile(
+        absl::StrCat(getenv("TEST_TMPDIR"), "/test_file"));
+    for (size_t i = 0; i < kData.size(); ++i) {
       output->WriteLine(kData[i]);
     }
   }
 
   {
-    auto input = filesystem::NewReadableFile(sf.filename());
+    auto input = filesystem::NewReadableFile(
+        absl::StrCat(getenv("TEST_TMPDIR"), "/test_file"));
     std::string line;
-    for (size_t i = 0; i < arraysize(kData); ++i) {
+    for (size_t i = 0; i < kData.size(); ++i) {
       EXPECT_TRUE(input->ReadLine(&line));
       EXPECT_EQ(kData[i], line);
     }
@@ -511,7 +354,7 @@ TEST(UtilTest, InputOutputBufferTest) {
 
 TEST(UtilTest, InputOutputBufferInvalidFileTest) {
   auto input = filesystem::NewReadableFile("__UNKNOWN__FILE__");
-  EXPECT_NOT_OK(input->status());
+  EXPECT_FALSE(input->status().ok());
 }
 
 TEST(UtilTest, STLDeleteELementsTest) {
@@ -534,31 +377,6 @@ TEST(UtilTest, STLDeleteELementsTest) {
   EXPECT_EQ(0, data.size());
 }
 
-TEST(UtilTest, StatusTest) {
-  const util::Status ok;
-  EXPECT_TRUE(ok.ok());
-  EXPECT_EQ(util::error::OK, ok.code());
-  EXPECT_EQ(std::string(""), ok.error_message());
-
-  const util::Status s1(util::error::UNKNOWN, "unknown");
-  const util::Status s2(util::error::UNKNOWN, std::string("unknown"));
-
-  EXPECT_EQ(util::error::UNKNOWN, s1.code());
-  EXPECT_EQ(util::error::UNKNOWN, s2.code());
-  EXPECT_EQ(std::string("unknown"), s1.error_message());
-  EXPECT_EQ(std::string("unknown"), s2.error_message());
-
-  auto ok2 = util::OkStatus();
-  EXPECT_TRUE(ok2.ok());
-  EXPECT_EQ(util::error::OK, ok2.code());
-  EXPECT_EQ(std::string(""), ok2.error_message());
-
-  util::OkStatus().IgnoreError();
-  for (int i = 0; i <= 16; ++i) {
-    util::Status s(static_cast<util::error::Code>(i), "message");
-    EXPECT_TRUE(s.ToString().find("message") != std::string::npos);
-  }
-}
 
 TEST(UtilTest, JoinPathTest) {
 #ifdef OS_WIN

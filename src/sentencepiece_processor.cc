@@ -12,20 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "sentencepiece_processor.h"
+#include "src/sentencepiece_processor.h"
 
 #include <map>
 #include <set>
 #include <utility>
 
-#include "common.h"
-#include "filesystem.h"
-#include "model_factory.h"
-#include "model_interface.h"
-#include "normalizer.h"
-#include "sentencepiece.pb.h"
-#include "unigram_model.h"
-#include "util.h"
+#include "absl/memory/memory.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_replace.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
+#include "src/common.h"
+#include "src/filesystem.h"
+#include "src/model_factory.h"
+#include "src/model_interface.h"
+#include "src/normalizer.h"
+#include "src/sentencepiece.pb.h"
+#include "src/unigram_model.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace {
@@ -42,43 +50,35 @@ const char kDefaultUnknownSymbol[] = " \xE2\x81\x87 ";
 SentencePieceProcessor::SentencePieceProcessor() {}
 SentencePieceProcessor::~SentencePieceProcessor() {}
 
-util::Status SentencePieceProcessor::Load(util::min_string_view filename) {
-  auto input = filesystem::NewReadableFile(string_util::ToSV(filename), true);
-  RETURN_IF_ERROR(input->status());
-  std::string proto;
-  CHECK_OR_RETURN(input->ReadAll(&proto));
-  return LoadFromSerializedProto(proto);
+::util::Status SentencePieceProcessor::Load(absl::string_view filename) {
+  auto model_proto = absl::make_unique<ModelProto>();
+  RETURN_IF_ERROR(io::LoadModelProto(filename, model_proto.get()));
+  return Load(std::move(model_proto));
 }
 
-void SentencePieceProcessor::LoadOrDie(util::min_string_view filename) {
+void SentencePieceProcessor::LoadOrDie(absl::string_view filename) {
   CHECK_OK(Load(filename));
 }
 
-util::Status SentencePieceProcessor::Load(std::istream *is) {
-  return util::StatusBuilder(util::error::UNIMPLEMENTED)
-         << "std::stream API is deprecated. Use LoadFromSerializedProto() "
-         << "to load model from any serialized blob object.";
-}
-
-util::Status SentencePieceProcessor::Load(const ModelProto &model_proto) {
-  auto model_proto_copy = port::MakeUnique<ModelProto>();
+::util::Status SentencePieceProcessor::Load(const ModelProto &model_proto) {
+  auto model_proto_copy = absl::make_unique<ModelProto>();
   *model_proto_copy = model_proto;
   return Load(std::move(model_proto_copy));
 }
 
-util::Status SentencePieceProcessor::LoadFromSerializedProto(
-    util::min_string_view serialized) {
-  auto model_proto = port::MakeUnique<ModelProto>();
+::util::Status SentencePieceProcessor::LoadFromSerializedProto(
+    absl::string_view serialized) {
+  auto model_proto = absl::make_unique<ModelProto>();
   CHECK_OR_RETURN(
       model_proto->ParseFromArray(serialized.data(), serialized.size()));
   return Load(std::move(model_proto));
 }
 
-util::Status SentencePieceProcessor::Load(
-    std::unique_ptr<ModelProto> &&model_proto) {
+::util::Status SentencePieceProcessor::Load(
+    std::unique_ptr<ModelProto> model_proto) {
   model_proto_ = std::move(model_proto);
   model_ = ModelFactory::Create(*model_proto_);
-  normalizer_ = port::MakeUnique<normalizer::Normalizer>(
+  normalizer_ = absl::make_unique<normalizer::Normalizer>(
       model_proto_->normalizer_spec(), model_proto_->trainer_spec());
 
   // Escapes user-defined-symbols in normalizer.
@@ -90,10 +90,10 @@ util::Status SentencePieceProcessor::Load(
   std::vector<std::string> errors, sps;
   for (const auto &s : model_proto_->self_test_data().samples()) {
     RETURN_IF_ERROR(Encode(s.input(), &sps));
-    const std::string result = string_util::Join(sps, " ");
+    const std::string result = absl::StrJoin(sps, " ");
     if (s.expected() != result) {
       errors.emplace_back(
-          string_util::StrCat(s.input(), "\t", s.expected(), "\t", result));
+          absl::StrCat(s.input(), "\t", s.expected(), "\t", result));
     }
   }
 
@@ -104,31 +104,31 @@ util::Status SentencePieceProcessor::Load(
     for (const auto &e : errors) {
       LOG(INFO) << e;
     }
-    return util::InternalError("Self-test failures. See LOG(INFO).");
+    return ::util::InternalError("Self-test failures. See LOG(INFO).");
   }
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::SetEncodeExtraOptions(
-    util::min_string_view extra_options) {
+::util::Status SentencePieceProcessor::SetEncodeExtraOptions(
+    absl::string_view extra_options) {
   return ParseExtraOptions(extra_options, &encode_extra_options_);
 }
 
-util::Status SentencePieceProcessor::SetDecodeExtraOptions(
-    util::min_string_view extra_options) {
+::util::Status SentencePieceProcessor::SetDecodeExtraOptions(
+    absl::string_view extra_options) {
   return ParseExtraOptions(extra_options, &decode_extra_options_);
 }
 
-util::Status SentencePieceProcessor::status() const {
+::util::Status SentencePieceProcessor::status() const {
   CHECK_OR_RETURN(model_) << "Model is not initialized.";
   CHECK_OR_RETURN(normalizer_) << "Normalizer is not initialized.";
   RETURN_IF_ERROR(model_->status());
   RETURN_IF_ERROR(normalizer_->status());
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::SetVocabulary(
+::util::Status SentencePieceProcessor::SetVocabulary(
     const std::vector<std::string> &valid_vocab) {
   RETURN_IF_ERROR(status());
 
@@ -155,34 +155,39 @@ util::Status SentencePieceProcessor::SetVocabulary(
     }
   }
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::ResetVocabulary() {
+::util::Status SentencePieceProcessor::ResetVocabulary() {
   RETURN_IF_ERROR(status());
   for (auto &piece : *(model_proto_->mutable_pieces())) {
     if (piece.type() == ModelProto::SentencePiece::UNUSED)
       piece.set_type(ModelProto::SentencePiece::NORMAL);
   }
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::LoadVocabulary(
-    util::min_string_view filename, int threshold) {
-  auto input = filesystem::NewReadableFile(string_util::ToSV(filename));
+::util::Status SentencePieceProcessor::LoadVocabulary(
+    absl::string_view filename, int threshold) {
+  auto input = filesystem::NewReadableFile(filename);
   RETURN_IF_ERROR(input->status());
 
   std::string line;
   std::vector<std::string> vocab;
 
   while (input->ReadLine(&line)) {
-    const std::vector<std::string> v = string_util::Split(line, "\t");
+    const std::vector<std::string> v = absl::StrSplit(line, "\t");
     CHECK_GE_OR_RETURN(v.size(), 1);
     CHECK_OR_RETURN(!v[0].empty());
     int32 freq = 1;
-    if (v.size() >= 2) freq = atoi(v[1].c_str());
-    if (freq >= threshold) vocab.emplace_back(v[0]);
+    if (v.size() >= 2) {
+      CHECK_OR_RETURN(absl::SimpleAtoi(v[1], &freq))
+          << "Could not parse the frequency";
+    }
+    if (freq >= threshold) {
+      vocab.emplace_back(v[0]);
+    }
   }
 
   return SetVocabulary(vocab);
@@ -200,8 +205,8 @@ util::Status SentencePieceProcessor::LoadVocabulary(
 
 //////////////////////////////////////////////////////////////
 // Simple API.
-util::Status SentencePieceProcessor::Encode(
-    util::min_string_view input, std::vector<std::string> *pieces) const {
+::util::Status SentencePieceProcessor::Encode(
+    absl::string_view input, std::vector<std::string> *pieces) const {
   CHECK_OR_RETURN_STATUS_STL(pieces);
 
   SentencePieceText spt;
@@ -210,11 +215,11 @@ util::Status SentencePieceProcessor::Encode(
     pieces->emplace_back(sp.piece());
   }
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::Encode(util::min_string_view input,
-                                            std::vector<int> *ids) const {
+::util::Status SentencePieceProcessor::Encode(absl::string_view input,
+                                              std::vector<int> *ids) const {
   CHECK_OR_RETURN_STATUS_STL(ids);
 
   SentencePieceText spt;
@@ -223,10 +228,10 @@ util::Status SentencePieceProcessor::Encode(util::min_string_view input,
     ids->emplace_back(sp.id());
   }
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::Decode(
+::util::Status SentencePieceProcessor::Decode(
     const std::vector<std::string> &pieces, std::string *detokenized) const {
   CHECK_OR_RETURN_STATUS_STL(detokenized);
 
@@ -234,22 +239,22 @@ util::Status SentencePieceProcessor::Decode(
   RETURN_IF_ERROR(Decode(pieces, &spt));
   *detokenized = std::move(spt.text());
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
-                                            std::string *detokenized) const {
+::util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
+                                              std::string *detokenized) const {
   CHECK_OR_RETURN_STATUS_STL(detokenized);
 
   SentencePieceText spt;
   RETURN_IF_ERROR(Decode(ids, &spt));
   *detokenized = std::move(spt.text());
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::NBestEncode(
-    util::min_string_view input, int nbest_size,
+::util::Status SentencePieceProcessor::NBestEncode(
+    absl::string_view input, int nbest_size,
     std::vector<std::vector<std::string>> *pieces) const {
   CHECK_OR_RETURN_STATUS_STL(pieces);
 
@@ -263,11 +268,11 @@ util::Status SentencePieceProcessor::NBestEncode(
     pieces->emplace_back(result);
   }
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::NBestEncode(
-    util::min_string_view input, int nbest_size,
+::util::Status SentencePieceProcessor::NBestEncode(
+    absl::string_view input, int nbest_size,
     std::vector<std::vector<int>> *ids) const {
   CHECK_OR_RETURN_STATUS_STL(ids);
 
@@ -281,11 +286,11 @@ util::Status SentencePieceProcessor::NBestEncode(
     ids->emplace_back(result);
   }
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::SampleEncode(
-    util::min_string_view input, int nbest_size, float alpha,
+::util::Status SentencePieceProcessor::SampleEncode(
+    absl::string_view input, int nbest_size, float alpha,
     std::vector<std::string> *pieces) const {
   CHECK_OR_RETURN_STATUS_STL(pieces);
 
@@ -295,12 +300,12 @@ util::Status SentencePieceProcessor::SampleEncode(
     pieces->emplace_back(sp.piece());
   }
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::SampleEncode(util::min_string_view input,
-                                                  int nbest_size, float alpha,
-                                                  std::vector<int> *ids) const {
+::util::Status SentencePieceProcessor::SampleEncode(
+    absl::string_view input, int nbest_size, float alpha,
+    std::vector<int> *ids) const {
   CHECK_OR_RETURN_STATUS_STL(ids);
 
   SentencePieceText spt;
@@ -309,11 +314,11 @@ util::Status SentencePieceProcessor::SampleEncode(util::min_string_view input,
     ids->emplace_back(sp.id());
   }
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::PopulateSentencePieceText(
-    util::min_string_view input, util::min_string_view normalized,
+::util::Status SentencePieceProcessor::PopulateSentencePieceText(
+    absl::string_view input, absl::string_view normalized,
     const std::vector<size_t> &norm_to_orig, const EncodeResult &result,
     SentencePieceText *spt) const {
   size_t consumed = 0;
@@ -374,34 +379,32 @@ util::Status SentencePieceProcessor::PopulateSentencePieceText(
 
   spt->set_text(input.data(), input.size());
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }  // namespace sentencepiece
 
-util::Status SentencePieceProcessor::Encode(util::min_string_view input,
-                                            SentencePieceText *spt) const {
+::util::Status SentencePieceProcessor::Encode(absl::string_view input,
+                                              SentencePieceText *spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(string_util::ToSV(input), &normalized,
-                                         &norm_to_orig));
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
   const auto result = model_->Encode(normalized);
   RETURN_IF_ERROR(
       PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt));
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::NBestEncode(
-    util::min_string_view input, int nbest_size,
+::util::Status SentencePieceProcessor::NBestEncode(
+    absl::string_view input, int nbest_size,
     NBestSentencePieceText *nbest_spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(nbest_spt);
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(string_util::ToSV(input), &normalized,
-                                         &norm_to_orig));
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
   const auto nbests = model_->NBestEncode(normalized, nbest_size);
   CHECK_OR_RETURN(!nbests.empty()) << "NBestEncode returns empty result.";
@@ -413,11 +416,11 @@ util::Status SentencePieceProcessor::NBestEncode(
                                               result.first, spt));
   }
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::SampleEncode(
-    util::min_string_view input, int nbest_size, float alpha,
+::util::Status SentencePieceProcessor::SampleEncode(
+    absl::string_view input, int nbest_size, float alpha,
     SentencePieceText *spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
@@ -425,8 +428,7 @@ util::Status SentencePieceProcessor::SampleEncode(
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(string_util::ToSV(input), &normalized,
-                                         &norm_to_orig));
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
   if (nbest_size == 1 || nbest_size == 0) {
     const auto result = model_->Encode(normalized);
@@ -452,10 +454,10 @@ util::Status SentencePieceProcessor::SampleEncode(
                                               result, spt));
   }
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::Decode(
+::util::Status SentencePieceProcessor::Decode(
     const std::vector<std::string> &pieces, SentencePieceText *spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
@@ -478,10 +480,10 @@ util::Status SentencePieceProcessor::Decode(
     if (is_bos_ws) {
       // Consume if the current position is bos and
       // piece starts with kSpaceSymbol.
-      string_util::ConsumePrefix(&piece, kSpaceSymbol);
+      absl::ConsumePrefix(&piece, kSpaceSymbol);
     }
 
-    return string_util::StringReplace(piece, kSpaceSymbol, " ", true);
+    return absl::StrReplaceAll(piece, {{kSpaceSymbol, " "}});
   };
 
   for (const std::string &w : pieces) {
@@ -500,58 +502,58 @@ util::Status SentencePieceProcessor::Decode(
     *text += sp.surface();
   }
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
-                                            SentencePieceText *spt) const {
+::util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
+                                              SentencePieceText *spt) const {
   std::vector<std::string> pieces;
+  pieces.reserve(ids.size());
   for (const int id : ids) {
     pieces.emplace_back(IdToPiece(id));
   }
   return Decode(pieces, spt);
 }
 
-util::bytes SentencePieceProcessor::EncodeAsSerializedProto(
-    util::min_string_view input) const {
+std::string SentencePieceProcessor::EncodeAsSerializedProto(
+    absl::string_view input) const {
   SentencePieceText spt;
   if (!Encode(input, &spt).ok()) return "";
   return spt.SerializeAsString();
 }
 
-util::bytes SentencePieceProcessor::SampleEncodeAsSerializedProto(
-    util::min_string_view input, int nbest_size, float alpha) const {
+std::string SentencePieceProcessor::SampleEncodeAsSerializedProto(
+    absl::string_view input, int nbest_size, float alpha) const {
   SentencePieceText spt;
   if (!SampleEncode(input, nbest_size, alpha, &spt).ok()) return "";
   return spt.SerializeAsString();
 }
 
-util::bytes SentencePieceProcessor::NBestEncodeAsSerializedProto(
-    util::min_string_view input, int nbest_size) const {
+std::string SentencePieceProcessor::NBestEncodeAsSerializedProto(
+    absl::string_view input, int nbest_size) const {
   NBestSentencePieceText spt;
   if (!NBestEncode(input, nbest_size, &spt).ok()) return "";
   return spt.SerializeAsString();
 }
 
-util::bytes SentencePieceProcessor::DecodePiecesAsSerializedProto(
+std::string SentencePieceProcessor::DecodePiecesAsSerializedProto(
     const std::vector<std::string> &pieces) const {
   SentencePieceText spt;
   if (!Decode(pieces, &spt).ok()) return "";
   return spt.SerializeAsString();
 }
 
-util::bytes SentencePieceProcessor::DecodeIdsAsSerializedProto(
+std::string SentencePieceProcessor::DecodeIdsAsSerializedProto(
     const std::vector<int> &ids) const {
   SentencePieceText spt;
   if (!Decode(ids, &spt).ok()) return "";
   return spt.SerializeAsString();
 }
 
-#define CHECK_STATUS_OR_RETURN_DEFAULT(value)                            \
-  if (!status().ok()) {                                                  \
-    LOG(ERROR) << status().error_message() << "\nReturns default value " \
-               << value;                                                 \
-    return value;                                                        \
+#define CHECK_STATUS_OR_RETURN_DEFAULT(value)                                \
+  if (!status().ok()) {                                                      \
+    LOG(ERROR) << status().message() << "\nReturns default value " << value; \
+    return value;                                                            \
   }
 
 int SentencePieceProcessor::GetPieceSize() const {
@@ -559,9 +561,9 @@ int SentencePieceProcessor::GetPieceSize() const {
   return model_->GetPieceSize();
 }
 
-int SentencePieceProcessor::PieceToId(util::min_string_view piece) const {
+int SentencePieceProcessor::PieceToId(absl::string_view piece) const {
   CHECK_STATUS_OR_RETURN_DEFAULT(0);
-  return model_->PieceToId(string_util::ToSV(piece));
+  return model_->PieceToId(piece);
 }
 
 const std::string &SentencePieceProcessor::IdToPiece(int id) const {
@@ -591,31 +593,31 @@ bool SentencePieceProcessor::IsUnused(int id) const {
 }
 
 int SentencePieceProcessor::unk_id() const {
-  const int id = PieceToId(util::min_string_view(model_->unk_piece().data()));
+  const int id = PieceToId(absl::string_view(model_->unk_piece().data()));
   if (IsUnknown(id)) return id;
   return -1;
 }
 
 int SentencePieceProcessor::bos_id() const {
-  const int id = PieceToId(util::min_string_view(model_->bos_piece().data()));
+  const int id = PieceToId(absl::string_view(model_->bos_piece().data()));
   if (IsControl(id)) return id;
   return -1;
 }
 
 int SentencePieceProcessor::eos_id() const {
-  const int id = PieceToId(util::min_string_view(model_->eos_piece().data()));
+  const int id = PieceToId(absl::string_view(model_->eos_piece().data()));
   if (IsControl(id)) return id;
   return -1;
 }
 
 int SentencePieceProcessor::pad_id() const {
-  const int id = PieceToId(util::min_string_view(model_->pad_piece().data()));
+  const int id = PieceToId(absl::string_view(model_->pad_piece().data()));
   if (IsControl(id)) return id;
   return -1;
 }
 
 // static
-util::Status SentencePieceProcessor::ApplyExtraOptions(
+::util::Status SentencePieceProcessor::ApplyExtraOptions(
     const std::vector<ExtraOption> &extra_options,
     SentencePieceText *spt) const {
   for (const auto &extra_option : extra_options) {
@@ -626,8 +628,7 @@ util::Status SentencePieceProcessor::ApplyExtraOptions(
         break;
       case EOS: {
         auto *piece = spt->add_pieces();
-        piece->set_id(
-            PieceToId(util::min_string_view(model_->eos_piece().data())));
+        piece->set_id(PieceToId(absl::string_view(model_->eos_piece().data())));
         piece->set_piece(model_->eos_piece().data(),
                          model_->eos_piece().size());
       } break;
@@ -638,27 +639,26 @@ util::Status SentencePieceProcessor::ApplyExtraOptions(
           array->SwapElements(i - 1, i);
         }
         auto *piece = array->Mutable(0);
-        piece->set_id(
-            PieceToId(util::min_string_view(model_->bos_piece().data())));
+        piece->set_id(PieceToId(absl::string_view(model_->bos_piece().data())));
         piece->set_piece(model_->bos_piece().data(),
                          model_->bos_piece().size());
       } break;
       default:
-        return util::InternalError("unknown extra_option type.");
+        return ::util::InternalError("unknown extra_option type.");
     }
   }
 
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
 // static
-util::Status SentencePieceProcessor::ParseExtraOptions(
-    util::min_string_view _extra_option,
+::util::Status SentencePieceProcessor::ParseExtraOptions(
+    absl::string_view _extra_option,
     std::vector<SentencePieceProcessor::ExtraOption> *extra_options) const {
   absl::string_view extra_option(_extra_option.data(), _extra_option.size());
 
   extra_options->clear();
-  if (extra_option.empty()) return util::OkStatus();
+  if (extra_option.empty()) return ::util::OkStatus();
 
   RETURN_IF_ERROR(status());
 
@@ -666,24 +666,24 @@ util::Status SentencePieceProcessor::ParseExtraOptions(
       extra_option_map = {{"bos", SentencePieceProcessor::BOS},
                           {"eos", SentencePieceProcessor::EOS},
                           {"reverse", SentencePieceProcessor::REVERSE}};
-  for (const auto &s : string_util::SplitPiece(extra_option, ":")) {
+  for (const auto &s : absl::StrSplit(extra_option, ":")) {
     const auto it = extra_option_map.find(s);
     CHECK_OR_RETURN(it != extra_option_map.end())
         << "option \"" << s << "\" is not available.";
     extra_options->push_back(it->second);
 
     if (it->second == SentencePieceProcessor::BOS) {
-      CHECK_OR_RETURN(!IsUnknown(
-          PieceToId(util::min_string_view(model_->bos_piece().data()))))
+      CHECK_OR_RETURN(
+          !IsUnknown(PieceToId(absl::string_view(model_->bos_piece().data()))))
           << "id for `" << model_->bos_piece() << "` is not defined.";
     }
     if (it->second == SentencePieceProcessor::EOS) {
-      CHECK_OR_RETURN(!IsUnknown(
-          PieceToId(util::min_string_view(model_->eos_piece().data()))))
+      CHECK_OR_RETURN(
+          !IsUnknown(PieceToId(absl::string_view(model_->eos_piece().data()))))
           << "id for `" << model_->eos_piece() << "` is not defined.";
     }
   }
-  return util::OkStatus();
+  return ::util::OkStatus();
 }
 
 void SentencePieceProcessor::SetModel(std::unique_ptr<ModelInterface> &&model) {
@@ -698,4 +698,35 @@ void SentencePieceProcessor::SetNormalizer(
 const ModelProto &SentencePieceProcessor::model_proto() const {
   return *model_proto_;
 }
+
+namespace io {
+
+::util::Status LoadModelProto(absl::string_view filename,
+                              ModelProto *model_proto) {
+  if (filename.empty()) {
+    return ::util::NotFoundError("model file path should not be empty.");
+  }
+
+  auto input = filesystem::NewReadableFile(filename, true);
+  RETURN_IF_ERROR(input->status());
+  std::string serialized;
+  CHECK_OR_RETURN(input->ReadAll(&serialized));
+  CHECK_OR_RETURN(
+      model_proto->ParseFromArray(serialized.data(), serialized.size()));
+
+  return ::util::OkStatus();
+}
+
+::util::Status SaveModelProto(absl::string_view filename,
+                              const ModelProto &model_proto) {
+  if (filename.empty()) {
+    return ::util::NotFoundError("model file path should not be empty.");
+  }
+  auto output = filesystem::NewWritableFile(filename, true);
+  RETURN_IF_ERROR(output->status());
+  CHECK_OR_RETURN(output->Write(model_proto.SerializeAsString()));
+
+  return ::util::OkStatus();
+}
+}  // namespace io
 }  // namespace sentencepiece

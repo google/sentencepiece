@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "bpe_model.h"
+#include "src/bpe_model.h"
+
 #include <string>
-#include "testharness.h"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 namespace sentencepiece {
 namespace bpe {

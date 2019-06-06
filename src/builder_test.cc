@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "builder.h"
-#include "common.h"
-#include "filesystem.h"
-#include "flags.h"
-#include "normalizer.h"
-#include "sentencepiece_trainer.h"
-#include "testharness.h"
-#include "util.h"
+#include "src/builder.h"
 
-DECLARE_string(data_dir);
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include "absl/strings/str_cat.h"
+#include "src/common.h"
+#include "src/filesystem.h"
+#include "src/normalizer.h"
+#include "src/sentencepiece_trainer.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace normalizer {
@@ -38,7 +38,7 @@ TEST(BuilderTest, RemoveRedundantMapTest) {
   chars_map[{0x0061, 0x0062}] = {0x0041, 0x0042};
   chars_map[{0x0061, 0x0062, 0x0063}] = {0x0043, 0x0042, 0x0041};
 
-  EXPECT_OK(Builder::RemoveRedundantMap(&chars_map));
+  EXPECT_TRUE(Builder::RemoveRedundantMap(&chars_map).ok());
   EXPECT_EQ(3, chars_map.size());
   EXPECT_EQ(chars_map.end(), chars_map.find({0x0061, 0x0062}));
   EXPECT_NE(chars_map.end(), chars_map.find({0x0061}));
@@ -48,17 +48,17 @@ TEST(BuilderTest, RemoveRedundantMapTest) {
 
 TEST(BuilderTest, GetPrecompiledCharsMapWithInvalidNameTest) {
   std::string output;
-  EXPECT_NOT_OK(Builder::GetPrecompiledCharsMap("", &output));
-  EXPECT_NOT_OK(Builder::GetPrecompiledCharsMap("__UNKNOWN__", &output));
+  EXPECT_FALSE(Builder::GetPrecompiledCharsMap("", &output).ok());
+  EXPECT_FALSE(Builder::GetPrecompiledCharsMap("__UNKNOWN__", &output).ok());
 }
 
 TEST(BuilderTest, BuildNFKCMapTest) {
   Builder::CharsMap chars_map;
 #ifdef ENABLE_NFKC_COMPILE
-  EXPECT_OK(Builder::BuildNFKCMap(&chars_map));
+  EXPECT_TRUE(Builder::BuildNFKCMap(&chars_map).ok());
   EXPECT_TRUE(!chars_map.empty());
 #else
-  EXPECT_OK(Builder::BuildNFKCMap(&chars_map));
+  EXPECT_TRUE(Builder::BuildNFKCMap(&chars_map).ok());
 #endif
 }
 
@@ -116,11 +116,13 @@ TEST(BuilderTest, CompileCharsMap) {
   chars_map[{0x3048, 0x304A}] = {};
 
   NormalizerSpec spec;
-  EXPECT_OK(
-      Builder::CompileCharsMap(chars_map, spec.mutable_precompiled_charsmap()));
+  EXPECT_TRUE(
+      Builder::CompileCharsMap(chars_map, spec.mutable_precompiled_charsmap())
+          .ok());
   Builder::CharsMap decompiled_chars_map;
-  EXPECT_OK(Builder::DecompileCharsMap(spec.precompiled_charsmap(),
-                                       &decompiled_chars_map));
+  EXPECT_TRUE(Builder::DecompileCharsMap(spec.precompiled_charsmap(),
+                                         &decompiled_chars_map)
+                  .ok());
   EXPECT_EQ(chars_map, decompiled_chars_map);
 
   spec.set_add_dummy_prefix(false);
@@ -137,55 +139,70 @@ TEST(BuilderTest, CompileCharsMap) {
   EXPECT_EQ("abcか", normalizer.Normalize("あいうえおか"));
 }
 
+static constexpr char kTestInputData[] =
+    "src/test_data/nfkc.tsv";
+
 TEST(BuilderTest, LoadCharsMapTest) {
   Builder::CharsMap chars_map;
-  EXPECT_OK(Builder::LoadCharsMap(util::JoinPath(FLAGS_data_dir, "nfkc.tsv"),
-                                  &chars_map));
+  ASSERT_TRUE(Builder::LoadCharsMap(
+                  absl::StrCat(getenv("TEST_SRCDIR"), kTestInputData), &chars_map)
+                  .ok());
 
   std::string precompiled, expected;
-  EXPECT_OK(Builder::CompileCharsMap(chars_map, &precompiled));
+  ASSERT_TRUE(Builder::CompileCharsMap(chars_map, &precompiled).ok());
 
   // Round-trip.
   Builder::CharsMap decompiled_chars_map;
-  EXPECT_OK(Builder::DecompileCharsMap(precompiled, &decompiled_chars_map));
+  ASSERT_TRUE(
+      Builder::DecompileCharsMap(precompiled, &decompiled_chars_map).ok());
   EXPECT_EQ(chars_map, decompiled_chars_map);
 
-  test::ScopedTempFile output_tsv("output.tsv");
-  EXPECT_OK(Builder::SaveCharsMap(output_tsv.filename(), chars_map));
+  ASSERT_TRUE(Builder::SaveCharsMap(
+                  absl::StrCat(getenv("TEST_TMPDIR"), "/output.tsv"), chars_map)
+                  .ok());
 
   Builder::CharsMap saved_chars_map;
-  EXPECT_OK(Builder::LoadCharsMap(output_tsv.filename(), &saved_chars_map));
+  ASSERT_TRUE(
+      Builder::LoadCharsMap(absl::StrCat(getenv("TEST_TMPDIR"), "/output.tsv"),
+                            &saved_chars_map)
+          .ok());
   EXPECT_EQ(chars_map, saved_chars_map);
 
 #ifdef ENABLE_NFKC_COMPILE
   Builder::CharsMap nfkc_map;
-  EXPECT_OK(Builder::BuildNFKCMap(&nfkc_map));
-  EXPECT_OK(Builder::CompileCharsMap(nfkc_map, &expected));
+  ASSERT_TRUE(Builder::BuildNFKCMap(&nfkc_map).ok());
+  ASSERT_TRUE(Builder::CompileCharsMap(nfkc_map, &expected).ok());
 #endif
 }
 
 TEST(BuilderTest, LoadCharsMapWithEmptyeTest) {
-  test::ScopedTempFile test_tsv("test.tsv");
-  test::ScopedTempFile test_out_tsv("test_out.tsv");
   {
-    auto output = filesystem::NewWritableFile(test_tsv.filename());
+    auto output = filesystem::NewWritableFile(
+        absl::StrCat(getenv("TEST_TMPDIR"), "/test.tsv"));
     output->WriteLine("0061\t0041");
     output->WriteLine("0062");
     output->WriteLine("0063\t\t#foo=>bar");
   }
 
   Builder::CharsMap chars_map;
-  EXPECT_OK(Builder::LoadCharsMap(test_tsv.filename(), &chars_map));
+  EXPECT_TRUE(Builder::LoadCharsMap(
+                  absl::StrCat(getenv("TEST_TMPDIR"), "/test.tsv"), &chars_map)
+                  .ok());
 
   EXPECT_EQ(3, chars_map.size());
   EXPECT_EQ(std::vector<char32>({0x0041}), chars_map[{0x0061}]);
   EXPECT_EQ(std::vector<char32>({}), chars_map[{0x0062}]);
   EXPECT_EQ(std::vector<char32>({}), chars_map[{0x0063}]);
 
-  EXPECT_OK(Builder::SaveCharsMap(test_out_tsv.filename(), chars_map));
+  EXPECT_TRUE(Builder::SaveCharsMap(
+                  absl::StrCat(getenv("TEST_TMPDIR"), "/test_out.tsv"), chars_map)
+                  .ok());
 
   Builder::CharsMap new_chars_map;
-  EXPECT_OK(Builder::LoadCharsMap(test_out_tsv.filename(), &new_chars_map));
+  EXPECT_TRUE(
+      Builder::LoadCharsMap(absl::StrCat(getenv("TEST_TMPDIR"), "/test_out.tsv"),
+                            &new_chars_map)
+          .ok());
   EXPECT_EQ(chars_map, new_chars_map);
 }
 

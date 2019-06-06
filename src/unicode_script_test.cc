@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "unicode_script.h"
-#include "common.h"
-#include "third_party/absl/strings/string_view.h"
-#include "testharness.h"
-#include "util.h"
+#include "src/unicode_script.h"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include "absl/strings/string_view.h"
+#include "src/common.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace unicode_script {

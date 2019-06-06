@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "model_interface.h"
+#include "src/model_interface.h"
 
 #include <algorithm>
-#include "sentencepiece_model.pb.h"
-#include "util.h"
+
+#include "absl/memory/memory.h"
+#include "src/sentencepiece_model.pb.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 
 ModelInterface::ModelInterface(const ModelProto &model_proto)
-    : model_proto_(&model_proto), status_(util::OkStatus()) {}
+    : model_proto_(&model_proto), status_(::util::OkStatus()) {}
 ModelInterface::~ModelInterface() {}
 
 #define RETURN_PIECE(name, default_value)                                \
@@ -68,7 +70,7 @@ void ModelInterface::InitializePieces() {
   for (int i = 0; i < model_proto_->pieces_size(); ++i) {
     const auto &sp = model_proto_->pieces(i);
     if (sp.piece().empty()) {
-      status_ = util::InternalError("piece must not be empty.");
+      status_ = ::util::InternalError("piece must not be empty.");
       return;
     }
 
@@ -78,7 +80,7 @@ void ModelInterface::InitializePieces() {
          sp.type() == ModelProto::SentencePiece::UNUSED);
     if (!port::InsertIfNotPresent(
             is_normal_piece ? &pieces_ : &reserved_id_map_, sp.piece(), i)) {
-      status_ = util::InternalError(sp.piece() + " is already defined.");
+      status_ = ::util::InternalError(sp.piece() + " is already defined.");
       return;
     }
 
@@ -88,7 +90,7 @@ void ModelInterface::InitializePieces() {
 
     if (sp.type() == ModelProto::SentencePiece::UNKNOWN) {
       if (unk_id_ >= 0) {
-        status_ = util::InternalError("unk is already defined.");
+        status_ = ::util::InternalError("unk is already defined.");
         return;
       }
       unk_id_ = i;
@@ -96,11 +98,11 @@ void ModelInterface::InitializePieces() {
   }
 
   if (unk_id_ == -1) {
-    status_ = util::InternalError("unk is not defined.");
+    status_ = ::util::InternalError("unk is not defined.");
     return;
   }
 
-  matcher_ = port::MakeUnique<normalizer::PrefixMatcher>(user_defined_symbols);
+  matcher_ = absl::make_unique<normalizer::PrefixMatcher>(user_defined_symbols);
 }
 
 std::vector<absl::string_view> SplitIntoWords(absl::string_view text,

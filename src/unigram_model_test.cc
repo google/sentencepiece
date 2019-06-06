@@ -12,17 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "unigram_model.h"
+#include "src/unigram_model.h"
 
+#include <cmath>
 #include <map>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
-#include "sentencepiece_model.pb.h"
-#include "testharness.h"
-#include "util.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "src/sentencepiece_model.pb.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace unigram {
@@ -176,7 +178,7 @@ std::string GetTokenized(const std::vector<Lattice::Node *> &nodes) {
   for (auto *node : nodes) {
     tokens.push_back(std::string(node->piece));
   }
-  return string_util::Join(tokens, " ");
+  return absl::StrJoin(tokens, " ");
 }
 
 void InsertWithScore(Lattice *lattice, int pos, int length, float score) {
@@ -267,7 +269,7 @@ TEST(LatticeTest, PopulateMarginalTest) {
   EXPECT_NEAR(p2 / Z, probs[3], 0.001);         // AB
   EXPECT_NEAR(p3 / Z, probs[4], 0.001);         // BC
   EXPECT_NEAR(p4 / Z, probs[5], 0.001);         // ABC
-  EXPECT_NEAR(log(Z), logZ, 0.001);
+  EXPECT_NEAR(std::log(static_cast<double>(Z)), logZ, 0.001);
 }
 
 TEST(LatticeTest, SampleTest) {
@@ -281,8 +283,8 @@ TEST(LatticeTest, SampleTest) {
   InsertWithScoreAndId(&lattice, 1, 2, 1.7, 4);  // BC
   InsertWithScoreAndId(&lattice, 0, 3, 1.8, 5);  // ABC
 
-  const float kTheta[] = {0.0, 0.01, 0.5, 0.7, 1.0};
-  for (int i = 0; i < arraysize(kTheta); ++i) {
+  const std::vector<float> kTheta = {0.0, 0.01, 0.5, 0.7, 1.0};
+  for (int i = 0; i < kTheta.size(); ++i) {
     std::map<std::string, float> probs;
     // Expands all paths in the lattice.
     probs["A B C"] = exp(kTheta[i] * (1.0 + 1.2 + 1.5));  // A B C

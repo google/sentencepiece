@@ -16,8 +16,8 @@
 #define TRAINER_FACTORY_H_
 
 #include <memory>
-#include "sentencepiece_model.pb.h"
-#include "trainer_interface.h"
+#include "src/sentencepiece_model.pb.h"
+#include "src/trainer_interface.h"
 
 namespace sentencepiece {
 

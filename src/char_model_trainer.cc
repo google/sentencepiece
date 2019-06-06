@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "char_model_trainer.h"
+#include "src/char_model_trainer.h"
 
 #include <cmath>
 
-#include "char_model.h"
-#include "util.h"
+#include "src/char_model.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace character {
 
-util::Status Trainer::Train() {
+::util::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
   CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());

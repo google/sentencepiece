@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "char_model.h"
+#include "src/char_model.h"
 
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 
-#include "testharness.h"
-#include "util.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace character {

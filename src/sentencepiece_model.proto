@@ -13,9 +13,11 @@
 // limitations under the License.!
 
 syntax = "proto2";
-option optimize_for = LITE_RUNTIME;
+// TODO(taku): Needs to use LITE RUNTIME in OSS release.
+// option optimize_for = LITE_RUNTIME;
 
 package sentencepiece;
+
 
 // TrainerSpec encodes a various parameters for SentencePiece training.
 message TrainerSpec {
@@ -152,6 +154,10 @@ message TrainerSpec {
   // so they are always treated as one unique symbol in any context.
   // Typical usage of user_defined_symbols is placeholder for named entities.
   repeated string user_defined_symbols = 31;
+
+  // When creating the vocabulary file, defines whether or not to additionally
+  // output the score for each piece.
+  optional bool vocabulary_output_piece_score = 32 [default = true];
 
   // `vocab_size` is treated as hard limit. Crash if
   // the model can not produce the vocab of size `vocab_size`,

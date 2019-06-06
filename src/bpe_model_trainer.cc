@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "bpe_model_trainer.h"
+#include "src/bpe_model_trainer.h"
 
 #include <algorithm>
 #include <string>
 #include <unordered_set>
 #include <vector>
-#include "util.h"
+#include "absl/container/node_hash_set.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace bpe {
@@ -170,7 +171,7 @@ void Trainer::UpdateActiveSymbols() {
   active_symbols_.insert(symbols.begin(), symbols.begin() + size);
 }
 
-util::Status Trainer::Train() {
+::util::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
   CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());
@@ -210,7 +211,7 @@ util::Status Trainer::Train() {
   // We may see duplicated pieces that are extracted with different path.
   // In real segmentation phase, we can consider them as one symbol.
   // e.g., "aaa" => "aa" + "a" or "a" + "aa".
-  std::unordered_set<std::string> dup;
+  absl::node_hash_set<std::string> dup;
 
   // Main loop.
   CHECK_OR_RETURN(final_pieces_.empty());

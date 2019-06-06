@@ -1,5 +1,7 @@
-#include "freelist.h"
-#include "testharness.h"
+#include "src/freelist.h"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 namespace sentencepiece {
 namespace model {

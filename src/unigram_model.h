@@ -20,11 +20,11 @@
 #include <utility>
 #include <vector>
 
-#include "common.h"
-#include "freelist.h"
-#include "model_interface.h"
-#include "sentencepiece_model.pb.h"
-#include "third_party/darts_clone/darts.h"
+#include "src/common.h"
+#include "src/freelist.h"
+#include "src/model_interface.h"
+#include "src/sentencepiece_model.pb.h"
+#include "third_party/darts_clone/include/darts.h"
 
 namespace sentencepiece {
 namespace unigram {

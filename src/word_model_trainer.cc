@@ -12,20 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "word_model_trainer.h"
+#include "src/word_model_trainer.h"
 
 #include <cmath>
 #include <string>
-#include <unordered_map>
 
-#include "third_party/absl/strings/string_view.h"
-#include "util.h"
-#include "word_model.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
+#include "src/util.h"
+#include "src/word_model.h"
 
 namespace sentencepiece {
 namespace word {
 
-util::Status Trainer::Train() {
+::util::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
   CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());
@@ -33,7 +33,7 @@ util::Status Trainer::Train() {
 
   RETURN_IF_ERROR(LoadSentences());
 
-  std::unordered_map<std::string, uint64> freq;
+  absl::flat_hash_map<std::string, uint64> freq;
   for (const auto &it : sentences_) {
     for (const auto &s : SplitIntoWords(it.first)) {
       freq[std::string(s)] += it.second;

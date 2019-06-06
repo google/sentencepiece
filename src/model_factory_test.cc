@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "model_factory.h"
-#include "testharness.h"
+#include "src/model_factory.h"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 namespace sentencepiece {
 

@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "unigram_model_trainer.h"
+#include "src/unigram_model_trainer.h"
 
-#include "flags.h"
-#include "sentencepiece_model.pb.h"
-#include "sentencepiece_processor.h"
-#include "sentencepiece_trainer.h"
-#include "testharness.h"
-#include "util.h"
-
-DECLARE_string(data_dir);
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "src/sentencepiece_model.pb.h"
+#include "src/sentencepiece_processor.h"
+#include "src/sentencepiece_trainer.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace unigram {
@@ -37,19 +37,24 @@ TEST(UnigramTrainerTest, TrainerModelTest) {
   EXPECT_EQ(EncodeResult(), model.Encode("test"));
 }
 
-TEST(UnigramTrainerTest, EndToEndTest) {
-  const test::ScopedTempFile sf("tmp_model");
-  const std::string input =
-      util::JoinPath(FLAGS_data_dir, "wagahaiwa_nekodearu.txt");
+static constexpr char kTestInputData[] =
+    "src/test_data/wagahaiwa_nekodearu.txt";
 
-  EXPECT_OK(SentencePieceTrainer::Train(string_util::StrCat(
-      "--model_prefix=", sf.filename(), " --input=", input,
-      " --vocab_size=8000 --normalization_rule_name=identity",
-      " --model_type=unigram --user_defined_symbols=<user>",
-      " --control_symbols=<ctrl> --max_sentence_length=2048")));
+TEST(UnigramTrainerTest, EndToEndTest) {
+  const std::string input = absl::StrCat(getenv("TEST_SRCDIR"), kTestInputData);
+
+  ASSERT_TRUE(
+      SentencePieceTrainer::Train(
+          absl::StrCat("--model_prefix=", getenv("TEST_TMPDIR"), "/tmp_model",
+                       " --input=", input,
+                       " --vocab_size=8000 --normalization_rule_name=identity",
+                       " --model_type=unigram --user_defined_symbols=<user>",
+                       " --control_symbols=<ctrl> --max_sentence_length=2048"))
+          .ok());
 
   SentencePieceProcessor sp;
-  EXPECT_OK(sp.Load(string_util::StrCat(sf.filename(), ".model")));
+  EXPECT_TRUE(
+      sp.Load(absl::StrCat(getenv("TEST_TMPDIR"), "/tmp_model.model")).ok());
   EXPECT_EQ(8000, sp.GetPieceSize());
 
   const int cid = sp.PieceToId("<ctrl>");
@@ -59,15 +64,16 @@ TEST(UnigramTrainerTest, EndToEndTest) {
 
   std::vector<std::string> tok;
 
-  EXPECT_OK(sp.Encode("", &tok));
+  EXPECT_TRUE(sp.Encode("", &tok).ok());
   EXPECT_TRUE(tok.empty());
 
-  EXPECT_OK(sp.Encode(
-      "吾輩《わがはい》は猫である。名前はまだ無い。"
-      "どこで生れたかとんと見当《けんとう》がつかぬ。"
-      "何でも薄暗いじめじめした所でニャーニャー泣いていた事だけは記憶している"
-      "。",
-      &tok));
+  EXPECT_TRUE(sp.Encode("吾輩《わがはい》は猫である。名前はまだ無い。"
+                        "どこで生れたかとんと見当《けんとう》がつかぬ。"
+                        "何でも薄暗いじめじめした所でニャーニャー泣いていた事だ"
+                        "けは記憶している"
+                        "。",
+                        &tok)
+                  .ok());
   // TODO(taku): Temporally disable this test on Windows.
 #ifndef OS_WIN
   EXPECT_EQ(WS
@@ -75,7 +81,7 @@ TEST(UnigramTrainerTest, EndToEndTest) {
             "どこ で 生 れた か とん と 見当 《 けん とう 》 が つか ぬ 。 "
             "何でも 薄 暗 い じめ じめ した 所で ニャーニャー "
             "泣 い ていた 事 だけは 記憶 している 。",
-            string_util::Join(tok, " "));
+            absl::StrJoin(tok, " "));
 #endif
 }
 

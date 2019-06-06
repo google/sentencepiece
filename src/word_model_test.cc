@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "word_model.h"
+#include "src/word_model.h"
 
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 
-#include "sentencepiece_model.pb.h"
-#include "testharness.h"
-#include "util.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include "src/sentencepiece_model.pb.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace word {

@@ -15,8 +15,8 @@
 #ifndef WORD_MODEL_H_
 #define WORD_MODEL_H_
 
-#include "model_interface.h"
-#include "sentencepiece_model.pb.h"
+#include "src/model_interface.h"
+#include "src/sentencepiece_model.pb.h"
 
 namespace sentencepiece {
 namespace word {

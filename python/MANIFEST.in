@@ -1,3 +1,0 @@
-recursive-include test *.py *.model botchan.txt
-include *.i *.md
-

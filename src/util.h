@@ -24,18 +24,37 @@
 #include <random>
 #include <sstream>
 #include <string>
-#include <thread>
 #include <utility>
 #include <vector>
-#include "common.h"
-#include "sentencepiece_processor.h"
-#include "third_party/absl/strings/string_view.h"
+
+#include "absl/strings/string_view.h"
+#include "src/common.h"
+#include "src/sentencepiece_processor.h"
+#include "src/deps/threadpool.h"
+#include "src/deps/status_builder.h"
 
 #ifdef SPM_NO_THREADLOCAL
 #include <pthread.h>
 #endif
 
+#define GTL_LOC (0)
+
+#define CHECK_OR_RETURN(condition)                                 \
+  if (condition) {                                                 \
+  } else /* NOLINT */                                              \
+    return ::util::StatusBuilder(::util::error::INTERNAL, GTL_LOC) \
+           << __FILE__ << "(" << __LINE__ << ") [" << #condition << "] "
+
+#define CHECK_EQ_OR_RETURN(a, b) CHECK_OR_RETURN((a) == (b))
+#define CHECK_NE_OR_RETURN(a, b) CHECK_OR_RETURN((a) != (b))
+#define CHECK_GE_OR_RETURN(a, b) CHECK_OR_RETURN((a) >= (b))
+#define CHECK_LE_OR_RETURN(a, b) CHECK_OR_RETURN((a) <= (b))
+#define CHECK_GT_OR_RETURN(a, b) CHECK_OR_RETURN((a) > (b))
+#define CHECK_LT_OR_RETURN(a, b) CHECK_OR_RETURN((a) < (b))
+
 namespace sentencepiece {
+
+static constexpr uint32 kUnicodeError = 0xFFFD;
 
 template <typename T>
 std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
@@ -48,10 +67,6 @@ std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
 // String utilities
 namespace string_util {
 
-inline absl::string_view ToSV(util::min_string_view data) {
-  return absl::string_view(data.data(), data.size());
-}
-
 struct string_view_hash {
   // DJB hash function.
   inline size_t operator()(const absl::string_view &sp) const {
@@ -62,20 +77,6 @@ struct string_view_hash {
     return hash;
   }
 };
-
-inline std::string ToLower(absl::string_view arg) {
-  std::string lower_value = std::string(arg);
-  std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(),
-                 ::tolower);
-  return lower_value;
-}
-
-inline std::string ToUpper(absl::string_view arg) {
-  std::string upper_value = std::string(arg);
-  std::transform(upper_value.begin(), upper_value.end(), upper_value.begin(),
-                 ::toupper);
-  return upper_value;
-}
 
 template <typename Target>
 inline bool lexical_cast(absl::string_view arg, Target *result) {
@@ -109,37 +110,8 @@ inline bool lexical_cast(absl::string_view arg, std::string *result) {
   return true;
 }
 
-std::vector<std::string> Split(const std::string &str, const std::string &delim,
-                               bool allow_empty = false);
-
-std::vector<absl::string_view> SplitPiece(absl::string_view str,
-                                          absl::string_view delim,
-                                          bool allow_empty = false);
-
-std::string Join(const std::vector<std::string> &tokens,
-                 absl::string_view delim);
-
-std::string Join(const std::vector<int> &tokens, absl::string_view delim);
-
-inline std::string StrCat(absl::string_view str) {
-  return std::string(str.data(), str.size());
-}
-
-template <typename... T>
-inline std::string StrCat(absl::string_view first, const T &... rest) {
-  return std::string(first) + StrCat(rest...);
-}
-
-std::string StringReplace(absl::string_view s, absl::string_view oldsub,
-                          absl::string_view newsub, bool replace_all);
-
-void StringReplace(absl::string_view s, absl::string_view oldsub,
-                   absl::string_view newsub, bool replace_all,
-                   std::string *res);
-
 template <typename T>
 inline bool DecodePOD(absl::string_view str, T *result) {
-  CHECK_NOTNULL(result);
   if (sizeof(*result) != str.size()) {
     return false;
   }
@@ -153,24 +125,6 @@ inline std::string EncodePOD(const T &value) {
   s.resize(sizeof(T));
   memcpy(const_cast<char *>(s.data()), &value, sizeof(T));
   return s;
-}
-
-inline bool StartsWith(absl::string_view text, absl::string_view prefix) {
-  return prefix.empty() ||
-         (text.size() >= prefix.size() &&
-          memcmp(text.data(), prefix.data(), prefix.size()) == 0);
-}
-
-inline bool EndsWith(absl::string_view text, absl::string_view suffix) {
-  return suffix.empty() || (text.size() >= suffix.size() &&
-                            memcmp(text.data() + (text.size() - suffix.size()),
-                                   suffix.data(), suffix.size()) == 0);
-}
-
-inline bool ConsumePrefix(absl::string_view *str, absl::string_view expected) {
-  if (!StartsWith(*str, expected)) return false;
-  str->remove_prefix(expected.size());
-  return true;
 }
 
 template <typename T>
@@ -356,42 +310,6 @@ inline uint64 FingerprintCat(uint64 x, uint64 y) {
   return y;
 }
 
-// Trait to select overloads and return types for MakeUnique.
-template <typename T>
-struct MakeUniqueResult {
-  using scalar = std::unique_ptr<T>;
-};
-template <typename T>
-struct MakeUniqueResult<T[]> {
-  using array = std::unique_ptr<T[]>;
-};
-template <typename T, size_t N>
-struct MakeUniqueResult<T[N]> {
-  using invalid = void;
-};
-
-// MakeUnique<T>(...) is an early implementation of C++14 std::make_unique.
-// It is designed to be 100% compatible with std::make_unique so that the
-// eventual switchover will be a simple renaming operation.
-template <typename T, typename... Args>
-typename MakeUniqueResult<T>::scalar MakeUnique(Args &&... args) {  // NOLINT
-  return std::unique_ptr<T>(
-      new T(std::forward<Args>(args)...));  // NOLINT(build/c++11)
-}
-
-// Overload for array of unknown bound.
-// The allocation of arrays needs to use the array form of new,
-// and cannot take element constructor arguments.
-template <typename T>
-typename MakeUniqueResult<T>::array MakeUnique(size_t n) {
-  return std::unique_ptr<T>(new typename std::remove_extent<T>::type[n]());
-}
-
-// Reject arrays of known bound.
-template <typename T, typename... Args>
-typename MakeUniqueResult<T>::invalid MakeUnique(Args &&... /* args */) =
-    delete;  // NOLINT
-
 template <typename T>
 void STLDeleteElements(std::vector<T *> *vec) {
   for (auto item : *vec) {
@@ -454,82 +372,7 @@ inline std::string JoinPath(absl::string_view first, const T &... rest) {
 }
 
 std::string StrError(int errnum);
-
-inline Status OkStatus() { return Status(); }
-
-#define DECLARE_ERROR(FUNC, CODE)                          \
-  inline util::Status FUNC##Error(absl::string_view str) { \
-    return util::Status(error::CODE, str.data());          \
-  }                                                        \
-  inline bool Is##FUNC(const util::Status &status) {       \
-    return status.code() == error::CODE;                   \
-  }
-
-DECLARE_ERROR(Cancelled, CANCELLED)
-DECLARE_ERROR(InvalidArgument, INVALID_ARGUMENT)
-DECLARE_ERROR(NotFound, NOT_FOUND)
-DECLARE_ERROR(AlreadyExists, ALREADY_EXISTS)
-DECLARE_ERROR(ResourceExhausted, RESOURCE_EXHAUSTED)
-DECLARE_ERROR(Unavailable, UNAVAILABLE)
-DECLARE_ERROR(FailedPrecondition, FAILED_PRECONDITION)
-DECLARE_ERROR(OutOfRange, OUT_OF_RANGE)
-DECLARE_ERROR(Unimplemented, UNIMPLEMENTED)
-DECLARE_ERROR(Internal, INTERNAL)
-DECLARE_ERROR(Aborted, ABORTED)
-DECLARE_ERROR(DeadlineExceeded, DEADLINE_EXCEEDED)
-DECLARE_ERROR(DataLoss, DATA_LOSS)
-DECLARE_ERROR(Unknown, UNKNOWN)
-DECLARE_ERROR(PermissionDenied, PERMISSION_DENIED)
-DECLARE_ERROR(Unauthenticated, UNAUTHENTICATED)
-
-class StatusBuilder {
- public:
-  explicit StatusBuilder(error::Code code) : code_(code) {}
-
-  template <typename T>
-  StatusBuilder &operator<<(const T &value) {
-    os_ << value;
-    return *this;
-  }
-
-  operator Status() const { return Status(code_, os_.str()); }
-
- private:
-  error::Code code_;
-  std::ostringstream os_;
-};
-
-#define CHECK_OR_RETURN(condition)                                     \
-  if (condition) {                                                     \
-  } else /* NOLINT */                                                  \
-    return ::sentencepiece::util::StatusBuilder(util::error::INTERNAL) \
-           << __FILE__ << "(" << __LINE__ << ") [" << #condition << "] "
-
-#define CHECK_EQ_OR_RETURN(a, b) CHECK_OR_RETURN((a) == (b))
-#define CHECK_NE_OR_RETURN(a, b) CHECK_OR_RETURN((a) != (b))
-#define CHECK_GE_OR_RETURN(a, b) CHECK_OR_RETURN((a) >= (b))
-#define CHECK_LE_OR_RETURN(a, b) CHECK_OR_RETURN((a) <= (b))
-#define CHECK_GT_OR_RETURN(a, b) CHECK_OR_RETURN((a) > (b))
-#define CHECK_LT_OR_RETURN(a, b) CHECK_OR_RETURN((a) < (b))
-
 }  // namespace util
-
-namespace thread {
-
-class ThreadPool {
- public:
-  ThreadPool() {}
-  virtual ~ThreadPool() {
-    for (auto &task : tasks_) {
-      task.join();
-    }
-  }
-
-  void Schedule(std::function<void()> closure) { tasks_.emplace_back(closure); }
-
- private:
-  std::vector<std::thread> tasks_;
-};
-}  // namespace thread
 }  // namespace sentencepiece
+
 #endif  // UTIL_H_

@@ -17,15 +17,15 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "sentencepiece_model.pb.h"
-#include "third_party/absl/strings/string_view.h"
-#include "trainer_interface.h"
-#include "unigram_model.h"
-#include "util.h"
+#include "gtest/gtest_prod.h"
+#include "absl/strings/string_view.h"
+#include "src/sentencepiece_model.pb.h"
+#include "src/trainer_interface.h"
+#include "src/unigram_model.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace unigram {
@@ -67,7 +67,7 @@ class Trainer : public TrainerInterface {
           const NormalizerSpec &normalizer_spec)
       : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec) {}
 
-  util::Status Train() override;
+  ::util::Status Train() override;
 
  private:
   FRIEND_TEST(TrainerTest, IsValidSentencePieceTest);

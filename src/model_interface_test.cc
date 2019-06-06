@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "model_interface.h"
-#include "model_factory.h"
-#include "testharness.h"
-#include "util.h"
+#include "src/model_interface.h"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include "absl/container/flat_hash_map.h"
+#include "src/model_factory.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace {
@@ -250,8 +253,8 @@ std::string RandomString(int length) {
 TEST(ModelInterfaceTest, PieceToIdStressTest) {
   for (const auto type : kModelTypes) {
     for (int i = 0; i < 100; ++i) {
-      std::unordered_map<std::string, int> expected_p2i;
-      std::unordered_map<int, std::string> expected_i2p;
+      absl::flat_hash_map<std::string, int> expected_p2i;
+      absl::flat_hash_map<int, std::string> expected_i2p;
       ModelProto model_proto = MakeBaseModelProto(type);
       for (int n = 0; n < 1000; ++n) {
         const std::string piece = RandomString(10);

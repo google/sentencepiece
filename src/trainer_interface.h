@@ -19,14 +19,15 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "common.h"
-#include "sentencepiece_model.pb.h"
-#include "sentencepiece_processor.h"
-#include "util.h"
+#include "gtest/gtest_prod.h"
+#include "absl/container/flat_hash_map.h"
+#include "src/common.h"
+#include "src/sentencepiece_model.pb.h"
+#include "src/sentencepiece_processor.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 
@@ -42,7 +43,7 @@ std::vector<std::pair<K, V>> Sorted(const std::vector<std::pair<K, V>> &m) {
 }
 
 template <typename K, typename V>
-std::vector<std::pair<K, V>> Sorted(const std::unordered_map<K, V> &m) {
+std::vector<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V> &m) {
   std::vector<std::pair<K, V>> v(m.begin(), m.end());
   return Sorted(v);
 }
@@ -65,9 +66,9 @@ class TrainerInterface {
 
   virtual ~TrainerInterface();
 
-  virtual util::Status Train() { return status(); }
+  virtual ::util::Status Train() { return status(); }
 
-  virtual util::Status status() const { return status_; }
+  virtual ::util::Status status() const { return status_; }
 
   FRIEND_TEST(TrainerInterfaceTest, IsValidSentencePieceTest);
   FRIEND_TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest);
@@ -81,7 +82,7 @@ class TrainerInterface {
 
   // Loads all sentences from spec.input().
   // It loads at most input_sentence_size sentences.
-  util::Status LoadSentences();
+  ::util::Status LoadSentences();
 
   // Splits all sentencecs by whitespaces and
   // replace the |sentences_| with tokenized string.
@@ -91,11 +92,11 @@ class TrainerInterface {
   void SplitSentencesByWhitespace();
 
   // Save model files into spec.model_prefix().
-  util::Status Save() const;
+  ::util::Status Save() const;
 
   // Set of characters which must be included in the final vocab.
   // The value of this map stores the frequency.
-  std::unordered_map<char32, int64> required_chars_;
+  absl::flat_hash_map<char32, int64> required_chars_;
 
   // Final output pieces
   std::vector<std::pair<std::string, float>> final_pieces_;
@@ -115,23 +116,23 @@ class TrainerInterface {
       meta_pieces_;
 
   // Detect errors on initialization.
-  util::Status status_;
+  ::util::Status status_;
 
  private:
   // Serialize final_pieces_ to |model_proto|.
-  util::Status Serialize(ModelProto *model_proto) const;
+  ::util::Status Serialize(ModelProto *model_proto) const;
 
   // Saves the best sentence split with the current model for debugging.
-  util::Status SaveSplits(absl::string_view filename) const;
+  ::util::Status SaveSplits(absl::string_view filename) const;
 
   // Saves model file.
-  util::Status SaveModel(absl::string_view filename) const;
+  ::util::Status SaveModel(absl::string_view filename) const;
 
   // Saves vocabulary file for NMT.
-  util::Status SaveVocab(absl::string_view filename) const;
+  ::util::Status SaveVocab(absl::string_view filename) const;
 
   // Initializes `meta_pieces_` from TrainerSpec.
-  util::Status InitMetaPieces();
+  ::util::Status InitMetaPieces();
 
   // Randomly sampled raw sentences for self-testing.
   std::vector<std::string> self_test_samples_;

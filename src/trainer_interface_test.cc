@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "trainer_interface.h"
+#include "src/trainer_interface.h"
+
 #include <utility>
 
-#include "testharness.h"
-#include "util.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include "src/util.h"
 
 namespace sentencepiece {
 
@@ -31,7 +33,7 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
 
   // Calls the default method for better coverage.
   TrainerInterface trainer(trainer_spec, normalizer_spec);
-  trainer.Train();
+  EXPECT_TRUE(trainer.Train().ok());
 
   auto IsValid = [&trainer_spec, &normalizer_spec](const std::string &str) {
     TrainerInterface trainer(trainer_spec, normalizer_spec);
@@ -221,7 +223,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_bos_id(-1);
     trainer_spec.set_eos_id(2);
     TrainerInterface trainer(trainer_spec, normalizer_spec);
-    EXPECT_OK(trainer.status());
+    EXPECT_TRUE(trainer.status().ok());
   }
 
   {
@@ -251,7 +253,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_bos_id(32000 - 100);
     trainer_spec.set_eos_id(32000 - 200);
     TrainerInterface trainer(trainer_spec, normalizer_spec);
-    EXPECT_OK(trainer.status());
+    EXPECT_TRUE(trainer.status().ok());
   }
 
   {
@@ -287,7 +289,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.add_user_defined_symbols("<pad>");
     trainer_spec.add_user_defined_symbols("foo");
     TrainerInterface trainer(trainer_spec, normalizer_spec);
-    EXPECT_OK(trainer.status());
+    EXPECT_TRUE(trainer.status().ok());
 
     EXPECT_EQ(5, trainer.meta_pieces_.size());
     EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
@@ -355,7 +357,7 @@ TEST(TrainerInterfaceTest, SerializeTest) {
     TrainerInterface trainer(trainer_spec, normalizer_spec);
     trainer.final_pieces_ = final_pieces;
     ModelProto model_proto;
-    EXPECT_NOT_OK(trainer.Serialize(&model_proto));
+    EXPECT_FALSE(trainer.Serialize(&model_proto).ok());
   }
 
   {
@@ -364,7 +366,7 @@ TEST(TrainerInterfaceTest, SerializeTest) {
     TrainerInterface trainer(trainer_spec, normalizer_spec);
     trainer.final_pieces_ = final_pieces;
     ModelProto model_proto;
-    EXPECT_OK(trainer.Serialize(&model_proto));
+    EXPECT_TRUE(trainer.Serialize(&model_proto).ok());
     EXPECT_EQ(6, model_proto.trainer_spec().vocab_size());
     for (int i = 3; i < 6; ++i) {
       EXPECT_EQ(final_pieces[i - 3].first, model_proto.pieces(i).piece());
@@ -379,7 +381,7 @@ TEST(TrainerInterfaceTest, SerializeTest) {
     TrainerInterface trainer(trainer_spec, normalizer_spec);
     trainer.final_pieces_ = final_pieces;
     ModelProto model_proto;
-    trainer.Serialize(&model_proto);
+    EXPECT_TRUE(trainer.Serialize(&model_proto).ok());
     EXPECT_EQ(6, model_proto.trainer_spec().vocab_size());
     for (int i = 3; i < 6; ++i) {
       EXPECT_EQ(final_pieces[i - 3].first, model_proto.pieces(i).piece());

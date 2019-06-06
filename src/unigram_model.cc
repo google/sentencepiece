@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "unigram_model.h"
+#include "src/unigram_model.h"
 
 #include <algorithm>
 #include <cfloat>
@@ -23,8 +23,9 @@
 #include <utility>
 #include <vector>
 
-#include "third_party/absl/strings/string_view.h"
-#include "util.h"
+#include "absl/memory/memory.h"
+#include "absl/strings/string_view.h"
+#include "src/util.h"
 
 namespace sentencepiece {
 namespace unigram {
@@ -48,7 +49,7 @@ inline float LogSumExp(float x, float y, bool init_mode) {
   if (vmax > vmin + kMinusLogEpsilon) {
     return vmax;
   } else {
-    return vmax + log(exp(vmin - vmax) + 1.0);
+    return vmax + log(std::exp(static_cast<double>(vmin - vmax)) + 1.0);
   }
 }
 }  // namespace
@@ -213,8 +214,10 @@ float Lattice::PopulateMarginal(float freq,
     for (Node *node : begin_nodes_[pos]) {
       if (node->id >= 0) {
         // the index of |expected| is a Node::id, which is a vocabulary id.
-        (*expected)[node->id] += freq * exp(alpha[node->node_id] + node->score +
-                                            beta[node->node_id] - Z);
+        (*expected)[node->id] +=
+            freq *
+            std::exp(static_cast<double>(alpha[node->node_id] + node->score +
+                                         beta[node->node_id] - Z));
       }
     }
   }
@@ -349,7 +352,8 @@ std::vector<Lattice::Node *> Lattice::Sample(float theta) {
   while (true) {
     probs.clear();
     for (const Node *lnode : end_nodes_[node->pos]) {
-      probs.push_back(exp(alpha[lnode->node_id] + theta * lnode->score - Z));
+      probs.push_back(std::exp(static_cast<double>(alpha[lnode->node_id] +
+                                                   theta * lnode->score - Z)));
     }
     std::discrete_distribution<int> dist(probs.begin(), probs.end());
     node = end_nodes_[node->pos][dist(*mt)];
@@ -432,7 +436,7 @@ void Model::BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces) {
   if (!status().ok()) return;
 
   if (pieces->empty()) {
-    status_ = util::InternalError("no pieces are loaded.");
+    status_ = ::util::InternalError("no pieces are loaded.");
     return;
   }
 
@@ -448,10 +452,10 @@ void Model::BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces) {
     value[i] = (*pieces)[i].second;      // vocab_id
   }
 
-  trie_ = port::MakeUnique<Darts::DoubleArray>();
+  trie_ = absl::make_unique<Darts::DoubleArray>();
   if (trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
                    &value[0]) != 0) {
-    status_ = util::InternalError("cannot build double-array.");
+    status_ = ::util::InternalError("cannot build double-array.");
     return;
   }
 
@@ -469,7 +473,7 @@ void Model::BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces) {
   pieces_.clear();
 
   if (trie_results_size_ == 0)
-    status_ = util::InternalError("no entry is found in the trie.");
+    status_ = ::util::InternalError("no entry is found in the trie.");
 }
 
 Model::Model(const ModelProto &model_proto) {
