@@ -8,8 +8,6 @@ package(
 
 licenses(["notice"])  # Apache 2, BSD, MIT
 
-exports_files(["LICENSE"])
-
 proto_library(
     name = "sentencepiece_proto",
     srcs = ["sentencepiece.proto"],
