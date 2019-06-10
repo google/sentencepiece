@@ -1,5 +1,9 @@
 # SentencePiece
 
+Note: We're actively refactoring the codebase to simplify support for open
+source releases and Google internal needs.  During this time, builds and tests
+will be unstable and not all features will be supported.
+
 [![Build Status](https://travis-ci.org/google/sentencepiece.svg?branch=master)](https://travis-ci.org/google/sentencepiece)
 [![Build status](https://ci.appveyor.com/api/projects/status/vxoub3qx4fwpysyq?svg=true)](https://ci.appveyor.com/project/taku910/sentencepiece)
 [![Coverage Status](https://coveralls.io/repos/github/google/sentencepiece/badge.svg?branch=master)](https://coveralls.io/github/google/sentencepiece?branch=master)
