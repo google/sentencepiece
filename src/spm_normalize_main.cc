@@ -34,7 +34,7 @@ DEFINE_string(normalization_rule_tsv, "", "Normalization rule TSV file. ");
 DEFINE_bool(remove_extra_whitespaces, true, "Remove extra whitespaces");
 DEFINE_bool(decompile, false,
             "Decompile compiled charamap and output it as TSV.");
-DEFINE_string(input, "", "output filename");
+DEFINE_string(input, "", "Input filename");
 DEFINE_string(output, "", "Output filename");
 
 using sentencepiece::ModelProto;

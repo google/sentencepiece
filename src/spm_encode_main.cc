@@ -31,7 +31,7 @@ DEFINE_string(model, "", "model file name");
 DEFINE_string(
     output_format, "piece",
     "choose from piece, id, proto, nbest_piece, nbest_id, or nbest_proto");
-DEFINE_string(input, "", "output filename");
+DEFINE_string(input, "", "input filename");
 DEFINE_string(output, "", "output filename");
 DEFINE_string(extra_options, "",
               "':' separated encoder extra options, e.g., \"reverse:bos:eos\"");

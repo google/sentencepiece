@@ -26,7 +26,7 @@
 #include "src/util.h"
 
 DEFINE_string(model, "", "model file name");
-DEFINE_string(input, "", "output filename");
+DEFINE_string(input, "", "input filename");
 DEFINE_string(output, "", "output filename");
 DEFINE_string(input_format, "piece", "choose from piece or id");
 DEFINE_string(output_format, "string", "choose from string or proto");

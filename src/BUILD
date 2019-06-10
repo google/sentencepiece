@@ -30,13 +30,6 @@ cc_proto_library(
     deps = [":sentencepiece_model_proto"],
 )
 
-py_proto_library(
-    name = "sentencepiece_py_pb2",
-    api_version = 2,
-    visibility = ["//visibility:public"],
-    deps = [":sentencepiece_proto"],
-)
-
 cc_library(
     name = "common",
     hdrs = ["common.h"],
