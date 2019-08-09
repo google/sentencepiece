@@ -256,10 +256,10 @@ sparse_encode = encode_sparse
 dense_encode = encode_dense
 
 
-tf.NotDifferentiable('SentencepieceGetPieceSize')
-tf.NotDifferentiable('SentencepieceIdToPiece')
-tf.NotDifferentiable('SentencepiecePieceToId')
-tf.NotDifferentiable('SentencepieceGetPieceType')
-tf.NotDifferentiable('SentencepieceEncodeDense')
-tf.NotDifferentiable('SentencepieceEncodeSparse')
-tf.NotDifferentiable('SentencepieceDecode')
+tf.no_gradient('SentencepieceGetPieceSize')
+tf.no_gradient('SentencepieceIdToPiece')
+tf.no_gradient('SentencepiecePieceToId')
+tf.no_gradient('SentencepieceGetPieceType')
+tf.no_gradient('SentencepieceEncodeDense')
+tf.no_gradient('SentencepieceEncodeSparse')
+tf.no_gradient('SentencepieceDecode')
