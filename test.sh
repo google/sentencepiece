@@ -91,7 +91,7 @@ build_linux_gcc_ubuntu() {
   build_tensorflow
 }
 
-build_linux_gcc_ubuntu_trusty() {
+build_linux_gcc_ubuntu_no_tf() {
   setup_ubuntu
   build_generic
   build_python

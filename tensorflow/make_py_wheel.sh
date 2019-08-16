@@ -40,11 +40,14 @@ build_tf_wrapper() {
   TF_CFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
   TF_LFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
   TF_VERSION=( $(python -c 'import tensorflow as tf; print(tf.__version__)') )
+  
+  echo TF_CFLAGS=${TF_CFLAGS[@]}
+  echo TF_LFLAGS=${TF_LFLAGS[@]}
+  echo TF_VERSION=${TF_VERSION}
 
   g++ -std=c++11 -shared \
     -I../../src \
     -fPIC ${TF_CFLAGS[@]} -O2 \
-    -D_GLIBCXX_USE_CXX11_ABI=0 \
     -Wl,--whole-archive \
     /usr/local/lib/libsentencepiece.a \
     -Wl,--no-whole-archive \
@@ -61,18 +64,15 @@ build() {
   mkdir -p build
   cd build
 
-  apt-get update
-  apt-get install -y curl build-essential cmake git pkg-config python-pip python3-pip
-
   # Install sentencepiece
-  cmake ../.. -DSPM_ENABLE_SHARED=OFF -DSPM_ENABLE_TENSORFLOW_SHARED=ON
+  cmake ../.. -DSPM_ENABLE_SHARED=OFF -DSPM_ENABLE_TENSORFLOW_SHARED=ON  
   make -j4
   make install
   cd ..
 
+  build_tf_wrapper "2.0.0-beta1"
   build_tf_wrapper "1.14.0"
   build_tf_wrapper "1.13.1"
-  #  build_tf_wrapper "1.12.0"
   build_tf_wrapper "1.11.0"
   build_tf_wrapper "1.10.0"
   build_tf_wrapper "1.9.0"
@@ -89,5 +89,5 @@ build() {
 if [ "$1" = "native" ]; then
   build
 else
-  run_docker tensorflow/tensorflow:latest
+  run_docker tensorflow/tensorflow:custom-op-ubuntu14
 fi

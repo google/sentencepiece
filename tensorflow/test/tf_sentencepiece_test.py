@@ -8,6 +8,13 @@ import unittest
 import tensorflow as tf
 import tf_sentencepiece as tfspm
 
+try:
+  tf.Session = tf.compat.v1.Session
+  tf.sparse_tensor_to_dense = tf.compat.v1.sparse_tensor_to_dense
+except:
+  pass
+
+
 class SentencePieceProcssorOpTest(unittest.TestCase):
 
   def _getSentencePieceModelFile(self):
@@ -16,21 +23,27 @@ class SentencePieceProcssorOpTest(unittest.TestCase):
   def _getPieceSize(self):
     return 1000
 
-  def _getExpected(self, reverse=False, add_bos=False,
-                   add_eos=False, padding=''):
+  def _getExpected(self,
+                   reverse=False,
+                   add_bos=False,
+                   add_eos=False,
+                   padding=''):
     # TF uses str(bytes) as a string representation.
     padding = padding.encode('utf8')
-    sentences = [b'Hello world.', b'I have a pen.',
-                 b'I saw a girl with a telescope.']
+    sentences = [
+        b'Hello world.', b'I have a pen.', b'I saw a girl with a telescope.'
+    ]
     pieces = [[b'\xe2\x96\x81He', b'll', b'o', b'\xe2\x96\x81world', b'.'],
-              [b'\xe2\x96\x81I', b'\xe2\x96\x81have', b'\xe2\x96\x81a',
-               b'\xe2\x96\x81p', b'en', b'.'],
-              [b'\xe2\x96\x81I', b'\xe2\x96\x81saw', b'\xe2\x96\x81a',
-               b'\xe2\x96\x81girl', b'\xe2\x96\x81with',
-               b'\xe2\x96\x81a', b'\xe2\x96\x81',
-               b'te', b'le', b's', b'c', b'o', b'pe', b'.']]
-    ids = [[151, 88, 21, 887, 6],
-           [9, 76, 11, 68, 98, 6],
+              [
+                  b'\xe2\x96\x81I', b'\xe2\x96\x81have', b'\xe2\x96\x81a',
+                  b'\xe2\x96\x81p', b'en', b'.'
+              ],
+              [
+                  b'\xe2\x96\x81I', b'\xe2\x96\x81saw', b'\xe2\x96\x81a',
+                  b'\xe2\x96\x81girl', b'\xe2\x96\x81with', b'\xe2\x96\x81a',
+                  b'\xe2\x96\x81', b'te', b'le', b's', b'c', b'o', b'pe', b'.'
+              ]]
+    ids = [[151, 88, 21, 887, 6], [9, 76, 11, 68, 98, 6],
            [9, 459, 11, 939, 44, 11, 4, 142, 82, 8, 28, 21, 132, 6]]
     seq_len = [5, 6, 14]
 
@@ -58,22 +71,19 @@ class SentencePieceProcssorOpTest(unittest.TestCase):
     sentencepiece_model_file = self._getSentencePieceModelFile()
 
     with tf.Session():
-      s = tfspm.piece_size(
-          model_file=sentencepiece_model_file)
+      s = tfspm.piece_size(model_file=sentencepiece_model_file)
       self.assertEqual(s.eval(), self._getPieceSize())
 
   def testConvertPiece(self):
     sentencepiece_model_file = self._getSentencePieceModelFile()
-    (sentences, expected_pieces,
-     expected_ids, expected_seq_len) = self._getExpected(padding='<unk>')
+    (sentences, expected_pieces, expected_ids,
+     expected_seq_len) = self._getExpected(padding='<unk>')
 
     with tf.Session():
       ids_matrix = tfspm.piece_to_id(
-          tf.constant(expected_pieces),
-          model_file=sentencepiece_model_file)
+          tf.constant(expected_pieces), model_file=sentencepiece_model_file)
       ids_vec = tfspm.piece_to_id(
-          tf.constant(expected_pieces[0]),
-          model_file=sentencepiece_model_file)
+          tf.constant(expected_pieces[0]), model_file=sentencepiece_model_file)
       ids_scalar = tfspm.piece_to_id(
           tf.constant(expected_pieces[0][0]),
           model_file=sentencepiece_model_file)
@@ -83,39 +93,41 @@ class SentencePieceProcssorOpTest(unittest.TestCase):
       self.assertEqual(ids_scalar.eval(), expected_ids[0][0])
 
       pieces_matrix = tfspm.id_to_piece(
-          tf.constant(expected_ids),
-          model_file=sentencepiece_model_file)
+          tf.constant(expected_ids), model_file=sentencepiece_model_file)
       pieces_vec = tfspm.id_to_piece(
-          tf.constant(expected_ids[0]),
-          model_file=sentencepiece_model_file)
+          tf.constant(expected_ids[0]), model_file=sentencepiece_model_file)
       pieces_scalar = tfspm.id_to_piece(
-          tf.constant(expected_ids[0][0]),
-          model_file=sentencepiece_model_file)
+          tf.constant(expected_ids[0][0]), model_file=sentencepiece_model_file)
 
       self.assertEqual(pieces_matrix.eval().tolist(), expected_pieces)
       self.assertEqual(pieces_vec.eval().tolist(), expected_pieces[0])
       self.assertEqual(pieces_scalar.eval(), expected_pieces[0][0])
 
-
   def testEncodeAndDecode(self):
     sentencepiece_model_file = self._getSentencePieceModelFile()
 
     with tf.Session():
-      for reverse, add_bos, add_eos in list(it.product(
-          (True, False), repeat=3)):
-        (sentences, expected_pieces,
-         expected_ids, expected_seq_len) = self._getExpected(
+      for reverse, add_bos, add_eos in list(
+          it.product((True, False), repeat=3)):
+        (sentences, expected_pieces, expected_ids,
+         expected_seq_len) = self._getExpected(
              reverse=reverse, add_bos=add_bos, add_eos=add_eos)
 
         # Encode sentences into pieces/ids.
         s = tf.constant(sentences)
         pieces, seq_len1 = tfspm.encode(
-            s, model_file=sentencepiece_model_file,
-            reverse=reverse, add_bos=add_bos, add_eos=add_eos,
+            s,
+            model_file=sentencepiece_model_file,
+            reverse=reverse,
+            add_bos=add_bos,
+            add_eos=add_eos,
             out_type=tf.string)
         ids, seq_len2 = tfspm.encode(
-            s, model_file=sentencepiece_model_file,
-            reverse=reverse, add_bos=add_bos, add_eos=add_eos)
+            s,
+            model_file=sentencepiece_model_file,
+            reverse=reverse,
+            add_bos=add_bos,
+            add_eos=add_eos)
 
         self.assertEqual(pieces.eval().tolist(), expected_pieces)
         self.assertEqual(ids.eval().tolist(), expected_ids)
@@ -127,11 +139,12 @@ class SentencePieceProcssorOpTest(unittest.TestCase):
         ids = tf.constant(expected_ids)
         seq_len = tf.constant(expected_seq_len, dtype=tf.int32)
         decoded_sentences1 = tfspm.decode(
-            pieces, seq_len, model_file=sentencepiece_model_file,
+            pieces,
+            seq_len,
+            model_file=sentencepiece_model_file,
             reverse=reverse)
         decoded_sentences2 = tfspm.decode(
-            ids, seq_len, model_file=sentencepiece_model_file,
-            reverse=reverse)
+            ids, seq_len, model_file=sentencepiece_model_file, reverse=reverse)
 
         self.assertEqual(decoded_sentences1.eval().tolist(), sentences)
         self.assertEqual(decoded_sentences2.eval().tolist(), sentences)
@@ -148,10 +161,15 @@ class SentencePieceProcssorOpTest(unittest.TestCase):
         s = tf.constant(sentences)
 
         pieces, seq_len1 = tfspm.encode(
-            s, nbest_size=nbest_size, alpha=alpha,
-            model_file=sentencepiece_model_file, out_type=tf.string)
+            s,
+            nbest_size=nbest_size,
+            alpha=alpha,
+            model_file=sentencepiece_model_file,
+            out_type=tf.string)
         ids, seq_len2 = tfspm.encode(
-            s, nbest_size=nbest_size, alpha=alpha,
+            s,
+            nbest_size=nbest_size,
+            alpha=alpha,
             model_file=sentencepiece_model_file)
         decoded_sentences1 = tfspm.decode(
             pieces, seq_len1, model_file=sentencepiece_model_file)
@@ -165,20 +183,26 @@ class SentencePieceProcssorOpTest(unittest.TestCase):
     sentencepiece_model_file = self._getSentencePieceModelFile()
 
     with tf.Session():
-      for reverse, add_bos, add_eos in list(it.product(
-          (True, False), repeat=3)):
+      for reverse, add_bos, add_eos in list(
+          it.product((True, False), repeat=3)):
         (sentences, expected_pieces, expected_ids,
          _) = self._getExpected(reverse, add_bos, add_eos)
 
         # Encode sentences into sparse pieces/ids.
         s = tf.constant(sentences)
         pieces = tfspm.encode_sparse(
-            s, model_file=sentencepiece_model_file,
-            reverse=reverse, add_bos=add_bos, add_eos=add_eos,
+            s,
+            model_file=sentencepiece_model_file,
+            reverse=reverse,
+            add_bos=add_bos,
+            add_eos=add_eos,
             out_type=tf.string)
         ids = tfspm.encode_sparse(
-            s, model_file=sentencepiece_model_file,
-            reverse=reverse, add_bos=add_bos, add_eos=add_eos)
+            s,
+            model_file=sentencepiece_model_file,
+            reverse=reverse,
+            add_bos=add_bos,
+            add_eos=add_eos)
         pieces = tf.sparse_tensor_to_dense(pieces, default_value='')
         ids = tf.sparse_tensor_to_dense(ids, default_value=0)
 
@@ -208,89 +232,83 @@ class SentencePieceProcssorOpTest(unittest.TestCase):
       self.assertEqual(is_control.eval().tolist(), expected_is_control)
       self.assertEqual(is_unused.eval().tolist(), expected_is_unused)
 
-
   def testLoadModelProto(self):
     # Makes a serialized model proto.
     model_proto = open(self._getSentencePieceModelFile(), 'rb').read()
     with tf.Session() as sess:
       sentences = ['Hello world.']
       a = tf.constant(sentences)
-      sess.run(tfspm.encode(
-          a, model_proto=model_proto,
-          out_type=tf.string))
+      sess.run(tfspm.encode(a, model_proto=model_proto, out_type=tf.string))
 
   def testInvalidModelPath(self):
     with tf.Session() as sess:
       with self.assertRaises(tf.errors.NotFoundError):
         sentences = ['Hello world.']
         a = tf.constant(sentences)
-        sess.run(tfspm.encode(
-            a, model_file='invalid path', out_type=tf.string))
+        sess.run(tfspm.encode(a, model_file='invalid path', out_type=tf.string))
 
   def testInvalidModelProto(self):
     with tf.Session() as sess:
       with self.assertRaises(tf.errors.InternalError):
         sentences = ['Hello world.']
         a = tf.constant(sentences)
-        sess.run(tfspm.encode(
-            a, model_proto='invalid proto', out_type=tf.string))
+        sess.run(
+            tfspm.encode(a, model_proto='invalid proto', out_type=tf.string))
 
   def testInvalidInput(self):
     sentences = ['Hello world.', 'This is a test.']
-    ids = [[0,1],[2,3]]
+    ids = [[0, 1], [2, 3]]
     model_file = self._getSentencePieceModelFile()
     with tf.Session() as sess:
       a = tf.constant(sentences)
       b = tf.constant(ids)
 
       alpha = tf.constant([1.0, 2.0])
-      sess.run(tfspm.encode(
-          a, model_file=model_file, alpha=alpha, name='foo'))
+      sess.run(tfspm.encode(a, model_file=model_file, alpha=alpha, name='foo'))
 
       nbest_size = tf.constant([1, 2], dtype=tf.int32)
-      sess.run(tfspm.encode(
-          a, model_file=model_file, nbest_size=nbest_size, name='foo'))
+      sess.run(
+          tfspm.encode(
+              a, model_file=model_file, nbest_size=nbest_size, name='foo'))
 
       alpha = tf.constant(1.0)
-      sess.run(tfspm.encode(
-          a, model_file=model_file, alpha=alpha, name='foo'))
+      sess.run(tfspm.encode(a, model_file=model_file, alpha=alpha, name='foo'))
 
       nbest_size = tf.constant(10, dtype=tf.int32)
-      sess.run(tfspm.encode(
-          a, model_file=model_file, nbest_size=nbest_size, name='foo'))
+      sess.run(
+          tfspm.encode(
+              a, model_file=model_file, nbest_size=nbest_size, name='foo'))
 
-      sess.run(tfspm.decode(
-          b, sequence_length=tf.constant([2, 2]), model_file=model_file))
+      sess.run(
+          tfspm.decode(
+              b, sequence_length=tf.constant([2, 2]), model_file=model_file))
 
       with self.assertRaises(ValueError):
         a = tf.constant(sentences)
         alpha = tf.constant([1.0, 2.0, 3.0])
-        sess.run(tfspm.encode(
-            a, model_file=model_file, alpha=alpha))
+        sess.run(tfspm.encode(a, model_file=model_file, alpha=alpha))
       with self.assertRaises(ValueError):
         a = tf.constant(sentences)
         nbest_size = tf.constant([1, 2, 3], dtype=tf.int32)
-        sess.run(tfspm.encode(
-            a, model_file=model_file, nbest_size=nbest_size))
+        sess.run(tfspm.encode(a, model_file=model_file, nbest_size=nbest_size))
       with self.assertRaises(ValueError):
         a = tf.constant(sentences)
         alpha = tf.constant([[1.0], [2.0]])
-        sess.run(tfspm.encode(
-            a, model_file=model_file, alpha=alpha))
+        sess.run(tfspm.encode(a, model_file=model_file, alpha=alpha))
       with self.assertRaises(ValueError):
         a = tf.constant(sentences)
         nbest_size = tf.constant([[1], [2]], dtype=tf.int32)
-        sess.run(tfspm.encode(
-            a, model_file=model_file, nbest_size=nbest_size))
+        sess.run(tfspm.encode(a, model_file=model_file, nbest_size=nbest_size))
       with self.assertRaises(ValueError):
         b = tf.constant(ids)
-        sess.run(tfspm.decode(
-            a, sequence_length=2, model_file=model_file))
+        sess.run(tfspm.decode(a, sequence_length=2, model_file=model_file))
       with self.assertRaises(ValueError):
         b = tf.constant(ids)
-        sess.run(tfspm.decode(
-            a, sequence_length=tf.constant([2, 2, 2]),
-            model_file=model_file))
+        sess.run(
+            tfspm.decode(
+                a,
+                sequence_length=tf.constant([2, 2, 2]),
+                model_file=model_file))
 
 
 def suite():
