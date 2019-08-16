@@ -38,9 +38,8 @@ build_tf_wrapper() {
     -I../../src \
     -fPIC ${TF_CFLAGS[@]} -O2 \
     -D_GLIBCXX_USE_CXX11_ABI=0 \
-    -Wl,-all_load  \
+    -Wl,-force_load \
     /usr/local/lib/libsentencepiece.a \
-    -Wl,-noall_load \
     sentencepiece_processor_ops.cc \
     -o tf_sentencepiece/_sentencepiece_processor_ops.so.${TF_VERSION} \
     ${TF_LFLAGS[@]}
@@ -69,7 +68,7 @@ build() {
   pip install --upgrade setuptools
   pip install wheel
 
-  # build_tf_wrapper "2.0.0-beta1"
+  build_tf_wrapper "2.0.0-beta1"
   build_tf_wrapper "1.14.0"
   build_tf_wrapper "1.13.1"
   build_tf_wrapper "1.11.0"
