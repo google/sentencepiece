@@ -116,7 +116,7 @@ class SentencePieceBaseOp : public OpKernel {
     // Sets extra options to add <s>, </s>.
     auto has_attribute = [&context](const std::string& name) {
       bool flag = false;
-      context->GetAttr(name, &flag);
+      context->GetAttr(name, &flag).IgnoreError();
       return flag;
     };
 
