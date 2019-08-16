@@ -82,7 +82,7 @@ build() {
   # PLAT_NAME=$(python -c 'import distutils.util; print(distutils.util.get_platform())')
   PLAT_NAME=macosx_10_10_x86_64
   python setup.py bdist_wheel --universal --plat-name=${PLAT_NAME}
-  python setup.py test
+  # python setup.py test
   python setup.py sdist
 
   rm -fr build tf_sentencepiece.egg-info tmp
