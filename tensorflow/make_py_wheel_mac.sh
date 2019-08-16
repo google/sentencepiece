@@ -34,7 +34,7 @@ build_tf_wrapper() {
   TF_LFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
   TF_VERSION=( $(python -c 'import tensorflow as tf; print(tf.__version__)') )
   
-  TF_LFLAGS2=`echo -n ${TF_LFLAGS[@]} | sed -e 's/-l:/-l/' -e 's/.[12].dylib//'`
+  TF_LFLAGS2=`echo -n ${TF_LFLAGS[@]} | sed -e 's/-l:lib/-l/' -e 's/.[12].dylib//'`
 
   g++ -std=c++11 -shared -undefined dynamic_lookup \
     -I../../src \
