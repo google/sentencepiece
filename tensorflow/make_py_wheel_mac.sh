@@ -34,7 +34,7 @@ build_tf_wrapper() {
   TF_LFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
   TF_VERSION=( $(python -c 'import tensorflow as tf; print(tf.__version__)') )
 
-  g++ -std=c++11 -shared \
+  g++ -std=c++11 -shared -undefined dynamic_lookup \
     -I../../src \
     -fPIC ${TF_CFLAGS[@]} -O2 \
     -D_GLIBCXX_USE_CXX11_ABI=0 \
