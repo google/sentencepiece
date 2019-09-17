@@ -60,7 +60,7 @@ The number of merge operations is a BPE-specific parameter and not applicable to
 
 #### Trains from raw sentences
 Previous sub-word implementations assume that the input sentences are pre-tokenized. This constraint was required for efficient training, but makes the preprocessing complicated as we have to run language dependent tokenizers in advance.
-The implementation of SentencePiece is fast enough to train the model from raw sentences. This is useful for training the tokenizer and detokenizer for Chinese, Japanese and Korean where no explicit spaces exist between words.
+The implementation of SentencePiece is fast enough to train the model from raw sentences. This is useful for training the tokenizer and detokenizer for Chinese and Japanese where no explicit spaces exist between words.
 
 #### Whitespace is treated as a basic symbol
 The first step of Natural Language processing is text tokenization. For
