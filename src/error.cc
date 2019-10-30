@@ -139,7 +139,7 @@ std::string Status::ToString() const {
       result = "Data loss";
       break;
     default:
-      result = "Unkown code:";
+      result = "Unknown code:";
       break;
   }
 
