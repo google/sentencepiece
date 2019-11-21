@@ -160,6 +160,23 @@ int main(int argc, char *argv[]) {
   SetRepeatedTrainerSpecFromFlag(control_symbols);
   SetRepeatedTrainerSpecFromFlag(user_defined_symbols);
 
+  // ,.,!,?,\(,\),[,],\{,\},\’,\“,/,-,_
+  trainer_spec.add_user_defined_symbols(",");
+  trainer_spec.add_user_defined_symbols(".");
+  trainer_spec.add_user_defined_symbols("!");
+  trainer_spec.add_user_defined_symbols("?");
+  trainer_spec.add_user_defined_symbols("(");
+  trainer_spec.add_user_defined_symbols(")");
+  trainer_spec.add_user_defined_symbols("[");
+  trainer_spec.add_user_defined_symbols("]");
+  trainer_spec.add_user_defined_symbols("{");
+  trainer_spec.add_user_defined_symbols("}");
+  trainer_spec.add_user_defined_symbols("'");
+  trainer_spec.add_user_defined_symbols("\"");
+  trainer_spec.add_user_defined_symbols("/");
+  trainer_spec.add_user_defined_symbols("-");
+  trainer_spec.add_user_defined_symbols("_");
+
   normalizer_spec.set_name(FLAGS_normalization_rule_name);
   SetNormalizerSpecFromFlag(normalization_rule_tsv);
   SetNormalizerSpecFromFlag(add_dummy_prefix);
