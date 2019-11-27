@@ -573,6 +573,13 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   ::google::protobuf::int32 pad_id() const;
   void set_pad_id(::google::protobuf::int32 value);
 
+  // optional bool add_punctuation [default = true];
+  bool has_add_punctuation() const;
+  void clear_add_punctuation();
+  bool add_punctuation() const;
+  void set_add_punctuation(bool value);
+
+
   GOOGLE_PROTOBUF_EXTENSION_ACCESSORS(TrainerSpec)
   // @@protoc_insertion_point(class_scope:sentencepiece.TrainerSpec)
  private:
@@ -688,6 +695,7 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   ::google::protobuf::int32 max_sentencepiece_length_;
   bool shuffle_input_sentence_;
   bool split_by_unicode_script_;
+  bool add_punctuation_;
   bool split_by_number_;
   bool split_by_whitespace_;
   bool hard_vocab_limit_;
@@ -2112,6 +2120,15 @@ inline void TrainerSpec::set_split_by_unicode_script(bool value) {
   set_has_split_by_unicode_script();
   split_by_unicode_script_ = value;
   // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.split_by_unicode_script)
+}
+
+inline bool TrainerSpec::add_punctuation() const {
+  // @@protoc_insertion_point(field_get:sentencepiece.TrainerSpec.add_punctuation)
+  return add_punctuation_;
+}
+inline void TrainerSpec::set_add_punctuation(bool value) {
+  add_punctuation_ = value;
+  // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.add_punctuation)
 }
 
 // optional bool split_by_number = 23 [default = true];

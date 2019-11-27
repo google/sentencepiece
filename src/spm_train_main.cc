@@ -104,6 +104,10 @@ DEFINE_string(pad_piece, kDefaultTrainerSpec.pad_piece(),
 DEFINE_string(unk_surface, kDefaultTrainerSpec.unk_surface(),
               "Dummy surface string for <unk>. In decoding <unk> is decoded to "
               "`unk_surface`.");
+DEFINE_bool(add_punctuation,
+            false,
+            "Add punctuation symbols as symbols");
+
 
 int main(int argc, char *argv[]) {
   sentencepiece::flags::ParseCommandLineFlags(argc, argv);
@@ -155,27 +159,30 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(eos_piece);
   SetTrainerSpecFromFlag(pad_piece);
   SetTrainerSpecFromFlag(unk_surface);
+  SetTrainerSpecFromFlag(add_punctuation);  
   SetRepeatedTrainerSpecFromFlag(input);
   SetRepeatedTrainerSpecFromFlag(accept_language);
   SetRepeatedTrainerSpecFromFlag(control_symbols);
   SetRepeatedTrainerSpecFromFlag(user_defined_symbols);
 
-  // ,.,!,?,\(,\),[,],\{,\},\’,\“,/,-,_
-  trainer_spec.add_user_defined_symbols(",");
-  trainer_spec.add_user_defined_symbols(".");
-  trainer_spec.add_user_defined_symbols("!");
-  trainer_spec.add_user_defined_symbols("?");
-  trainer_spec.add_user_defined_symbols("(");
-  trainer_spec.add_user_defined_symbols(")");
-  trainer_spec.add_user_defined_symbols("[");
-  trainer_spec.add_user_defined_symbols("]");
-  trainer_spec.add_user_defined_symbols("{");
-  trainer_spec.add_user_defined_symbols("}");
-  trainer_spec.add_user_defined_symbols("'");
-  trainer_spec.add_user_defined_symbols("\"");
-  trainer_spec.add_user_defined_symbols("/");
-  trainer_spec.add_user_defined_symbols("-");
-  trainer_spec.add_user_defined_symbols("_");
+  if(trainer_spec.add_punctuation()){
+      // ,.,!,?,\(,\),[,],\{,\},\’,\“,/,-,_
+    trainer_spec.add_user_defined_symbols(",");
+    trainer_spec.add_user_defined_symbols(".");
+    trainer_spec.add_user_defined_symbols("!");
+    trainer_spec.add_user_defined_symbols("?");
+    trainer_spec.add_user_defined_symbols("(");
+    trainer_spec.add_user_defined_symbols(")");
+    trainer_spec.add_user_defined_symbols("[");
+    trainer_spec.add_user_defined_symbols("]");
+    trainer_spec.add_user_defined_symbols("{");
+    trainer_spec.add_user_defined_symbols("}");
+    trainer_spec.add_user_defined_symbols("'");
+    trainer_spec.add_user_defined_symbols("\"");
+    trainer_spec.add_user_defined_symbols("/");
+    trainer_spec.add_user_defined_symbols("-");
+    trainer_spec.add_user_defined_symbols("_");
+  }
 
   normalizer_spec.set_name(FLAGS_normalization_rule_name);
   SetNormalizerSpecFromFlag(normalization_rule_tsv);
