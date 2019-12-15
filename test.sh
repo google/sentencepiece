@@ -114,7 +114,7 @@ build_linux_gcc_fedora() {
   setup_fedora
   build_generic
   build_python
-  build_tensorflow
+#  build_tensorflow
 }
 
 build_linux_clang_ubuntu() {
