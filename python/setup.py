@@ -26,18 +26,20 @@ sys.path.append(os.path.join('.', 'test'))
 with codecs.open('README.md', 'r', 'utf-8') as f:
   long_description = f.read()
 
-with codecs.open(os.path.join('..', 'VERSION'), 'r', 'utf-8') as f:
+with codecs.open('VERSION', 'r', 'utf-8') as f:
   version = f.read().rstrip()
+
 
 def cmd(line):
   try:
     output = subprocess.check_output(line, shell=True)
-    if sys.version_info >= (3,0,0):
+    if sys.version_info >= (3, 0, 0):
       output = output.decode('utf-8')
   except subprocess.CalledProcessError:
     sys.stderr.write('Failed to find sentencepiece pkgconfig\n')
     sys.exit(1)
   return output.strip().split()
+
 
 # Fix compile on some versions of Mac OSX
 # See: https://github.com/neulab/xnmt/issues/199
@@ -50,38 +52,43 @@ def cflags():
   args = args + cmd('pkg-config sentencepiece --cflags')
   return args
 
+
 def libs():
   if sys.platform == 'win32':
-    return ['..\\build\\root\\lib\\sentencepiece.lib',
-            '..\\build\\root\\lib\\sentencepiece_train.lib']
+    return [
+        '..\\build\\root\\lib\\sentencepiece.lib',
+        '..\\build\\root\\lib\\sentencepiece_train.lib'
+    ]
 
   return cmd('pkg-config sentencepiece --libs')
 
-setup(name = 'sentencepiece',
-      author = 'Taku Kudo',
-      author_email='taku@google.com',
-      description = 'SentencePiece python wrapper',
-      long_description = long_description,
-      long_description_content_type='text/markdown',
-      version=version,
-      url = 'https://github.com/google/sentencepiece',
-      license = 'Apache',
-      platforms = 'Unix',
-      py_modules=['sentencepiece'],
-      ext_modules = [Extension('_sentencepiece',
-                               sources=['sentencepiece_wrap.cxx'],
-                               extra_compile_args=cflags(),
-                               extra_link_args=libs())
-                     ],
-      classifiers = [
-        'Development Status :: 5 - Production/Stable',
-        'Environment :: Console',
+
+setup(
+    name='sentencepiece',
+    author='Taku Kudo',
+    author_email='taku@google.com',
+    description='SentencePiece python wrapper',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    version=version,
+    url='https://github.com/google/sentencepiece',
+    license='Apache',
+    platforms='Unix',
+    py_modules=['sentencepiece'],
+    ext_modules=[
+        Extension(
+            '_sentencepiece',
+            sources=['sentencepiece_wrap.cxx'],
+            extra_compile_args=cflags(),
+            extra_link_args=libs())
+    ],
+    classifiers=[
+        'Development Status :: 5 - Production/Stable', 'Environment :: Console',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: Apache Software License',
-        'Operating System :: Unix',
-        'Programming Language :: Python',
+        'Operating System :: Unix', 'Programming Language :: Python',
         'Topic :: Text Processing :: Linguistic',
         'Topic :: Software Development :: Libraries :: Python Modules'
-        ],
-      test_suite = 'sentencepiece_test.suite')
+    ],
+    test_suite='sentencepiece_test.suite')

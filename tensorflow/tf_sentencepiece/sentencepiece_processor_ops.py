@@ -35,7 +35,7 @@ if not hasattr(tf, 'no_gradient'):
 
 if not os.path.exists(so_file):
   versions = [
-      re.search('[0-9]+\.[0-9\.]+.*$', os.path.basename(n)).group(0)
+      re.search('so.([0-9]+\.[0-9\.]+.*)$', os.path.basename(n)).group(0)
       for n in glob.glob(so_base + '.*')
   ]
   latest = sorted(versions, key=LooseVersion)[-1]

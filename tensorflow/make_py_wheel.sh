@@ -71,6 +71,7 @@ build() {
   cd ..
   
   build_tf_wrapper "2.0.0"
+  build_tf_wrapper "1.15.0"  
   build_tf_wrapper "1.14.0"
   build_tf_wrapper "1.13.1"
 
