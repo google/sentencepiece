@@ -159,29 +159,22 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(eos_piece);
   SetTrainerSpecFromFlag(pad_piece);
   SetTrainerSpecFromFlag(unk_surface);
-  SetTrainerSpecFromFlag(add_punctuation);  
+  SetTrainerSpecFromFlag(add_punctuation);
   SetRepeatedTrainerSpecFromFlag(input);
   SetRepeatedTrainerSpecFromFlag(accept_language);
   SetRepeatedTrainerSpecFromFlag(control_symbols);
   SetRepeatedTrainerSpecFromFlag(user_defined_symbols);
 
   if(trainer_spec.add_punctuation()){
-      // ,.,!,?,\(,\),[,],\{,\},\’,\“,/,-,_
-    trainer_spec.add_user_defined_symbols(",");
-    trainer_spec.add_user_defined_symbols(".");
-    trainer_spec.add_user_defined_symbols("!");
-    trainer_spec.add_user_defined_symbols("?");
-    trainer_spec.add_user_defined_symbols("(");
-    trainer_spec.add_user_defined_symbols(")");
-    trainer_spec.add_user_defined_symbols("[");
-    trainer_spec.add_user_defined_symbols("]");
-    trainer_spec.add_user_defined_symbols("{");
-    trainer_spec.add_user_defined_symbols("}");
-    trainer_spec.add_user_defined_symbols("'");
-    trainer_spec.add_user_defined_symbols("\"");
-    trainer_spec.add_user_defined_symbols("/");
-    trainer_spec.add_user_defined_symbols("-");
-    trainer_spec.add_user_defined_symbols("_");
+    std::vector<std::string> punctuation = {",", ".", "!", "?", "(", ")", "[", "]", "{", "}", "'", "\"", "/", "-", "_"};
+    for( std::vector<std::string>::iterator it = punctuation.begin(); it != punctuation.end(); ++it){
+      trainer_spec.add_user_defined_symbols(*it);
+      if(trainer_spec.treat_whitespace_as_suffix()){
+        trainer_spec.add_user_defined_symbols(*it + "▁");
+      }else{
+        trainer_spec.add_user_defined_symbols("▁" + *it );
+      }
+    }
   }
 
   normalizer_spec.set_name(FLAGS_normalization_rule_name);
