@@ -107,7 +107,21 @@ DEFINE_string(unk_surface, kDefaultTrainerSpec.unk_surface(),
 DEFINE_bool(add_punctuation,
             false,
             "Add punctuation symbols as symbols");
+DEFINE_bool(add_punctuation_cjk,
+            false,
+            "Add CJK punctuation symbols as symbols");
 
+void add_custom(std::vector<std::string> &list,
+                     sentencepiece::TrainerSpec &spec) {
+  for(std::vector<std::string>::iterator it = list.begin(); it != list.end(); ++it) {
+    spec.add_user_defined_symbols(*it);
+    if (spec.treat_whitespace_as_suffix()) {
+      spec.add_user_defined_symbols(*it + "▁");
+    } else {
+      spec.add_user_defined_symbols("▁" + *it );
+    }
+  }
+}
 
 int main(int argc, char *argv[]) {
   sentencepiece::flags::ParseCommandLineFlags(argc, argv);
@@ -160,21 +174,20 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(pad_piece);
   SetTrainerSpecFromFlag(unk_surface);
   SetTrainerSpecFromFlag(add_punctuation);
+  SetTrainerSpecFromFlag(add_punctuation_cjk);
   SetRepeatedTrainerSpecFromFlag(input);
   SetRepeatedTrainerSpecFromFlag(accept_language);
   SetRepeatedTrainerSpecFromFlag(control_symbols);
   SetRepeatedTrainerSpecFromFlag(user_defined_symbols);
 
-  if(trainer_spec.add_punctuation()){
+  if(trainer_spec.add_punctuation()) {
     std::vector<std::string> punctuation = {",", ".", "!", "?", "(", ")", "[", "]", "{", "}", "'", "\"", "/", "-", "_"};
-    for( std::vector<std::string>::iterator it = punctuation.begin(); it != punctuation.end(); ++it){
-      trainer_spec.add_user_defined_symbols(*it);
-      if(trainer_spec.treat_whitespace_as_suffix()){
-        trainer_spec.add_user_defined_symbols(*it + "▁");
-      }else{
-        trainer_spec.add_user_defined_symbols("▁" + *it );
-      }
-    }
+    add_custom(punctuation, trainer_spec);
+  }
+
+  if(trainer_spec.add_punctuation_cjk()) {
+    std::vector<std::string> punctuation_cjk = {"…","‧","、","。","「","」","『","』","【","】","〜","゛","゜","・","﹁","﹂","！","＂","＃","％","＆","＇","（","）","＊","＋","，","－","．","／","：","；","＜","＝","＞","？","＠","［","＼","］","＾","＿","｀","｛","｜","｝","～","｟","｠","￢","￣","￤","ー"};
+    add_custom(punctuation_cjk, trainer_spec);
   }
 
   normalizer_spec.set_name(FLAGS_normalization_rule_name);
