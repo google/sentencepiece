@@ -31,7 +31,7 @@
 #include <google/protobuf/extension_set.h>  // IWYU pragma: export
 #include <google/protobuf/generated_enum_util.h>
 // @@protoc_insertion_point(includes)
-#define PROTOBUF_INTERNAL_EXPORT_protobuf_sentencepiece_5fmodel_2eproto 
+#define PROTOBUF_INTERNAL_EXPORT_protobuf_sentencepiece_5fmodel_2eproto
 
 namespace protobuf_sentencepiece_5fmodel_2eproto {
 // Internal implementation detail -- do not use these members.
@@ -585,6 +585,12 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   bool add_punctuation_cjk() const;
   void set_add_punctuation_cjk(bool value);
 
+  // optional bool add_punctuation_cjk [default = false];
+  bool has_add_numbers() const;
+  void clear_add_numbers();
+  bool add_numbers() const;
+  void set_add_numbers(bool value);
+
   GOOGLE_PROTOBUF_EXTENSION_ACCESSORS(TrainerSpec)
   // @@protoc_insertion_point(class_scope:sentencepiece.TrainerSpec)
  private:
@@ -702,6 +708,7 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   bool split_by_unicode_script_;
   bool add_punctuation_;
   bool add_punctuation_cjk_;
+  bool add_numbers_;
   bool split_by_number_;
   bool split_by_whitespace_;
   bool hard_vocab_limit_;
@@ -2143,6 +2150,15 @@ inline bool TrainerSpec::add_punctuation_cjk() const {
 }
 inline void TrainerSpec::set_add_punctuation_cjk(bool value) {
   add_punctuation_cjk_ = value;
+  // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.add_punctuation_cjk)
+}
+
+inline bool TrainerSpec::add_numbers() const {
+  // @@protoc_insertion_point(field_get:sentencepiece.TrainerSpec.add_punctuation_cjk)
+  return add_numbers_;
+}
+inline void TrainerSpec::set_add_numbers(bool value) {
+  add_numbers_ = value;
   // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.add_punctuation_cjk)
 }
 
