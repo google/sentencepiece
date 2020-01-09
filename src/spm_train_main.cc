@@ -113,6 +113,9 @@ DEFINE_bool(add_punctuation_cjk,
 DEFINE_bool(add_numbers,
             false,
             "Add numbers as symbols");
+DEFINE_bool(add_fullwidth_numbers,
+            false,
+            "Add fullwidth numbers as symbols");
 
 void add_custom(std::vector<std::string> &list,
                      sentencepiece::TrainerSpec &spec) {
@@ -179,6 +182,7 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(add_punctuation);
   SetTrainerSpecFromFlag(add_punctuation_cjk);
   SetTrainerSpecFromFlag(add_numbers);
+  SetTrainerSpecFromFlag(add_fullwidth_numbers);
   SetRepeatedTrainerSpecFromFlag(input);
   SetRepeatedTrainerSpecFromFlag(accept_language);
   SetRepeatedTrainerSpecFromFlag(control_symbols);
@@ -197,6 +201,11 @@ int main(int argc, char *argv[]) {
   if(trainer_spec.add_numbers()) {
     std::vector<std::string> numbers = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
     add_custom(numbers, trainer_spec);
+  }
+
+  if(trainer_spec.add_fullwidth_numbers()) {
+    std::vector<std::string> symbols = {"０","１","２","３","４","５","６","７","８","９"};
+    add_custom(symbols, trainer_spec);
   }
 
   normalizer_spec.set_name(FLAGS_normalization_rule_name);
