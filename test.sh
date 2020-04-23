@@ -54,16 +54,16 @@ build_python() {
   export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
   ldconfig -v
   cd python
-  python setup.py test
+  python3 setup.py test
   cd ..
 }
 
 build_tensorflow() {
   cd tensorflow
-  pip install tensorflow
-  python setup.py bdist_wheel
-  python setup.py sdist
-  python setup.py test
+  pip3 install tensorflow
+  python3 setup.py bdist_wheel
+  python3 setup.py sdist
+  python3 setup.py test
   cd ..
 }
 
@@ -140,13 +140,8 @@ build_osx() {
   # Test default Python
   python setup.py test
   python setup.py clean
-  # Test Python2
   /usr/local/bin/python setup.py test
   /usr/local/bin/python setup.py clean
-  # Upgrade to Python3
-  brew upgrade python || true
-  /usr/local/bin/python3 setup.py test
-  /usr/local/bin/python3 setup.py clean
   cd ..
 }
 

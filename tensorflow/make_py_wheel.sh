@@ -25,22 +25,19 @@ run_docker() {
   docker run --rm -ti --name tf_sentencepiece \
     -v `pwd`/../:/sentencepiece -w /sentencepiece/tensorflow \
     -td $1 /bin/bash
-  docker exec tf_sentencepiece bash -c "./make_py_wheel.sh native"
+  docker exec tf_sentencepiece bash -c "./make_py_wheel.sh native $2"
   docker stop tf_sentencepiece
 }
 
 build_tf_wrapper() {
-  if [ "$1" != "" ]; then
-    pkg_name="==$1"
-  fi
+  pkg_name="==$1"
 
-  # Builds _sentencepiece_processor_ops.so
-  pip install tensorflow${pkg_name} --upgrade
+  pip3 install tensorflow${pkg_name} --upgrade
 
-  TF_CFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
-  TF_LFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
-  TF_VERSION=( $(python -c 'import tensorflow as tf; print(tf.__version__)') )
-  
+  TF_CFLAGS=( $(python3 -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
+  TF_LFLAGS=( $(python3 -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
+  TF_VERSION=( $(python3 -c 'import tensorflow as tf; print(tf.__version__)') )
+
   echo TF_CFLAGS=${TF_CFLAGS[@]}
   echo TF_LFLAGS=${TF_LFLAGS[@]}
   echo TF_VERSION=${TF_VERSION}
@@ -56,34 +53,35 @@ build_tf_wrapper() {
     ${TF_LFLAGS[@]}
 
   strip tf_sentencepiece/_sentencepiece_processor_ops.so.${TF_VERSION}
+
+  python3 setup.py test
 }
 
 build() {
-  TRG=$1
   rm -fr build
   mkdir -p build
   cd build
 
-  # Install sentencepiece
-  cmake ../.. -DSPM_ENABLE_SHARED=OFF -DSPM_ENABLE_TENSORFLOW_SHARED=ON  
+  cmake ../.. -DSPM_ENABLE_SHARED=OFF -DSPM_ENABLE_TENSORFLOW_SHARED=ON
   make -j4
   make install
   cd ..
-  
-  build_tf_wrapper "2.0.0"
-  build_tf_wrapper "1.15.0"  
-  build_tf_wrapper "1.14.0"
-  build_tf_wrapper "1.13.1"
 
-  # Builds Python manylinux wheel package.
-  python setup.py bdist_wheel --universal --plat-name=manylinux1_x86_64
-  python setup.py sdist
+  for v in $@; do
+    build_tf_wrapper $v
+  done
 
-  rm -fr build tf_sentencepiece.egg-info
+  python3 setup.py bdist_wheel --universal --plat-name=manylinux1_x86_64
+  python3 setup.py sdist
 }
 
 if [ "$1" = "native" ]; then
-  build
+  shift
+  build $@
 else
-  run_docker tensorflow/tensorflow:custom-op-ubuntu14
+  run_docker tensorflow/tensorflow:custom-op-ubuntu14 "1.13.1 1.13.2 1.14.0"
+  run_docker tensorflow/tensorflow:custom-op-ubuntu16 "1.15.0 1.15.2 2.0.0 2.0.1"
+  run_docker tensorflow/tensorflow:2.1.0-custom-op-ubuntu16 "2.1.0"
+
+  rm -fr build tf_sentencepiece.egg-info
 fi
