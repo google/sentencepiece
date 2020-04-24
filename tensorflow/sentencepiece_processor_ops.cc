@@ -39,6 +39,7 @@ using ::tensorflow::TensorShapeUtils;
 using ::tensorflow::shape_inference::DimensionHandle;
 using ::tensorflow::shape_inference::InferenceContext;
 using ::tensorflow::shape_inference::ShapeHandle;
+using ::tensorflow::tstring;
 
 namespace {
 
@@ -143,10 +144,10 @@ class SentencePieceBaseOp : public OpKernel {
  protected:
   void GetPad(int32* pad) const { *pad = pad_id_; }
 
-  void GetPad(std::string* pad) const {
-    pad->clear();
-    if (sentencepiece_processor_ && pad_id_ >= 0 &&
-        pad_id_ != sentencepiece_processor_->unk_id())
+  void GetPad(tstring* pad) const {
+      pad->clear();
+      if (sentencepiece_processor_ && pad_id_ >= 0 &&
+          pad_id_ != sentencepiece_processor_->unk_id())
       *pad = sentencepiece_processor_->IdToPiece(pad_id_);
   }
 
@@ -241,7 +242,7 @@ class SentencePieceGetPieceTypeOp : public SentencePieceBaseOp {
   int piece_type_;
 };
 
-template <typename T>
+template <typename T, typename U = T>
 class SentencePieceEncodeOpBase : public SentencePieceBaseOp {
  public:
   explicit SentencePieceEncodeOpBase(OpKernelConstruction* context)
@@ -255,7 +256,7 @@ class SentencePieceEncodeOpBase : public SentencePieceBaseOp {
                 ::tensorflow::errors::InvalidArgument(
                     "`input` must be a vector, got shape: ",
                     input_tensor->shape().DebugString()));
-    const auto& input_sentences = input_tensor->vec<std::string>();
+    const auto& input_sentences = input_tensor->vec<tstring>();
     const int64 batch_size = input_sentences.size();
 
     const Tensor* nbest_size_tensor = nullptr;
@@ -283,7 +284,7 @@ class SentencePieceEncodeOpBase : public SentencePieceBaseOp {
                       "`alpha` must have the same batch size as `input`."));
     }
 
-    std::vector<std::vector<T>> pieces(batch_size);
+    std::vector<std::vector<U>> pieces(batch_size);
 
     for (int64 i = 0; i < batch_size; ++i) {
       const int32 nbest_size = nbest_size_tensor->dims() == 1
@@ -291,14 +292,14 @@ class SentencePieceEncodeOpBase : public SentencePieceBaseOp {
                                    : nbest_size_tensor->scalar<int32>()();
       if (nbest_size == 0 || nbest_size == 1) {
         OP_REQUIRES_OK(context, ToTFStatus(sentencepiece_processor_->Encode(
-                                    input_sentences(i), &pieces[i])));
+            util::min_string_view(input_sentences(i)), &pieces[i])));
       } else {
         const float alpha = alpha_tensor->dims() == 1
                                 ? alpha_tensor->vec<float>()(i)
                                 : alpha_tensor->scalar<float>()();
         OP_REQUIRES_OK(context,
                        ToTFStatus(sentencepiece_processor_->SampleEncode(
-                           input_sentences(i), nbest_size, alpha, &pieces[i])));
+                           util::min_string_view(input_sentences(i)), nbest_size, alpha, &pieces[i])));
       }
       RewritePieces(&pieces[i]);
     }
@@ -323,18 +324,18 @@ class SentencePieceEncodeOpBase : public SentencePieceBaseOp {
   }
 
   virtual void MakeOutputTensor(OpKernelContext* context,
-                                const std::vector<std::vector<T>>& pieces) = 0;
+                                const std::vector<std::vector<U>>& pieces) = 0;
 };
 
-template <typename T>
-class SentencePieceEncodeSparseOp : public SentencePieceEncodeOpBase<T> {
+template <typename T, typename U = T>
+    class SentencePieceEncodeSparseOp : public SentencePieceEncodeOpBase<T, U> {
  public:
   explicit SentencePieceEncodeSparseOp(OpKernelConstruction* context)
-      : SentencePieceEncodeOpBase<T>(context) {}
+      : SentencePieceEncodeOpBase<T, U>(context) {}
 
  protected:
   void MakeOutputTensor(OpKernelContext* context,
-                        const std::vector<std::vector<T>>& pieces) override {
+                        const std::vector<std::vector<U>>& pieces) override {
     const int64 batch_size = pieces.size();
 
     int64 max_sequence_length = 0;
@@ -383,17 +384,17 @@ class SentencePieceEncodeSparseOp : public SentencePieceEncodeOpBase<T> {
   }
 };
 
-template <typename T>
-class SentencePieceEncodeDenseOp : public SentencePieceEncodeOpBase<T> {
+template <typename T, typename U = T>
+    class SentencePieceEncodeDenseOp : public SentencePieceEncodeOpBase<T, U> {
  public:
   explicit SentencePieceEncodeDenseOp(OpKernelConstruction* context)
-      : SentencePieceEncodeOpBase<T>(context) {
+      : SentencePieceEncodeOpBase<T, U>(context) {
     this->GetPad(&pad_);
   }
 
   // protected:
   void MakeOutputTensor(OpKernelContext* context,
-                        const std::vector<std::vector<T>>& pieces) override {
+                        const std::vector<std::vector<U>>& pieces) override {
     const int64 batch_size = pieces.size();
 
     int64 max_sequence_length = 0;
@@ -414,10 +415,12 @@ class SentencePieceEncodeDenseOp : public SentencePieceEncodeOpBase<T> {
     auto values_tensor_output = values_tensor->matrix<T>();
     auto length_tensor_output = length_tensor->vec<int32>();
 
+    U pad = pad_;
+
     for (int row = 0; row < batch_size; ++row) {
       for (int col = 0; col < max_sequence_length; ++col) {
         values_tensor_output(row, col) =
-            col < pieces[row].size() ? pieces[row][col] : pad_;
+            col < pieces[row].size() ? pieces[row][col] : pad;
       }
       length_tensor_output(row) = pieces[row].size();
     }
@@ -427,7 +430,7 @@ class SentencePieceEncodeDenseOp : public SentencePieceEncodeOpBase<T> {
   T pad_;
 };
 
-template <typename T>
+template <typename T, typename U = T>
 class SentencePieceDecodeOp : public SentencePieceBaseOp {
  public:
   explicit SentencePieceDecodeOp(OpKernelConstruction* context)
@@ -460,7 +463,7 @@ class SentencePieceDecodeOp : public SentencePieceBaseOp {
     Tensor* values_tensor = nullptr;
     OP_REQUIRES_OK(context,
                    context->allocate_output(0, {batch_size}, &values_tensor));
-    auto values_tensor_output = values_tensor->vec<std::string>();
+    auto values_tensor_output = values_tensor->vec<tstring>();
 
     for (int64 i = 0; i < batch_size; ++i) {
       OP_REQUIRES(context,
@@ -468,11 +471,13 @@ class SentencePieceDecodeOp : public SentencePieceBaseOp {
                    sequence_length(i) <= max_sequence_length),
                   ::tensorflow::errors::InvalidArgument(
                       "`sequence_length` is out-of-range."));
-      std::vector<T> pieces(&input_sentences(i, 0),
+      std::vector<U> pieces(&input_sentences(i, 0),
                             &input_sentences(i, 0) + sequence_length(i));
       if (reverse_) std::reverse(pieces.begin(), pieces.end());
+      std::string detokenized_str;
       OP_REQUIRES_OK(context, ToTFStatus(sentencepiece_processor_->Decode(
-                                  pieces, &values_tensor_output(i))));
+          pieces, &detokenized_str)));
+      values_tensor_output(i) = detokenized_str;
     }
   }
 };
@@ -511,7 +516,7 @@ REGISTER_OP(kPieceToIdOpName)
     });
 
 REGISTER_KERNEL_BUILDER(Name(kPieceToIdOpName).Device(DEVICE_CPU),
-                        SentencePieceConvertPieceOp<std::string, int32>);
+                        SentencePieceConvertPieceOp<tstring, int32>);
 
 REGISTER_OP(kIdToPieceOpName)
     .Input("input: int32")
@@ -524,7 +529,7 @@ REGISTER_OP(kIdToPieceOpName)
     });
 
 REGISTER_KERNEL_BUILDER(Name(kIdToPieceOpName).Device(DEVICE_CPU),
-                        SentencePieceConvertPieceOp<int32, std::string>);
+                        SentencePieceConvertPieceOp<int32, tstring>);
 
 REGISTER_OP(kGetPieceTypeOpName)
     .Input("input: int32")
@@ -574,8 +579,8 @@ REGISTER_KERNEL_BUILDER(Name(kEncodeDenseOpName)
 
 REGISTER_KERNEL_BUILDER(Name(kEncodeDenseOpName)
                             .Device(DEVICE_CPU)
-                            .TypeConstraint<std::string>("out_type"),
-                        SentencePieceEncodeDenseOp<std::string>);
+                            .TypeConstraint<tstring>("out_type"),
+                        SentencePieceEncodeDenseOp<tstring, std::string>);
 
 REGISTER_OP(kEncodeSparseOpName)
     .Attr("out_type: {int32, string} = DT_INT32")
@@ -613,8 +618,8 @@ REGISTER_KERNEL_BUILDER(Name(kEncodeSparseOpName)
 
 REGISTER_KERNEL_BUILDER(Name(kEncodeSparseOpName)
                             .Device(DEVICE_CPU)
-                            .TypeConstraint<std::string>("out_type"),
-                        SentencePieceEncodeSparseOp<std::string>);
+                            .TypeConstraint<tstring>("out_type"),
+                        SentencePieceEncodeSparseOp<tstring, std::string>);
 
 REGISTER_OP(kDecodeOpName)
     .Attr("T: {int32, string}")
@@ -640,6 +645,6 @@ REGISTER_KERNEL_BUILDER(
     SentencePieceDecodeOp<int32>);
 
 REGISTER_KERNEL_BUILDER(
-    Name(kDecodeOpName).Device(DEVICE_CPU).TypeConstraint<std::string>("T"),
-    SentencePieceDecodeOp<std::string>);
+    Name(kDecodeOpName).Device(DEVICE_CPU).TypeConstraint<tstring>("T"),
+    SentencePieceDecodeOp<tstring, std::string>);
 }  // namespace sentencepiece
