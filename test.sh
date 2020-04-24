@@ -64,7 +64,9 @@ build_python() {
 
 build_tensorflow() {
   cd tensorflow
-  pip3 install tensorflow
+  # Seems that RC version is downloaded without the version annotation.
+  # TODO: Remove == 2.1.0 and use the default version.
+  pip3 install tensorflow==2.1.0
   python3 setup.py bdist_wheel
   python3 setup.py sdist
   python3 setup.py test
