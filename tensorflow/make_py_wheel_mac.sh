@@ -71,13 +71,13 @@ build() {
   pip install wheel
 
   build_tf_wrapper "2.1.0"
-  build_tf_wrapper "2.0.1"  
+#  build_tf_wrapper "2.0.1"
   build_tf_wrapper "2.0.0"
-  build_tf_wrapper "1.15.2"
+#  build_tf_wrapper "1.15.2"
   build_tf_wrapper "1.15.0"
-  build_tf_wrapper "1.14.0"
-  build_tf_wrapper "1.13.2"  
-  build_tf_wrapper "1.13.1"
+#  build_tf_wrapper "1.14.0"
+#  build_tf_wrapper "1.13.2"  
+#  build_tf_wrapper "1.13.1"
 
   # Builds Python manylinux wheel package.
   # Platform name is determined by the tensorflow pip package.

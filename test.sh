@@ -20,6 +20,10 @@ set -x  # display all commands
 setup_ubuntu() {
   apt-get update
   apt-get install -y build-essential cmake git pkg-config python-pip python3-pip
+  sudo pip install --upgrade pip
+  sudo pip3 install --upgrade pip
+
+  export PATH="/usr/local/bin:$PATH"
 
   . /etc/os-release
   if [ "${VERSION_ID}" = "14.04" ]; then

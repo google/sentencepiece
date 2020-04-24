@@ -79,7 +79,8 @@ if [ "$1" = "native" ]; then
   shift
   build $@
 else
-  run_docker tensorflow/tensorflow:custom-op-ubuntu14 "1.13.1 1.13.2 1.14.0"
+  # Do not support TF<=1.14 because API compatiblity issue is not fixed.
+#  run_docker tensorflow/tensorflow:custom-op-ubuntu14 "1.13.1 1.13.2 1.14.0"
   run_docker tensorflow/tensorflow:custom-op-ubuntu16 "1.15.0 1.15.2 2.0.0 2.0.1"
   run_docker tensorflow/tensorflow:2.1.0-custom-op-ubuntu16 "2.1.0"
 
