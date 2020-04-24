@@ -19,9 +19,8 @@ set -x  # display all commands
 
 setup_ubuntu() {
   apt-get update
-  apt-get install -y build-essential cmake git pkg-config python-pip python3-pip
-  sudo pip install --upgrade pip
-  sudo pip3 install --upgrade pip
+  apt-get install -y build-essential cmake git pkg-config python3-pip
+  pip3 install --upgrade pip
 
   export PATH="/usr/local/bin:$PATH"
 
@@ -74,8 +73,8 @@ build_tensorflow() {
 build_linux_gcc_coverall_ubuntu() {
   setup_debian
   apt-get install -y lcov
-  pip install cpp-coveralls
-  pip install 'requests[security]'
+  pip3 install cpp-coveralls
+  pip3 install 'requests[security]'
   build_generic
   build_python
   build_tensorflow
@@ -141,7 +140,6 @@ build_osx() {
   make install
   cd ..
   cd python
-  # Test default Python
   python setup.py test
   python setup.py clean
   /usr/local/bin/python setup.py test
