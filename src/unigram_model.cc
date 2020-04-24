@@ -403,7 +403,7 @@ void Model::PopulateNodes(Lattice *lattice) const {
       Lattice::Node *node = lattice->Insert(begin_pos, length);
       node->id = id;  // the value of Trie stores vocab_id.
       // User defined symbol receives extra bonus to always be selected.
-      node->score = IsUserDefinedInlined(id) ? (length * max_score_ + 1.0)
+      node->score = IsUserDefinedInlined(id) ? (length * max_score_ - 0.1)
                                              : GetScoreInlined(id);
       if (!has_single_node && node->length == 1) {
         has_single_node = true;
