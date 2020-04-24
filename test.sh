@@ -18,6 +18,7 @@ set -e  # exit immediately on error
 set -x  # display all commands
 
 setup_ubuntu() {
+  export DEBIAN_FRONTEND=noninteractive
   apt-get update
   apt-get install -y build-essential cmake git pkg-config python3-pip
   pip3 install --upgrade pip
