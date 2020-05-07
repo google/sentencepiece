@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "model_factory.h"
-
 #include "bpe_model.h"
 #include "char_model.h"
+#include "model_factory.h"
+#include "third_party/absl/memory/memory.h"
 #include "unigram_model.h"
-#include "util.h"
 #include "word_model.h"
 
 namespace sentencepiece {
@@ -29,16 +28,16 @@ std::unique_ptr<ModelInterface> ModelFactory::Create(
 
   switch (trainer_spec.model_type()) {
     case TrainerSpec::UNIGRAM:
-      return port::MakeUnique<unigram::Model>(model_proto);
+      return absl::make_unique<unigram::Model>(model_proto);
       break;
     case TrainerSpec::BPE:
-      return port::MakeUnique<bpe::Model>(model_proto);
+      return absl::make_unique<bpe::Model>(model_proto);
       break;
     case TrainerSpec::WORD:
-      return port::MakeUnique<word::Model>(model_proto);
+      return absl::make_unique<word::Model>(model_proto);
       break;
     case TrainerSpec::CHAR:
-      return port::MakeUnique<character::Model>(model_proto);
+      return absl::make_unique<character::Model>(model_proto);
       break;
     default:
       LOG(ERROR) << "Unknown model_type: " << trainer_spec.model_type();
@@ -46,6 +45,6 @@ std::unique_ptr<ModelInterface> ModelFactory::Create(
       break;
   }
 
-  return port::MakeUnique<unigram::Model>(model_proto);
+  return absl::make_unique<unigram::Model>(model_proto);
 }
 }  // namespace sentencepiece

@@ -17,11 +17,10 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "sentencepiece_model.pb.h"
+#include "builtin_pb/sentencepiece_model.pb.h"
 #include "third_party/absl/strings/string_view.h"
 #include "trainer_interface.h"
 #include "unigram_model.h"
@@ -64,8 +63,10 @@ class TrainerModel : public Model {
 class Trainer : public TrainerInterface {
  public:
   Trainer(const TrainerSpec &trainer_spec,
-          const NormalizerSpec &normalizer_spec)
-      : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec) {}
+          const NormalizerSpec &normalizer_spec,
+          const NormalizerSpec &denormalizer_spec)
+      : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec,
+                                           denormalizer_spec) {}
 
   util::Status Train() override;
 
@@ -74,6 +75,9 @@ class Trainer : public TrainerInterface {
 
   // Makes seed pieces from the training corpus.
   // The size of seed pieces is determined by seed_sentencepiece_size.
+  // node_int_type should be of integer type (int32 or int64),
+  // determined by train_extremely_large_corpus.
+  template <typename node_int_type>
   TrainerModel::SentencePieces MakeSeedSentencePieces() const;
 
   // Executes the E step of EM and returns expected count.

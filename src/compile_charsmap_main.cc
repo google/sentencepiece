@@ -17,6 +17,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+
 #include "builder.h"
 #include "filesystem.h"
 #include "flags.h"
@@ -24,7 +25,7 @@
 #include "third_party/absl/strings/string_view.h"
 
 using sentencepiece::normalizer::Builder;
-using sentencepiece::util::Status;
+using util::Status;
 
 DEFINE_bool(output_precompiled_header, false, "make normalization_rule.h file");
 
@@ -154,7 +155,7 @@ struct BinaryBlob {
 }  // namespace sentencepiece
 
 int main(int argc, char **argv) {
-  sentencepiece::flags::ParseCommandLineFlags(argc, argv);
+  sentencepiece::flags::ParseCommandLineFlags(argv[0], &argc, &argv, true);
 
   const std::vector<
       std::pair<std::string, std::function<Status(Builder::CharsMap *)>>>

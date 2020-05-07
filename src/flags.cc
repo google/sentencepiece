@@ -43,10 +43,16 @@ void SetMinLogLevel(int minloglevel) { g_minloglevel = minloglevel; }
 
 namespace {
 using FlagMap = std::map<std::string, Flag *>;
+using RestArgs = std::vector<char *>;
+
+RestArgs *GetRestArgs() {
+  static auto *rest_args = new RestArgs;
+  return rest_args;
+}
 
 FlagMap *GetFlagMap() {
-  static FlagMap flag_map;
-  return &flag_map;
+  static auto *flag_map = new FlagMap;
+  return flag_map;
 }
 
 bool SetFlag(const std::string &name, const std::string &value) {
@@ -194,14 +200,21 @@ std::string PrintHelp(const char *programname) {
   return os.str();
 }
 
-void ParseCommandLineFlags(int argc, char **argv,
-                           std::vector<std::string> *rest_flags) {
+void ParseCommandLineFlags(const char *usage, int *iargc, char ***iargv,
+                           bool remove_arg) {
   int used_argc = 0;
   std::string key, value;
 
+  auto *rest_args = GetRestArgs();
+  char **argv = *iargv;
+  int argc = *iargc;
+
+  rest_args->clear();
+  rest_args->push_back(argv[0]);
+
   for (int i = 1; i < argc; i += used_argc) {
     if (!CommandLineGetFlag(argc - i, argv + i, &key, &value, &used_argc)) {
-      if (rest_flags) rest_flags->push_back(std::string(argv[i]));
+      rest_args->push_back(argv[i]);
       continue;
     }
     if (key == "help") {
@@ -218,6 +231,9 @@ void ParseCommandLineFlags(int argc, char **argv,
       error::Exit(1);
     }
   }
+
+  *iargv = rest_args->data();
+  *iargc = static_cast<int>(rest_args->size());
 }
 }  // namespace flags
 }  // namespace sentencepiece

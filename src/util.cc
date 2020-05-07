@@ -12,96 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "util.h"
 #include <iostream>
+
+#include "util.h"
 
 namespace sentencepiece {
 namespace string_util {
-
-template <typename T>
-std::vector<T> SplitInternal(const T &str, const T &delim, bool allow_empty) {
-  std::vector<T> result;
-  size_t current_pos = 0;
-  size_t found_pos = 0;
-  while ((found_pos = str.find_first_of(delim, current_pos)) != T::npos) {
-    if ((allow_empty && found_pos >= current_pos) ||
-        (!allow_empty && found_pos > current_pos)) {
-      result.push_back(str.substr(current_pos, found_pos - current_pos));
-    }
-    current_pos = found_pos + 1;
-  }
-  if (str.size() > current_pos) {
-    result.push_back(str.substr(current_pos, str.size() - current_pos));
-  }
-  return result;
-}
-
-std::vector<std::string> Split(const std::string &str, const std::string &delim,
-                               bool allow_empty) {
-  return SplitInternal<std::string>(str, delim, allow_empty);
-}
-
-std::vector<absl::string_view> SplitPiece(absl::string_view str,
-                                          absl::string_view delim,
-                                          bool allow_empty) {
-  return SplitInternal<absl::string_view>(str, delim, allow_empty);
-}
-
-std::string Join(const std::vector<std::string> &tokens,
-                 absl::string_view delim) {
-  std::string result;
-  if (!tokens.empty()) {
-    result.append(tokens[0]);
-  }
-  for (size_t i = 1; i < tokens.size(); ++i) {
-    result.append(delim.data(), delim.size());
-    result.append(tokens[i]);
-  }
-  return result;
-}
-
-std::string Join(const std::vector<int> &tokens, absl::string_view delim) {
-  std::string result;
-  char buf[32];
-  if (!tokens.empty()) {
-    const size_t len = Itoa(tokens[0], buf);
-    result.append(buf, len);
-  }
-  for (size_t i = 1; i < tokens.size(); ++i) {
-    result.append(delim.data(), delim.size());
-    const size_t len = Itoa(tokens[i], buf);
-    result.append(buf, len);
-  }
-  return result;
-}
-
-std::string StringReplace(absl::string_view s, absl::string_view oldsub,
-                          absl::string_view newsub, bool replace_all) {
-  std::string ret;
-  StringReplace(s, oldsub, newsub, replace_all, &ret);
-  return ret;
-}
-
-void StringReplace(absl::string_view s, absl::string_view oldsub,
-                   absl::string_view newsub, bool replace_all,
-                   std::string *res) {
-  if (oldsub.empty()) {
-    res->append(s.data(), s.size());
-    return;
-  }
-
-  absl::string_view::size_type start_pos = 0;
-  do {
-    const absl::string_view::size_type pos = s.find(oldsub, start_pos);
-    if (pos == absl::string_view::npos) {
-      break;
-    }
-    res->append(s.data() + start_pos, pos - start_pos);
-    res->append(newsub.data(), newsub.size());
-    start_pos = pos + oldsub.size();
-  } while (replace_all);
-  res->append(s.data() + start_pos, s.size() - start_pos);
-}
 
 // mblen sotres the number of bytes consumed after decoding.
 char32 DecodeUTF8(const char *begin, const char *end, size_t *mblen) {
@@ -270,6 +186,39 @@ std::string StrError(int errnum) {
   std::ostringstream os;
   os << str << " Error #" << errnum;
   return os.str();
+}
+
+std::vector<std::string> StrSplitAsCSV(absl::string_view text) {
+  std::string buf = std::string(text);
+  char *str = const_cast<char *>(buf.data());
+  char *eos = str + text.size();
+  char *start = nullptr;
+  char *end = nullptr;
+
+  std::vector<std::string> result;
+  for (; str < eos; ++str) {
+    while (*str == ' ' || *str == '\t') ++str;
+    if (*str == '"') {
+      start = ++str;
+      end = start;
+      for (; str < eos; ++str) {
+        if (*str == '"') {
+          str++;
+          if (*str != '"') break;
+        }
+        *end++ = *str;
+      }
+      str = std::find(str, eos, ',');
+    } else {
+      start = str;
+      str = std::find(str, eos, ',');
+      end = str;
+    }
+    *end = '\0';
+    result.push_back(start);
+  }
+
+  return result;
 }
 }  // namespace util
 

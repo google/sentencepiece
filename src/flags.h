@@ -38,8 +38,8 @@ class FlagRegister {
 
 std::string PrintHelp(const char *programname);
 
-void ParseCommandLineFlags(int argc, char **argv,
-                           std::vector<std::string> *rest_args = nullptr);
+void ParseCommandLineFlags(const char *usage, int *argc, char ***argv,
+                           bool remvoe_flags = true);
 }  // namespace flags
 }  // namespace sentencepiece
 
@@ -84,12 +84,5 @@ void ParseCommandLineFlags(int argc, char **argv,
 #define DEFINE_string(name, value, help) \
   DEFINE_VARIABLE(std::string, S, name, value, help)
 #define DECLARE_string(name) DECLARE_VARIABLE(std::string, S, name)
-
-#define CHECK_OR_HELP(flag)                                        \
-  if (FLAGS_##flag.empty()) {                                      \
-    std::cout << "ERROR: --" << #flag << " must not be empty\n\n"; \
-    std::cout << sentencepiece::flags::PrintHelp(PACKAGE_STRING);  \
-    sentencepiece::error::Exit(0);                                 \
-  }
 
 #endif  // FLAGS_H_

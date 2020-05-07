@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "bpe_model_trainer.h"
-
 #include <algorithm>
 #include <string>
 #include <unordered_set>
 #include <vector>
+
+#include "bpe_model_trainer.h"
 #include "util.h"
 
 namespace sentencepiece {

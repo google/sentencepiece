@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "unicode_script.h"
 #include <unordered_map>
+
+#include "unicode_script.h"
 #include "unicode_script_map.h"
 #include "util.h"
 

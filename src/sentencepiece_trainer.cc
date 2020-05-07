@@ -12,16 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "sentencepiece_trainer.h"
 #include <string>
 #include <vector>
 
 #include "builder.h"
+#include "builtin_pb/sentencepiece.pb.h"
+#include "builtin_pb/sentencepiece_model.pb.h"
 #include "common.h"
-#include "flags.h"
 #include "normalizer.h"
-#include "sentencepiece.pb.h"
-#include "sentencepiece_model.pb.h"
+#include "sentencepiece_trainer.h"
+#include "spec_parser.h"
+#include "third_party/absl/strings/str_cat.h"
+#include "third_party/absl/strings/str_split.h"
+#include "third_party/absl/strings/string_view.h"
+#include "third_party/absl/strings/strip.h"
 #include "trainer_factory.h"
 #include "util.h"
 
@@ -30,31 +34,46 @@ namespace {
 static constexpr char kDefaultNormalizerName[] = "nmt_nfkc";
 }  // namespace
 
-// this header is automatically generated.
-#include "spec_parser.h"
-
 // static
-util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec) {
+util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec,
+                                         SentenceIterator *sentence_iterator) {
   NormalizerSpec normalizer_spec;
-  return Train(trainer_spec, normalizer_spec);
+  return Train(trainer_spec, normalizer_spec, sentence_iterator);
+}
+
+util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec,
+                                         const NormalizerSpec &normalizer_spec,
+                                         SentenceIterator *sentence_iterator) {
+  NormalizerSpec denormalizer_spec;
+  return Train(trainer_spec, normalizer_spec, denormalizer_spec,
+               sentence_iterator);
 }
 
 // static
 util::Status SentencePieceTrainer::Train(
-    const TrainerSpec &trainer_spec, const NormalizerSpec &normalizer_spec) {
+    const TrainerSpec &trainer_spec, const NormalizerSpec &normalizer_spec,
+    const NormalizerSpec &denormalizer_spec,
+    SentenceIterator *sentence_iterator) {
   auto copied_normalizer_spec = normalizer_spec;
-  RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_normalizer_spec));
-  auto trainer = TrainerFactory::Create(trainer_spec, copied_normalizer_spec);
+  RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_normalizer_spec, false));
+  auto copied_denormalizer_spec = denormalizer_spec;
+  RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_denormalizer_spec, true));
+  auto trainer = TrainerFactory::Create(trainer_spec, copied_normalizer_spec,
+                                        copied_denormalizer_spec);
+  std::string info = absl::StrCat(PrintProto(trainer_spec),
+                                  PrintProto(copied_normalizer_spec));
+  if (!copied_denormalizer_spec.precompiled_charsmap().empty())
+    info += PrintProto(copied_denormalizer_spec);
 
-  LOG(INFO) << "Starts training with : \n"
-            << PrintProto(trainer_spec) << PrintProto(copied_normalizer_spec);
+  LOG(INFO) << "Starts training with : \n" << info;
+
+  trainer->SetSentenceIterator(sentence_iterator);
 
   return trainer->Train();
 }
 
 // static
-NormalizerSpec SentencePieceTrainer::GetNormalizerSpec(
-    util::min_string_view name) {
+NormalizerSpec SentencePieceTrainer::GetNormalizerSpec(absl::string_view name) {
   NormalizerSpec spec;
   spec.set_name(name.data(), name.size());
   CHECK_OK(normalizer::Builder::GetPrecompiledCharsMap(
@@ -64,16 +83,17 @@ NormalizerSpec SentencePieceTrainer::GetNormalizerSpec(
 
 // static
 util::Status SentencePieceTrainer::MergeSpecsFromArgs(
-    util::min_string_view _args, TrainerSpec *trainer_spec,
-    NormalizerSpec *normalizer_spec) {
+    absl::string_view _args, TrainerSpec *trainer_spec,
+    NormalizerSpec *normalizer_spec, NormalizerSpec *denormalizer_spec) {
   CHECK_OR_RETURN(trainer_spec) << "`trainer_spec` must not be null.";
   CHECK_OR_RETURN(normalizer_spec) << "`normalizer_spec` must not be null.";
+  CHECK_OR_RETURN(denormalizer_spec) << "`denormalizer_spec` must not be null.";
 
   absl::string_view args(_args.data(), _args.size());
   if (args.empty()) return util::OkStatus();
 
-  for (auto arg : string_util::SplitPiece(args, " ")) {
-    string_util::ConsumePrefix(&arg, "--");
+  for (auto arg : absl::StrSplit(args, " ")) {
+    absl::ConsumePrefix(&arg, "--");
     std::string key, value;
     auto pos = arg.find("=");
     if (pos == absl::string_view::npos) {
@@ -83,14 +103,15 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
       value = std::string(arg.substr(pos + 1));
     }
 
-    // Exception.
+    // Exceptions.
     if (key == "normalization_rule_name") {
       normalizer_spec->set_name(value);
       continue;
-    }
-
-    if (key == "minloglevel") {
-      flags::SetMinLogLevel(atoi(value.c_str()));
+    } else if (key == "denormalization_rule_tsv") {
+      denormalizer_spec->set_normalization_rule_tsv(value);
+      denormalizer_spec->set_add_dummy_prefix(false);
+      denormalizer_spec->set_remove_extra_whitespaces(false);
+      denormalizer_spec->set_escape_whitespaces(false);
       continue;
     }
 
@@ -112,17 +133,21 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
 }
 
 // static
-util::Status SentencePieceTrainer::Train(util::min_string_view args) {
+util::Status SentencePieceTrainer::Train(absl::string_view args,
+                                         SentenceIterator *sentence_iterator) {
   LOG(INFO) << "Running command: " << args.data();
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
-  RETURN_IF_ERROR(MergeSpecsFromArgs(args, &trainer_spec, &normalizer_spec));
-  return Train(trainer_spec, normalizer_spec);
+  NormalizerSpec denormalizer_spec;
+  RETURN_IF_ERROR(MergeSpecsFromArgs(args, &trainer_spec, &normalizer_spec,
+                                     &denormalizer_spec));
+  return Train(trainer_spec, normalizer_spec, denormalizer_spec,
+               sentence_iterator);
 }
 
 // static
 util::Status SentencePieceTrainer::PopulateNormalizerSpec(
-    NormalizerSpec *normalizer_spec) {
+    NormalizerSpec *normalizer_spec, bool is_denormalizer) {
   CHECK_OR_RETURN(normalizer_spec);
 
   if (!normalizer_spec->normalization_rule_tsv().empty()) {
@@ -134,7 +159,7 @@ util::Status SentencePieceTrainer::PopulateNormalizerSpec(
     RETURN_IF_ERROR(normalizer::Builder::CompileCharsMap(
         chars_map, normalizer_spec->mutable_precompiled_charsmap()));
     normalizer_spec->set_name("user_defined");
-  } else {
+  } else if (!is_denormalizer) {
     if (normalizer_spec->name().empty()) {
       normalizer_spec->set_name(kDefaultNormalizerName);
     }
@@ -146,6 +171,41 @@ util::Status SentencePieceTrainer::PopulateNormalizerSpec(
   }
 
   return util::OkStatus();
+}
+
+// static
+util::Status SentencePieceTrainer::PopulateModelTypeFromString(
+    absl::string_view type, TrainerSpec *spec) {
+  static const std::map<std::string, TrainerSpec::ModelType> kModelTypeMap = {
+      {"unigram", TrainerSpec::UNIGRAM},
+      {"bpe", TrainerSpec::BPE},
+      {"word", TrainerSpec::WORD},
+      {"char", TrainerSpec::CHAR}};
+  const auto it = kModelTypeMap.find(absl::AsciiStrToLower(type));
+  if (it != kModelTypeMap.end()) {
+    spec->set_model_type(it->second);
+    return util::OkStatus();
+  }
+
+  return util::StatusBuilder(util::StatusCode::kInternal, GTL_LOC)
+         << "\"" << type << "\" is not found in TrainerSpec";
+}
+
+namespace {
+const pretokenizer::PretokenizerForTrainingInterface *g_pretokenizer = nullptr;
+}  // namespace
+
+// static
+util::Status SentencePieceTrainer::SetPretokenizerForTraining(
+    const pretokenizer::PretokenizerForTrainingInterface *pretokenizer) {
+  g_pretokenizer = pretokenizer;
+  return util::OkStatus();
+}
+
+// static
+const pretokenizer::PretokenizerForTrainingInterface *
+SentencePieceTrainer::GetPretokenizerForTraining() {
+  return g_pretokenizer;
 }
 
 }  // namespace sentencepiece

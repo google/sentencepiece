@@ -84,13 +84,13 @@ PyObject* MakePyOutputBytes(const std::string& output) {
 #endif
 }
 
-int ToSwigError(sentencepiece::util::error::Code code) {
+int ToSwigError(sentencepiece::util::StatusCode code) {
   switch (code) {
-    case sentencepiece::util::error::NOT_FOUND:
+    case sentencepiece::util::StatusCode::kNotFound:
       return SWIG_IOError;
-    case sentencepiece::util::error::OUT_OF_RANGE:
+    case sentencepiece::util::StatusCode::kOutOfRange:
       return SWIG_IndexError;
-    case sentencepiece::util::error::INVALID_ARGUMENT:
+    case sentencepiece::util::StatusCode::kInvalidArgument:
       return SWIG_SyntaxError;
     default:
       return SWIG_RuntimeError;
@@ -111,8 +111,8 @@ int ToSwigError(sentencepiece::util::error::Code code) {
 }
 
 %ignore sentencepiece::util::Status;
-%ignore sentencepiece::util::error::Code;
-%ignore sentencepiece::util::min_string_view;
+%ignore sentencepiece::util::StatusCode;
+%ignore absl::string_view;
 %ignore sentencepiece::SentencePieceText;
 %ignore sentencepiece::NormalizerSpec;
 %ignore sentencepiece::TrainerSpec;
@@ -127,7 +127,7 @@ int ToSwigError(sentencepiece::util::error::Code code) {
 %ignore sentencepiece::SentencePieceProcessor::Load(std::istream *);
 %ignore sentencepiece::SentencePieceProcessor::LoadOrDie(std::istream *);
 %ignore sentencepiece::SentencePieceProcessor::Load(const ModelProto &);
-%ignore sentencepiece::SentencePieceProcessor::Load(std::unique_ptr<ModelProto> &&);
+%ignore sentencepiece::SentencePieceProcessor::Load(std::unique_ptr<ModelProto>);
 %ignore sentencepiece::SentencePieceTrainer::Train(const TrainerSpec &);
 %ignore sentencepiece::SentencePieceTrainer::Train(const TrainerSpec &, const NormalizerSpec &);
 %ignore sentencepiece::SentencePieceTrainer::GetNormalizerSpec;
@@ -136,27 +136,27 @@ int ToSwigError(sentencepiece::util::error::Code code) {
 %ignore sentencepiece::SentencePieceTrainer::SetProtoField;
 
 %extend sentencepiece::SentencePieceTrainer {
-  static util::Status train(sentencepiece::util::min_string_view args) {
+  static util::Status train(absl::string_view args) {
     return sentencepiece::SentencePieceTrainer::Train(args);
   }
 }
 
 %extend sentencepiece::SentencePieceProcessor {
-  util::Status load(sentencepiece::util::min_string_view filename) {
+  util::Status load(absl::string_view filename) {
     return $self->Load(filename);
   }
 
-  util::Status load_from_serialized_proto(sentencepiece::util::min_string_view filename) {
+  util::Status load_from_serialized_proto(absl::string_view filename) {
     return $self->LoadFromSerializedProto(filename);
   }
 
   util::Status set_encode_extra_options(
-      sentencepiece::util::min_string_view extra_option) {
+      absl::string_view extra_option) {
     return $self->SetEncodeExtraOptions(extra_option);
   }
 
   util::Status set_decode_extra_options(
-      sentencepiece::util::min_string_view extra_option) {
+      absl::string_view extra_option) {
     return $self->SetDecodeExtraOptions(extra_option);
   }
 
@@ -169,40 +169,40 @@ int ToSwigError(sentencepiece::util::error::Code code) {
     return $self->ResetVocabulary();
   }
 
-  util::Status load_vocabulary(sentencepiece::util::min_string_view filename,
+  util::Status load_vocabulary(absl::string_view filename,
                                int threshold) {
     return $self->LoadVocabulary(filename, threshold);
   }
 
   std::vector<std::string> encode_as_pieces(
-      sentencepiece::util::min_string_view input) const {
+      absl::string_view input) const {
     return $self->EncodeAsPieces(input);
   }
 
   std::vector<int> encode_as_ids(
-      sentencepiece::util::min_string_view input) const {
+      absl::string_view input) const {
     return $self->EncodeAsIds(input);
   }
 
   std::vector<std::vector<std::string>> nbest_encode_as_pieces(
-      sentencepiece::util::min_string_view input, int nbest_size) const {
+      absl::string_view input, int nbest_size) const {
     return $self->NBestEncodeAsPieces(input, nbest_size);
   }
 
   std::vector<std::vector<int>> nbest_encode_as_ids(
-      sentencepiece::util::min_string_view input,
+      absl::string_view input,
       int nbest_size) const {
     return $self->NBestEncodeAsIds(input, nbest_size);
   }
 
   std::vector<std::string> sample_encode_as_pieces(
-      sentencepiece::util::min_string_view input,
+      absl::string_view input,
       int nbest_size, float alpha) const {
     return $self->SampleEncodeAsPieces(input, nbest_size, alpha);
   }
 
   std::vector<int> sample_encode_as_ids(
-      sentencepiece::util::min_string_view input,
+      absl::string_view input,
       int nbest_size, float alpha) const {
     return $self->SampleEncodeAsIds(input, nbest_size, alpha);
   }
@@ -215,16 +215,16 @@ int ToSwigError(sentencepiece::util::error::Code code) {
     return $self->DecodeIds(input);
   }
 
-  util::bytes encode_as_serialized_proto(util::min_string_view input) const {
+  util::bytes encode_as_serialized_proto(absl::string_view input) const {
     return $self->EncodeAsSerializedProto(input);
   }
 
-  util::bytes sample_encode_as_serialized_proto(util::min_string_view input,
+  util::bytes sample_encode_as_serialized_proto(absl::string_view input,
                                           int nbest_size, float alpha) const {
     return $self->SampleEncodeAsSerializedProto(input, nbest_size, alpha);
   }
 
-  util::bytes nbest_encode_as_serialized_proto(util::min_string_view input,
+  util::bytes nbest_encode_as_serialized_proto(absl::string_view input,
                                          int nbest_size) const {
     return $self->NBestEncodeAsSerializedProto(input, nbest_size);
   }
@@ -242,7 +242,7 @@ int ToSwigError(sentencepiece::util::error::Code code) {
     return $self->GetPieceSize();
   }
 
-  int piece_to_id(sentencepiece::util::min_string_view piece) const {
+  int piece_to_id(absl::string_view piece) const {
     return $self->PieceToId(piece);
   }
 
@@ -270,7 +270,7 @@ int ToSwigError(sentencepiece::util::error::Code code) {
     return $self->GetPieceSize();
   }
 
-  int __getitem__(sentencepiece::util::min_string_view key) const {
+  int __getitem__(absl::string_view key) const {
     return $self->PieceToId(key);
   }
 }
@@ -344,16 +344,16 @@ int ToSwigError(sentencepiece::util::error::Code code) {
   $1 = new std::string(ustring.data(), ustring.size());
 }
 
-%typemap(typecheck) sentencepiece::util::min_string_view = char *;
+%typemap(typecheck) absl::string_view = char *;
 
-%typemap(in) sentencepiece::util::min_string_view {
+%typemap(in) absl::string_view {
   const PyInputString ustring($input);
   if (!ustring.IsAvalable()) {
     PyErr_SetString(PyExc_TypeError, "not a string");
     SWIG_fail;
   }
   resultobj = ustring.input_type();
-  $1 = sentencepiece::util::min_string_view(ustring.data(), ustring.size());
+  $1 = absl::string_view(ustring.data(), ustring.size());
 }
 
 %typemap(in) const std::vector<std::string>& {

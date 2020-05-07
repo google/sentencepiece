@@ -13,9 +13,12 @@
 // limitations under the License.!
 
 #include <map>
+
+#include "builtin_pb/sentencepiece_model.pb.h"
 #include "flags.h"
-#include "sentencepiece_model.pb.h"
 #include "sentencepiece_trainer.h"
+#include "third_party/absl/strings/ascii.h"
+#include "third_party/absl/strings/str_split.h"
 #include "util.h"
 
 using sentencepiece::NormalizerSpec;
@@ -66,15 +69,27 @@ DEFINE_bool(split_by_number, kDefaultTrainerSpec.split_by_number(),
             "split tokens by numbers (0-9)");
 DEFINE_bool(split_by_whitespace, kDefaultTrainerSpec.split_by_whitespace(),
             "use a white space to split sentence pieces");
-DEFINE_bool(treat_whitespace_as_suffix, false,
+DEFINE_bool(split_digits, kDefaultTrainerSpec.split_digits(),
+            "split all digits (0-9) into separate pieces");
+DEFINE_bool(treat_whitespace_as_suffix,
+            kDefaultTrainerSpec.treat_whitespace_as_suffix(),
             "treat whitespace marker as suffix instead of prefix.");
 DEFINE_string(control_symbols, "", "comma separated list of control symbols");
 DEFINE_string(user_defined_symbols, "",
               "comma separated list of user defined symbols");
+DEFINE_string(required_chars, "",
+              "UTF8 characters in this flag are always used in the character "
+              "set regardless of --character_coverage");
+DEFINE_bool(byte_fallback, kDefaultTrainerSpec.byte_fallback(),
+            "decompose unknown pieces into UTF-8 byte pieces");
+DEFINE_bool(vocabulary_output_piece_score,
+            kDefaultTrainerSpec.vocabulary_output_piece_score(),
+            "Define score in vocab file");
 DEFINE_string(normalization_rule_name, "nmt_nfkc",
               "Normalization rule name. "
               "Choose from nfkc or identity");
 DEFINE_string(normalization_rule_tsv, "", "Normalization rule TSV file. ");
+DEFINE_string(denormalization_rule_tsv, "", "Denormalization rule TSV file.");
 DEFINE_bool(add_dummy_prefix, kDefaultNormalizerSpec.add_dummy_prefix(),
             "Add dummy whitespace at the beginning of text");
 DEFINE_bool(remove_extra_whitespaces,
@@ -104,14 +119,19 @@ DEFINE_string(pad_piece, kDefaultTrainerSpec.pad_piece(),
 DEFINE_string(unk_surface, kDefaultTrainerSpec.unk_surface(),
               "Dummy surface string for <unk>. In decoding <unk> is decoded to "
               "`unk_surface`.");
+DEFINE_bool(train_extremely_large_corpus,
+            kDefaultTrainerSpec.train_extremely_large_corpus(),
+            "Increase bit depth for unigram tokenization.");
 
 int main(int argc, char *argv[]) {
-  sentencepiece::flags::ParseCommandLineFlags(argc, argv);
+  sentencepiece::flags::ParseCommandLineFlags(argv[0], &argc, &argv, true);
+
   sentencepiece::TrainerSpec trainer_spec;
   sentencepiece::NormalizerSpec normalizer_spec;
+  NormalizerSpec denormalizer_spec;
 
-  CHECK_OR_HELP(input);
-  CHECK_OR_HELP(model_prefix);
+  CHECK(!FLAGS_input.empty());
+  CHECK(!FLAGS_model_prefix.empty());
 
 // Populates the value from flags to spec.
 #define SetTrainerSpecFromFlag(name) trainer_spec.set_##name(FLAGS_##name);
@@ -119,13 +139,14 @@ int main(int argc, char *argv[]) {
 #define SetNormalizerSpecFromFlag(name) \
   normalizer_spec.set_##name(FLAGS_##name);
 
-#define SetRepeatedTrainerSpecFromFlag(name)                     \
-  if (!FLAGS_##name.empty()) {                                   \
-    for (const auto v :                                          \
-         sentencepiece::string_util::Split(FLAGS_##name, ",")) { \
-      trainer_spec.add_##name(v);                                \
-    }                                                            \
+#define SetRepeatedTrainerSpecFromFlag(name)                                 \
+  if (!FLAGS_##name.empty()) {                                               \
+    for (const auto &v : sentencepiece::util::StrSplitAsCSV(FLAGS_##name)) { \
+      trainer_spec.add_##name(v);                                            \
+    }                                                                        \
   }
+
+  SetRepeatedTrainerSpecFromFlag(input);
 
   SetTrainerSpecFromFlag(input_format);
   SetTrainerSpecFromFlag(model_prefix);
@@ -143,6 +164,8 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(split_by_unicode_script);
   SetTrainerSpecFromFlag(split_by_whitespace);
   SetTrainerSpecFromFlag(split_by_number);
+  SetTrainerSpecFromFlag(split_digits);
+  SetTrainerSpecFromFlag(byte_fallback);
   SetTrainerSpecFromFlag(treat_whitespace_as_suffix);
   SetTrainerSpecFromFlag(hard_vocab_limit);
   SetTrainerSpecFromFlag(use_all_vocab);
@@ -155,27 +178,31 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(eos_piece);
   SetTrainerSpecFromFlag(pad_piece);
   SetTrainerSpecFromFlag(unk_surface);
-  SetRepeatedTrainerSpecFromFlag(input);
+  SetTrainerSpecFromFlag(required_chars);
+  SetTrainerSpecFromFlag(vocabulary_output_piece_score);
   SetRepeatedTrainerSpecFromFlag(accept_language);
   SetRepeatedTrainerSpecFromFlag(control_symbols);
   SetRepeatedTrainerSpecFromFlag(user_defined_symbols);
+  SetTrainerSpecFromFlag(train_extremely_large_corpus);
 
   normalizer_spec.set_name(FLAGS_normalization_rule_name);
   SetNormalizerSpecFromFlag(normalization_rule_tsv);
   SetNormalizerSpecFromFlag(add_dummy_prefix);
   SetNormalizerSpecFromFlag(remove_extra_whitespaces);
 
-  const std::map<std::string, TrainerSpec::ModelType> kModelTypeMap = {
-      {"unigram", TrainerSpec::UNIGRAM},
-      {"bpe", TrainerSpec::BPE},
-      {"word", TrainerSpec::WORD},
-      {"char", TrainerSpec::CHAR}};
+  if (!FLAGS_denormalization_rule_tsv.empty()) {
+    denormalizer_spec.set_normalization_rule_tsv(
+        FLAGS_denormalization_rule_tsv);
+    denormalizer_spec.set_add_dummy_prefix(false);
+    denormalizer_spec.set_remove_extra_whitespaces(false);
+    denormalizer_spec.set_escape_whitespaces(false);
+  }
 
-  trainer_spec.set_model_type(sentencepiece::port::FindOrDie(
-      kModelTypeMap, sentencepiece::string_util::ToLower(FLAGS_model_type)));
+  CHECK_OK(sentencepiece::SentencePieceTrainer::PopulateModelTypeFromString(
+      FLAGS_model_type, &trainer_spec));
 
-  CHECK_OK(sentencepiece::SentencePieceTrainer::Train(trainer_spec,
-                                                      normalizer_spec));
+  CHECK_OK(sentencepiece::SentencePieceTrainer::Train(
+      trainer_spec, normalizer_spec, denormalizer_spec));
 
   return 0;
 }

@@ -1,52 +1,157 @@
-namespace {
+// Copyright 2016 Google LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.!
+
+#ifndef SPEC_PARSER_H_
+#define SPEC_PARSER_H_
+
+#include <string>
+#include <vector>
+
+#include "sentencepiece_processor.h"
+#include "third_party/absl/strings/ascii.h"
+#include "third_party/absl/strings/str_split.h"
+#include "util.h"
+
+namespace sentencepiece {
+
+#define PARSE_STRING(param_name)      \
+  if (name == #param_name) {          \
+    message->set_##param_name(value); \
+    return util::OkStatus();          \
+  }
+
+#define PARSE_REPEATED_STRING(param_name)                       \
+  if (name == #param_name) {                                    \
+    for (const std::string &val : util::StrSplitAsCSV(value)) { \
+      message->add_##param_name(val);                           \
+    }                                                           \
+    return util::OkStatus();                                    \
+  }
+
+#define PARSE_BYTE(param_name)                             \
+  if (name == #param_name) {                               \
+    message->set_##param_name(value.data(), value.size()); \
+    return util::OkStatus();                               \
+  }
+
+#define PARSE_INT32(param_name)                                               \
+  if (name == #param_name) {                                                  \
+    int32 v;                                                                  \
+    if (!string_util::lexical_cast(value, &v))                                \
+      return util::StatusBuilder(util::StatusCode::kInvalidArgument, GTL_LOC) \
+             << "cannot parse \"" << value << "\" as int.";                   \
+    message->set_##param_name(v);                                             \
+    return util::OkStatus();                                                  \
+  }
+
+#define PARSE_DOUBLE(param_name)                                              \
+  if (name == #param_name) {                                                  \
+    double v;                                                                 \
+    if (!string_util::lexical_cast(value, &v))                                \
+      return util::StatusBuilder(util::StatusCode::kInvalidArgument, GTL_LOC) \
+             << "cannot parse \"" << value << "\" as int.";                   \
+    message->set_##param_name(v);                                             \
+    return util::OkStatus();                                                  \
+  }
+
+#define PARSE_BOOL(param_name)                                                \
+  if (name == #param_name) {                                                  \
+    bool v;                                                                   \
+    if (!string_util::lexical_cast(value.empty() ? "true" : value, &v))       \
+      return util::StatusBuilder(util::StatusCode::kInvalidArgument, GTL_LOC) \
+             << "cannot parse \"" << value << "\" as bool.";                  \
+    message->set_##param_name(v);                                             \
+    return util::OkStatus();                                                  \
+  }
+
+#define PARSE_ENUM(param_name, map_name)                                      \
+  if (name == #param_name) {                                                  \
+    const auto it = map_name.find(absl::AsciiStrToUpper(value));              \
+    if (it == map_name.end())                                                 \
+      return util::StatusBuilder(util::StatusCode::kInvalidArgument, GTL_LOC) \
+             << "unknown enumeration value of \"" << value << "\" as "        \
+             << #map_name;                                                    \
+    message->set_##param_name(it->second);                                    \
+    return util::OkStatus();                                                  \
+  }
+
+#define PRINT_PARAM(param_name) \
+  os << "  " << #param_name << ": " << message.param_name() << "\n";
+
+#define PRINT_REPEATED_STRING(param_name)    \
+  for (const auto &v : message.param_name()) \
+    os << "  " << #param_name << ": " << v << "\n";
+
+#define PRINT_ENUM(param_name, map_name)               \
+  const auto it = map_name.find(message.param_name()); \
+  if (it == map_name.end())                            \
+    os << "  " << #param_name << ": unknown\n";        \
+  else                                                 \
+    os << "  " << #param_name << ": " << it->second << "\n";
+
 inline std::string PrintProto(const TrainerSpec &message) {
   std::ostringstream os;
 
   os << "TrainerSpec {\n";
-  for (const auto &v : message.input())
-    os << "  input: " << v << "\n";
-  os << "  input_format: " << message.input_format() << "\n";
-  os << "  model_prefix: " << message.model_prefix() << "\n";
-  static const std::map<TrainerSpec::ModelType, std::string> kModelType_Map = { {TrainerSpec::UNIGRAM, "UNIGRAM"}, {TrainerSpec::BPE, "BPE"}, {TrainerSpec::WORD, "WORD"}, {TrainerSpec::CHAR, "CHAR"},  };
-  {
-    const auto it = kModelType_Map.find(message.model_type());
-    if (it == kModelType_Map.end())
-      os << "  model_type: unknown\n";
-    else
-      os << "  model_type: " << it->second << "\n";
-  }
-  os << "  vocab_size: " << message.vocab_size() << "\n";
-  for (const auto &v : message.accept_language())
-    os << "  accept_language: " << v << "\n";
-  os << "  self_test_sample_size: " << message.self_test_sample_size() << "\n";
-  os << "  character_coverage: " << message.character_coverage() << "\n";
-  os << "  input_sentence_size: " << message.input_sentence_size() << "\n";
-  os << "  shuffle_input_sentence: " << message.shuffle_input_sentence() << "\n";
-  os << "  seed_sentencepiece_size: " << message.seed_sentencepiece_size() << "\n";
-  os << "  shrinking_factor: " << message.shrinking_factor() << "\n";
-  os << "  max_sentence_length: " << message.max_sentence_length() << "\n";
-  os << "  num_threads: " << message.num_threads() << "\n";
-  os << "  num_sub_iterations: " << message.num_sub_iterations() << "\n";
-  os << "  max_sentencepiece_length: " << message.max_sentencepiece_length() << "\n";
-  os << "  split_by_unicode_script: " << message.split_by_unicode_script() << "\n";
-  os << "  split_by_number: " << message.split_by_number() << "\n";
-  os << "  split_by_whitespace: " << message.split_by_whitespace() << "\n";
-  os << "  treat_whitespace_as_suffix: " << message.treat_whitespace_as_suffix() << "\n";
-  for (const auto &v : message.control_symbols())
-    os << "  control_symbols: " << v << "\n";
-  for (const auto &v : message.user_defined_symbols())
-    os << "  user_defined_symbols: " << v << "\n";
-  os << "  hard_vocab_limit: " << message.hard_vocab_limit() << "\n";
-  os << "  use_all_vocab: " << message.use_all_vocab() << "\n";
-  os << "  unk_id: " << message.unk_id() << "\n";
-  os << "  bos_id: " << message.bos_id() << "\n";
-  os << "  eos_id: " << message.eos_id() << "\n";
-  os << "  pad_id: " << message.pad_id() << "\n";
-  os << "  unk_piece: " << message.unk_piece() << "\n";
-  os << "  bos_piece: " << message.bos_piece() << "\n";
-  os << "  eos_piece: " << message.eos_piece() << "\n";
-  os << "  pad_piece: " << message.pad_piece() << "\n";
-  os << "  unk_surface: " << message.unk_surface() << "\n";
+
+  PRINT_REPEATED_STRING(input);
+  PRINT_PARAM(input_format);
+  PRINT_PARAM(model_prefix);
+
+  static const std::map<TrainerSpec::ModelType, std::string> kModelType_Map = {
+      {TrainerSpec::UNIGRAM, "UNIGRAM"},
+      {TrainerSpec::BPE, "BPE"},
+      {TrainerSpec::WORD, "WORD"},
+      {TrainerSpec::CHAR, "CHAR"},
+  };
+
+  PRINT_ENUM(model_type, kModelType_Map);
+  PRINT_PARAM(vocab_size);
+  PRINT_REPEATED_STRING(accept_language);
+  PRINT_PARAM(self_test_sample_size);
+  PRINT_PARAM(character_coverage);
+  PRINT_PARAM(input_sentence_size);
+  PRINT_PARAM(shuffle_input_sentence);
+  PRINT_PARAM(seed_sentencepiece_size);
+  PRINT_PARAM(shrinking_factor);
+  PRINT_PARAM(max_sentence_length);
+  PRINT_PARAM(num_threads);
+  PRINT_PARAM(num_sub_iterations);
+  PRINT_PARAM(max_sentencepiece_length);
+  PRINT_PARAM(split_by_unicode_script);
+  PRINT_PARAM(split_by_number);
+  PRINT_PARAM(split_by_whitespace);
+  PRINT_PARAM(split_digits);
+  PRINT_PARAM(treat_whitespace_as_suffix);
+  PRINT_REPEATED_STRING(control_symbols);
+  PRINT_REPEATED_STRING(user_defined_symbols);
+  PRINT_PARAM(required_chars);
+  PRINT_PARAM(byte_fallback);
+  PRINT_PARAM(vocabulary_output_piece_score);
+  PRINT_PARAM(train_extremely_large_corpus);
+  PRINT_PARAM(hard_vocab_limit);
+  PRINT_PARAM(use_all_vocab);
+  PRINT_PARAM(unk_id);
+  PRINT_PARAM(bos_id);
+  PRINT_PARAM(eos_id);
+  PRINT_PARAM(pad_id);
+  PRINT_PARAM(unk_piece);
+  PRINT_PARAM(bos_piece);
+  PRINT_PARAM(eos_piece);
+  PRINT_PARAM(pad_piece);
+  PRINT_PARAM(unk_surface);
+
   os << "}\n";
 
   return os.str();
@@ -56,344 +161,99 @@ inline std::string PrintProto(const NormalizerSpec &message) {
   std::ostringstream os;
 
   os << "NormalizerSpec {\n";
-  os << "  name: " << message.name() << "\n";
-  os << "  add_dummy_prefix: " << message.add_dummy_prefix() << "\n";
-  os << "  remove_extra_whitespaces: " << message.remove_extra_whitespaces() << "\n";
-  os << "  escape_whitespaces: " << message.escape_whitespaces() << "\n";
-  os << "  normalization_rule_tsv: " << message.normalization_rule_tsv() << "\n";
+
+  PRINT_PARAM(name);
+  PRINT_PARAM(add_dummy_prefix);
+  PRINT_PARAM(remove_extra_whitespaces);
+  PRINT_PARAM(escape_whitespaces);
+  PRINT_PARAM(normalization_rule_tsv);
+
   os << "}\n";
 
   return os.str();
 }
 
-}  // namespace
-
-util::Status SentencePieceTrainer::SetProtoField(const std::string& name, const std::string& value, TrainerSpec *message) {
+util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
+                                                 const std::string &value,
+                                                 TrainerSpec *message) {
   CHECK_OR_RETURN(message);
 
-  if (name == "input") {
-    for (const auto &val : string_util::Split(value, ",")) {
-      message->add_input(val);
-    }
-    return util::OkStatus();
-  }
+  PARSE_REPEATED_STRING(input);
+  PARSE_STRING(input_format);
+  PARSE_STRING(model_prefix);
 
-  if (name == "input_format") {
-    const auto &val = value;
-    message->set_input_format(val);
-    return util::OkStatus();
-  }
+  static const std::map<std::string, TrainerSpec::ModelType> kModelType_Map = {
+      {"UNIGRAM", TrainerSpec::UNIGRAM},
+      {"BPE", TrainerSpec::BPE},
+      {"WORD", TrainerSpec::WORD},
+      {"CHAR", TrainerSpec::CHAR},
+  };
 
-  if (name == "model_prefix") {
-    const auto &val = value;
-    message->set_model_prefix(val);
-    return util::OkStatus();
-  }
+  PARSE_ENUM(model_type, kModelType_Map);
+  PARSE_INT32(vocab_size);
+  PARSE_REPEATED_STRING(accept_language);
+  PARSE_INT32(self_test_sample_size);
+  PARSE_DOUBLE(character_coverage);
+  PARSE_INT32(input_sentence_size);
+  PARSE_BOOL(shuffle_input_sentence);
+  PARSE_INT32(seed_sentencepiece_size);
+  PARSE_DOUBLE(shrinking_factor);
+  PARSE_INT32(max_sentence_length);
+  PARSE_INT32(num_threads);
+  PARSE_INT32(num_sub_iterations);
+  PARSE_INT32(max_sentencepiece_length);
+  PARSE_BOOL(split_by_unicode_script);
+  PARSE_BOOL(split_by_number);
+  PARSE_BOOL(split_by_whitespace);
+  PARSE_BOOL(treat_whitespace_as_suffix);
+  PARSE_REPEATED_STRING(control_symbols);
+  PARSE_REPEATED_STRING(user_defined_symbols);
+  PARSE_STRING(required_chars);
+  PARSE_BOOL(byte_fallback);
+  PARSE_BOOL(hard_vocab_limit);
+  PARSE_BOOL(vocabulary_output_piece_score);
+  PARSE_BOOL(train_extremely_large_corpus);
+  PARSE_BOOL(use_all_vocab);
+  PARSE_INT32(unk_id);
+  PARSE_INT32(bos_id);
+  PARSE_INT32(eos_id);
+  PARSE_INT32(pad_id);
+  PARSE_STRING(unk_piece);
+  PARSE_STRING(bos_piece);
+  PARSE_STRING(eos_piece);
+  PARSE_STRING(pad_piece);
+  PARSE_STRING(unk_surface);
 
-  static const std::map <std::string, TrainerSpec::ModelType> kModelType_Map = { {"UNIGRAM", TrainerSpec::UNIGRAM}, {"BPE", TrainerSpec::BPE}, {"WORD", TrainerSpec::WORD}, {"CHAR", TrainerSpec::CHAR},  };
-
-  if (name == "model_type") {
-    const auto &val = value;
-    const auto it = kModelType_Map.find(string_util::ToUpper(val));
-    if (it == kModelType_Map.end())
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "unknown enumeration value of \"" << val << "\" as ModelType.";
-    message->set_model_type(it->second);
-    return util::OkStatus();
-  }
-
-  if (name == "vocab_size") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_vocab_size(v);
-    return util::OkStatus();
-  }
-
-  if (name == "accept_language") {
-    for (const auto &val : string_util::Split(value, ",")) {
-      message->add_accept_language(val);
-    }
-    return util::OkStatus();
-  }
-
-  if (name == "self_test_sample_size") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_self_test_sample_size(v);
-    return util::OkStatus();
-  }
-
-  if (name == "character_coverage") {
-    const auto &val = value;
-    float v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as float.";
-    message->set_character_coverage(v);
-    return util::OkStatus();
-  }
-
-  if (name == "input_sentence_size") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_input_sentence_size(v);
-    return util::OkStatus();
-  }
-
-  if (name == "shuffle_input_sentence") {
-    const auto &val = value;
-    bool v;
-    if (!string_util::lexical_cast(val.empty() ? "true" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as bool.";
-    message->set_shuffle_input_sentence(v);
-    return util::OkStatus();
-  }
-
-  if (name == "seed_sentencepiece_size") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_seed_sentencepiece_size(v);
-    return util::OkStatus();
-  }
-
-  if (name == "shrinking_factor") {
-    const auto &val = value;
-    float v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as float.";
-    message->set_shrinking_factor(v);
-    return util::OkStatus();
-  }
-
-  if (name == "max_sentence_length") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_max_sentence_length(v);
-    return util::OkStatus();
-  }
-
-  if (name == "num_threads") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_num_threads(v);
-    return util::OkStatus();
-  }
-
-  if (name == "num_sub_iterations") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_num_sub_iterations(v);
-    return util::OkStatus();
-  }
-
-  if (name == "max_sentencepiece_length") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_max_sentencepiece_length(v);
-    return util::OkStatus();
-  }
-
-  if (name == "split_by_unicode_script") {
-    const auto &val = value;
-    bool v;
-    if (!string_util::lexical_cast(val.empty() ? "true" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as bool.";
-    message->set_split_by_unicode_script(v);
-    return util::OkStatus();
-  }
-
-  if (name == "split_by_number") {
-    const auto &val = value;
-    bool v;
-    if (!string_util::lexical_cast(val.empty() ? "true" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as bool.";
-    message->set_split_by_number(v);
-    return util::OkStatus();
-  }
-
-  if (name == "split_by_whitespace") {
-    const auto &val = value;
-    bool v;
-    if (!string_util::lexical_cast(val.empty() ? "true" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as bool.";
-    message->set_split_by_whitespace(v);
-    return util::OkStatus();
-  }
-
-  if (name == "treat_whitespace_as_suffix") {
-    const auto &val = value;
-    bool v;
-    if (!string_util::lexical_cast(val.empty() ? "true" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as bool.";
-    message->set_treat_whitespace_as_suffix(v);
-    return util::OkStatus();
-  }
-
-  if (name == "control_symbols") {
-    for (const auto &val : string_util::Split(value, ",")) {
-      message->add_control_symbols(val);
-    }
-    return util::OkStatus();
-  }
-
-  if (name == "user_defined_symbols") {
-    for (const auto &val : string_util::Split(value, ",")) {
-      message->add_user_defined_symbols(val);
-    }
-    return util::OkStatus();
-  }
-
-  if (name == "hard_vocab_limit") {
-    const auto &val = value;
-    bool v;
-    if (!string_util::lexical_cast(val.empty() ? "true" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as bool.";
-    message->set_hard_vocab_limit(v);
-    return util::OkStatus();
-  }
-
-  if (name == "use_all_vocab") {
-    const auto &val = value;
-    bool v;
-    if (!string_util::lexical_cast(val.empty() ? "true" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as bool.";
-    message->set_use_all_vocab(v);
-    return util::OkStatus();
-  }
-
-  if (name == "unk_id") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_unk_id(v);
-    return util::OkStatus();
-  }
-
-  if (name == "bos_id") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_bos_id(v);
-    return util::OkStatus();
-  }
-
-  if (name == "eos_id") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_eos_id(v);
-    return util::OkStatus();
-  }
-
-  if (name == "pad_id") {
-    const auto &val = value;
-    int32 v;
-    if (!string_util::lexical_cast(val.empty() ? "" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as int32.";
-    message->set_pad_id(v);
-    return util::OkStatus();
-  }
-
-  if (name == "unk_piece") {
-    const auto &val = value;
-    message->set_unk_piece(val);
-    return util::OkStatus();
-  }
-
-  if (name == "bos_piece") {
-    const auto &val = value;
-    message->set_bos_piece(val);
-    return util::OkStatus();
-  }
-
-  if (name == "eos_piece") {
-    const auto &val = value;
-    message->set_eos_piece(val);
-    return util::OkStatus();
-  }
-
-  if (name == "pad_piece") {
-    const auto &val = value;
-    message->set_pad_piece(val);
-    return util::OkStatus();
-  }
-
-  if (name == "unk_surface") {
-    const auto &val = value;
-    message->set_unk_surface(val);
-    return util::OkStatus();
-  }
-
-  return util::StatusBuilder(util::error::NOT_FOUND)
-    << "unknown field name \"" << name << "\" in TrainerSpec.";
+  return util::StatusBuilder(util::StatusCode::kNotFound, GTL_LOC)
+         << "unknown field name \"" << name << "\" in TrainerSpec.";
 }
 
-util::Status SentencePieceTrainer::SetProtoField(const std::string& name, const std::string& value, NormalizerSpec *message) {
+util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
+                                                 const std::string &value,
+                                                 NormalizerSpec *message) {
   CHECK_OR_RETURN(message);
 
-  if (name == "name") {
-    const auto &val = value;
-    message->set_name(val);
-    return util::OkStatus();
-  }
+  PARSE_STRING(name);
+  PARSE_BYTE(precompiled_charsmap);
+  PARSE_BOOL(add_dummy_prefix);
+  PARSE_BOOL(remove_extra_whitespaces);
+  PARSE_BOOL(escape_whitespaces);
+  PARSE_STRING(normalization_rule_tsv);
 
-  if (name == "precompiled_charsmap") {
-    const auto &val = value;
-    message->set_precompiled_charsmap(val.data(), val.size());
-    return util::OkStatus();
-  }
-
-  if (name == "add_dummy_prefix") {
-    const auto &val = value;
-    bool v;
-    if (!string_util::lexical_cast(val.empty() ? "true" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as bool.";
-    message->set_add_dummy_prefix(v);
-    return util::OkStatus();
-  }
-
-  if (name == "remove_extra_whitespaces") {
-    const auto &val = value;
-    bool v;
-    if (!string_util::lexical_cast(val.empty() ? "true" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as bool.";
-    message->set_remove_extra_whitespaces(v);
-    return util::OkStatus();
-  }
-
-  if (name == "escape_whitespaces") {
-    const auto &val = value;
-    bool v;
-    if (!string_util::lexical_cast(val.empty() ? "true" : val, &v))
-      return util::StatusBuilder(util::error::INVALID_ARGUMENT) << "cannot parse \"" << val << "\" as bool.";
-    message->set_escape_whitespaces(v);
-    return util::OkStatus();
-  }
-
-  if (name == "normalization_rule_tsv") {
-    const auto &val = value;
-    message->set_normalization_rule_tsv(val);
-    return util::OkStatus();
-  }
-
-  return util::StatusBuilder(util::error::NOT_FOUND)
-    << "unknown field name \"" << name << "\" in NormalizerSpec.";
+  return util::StatusBuilder(util::StatusCode::kNotFound, GTL_LOC)
+         << "unknown field name \"" << name << "\" in NormalizerSpec.";
 }
 
+#undef PARSE_STRING
+#undef PARSE_REPEATED_STRING
+#undef PARSE_BOOL
+#undef PARSE_BYTE
+#undef PARSE_INT32
+#undef PARSE_DUOBLE
+#undef PARSE_ENUM
+#undef PRINT_MAP
+#undef PRINT_REPEATED_STRING
+#undef PRINT_ENUM
+}  // namespace sentencepiece
+
+#endif  // SPEC_PARSER_H_

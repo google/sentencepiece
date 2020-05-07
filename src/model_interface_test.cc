@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "model_interface.h"
+#include <unordered_map>
+
 #include "model_factory.h"
+#include "model_interface.h"
 #include "testharness.h"
 #include "util.h"
 
@@ -26,12 +28,14 @@ const std::vector<TrainerSpec::ModelType> kModelTypes = {
     TrainerSpec::UNIGRAM, TrainerSpec::BPE, TrainerSpec::WORD,
     TrainerSpec::CHAR};
 
-ModelProto MakeBaseModelProto(TrainerSpec::ModelType type) {
+ModelProto MakeBaseModelProto(TrainerSpec::ModelType type,
+                              bool byte_fallback = false) {
   ModelProto model_proto;
   auto *sp1 = model_proto.add_pieces();
   auto *sp2 = model_proto.add_pieces();
   auto *sp3 = model_proto.add_pieces();
   model_proto.mutable_trainer_spec()->set_model_type(type);
+  model_proto.mutable_trainer_spec()->set_byte_fallback(byte_fallback);
 
   sp1->set_type(ModelProto::SentencePiece::UNKNOWN);
   sp1->set_piece("<unk>");
@@ -48,6 +52,12 @@ void AddPiece(ModelProto *model_proto, const std::string &piece,
   auto *sp = model_proto->add_pieces();
   sp->set_piece(piece);
   sp->set_score(score);
+}
+
+void AddBytePiece(ModelProto *model_proto, unsigned char byte) {
+  auto *sp = model_proto->add_pieces();
+  sp->set_piece(ByteToPiece(byte));
+  sp->set_type(ModelProto::SentencePiece::BYTE);
 }
 
 TEST(ModelInterfaceTest, GetDefaultPieceTest) {
@@ -232,6 +242,40 @@ TEST(ModelInterfaceTest, InvalidModelTest) {
   }
 }
 
+TEST(ModelInterfaceTest, ByteFallbackModelTest) {
+  {
+    ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM, true);
+    for (int i = 0; i < 256; ++i) {
+      AddBytePiece(&model_proto, i);
+    }
+    AddPiece(&model_proto, "a");
+    auto model = ModelFactory::Create(model_proto);
+    EXPECT_TRUE(model->status().ok());
+  }
+
+  // `byte_fallback` is true, but there are not 256 byte pieces.
+  {
+    ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM, true);
+    for (int i = 0; i < 10; ++i) {
+      AddBytePiece(&model_proto, i);
+    }
+    AddPiece(&model_proto, "a");
+    auto model = ModelFactory::Create(model_proto);
+    EXPECT_FALSE(model->status().ok());
+  }
+
+  // `byte_fallback` is false, but a byte piece is found.
+  {
+    ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
+    for (int i = 0; i < 10; ++i) {
+      AddBytePiece(&model_proto, i);
+    }
+    AddPiece(&model_proto, "a");
+    auto model = ModelFactory::Create(model_proto);
+    EXPECT_FALSE(model->status().ok());
+  }
+}
+
 std::string RandomString(int length) {
   const char kAlphaNum[] =
       "0123456789"
@@ -366,6 +410,63 @@ TEST(ModelInterfaceTest, SplitIntoWordsSuffixTest) {
     EXPECT_EQ(WS, v[1]);
     EXPECT_EQ("hello" WS, v[2]);
     EXPECT_EQ(WS, v[3]);
+  }
+}
+
+TEST(ModelInterfaceTest, ByteToPieceTest) {
+  EXPECT_EQ(ByteToPiece(0), "<0x00>");
+  EXPECT_EQ(ByteToPiece(1), "<0x01>");
+  EXPECT_EQ(ByteToPiece(10), "<0x0A>");
+  EXPECT_EQ(ByteToPiece(16), "<0x10>");
+  EXPECT_EQ(ByteToPiece(255), "<0xFF>");
+}
+
+TEST(ModelInterfaceTest, PieceToByteTest) {
+  // Valid byte pieces.
+  EXPECT_EQ(PieceToByte("<0x00>"), 0);
+  EXPECT_EQ(PieceToByte("<0x01>"), 1);
+  EXPECT_EQ(PieceToByte("<0x0A>"), 10);
+  EXPECT_EQ(PieceToByte("<0x10>"), 16);
+  EXPECT_EQ(PieceToByte("<0xFF>"), 255);
+
+  // Invalid byte pieces.
+  EXPECT_EQ(PieceToByte("<0x0>"), -1);
+  EXPECT_EQ(PieceToByte("<0x000>"), -1);
+  EXPECT_EQ(PieceToByte("<0x001>"), -1);
+  EXPECT_EQ(PieceToByte("<0xff>"), -1);
+  EXPECT_EQ(PieceToByte("<0xFG>"), -1);
+  EXPECT_EQ(PieceToByte("a"), -1);
+}
+
+TEST(ModelInterfaceTest, SetEncoderVersion) {
+  for (const auto type : kModelTypes) {
+    ModelProto model_proto = MakeBaseModelProto(type);
+    AddPiece(&model_proto, "a");
+    AddPiece(&model_proto, "b");
+    auto model = ModelFactory::Create(model_proto);
+
+    // Verify the default encoder version.
+    EXPECT_EQ(EncoderVersion::kOptimized, model->GetEncoderVersion());
+
+    // Set the encoder version to original and verify.
+    EXPECT_TRUE(model->SetEncoderVersion(EncoderVersion::kOriginal).ok());
+    EXPECT_EQ(EncoderVersion::kOriginal, model->GetEncoderVersion());
+  }
+}
+
+TEST(ModelInterfaceTest, VerifyOutputsEquivalent) {
+  for (const auto type : kModelTypes) {
+    ModelProto model_proto = MakeBaseModelProto(type);
+    AddPiece(&model_proto, "a", 1.0);
+    AddPiece(&model_proto, "b", 2.0);
+    auto model = ModelFactory::Create(model_proto);
+
+    // Equivalent outputs.
+    EXPECT_TRUE(model->VerifyOutputsEquivalent("", ""));
+    EXPECT_TRUE(model->VerifyOutputsEquivalent("a b", "a b"));
+
+    // Inequivalent outputs.
+    EXPECT_FALSE(model->VerifyOutputsEquivalent("a", "a b"));
   }
 }
 

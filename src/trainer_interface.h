@@ -23,9 +23,11 @@
 #include <utility>
 #include <vector>
 
+#include "builtin_pb/sentencepiece_model.pb.h"
 #include "common.h"
-#include "sentencepiece_model.pb.h"
+#include "filesystem.h"
 #include "sentencepiece_processor.h"
+#include "sentencepiece_trainer.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -47,6 +49,26 @@ std::vector<std::pair<K, V>> Sorted(const std::unordered_map<K, V> &m) {
   return Sorted(v);
 }
 
+class MultiFileSentenceIterator : public SentenceIterator {
+ public:
+  explicit MultiFileSentenceIterator(const std::vector<std::string> &files);
+  ~MultiFileSentenceIterator() {}
+
+  bool done() const override;
+  void Next() override;
+  const std::string &value() const override { return value_; }
+  util::Status status() const override;
+
+ private:
+  void TryRead();
+
+  bool read_done_ = false;
+  size_t file_index_ = 0;
+  std::vector<std::string> files_;
+  std::string value_;
+  std::unique_ptr<filesystem::ReadableFile> fp_;
+};
+
 // Base trainer class
 class TrainerInterface {
  public:
@@ -61,9 +83,14 @@ class TrainerInterface {
   static const char kUPPBoundaryStr[];
 
   TrainerInterface(const TrainerSpec &trainer_spec,
-                   const NormalizerSpec &normalizer_spec);
+                   const NormalizerSpec &normalizer_spec,
+                   const NormalizerSpec &denormalizer_spec);
 
   virtual ~TrainerInterface();
+
+  virtual void SetSentenceIterator(SentenceIterator *sentence_iterator) {
+    sentence_iterator_ = sentence_iterator;
+  }
 
   virtual util::Status Train() { return status(); }
 
@@ -71,7 +98,9 @@ class TrainerInterface {
 
   FRIEND_TEST(TrainerInterfaceTest, IsValidSentencePieceTest);
   FRIEND_TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest);
+  FRIEND_TEST(TrainerInterfaceTest, BytePiecesTest);
   FRIEND_TEST(TrainerInterfaceTest, SerializeTest);
+  FRIEND_TEST(TrainerInterfaceTest, CharactersTest);
 
  protected:
   // Returns true if |piece| is valid sentence piece.
@@ -79,7 +108,7 @@ class TrainerInterface {
   // max_sentencepiece_length, split_by_whiespace, split_by_unicode_script.
   bool IsValidSentencePiece(const string_util::UnicodeText &piece) const;
 
-  // Loads all sentences from spec.input().
+  // Loads all sentences from spec.input() or SentenceIterator.
   // It loads at most input_sentence_size sentences.
   util::Status LoadSentences();
 
@@ -109,6 +138,9 @@ class TrainerInterface {
   // Normalizer spec
   NormalizerSpec normalizer_spec_;
 
+  // Denormalizer spec
+  NormalizerSpec denormalizer_spec_;
+
   // Reserved control pieces. e.g., <unk>, <s>, </s>.
   // key is vocab id.
   std::map<int, std::pair<std::string, ModelProto::SentencePiece::Type>>
@@ -116,6 +148,9 @@ class TrainerInterface {
 
   // Detect errors on initialization.
   util::Status status_;
+
+  // Loads sentences from SentenceIterator if not null.
+  SentenceIterator *sentence_iterator_ = nullptr;
 
  private:
   // Serialize final_pieces_ to |model_proto|.

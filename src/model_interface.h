@@ -22,9 +22,9 @@
 #include <utility>
 #include <vector>
 
+#include "builtin_pb/sentencepiece_model.pb.h"
 #include "common.h"
 #include "normalizer.h"
-#include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
@@ -35,6 +35,13 @@ namespace sentencepiece {
 // "_this_is_a_pen" => ["_this", "_is", "_a", "_pen"]
 std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
                                               bool add_ws_as_suffix = false);
+
+// Converts byte (0-255) to piece (e.g., 58 -> "<0x3A>").
+std::string ByteToPiece(unsigned char c);
+
+// Converts piece to byte (e.g., "<0x3A>" -> 58). Returns -1 if `piece` is not
+// a valid byte piece.
+int PieceToByte(absl::string_view piece);
 
 using EncodeResult = std::vector<std::pair<absl::string_view, int>>;
 using NBestEncodeResult = std::vector<std::pair<EncodeResult, float>>;
@@ -68,6 +75,19 @@ class ModelInterface {
   virtual const normalizer::PrefixMatcher *prefix_matcher() const {
     return matcher_.get();
   }
+
+  // Sets the encoder version. Currently only unigram has an optimized encoder.
+  // The optimized version is always used by default if there is one, so
+  // normally users do not need to call this function. This function is provided
+  // just in case that a user want to manually choose which encoder version to
+  // use.
+  virtual util::Status SetEncoderVersion(EncoderVersion encoder_version) {
+    encoder_version_ = encoder_version;
+    return util::OkStatus();
+  }
+
+  // Returns the current encoder version in use.
+  virtual EncoderVersion GetEncoderVersion() const { return encoder_version_; }
 
   // Given a normalized string, returns a sequence of sentence pieces with ids.
   // The concatenation of pieces must be the same as `normalized`.
@@ -131,6 +151,25 @@ class ModelInterface {
             ModelProto::SentencePiece::USER_DEFINED);
   }
 
+  // Returns true if `id` is byte symbol.
+  virtual bool IsByte(int id) const {
+    return (model_proto_->pieces(id).type() == ModelProto::SentencePiece::BYTE);
+  }
+
+  virtual bool ByteFallbackEnabled() const {
+    return model_proto_ && model_proto_->trainer_spec().byte_fallback();
+  }
+
+  // Verifies if the `expected` and `actual` outputs are equivalent. `expected`
+  // and `actual` are sentence pieces joined by space (` `). Normally it means
+  // that the two strings are identical. In some model, due to float rounding
+  // errors, the strings may not be identical, but they may be still equivalent
+  // provided their scores are close enough (by some espilon).
+  virtual bool VerifyOutputsEquivalent(absl::string_view expected,
+                                       absl::string_view actual) const {
+    return expected == actual;
+  }
+
  protected:
   void InitializePieces();
 
@@ -159,6 +198,10 @@ class ModelInterface {
             ModelProto::SentencePiece::USER_DEFINED);
   }
 
+  inline bool IsByteInlined(int id) const {
+    return (model_proto_->pieces(id).type() == ModelProto::SentencePiece::BYTE);
+  }
+
   const ModelProto *model_proto_ = nullptr;
 
   // PrefixMatcher for user defined symbols.
@@ -167,11 +210,15 @@ class ModelInterface {
   // piece -> id map for normal pieces
   PieceToIdMap pieces_;
 
-  // piece -> id map for control and unknown
+  // piece -> id map for control, unknown, and byte pieces
   PieceToIdMap reserved_id_map_;
 
   // unknown id.
   int unk_id_ = 0;
+
+  // The encoder version. Currently it is only effective for unigram model but
+  // ignored by other models.
+  EncoderVersion encoder_version_ = EncoderVersion::kOptimized;
 
   // status.
   util::Status status_;

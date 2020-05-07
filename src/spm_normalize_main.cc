@@ -13,12 +13,12 @@
 // limitations under the License.!
 
 #include "builder.h"
+#include "builtin_pb/sentencepiece.pb.h"
+#include "builtin_pb/sentencepiece_model.pb.h"
 #include "common.h"
 #include "filesystem.h"
 #include "flags.h"
 #include "normalizer.h"
-#include "sentencepiece.pb.h"
-#include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 
@@ -33,6 +33,7 @@ DEFINE_string(normalization_rule_tsv, "", "Normalization rule TSV file. ");
 DEFINE_bool(remove_extra_whitespaces, true, "Remove extra whitespaces");
 DEFINE_bool(decompile, false,
             "Decompile compiled charamap and output it as TSV.");
+DEFINE_string(input, "", "Input filename");
 DEFINE_string(output, "", "Output filename");
 
 using sentencepiece::ModelProto;
@@ -43,8 +44,16 @@ using sentencepiece::normalizer::Builder;
 using sentencepiece::normalizer::Normalizer;
 
 int main(int argc, char *argv[]) {
+  sentencepiece::flags::ParseCommandLineFlags(argv[0], &argc, &argv, true);
+
   std::vector<std::string> rest_args;
-  sentencepiece::flags::ParseCommandLineFlags(argc, argv, &rest_args);
+  if (FLAGS_input.empty()) {
+    for (int i = 1; i < argc; ++i) {
+      rest_args.push_back(std::string(argv[i]));
+    }
+  } else {
+    rest_args.push_back(FLAGS_input);
+  }
 
   NormalizerSpec spec;
 
