@@ -384,19 +384,19 @@ class SentencePieceProcessor {
   // They are used in Python interface. Returns serialized proto.
   // In python module, we can get access to the full Proto after
   // deserialzing the returned byte sequence.
-  virtual std::string EncodeAsSerializedProto(absl::string_view input) const;
+  virtual util::bytes EncodeAsSerializedProto(absl::string_view input) const;
 
-  virtual std::string SampleEncodeAsSerializedProto(absl::string_view input,
+  virtual util::bytes SampleEncodeAsSerializedProto(absl::string_view input,
                                                     int nbest_size,
                                                     float alpha) const;
 
-  virtual std::string NBestEncodeAsSerializedProto(absl::string_view input,
+  virtual util::bytes NBestEncodeAsSerializedProto(absl::string_view input,
                                                    int nbest_size) const;
 
-  virtual std::string DecodePiecesAsSerializedProto(
+  virtual util::bytes DecodePiecesAsSerializedProto(
       const std::vector<std::string> &pieces) const;
 
-  virtual std::string DecodeIdsAsSerializedProto(
+  virtual util::bytes DecodeIdsAsSerializedProto(
       const std::vector<int> &ids) const;
 
   //////////////////////////////////////////////////////////////

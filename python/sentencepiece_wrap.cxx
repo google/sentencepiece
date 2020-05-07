@@ -4276,7 +4276,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_EncodeAsSerializedProto(PyObje
   void *argp1 = 0 ;
   int res1 = 0 ;
   PyObject *swig_obj[2] ;
-  std::string result;
+  sentencepiece::util::bytes result;
   
   if (!SWIG_Python_UnpackTuple(args, "SentencePieceProcessor_EncodeAsSerializedProto", 2, 2, swig_obj)) SWIG_fail;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
@@ -4303,8 +4303,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_EncodeAsSerializedProto(PyObje
     }
   }
   {
-    PyObject *input_type = resultobj;
-    resultobj = MakePyOutputString(result, input_type);
+    resultobj = MakePyOutputBytes(result);
   }
   return resultobj;
 fail:
@@ -4325,7 +4324,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SampleEncodeAsSerializedProto(
   float val4 ;
   int ecode4 = 0 ;
   PyObject *swig_obj[4] ;
-  std::string result;
+  sentencepiece::util::bytes result;
   
   if (!SWIG_Python_UnpackTuple(args, "SentencePieceProcessor_SampleEncodeAsSerializedProto", 4, 4, swig_obj)) SWIG_fail;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
@@ -4362,8 +4361,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SampleEncodeAsSerializedProto(
     }
   }
   {
-    PyObject *input_type = resultobj;
-    resultobj = MakePyOutputString(result, input_type);
+    resultobj = MakePyOutputBytes(result);
   }
   return resultobj;
 fail:
@@ -4381,7 +4379,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_NBestEncodeAsSerializedProto(P
   int val3 ;
   int ecode3 = 0 ;
   PyObject *swig_obj[3] ;
-  std::string result;
+  sentencepiece::util::bytes result;
   
   if (!SWIG_Python_UnpackTuple(args, "SentencePieceProcessor_NBestEncodeAsSerializedProto", 3, 3, swig_obj)) SWIG_fail;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
@@ -4413,8 +4411,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_NBestEncodeAsSerializedProto(P
     }
   }
   {
-    PyObject *input_type = resultobj;
-    resultobj = MakePyOutputString(result, input_type);
+    resultobj = MakePyOutputBytes(result);
   }
   return resultobj;
 fail:
@@ -4429,7 +4426,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_DecodePiecesAsSerializedProto(
   void *argp1 = 0 ;
   int res1 = 0 ;
   PyObject *swig_obj[2] ;
-  std::string result;
+  sentencepiece::util::bytes result;
   
   if (!SWIG_Python_UnpackTuple(args, "SentencePieceProcessor_DecodePiecesAsSerializedProto", 2, 2, swig_obj)) SWIG_fail;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
@@ -4468,8 +4465,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_DecodePiecesAsSerializedProto(
     }
   }
   {
-    PyObject *input_type = resultobj;
-    resultobj = MakePyOutputString(result, input_type);
+    resultobj = MakePyOutputBytes(result);
   }
   {
     delete arg2;
@@ -4490,7 +4486,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_DecodeIdsAsSerializedProto(PyO
   void *argp1 = 0 ;
   int res1 = 0 ;
   PyObject *swig_obj[2] ;
-  std::string result;
+  sentencepiece::util::bytes result;
   
   if (!SWIG_Python_UnpackTuple(args, "SentencePieceProcessor_DecodeIdsAsSerializedProto", 2, 2, swig_obj)) SWIG_fail;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
@@ -4528,8 +4524,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_DecodeIdsAsSerializedProto(PyO
     }
   }
   {
-    PyObject *input_type = resultobj;
-    resultobj = MakePyOutputString(result, input_type);
+    resultobj = MakePyOutputBytes(result);
   }
   {
     delete arg2;
