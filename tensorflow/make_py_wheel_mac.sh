@@ -38,6 +38,7 @@ build_tf_wrapper() {
 
   g++ -std=c++11 -shared -undefined dynamic_lookup \
     -I../../src \
+    -D_USE_TF_STRING_VIEW \
     -fPIC ${TF_CFLAGS[@]} -O2 \
     -D_GLIBCXX_USE_CXX11_ABI=0 \
     -Wl,-force_load \

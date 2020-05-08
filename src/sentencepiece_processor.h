@@ -21,8 +21,10 @@
 #include <utility>
 #include <vector>
 
-#ifdef _USE_INTERNAL_STRING_VIEW
+#if defined(_USE_INTERNAL_STRING_VIEW)
 #include "third_party/absl/strings/string_view.h"
+#elif defined(_USE_TF_STRING_VIEW)
+#include "absl/strings/string_view.h"
 #else
 // Minimum absl::string_view class that is used only for
 // the argument of public APIs.

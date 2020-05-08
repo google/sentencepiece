@@ -36,10 +36,10 @@ using ::tensorflow::OpKernelConstruction;
 using ::tensorflow::OpKernelContext;
 using ::tensorflow::Tensor;
 using ::tensorflow::TensorShapeUtils;
+using ::tensorflow::tstring;
 using ::tensorflow::shape_inference::DimensionHandle;
 using ::tensorflow::shape_inference::InferenceContext;
 using ::tensorflow::shape_inference::ShapeHandle;
-using ::tensorflow::tstring;
 
 namespace {
 
@@ -145,9 +145,9 @@ class SentencePieceBaseOp : public OpKernel {
   void GetPad(int32* pad) const { *pad = pad_id_; }
 
   void GetPad(tstring* pad) const {
-      pad->clear();
-      if (sentencepiece_processor_ && pad_id_ >= 0 &&
-          pad_id_ != sentencepiece_processor_->unk_id())
+    pad->clear();
+    if (sentencepiece_processor_ && pad_id_ >= 0 &&
+        pad_id_ != sentencepiece_processor_->unk_id())
       *pad = sentencepiece_processor_->IdToPiece(pad_id_);
   }
 
@@ -291,15 +291,17 @@ class SentencePieceEncodeOpBase : public SentencePieceBaseOp {
                                    ? nbest_size_tensor->vec<int32>()(i)
                                    : nbest_size_tensor->scalar<int32>()();
       if (nbest_size == 0 || nbest_size == 1) {
-        OP_REQUIRES_OK(context, ToTFStatus(sentencepiece_processor_->Encode(
-            util::min_string_view(input_sentences(i)), &pieces[i])));
+        OP_REQUIRES_OK(context,
+                       ToTFStatus(sentencepiece_processor_->Encode(
+                           absl::string_view(input_sentences(i)), &pieces[i])));
       } else {
         const float alpha = alpha_tensor->dims() == 1
                                 ? alpha_tensor->vec<float>()(i)
                                 : alpha_tensor->scalar<float>()();
         OP_REQUIRES_OK(context,
                        ToTFStatus(sentencepiece_processor_->SampleEncode(
-                           util::min_string_view(input_sentences(i)), nbest_size, alpha, &pieces[i])));
+                           absl::string_view(input_sentences(i)), nbest_size,
+                           alpha, &pieces[i])));
       }
       RewritePieces(&pieces[i]);
     }
@@ -328,7 +330,7 @@ class SentencePieceEncodeOpBase : public SentencePieceBaseOp {
 };
 
 template <typename T, typename U = T>
-    class SentencePieceEncodeSparseOp : public SentencePieceEncodeOpBase<T, U> {
+class SentencePieceEncodeSparseOp : public SentencePieceEncodeOpBase<T, U> {
  public:
   explicit SentencePieceEncodeSparseOp(OpKernelConstruction* context)
       : SentencePieceEncodeOpBase<T, U>(context) {}
@@ -385,7 +387,7 @@ template <typename T, typename U = T>
 };
 
 template <typename T, typename U = T>
-    class SentencePieceEncodeDenseOp : public SentencePieceEncodeOpBase<T, U> {
+class SentencePieceEncodeDenseOp : public SentencePieceEncodeOpBase<T, U> {
  public:
   explicit SentencePieceEncodeDenseOp(OpKernelConstruction* context)
       : SentencePieceEncodeOpBase<T, U>(context) {
@@ -476,7 +478,7 @@ class SentencePieceDecodeOp : public SentencePieceBaseOp {
       if (reverse_) std::reverse(pieces.begin(), pieces.end());
       std::string detokenized_str;
       OP_REQUIRES_OK(context, ToTFStatus(sentencepiece_processor_->Decode(
-          pieces, &detokenized_str)));
+                                  pieces, &detokenized_str)));
       values_tensor_output(i) = detokenized_str;
     }
   }
