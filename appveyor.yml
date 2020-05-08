@@ -7,7 +7,7 @@ configuration: Release
 clone_depth: 50
 clone_folder: c:\projects\sentencepiece
 init:
- - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+ - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 build_script:
 - cmd: call test.bat %platform%
 artifacts:
