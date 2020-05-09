@@ -98,11 +98,6 @@ class Status {
   struct Rep;
   std::unique_ptr<Rep> rep_;
 };
-
-// Redefine std::string for serialized_proto interface as Python's string is
-// a Unicode string. We can enforce the return value to be raw byte sequence
-// with SWIG's typemap.
-using bytes = std::string;
 }  // namespace util
 
 // SentencePieceProcessor:
@@ -175,6 +170,13 @@ enum class EncoderVersion {
   kOriginal    // The original encoder (user may choose to fall back to this
                // just in case).
 };
+
+namespace util {
+// Redefine std::string for serialized_proto interface as Python's string is
+// a Unicode string. We can enforce the return value to be raw byte sequence
+// with SWIG's typemap.
+using bytes = std::string;
+}  // namespace util
 
 class SentencePieceProcessor {
  public:

@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "bpe_model.h"
-
 #include <cstdio>
 #include <string>
 
+#include "bpe_model.h"
 #include "model_interface.h"
 #include "testharness.h"
 

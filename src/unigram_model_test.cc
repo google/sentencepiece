@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "unigram_model.h"
-
 #include <cmath>
 #include <map>
 #include <string>
@@ -24,6 +22,7 @@
 #include "testharness.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_join.h"
+#include "unigram_model.h"
 #include "util.h"
 
 namespace sentencepiece {
