@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "unigram_model.h"
+
 #include <cmath>
 #include <map>
 #include <string>
@@ -22,7 +24,6 @@
 #include "testharness.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_join.h"
-#include "unigram_model.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -282,9 +283,9 @@ TEST(LatticeTest, SampleTest) {
   InsertWithScoreAndId(&lattice, 1, 2, 1.7, 4);  // BC
   InsertWithScoreAndId(&lattice, 0, 3, 1.8, 5);  // ABC
 
-  const std::vector<float> kTheta = {0.0, 0.01, 0.5, 0.7, 1.0};
+  const std::vector<double> kTheta = {0.0, 0.01, 0.5, 0.7, 1.0};
   for (int i = 0; i < kTheta.size(); ++i) {
-    std::map<std::string, float> probs;
+    std::map<std::string, double> probs;
     // Expands all paths in the lattice.
     probs["A B C"] = exp(kTheta[i] * (1.0 + 1.2 + 1.5));  // A B C
     probs["AB C"] = exp(kTheta[i] * (1.6 + 1.5));         // AB C
@@ -292,7 +293,7 @@ TEST(LatticeTest, SampleTest) {
     probs["ABC"] = exp(kTheta[i] * 1.8);                  // ABC
 
     // Computes expected probabilities.
-    float Z = 0.0;
+    double Z = 0.0;
     for (const auto &it : probs) Z += it.second;
     for (auto &it : probs) it.second /= Z;
 

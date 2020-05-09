@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "bpe_model.h"
+
 #include <cstdio>
 #include <string>
 
-#include "bpe_model.h"
 #include "model_interface.h"
 #include "testharness.h"
 
@@ -276,12 +277,13 @@ TEST(SampleModelTest, EncodeTest) {
     };
 
     const Model model(model_proto);
-    const std::vector<float> kAlpha = {0.0, 0.1, 0.5, 0.7, 0.9};
-    for (const float alpha : kAlpha) {
+    const std::vector<double> kAlpha = {0.0, 0.1, 0.5, 0.7, 0.9};
+    for (const auto alpha : kAlpha) {
       constexpr int kTrial = 100000;
       std::map<std::string, int> freq;
       for (int n = 0; n < kTrial; ++n)
-        freq[get_tokens(model.SampleEncode("abcd", alpha))]++;
+        freq[get_tokens(
+            model.SampleEncode("abcd", static_cast<float>(alpha)))]++;
       int num = 0;
       if (alpha == 0.0)
         EXPECT_EQ(1, freq.size());
