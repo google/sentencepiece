@@ -540,7 +540,7 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   ::google::protobuf::int32 num_sub_iterations() const;
   void set_num_sub_iterations(::google::protobuf::int32 value);
 
-  // optional int32 max_sentence_length = 18 [default = 8192];
+  // optional int32 max_sentence_length = 18 [default = 4192];
   bool has_max_sentence_length() const;
   void clear_max_sentence_length();
   static const int kMaxSentenceLengthFieldNumber = 18;
@@ -2070,7 +2070,7 @@ inline void TrainerSpec::set_shrinking_factor(float value) {
   // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.shrinking_factor)
 }
 
-// optional int32 max_sentence_length = 18 [default = 8192];
+// optional int32 max_sentence_length = 18 [default = 4192];
 inline bool TrainerSpec::has_max_sentence_length() const {
   return (_has_bits_[0] & 0x02000000u) != 0;
 }
@@ -2081,7 +2081,7 @@ inline void TrainerSpec::clear_has_max_sentence_length() {
   _has_bits_[0] &= ~0x02000000u;
 }
 inline void TrainerSpec::clear_max_sentence_length() {
-  max_sentence_length_ = 8192;
+  max_sentence_length_ = 4192;
   clear_has_max_sentence_length();
 }
 inline ::google::protobuf::int32 TrainerSpec::max_sentence_length() const {

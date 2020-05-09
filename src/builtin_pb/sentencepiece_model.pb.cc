@@ -349,7 +349,7 @@ void TrainerSpec::SharedCtor() {
   shrinking_factor_ = 0.75f;
   num_threads_ = 16;
   num_sub_iterations_ = 2;
-  max_sentence_length_ = 8192;
+  max_sentence_length_ = 4192;
   max_sentencepiece_length_ = 16;
   shuffle_input_sentence_ = true;
   split_by_unicode_script_ = true;
@@ -443,7 +443,7 @@ void TrainerSpec::Clear() {
   }
   if (cached_has_bits & 4278190080u) {
     num_sub_iterations_ = 2;
-    max_sentence_length_ = 8192;
+    max_sentence_length_ = 4192;
     max_sentencepiece_length_ = 16;
     shuffle_input_sentence_ = true;
     split_by_unicode_script_ = true;
@@ -687,7 +687,7 @@ bool TrainerSpec::MergePartialFromCodedStream(
         break;
       }
 
-      // optional int32 max_sentence_length = 18 [default = 8192];
+      // optional int32 max_sentence_length = 18 [default = 4192];
       case 18: {
         if (static_cast< ::google::protobuf::uint8>(tag) ==
             static_cast< ::google::protobuf::uint8>(144u /* 144 & 0xFF */)) {
@@ -1134,7 +1134,7 @@ void TrainerSpec::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteInt32(17, this->num_sub_iterations(), output);
   }
 
-  // optional int32 max_sentence_length = 18 [default = 8192];
+  // optional int32 max_sentence_length = 18 [default = 4192];
   if (cached_has_bits & 0x02000000u) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(18, this->max_sentence_length(), output);
   }
@@ -1487,7 +1487,7 @@ size_t TrainerSpec::ByteSizeLong() const {
           this->num_sub_iterations());
     }
 
-    // optional int32 max_sentence_length = 18 [default = 8192];
+    // optional int32 max_sentence_length = 18 [default = 4192];
     if (has_max_sentence_length()) {
       total_size += 2 +
         ::google::protobuf::internal::WireFormatLite::Int32Size(

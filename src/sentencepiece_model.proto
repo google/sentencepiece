@@ -103,7 +103,7 @@ message TrainerSpec {
   // Longer input tends to bring the following risks:
   //  * Overflow during EM training (unigram language model only)
   //  * Performance drop because of O(n log n) cost in BPE.
-  optional int32 max_sentence_length = 18 [default = 8192];
+  optional int32 max_sentence_length = 18 [default = 4192];
 
   // Number of threads in the training.
   optional int32 num_threads = 16 [default = 16];
