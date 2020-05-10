@@ -100,10 +100,11 @@ namespace sentencepiece {
   else                                                 \
     os << "  " << #param_name << ": " << it->second << "\n";
 
-inline std::string PrintProto(const TrainerSpec &message) {
+inline std::string PrintProto(const TrainerSpec &message,
+                              absl::string_view name) {
   std::ostringstream os;
 
-  os << "TrainerSpec {\n";
+  os << name << " {\n";
 
   PRINT_REPEATED_STRING(input);
   PRINT_PARAM(input_format);
@@ -157,10 +158,11 @@ inline std::string PrintProto(const TrainerSpec &message) {
   return os.str();
 }
 
-inline std::string PrintProto(const NormalizerSpec &message) {
+inline std::string PrintProto(const NormalizerSpec &message,
+                              absl::string_view name) {
   std::ostringstream os;
 
-  os << "NormalizerSpec {\n";
+  os << name << " {\n";
 
   PRINT_PARAM(name);
   PRINT_PARAM(add_dummy_prefix);

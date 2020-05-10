@@ -60,10 +60,14 @@ util::Status SentencePieceTrainer::Train(
   RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_denormalizer_spec, true));
   auto trainer = TrainerFactory::Create(trainer_spec, copied_normalizer_spec,
                                         copied_denormalizer_spec);
-  std::string info = absl::StrCat(PrintProto(trainer_spec),
-                                  PrintProto(copied_normalizer_spec));
-  if (!copied_denormalizer_spec.precompiled_charsmap().empty())
-    info += PrintProto(copied_denormalizer_spec);
+  std::string info =
+      absl::StrCat(PrintProto(trainer_spec, "trainer_spec"),
+                   PrintProto(copied_normalizer_spec, "normalizer_spec"));
+  if (!copied_denormalizer_spec.precompiled_charsmap().empty()) {
+    info += PrintProto(copied_denormalizer_spec, "denormalizer_spec");
+  } else {
+    info += "denormalizer_spec {}";
+  }
 
   LOG(INFO) << "Starts training with : \n" << info;
 
