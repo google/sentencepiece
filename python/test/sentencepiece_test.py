@@ -291,7 +291,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
     # add_bos, add_eos, reverse
     self.assertEqual([sp.bos_id()] + ids, sp.encode(text, add_bos=True))
     self.assertEqual(ids + [sp.eos_id()], sp.encode(text, add_eos=True))
-    rids = ids.copy()
+    rids = ids[:]
     rids.reverse()
     self.assertEqual(rids, sp.encode(text, reverse=True))
 

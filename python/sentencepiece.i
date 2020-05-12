@@ -345,7 +345,9 @@ int ToSwigError(sentencepiece::util::StatusCode code) {
 
 import re
 import csv
+import sys
 from io import StringIO
+from io import BytesIO
 
 
 def _sentencepiece_processor_init(self,
@@ -521,7 +523,10 @@ def _sentencepiece_trainer_train(arg=None, **kwargs):
   def _encode(value):
     """Encode value to CSV.."""
     if type(value) is list:
-      f = StringIO()
+      if sys.version_info[0] == 3:
+        f = StringIO()
+      else:
+        f = BytesIO()
       writer = csv.writer(f, lineterminator="")
       writer.writerow([str(v) for v in value])
       return f.getvalue()
@@ -582,7 +587,7 @@ setattr(SentencePieceProcessor, 'Load', _sentencepiece_processor_load)
 setattr(SentencePieceProcessor, '__init__', _sentencepiece_processor_init)
 setattr(SentencePieceProcessor, 'vocab_size', SentencePieceProcessor.GetPieceSize)
 setattr(SentencePieceProcessor, 'piece_size', SentencePieceProcessor.GetPieceSize)
-setattr(SentencePieceTrainer, 'Train', _sentencepiece_trainer_train)
+setattr(SentencePieceTrainer, 'Train', staticmethod(_sentencepiece_trainer_train))
 
 for m in [
     'PieceToId', 'IdToPiece', 'GetScore', 'IsUnknown', 'IsControl', 'IsUnused',
