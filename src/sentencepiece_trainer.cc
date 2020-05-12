@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "sentencepiece_trainer.h"
+
 #include <string>
 #include <vector>
 
@@ -20,7 +22,6 @@
 #include "builtin_pb/sentencepiece_model.pb.h"
 #include "common.h"
 #include "normalizer.h"
-#include "sentencepiece_trainer.h"
 #include "spec_parser.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_split.h"
@@ -87,26 +88,39 @@ NormalizerSpec SentencePieceTrainer::GetNormalizerSpec(absl::string_view name) {
 
 // static
 util::Status SentencePieceTrainer::MergeSpecsFromArgs(
-    absl::string_view _args, TrainerSpec *trainer_spec,
+    absl::string_view args, TrainerSpec *trainer_spec,
     NormalizerSpec *normalizer_spec, NormalizerSpec *denormalizer_spec) {
-  CHECK_OR_RETURN(trainer_spec) << "`trainer_spec` must not be null.";
-  CHECK_OR_RETURN(normalizer_spec) << "`normalizer_spec` must not be null.";
-  CHECK_OR_RETURN(denormalizer_spec) << "`denormalizer_spec` must not be null.";
-
-  absl::string_view args(_args.data(), _args.size());
   if (args.empty()) return util::OkStatus();
 
+  std::map<std::string, std::string> kwargs;
   for (auto arg : absl::StrSplit(args, " ")) {
     absl::ConsumePrefix(&arg, "--");
     std::string key, value;
-    auto pos = arg.find("=");
+    const auto pos = arg.find("=");
     if (pos == absl::string_view::npos) {
       key = std::string(arg);
     } else {
       key = std::string(arg.substr(0, pos));
       value = std::string(arg.substr(pos + 1));
     }
+    kwargs.emplace(key, value);
+  }
 
+  return MergeSpecsFromArgs(kwargs, trainer_spec, normalizer_spec,
+                            denormalizer_spec);
+}
+
+// static
+util::Status SentencePieceTrainer::MergeSpecsFromArgs(
+    const std::map<std::string, std::string> &kwargs, TrainerSpec *trainer_spec,
+    NormalizerSpec *normalizer_spec, NormalizerSpec *denormalizer_spec) {
+  CHECK_OR_RETURN(trainer_spec) << "`trainer_spec` must not be null.";
+  CHECK_OR_RETURN(normalizer_spec) << "`normalizer_spec` must not be null.";
+  CHECK_OR_RETURN(denormalizer_spec) << "`denormalizer_spec` must not be null.";
+
+  for (const auto &it : kwargs) {
+    const auto &key = it.first;
+    const auto &value = it.second;
     // Exceptions.
     if (key == "normalization_rule_name") {
       normalizer_spec->set_name(value);
@@ -144,6 +158,19 @@ util::Status SentencePieceTrainer::Train(absl::string_view args,
   NormalizerSpec normalizer_spec;
   NormalizerSpec denormalizer_spec;
   RETURN_IF_ERROR(MergeSpecsFromArgs(args, &trainer_spec, &normalizer_spec,
+                                     &denormalizer_spec));
+  return Train(trainer_spec, normalizer_spec, denormalizer_spec,
+               sentence_iterator);
+}
+
+// static
+util::Status SentencePieceTrainer::Train(
+    const std::map<std::string, std::string> &kwargs,
+    SentenceIterator *sentence_iterator) {
+  TrainerSpec trainer_spec;
+  NormalizerSpec normalizer_spec;
+  NormalizerSpec denormalizer_spec;
+  RETURN_IF_ERROR(MergeSpecsFromArgs(kwargs, &trainer_spec, &normalizer_spec,
                                      &denormalizer_spec));
   return Train(trainer_spec, normalizer_spec, denormalizer_spec,
                sentence_iterator);

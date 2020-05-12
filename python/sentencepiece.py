@@ -176,87 +176,6 @@ class SentencePieceProcessor(object):
     def pad_id(self):
         return _sentencepiece.SentencePieceProcessor_pad_id(self)
 
-    def load(self, filename):
-        return _sentencepiece.SentencePieceProcessor_load(self, filename)
-
-    def load_from_serialized_proto(self, filename):
-        return _sentencepiece.SentencePieceProcessor_load_from_serialized_proto(self, filename)
-
-    def set_encode_extra_options(self, extra_option):
-        return _sentencepiece.SentencePieceProcessor_set_encode_extra_options(self, extra_option)
-
-    def set_decode_extra_options(self, extra_option):
-        return _sentencepiece.SentencePieceProcessor_set_decode_extra_options(self, extra_option)
-
-    def set_vocabulary(self, valid_vocab):
-        return _sentencepiece.SentencePieceProcessor_set_vocabulary(self, valid_vocab)
-
-    def reset_vocabulary(self):
-        return _sentencepiece.SentencePieceProcessor_reset_vocabulary(self)
-
-    def load_vocabulary(self, filename, threshold):
-        return _sentencepiece.SentencePieceProcessor_load_vocabulary(self, filename, threshold)
-
-    def encode_as_pieces(self, input):
-        return _sentencepiece.SentencePieceProcessor_encode_as_pieces(self, input)
-
-    def encode_as_ids(self, input):
-        return _sentencepiece.SentencePieceProcessor_encode_as_ids(self, input)
-
-    def nbest_encode_as_pieces(self, input, nbest_size):
-        return _sentencepiece.SentencePieceProcessor_nbest_encode_as_pieces(self, input, nbest_size)
-
-    def nbest_encode_as_ids(self, input, nbest_size):
-        return _sentencepiece.SentencePieceProcessor_nbest_encode_as_ids(self, input, nbest_size)
-
-    def sample_encode_as_pieces(self, input, nbest_size, alpha):
-        return _sentencepiece.SentencePieceProcessor_sample_encode_as_pieces(self, input, nbest_size, alpha)
-
-    def sample_encode_as_ids(self, input, nbest_size, alpha):
-        return _sentencepiece.SentencePieceProcessor_sample_encode_as_ids(self, input, nbest_size, alpha)
-
-    def decode_pieces(self, input):
-        return _sentencepiece.SentencePieceProcessor_decode_pieces(self, input)
-
-    def decode_ids(self, input):
-        return _sentencepiece.SentencePieceProcessor_decode_ids(self, input)
-
-    def encode_as_serialized_proto(self, input):
-        return _sentencepiece.SentencePieceProcessor_encode_as_serialized_proto(self, input)
-
-    def sample_encode_as_serialized_proto(self, input, nbest_size, alpha):
-        return _sentencepiece.SentencePieceProcessor_sample_encode_as_serialized_proto(self, input, nbest_size, alpha)
-
-    def nbest_encode_as_serialized_proto(self, input, nbest_size):
-        return _sentencepiece.SentencePieceProcessor_nbest_encode_as_serialized_proto(self, input, nbest_size)
-
-    def decode_pieces_as_serialized_proto(self, pieces):
-        return _sentencepiece.SentencePieceProcessor_decode_pieces_as_serialized_proto(self, pieces)
-
-    def decode_ids_as_serialized_proto(self, ids):
-        return _sentencepiece.SentencePieceProcessor_decode_ids_as_serialized_proto(self, ids)
-
-    def get_piece_size(self):
-        return _sentencepiece.SentencePieceProcessor_get_piece_size(self)
-
-    def piece_to_id(self, piece):
-        return _sentencepiece.SentencePieceProcessor_piece_to_id(self, piece)
-
-    def id_to_piece(self, id):
-        return _sentencepiece.SentencePieceProcessor_id_to_piece(self, id)
-
-    def get_score(self, id):
-        return _sentencepiece.SentencePieceProcessor_get_score(self, id)
-
-    def is_unknown(self, id):
-        return _sentencepiece.SentencePieceProcessor_is_unknown(self, id)
-
-    def is_control(self, id):
-        return _sentencepiece.SentencePieceProcessor_is_control(self, id)
-
-    def is_unused(self, id):
-        return _sentencepiece.SentencePieceProcessor_is_unused(self, id)
-
     def __len__(self):
         return _sentencepiece.SentencePieceProcessor___len__(self)
 
@@ -266,29 +185,6 @@ class SentencePieceProcessor(object):
 # Register SentencePieceProcessor in _sentencepiece:
 _sentencepiece.SentencePieceProcessor_swigregister(SentencePieceProcessor)
 
-class SentenceIterator(object):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError("No constructor defined - class is abstract")
-    __repr__ = _swig_repr
-    __swig_destroy__ = _sentencepiece.delete_SentenceIterator
-
-    def done(self):
-        return _sentencepiece.SentenceIterator_done(self)
-
-    def Next(self):
-        return _sentencepiece.SentenceIterator_Next(self)
-
-    def value(self):
-        return _sentencepiece.SentenceIterator_value(self)
-
-    def status(self):
-        return _sentencepiece.SentenceIterator_status(self)
-
-# Register SentenceIterator in _sentencepiece:
-_sentencepiece.SentenceIterator_swigregister(SentenceIterator)
-
 class SentencePieceTrainer(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
 
@@ -297,42 +193,273 @@ class SentencePieceTrainer(object):
     __repr__ = _swig_repr
 
     @staticmethod
-    def Train(*args):
-        return _sentencepiece.SentencePieceTrainer_Train(*args)
+    def TrainFromString(arg):
+        return _sentencepiece.SentencePieceTrainer_TrainFromString(arg)
 
     @staticmethod
-    def SetPretokenizerForTraining(pretokenizer):
-        return _sentencepiece.SentencePieceTrainer_SetPretokenizerForTraining(pretokenizer)
-
-    @staticmethod
-    def GetPretokenizerForTraining():
-        return _sentencepiece.SentencePieceTrainer_GetPretokenizerForTraining()
-
-    @staticmethod
-    def PopulateModelTypeFromString(type, trainer_spec):
-        return _sentencepiece.SentencePieceTrainer_PopulateModelTypeFromString(type, trainer_spec)
-
-    @staticmethod
-    def train(args):
-        return _sentencepiece.SentencePieceTrainer_train(args)
+    def TrainFromMap(args):
+        return _sentencepiece.SentencePieceTrainer_TrainFromMap(args)
 
 # Register SentencePieceTrainer in _sentencepiece:
 _sentencepiece.SentencePieceTrainer_swigregister(SentencePieceTrainer)
 
-def SentencePieceTrainer_Train(*args):
-    return _sentencepiece.SentencePieceTrainer_Train(*args)
+def SentencePieceTrainer_TrainFromString(arg):
+    return _sentencepiece.SentencePieceTrainer_TrainFromString(arg)
 
-def SentencePieceTrainer_SetPretokenizerForTraining(pretokenizer):
-    return _sentencepiece.SentencePieceTrainer_SetPretokenizerForTraining(pretokenizer)
+def SentencePieceTrainer_TrainFromMap(args):
+    return _sentencepiece.SentencePieceTrainer_TrainFromMap(args)
 
-def SentencePieceTrainer_GetPretokenizerForTraining():
-    return _sentencepiece.SentencePieceTrainer_GetPretokenizerForTraining()
 
-def SentencePieceTrainer_PopulateModelTypeFromString(type, trainer_spec):
-    return _sentencepiece.SentencePieceTrainer_PopulateModelTypeFromString(type, trainer_spec)
 
-def SentencePieceTrainer_train(args):
-    return _sentencepiece.SentencePieceTrainer_train(args)
+import re
+import csv
+from io import StringIO
+
+
+def _sentencepiece_processor_init(self,
+                                  model_file=None,
+                                  model_proto=None,
+                                  out_type=int,
+                                  add_bos=False,
+                                  add_eos=False,
+                                  reverse=False,
+                                  enable_sampling=False,
+                                  nbest_size=-1,
+                                  alpha=0.1):
+  """Overwride SentencePieceProcessor.__init__ to add addtional parameters.
+
+  Args:
+    model_file: The sentencepiece model file path.
+    model_proto: The sentencepiece model serialized proto.
+    out_type: output type. int or str.
+    add_bos: Add <s> to the result (Default = false)
+    add_eos: Add </s> to the result (Default = false) <s>/</s> is added after
+      reversing (if enabled).
+    reverse: Reverses the tokenized sequence (Default = false)
+    nbest_size: sampling parameters for unigram. Invalid for BPE-Dropout.
+                nbest_size = {0,1}: No sampling is performed.
+                nbest_size > 1: samples from the nbest_size results.
+                nbest_size < 0: assuming that nbest_size is infinite and samples
+                  from the all hypothesis (lattice) using
+                  forward-filtering-and-backward-sampling algorithm.
+    alpha: Soothing parameter for unigram sampling, and merge probability for
+      BPE-dropout.
+  """
+
+  _sentencepiece_processor_init_native(self)
+  self._out_type = out_type
+  self._add_bos = add_bos
+  self._add_eos = add_eos
+  self._reverse = reverse
+  self._enable_sampling = enable_sampling
+  self._nbest_size = nbest_size
+  self._alpha = alpha
+  if model_file or model_proto:
+    self.Load(model_file=model_file, model_proto=model_proto)
+
+
+def _sentencepiece_processor_load(self, model_file=None, model_proto=None):
+  """Overwride SentencePieceProcessor.Load to support both model_file and model_proto.
+
+  Args:
+    model_file: The sentencepiece model file path.
+    model_proto: The sentencepiece model serialized proto. Either `model_file`
+      or `model_proto` must be set.
+  """
+  if model_file and model_proto:
+    raise RuntimeError('model_file and model_proto must be exclusive.')
+  if model_proto:
+    return self._LoadFromSerializedProto_native(model_proto)
+  return self._Load_native(model_file)
+
+
+def _sentencepiece_processor_encode(self,
+                                    input,
+                                    out_type=None,
+                                    add_bos=None,
+                                    add_eos=None,
+                                    reverse=None,
+                                    enable_sampling=None,
+                                    nbest_size=None,
+                                    alpha=None):
+  """Encode text input to segmented ids or tokens.
+
+    Args:
+    input: input string. accepsts list of string.
+    out_type: output type. int or str.
+    add_bos: Add <s> to the result (Default = false)
+    add_eos: Add </s> to the result (Default = false) <s>/</s> is added after
+      reversing (if enabled).
+    reverse: Reverses the tokenized sequence (Default = false)
+    nbest_size: sampling parameters for unigram. Invalid for BPE-Dropout.
+                nbest_size = {0,1}: No sampling is performed.
+                nbest_size > 1: samples from the nbest_size results.
+                nbest_size < 0: assuming that nbest_size is infinite and samples
+                  from the all hypothesis (lattice) using
+                  forward-filtering-and-backward-sampling algorithm.
+    alpha: Soothing parameter for unigram sampling, and merge probability for
+      BPE-dropout.
+  """
+
+  if out_type is None:
+    out_type = self._out_type
+  if add_bos is None:
+    add_bos = self._add_bos
+  if add_eos is None:
+    add_eos = self._add_eos
+  if reverse is None:
+    reverse = self._reverse
+  if enable_sampling is None:
+    enable_sampling = self._enable_sampling
+  if nbest_size is None:
+    nbest_size = self._nbest_size
+  if alpha is None:
+    alpha = self._alpha
+
+  if enable_sampling == True and (nbest_size is None or nbest_size == 0 or
+                                      nbest_size == 1 or alpha is None or
+                                      alpha <= 0.0 or alpha > 1.0):
+    raise RuntimeError(
+        'When enable_sampling is True, We must specify "nbest_size > 1" or "nbest_size = -1", '
+        'and "0.0 < alpha < 1.0". "nbest_size = -1" is enabled only on unigram mode and '
+        'samples from all candidates on the lattice instead of nbest segmentations. '
+    )
+
+  def _encode(text):
+    if out_type is int:
+      if enable_sampling:
+        result = self.SampleEncodeAsIds(text, nbest_size, alpha)
+      else:
+        result = self.EncodeAsIds(text)
+    else:
+      if enable_sampling:
+        result = self.SampleEncodeAsPieces(text, nbest_size, alpha)
+      else:
+        result = self.EncodeAsPieces(text)
+
+    if reverse:
+      result.reverse()
+    if add_bos:
+      if out_type is int:
+        result = [self.bos_id()] + result
+      else:
+        result = [self.IdToPiece(self.bos_id())] + result
+
+    if add_eos:
+      if out_type is int:
+        result = result + [self.eos_id()]
+      else:
+        result = result + [self.IdToPiece(self.eos_id())]
+
+    return result
+
+  if type(input) is list:
+    return [_encode(n) for n in input]
+
+  return _encode(input)
+
+
+def _sentencepiece_processor_decode(self, input):
+  """Decode processed id or token sequences."""
+
+  if not input:
+    return self.DecodeIds([])
+  elif type(input) is int:
+    return self.DecodeIds([input])
+  elif type(input) is str:
+    return self.DecodePieces([input])
+
+  def _decode(input):
+    if not input:
+      return self.DecodeIds([])
+    if type(input[0]) is int:
+      return self.DecodeIds(input)
+    return self.DecodePieces(input)
+
+  if type(input[0]) is list:
+    return [_decode(n) for n in input]
+
+  return _decode(input)
+
+def _sentencepiece_trainer_train(arg=None, **kwargs):
+  """Train Sentencepiece model. Accept both kwargs and legacy string arg."""
+  if arg is not None and type(arg) is str:
+    return SentencePieceTrainer.TrainFromString(arg)
+
+  def _encode(value):
+    """Encode value to CSV.."""
+    if type(value) is list:
+      f = StringIO()
+      writer = csv.writer(f, lineterminator="")
+      writer.writerow([str(v) for v in value])
+      return f.getvalue()
+    else:
+      return str(value)
+
+  for key, value in kwargs.items():
+    kwargs[key] = _encode(value)
+
+  return SentencePieceTrainer.TrainFromMap(kwargs)
+
+
+def _save_native(classname):
+  """Stores the origina method as _{method_name}_native."""
+
+  native_map = {}
+  for name, method in classname.__dict__.items():
+    if name[0] != '_':
+      native_map[('_%s_native' % name)] = method
+  for k, v in native_map.items():
+    setattr(classname, k, v)
+
+
+def _add_snake_case(classname):
+  """Added snake_cased method from CammelCased method."""
+
+  snake_map = {}
+  for k, v in classname.__dict__.items():
+    if re.match(r'^[A-Z]+', k):
+      snake = re.sub(r'(?<!^)(?=[A-Z])', '_',
+                     k).lower().replace('n_best', 'nbest')
+      snake_map[snake] = v
+  for k, v in snake_map.items():
+    setattr(classname, k, v)
+
+
+def _batchnize(classname, name):
+  """Enables batch request for the method classname.name."""
+
+  func = getattr(classname, '_%s_native' % name, None)
+
+  def _batched_func(self, arg):
+    if type(arg) is list:
+      return [func(self, n) for n in arg]
+    else:
+      return func(self, arg)
+
+  setattr(classname, name, _batched_func)
+
+
+_save_native(SentencePieceProcessor)
+_sentencepiece_processor_init_native = SentencePieceProcessor.__init__
+setattr(SentencePieceProcessor, 'Encode', _sentencepiece_processor_encode)
+setattr(SentencePieceProcessor, 'Tokenize', _sentencepiece_processor_encode)
+setattr(SentencePieceProcessor, 'Decode', _sentencepiece_processor_decode)
+setattr(SentencePieceProcessor, 'Detokenize', _sentencepiece_processor_decode)
+setattr(SentencePieceProcessor, 'Load', _sentencepiece_processor_load)
+setattr(SentencePieceProcessor, '__init__', _sentencepiece_processor_init)
+setattr(SentencePieceProcessor, 'vocab_size', SentencePieceProcessor.GetPieceSize)
+setattr(SentencePieceProcessor, 'piece_size', SentencePieceProcessor.GetPieceSize)
+setattr(SentencePieceTrainer, 'Train', _sentencepiece_trainer_train)
+
+for m in [
+    'PieceToId', 'IdToPiece', 'GetScore', 'IsUnknown', 'IsControl', 'IsUnused',
+    'IsByte'
+]:
+  _batchnize(SentencePieceProcessor, m)
+
+_add_snake_case(SentencePieceProcessor)
+_add_snake_case(SentencePieceTrainer)
 
 
 

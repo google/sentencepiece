@@ -15,6 +15,7 @@
 #ifndef SENTENCEPIECE_TRAINER_H_
 #define SENTENCEPIECE_TRAINER_H_
 
+#include <map>
 #include <string>
 
 #include "sentencepiece_processor.h"
@@ -70,12 +71,16 @@ class SentencePieceTrainer {
                             const NormalizerSpec &normalizer_spec,
                             const NormalizerSpec &denormalizer_spec,
                             SentenceIterator *sentence_iterator = nullptr);
-
   // Trains SentencePiece model with command-line string in `args`,
   // e.g.,
   // '--input=data --model_prefix=m --vocab_size=8192 model_type=unigram'
   // When `sentence_iterator` is passed, load sentences from the iterator.
   static util::Status Train(absl::string_view args,
+                            SentenceIterator *sentence_iterator = nullptr);
+
+  // Trains SentencePiece model with mapin `kwargs`.
+  // e.g., {{"input", "data"}, {"model_prefix, "m"}, {"vocab_size", "8192"}...}
+  static util::Status Train(const std::map<std::string, std::string> &kwargs,
                             SentenceIterator *sentence_iterator = nullptr);
 
   // Handy function to make a normalizer spec from the pre-compiled
@@ -89,7 +94,14 @@ class SentencePieceTrainer {
                                              bool is_denomalizer = false);
 
   // Overrides `trainer_spec`, `normalizer_spec`, `denormalizer_spec` with the
-  // command-line string in `args`.
+  // std::map in `kargs`.
+  static util::Status MergeSpecsFromArgs(
+      const std::map<std::string, std::string> &kwargs,
+      TrainerSpec *trainer_spec, NormalizerSpec *normalizer_spec,
+      NormalizerSpec *denormalizer_spec);
+
+  // Overrides `trainer_spec`, `normalizer_spec`, `denormalizer_spec` with the
+  // command line flags in `args`.
   static util::Status MergeSpecsFromArgs(absl::string_view args,
                                          TrainerSpec *trainer_spec,
                                          NormalizerSpec *normalizer_spec,
