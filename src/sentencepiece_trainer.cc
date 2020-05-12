@@ -90,6 +90,10 @@ NormalizerSpec SentencePieceTrainer::GetNormalizerSpec(absl::string_view name) {
 util::Status SentencePieceTrainer::MergeSpecsFromArgs(
     absl::string_view args, TrainerSpec *trainer_spec,
     NormalizerSpec *normalizer_spec, NormalizerSpec *denormalizer_spec) {
+  CHECK_OR_RETURN(trainer_spec) << "`trainer_spec` must not be null.";
+  CHECK_OR_RETURN(normalizer_spec) << "`normalizer_spec` must not be null.";
+  CHECK_OR_RETURN(denormalizer_spec) << "`denormalizer_spec` must not be null.";
+
   if (args.empty()) return util::OkStatus();
 
   std::map<std::string, std::string> kwargs;
