@@ -2661,14 +2661,15 @@ SWIGINTERN PyObject *SWIG_PyStaticMethod_New(PyObject *SWIGUNUSEDPARM(self), PyO
 /* -------- TYPES TABLE (BEGIN) -------- */
 
 #define SWIGTYPE_p_char swig_types[0]
-#define SWIGTYPE_p_sentencepiece__SentencePieceProcessor swig_types[1]
-#define SWIGTYPE_p_sentencepiece__SentencePieceTrainer swig_types[2]
-#define SWIGTYPE_p_std__mapT_std__string_std__string_t swig_types[3]
-#define SWIGTYPE_p_std__string swig_types[4]
-#define SWIGTYPE_p_std__vectorT_int_t swig_types[5]
-#define SWIGTYPE_p_std__vectorT_std__string_t swig_types[6]
-static swig_type_info *swig_types[8];
-static swig_module_info swig_module = {swig_types, 7, 0, 0, 0, 0};
+#define SWIGTYPE_p_sentencepiece__SentenceIterator swig_types[1]
+#define SWIGTYPE_p_sentencepiece__SentencePieceProcessor swig_types[2]
+#define SWIGTYPE_p_sentencepiece__SentencePieceTrainer swig_types[3]
+#define SWIGTYPE_p_std__mapT_std__string_std__string_t swig_types[4]
+#define SWIGTYPE_p_std__string swig_types[5]
+#define SWIGTYPE_p_std__vectorT_int_t swig_types[6]
+#define SWIGTYPE_p_std__vectorT_std__string_t swig_types[7]
+static swig_type_info *swig_types[9];
+static swig_module_info swig_module = {swig_types, 8, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2867,6 +2868,58 @@ int ToSwigError(sentencepiece::util::StatusCode code) {
   }
   return SWIG_RuntimeError;
 }
+
+class PySentenceIterator : public sentencepiece::SentenceIterator {
+  public:
+  PySentenceIterator(PyObject *iter) : iter_(iter) {
+    item_ = PyIter_Next(iter_);
+    CopyValue();
+  }
+
+  ~PySentenceIterator() {}
+
+  bool done() const override {
+    return item_ == nullptr;
+  }
+
+  void Next() override {
+    item_ = PyIter_Next(iter_);
+    CopyValue();
+  }
+
+  const std::string &value() const override {
+    return value_;
+  }
+
+  sentencepiece::util::Status status() const override {
+    return status_;
+  }
+
+  private:
+   void CopyValue() {
+     if (item_ == nullptr) return;
+     const PyInputString ustring(item_);
+     if (ustring.IsAvalable()) {
+       const char *data = ustring.data();
+       size_t size = ustring.size();
+       while (size > 0) {
+         if (data[size - 1] == '\r' || data[size - 1] == '\n')
+           --size;
+         else
+           break;
+       }
+       value_.assign(data, size);
+     } else {
+       status_ = sentencepiece::util::Status(sentencepiece::util::StatusCode::kInternal,
+                                             "Not a string.");
+     }
+     Py_DECREF(item_);
+   }
+   PyObject *iter_ = nullptr;
+   PyObject *item_ = nullptr;
+   std::string value_;
+   sentencepiece::util::Status status_;
+};
 }
 
 
@@ -3242,6 +3295,23 @@ SWIGINTERN void sentencepiece_SentencePieceTrainer_TrainFromMap(std::map< std::s
     const auto _status = sentencepiece::SentencePieceTrainer::Train(args);
     if (!_status.ok()) throw _status;
     return;
+  }
+SWIGINTERN void sentencepiece_SentencePieceTrainer_TrainFromMap2(std::map< std::string,std::string > const &args,sentencepiece::SentenceIterator *iter){
+    const auto _status = sentencepiece::SentencePieceTrainer::Train(args, iter);
+    if (!_status.ok()) throw _status;
+    return;
+  }
+SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceTrainer_TrainFromMap3(std::map< std::string,std::string > const &args){
+    sentencepiece::util::bytes model_proto;
+    const auto _status = sentencepiece::SentencePieceTrainer::Train(args, nullptr, &model_proto);
+    if (!_status.ok()) throw _status;
+    return model_proto;
+  }
+SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceTrainer_TrainFromMap4(std::map< std::string,std::string > const &args,sentencepiece::SentenceIterator *iter){
+    sentencepiece::util::bytes model_proto;
+    const auto _status = sentencepiece::SentencePieceTrainer::Train(args, iter, &model_proto);
+    if (!_status.ok()) throw _status;
+    return model_proto;
   }
 #ifdef __cplusplus
 extern "C" {
@@ -4887,6 +4957,39 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_SentencePieceProcessor_serialized_model_proto(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  sentencepiece::util::bytes result;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor_serialized_model_proto" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor const *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
+  {
+    try {
+      result = ((sentencepiece::SentencePieceProcessor const *)arg1)->serialized_model_proto();
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    resultobj = MakePyOutputBytes(result);
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_SentencePieceProcessor___len__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
@@ -5054,6 +5157,203 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_SentencePieceTrainer_TrainFromMap2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  std::map< std::string,std::string > *arg1 = 0 ;
+  sentencepiece::SentenceIterator *arg2 = (sentencepiece::SentenceIterator *) 0 ;
+  PyObject *swig_obj[2] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "SentencePieceTrainer_TrainFromMap2", 2, 2, swig_obj)) SWIG_fail;
+  {
+    std::map<std::string, std::string> *out = nullptr;
+    if (PyDict_Check(swig_obj[0])) {
+      PyObject *key, *value;
+      Py_ssize_t pos = 0;
+      out = new std::map<std::string, std::string>;
+      while (PyDict_Next(swig_obj[0], &pos, &key, &value)) {
+        const PyInputString key_ustring(key);
+        const PyInputString value_ustring(value);
+        if (key_ustring.IsAvalable() && value_ustring.IsAvalable()) {
+          out->emplace(std::string(key_ustring.data(), key_ustring.size()),
+            std::string(value_ustring.data(), value_ustring.size()));
+        } else {
+          PyErr_SetString(PyExc_TypeError, "map must contain strings.");
+          SWIG_fail;
+        }
+        resultobj = key_ustring.input_type();
+      }
+    } else {
+      PyErr_SetString(PyExc_TypeError, "not a dictionary");
+      SWIG_fail;
+    }
+    arg1 = out;
+  }
+  {
+    sentencepiece::SentenceIterator *out = nullptr;
+    if (PyIter_Check(swig_obj[1])) {
+      out = new PySentenceIterator(swig_obj[1]);
+    } else {
+      PyErr_SetString(PyExc_TypeError, "not a iterator");
+      SWIG_fail;
+    }
+    arg2 = out;
+  }
+  {
+    try {
+      sentencepiece_SentencePieceTrainer_TrainFromMap2((std::map< std::string,std::string > const &)*arg1,arg2);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  resultobj = SWIG_Py_Void();
+  {
+    delete arg1;
+  }
+  {
+    delete arg2;
+  }
+  return resultobj;
+fail:
+  {
+    delete arg1;
+  }
+  {
+    delete arg2;
+  }
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceTrainer_TrainFromMap3(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  std::map< std::string,std::string > *arg1 = 0 ;
+  PyObject *swig_obj[1] ;
+  sentencepiece::util::bytes result;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  {
+    std::map<std::string, std::string> *out = nullptr;
+    if (PyDict_Check(swig_obj[0])) {
+      PyObject *key, *value;
+      Py_ssize_t pos = 0;
+      out = new std::map<std::string, std::string>;
+      while (PyDict_Next(swig_obj[0], &pos, &key, &value)) {
+        const PyInputString key_ustring(key);
+        const PyInputString value_ustring(value);
+        if (key_ustring.IsAvalable() && value_ustring.IsAvalable()) {
+          out->emplace(std::string(key_ustring.data(), key_ustring.size()),
+            std::string(value_ustring.data(), value_ustring.size()));
+        } else {
+          PyErr_SetString(PyExc_TypeError, "map must contain strings.");
+          SWIG_fail;
+        }
+        resultobj = key_ustring.input_type();
+      }
+    } else {
+      PyErr_SetString(PyExc_TypeError, "not a dictionary");
+      SWIG_fail;
+    }
+    arg1 = out;
+  }
+  {
+    try {
+      result = sentencepiece_SentencePieceTrainer_TrainFromMap3((std::map< std::string,std::string > const &)*arg1);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    resultobj = MakePyOutputBytes(result);
+  }
+  {
+    delete arg1;
+  }
+  return resultobj;
+fail:
+  {
+    delete arg1;
+  }
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceTrainer_TrainFromMap4(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  std::map< std::string,std::string > *arg1 = 0 ;
+  sentencepiece::SentenceIterator *arg2 = (sentencepiece::SentenceIterator *) 0 ;
+  PyObject *swig_obj[2] ;
+  sentencepiece::util::bytes result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "SentencePieceTrainer_TrainFromMap4", 2, 2, swig_obj)) SWIG_fail;
+  {
+    std::map<std::string, std::string> *out = nullptr;
+    if (PyDict_Check(swig_obj[0])) {
+      PyObject *key, *value;
+      Py_ssize_t pos = 0;
+      out = new std::map<std::string, std::string>;
+      while (PyDict_Next(swig_obj[0], &pos, &key, &value)) {
+        const PyInputString key_ustring(key);
+        const PyInputString value_ustring(value);
+        if (key_ustring.IsAvalable() && value_ustring.IsAvalable()) {
+          out->emplace(std::string(key_ustring.data(), key_ustring.size()),
+            std::string(value_ustring.data(), value_ustring.size()));
+        } else {
+          PyErr_SetString(PyExc_TypeError, "map must contain strings.");
+          SWIG_fail;
+        }
+        resultobj = key_ustring.input_type();
+      }
+    } else {
+      PyErr_SetString(PyExc_TypeError, "not a dictionary");
+      SWIG_fail;
+    }
+    arg1 = out;
+  }
+  {
+    sentencepiece::SentenceIterator *out = nullptr;
+    if (PyIter_Check(swig_obj[1])) {
+      out = new PySentenceIterator(swig_obj[1]);
+    } else {
+      PyErr_SetString(PyExc_TypeError, "not a iterator");
+      SWIG_fail;
+    }
+    arg2 = out;
+  }
+  {
+    try {
+      result = sentencepiece_SentencePieceTrainer_TrainFromMap4((std::map< std::string,std::string > const &)*arg1,arg2);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    resultobj = MakePyOutputBytes(result);
+  }
+  {
+    delete arg1;
+  }
+  {
+    delete arg2;
+  }
+  return resultobj;
+fail:
+  {
+    delete arg1;
+  }
+  {
+    delete arg2;
+  }
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *SentencePieceTrainer_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!SWIG_Python_UnpackTuple(args, "swigregister", 1, 1, &obj)) return NULL;
@@ -5100,12 +5400,16 @@ static PyMethodDef SwigMethods[] = {
 	 { "SentencePieceProcessor_bos_id", _wrap_SentencePieceProcessor_bos_id, METH_O, NULL},
 	 { "SentencePieceProcessor_eos_id", _wrap_SentencePieceProcessor_eos_id, METH_O, NULL},
 	 { "SentencePieceProcessor_pad_id", _wrap_SentencePieceProcessor_pad_id, METH_O, NULL},
+	 { "SentencePieceProcessor_serialized_model_proto", _wrap_SentencePieceProcessor_serialized_model_proto, METH_O, NULL},
 	 { "SentencePieceProcessor___len__", _wrap_SentencePieceProcessor___len__, METH_O, NULL},
 	 { "SentencePieceProcessor___getitem__", _wrap_SentencePieceProcessor___getitem__, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor_swigregister", SentencePieceProcessor_swigregister, METH_O, NULL},
 	 { "SentencePieceProcessor_swiginit", SentencePieceProcessor_swiginit, METH_VARARGS, NULL},
 	 { "SentencePieceTrainer_TrainFromString", _wrap_SentencePieceTrainer_TrainFromString, METH_O, NULL},
 	 { "SentencePieceTrainer_TrainFromMap", _wrap_SentencePieceTrainer_TrainFromMap, METH_O, NULL},
+	 { "SentencePieceTrainer_TrainFromMap2", _wrap_SentencePieceTrainer_TrainFromMap2, METH_VARARGS, NULL},
+	 { "SentencePieceTrainer_TrainFromMap3", _wrap_SentencePieceTrainer_TrainFromMap3, METH_O, NULL},
+	 { "SentencePieceTrainer_TrainFromMap4", _wrap_SentencePieceTrainer_TrainFromMap4, METH_VARARGS, NULL},
 	 { "SentencePieceTrainer_swigregister", SentencePieceTrainer_swigregister, METH_O, NULL},
 	 { NULL, NULL, 0, NULL }
 };
@@ -5118,6 +5422,7 @@ static PyMethodDef SwigMethods_proxydocs[] = {
 /* -------- TYPE CONVERSION AND EQUIVALENCE RULES (BEGIN) -------- */
 
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_sentencepiece__SentenceIterator = {"_p_sentencepiece__SentenceIterator", "sentencepiece::SentenceIterator *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_sentencepiece__SentencePieceProcessor = {"_p_sentencepiece__SentencePieceProcessor", "sentencepiece::SentencePieceProcessor *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_sentencepiece__SentencePieceTrainer = {"_p_sentencepiece__SentencePieceTrainer", "sentencepiece::SentencePieceTrainer *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__mapT_std__string_std__string_t = {"_p_std__mapT_std__string_std__string_t", "std::map< std::string,std::string > *", 0, 0, (void*)0, 0};
@@ -5127,6 +5432,7 @@ static swig_type_info _swigt__p_std__vectorT_std__string_t = {"_p_std__vectorT_s
 
 static swig_type_info *swig_type_initial[] = {
   &_swigt__p_char,
+  &_swigt__p_sentencepiece__SentenceIterator,
   &_swigt__p_sentencepiece__SentencePieceProcessor,
   &_swigt__p_sentencepiece__SentencePieceTrainer,
   &_swigt__p_std__mapT_std__string_std__string_t,
@@ -5136,6 +5442,7 @@ static swig_type_info *swig_type_initial[] = {
 };
 
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_sentencepiece__SentenceIterator[] = {  {&_swigt__p_sentencepiece__SentenceIterator, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_sentencepiece__SentencePieceProcessor[] = {  {&_swigt__p_sentencepiece__SentencePieceProcessor, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_sentencepiece__SentencePieceTrainer[] = {  {&_swigt__p_sentencepiece__SentencePieceTrainer, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__mapT_std__string_std__string_t[] = {  {&_swigt__p_std__mapT_std__string_std__string_t, 0, 0, 0},{0, 0, 0, 0}};
@@ -5145,6 +5452,7 @@ static swig_cast_info _swigc__p_std__vectorT_std__string_t[] = {  {&_swigt__p_st
 
 static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_char,
+  _swigc__p_sentencepiece__SentenceIterator,
   _swigc__p_sentencepiece__SentencePieceProcessor,
   _swigc__p_sentencepiece__SentencePieceTrainer,
   _swigc__p_std__mapT_std__string_std__string_t,

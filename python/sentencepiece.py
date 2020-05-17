@@ -176,6 +176,9 @@ class SentencePieceProcessor(object):
     def pad_id(self):
         return _sentencepiece.SentencePieceProcessor_pad_id(self)
 
+    def serialized_model_proto(self):
+        return _sentencepiece.SentencePieceProcessor_serialized_model_proto(self)
+
     def __len__(self):
         return _sentencepiece.SentencePieceProcessor___len__(self)
 
@@ -200,6 +203,18 @@ class SentencePieceTrainer(object):
     def TrainFromMap(args):
         return _sentencepiece.SentencePieceTrainer_TrainFromMap(args)
 
+    @staticmethod
+    def TrainFromMap2(args, iter):
+        return _sentencepiece.SentencePieceTrainer_TrainFromMap2(args, iter)
+
+    @staticmethod
+    def TrainFromMap3(args):
+        return _sentencepiece.SentencePieceTrainer_TrainFromMap3(args)
+
+    @staticmethod
+    def TrainFromMap4(args, iter):
+        return _sentencepiece.SentencePieceTrainer_TrainFromMap4(args, iter)
+
 # Register SentencePieceTrainer in _sentencepiece:
 _sentencepiece.SentencePieceTrainer_swigregister(SentencePieceTrainer)
 
@@ -208,6 +223,15 @@ def SentencePieceTrainer_TrainFromString(arg):
 
 def SentencePieceTrainer_TrainFromMap(args):
     return _sentencepiece.SentencePieceTrainer_TrainFromMap(args)
+
+def SentencePieceTrainer_TrainFromMap2(args, iter):
+    return _sentencepiece.SentencePieceTrainer_TrainFromMap2(args, iter)
+
+def SentencePieceTrainer_TrainFromMap3(args):
+    return _sentencepiece.SentencePieceTrainer_TrainFromMap3(args)
+
+def SentencePieceTrainer_TrainFromMap4(args, iter):
+    return _sentencepiece.SentencePieceTrainer_TrainFromMap4(args, iter)
 
 
 
@@ -395,16 +419,37 @@ def _sentencepiece_trainer_train(arg=None, **kwargs):
         f = StringIO()
       else:
         f = BytesIO()
-      writer = csv.writer(f, lineterminator="")
+      writer = csv.writer(f, lineterminator='')
       writer.writerow([str(v) for v in value])
       return f.getvalue()
     else:
       return str(value)
 
+  sentence_iterator = None
+  model_writer = None
+  new_kwargs = {}
   for key, value in kwargs.items():
-    kwargs[key] = _encode(value)
+    if key in ['sentence_iterator', 'sentence_reader']:
+      sentence_iterator = value
+    elif key in ['model_writer']:
+      model_writer = value
+    else:
+      new_kwargs[key] = _encode(value)
 
-  return SentencePieceTrainer.TrainFromMap(kwargs)
+  if model_writer:
+    if sentence_iterator:
+      model_proto = SentencePieceTrainer.TrainFromMap4(new_kwargs,
+                                                       sentence_iterator)
+    else:
+      model_proto = SentencePieceTrainer.TrainFromMap3(new_kwargs)
+    model_writer.write(model_proto)
+  else:
+    if sentence_iterator:
+      return SentencePieceTrainer.TrainFromMap2(new_kwargs, sentence_iterator)
+    else:
+      return SentencePieceTrainer.TrainFromMap(new_kwargs)
+
+  return None
 
 
 def _save_native(classname):

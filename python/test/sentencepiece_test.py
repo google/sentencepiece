@@ -16,6 +16,7 @@
 # limitations under the License.!
 
 import codecs
+import io
 import sentencepiece as spm
 import unittest
 import sys
@@ -141,6 +142,37 @@ class TestSentencepieceProcessor(unittest.TestCase):
       for line in file:
         sp.DecodePieces(sp.EncodeAsPieces(line))
         sp.DecodeIds(sp.EncodeAsIds(line))
+
+  def test_train(self):
+    spm.SentencePieceTrainer.Train('--input=' +
+                                   os.path.join(data_dir, 'botchan.txt') +
+                                   ' --model_prefix=m --vocab_size=1000')
+    is1 = open(os.path.join(data_dir, 'botchan.txt'), 'r')
+    is2 = open(os.path.join(data_dir, 'botchan.txt'), 'r')
+    os1 = io.BytesIO()
+    os2 = io.BytesIO()
+    expected = open('m.model', 'rb').read()
+
+    spm.SentencePieceTrainer.train(
+        input=os.path.join(data_dir, 'botchan.txt'),
+        model_prefix='m',
+        vocab_size=1000)
+
+    spm.SentencePieceTrainer.train(
+        sentence_iterator=is1, model_prefix='m', vocab_size=1000)
+
+    spm.SentencePieceTrainer.train(
+        input=os.path.join(data_dir, 'botchan.txt'),
+        model_writer=os1,
+        vocab_size=1000)
+
+    spm.SentencePieceTrainer.train(
+        sentence_iterator=is2, model_writer=os2, vocab_size=1000)
+
+    sp1 = spm.SentencePieceProcessor(model_proto=os1.getvalue())
+    sp2 = spm.SentencePieceProcessor(model_proto=os2.getvalue())
+    self.assertEqual([sp1.id_to_piece(i) for i in range(sp1.get_piece_size())],
+                     [sp2.id_to_piece(i) for i in range(sp2.get_piece_size())])
 
   def test_train_kwargs(self):
     spm.SentencePieceTrainer.train(

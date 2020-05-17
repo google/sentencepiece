@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "trainer_interface.h"
+
 #include <cstdlib>
 #include <memory>
 #include <set>
@@ -32,7 +34,6 @@
 #include "third_party/absl/strings/str_format.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_split.h"
-#include "trainer_interface.h"
 #include "unicode_script.h"
 #include "util.h"
 
@@ -49,7 +50,7 @@ const char TrainerInterface::kUPPBoundaryStr[] = "\t";
 
 namespace {
 util::Status VerifySpec(const TrainerSpec &trainer_spec) {
-  CHECK_OR_RETURN(!trainer_spec.model_prefix().empty());
+  //  CHECK_OR_RETURN(!trainer_spec.model_prefix().empty());
   CHECK_GT_OR_RETURN(trainer_spec.vocab_size(), 0);
 
   if (trainer_spec.model_type() == TrainerSpec::UNIGRAM ||
@@ -312,6 +313,12 @@ util::Status TrainerInterface::LoadSentences() {
       (sentence_iterator_ == nullptr && !trainer_spec_.input().empty()))
       << "SentenceIterator and trainer_spec.input() must be exclusive.";
 
+  CHECK_OR_RETURN((serialized_model_proto_ != nullptr &&
+                   trainer_spec_.model_prefix().empty()) ||
+                  (serialized_model_proto_ == nullptr &&
+                   !trainer_spec_.model_prefix().empty()))
+      << "ModelProto and trainer_spec.model_prefix() must be exclusive.";
+
   const bool is_tsv = trainer_spec_.input_format() == "tsv";
 
   SentenceSelector selector(&sentences_, trainer_spec_);
@@ -538,6 +545,8 @@ util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
   // Duplicated sentencepiece is not allowed.
   std::set<std::string> dup;
 
+  model_proto->Clear();
+
 #define CHECK_PIECE(piece)                                  \
   CHECK_OR_RETURN(string_util::IsStructurallyValid(piece)); \
   CHECK_OR_RETURN(!piece.empty());                          \
@@ -588,6 +597,19 @@ util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
                        static_cast<int32>(dup.size()));
   }
 
+  // Saves self-testing data.
+  if (!self_test_samples_.empty()) {
+    SentencePieceProcessor sp;
+    RETURN_IF_ERROR(sp.Load(*model_proto));
+    for (const auto &input : self_test_samples_) {
+      std::vector<std::string> sps;
+      RETURN_IF_ERROR(sp.Encode(input, &sps));
+      auto *sample = model_proto->mutable_self_test_data()->add_samples();
+      sample->set_input(input);
+      sample->set_expected(absl::StrJoin(sps, " "));
+    }
+  }
+
   return util::OkStatus();
 }
 
@@ -595,19 +617,6 @@ util::Status TrainerInterface::SaveModel(absl::string_view filename) const {
   LOG(INFO) << "Saving model: " << filename;
   ModelProto model_proto;
   RETURN_IF_ERROR(Serialize(&model_proto));
-
-  // Saves self-testing data.
-  if (!self_test_samples_.empty()) {
-    SentencePieceProcessor sp;
-    RETURN_IF_ERROR(sp.Load(model_proto));
-    for (const auto &input : self_test_samples_) {
-      std::vector<std::string> sps;
-      RETURN_IF_ERROR(sp.Encode(input, &sps));
-      auto *sample = model_proto.mutable_self_test_data()->add_samples();
-      sample->set_input(input);
-      sample->set_expected(absl::StrJoin(sps, " "));
-    }
-  }
 
   auto output = filesystem::NewWritableFile(filename.data(), true);
   RETURN_IF_ERROR(output->status());
@@ -638,8 +647,14 @@ util::Status TrainerInterface::SaveVocab(absl::string_view filename) const {
 }
 
 util::Status TrainerInterface::Save() const {
-  RETURN_IF_ERROR(SaveModel(trainer_spec_.model_prefix() + ".model"));
-  RETURN_IF_ERROR(SaveVocab(trainer_spec_.model_prefix() + ".vocab"));
+  if (serialized_model_proto_) {
+    ModelProto model_proto;
+    RETURN_IF_ERROR(Serialize(&model_proto));
+    *serialized_model_proto_ = model_proto.SerializeAsString();
+  } else {
+    RETURN_IF_ERROR(SaveModel(trainer_spec_.model_prefix() + ".model"));
+    RETURN_IF_ERROR(SaveVocab(trainer_spec_.model_prefix() + ".vocab"));
+  }
   return util::OkStatus();
 }
 

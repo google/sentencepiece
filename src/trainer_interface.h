@@ -92,6 +92,11 @@ class TrainerInterface {
     sentence_iterator_ = sentence_iterator;
   }
 
+  virtual void SetOutputSerializedModelProto(
+      std::string *serialized_model_proto) {
+    serialized_model_proto_ = serialized_model_proto;
+  }
+
   virtual util::Status Train() { return status(); }
 
   virtual util::Status status() const { return status_; }
@@ -151,6 +156,9 @@ class TrainerInterface {
 
   // Loads sentences from SentenceIterator if not null.
   SentenceIterator *sentence_iterator_ = nullptr;
+
+  // Emits model to this proto instead of file.
+  std::string *serialized_model_proto_ = nullptr;
 
  private:
   // Serialize final_pieces_ to |model_proto|.

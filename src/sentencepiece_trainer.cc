@@ -37,24 +37,27 @@ static constexpr char kDefaultNormalizerName[] = "nmt_nfkc";
 
 // static
 util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec,
-                                         SentenceIterator *sentence_iterator) {
+                                         SentenceIterator *sentence_iterator,
+                                         std::string *serialized_model_proto) {
   NormalizerSpec normalizer_spec;
-  return Train(trainer_spec, normalizer_spec, sentence_iterator);
+  return Train(trainer_spec, normalizer_spec, sentence_iterator,
+               serialized_model_proto);
 }
 
 util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec,
                                          const NormalizerSpec &normalizer_spec,
-                                         SentenceIterator *sentence_iterator) {
+                                         SentenceIterator *sentence_iterator,
+                                         std::string *serialized_model_proto) {
   NormalizerSpec denormalizer_spec;
   return Train(trainer_spec, normalizer_spec, denormalizer_spec,
-               sentence_iterator);
+               sentence_iterator, serialized_model_proto);
 }
 
 // static
 util::Status SentencePieceTrainer::Train(
     const TrainerSpec &trainer_spec, const NormalizerSpec &normalizer_spec,
     const NormalizerSpec &denormalizer_spec,
-    SentenceIterator *sentence_iterator) {
+    SentenceIterator *sentence_iterator, std::string *serialized_model_proto) {
   auto copied_normalizer_spec = normalizer_spec;
   RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_normalizer_spec, false));
   auto copied_denormalizer_spec = denormalizer_spec;
@@ -73,6 +76,7 @@ util::Status SentencePieceTrainer::Train(
   LOG(INFO) << "Starts training with : \n" << info;
 
   trainer->SetSentenceIterator(sentence_iterator);
+  trainer->SetOutputSerializedModelProto(serialized_model_proto);
 
   return trainer->Train();
 }
@@ -156,7 +160,8 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
 
 // static
 util::Status SentencePieceTrainer::Train(absl::string_view args,
-                                         SentenceIterator *sentence_iterator) {
+                                         SentenceIterator *sentence_iterator,
+                                         std::string *serialized_model_proto) {
   LOG(INFO) << "Running command: " << args.data();
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
@@ -164,20 +169,20 @@ util::Status SentencePieceTrainer::Train(absl::string_view args,
   RETURN_IF_ERROR(MergeSpecsFromArgs(args, &trainer_spec, &normalizer_spec,
                                      &denormalizer_spec));
   return Train(trainer_spec, normalizer_spec, denormalizer_spec,
-               sentence_iterator);
+               sentence_iterator, serialized_model_proto);
 }
 
 // static
 util::Status SentencePieceTrainer::Train(
     const std::map<std::string, std::string> &kwargs,
-    SentenceIterator *sentence_iterator) {
+    SentenceIterator *sentence_iterator, std::string *serialized_model_proto) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
   NormalizerSpec denormalizer_spec;
   RETURN_IF_ERROR(MergeSpecsFromArgs(kwargs, &trainer_spec, &normalizer_spec,
                                      &denormalizer_spec));
   return Train(trainer_spec, normalizer_spec, denormalizer_spec,
-               sentence_iterator);
+               sentence_iterator, serialized_model_proto);
 }
 
 // static

@@ -463,6 +463,10 @@ class SentencePieceProcessor {
   // or experimental parameters encoded in model_proto.
   const ModelProto &model_proto() const;
 
+  // returns immutable model proto as std::string.
+  // Useful to save the state of this instance via Python's pickle object.
+  util::bytes serialized_model_proto() const;
+
  private:
   enum ExtraOption { REVERSE, BOS, EOS };
 
@@ -499,10 +503,13 @@ namespace io {
 //  io::LoadModelProto("//path/spm.model", model_proto.get());
 //  SentencePieceProcessor sp;
 //  CHECK_OK(sp.Load(std::move(model_proto)));
-util::Status LoadModelProto(absl::string_view, ModelProto *model_proto);
+util::Status LoadModelProto(absl::string_view filename,
+                            ModelProto *model_proto);
 
 // Saves `model_proto` as `filename`.
-util::Status SaveModelProto(absl::string_view, const ModelProto &model_proto);
+util::Status SaveModelProto(absl::string_view filename,
+                            const ModelProto &model_proto);
+
 }  // namespace io
 #endif  // SWIG
 }  // namespace sentencepiece

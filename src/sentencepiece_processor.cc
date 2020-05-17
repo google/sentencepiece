@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "sentencepiece_processor.h"
+
 #include <map>
 #include <set>
 #include <utility>
@@ -22,7 +24,6 @@
 #include "model_factory.h"
 #include "model_interface.h"
 #include "normalizer.h"
-#include "sentencepiece_processor.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -794,6 +795,10 @@ const ModelProto &SentencePieceProcessor::model_proto() const {
   return *model_proto_;
 }
 
+std::string SentencePieceProcessor::serialized_model_proto() const {
+  return model_proto_ ? model_proto_->SerializeAsString() : "";
+}
+
 namespace io {
 
 util::Status LoadModelProto(absl::string_view filename,
@@ -823,5 +828,6 @@ util::Status SaveModelProto(absl::string_view filename,
 
   return util::OkStatus();
 }
+
 }  // namespace io
 }  // namespace sentencepiece

@@ -55,14 +55,16 @@ class SentencePieceTrainer {
   // Default `normalizer_spec` is used.
   // When `sentence_iterator` is passed, load sentences from the iterator.
   static util::Status Train(const TrainerSpec &trainer_spec,
-                            SentenceIterator *sentence_iterator = nullptr);
+                            SentenceIterator *sentence_iterator = nullptr,
+                            std::string *serialized_model_proto = nullptr);
 
   // Trains SentencePiece model with `trainer_spec` and
   // `normalizer_spec`.
   // When `sentence_iterator` is passed, load sentences from the iterator.
   static util::Status Train(const TrainerSpec &trainer_spec,
                             const NormalizerSpec &normalizer_spec,
-                            SentenceIterator *sentence_iterator = nullptr);
+                            SentenceIterator *sentence_iterator = nullptr,
+                            std::string *serialized_model_proto = nullptr);
 
   // Trains SentencePiece model with `trainer_spec`, `normalizer_spec`
   // and `denormalizer_spec`.
@@ -70,18 +72,21 @@ class SentencePieceTrainer {
   static util::Status Train(const TrainerSpec &trainer_spec,
                             const NormalizerSpec &normalizer_spec,
                             const NormalizerSpec &denormalizer_spec,
-                            SentenceIterator *sentence_iterator = nullptr);
+                            SentenceIterator *sentence_iterator = nullptr,
+                            std::string *serialized_model_proto = nullptr);
   // Trains SentencePiece model with command-line string in `args`,
   // e.g.,
   // '--input=data --model_prefix=m --vocab_size=8192 model_type=unigram'
   // When `sentence_iterator` is passed, load sentences from the iterator.
   static util::Status Train(absl::string_view args,
-                            SentenceIterator *sentence_iterator = nullptr);
+                            SentenceIterator *sentence_iterator = nullptr,
+                            std::string *serialized_model_proto = nullptr);
 
   // Trains SentencePiece model with mapin `kwargs`.
   // e.g., {{"input", "data"}, {"model_prefix, "m"}, {"vocab_size", "8192"}...}
   static util::Status Train(const std::map<std::string, std::string> &kwargs,
-                            SentenceIterator *sentence_iterator = nullptr);
+                            SentenceIterator *sentence_iterator = nullptr,
+                            std::string *serialized_model_proto = nullptr);
 
   // Handy function to make a normalizer spec from the pre-compiled
   // normalization name. Do not use this method in production as it crashes

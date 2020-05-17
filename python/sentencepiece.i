@@ -97,6 +97,58 @@ int ToSwigError(sentencepiece::util::StatusCode code) {
   }
   return SWIG_RuntimeError;
 }
+
+class PySentenceIterator : public sentencepiece::SentenceIterator {
+  public:
+  PySentenceIterator(PyObject *iter) : iter_(iter) {
+    item_ = PyIter_Next(iter_);
+    CopyValue();
+  }
+
+  ~PySentenceIterator() {}
+
+  bool done() const override {
+    return item_ == nullptr;
+  }
+
+  void Next() override {
+    item_ = PyIter_Next(iter_);
+    CopyValue();
+  }
+
+  const std::string &value() const override {
+    return value_;
+  }
+
+  sentencepiece::util::Status status() const override {
+    return status_;
+  }
+
+  private:
+   void CopyValue() {
+     if (item_ == nullptr) return;
+     const PyInputString ustring(item_);
+     if (ustring.IsAvalable()) {
+       const char *data = ustring.data();
+       size_t size = ustring.size();
+       while (size > 0) {
+         if (data[size - 1] == '\r' || data[size - 1] == '\n')
+           --size;
+         else
+           break;
+       }
+       value_.assign(data, size);
+     } else {
+       status_ = sentencepiece::util::Status(sentencepiece::util::StatusCode::kInternal,
+                                             "Not a string.");
+     }
+     Py_DECREF(item_);
+   }
+   PyObject *iter_ = nullptr;
+   PyObject *item_ = nullptr;
+   std::string value_;
+   sentencepiece::util::Status status_;
+};
 }
 %}
 
@@ -162,6 +214,28 @@ int ToSwigError(sentencepiece::util::StatusCode code) {
     const auto _status = sentencepiece::SentencePieceTrainer::Train(args);
     if (!_status.ok()) throw _status;
     return;
+  }
+
+  static void TrainFromMap2(const std::map<std::string, std::string> &args,
+                            SentenceIterator *iter) {
+    const auto _status = sentencepiece::SentencePieceTrainer::Train(args, iter);
+    if (!_status.ok()) throw _status;
+    return;
+  }
+
+  static sentencepiece::util::bytes TrainFromMap3(const std::map<std::string, std::string> &args) {
+    sentencepiece::util::bytes model_proto;
+    const auto _status = sentencepiece::SentencePieceTrainer::Train(args, nullptr, &model_proto);
+    if (!_status.ok()) throw _status;
+    return model_proto;
+  }
+
+  static sentencepiece::util::bytes TrainFromMap4(const std::map<std::string, std::string> &args,
+                                                  SentenceIterator *iter) {
+    sentencepiece::util::bytes model_proto;
+    const auto _status = sentencepiece::SentencePieceTrainer::Train(args, iter, &model_proto);
+    if (!_status.ok()) throw _status;
+    return model_proto;
   }
 }
 
@@ -314,6 +388,17 @@ int ToSwigError(sentencepiece::util::StatusCode code) {
   $1 = out;
 }
 
+%typemap(in) sentencepiece::SentenceIterator * {
+  sentencepiece::SentenceIterator *out = nullptr;
+  if (PyIter_Check($input)) {
+    out = new PySentenceIterator($input);
+  } else {
+    PyErr_SetString(PyExc_TypeError, "not a iterator");
+    SWIG_fail;
+  }
+  $1 = out;
+}
+
 %typemap(freearg) const std::string& {
   delete $1;
 }
@@ -335,6 +420,10 @@ int ToSwigError(sentencepiece::util::StatusCode code) {
 }
 
 %typemap(freearg) const std::map<std::string, std::string> & {
+  delete $1;
+}
+
+%typemap(freearg) sentencepiece::SentenceIterator * {
   delete $1;
 }
 
@@ -527,16 +616,37 @@ def _sentencepiece_trainer_train(arg=None, **kwargs):
         f = StringIO()
       else:
         f = BytesIO()
-      writer = csv.writer(f, lineterminator="")
+      writer = csv.writer(f, lineterminator='')
       writer.writerow([str(v) for v in value])
       return f.getvalue()
     else:
       return str(value)
 
+  sentence_iterator = None
+  model_writer = None
+  new_kwargs = {}
   for key, value in kwargs.items():
-    kwargs[key] = _encode(value)
+    if key in ['sentence_iterator', 'sentence_reader']:
+      sentence_iterator = value
+    elif key in ['model_writer']:
+      model_writer = value
+    else:
+      new_kwargs[key] = _encode(value)
 
-  return SentencePieceTrainer.TrainFromMap(kwargs)
+  if model_writer:
+    if sentence_iterator:
+      model_proto = SentencePieceTrainer.TrainFromMap4(new_kwargs,
+                                                       sentence_iterator)
+    else:
+      model_proto = SentencePieceTrainer.TrainFromMap3(new_kwargs)
+    model_writer.write(model_proto)
+  else:
+    if sentence_iterator:
+      return SentencePieceTrainer.TrainFromMap2(new_kwargs, sentence_iterator)
+    else:
+      return SentencePieceTrainer.TrainFromMap(new_kwargs)
+
+  return None
 
 
 def _save_native(classname):
