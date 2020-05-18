@@ -106,7 +106,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
   }
 
   ~PySentenceIterator() {
-    if (iter_) Py_DECREF(iter_);
+    Py_XDECREF(iter_);
   }
 
   bool done() const override {
@@ -144,7 +144,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
        status_ = sentencepiece::util::Status(sentencepiece::util::StatusCode::kInternal,
                                              "Not a string.");
      }
-     Py_DECREF(item_);
+     Py_XDECREF(item_);
    }
    PyObject *iter_ = nullptr;
    PyObject *item_ = nullptr;
