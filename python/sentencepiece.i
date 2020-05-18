@@ -106,7 +106,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
   }
 
   ~PySentenceIterator() {
-    Py_XDECREF(iter_);
+   // Py_XDECREF(iter_);
   }
 
   bool done() const override {
