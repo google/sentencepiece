@@ -161,11 +161,11 @@ class TestSentencepieceProcessor(unittest.TestCase):
     spm.SentencePieceTrainer.Train('--input=' +
                                    os.path.join(data_dir, 'botchan.txt') +
                                    ' --model_prefix=m --vocab_size=1000')
-    is1 = open(os.path.join(data_dir, 'botchan.txt'), 'r')
-    is2 = open(os.path.join(data_dir, 'botchan.txt'), 'r')
+    # Load as 'rb' for Python3.5/2.7.
+    is1 = open(os.path.join(data_dir, 'botchan.txt'), 'rb')
+    is2 = open(os.path.join(data_dir, 'botchan.txt'), 'rb')
     os1 = io.BytesIO()
     os2 = io.BytesIO()
-    expected = open('m.model', 'rb').read()
 
     spm.SentencePieceTrainer.train(
         input=os.path.join(data_dir, 'botchan.txt'),
