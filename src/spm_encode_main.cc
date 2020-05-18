@@ -13,18 +13,24 @@
 // limitations under the License.!
 
 #include <functional>
+#include <string>
 #include <unordered_map>
+#include <vector>
+
+#include "builtin_pb/sentencepiece.pb.h"
 #include "common.h"
 #include "filesystem.h"
 #include "flags.h"
-#include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
+#include "third_party/absl/strings/str_cat.h"
+#include "third_party/absl/strings/str_join.h"
 #include "trainer_interface.h"
 
 DEFINE_string(model, "", "model file name");
 DEFINE_string(
     output_format, "piece",
     "choose from piece, id, proto, nbest_piece, nbest_id, or nbest_proto");
+DEFINE_string(input, "", "input filename");
 DEFINE_string(output, "", "output filename");
 DEFINE_string(extra_options, "",
               "':' separated encoder extra options, e.g., \"reverse:bos:eos\"");
@@ -38,15 +44,22 @@ DEFINE_string(vocabulary, "",
               "tokens in \"vocabulary\" file");
 DEFINE_int32(vocabulary_threshold, 0,
              "Words with frequency < threshold will be treated as OOV");
-
 DEFINE_bool(generate_vocabulary, false,
             "Generates vocabulary file instead of segmentation");
 
 int main(int argc, char *argv[]) {
+  sentencepiece::flags::ParseCommandLineFlags(argv[0], &argc, &argv, true);
   std::vector<std::string> rest_args;
-  sentencepiece::flags::ParseCommandLineFlags(argc, argv, &rest_args);
 
-  CHECK_OR_HELP(model);
+  if (FLAGS_input.empty()) {
+    for (int i = 1; i < argc; ++i) {
+      rest_args.push_back(std::string(argv[i]));
+    }
+  } else {
+    rest_args.push_back(FLAGS_input);
+  }
+
+  CHECK(!FLAGS_model.empty());
 
   sentencepiece::SentencePieceProcessor sp;
   CHECK_OK(sp.Load(FLAGS_model));
@@ -84,51 +97,46 @@ int main(int argc, char *argv[]) {
   } else if (FLAGS_output_format == "piece") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.Encode(line, &sps));
-      output->WriteLine(sentencepiece::string_util::Join(sps, " "));
+      output->WriteLine(absl::StrJoin(sps, " "));
     };
   } else if (FLAGS_output_format == "id") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.Encode(line, &ids));
-      output->WriteLine(sentencepiece::string_util::Join(ids, " "));
+      output->WriteLine(absl::StrJoin(ids, " "));
     };
   } else if (FLAGS_output_format == "proto") {
-    process = [&](const std::string &line) {
-      CHECK_OK(sp.Encode(line, &spt));
-      //      output->WriteLine(spt.Utf8DebugString());
-    };
+    process = [&](const std::string &line) { CHECK_OK(sp.Encode(line, &spt)); };
   } else if (FLAGS_output_format == "sample_piece") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &sps));
-      output->WriteLine(sentencepiece::string_util::Join(sps, " "));
+      output->WriteLine(absl::StrJoin(sps, " "));
     };
   } else if (FLAGS_output_format == "sample_id") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &ids));
-      output->WriteLine(sentencepiece::string_util::Join(ids, " "));
+      output->WriteLine(absl::StrJoin(ids, " "));
     };
   } else if (FLAGS_output_format == "sample_proto") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.SampleEncode(line, FLAGS_nbest_size, FLAGS_alpha, &spt));
-      //      output->WriteLine(spt.Utf8DebugString());
     };
   } else if (FLAGS_output_format == "nbest_piece") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.NBestEncode(line, FLAGS_nbest_size, &nbest_sps));
       for (const auto &result : nbest_sps) {
-        output->WriteLine(sentencepiece::string_util::Join(result, " "));
+        output->WriteLine(absl::StrJoin(result, " "));
       }
     };
   } else if (FLAGS_output_format == "nbest_id") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.NBestEncode(line, FLAGS_nbest_size, &nbest_ids));
       for (const auto &result : nbest_ids) {
-        output->WriteLine(sentencepiece::string_util::Join(result, " "));
+        output->WriteLine(absl::StrJoin(result, " "));
       }
     };
   } else if (FLAGS_output_format == "nbest_proto") {
     process = [&](const std::string &line) {
       CHECK_OK(sp.NBestEncode(line, FLAGS_nbest_size, &nbest_spt));
-      //      output->WriteLine(nbest_spt.Utf8DebugString());
     };
   } else {
     LOG(FATAL) << "Unknown output format: " << FLAGS_output_format;

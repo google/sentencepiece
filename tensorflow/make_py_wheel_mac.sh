@@ -38,6 +38,7 @@ build_tf_wrapper() {
 
   g++ -std=c++11 -shared -undefined dynamic_lookup \
     -I../../src \
+    -D_USE_TF_STRING_VIEW \
     -fPIC ${TF_CFLAGS[@]} -O2 \
     -D_GLIBCXX_USE_CXX11_ABI=0 \
     -Wl,-force_load \
@@ -70,9 +71,14 @@ build() {
   pip install --upgrade setuptools
   pip install wheel
 
+  build_tf_wrapper "2.1.0"
+#  build_tf_wrapper "2.0.1"
   build_tf_wrapper "2.0.0"
-  build_tf_wrapper "1.14.0"
-  build_tf_wrapper "1.13.1"
+#  build_tf_wrapper "1.15.2"
+  build_tf_wrapper "1.15.0"
+#  build_tf_wrapper "1.14.0"
+#  build_tf_wrapper "1.13.2"  
+#  build_tf_wrapper "1.13.1"
 
   # Builds Python manylinux wheel package.
   # Platform name is determined by the tensorflow pip package.

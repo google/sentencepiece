@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "normalizer.h"
-
 #include <vector>
+
 #include "builder.h"
+#include "normalizer.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
 #include "util.h"
@@ -167,8 +167,9 @@ TEST(NormalizeTest, NomalizeWithSpaceContainedRules) {
   AddRule("d", " F G ");
 
   NormalizerSpec spec;
-  EXPECT_OK(
-      Builder::CompileCharsMap(charsmap, spec.mutable_precompiled_charsmap()));
+  EXPECT_TRUE(
+      Builder::CompileCharsMap(charsmap, spec.mutable_precompiled_charsmap())
+          .ok());
 
   // Test default behavior
   {
@@ -282,7 +283,7 @@ TEST(NormalizerTest, NormalizeFullTest) {
 
   {
     const std::string input = "I saw a girl";
-    normalizer.Normalize(input, &output, &n2i);
+    EXPECT_TRUE(normalizer.Normalize(input, &output, &n2i).ok());
     EXPECT_EQ(WS "I" WS "saw" WS "a" WS "girl", output);
     const std::vector<size_t> expected = {0, 0, 0,       // WS (3byte)
                                           0,             // I
@@ -298,7 +299,7 @@ TEST(NormalizerTest, NormalizeFullTest) {
 
   {
     const std::string input = " I   saw a　 　girl　　";
-    EXPECT_OK(normalizer.Normalize(input, &output, &n2i));
+    EXPECT_TRUE(normalizer.Normalize(input, &output, &n2i).ok());
     LOG(INFO) << output;
     EXPECT_EQ(WS "I" WS "saw" WS "a" WS "girl", output);
     const std::vector<size_t> expected = {1,  1,  1,       // WS (3byte)
@@ -315,7 +316,7 @@ TEST(NormalizerTest, NormalizeFullTest) {
 
   {
     const std::string input = " ｸﾞｰｸﾞﾙ ";  // halfwidth katakana
-    normalizer.Normalize(input, &output, &n2i);
+    EXPECT_TRUE(normalizer.Normalize(input, &output, &n2i).ok());
     EXPECT_EQ(WS "グーグル", output);
     const std::vector<size_t> expected = {1,  1,  1,   // WS (3byte)
                                           1,  1,  1,   // グ
@@ -328,7 +329,7 @@ TEST(NormalizerTest, NormalizeFullTest) {
 
   {
     const std::string input = "①②③";
-    normalizer.Normalize(input, &output, &n2i);
+    EXPECT_TRUE(normalizer.Normalize(input, &output, &n2i).ok());
     EXPECT_EQ(WS "123", output);
     const std::vector<size_t> expected = {0, 0, 0,  // WS (3byte)
                                           0,        // 1
@@ -340,7 +341,7 @@ TEST(NormalizerTest, NormalizeFullTest) {
 
   {
     const std::string input = "㍿";
-    normalizer.Normalize(input, &output, &n2i);
+    EXPECT_TRUE(normalizer.Normalize(input, &output, &n2i).ok());
     EXPECT_EQ(WS "株式会社", output);
     const std::vector<size_t> expected = {0, 0, 0,  // WS (3byte)
                                           0, 0, 0,  // 株
@@ -358,20 +359,22 @@ TEST(NormalizerTest, NormalizeFullTest) {
 TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest) {
   const std::string blob = Normalizer::EncodePrecompiledCharsMap("foo", "bar");
   absl::string_view trie_blob, normalized_blob;
-  EXPECT_OK(Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob,
-                                                  &normalized_blob));
+  EXPECT_TRUE(
+      Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob, &normalized_blob)
+          .ok());
   EXPECT_EQ("foo", trie_blob);
   EXPECT_EQ("bar", normalized_blob);
 
-  EXPECT_NOT_OK(
-      Normalizer::DecodePrecompiledCharsMap("", &trie_blob, &normalized_blob));
+  EXPECT_FALSE(
+      Normalizer::DecodePrecompiledCharsMap("", &trie_blob, &normalized_blob)
+          .ok());
 }
 
 TEST(NormalizerTest, StatusTest) {
   NormalizerSpec spec;
   {
     const Normalizer normalizer(spec);
-    EXPECT_OK(normalizer.status());  // fallback to identity.
+    EXPECT_TRUE(normalizer.status().ok());  // fallback to identity.
   }
 
   {

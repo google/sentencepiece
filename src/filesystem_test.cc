@@ -13,32 +13,32 @@
 // limitations under the License.!
 
 #include "filesystem.h"
-
 #include "testharness.h"
+#include "third_party/absl/strings/str_cat.h"
 #include "util.h"
 
 namespace sentencepiece {
 
 TEST(UtilTest, FilesystemTest) {
-  test::ScopedTempFile sf("test_file");
-
-  const char *kData[] = {
+  const std::vector<std::string> kData = {
       "This"
       "is"
       "a"
       "test"};
 
   {
-    auto output = filesystem::NewWritableFile(sf.filename());
-    for (size_t i = 0; i < arraysize(kData); ++i) {
+    auto output = filesystem::NewWritableFile(
+        util::JoinPath(FLAGS_test_tmpdir, "test_file"));
+    for (size_t i = 0; i < kData.size(); ++i) {
       output->WriteLine(kData[i]);
     }
   }
 
   {
-    auto input = filesystem::NewReadableFile(sf.filename());
+    auto input = filesystem::NewReadableFile(
+        util::JoinPath(FLAGS_test_tmpdir, "test_file"));
     std::string line;
-    for (size_t i = 0; i < arraysize(kData); ++i) {
+    for (size_t i = 0; i < kData.size(); ++i) {
       EXPECT_TRUE(input->ReadLine(&line));
       EXPECT_EQ(kData[i], line);
     }
@@ -48,7 +48,7 @@ TEST(UtilTest, FilesystemTest) {
 
 TEST(UtilTest, FilesystemInvalidFileTest) {
   auto input = filesystem::NewReadableFile("__UNKNOWN__FILE__");
-  EXPECT_NOT_OK(input->status());
+  EXPECT_FALSE(input->status().ok());
 }
 
 }  // namespace sentencepiece

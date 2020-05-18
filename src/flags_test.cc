@@ -13,6 +13,7 @@
 // limitations under the License.!
 
 #include "flags.h"
+
 #include "common.h"
 #include "testharness.h"
 
@@ -51,9 +52,9 @@ TEST(FlagsTest, ParseCommandLineFlagsTest) {
                           "--bool_f=true",  "--int64_f=200",  "--uint64_f=300",
                           "--double_f=400", "--string_f=foo", "other2",
                           "other3"};
-
-  std::vector<std::string> rest;
-  ParseCommandLineFlags(arraysize(kFlags), const_cast<char **>(kFlags), &rest);
+  int argc = arraysize(kFlags);
+  char **argv = const_cast<char **>(kFlags);
+  ParseCommandLineFlags(kFlags[0], &argc, &argv);
 
   EXPECT_EQ(100, FLAGS_int32_f);
   EXPECT_EQ(true, FLAGS_bool_f);
@@ -61,78 +62,90 @@ TEST(FlagsTest, ParseCommandLineFlagsTest) {
   EXPECT_EQ(300, FLAGS_uint64_f);
   EXPECT_EQ(400.0, FLAGS_double_f);
   EXPECT_EQ("foo", FLAGS_string_f);
-  EXPECT_EQ(3, rest.size());
-  EXPECT_EQ("other1", rest[0]);
-  EXPECT_EQ("other2", rest[1]);
-  EXPECT_EQ("other3", rest[2]);
+  EXPECT_EQ(4, argc);
+  EXPECT_EQ("program", std::string(argv[0]));
+  EXPECT_EQ("other1", std::string(argv[1]));
+  EXPECT_EQ("other2", std::string(argv[2]));
+  EXPECT_EQ("other3", std::string(argv[3]));
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsTest2) {
   const char *kFlags[] = {"program",       "--int32_f", "500",
                           "-int64_f=600",  "-uint64_f", "700",
                           "--bool_f=FALSE"};
-
-  std::vector<std::string> rest;
-  ParseCommandLineFlags(arraysize(kFlags), const_cast<char **>(kFlags), &rest);
+  int argc = arraysize(kFlags);
+  char **argv = const_cast<char **>(kFlags);
+  ParseCommandLineFlags(kFlags[0], &argc, &argv);
 
   EXPECT_EQ(500, FLAGS_int32_f);
   EXPECT_EQ(600, FLAGS_int64_f);
   EXPECT_EQ(700, FLAGS_uint64_f);
   EXPECT_FALSE(FLAGS_bool_f);
-  EXPECT_TRUE(rest.empty());
+  EXPECT_EQ(1, argc);
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsTest3) {
   const char *kFlags[] = {"program", "--bool_f", "--int32_f", "800"};
 
-  std::vector<std::string> rest;
-  ParseCommandLineFlags(arraysize(kFlags), const_cast<char **>(kFlags), &rest);
-
+  int argc = arraysize(kFlags);
+  char **argv = const_cast<char **>(kFlags);
+  ParseCommandLineFlags(kFlags[0], &argc, &argv);
   EXPECT_TRUE(FLAGS_bool_f);
   EXPECT_EQ(800, FLAGS_int32_f);
-  EXPECT_TRUE(rest.empty());
+  EXPECT_EQ(1, argc);
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsHelpTest) {
   const char *kFlags[] = {"program", "--help"};
-  EXPECT_DEATH(
-      ParseCommandLineFlags(arraysize(kFlags), const_cast<char **>(kFlags)));
+  int argc = arraysize(kFlags);
+  char **argv = const_cast<char **>(kFlags);
+  EXPECT_DEATH(ParseCommandLineFlags(kFlags[0], &argc, &argv), "");
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsVersionTest) {
   const char *kFlags[] = {"program", "--version"};
-  EXPECT_DEATH(
-      ParseCommandLineFlags(arraysize(kFlags), const_cast<char **>(kFlags)));
+  int argc = arraysize(kFlags);
+  char **argv = const_cast<char **>(kFlags);
+  EXPECT_DEATH(ParseCommandLineFlags(kFlags[0], &argc, &argv), "");
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsUnknownTest) {
   const char *kFlags[] = {"program", "--foo"};
-  EXPECT_DEATH(
-      ParseCommandLineFlags(arraysize(kFlags), const_cast<char **>(kFlags)));
+  int argc = arraysize(kFlags);
+  char **argv = const_cast<char **>(kFlags);
+  EXPECT_DEATH(ParseCommandLineFlags(kFlags[0], &argc, &argv), "");
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsInvalidBoolTest) {
   const char *kFlags[] = {"program", "--bool_f=X"};
-  EXPECT_DEATH(
-      ParseCommandLineFlags(arraysize(kFlags), const_cast<char **>(kFlags)));
+  int argc = arraysize(kFlags);
+  char **argv = const_cast<char **>(kFlags);
+  EXPECT_DEATH(ParseCommandLineFlags(kFlags[0], &argc, &argv), "");
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsEmptyStringArgs) {
   const char *kFlags[] = {"program", "--string_f="};
-  ParseCommandLineFlags(arraysize(kFlags), const_cast<char **>(kFlags));
+  int argc = arraysize(kFlags);
+  char **argv = const_cast<char **>(kFlags);
+  ParseCommandLineFlags(kFlags[0], &argc, &argv);
+  EXPECT_EQ(1, argc);
   EXPECT_EQ("", FLAGS_string_f);
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsEmptyBoolArgs) {
   const char *kFlags[] = {"program", "--bool_f"};
-  ParseCommandLineFlags(arraysize(kFlags), const_cast<char **>(kFlags));
+  int argc = arraysize(kFlags);
+  char **argv = const_cast<char **>(kFlags);
+  ParseCommandLineFlags(kFlags[0], &argc, &argv);
+  EXPECT_EQ(1, argc);
   EXPECT_TRUE(FLAGS_bool_f);
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsEmptyIntArgs) {
   const char *kFlags[] = {"program", "--int32_f"};
-  EXPECT_DEATH(
-      ParseCommandLineFlags(arraysize(kFlags), const_cast<char **>(kFlags)));
+  int argc = arraysize(kFlags);
+  char **argv = const_cast<char **>(kFlags);
+  EXPECT_DEATH(ParseCommandLineFlags(kFlags[0], &argc, &argv), );
 }
 }  // namespace flags
 }  // namespace sentencepiece

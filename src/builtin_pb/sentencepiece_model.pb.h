@@ -92,11 +92,12 @@ enum ModelProto_SentencePiece_Type {
   ModelProto_SentencePiece_Type_UNKNOWN = 2,
   ModelProto_SentencePiece_Type_CONTROL = 3,
   ModelProto_SentencePiece_Type_USER_DEFINED = 4,
+  ModelProto_SentencePiece_Type_BYTE = 6,
   ModelProto_SentencePiece_Type_UNUSED = 5
 };
 bool ModelProto_SentencePiece_Type_IsValid(int value);
 const ModelProto_SentencePiece_Type ModelProto_SentencePiece_Type_Type_MIN = ModelProto_SentencePiece_Type_NORMAL;
-const ModelProto_SentencePiece_Type ModelProto_SentencePiece_Type_Type_MAX = ModelProto_SentencePiece_Type_UNUSED;
+const ModelProto_SentencePiece_Type ModelProto_SentencePiece_Type_Type_MAX = ModelProto_SentencePiece_Type_BYTE;
 const int ModelProto_SentencePiece_Type_Type_ARRAYSIZE = ModelProto_SentencePiece_Type_Type_MAX + 1;
 
 // ===================================================================
@@ -330,6 +331,21 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   ::std::string* release_input_format();
   void set_allocated_input_format(::std::string* input_format);
 
+  // optional string required_chars = 36;
+  bool has_required_chars() const;
+  void clear_required_chars();
+  static const int kRequiredCharsFieldNumber = 36;
+  const ::std::string& required_chars() const;
+  void set_required_chars(const ::std::string& value);
+  #if LANG_CXX11
+  void set_required_chars(::std::string&& value);
+  #endif
+  void set_required_chars(const char* value);
+  void set_required_chars(const char* value, size_t size);
+  ::std::string* mutable_required_chars();
+  ::std::string* release_required_chars();
+  void set_allocated_required_chars(::std::string* required_chars);
+
   // optional string unk_surface = 44 [default = " \342\201\207 "];
   bool has_unk_surface() const;
   void clear_unk_surface();
@@ -440,6 +456,20 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   bool treat_whitespace_as_suffix() const;
   void set_treat_whitespace_as_suffix(bool value);
 
+  // optional bool split_digits = 25 [default = false];
+  bool has_split_digits() const;
+  void clear_split_digits();
+  static const int kSplitDigitsFieldNumber = 25;
+  bool split_digits() const;
+  void set_split_digits(bool value);
+
+  // optional bool byte_fallback = 35 [default = false];
+  bool has_byte_fallback() const;
+  void clear_byte_fallback();
+  static const int kByteFallbackFieldNumber = 35;
+  bool byte_fallback() const;
+  void set_byte_fallback(bool value);
+
   // optional bool use_all_vocab = 34 [default = false];
   bool has_use_all_vocab() const;
   void clear_use_all_vocab();
@@ -453,6 +483,13 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   static const int kUnkIdFieldNumber = 40;
   ::google::protobuf::int32 unk_id() const;
   void set_unk_id(::google::protobuf::int32 value);
+
+  // optional bool train_extremely_large_corpus = 49 [default = false];
+  bool has_train_extremely_large_corpus() const;
+  void clear_train_extremely_large_corpus();
+  static const int kTrainExtremelyLargeCorpusFieldNumber = 49;
+  bool train_extremely_large_corpus() const;
+  void set_train_extremely_large_corpus(bool value);
 
   // optional .sentencepiece.TrainerSpec.ModelType model_type = 3 [default = UNIGRAM];
   bool has_model_type() const;
@@ -544,6 +581,13 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   static const int kSplitByWhitespaceFieldNumber = 22;
   bool split_by_whitespace() const;
   void set_split_by_whitespace(bool value);
+
+  // optional bool vocabulary_output_piece_score = 32 [default = true];
+  bool has_vocabulary_output_piece_score() const;
+  void clear_vocabulary_output_piece_score();
+  static const int kVocabularyOutputPieceScoreFieldNumber = 32;
+  bool vocabulary_output_piece_score() const;
+  void set_vocabulary_output_piece_score(bool value);
 
   // optional bool hard_vocab_limit = 33 [default = true];
   bool has_hard_vocab_limit() const;
@@ -640,6 +684,14 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   void clear_has_split_by_whitespace();
   void set_has_treat_whitespace_as_suffix();
   void clear_has_treat_whitespace_as_suffix();
+  void set_has_split_digits();
+  void clear_has_split_digits();
+  void set_has_required_chars();
+  void clear_has_required_chars();
+  void set_has_byte_fallback();
+  void clear_has_byte_fallback();
+  void set_has_vocabulary_output_piece_score();
+  void clear_has_vocabulary_output_piece_score();
   void set_has_hard_vocab_limit();
   void clear_has_hard_vocab_limit();
   void set_has_use_all_vocab();
@@ -662,18 +714,20 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   void clear_has_pad_piece();
   void set_has_unk_surface();
   void clear_has_unk_surface();
+  void set_has_train_extremely_large_corpus();
+  void clear_has_train_extremely_large_corpus();
 
   ::google::protobuf::internal::ExtensionSet _extensions_;
 
   ::google::protobuf::internal::InternalMetadataWithArenaLite _internal_metadata_;
-  ::google::protobuf::internal::HasBits<1> _has_bits_;
-  mutable ::google::protobuf::internal::CachedSize _cached_size_;
+  ::google::protobuf::internal::HasBits<2> _has_bits_;
   ::google::protobuf::RepeatedPtrField< ::std::string> input_;
   ::google::protobuf::RepeatedPtrField< ::std::string> accept_language_;
   ::google::protobuf::RepeatedPtrField< ::std::string> control_symbols_;
   ::google::protobuf::RepeatedPtrField< ::std::string> user_defined_symbols_;
   ::google::protobuf::internal::ArenaStringPtr model_prefix_;
   ::google::protobuf::internal::ArenaStringPtr input_format_;
+  ::google::protobuf::internal::ArenaStringPtr required_chars_;
   public:
   static ::google::protobuf::internal::ExplicitlyConstructed< ::std::string> _i_give_permission_to_break_this_code_default_unk_surface_;
   private:
@@ -699,8 +753,11 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   ::google::protobuf::int32 mining_sentence_size_;
   ::google::protobuf::int32 training_sentence_size_;
   bool treat_whitespace_as_suffix_;
+  bool split_digits_;
+  bool byte_fallback_;
   bool use_all_vocab_;
   ::google::protobuf::int32 unk_id_;
+  bool train_extremely_large_corpus_;
   int model_type_;
   ::google::protobuf::int32 vocab_size_;
   float character_coverage_;
@@ -718,10 +775,12 @@ class TrainerSpec : public ::google::protobuf::MessageLite /* @@protoc_insertion
   bool add_fullwidth_numbers_;
   bool split_by_number_;
   bool split_by_whitespace_;
+  bool vocabulary_output_piece_score_;
   bool hard_vocab_limit_;
   ::google::protobuf::int32 bos_id_;
   ::google::protobuf::int32 eos_id_;
   ::google::protobuf::int32 pad_id_;
+  mutable ::google::protobuf::internal::CachedSize _cached_size_;
   friend struct ::protobuf_sentencepiece_5fmodel_2eproto::TableStruct;
 };
 // -------------------------------------------------------------------
@@ -1272,6 +1331,8 @@ class ModelProto_SentencePiece : public ::google::protobuf::MessageLite /* @@pro
     ModelProto_SentencePiece_Type_CONTROL;
   static const Type USER_DEFINED =
     ModelProto_SentencePiece_Type_USER_DEFINED;
+  static const Type BYTE =
+    ModelProto_SentencePiece_Type_BYTE;
   static const Type UNUSED =
     ModelProto_SentencePiece_Type_UNUSED;
   static inline bool Type_IsValid(int value) {
@@ -1479,6 +1540,18 @@ class ModelProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_
   ::sentencepiece::SelfTestData* mutable_self_test_data();
   void set_allocated_self_test_data(::sentencepiece::SelfTestData* self_test_data);
 
+  // optional .sentencepiece.NormalizerSpec denormalizer_spec = 5;
+  bool has_denormalizer_spec() const;
+  void clear_denormalizer_spec();
+  static const int kDenormalizerSpecFieldNumber = 5;
+  private:
+  const ::sentencepiece::NormalizerSpec& _internal_denormalizer_spec() const;
+  public:
+  const ::sentencepiece::NormalizerSpec& denormalizer_spec() const;
+  ::sentencepiece::NormalizerSpec* release_denormalizer_spec();
+  ::sentencepiece::NormalizerSpec* mutable_denormalizer_spec();
+  void set_allocated_denormalizer_spec(::sentencepiece::NormalizerSpec* denormalizer_spec);
+
   GOOGLE_PROTOBUF_EXTENSION_ACCESSORS(ModelProto)
   // @@protoc_insertion_point(class_scope:sentencepiece.ModelProto)
  private:
@@ -1488,6 +1561,8 @@ class ModelProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_
   void clear_has_normalizer_spec();
   void set_has_self_test_data();
   void clear_has_self_test_data();
+  void set_has_denormalizer_spec();
+  void clear_has_denormalizer_spec();
 
   ::google::protobuf::internal::ExtensionSet _extensions_;
 
@@ -1498,6 +1573,7 @@ class ModelProto : public ::google::protobuf::MessageLite /* @@protoc_insertion_
   ::sentencepiece::TrainerSpec* trainer_spec_;
   ::sentencepiece::NormalizerSpec* normalizer_spec_;
   ::sentencepiece::SelfTestData* self_test_data_;
+  ::sentencepiece::NormalizerSpec* denormalizer_spec_;
   friend struct ::protobuf_sentencepiece_5fmodel_2eproto::TableStruct;
 };
 // ===================================================================
@@ -1714,13 +1790,13 @@ inline void TrainerSpec::set_allocated_model_prefix(::std::string* model_prefix)
 
 // optional .sentencepiece.TrainerSpec.ModelType model_type = 3 [default = UNIGRAM];
 inline bool TrainerSpec::has_model_type() const {
-  return (_has_bits_[0] & 0x00004000u) != 0;
+  return (_has_bits_[0] & 0x00040000u) != 0;
 }
 inline void TrainerSpec::set_has_model_type() {
-  _has_bits_[0] |= 0x00004000u;
+  _has_bits_[0] |= 0x00040000u;
 }
 inline void TrainerSpec::clear_has_model_type() {
-  _has_bits_[0] &= ~0x00004000u;
+  _has_bits_[0] &= ~0x00040000u;
 }
 inline void TrainerSpec::clear_model_type() {
   model_type_ = 1;
@@ -1739,13 +1815,13 @@ inline void TrainerSpec::set_model_type(::sentencepiece::TrainerSpec_ModelType v
 
 // optional int32 vocab_size = 4 [default = 8000];
 inline bool TrainerSpec::has_vocab_size() const {
-  return (_has_bits_[0] & 0x00008000u) != 0;
+  return (_has_bits_[0] & 0x00080000u) != 0;
 }
 inline void TrainerSpec::set_has_vocab_size() {
-  _has_bits_[0] |= 0x00008000u;
+  _has_bits_[0] |= 0x00080000u;
 }
 inline void TrainerSpec::clear_has_vocab_size() {
-  _has_bits_[0] &= ~0x00008000u;
+  _has_bits_[0] &= ~0x00080000u;
 }
 inline void TrainerSpec::clear_vocab_size() {
   vocab_size_ = 8000;
@@ -1832,13 +1908,13 @@ TrainerSpec::mutable_accept_language() {
 
 // optional int32 self_test_sample_size = 6 [default = 0];
 inline bool TrainerSpec::has_self_test_sample_size() const {
-  return (_has_bits_[0] & 0x00000080u) != 0;
+  return (_has_bits_[0] & 0x00000100u) != 0;
 }
 inline void TrainerSpec::set_has_self_test_sample_size() {
-  _has_bits_[0] |= 0x00000080u;
+  _has_bits_[0] |= 0x00000100u;
 }
 inline void TrainerSpec::clear_has_self_test_sample_size() {
-  _has_bits_[0] &= ~0x00000080u;
+  _has_bits_[0] &= ~0x00000100u;
 }
 inline void TrainerSpec::clear_self_test_sample_size() {
   self_test_sample_size_ = 0;
@@ -1856,13 +1932,13 @@ inline void TrainerSpec::set_self_test_sample_size(::google::protobuf::int32 val
 
 // optional float character_coverage = 10 [default = 0.9995];
 inline bool TrainerSpec::has_character_coverage() const {
-  return (_has_bits_[0] & 0x00010000u) != 0;
+  return (_has_bits_[0] & 0x00100000u) != 0;
 }
 inline void TrainerSpec::set_has_character_coverage() {
-  _has_bits_[0] |= 0x00010000u;
+  _has_bits_[0] |= 0x00100000u;
 }
 inline void TrainerSpec::clear_has_character_coverage() {
-  _has_bits_[0] &= ~0x00010000u;
+  _has_bits_[0] &= ~0x00100000u;
 }
 inline void TrainerSpec::clear_character_coverage() {
   character_coverage_ = 0.9995f;
@@ -1880,13 +1956,13 @@ inline void TrainerSpec::set_character_coverage(float value) {
 
 // optional int32 input_sentence_size = 11 [default = 0];
 inline bool TrainerSpec::has_input_sentence_size() const {
-  return (_has_bits_[0] & 0x00000100u) != 0;
+  return (_has_bits_[0] & 0x00000200u) != 0;
 }
 inline void TrainerSpec::set_has_input_sentence_size() {
-  _has_bits_[0] |= 0x00000100u;
+  _has_bits_[0] |= 0x00000200u;
 }
 inline void TrainerSpec::clear_has_input_sentence_size() {
-  _has_bits_[0] &= ~0x00000100u;
+  _has_bits_[0] &= ~0x00000200u;
 }
 inline void TrainerSpec::clear_input_sentence_size() {
   input_sentence_size_ = 0;
@@ -1904,13 +1980,13 @@ inline void TrainerSpec::set_input_sentence_size(::google::protobuf::int32 value
 
 // optional bool shuffle_input_sentence = 19 [default = true];
 inline bool TrainerSpec::has_shuffle_input_sentence() const {
-  return (_has_bits_[0] & 0x00800000u) != 0;
+  return (_has_bits_[0] & 0x08000000u) != 0;
 }
 inline void TrainerSpec::set_has_shuffle_input_sentence() {
-  _has_bits_[0] |= 0x00800000u;
+  _has_bits_[0] |= 0x08000000u;
 }
 inline void TrainerSpec::clear_has_shuffle_input_sentence() {
-  _has_bits_[0] &= ~0x00800000u;
+  _has_bits_[0] &= ~0x08000000u;
 }
 inline void TrainerSpec::clear_shuffle_input_sentence() {
   shuffle_input_sentence_ = true;
@@ -1928,13 +2004,13 @@ inline void TrainerSpec::set_shuffle_input_sentence(bool value) {
 
 // optional int32 mining_sentence_size = 12 [deprecated = true];
 inline bool TrainerSpec::has_mining_sentence_size() const {
-  return (_has_bits_[0] & 0x00000200u) != 0;
+  return (_has_bits_[0] & 0x00000400u) != 0;
 }
 inline void TrainerSpec::set_has_mining_sentence_size() {
-  _has_bits_[0] |= 0x00000200u;
+  _has_bits_[0] |= 0x00000400u;
 }
 inline void TrainerSpec::clear_has_mining_sentence_size() {
-  _has_bits_[0] &= ~0x00000200u;
+  _has_bits_[0] &= ~0x00000400u;
 }
 inline void TrainerSpec::clear_mining_sentence_size() {
   mining_sentence_size_ = 0;
@@ -1952,13 +2028,13 @@ inline void TrainerSpec::set_mining_sentence_size(::google::protobuf::int32 valu
 
 // optional int32 training_sentence_size = 13 [deprecated = true];
 inline bool TrainerSpec::has_training_sentence_size() const {
-  return (_has_bits_[0] & 0x00000400u) != 0;
+  return (_has_bits_[0] & 0x00000800u) != 0;
 }
 inline void TrainerSpec::set_has_training_sentence_size() {
-  _has_bits_[0] |= 0x00000400u;
+  _has_bits_[0] |= 0x00000800u;
 }
 inline void TrainerSpec::clear_has_training_sentence_size() {
-  _has_bits_[0] &= ~0x00000400u;
+  _has_bits_[0] &= ~0x00000800u;
 }
 inline void TrainerSpec::clear_training_sentence_size() {
   training_sentence_size_ = 0;
@@ -1976,13 +2052,13 @@ inline void TrainerSpec::set_training_sentence_size(::google::protobuf::int32 va
 
 // optional int32 seed_sentencepiece_size = 14 [default = 1000000];
 inline bool TrainerSpec::has_seed_sentencepiece_size() const {
-  return (_has_bits_[0] & 0x00020000u) != 0;
+  return (_has_bits_[0] & 0x00200000u) != 0;
 }
 inline void TrainerSpec::set_has_seed_sentencepiece_size() {
-  _has_bits_[0] |= 0x00020000u;
+  _has_bits_[0] |= 0x00200000u;
 }
 inline void TrainerSpec::clear_has_seed_sentencepiece_size() {
-  _has_bits_[0] &= ~0x00020000u;
+  _has_bits_[0] &= ~0x00200000u;
 }
 inline void TrainerSpec::clear_seed_sentencepiece_size() {
   seed_sentencepiece_size_ = 1000000;
@@ -2000,13 +2076,13 @@ inline void TrainerSpec::set_seed_sentencepiece_size(::google::protobuf::int32 v
 
 // optional float shrinking_factor = 15 [default = 0.75];
 inline bool TrainerSpec::has_shrinking_factor() const {
-  return (_has_bits_[0] & 0x00040000u) != 0;
+  return (_has_bits_[0] & 0x00400000u) != 0;
 }
 inline void TrainerSpec::set_has_shrinking_factor() {
-  _has_bits_[0] |= 0x00040000u;
+  _has_bits_[0] |= 0x00400000u;
 }
 inline void TrainerSpec::clear_has_shrinking_factor() {
-  _has_bits_[0] &= ~0x00040000u;
+  _has_bits_[0] &= ~0x00400000u;
 }
 inline void TrainerSpec::clear_shrinking_factor() {
   shrinking_factor_ = 0.75f;
@@ -2024,13 +2100,13 @@ inline void TrainerSpec::set_shrinking_factor(float value) {
 
 // optional int32 max_sentence_length = 18 [default = 4192];
 inline bool TrainerSpec::has_max_sentence_length() const {
-  return (_has_bits_[0] & 0x00200000u) != 0;
+  return (_has_bits_[0] & 0x02000000u) != 0;
 }
 inline void TrainerSpec::set_has_max_sentence_length() {
-  _has_bits_[0] |= 0x00200000u;
+  _has_bits_[0] |= 0x02000000u;
 }
 inline void TrainerSpec::clear_has_max_sentence_length() {
-  _has_bits_[0] &= ~0x00200000u;
+  _has_bits_[0] &= ~0x02000000u;
 }
 inline void TrainerSpec::clear_max_sentence_length() {
   max_sentence_length_ = 4192;
@@ -2048,13 +2124,13 @@ inline void TrainerSpec::set_max_sentence_length(::google::protobuf::int32 value
 
 // optional int32 num_threads = 16 [default = 16];
 inline bool TrainerSpec::has_num_threads() const {
-  return (_has_bits_[0] & 0x00080000u) != 0;
+  return (_has_bits_[0] & 0x00800000u) != 0;
 }
 inline void TrainerSpec::set_has_num_threads() {
-  _has_bits_[0] |= 0x00080000u;
+  _has_bits_[0] |= 0x00800000u;
 }
 inline void TrainerSpec::clear_has_num_threads() {
-  _has_bits_[0] &= ~0x00080000u;
+  _has_bits_[0] &= ~0x00800000u;
 }
 inline void TrainerSpec::clear_num_threads() {
   num_threads_ = 16;
@@ -2072,13 +2148,13 @@ inline void TrainerSpec::set_num_threads(::google::protobuf::int32 value) {
 
 // optional int32 num_sub_iterations = 17 [default = 2];
 inline bool TrainerSpec::has_num_sub_iterations() const {
-  return (_has_bits_[0] & 0x00100000u) != 0;
+  return (_has_bits_[0] & 0x01000000u) != 0;
 }
 inline void TrainerSpec::set_has_num_sub_iterations() {
-  _has_bits_[0] |= 0x00100000u;
+  _has_bits_[0] |= 0x01000000u;
 }
 inline void TrainerSpec::clear_has_num_sub_iterations() {
-  _has_bits_[0] &= ~0x00100000u;
+  _has_bits_[0] &= ~0x01000000u;
 }
 inline void TrainerSpec::clear_num_sub_iterations() {
   num_sub_iterations_ = 2;
@@ -2096,13 +2172,13 @@ inline void TrainerSpec::set_num_sub_iterations(::google::protobuf::int32 value)
 
 // optional int32 max_sentencepiece_length = 20 [default = 16];
 inline bool TrainerSpec::has_max_sentencepiece_length() const {
-  return (_has_bits_[0] & 0x00400000u) != 0;
+  return (_has_bits_[0] & 0x04000000u) != 0;
 }
 inline void TrainerSpec::set_has_max_sentencepiece_length() {
-  _has_bits_[0] |= 0x00400000u;
+  _has_bits_[0] |= 0x04000000u;
 }
 inline void TrainerSpec::clear_has_max_sentencepiece_length() {
-  _has_bits_[0] &= ~0x00400000u;
+  _has_bits_[0] &= ~0x04000000u;
 }
 inline void TrainerSpec::clear_max_sentencepiece_length() {
   max_sentencepiece_length_ = 16;
@@ -2120,13 +2196,13 @@ inline void TrainerSpec::set_max_sentencepiece_length(::google::protobuf::int32 
 
 // optional bool split_by_unicode_script = 21 [default = true];
 inline bool TrainerSpec::has_split_by_unicode_script() const {
-  return (_has_bits_[0] & 0x01000000u) != 0;
+  return (_has_bits_[0] & 0x10000000u) != 0;
 }
 inline void TrainerSpec::set_has_split_by_unicode_script() {
-  _has_bits_[0] |= 0x01000000u;
+  _has_bits_[0] |= 0x10000000u;
 }
 inline void TrainerSpec::clear_has_split_by_unicode_script() {
-  _has_bits_[0] &= ~0x01000000u;
+  _has_bits_[0] &= ~0x10000000u;
 }
 inline void TrainerSpec::clear_split_by_unicode_script() {
   split_by_unicode_script_ = true;
@@ -2180,13 +2256,13 @@ inline void TrainerSpec::set_add_fullwidth_numbers(bool value) {
 
 // optional bool split_by_number = 23 [default = true];
 inline bool TrainerSpec::has_split_by_number() const {
-  return (_has_bits_[0] & 0x02000000u) != 0;
+  return (_has_bits_[0] & 0x20000000u) != 0;
 }
 inline void TrainerSpec::set_has_split_by_number() {
-  _has_bits_[0] |= 0x02000000u;
+  _has_bits_[0] |= 0x20000000u;
 }
 inline void TrainerSpec::clear_has_split_by_number() {
-  _has_bits_[0] &= ~0x02000000u;
+  _has_bits_[0] &= ~0x20000000u;
 }
 inline void TrainerSpec::clear_split_by_number() {
   split_by_number_ = true;
@@ -2204,13 +2280,13 @@ inline void TrainerSpec::set_split_by_number(bool value) {
 
 // optional bool split_by_whitespace = 22 [default = true];
 inline bool TrainerSpec::has_split_by_whitespace() const {
-  return (_has_bits_[0] & 0x04000000u) != 0;
+  return (_has_bits_[0] & 0x40000000u) != 0;
 }
 inline void TrainerSpec::set_has_split_by_whitespace() {
-  _has_bits_[0] |= 0x04000000u;
+  _has_bits_[0] |= 0x40000000u;
 }
 inline void TrainerSpec::clear_has_split_by_whitespace() {
-  _has_bits_[0] &= ~0x04000000u;
+  _has_bits_[0] &= ~0x40000000u;
 }
 inline void TrainerSpec::clear_split_by_whitespace() {
   split_by_whitespace_ = true;
@@ -2228,13 +2304,13 @@ inline void TrainerSpec::set_split_by_whitespace(bool value) {
 
 // optional bool treat_whitespace_as_suffix = 24 [default = false];
 inline bool TrainerSpec::has_treat_whitespace_as_suffix() const {
-  return (_has_bits_[0] & 0x00000800u) != 0;
+  return (_has_bits_[0] & 0x00001000u) != 0;
 }
 inline void TrainerSpec::set_has_treat_whitespace_as_suffix() {
-  _has_bits_[0] |= 0x00000800u;
+  _has_bits_[0] |= 0x00001000u;
 }
 inline void TrainerSpec::clear_has_treat_whitespace_as_suffix() {
-  _has_bits_[0] &= ~0x00000800u;
+  _has_bits_[0] &= ~0x00001000u;
 }
 inline void TrainerSpec::clear_treat_whitespace_as_suffix() {
   treat_whitespace_as_suffix_ = false;
@@ -2248,6 +2324,30 @@ inline void TrainerSpec::set_treat_whitespace_as_suffix(bool value) {
   set_has_treat_whitespace_as_suffix();
   treat_whitespace_as_suffix_ = value;
   // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.treat_whitespace_as_suffix)
+}
+
+// optional bool split_digits = 25 [default = false];
+inline bool TrainerSpec::has_split_digits() const {
+  return (_has_bits_[0] & 0x00002000u) != 0;
+}
+inline void TrainerSpec::set_has_split_digits() {
+  _has_bits_[0] |= 0x00002000u;
+}
+inline void TrainerSpec::clear_has_split_digits() {
+  _has_bits_[0] &= ~0x00002000u;
+}
+inline void TrainerSpec::clear_split_digits() {
+  split_digits_ = false;
+  clear_has_split_digits();
+}
+inline bool TrainerSpec::split_digits() const {
+  // @@protoc_insertion_point(field_get:sentencepiece.TrainerSpec.split_digits)
+  return split_digits_;
+}
+inline void TrainerSpec::set_split_digits(bool value) {
+  set_has_split_digits();
+  split_digits_ = value;
+  // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.split_digits)
 }
 
 // repeated string control_symbols = 30;
@@ -2388,15 +2488,129 @@ TrainerSpec::mutable_user_defined_symbols() {
   return &user_defined_symbols_;
 }
 
+// optional string required_chars = 36;
+inline bool TrainerSpec::has_required_chars() const {
+  return (_has_bits_[0] & 0x00000004u) != 0;
+}
+inline void TrainerSpec::set_has_required_chars() {
+  _has_bits_[0] |= 0x00000004u;
+}
+inline void TrainerSpec::clear_has_required_chars() {
+  _has_bits_[0] &= ~0x00000004u;
+}
+inline void TrainerSpec::clear_required_chars() {
+  required_chars_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  clear_has_required_chars();
+}
+inline const ::std::string& TrainerSpec::required_chars() const {
+  // @@protoc_insertion_point(field_get:sentencepiece.TrainerSpec.required_chars)
+  return required_chars_.GetNoArena();
+}
+inline void TrainerSpec::set_required_chars(const ::std::string& value) {
+  set_has_required_chars();
+  required_chars_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.required_chars)
+}
+#if LANG_CXX11
+inline void TrainerSpec::set_required_chars(::std::string&& value) {
+  set_has_required_chars();
+  required_chars_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:sentencepiece.TrainerSpec.required_chars)
+}
+#endif
+inline void TrainerSpec::set_required_chars(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  set_has_required_chars();
+  required_chars_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:sentencepiece.TrainerSpec.required_chars)
+}
+inline void TrainerSpec::set_required_chars(const char* value, size_t size) {
+  set_has_required_chars();
+  required_chars_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:sentencepiece.TrainerSpec.required_chars)
+}
+inline ::std::string* TrainerSpec::mutable_required_chars() {
+  set_has_required_chars();
+  // @@protoc_insertion_point(field_mutable:sentencepiece.TrainerSpec.required_chars)
+  return required_chars_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* TrainerSpec::release_required_chars() {
+  // @@protoc_insertion_point(field_release:sentencepiece.TrainerSpec.required_chars)
+  if (!has_required_chars()) {
+    return NULL;
+  }
+  clear_has_required_chars();
+  return required_chars_.ReleaseNonDefaultNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void TrainerSpec::set_allocated_required_chars(::std::string* required_chars) {
+  if (required_chars != NULL) {
+    set_has_required_chars();
+  } else {
+    clear_has_required_chars();
+  }
+  required_chars_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), required_chars);
+  // @@protoc_insertion_point(field_set_allocated:sentencepiece.TrainerSpec.required_chars)
+}
+
+// optional bool byte_fallback = 35 [default = false];
+inline bool TrainerSpec::has_byte_fallback() const {
+  return (_has_bits_[0] & 0x00004000u) != 0;
+}
+inline void TrainerSpec::set_has_byte_fallback() {
+  _has_bits_[0] |= 0x00004000u;
+}
+inline void TrainerSpec::clear_has_byte_fallback() {
+  _has_bits_[0] &= ~0x00004000u;
+}
+inline void TrainerSpec::clear_byte_fallback() {
+  byte_fallback_ = false;
+  clear_has_byte_fallback();
+}
+inline bool TrainerSpec::byte_fallback() const {
+  // @@protoc_insertion_point(field_get:sentencepiece.TrainerSpec.byte_fallback)
+  return byte_fallback_;
+}
+inline void TrainerSpec::set_byte_fallback(bool value) {
+  set_has_byte_fallback();
+  byte_fallback_ = value;
+  // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.byte_fallback)
+}
+
+// optional bool vocabulary_output_piece_score = 32 [default = true];
+inline bool TrainerSpec::has_vocabulary_output_piece_score() const {
+  return (_has_bits_[0] & 0x80000000u) != 0;
+}
+inline void TrainerSpec::set_has_vocabulary_output_piece_score() {
+  _has_bits_[0] |= 0x80000000u;
+}
+inline void TrainerSpec::clear_has_vocabulary_output_piece_score() {
+  _has_bits_[0] &= ~0x80000000u;
+}
+inline void TrainerSpec::clear_vocabulary_output_piece_score() {
+  vocabulary_output_piece_score_ = true;
+  clear_has_vocabulary_output_piece_score();
+}
+inline bool TrainerSpec::vocabulary_output_piece_score() const {
+  // @@protoc_insertion_point(field_get:sentencepiece.TrainerSpec.vocabulary_output_piece_score)
+  return vocabulary_output_piece_score_;
+}
+inline void TrainerSpec::set_vocabulary_output_piece_score(bool value) {
+  set_has_vocabulary_output_piece_score();
+  vocabulary_output_piece_score_ = value;
+  // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.vocabulary_output_piece_score)
+}
+
 // optional bool hard_vocab_limit = 33 [default = true];
 inline bool TrainerSpec::has_hard_vocab_limit() const {
-  return (_has_bits_[0] & 0x08000000u) != 0;
+  return (_has_bits_[1] & 0x00000001u) != 0;
 }
 inline void TrainerSpec::set_has_hard_vocab_limit() {
-  _has_bits_[0] |= 0x08000000u;
+  _has_bits_[1] |= 0x00000001u;
 }
 inline void TrainerSpec::clear_has_hard_vocab_limit() {
-  _has_bits_[0] &= ~0x08000000u;
+  _has_bits_[1] &= ~0x00000001u;
 }
 inline void TrainerSpec::clear_hard_vocab_limit() {
   hard_vocab_limit_ = true;
@@ -2414,13 +2628,13 @@ inline void TrainerSpec::set_hard_vocab_limit(bool value) {
 
 // optional bool use_all_vocab = 34 [default = false];
 inline bool TrainerSpec::has_use_all_vocab() const {
-  return (_has_bits_[0] & 0x00001000u) != 0;
+  return (_has_bits_[0] & 0x00008000u) != 0;
 }
 inline void TrainerSpec::set_has_use_all_vocab() {
-  _has_bits_[0] |= 0x00001000u;
+  _has_bits_[0] |= 0x00008000u;
 }
 inline void TrainerSpec::clear_has_use_all_vocab() {
-  _has_bits_[0] &= ~0x00001000u;
+  _has_bits_[0] &= ~0x00008000u;
 }
 inline void TrainerSpec::clear_use_all_vocab() {
   use_all_vocab_ = false;
@@ -2438,13 +2652,13 @@ inline void TrainerSpec::set_use_all_vocab(bool value) {
 
 // optional int32 unk_id = 40 [default = 0];
 inline bool TrainerSpec::has_unk_id() const {
-  return (_has_bits_[0] & 0x00002000u) != 0;
+  return (_has_bits_[0] & 0x00010000u) != 0;
 }
 inline void TrainerSpec::set_has_unk_id() {
-  _has_bits_[0] |= 0x00002000u;
+  _has_bits_[0] |= 0x00010000u;
 }
 inline void TrainerSpec::clear_has_unk_id() {
-  _has_bits_[0] &= ~0x00002000u;
+  _has_bits_[0] &= ~0x00010000u;
 }
 inline void TrainerSpec::clear_unk_id() {
   unk_id_ = 0;
@@ -2462,13 +2676,13 @@ inline void TrainerSpec::set_unk_id(::google::protobuf::int32 value) {
 
 // optional int32 bos_id = 41 [default = 1];
 inline bool TrainerSpec::has_bos_id() const {
-  return (_has_bits_[0] & 0x10000000u) != 0;
+  return (_has_bits_[1] & 0x00000002u) != 0;
 }
 inline void TrainerSpec::set_has_bos_id() {
-  _has_bits_[0] |= 0x10000000u;
+  _has_bits_[1] |= 0x00000002u;
 }
 inline void TrainerSpec::clear_has_bos_id() {
-  _has_bits_[0] &= ~0x10000000u;
+  _has_bits_[1] &= ~0x00000002u;
 }
 inline void TrainerSpec::clear_bos_id() {
   bos_id_ = 1;
@@ -2486,13 +2700,13 @@ inline void TrainerSpec::set_bos_id(::google::protobuf::int32 value) {
 
 // optional int32 eos_id = 42 [default = 2];
 inline bool TrainerSpec::has_eos_id() const {
-  return (_has_bits_[0] & 0x20000000u) != 0;
+  return (_has_bits_[1] & 0x00000004u) != 0;
 }
 inline void TrainerSpec::set_has_eos_id() {
-  _has_bits_[0] |= 0x20000000u;
+  _has_bits_[1] |= 0x00000004u;
 }
 inline void TrainerSpec::clear_has_eos_id() {
-  _has_bits_[0] &= ~0x20000000u;
+  _has_bits_[1] &= ~0x00000004u;
 }
 inline void TrainerSpec::clear_eos_id() {
   eos_id_ = 2;
@@ -2510,13 +2724,13 @@ inline void TrainerSpec::set_eos_id(::google::protobuf::int32 value) {
 
 // optional int32 pad_id = 43 [default = -1];
 inline bool TrainerSpec::has_pad_id() const {
-  return (_has_bits_[0] & 0x40000000u) != 0;
+  return (_has_bits_[1] & 0x00000008u) != 0;
 }
 inline void TrainerSpec::set_has_pad_id() {
-  _has_bits_[0] |= 0x40000000u;
+  _has_bits_[1] |= 0x00000008u;
 }
 inline void TrainerSpec::clear_has_pad_id() {
-  _has_bits_[0] &= ~0x40000000u;
+  _has_bits_[1] &= ~0x00000008u;
 }
 inline void TrainerSpec::clear_pad_id() {
   pad_id_ = -1;
@@ -2534,13 +2748,13 @@ inline void TrainerSpec::set_pad_id(::google::protobuf::int32 value) {
 
 // optional string unk_piece = 45 [default = "<unk>"];
 inline bool TrainerSpec::has_unk_piece() const {
-  return (_has_bits_[0] & 0x00000008u) != 0;
+  return (_has_bits_[0] & 0x00000010u) != 0;
 }
 inline void TrainerSpec::set_has_unk_piece() {
-  _has_bits_[0] |= 0x00000008u;
+  _has_bits_[0] |= 0x00000010u;
 }
 inline void TrainerSpec::clear_has_unk_piece() {
-  _has_bits_[0] &= ~0x00000008u;
+  _has_bits_[0] &= ~0x00000010u;
 }
 inline void TrainerSpec::clear_unk_piece() {
   unk_piece_.ClearToDefaultNoArena(&::sentencepiece::TrainerSpec::_i_give_permission_to_break_this_code_default_unk_piece_.get());
@@ -2600,13 +2814,13 @@ inline void TrainerSpec::set_allocated_unk_piece(::std::string* unk_piece) {
 
 // optional string bos_piece = 46 [default = "<s>"];
 inline bool TrainerSpec::has_bos_piece() const {
-  return (_has_bits_[0] & 0x00000010u) != 0;
+  return (_has_bits_[0] & 0x00000020u) != 0;
 }
 inline void TrainerSpec::set_has_bos_piece() {
-  _has_bits_[0] |= 0x00000010u;
+  _has_bits_[0] |= 0x00000020u;
 }
 inline void TrainerSpec::clear_has_bos_piece() {
-  _has_bits_[0] &= ~0x00000010u;
+  _has_bits_[0] &= ~0x00000020u;
 }
 inline void TrainerSpec::clear_bos_piece() {
   bos_piece_.ClearToDefaultNoArena(&::sentencepiece::TrainerSpec::_i_give_permission_to_break_this_code_default_bos_piece_.get());
@@ -2666,13 +2880,13 @@ inline void TrainerSpec::set_allocated_bos_piece(::std::string* bos_piece) {
 
 // optional string eos_piece = 47 [default = "</s>"];
 inline bool TrainerSpec::has_eos_piece() const {
-  return (_has_bits_[0] & 0x00000020u) != 0;
+  return (_has_bits_[0] & 0x00000040u) != 0;
 }
 inline void TrainerSpec::set_has_eos_piece() {
-  _has_bits_[0] |= 0x00000020u;
+  _has_bits_[0] |= 0x00000040u;
 }
 inline void TrainerSpec::clear_has_eos_piece() {
-  _has_bits_[0] &= ~0x00000020u;
+  _has_bits_[0] &= ~0x00000040u;
 }
 inline void TrainerSpec::clear_eos_piece() {
   eos_piece_.ClearToDefaultNoArena(&::sentencepiece::TrainerSpec::_i_give_permission_to_break_this_code_default_eos_piece_.get());
@@ -2732,13 +2946,13 @@ inline void TrainerSpec::set_allocated_eos_piece(::std::string* eos_piece) {
 
 // optional string pad_piece = 48 [default = "<pad>"];
 inline bool TrainerSpec::has_pad_piece() const {
-  return (_has_bits_[0] & 0x00000040u) != 0;
+  return (_has_bits_[0] & 0x00000080u) != 0;
 }
 inline void TrainerSpec::set_has_pad_piece() {
-  _has_bits_[0] |= 0x00000040u;
+  _has_bits_[0] |= 0x00000080u;
 }
 inline void TrainerSpec::clear_has_pad_piece() {
-  _has_bits_[0] &= ~0x00000040u;
+  _has_bits_[0] &= ~0x00000080u;
 }
 inline void TrainerSpec::clear_pad_piece() {
   pad_piece_.ClearToDefaultNoArena(&::sentencepiece::TrainerSpec::_i_give_permission_to_break_this_code_default_pad_piece_.get());
@@ -2798,13 +3012,13 @@ inline void TrainerSpec::set_allocated_pad_piece(::std::string* pad_piece) {
 
 // optional string unk_surface = 44 [default = " \342\201\207 "];
 inline bool TrainerSpec::has_unk_surface() const {
-  return (_has_bits_[0] & 0x00000004u) != 0;
+  return (_has_bits_[0] & 0x00000008u) != 0;
 }
 inline void TrainerSpec::set_has_unk_surface() {
-  _has_bits_[0] |= 0x00000004u;
+  _has_bits_[0] |= 0x00000008u;
 }
 inline void TrainerSpec::clear_has_unk_surface() {
-  _has_bits_[0] &= ~0x00000004u;
+  _has_bits_[0] &= ~0x00000008u;
 }
 inline void TrainerSpec::clear_unk_surface() {
   unk_surface_.ClearToDefaultNoArena(&::sentencepiece::TrainerSpec::_i_give_permission_to_break_this_code_default_unk_surface_.get());
@@ -2860,6 +3074,30 @@ inline void TrainerSpec::set_allocated_unk_surface(::std::string* unk_surface) {
   }
   unk_surface_.SetAllocatedNoArena(&::sentencepiece::TrainerSpec::_i_give_permission_to_break_this_code_default_unk_surface_.get(), unk_surface);
   // @@protoc_insertion_point(field_set_allocated:sentencepiece.TrainerSpec.unk_surface)
+}
+
+// optional bool train_extremely_large_corpus = 49 [default = false];
+inline bool TrainerSpec::has_train_extremely_large_corpus() const {
+  return (_has_bits_[0] & 0x00020000u) != 0;
+}
+inline void TrainerSpec::set_has_train_extremely_large_corpus() {
+  _has_bits_[0] |= 0x00020000u;
+}
+inline void TrainerSpec::clear_has_train_extremely_large_corpus() {
+  _has_bits_[0] &= ~0x00020000u;
+}
+inline void TrainerSpec::clear_train_extremely_large_corpus() {
+  train_extremely_large_corpus_ = false;
+  clear_has_train_extremely_large_corpus();
+}
+inline bool TrainerSpec::train_extremely_large_corpus() const {
+  // @@protoc_insertion_point(field_get:sentencepiece.TrainerSpec.train_extremely_large_corpus)
+  return train_extremely_large_corpus_;
+}
+inline void TrainerSpec::set_train_extremely_large_corpus(bool value) {
+  set_has_train_extremely_large_corpus();
+  train_extremely_large_corpus_ = value;
+  // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.train_extremely_large_corpus)
 }
 
 // -------------------------------------------------------------------
@@ -3631,6 +3869,64 @@ inline void ModelProto::set_allocated_self_test_data(::sentencepiece::SelfTestDa
   }
   self_test_data_ = self_test_data;
   // @@protoc_insertion_point(field_set_allocated:sentencepiece.ModelProto.self_test_data)
+}
+
+// optional .sentencepiece.NormalizerSpec denormalizer_spec = 5;
+inline bool ModelProto::has_denormalizer_spec() const {
+  return (_has_bits_[0] & 0x00000008u) != 0;
+}
+inline void ModelProto::set_has_denormalizer_spec() {
+  _has_bits_[0] |= 0x00000008u;
+}
+inline void ModelProto::clear_has_denormalizer_spec() {
+  _has_bits_[0] &= ~0x00000008u;
+}
+inline void ModelProto::clear_denormalizer_spec() {
+  if (denormalizer_spec_ != NULL) denormalizer_spec_->Clear();
+  clear_has_denormalizer_spec();
+}
+inline const ::sentencepiece::NormalizerSpec& ModelProto::_internal_denormalizer_spec() const {
+  return *denormalizer_spec_;
+}
+inline const ::sentencepiece::NormalizerSpec& ModelProto::denormalizer_spec() const {
+  const ::sentencepiece::NormalizerSpec* p = denormalizer_spec_;
+  // @@protoc_insertion_point(field_get:sentencepiece.ModelProto.denormalizer_spec)
+  return p != NULL ? *p : *reinterpret_cast<const ::sentencepiece::NormalizerSpec*>(
+      &::sentencepiece::_NormalizerSpec_default_instance_);
+}
+inline ::sentencepiece::NormalizerSpec* ModelProto::release_denormalizer_spec() {
+  // @@protoc_insertion_point(field_release:sentencepiece.ModelProto.denormalizer_spec)
+  clear_has_denormalizer_spec();
+  ::sentencepiece::NormalizerSpec* temp = denormalizer_spec_;
+  denormalizer_spec_ = NULL;
+  return temp;
+}
+inline ::sentencepiece::NormalizerSpec* ModelProto::mutable_denormalizer_spec() {
+  set_has_denormalizer_spec();
+  if (denormalizer_spec_ == NULL) {
+    auto* p = CreateMaybeMessage<::sentencepiece::NormalizerSpec>(GetArenaNoVirtual());
+    denormalizer_spec_ = p;
+  }
+  // @@protoc_insertion_point(field_mutable:sentencepiece.ModelProto.denormalizer_spec)
+  return denormalizer_spec_;
+}
+inline void ModelProto::set_allocated_denormalizer_spec(::sentencepiece::NormalizerSpec* denormalizer_spec) {
+  ::google::protobuf::Arena* message_arena = GetArenaNoVirtual();
+  if (message_arena == NULL) {
+    delete denormalizer_spec_;
+  }
+  if (denormalizer_spec) {
+    ::google::protobuf::Arena* submessage_arena = NULL;
+    if (message_arena != submessage_arena) {
+      denormalizer_spec = ::google::protobuf::internal::GetOwnedMessage(
+          message_arena, denormalizer_spec, submessage_arena);
+    }
+    set_has_denormalizer_spec();
+  } else {
+    clear_has_denormalizer_spec();
+  }
+  denormalizer_spec_ = denormalizer_spec;
+  // @@protoc_insertion_point(field_set_allocated:sentencepiece.ModelProto.denormalizer_spec)
 }
 
 #ifdef __GNUC__

@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "model_interface.h"
-
 #include <algorithm>
-#include "sentencepiece_model.pb.h"
+
+#include "builtin_pb/sentencepiece_model.pb.h"
+#include "model_interface.h"
+#include "third_party/absl/memory/memory.h"
+#include "third_party/absl/strings/str_format.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -64,6 +66,7 @@ void ModelInterface::InitializePieces() {
   unk_id_ = -1;
 
   std::set<absl::string_view> user_defined_symbols;
+  std::vector<bool> byte_found(256, false);
 
   for (int i = 0; i < model_proto_->pieces_size(); ++i) {
     const auto &sp = model_proto_->pieces(i);
@@ -93,6 +96,23 @@ void ModelInterface::InitializePieces() {
       }
       unk_id_ = i;
     }
+
+    if (sp.type() == ModelProto::SentencePiece::BYTE) {
+      if (!model_proto_->trainer_spec().byte_fallback()) {
+        status_ =
+            util::InternalError("byte piece " + sp.piece() +
+                                " is found although `byte_fallback` is false.");
+        return;
+      }
+      const int byte = PieceToByte(sp.piece());
+      if (0 <= byte && byte < 256) {
+        byte_found[byte] = true;
+      } else {
+        status_ =
+            util::InternalError("byte piece " + sp.piece() + " is invalid.");
+        return;
+      }
+    }
   }
 
   if (unk_id_ == -1) {
@@ -100,7 +120,17 @@ void ModelInterface::InitializePieces() {
     return;
   }
 
-  matcher_ = port::MakeUnique<normalizer::PrefixMatcher>(user_defined_symbols);
+  if (model_proto_->trainer_spec().byte_fallback()) {
+    // Checks that there are 256 byte pieces.
+    if (std::find(byte_found.begin(), byte_found.end(), false) !=
+        byte_found.end()) {
+      status_ = util::InternalError(
+          "there are not 256 byte pieces although `byte_fallback` is true.");
+      return;
+    }
+  }
+
+  matcher_ = absl::make_unique<normalizer::PrefixMatcher>(user_defined_symbols);
 }
 
 std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
@@ -137,6 +167,27 @@ std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
   }
 
   return result;
+}
+
+std::string ByteToPiece(unsigned char c) {
+  return absl::StrFormat("<0x%02X>", c);
+}
+
+int PieceToByte(absl::string_view piece) {
+  using PieceToByteMap = std::unordered_map<std::string, unsigned char>;
+  static const auto *const kMap = []() -> PieceToByteMap * {
+    auto *m = new PieceToByteMap();
+    for (int i = 0; i < 256; ++i) {
+      (*m)[ByteToPiece(i)] = i;
+    }
+    return m;
+  }();
+  const auto it = kMap->find(std::string(piece));
+  if (it == kMap->end()) {
+    return -1;
+  } else {
+    return it->second;
+  }
 }
 
 }  // namespace sentencepiece

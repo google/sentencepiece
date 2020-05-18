@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "char_model_trainer.h"
 #include <string>
 #include <vector>
+
+#include "char_model_trainer.h"
 #include "filesystem.h"
 #include "sentencepiece_processor.h"
 #include "testharness.h"
+#include "third_party/absl/strings/str_cat.h"
+#include "third_party/absl/strings/str_join.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -28,10 +31,8 @@ namespace {
 #define WS "\xE2\x96\x81"
 
 std::string RunTrainer(const std::vector<std::string> &input, int size) {
-  test::ScopedTempFile input_scoped_file("input");
-  test::ScopedTempFile model_scoped_file("model");
-  const std::string input_file = input_scoped_file.filename();
-  const std::string model_prefix = model_scoped_file.filename();
+  const std::string input_file = util::JoinPath(FLAGS_test_tmpdir, "input");
+  const std::string model_prefix = util::JoinPath(FLAGS_test_tmpdir, "model");
   {
     auto output = filesystem::NewWritableFile(input_file);
     for (const auto &line : input) {
@@ -48,11 +49,13 @@ std::string RunTrainer(const std::vector<std::string> &input, int size) {
   NormalizerSpec normalizer_spec;
   normalizer_spec.set_name("identity");
 
-  Trainer trainer(trainer_spec, normalizer_spec);
-  EXPECT_OK(trainer.Train());
+  NormalizerSpec denormalizer_spec;
+
+  Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  EXPECT_TRUE(trainer.Train().ok());
 
   SentencePieceProcessor processor;
-  EXPECT_OK(processor.Load(model_prefix + ".model"));
+  EXPECT_TRUE(processor.Load(model_prefix + ".model").ok());
 
   const auto &model = processor.model_proto();
   std::vector<std::string> pieces;
@@ -62,7 +65,7 @@ std::string RunTrainer(const std::vector<std::string> &input, int size) {
     pieces.emplace_back(model.pieces(i).piece());
   }
 
-  return string_util::Join(pieces, " ");
+  return absl::StrJoin(pieces, " ");
 }
 
 TEST(TrainerTest, BasicTest) {

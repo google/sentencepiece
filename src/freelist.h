@@ -16,6 +16,7 @@
 #define FREELIST_H_
 
 #include <string.h>
+
 #include <vector>
 
 namespace sentencepiece {

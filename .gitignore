@@ -30,6 +30,10 @@ CMakeFiles
 CMakeCache.txt
 config.h
 sentencepiece.pc
+CPackConfig.cmake
+CTestTestfile.cmake
+CPackSourceConfig.cmake
+DartConfiguration.tcl
 
 *.o
 *.lo

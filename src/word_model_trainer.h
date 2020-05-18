@@ -15,7 +15,7 @@
 #ifndef WORD_MODEL_TRAINER_H_
 #define WORD_MODEL_TRAINER_H_
 
-#include "sentencepiece_model.pb.h"
+#include "builtin_pb/sentencepiece_model.pb.h"
 #include "trainer_interface.h"
 
 namespace sentencepiece {
@@ -29,8 +29,10 @@ namespace word {
 class Trainer : public TrainerInterface {
  public:
   Trainer(const TrainerSpec &trainer_spec,
-          const NormalizerSpec &normalizer_spec)
-      : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec) {}
+          const NormalizerSpec &normalizer_spec,
+          const NormalizerSpec &denormalizer_spec)
+      : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec,
+                                           denormalizer_spec) {}
 
   util::Status Train() override;
 };

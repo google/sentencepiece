@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "trainer_interface.h"
 #include <utility>
 
+#include "filesystem.h"
 #include "testharness.h"
+#include "third_party/absl/strings/str_cat.h"
+#include "third_party/absl/strings/str_format.h"
+#include "trainer_interface.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -23,18 +26,26 @@ namespace sentencepiece {
 // Space symbol
 #define WS "\xe2\x96\x81"
 
+// Converts the 1 unicode string to the code point.
+static char32 ToChar32(absl::string_view str) {
+  string_util::UnicodeText utext = string_util::UTF8ToUnicodeText(str);
+  return !utext.empty() ? *utext.begin() : 0;
+}
+
 TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
+  NormalizerSpec denormalizer_spec;
   trainer_spec.set_model_prefix("model");
   trainer_spec.add_input("input");
 
   // Calls the default method for better coverage.
-  TrainerInterface trainer(trainer_spec, normalizer_spec);
-  trainer.Train();
+  TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  EXPECT_TRUE(trainer.Train().ok());
 
-  auto IsValid = [&trainer_spec, &normalizer_spec](const std::string &str) {
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+  auto IsValid = [&trainer_spec, &normalizer_spec,
+                  &denormalizer_spec](const std::string &str) {
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     const string_util::UnicodeText text = string_util::UTF8ToUnicodeText(str);
     return trainer.IsValidSentencePiece(text);
   };
@@ -121,11 +132,26 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_TRUE(IsValid("a" WS "b"));
   EXPECT_FALSE(IsValid(WS "a" WS "b"));
   EXPECT_TRUE(IsValid("a" WS "b" WS));
+
+  trainer_spec.set_split_digits(false);
+  EXPECT_TRUE(IsValid("1"));
+  EXPECT_TRUE(IsValid("59"));
+  EXPECT_TRUE(IsValid("2007"));
+  EXPECT_TRUE(IsValid("x1"));
+  EXPECT_TRUE(IsValid("2x"));
+
+  trainer_spec.set_split_digits(true);
+  EXPECT_TRUE(IsValid("1"));
+  EXPECT_FALSE(IsValid("59"));
+  EXPECT_FALSE(IsValid("2007"));
+  EXPECT_FALSE(IsValid("x1"));
+  EXPECT_FALSE(IsValid("2x"));
 }
 
 TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
   TrainerSpec base_trainer_spec;
   NormalizerSpec normalizer_spec;
+  NormalizerSpec denormalizer_spec;
   base_trainer_spec.set_model_prefix("model");
   base_trainer_spec.add_input("input");
 
@@ -144,7 +170,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_eos_id(2);
     trainer_spec.set_pad_id(3);
 
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_EQ(4, trainer.meta_pieces_.size());
     EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
     EXPECT_EQ("<s>", trainer.meta_pieces_[1].first);
@@ -159,7 +185,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_eos_id(2);
     trainer_spec.set_pad_id(1);
 
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_EQ(4, trainer.meta_pieces_.size());
     EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
     EXPECT_EQ("<pad>", trainer.meta_pieces_[1].first);
@@ -174,7 +200,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_eos_id(1);
     trainer_spec.set_pad_id(-1);
 
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_EQ(2, trainer.meta_pieces_.size());
     EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
     EXPECT_EQ("</s>", trainer.meta_pieces_[1].first);
@@ -187,7 +213,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_eos_id(-1);
     trainer_spec.set_pad_id(-1);
 
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_EQ(1, trainer.meta_pieces_.size());
     EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
   }
@@ -204,7 +230,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.add_user_defined_symbols("<u1>");
     trainer_spec.add_user_defined_symbols("<u2>");
 
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_EQ(7, trainer.meta_pieces_.size());
     EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
     EXPECT_EQ("<s>", trainer.meta_pieces_[1].first);
@@ -220,8 +246,8 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_unk_id(0);
     trainer_spec.set_bos_id(-1);
     trainer_spec.set_eos_id(2);
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
-    EXPECT_OK(trainer.status());
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    EXPECT_TRUE(trainer.status().ok());
   }
 
   {
@@ -230,7 +256,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_unk_id(-1);
     trainer_spec.set_bos_id(0);
     trainer_spec.set_eos_id(1);
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
   }
 
@@ -240,7 +266,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_unk_id(640000);
     trainer_spec.set_bos_id(0);
     trainer_spec.set_eos_id(1);
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
   }
 
@@ -250,8 +276,8 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_unk_id(32000 - 1);
     trainer_spec.set_bos_id(32000 - 100);
     trainer_spec.set_eos_id(32000 - 200);
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
-    EXPECT_OK(trainer.status());
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    EXPECT_TRUE(trainer.status().ok());
   }
 
   {
@@ -261,7 +287,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_bos_id(1);
     trainer_spec.set_eos_id(2);
     trainer_spec.add_control_symbols("<unk>");
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
   }
 
@@ -270,7 +296,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     auto trainer_spec = base_trainer_spec;
     trainer_spec.add_control_symbols("<foo>");
     trainer_spec.add_control_symbols("<foo>");
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
   }
 
@@ -286,8 +312,8 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.add_user_defined_symbols("<s>");
     trainer_spec.add_user_defined_symbols("<pad>");
     trainer_spec.add_user_defined_symbols("foo");
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
-    EXPECT_OK(trainer.status());
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    EXPECT_TRUE(trainer.status().ok());
 
     EXPECT_EQ(5, trainer.meta_pieces_.size());
     EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
@@ -315,7 +341,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_eos_piece("__EOS__");
     trainer_spec.set_pad_piece("__PAD__");
     trainer_spec.set_pad_id(3);
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_TRUE(trainer.status().ok());
     EXPECT_EQ("__UNK__", trainer.meta_pieces_[0].first);
     EXPECT_EQ("__BOS__", trainer.meta_pieces_[1].first);
@@ -327,21 +353,47 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     auto trainer_spec = base_trainer_spec;
     trainer_spec.set_unk_piece("__UNK__");
     trainer_spec.set_bos_piece("__UNK__");
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
   }
 
   {
     auto trainer_spec = base_trainer_spec;
     trainer_spec.set_unk_piece("");
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
+  }
+}
+
+TEST(TrainerInterfaceTest, BytePiecesTest) {
+  TrainerSpec trainer_spec;
+  NormalizerSpec normalizer_spec;
+  NormalizerSpec denormalizer_spec;
+  trainer_spec.set_model_prefix("model");
+  trainer_spec.add_input("input");
+
+  trainer_spec.add_control_symbols("<c1>");
+  trainer_spec.add_control_symbols("<c2>");
+  trainer_spec.add_user_defined_symbols("<u1>");
+  trainer_spec.add_user_defined_symbols("<u2>");
+
+  trainer_spec.set_byte_fallback(true);
+
+  TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  EXPECT_TRUE(trainer.status().ok());
+
+  // Byte pieces come after control symbols and user-defined symbols.
+  for (int i = 0; i < 256; ++i) {
+    const auto &piece = trainer.meta_pieces_[i + 7];
+    EXPECT_EQ(absl::StrFormat("<0x%02X>", i), piece.first);
+    EXPECT_EQ(ModelProto::SentencePiece::BYTE, piece.second);
   }
 }
 
 TEST(TrainerInterfaceTest, SerializeTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
+  NormalizerSpec denormalizer_spec;
   trainer_spec.set_model_prefix("model");
   trainer_spec.add_input("input");
 
@@ -352,19 +404,19 @@ TEST(TrainerInterfaceTest, SerializeTest) {
 
   {
     trainer_spec.set_vocab_size(10);
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     trainer.final_pieces_ = final_pieces;
     ModelProto model_proto;
-    EXPECT_NOT_OK(trainer.Serialize(&model_proto));
+    EXPECT_FALSE(trainer.Serialize(&model_proto).ok());
   }
 
   {
     trainer_spec.set_vocab_size(10);
     trainer_spec.set_hard_vocab_limit(false);
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     trainer.final_pieces_ = final_pieces;
     ModelProto model_proto;
-    EXPECT_OK(trainer.Serialize(&model_proto));
+    EXPECT_TRUE(trainer.Serialize(&model_proto).ok());
     EXPECT_EQ(6, model_proto.trainer_spec().vocab_size());
     for (int i = 3; i < 6; ++i) {
       EXPECT_EQ(final_pieces[i - 3].first, model_proto.pieces(i).piece());
@@ -376,16 +428,115 @@ TEST(TrainerInterfaceTest, SerializeTest) {
     trainer_spec.set_vocab_size(10);
     trainer_spec.set_model_type(TrainerSpec::CHAR);
     trainer_spec.set_hard_vocab_limit(true);
-    TrainerInterface trainer(trainer_spec, normalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     trainer.final_pieces_ = final_pieces;
     ModelProto model_proto;
-    trainer.Serialize(&model_proto);
+    EXPECT_TRUE(trainer.Serialize(&model_proto).ok());
     EXPECT_EQ(6, model_proto.trainer_spec().vocab_size());
     for (int i = 3; i < 6; ++i) {
       EXPECT_EQ(final_pieces[i - 3].first, model_proto.pieces(i).piece());
       EXPECT_EQ(final_pieces[i - 3].second, model_proto.pieces(i).score());
     }
   }
+}
+
+TEST(TrainerInterfaceTest, CharactersTest) {
+  const std::string input_file = util::JoinPath(FLAGS_test_tmpdir, "input");
+  {
+    auto output = filesystem::NewWritableFile(input_file);
+    // Make a single line with 50 "a", 49 "あ", and 1 "b".
+    std::string line;
+    for (int i = 0; i < 100; i++) {
+      if (i < 50) {
+        line += "a";
+      } else if (i < 99) {
+        line += "あ";
+      } else {
+        line += "b";
+      }
+    }
+    line += "\n";
+    output->WriteLine(line);
+  }
+  TrainerSpec trainer_spec;
+  NormalizerSpec normalizer_spec;
+  NormalizerSpec denormalizer_spec;
+  trainer_spec.add_input(input_file);
+  trainer_spec.set_model_prefix("model");
+  trainer_spec.set_character_coverage(0.98);
+
+  using E = std::unordered_map<char32, int64>;
+  {
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    EXPECT_OK(trainer.LoadSentences());
+    // Because --character_coverage=0.98, "a" and "あ" are chosen, but "b" is
+    // dropped.
+    EXPECT_EQ(trainer.required_chars_,
+              E({{ToChar32("a"), 50}, {ToChar32("あ"), 49}}));
+  }
+  {
+    trainer_spec.set_required_chars("漢字");
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    EXPECT_OK(trainer.LoadSentences());
+    // 漢 and 字 do not occur in the line, but they are added.
+    EXPECT_EQ(trainer.required_chars_, E({{ToChar32("a"), 50},
+                                          {ToChar32("あ"), 49},
+                                          {ToChar32("漢"), 0},
+                                          {ToChar32("字"), 0}}));
+  }
+  {
+    trainer_spec.set_required_chars("aあ");
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    EXPECT_OK(trainer.LoadSentences());
+    // Adding characters that frequently occur do not change the result.
+    EXPECT_EQ(trainer.required_chars_,
+              E({{ToChar32("a"), 50}, {ToChar32("あ"), 49}}));
+  }
+  {
+    trainer_spec.set_required_chars("b");
+    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    EXPECT_OK(trainer.LoadSentences());
+    // "b" is added with the correct frequency.
+    EXPECT_EQ(
+        trainer.required_chars_,
+        E({{ToChar32("a"), 50}, {ToChar32("あ"), 49}, {ToChar32("b"), 1}}));
+  }
+}
+
+TEST(TrainerInterfaceTest, MultiFileSentenceIteratorTest) {
+  std::vector<std::string> files;
+  std::vector<std::string> expected;
+  for (int i = 0; i < 10; ++i) {
+    const std::string file =
+        util::JoinPath(FLAGS_test_tmpdir, absl::StrCat("input", i));
+    auto output = filesystem::NewWritableFile(file);
+    int num_line = (rand() % 100) + 1;
+    for (int n = 0; n < num_line; ++n) {
+      const auto value = absl::StrCat(rand());
+      expected.emplace_back(value);
+      output->WriteLine(value);
+    }
+    files.push_back(file);
+  }
+
+  std::vector<std::string> results;
+  MultiFileSentenceIterator it(files);
+  for (; !it.done(); it.Next()) results.emplace_back(it.value());
+  EXPECT_OK(it.status());
+  EXPECT_EQ(expected, results);
+}
+
+TEST(TrainerInterfaceTest, MultiFileSentenceIteratorErrorTest) {
+  std::vector<std::string> files;
+  for (int i = 0; i < 10; ++i) {
+    const std::string file =
+        util::JoinPath(FLAGS_test_tmpdir, absl::StrCat("input_not_exist", i));
+    files.push_back(file);
+  }
+
+  MultiFileSentenceIterator it(files);
+  EXPECT_TRUE(it.done());  // no files can be loaded.
+  EXPECT_FALSE(it.status().ok());
 }
 
 }  // namespace sentencepiece

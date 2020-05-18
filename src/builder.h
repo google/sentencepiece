@@ -18,8 +18,9 @@
 #include <map>
 #include <string>
 #include <vector>
+
+#include "builtin_pb/sentencepiece_model.pb.h"
 #include "common.h"
-#include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "third_party/absl/strings/string_view.h"
 
