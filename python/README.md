@@ -1,10 +1,6 @@
 # SentencePiece Python Wrapper
 
-Python wrapper for SentencePiece with SWIG. This module wraps sentencepiece::SentencePieceProcessor class with the following modifications:
-* Encode and Decode methods are re-defined as EncodeAsIds, EncodeAsPieces, DecodeIds and DecodePieces respectively.
-* Support model training with SentencePieceTrainer.Train method.
-* SentencePieceText proto is not supported.
-* Added __len__ and __getitem__ methods. len(obj) and obj[key] returns vocab size and vocab id respectively.
+Python wrapper for SentencePiece. This API will offer the encoding, decoding and training of Sentencepiece.
 
 ## Build and Install SentencePiece
 For Linux (x64/i686), macOS, and Windows(win32/x64) environment, you can simply use pip command to install SentencePiece python module.
@@ -26,9 +22,78 @@ If you don’t have write permission to the global site-packages directory or do
 
 ## Usage
 
-See [this google colab page](https://github.com/google/sentencepiece/blob/master/python/sentencepiece_python_module_example.ipynb) to run sentencepiece interactively.
+See [this google colab page](https://github.com/google/sentencepiece/blob/master/python/sentencepiece_python_module_example.ipynb) to run sentencepiece interactively. (Note: this sample is written in old interface.)
 
 ### Segmentation
+```
+% python
+>>> import sentencepiece as spm
+>>> sp = spm.SentencePieceProcessor(model_file='test/test_model.model')
+>>> sp.encode('This is a test')
+[284, 47, 11, 4, 15, 400]
+>>> sp.encode(['This is a test', 'Hello world'], out_type=int)
+[[284, 47, 11, 4, 15, 400], [151, 88, 21, 887]]
+>>> sp.encode('This is a test', out_type=str)
+['▁This', '▁is', '▁a', '▁', 't', 'est']
+>>> sp.encode(['This is a test', 'Hello world'], out_type=str)
+[['▁This', '▁is', '▁a', '▁', 't', 'est'], ['▁He', 'll', 'o', '▁world']]
+>>> for _ in range(10):
+...     sp.encode('This is a test', out_type=str, enable_sampling=True, alpha=0.1, nbest_size=-1)
+... 
+['▁', 'This', '▁', 'is', '▁a', '▁', 't', 'e', 'st']
+['▁T', 'h', 'i', 's', '▁is', '▁a', '▁', 'te', 's', 't']
+['▁T', 'h', 'is', '▁', 'is', '▁', 'a', '▁', 't', 'est']
+['▁', 'This', '▁is', '▁', 'a', '▁', 't', 'e', 'st']
+['▁', 'This', '▁', 'is', '▁', 'a', '▁', 't', 'e', 's', 't']
+['▁This', '▁is', '▁a', '▁', 'te', 's', 't']
+['▁This', '▁is', '▁', 'a', '▁', 't', 'e', 'st']
+['▁', 'T', 'h', 'is', '▁', 'is', '▁', 'a', '▁', 'te', 'st']
+['▁', 'This', '▁', 'i', 's', '▁a', '▁', 't', 'e', 'st']
+['▁This', '▁', 'is', '▁a', '▁', 't', 'est']
+>>> sp.decode([284, 47, 11, 4, 15, 400])
+'This is a test'
+>>> sp.decode([[284, 47, 11, 4, 15, 400], [151, 88, 21, 887]])
+['This is a test', 'Hello world']
+>>> sp.decode(['▁', 'This', '▁', 'is', '▁a', '▁', 't', 'e', 'st'])
+'This is a test'
+>>> sp.decode([['▁This', '▁is', '▁a', '▁', 't', 'est'], ['▁He', 'll', 'o', '▁world']])
+['This is a test', 'Hello world']
+>>> sp.get_piece_size()
+1000
+>>> sp.id_to_piece(2)
+'</s>'
+>>> sp.id_to_piece([2, 3, 4])
+['</s>', '\r', '▁']
+>>> sp.piece_to_id('<s>')
+1
+>>> sp.piece_to_id(['</s>', '\r', '▁'])
+[2, 3, 4]
+>>> len(sp)
+1000
+>>> sp['</s>']
+2
+```
+
+### Model Training
+Training is performed by passing parameters of [spm_train](https://github.com/google/sentencepiece#train-sentencepiece-model) to  SentencePieceTrainer.train() function.
+
+```
+>>> import sentencepiece as spm
+>>> spm.SentencePieceTrainer.train(input='test/botchan.txt', model_prefix='m', vocab_size=1000, user_defined_symbols=['foo', 'bar'])
+sentencepiece_trainer.cc(73) LOG(INFO) Starts training with : 
+trainer_spec {
+  input: test/botchan.txt
+  .. snip
+unigram_model_trainer.cc(500) LOG(INFO) EM sub_iter=1 size=1188 obj=10.2839 num_tokens=32182 num_tokens/piece=27.0892
+unigram_model_trainer.cc(500) LOG(INFO) EM sub_iter=0 size=1100 obj=10.4269 num_tokens=33001 num_tokens/piece=30.0009
+unigram_model_trainer.cc(500) LOG(INFO) EM sub_iter=1 size=1100 obj=10.4069 num_tokens=33002 num_tokens/piece=30.0018
+trainer_interface.cc(595) LOG(INFO) Saving model: m.model
+trainer_interface.cc(619) LOG(INFO) Saving vocabs: m.vocab
+>>>
+```
+
+
+### Segmentation (old interface)
 ```
 % python
 >>> import sentencepiece as spm
@@ -70,7 +135,7 @@ True
 2
 ```
 
-### Model Training
+### Model Training (old interface)
 Training is performed by passing parameters of [spm_train](https://github.com/google/sentencepiece#train-sentencepiece-model) to  SentencePieceTrainer.Train() function.
 
 ```

@@ -8,6 +8,9 @@ matrix:
       env: IMAGE=i386/ubuntu:rolling COMMAND=build_linux_gcc_ubuntu_i386
       services: docker
     - os: linux
+      env: IMAGE=ubuntu:bionic COMMAND=build_linux_gcc_ubuntu_no_tf
+      services: docker
+    - os: linux
       env: IMAGE=ubuntu:xenial COMMAND=build_linux_gcc_ubuntu_no_tf
       services: docker
     - os: linux

@@ -12,18 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "bpe_model_trainer.h"
-
 #include <string>
 #include <vector>
+
+#include "bpe_model_trainer.h"
 #include "filesystem.h"
-#include "flags.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
+#include "third_party/absl/strings/str_cat.h"
+#include "third_party/absl/strings/str_join.h"
 #include "util.h"
-
-DECLARE_string(data_dir);
 
 namespace sentencepiece {
 namespace bpe {
@@ -35,10 +34,8 @@ namespace {
 std::string RunTrainer(
     const std::vector<std::string> &input, int size,
     const std::vector<std::string> &user_defined_symbols = {}) {
-  test::ScopedTempFile input_scoped_file("input");
-  test::ScopedTempFile model_scoped_file("model");
-  const std::string input_file = input_scoped_file.filename();
-  const std::string model_prefix = model_scoped_file.filename();
+  const std::string input_file = util::JoinPath(FLAGS_test_tmpdir, "input");
+  const std::string model_prefix = util::JoinPath(FLAGS_test_tmpdir, "model");
   {
     auto output = filesystem::NewWritableFile(input_file);
     for (const auto &line : input) {
@@ -56,15 +53,17 @@ std::string RunTrainer(
   normalizer_spec.set_name("identity");
   normalizer_spec.set_add_dummy_prefix(false);
 
+  NormalizerSpec denormalizer_spec;
+
   for (const auto &w : user_defined_symbols) {
     trainer_spec.add_user_defined_symbols(w);
   }
 
-  Trainer trainer(trainer_spec, normalizer_spec);
-  EXPECT_OK(trainer.Train());
+  Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  EXPECT_TRUE(trainer.Train().ok());
 
   SentencePieceProcessor processor;
-  EXPECT_OK(processor.Load(model_prefix + ".model"));
+  EXPECT_TRUE(processor.Load(model_prefix + ".model").ok());
 
   const auto &model = processor.model_proto();
   std::vector<std::string> pieces;
@@ -74,7 +73,7 @@ std::string RunTrainer(
     pieces.emplace_back(model.pieces(i).piece());
   }
 
-  return string_util::Join(pieces, " ");
+  return absl::StrJoin(pieces, " ");
 }
 
 TEST(BPETrainerTest, BasicTest) {
@@ -88,40 +87,47 @@ TEST(BPETrainerTest, BasicTest) {
             RunTrainer({"pen", "pineapple", "apple"}, 20, {"app"}));
 }
 
-TEST(BPETrainerTest, EndToEndTest) {
-  const test::ScopedTempFile sf("tmp_model");
-  const std::string input =
-      util::JoinPath(FLAGS_data_dir, "wagahaiwa_nekodearu.txt");
+static constexpr char kTestInputData[] = "wagahaiwa_nekodearu.txt";
 
-  EXPECT_OK(SentencePieceTrainer::Train(string_util::StrCat(
-      "--model_prefix=", sf.filename(), " --input=", input,
-      " --vocab_size=8000 --normalization_rule_name=identity"
-      " --model_type=bpe --control_symbols=<ctrl> "
-      "--max_sentence_length=2048")));
+TEST(BPETrainerTest, EndToEndTest) {
+  const std::string input = util::JoinPath(FLAGS_test_srcdir, kTestInputData);
+
+  ASSERT_TRUE(
+      SentencePieceTrainer::Train(
+          absl::StrCat(
+              "--model_prefix=", util::JoinPath(FLAGS_test_tmpdir, "tmp_model"),
+              " --input=", input,
+              " --vocab_size=8000 --normalization_rule_name=identity"
+              " --model_type=bpe --control_symbols=<ctrl> "
+              "--max_sentence_length=2048"))
+          .ok());
 
   SentencePieceProcessor sp;
-  EXPECT_OK(sp.Load(std::string(sf.filename()) + ".model"));
+  ASSERT_TRUE(
+      sp.Load(std::string(util::JoinPath(FLAGS_test_tmpdir, "tmp_model.model")))
+          .ok());
   EXPECT_EQ(8000, sp.GetPieceSize());
 
   const int cid = sp.PieceToId("<ctrl>");
   EXPECT_TRUE(sp.IsControl(cid));
 
   std::vector<std::string> tok;
-  EXPECT_OK(sp.Encode("", &tok));
-  EXPECT_TRUE(tok.empty());
+  ASSERT_TRUE(sp.Encode("", &tok).ok());
+  ASSERT_TRUE(tok.empty());
 
-  EXPECT_OK(sp.Encode(
-      "吾輩《わがはい》は猫である。名前はまだ無い。"
-      "どこで生れたかとんと見当《けんとう》がつかぬ。"
-      "何でも薄暗いじめじめした所でニャーニャー泣いていた事だけは記憶している"
-      "。",
-      &tok));
+  EXPECT_TRUE(sp.Encode("吾輩《わがはい》は猫である。名前はまだ無い。"
+                        "どこで生れたかとんと見当《けんとう》がつかぬ。"
+                        "何でも薄暗いじめじめした所でニャーニャー泣いていた事だ"
+                        "けは記憶している"
+                        "。",
+                        &tok)
+                  .ok());
   EXPECT_EQ(WS
             " 吾輩 《 わが はい 》 は猫 である 。 名前 はまだ 無い 。 "
             "どこで 生 れた か とん と見 当 《 けんとう 》 が つかぬ 。 "
             "何でも 薄 暗 いじ め じ め した 所で ニャー ニャー 泣 いていた "
             "事 だけは 記憶 している 。",
-            string_util::Join(tok, " "));
+            absl::StrJoin(tok, " "));
 }
 
 }  // namespace

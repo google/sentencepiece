@@ -164,7 +164,8 @@ suffixsort(string_type T, sarray_type SA,
            bool isbwt) {
 typedef typename std::iterator_traits<string_type>::value_type char_type;
   sarray_type RA;
-  index_type i, j, m, p, q, plen, qlen, name, pidx = 0;
+  index_type i, j, m, p, q, plen, qlen, name;
+  int pidx = 0;
   bool diff;
   int c;
 #ifdef _OPENMP
@@ -326,7 +327,7 @@ saisxx(string_type T, sarray_type SA, index_type n, index_type k = 256) {
   int err;
   if((n < 0) || (k <= 0)) { return -1; }
   if(n <= 1) { if(n == 1) { SA[0] = 0; } return 0; }
-  try { err = saisxx_private::suffixsort(T, SA, 0, n, k, false); }
+  try { err = saisxx_private::suffixsort(T, SA, index_type(0), n, k, false); }
   catch(...) { err = -2; }
   return err;
 }

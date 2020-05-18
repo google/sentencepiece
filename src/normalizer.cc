@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "normalizer.h"
-
 #include <utility>
 #include <vector>
+
 #include "common.h"
+#include "normalizer.h"
+#include "third_party/absl/memory/memory.h"
+#include "third_party/absl/strings/match.h"
 #include "third_party/absl/strings/string_view.h"
+#include "third_party/absl/strings/strip.h"
 #include "third_party/darts_clone/darts.h"
 #include "util.h"
 
@@ -51,7 +54,7 @@ void Normalizer::Init() {
     if (!status_.ok()) return;
 
     // Reads the body of double array.
-    trie_ = port::MakeUnique<Darts::DoubleArray>();
+    trie_ = absl::make_unique<Darts::DoubleArray>();
 
     // The second arg of set_array is not the size of blob,
     // but the number of double array units.
@@ -128,7 +131,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
 
     // Removes heading spaces in sentence piece,
     // if the previous sentence piece ends with whitespace.
-    while (is_prev_space && string_util::ConsumePrefix(&sp, " ")) {
+    while (is_prev_space && absl::ConsumePrefix(&sp, " ")) {
     }
 
     if (!sp.empty()) {
@@ -146,7 +149,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
         }
       }
       // Checks whether the last character of sp is whitespace.
-      is_prev_space = string_util::EndsWith(sp, " ");
+      is_prev_space = absl::EndsWith(sp, " ");
     }
 
     consumed += p.second;
@@ -160,7 +163,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
   if (spec_->remove_extra_whitespaces()) {
     const absl::string_view space =
         spec_->escape_whitespaces() ? kSpaceSymbol : " ";
-    while (string_util::EndsWith(*normalized, space)) {
+    while (absl::EndsWith(*normalized, space)) {
       const int length = normalized->size() - space.size();
       CHECK_GE_OR_RETURN(length, 0);
       consumed = (*norm_to_orig)[length];
@@ -182,7 +185,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
 std::string Normalizer::Normalize(absl::string_view input) const {
   std::vector<size_t> norm_to_orig;
   std::string normalized;
-  Normalize(input, &normalized, &norm_to_orig);
+  Normalize(input, &normalized, &norm_to_orig).IgnoreError();
   return normalized;
 }
 
@@ -284,7 +287,7 @@ PrefixMatcher::PrefixMatcher(const std::set<absl::string_view> &dic) {
   std::vector<const char *> key;
   key.reserve(dic.size());
   for (const auto &it : dic) key.push_back(it.data());
-  trie_ = port::MakeUnique<Darts::DoubleArray>();
+  trie_ = absl::make_unique<Darts::DoubleArray>();
   CHECK_EQ(0, trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
                            nullptr));
 }

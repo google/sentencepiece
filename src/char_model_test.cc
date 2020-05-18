@@ -12,12 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "char_model.h"
-
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 
+#include "char_model.h"
 #include "testharness.h"
 #include "util.h"
 

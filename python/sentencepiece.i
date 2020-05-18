@@ -84,19 +84,73 @@ PyObject* MakePyOutputBytes(const std::string& output) {
 #endif
 }
 
-int ToSwigError(sentencepiece::util::error::Code code) {
+int ToSwigError(sentencepiece::util::StatusCode code) {
   switch (code) {
-    case sentencepiece::util::error::NOT_FOUND:
+    case sentencepiece::util::StatusCode::kNotFound:
       return SWIG_IOError;
-    case sentencepiece::util::error::OUT_OF_RANGE:
+    case sentencepiece::util::StatusCode::kOutOfRange:
       return SWIG_IndexError;
-    case sentencepiece::util::error::INVALID_ARGUMENT:
+    case sentencepiece::util::StatusCode::kInvalidArgument:
       return SWIG_SyntaxError;
     default:
       return SWIG_RuntimeError;
   }
   return SWIG_RuntimeError;
 }
+
+class PySentenceIterator : public sentencepiece::SentenceIterator {
+  public:
+  PySentenceIterator(PyObject *iter) : iter_(iter) {
+    item_ = PyIter_Next(iter_);
+    CopyValue();
+  }
+
+  ~PySentenceIterator() {
+   // Py_XDECREF(iter_);
+  }
+
+  bool done() const override {
+    return item_ == nullptr;
+  }
+
+  void Next() override {
+    item_ = PyIter_Next(iter_);
+    CopyValue();
+  }
+
+  const std::string &value() const override {
+    return value_;
+  }
+
+  sentencepiece::util::Status status() const override {
+    return status_;
+  }
+
+  private:
+   void CopyValue() {
+     if (item_ == nullptr) return;
+     const PyInputString ustring(item_);
+     if (ustring.IsAvalable()) {
+       const char *data = ustring.data();
+       size_t size = ustring.size();
+       while (size > 0) {
+         if (data[size - 1] == '\r' || data[size - 1] == '\n')
+           --size;
+         else
+           break;
+       }
+       value_.assign(data, size);
+     } else {
+       status_ = sentencepiece::util::Status(sentencepiece::util::StatusCode::kInternal,
+                                             "Not a string.");
+     }
+     Py_XDECREF(item_);
+   }
+   PyObject *iter_ = nullptr;
+   PyObject *item_ = nullptr;
+   std::string value_;
+   sentencepiece::util::Status status_;
+};
 }
 %}
 
@@ -111,168 +165,311 @@ int ToSwigError(sentencepiece::util::error::Code code) {
 }
 
 %ignore sentencepiece::util::Status;
-%ignore sentencepiece::util::error::Code;
-%ignore sentencepiece::util::min_string_view;
+%ignore sentencepiece::util::StatusCode;
+%ignore absl::string_view;
 %ignore sentencepiece::SentencePieceText;
 %ignore sentencepiece::NormalizerSpec;
 %ignore sentencepiece::TrainerSpec;
 
 %ignore sentencepiece::SentencePieceProcessor::status;
 %ignore sentencepiece::SentencePieceProcessor::Encode;
-%ignore sentencepiece::SentencePieceProcessor::Encode;
 %ignore sentencepiece::SentencePieceProcessor::SampleEncode;
 %ignore sentencepiece::SentencePieceProcessor::NBestEncode;
 %ignore sentencepiece::SentencePieceProcessor::Decode;
 %ignore sentencepiece::SentencePieceProcessor::model_proto;
-%ignore sentencepiece::SentencePieceProcessor::Load(std::istream *);
-%ignore sentencepiece::SentencePieceProcessor::LoadOrDie(std::istream *);
-%ignore sentencepiece::SentencePieceProcessor::Load(const ModelProto &);
-%ignore sentencepiece::SentencePieceProcessor::Load(std::unique_ptr<ModelProto> &&);
-%ignore sentencepiece::SentencePieceTrainer::Train(const TrainerSpec &);
-%ignore sentencepiece::SentencePieceTrainer::Train(const TrainerSpec &, const NormalizerSpec &);
+%ignore sentencepiece::SentencePieceProcessor::Load;
+%ignore sentencepiece::SentencePieceProcessor::LoadOrDie;
+%ignore sentencepiece::pretokenizer::PretokenizerForTrainingInterface;
+%ignore sentencepiece::SentenceIterator;
+%ignore sentencepiece::SentencePieceTrainer::Train;
 %ignore sentencepiece::SentencePieceTrainer::GetNormalizerSpec;
 %ignore sentencepiece::SentencePieceTrainer::PopulateNormalizerSpec;
 %ignore sentencepiece::SentencePieceTrainer::MergeSpecsFromArgs;
 %ignore sentencepiece::SentencePieceTrainer::SetProtoField;
-
-%extend sentencepiece::SentencePieceTrainer {
-  static util::Status train(sentencepiece::util::min_string_view args) {
-    return sentencepiece::SentencePieceTrainer::Train(args);
-  }
-}
+%ignore sentencepiece::SentencePieceTrainer::PopulateModelTypeFromString;
+%ignore sentencepiece::SentencePieceTrainer::PieceProcecssor;
+%ignore sentencepiece::SentencePieceTrainer::SetPretokenizerForTraining;
+%ignore sentencepiece::SentencePieceTrainer::GetPretokenizerForTraining;
 
 %extend sentencepiece::SentencePieceProcessor {
-  util::Status load(sentencepiece::util::min_string_view filename) {
-    return $self->Load(filename);
+  sentencepiece::util::Status LoadFromFile(absl::string_view arg) {
+    return $self->Load(arg);
   }
 
-  util::Status load_from_serialized_proto(sentencepiece::util::min_string_view filename) {
-    return $self->LoadFromSerializedProto(filename);
+%pythoncode {
+  def Init(self,
+           model_file=None,
+           model_proto=None,
+           out_type=int,
+           add_bos=False,
+           add_eos=False,
+           reverse=False,
+           enable_sampling=False,
+           nbest_size=-1,
+           alpha=0.1):
+    """Initialzie sentencepieceProcessor.
+
+    Args:
+      model_file: The sentencepiece model file path.
+      model_proto: The sentencepiece model serialized proto.
+      out_type: output type. int or str.
+      add_bos: Add <s> to the result (Default = false)
+      add_eos: Add </s> to the result (Default = false) <s>/</s> is added after
+        reversing (if enabled).
+      reverse: Reverses the tokenized sequence (Default = false)
+      nbest_size: sampling parameters for unigram. Invalid for BPE-Dropout.
+                  nbest_size = {0,1}: No sampling is performed.
+                  nbest_size > 1: samples from the nbest_size results.
+                  nbest_size < 0: assuming that nbest_size is infinite and samples
+                    from the all hypothesis (lattice) using
+                    forward-filtering-and-backward-sampling algorithm.
+      alpha: Soothing parameter for unigram sampling, and merge probability for
+        BPE-dropout.
+    """
+
+    _sentencepiece_processor_init_native(self)
+    self._out_type = out_type
+    self._add_bos = add_bos
+    self._add_eos = add_eos
+    self._reverse = reverse
+    self._enable_sampling = enable_sampling
+    self._nbest_size = nbest_size
+    self._alpha = alpha
+    if model_file or model_proto:
+      self.Load(model_file=model_file, model_proto=model_proto)
+
+
+  def Encode(self,
+             input,
+             out_type=None,
+             add_bos=None,
+             add_eos=None,
+             reverse=None,
+             enable_sampling=None,
+             nbest_size=None,
+             alpha=None):
+    """Encode text input to segmented ids or tokens.
+
+      Args:
+      input: input string. accepsts list of string.
+      out_type: output type. int or str.
+      add_bos: Add <s> to the result (Default = false)
+      add_eos: Add </s> to the result (Default = false) <s>/</s> is added after
+        reversing (if enabled).
+      reverse: Reverses the tokenized sequence (Default = false)
+      nbest_size: sampling parameters for unigram. Invalid for BPE-Dropout.
+                  nbest_size = {0,1}: No sampling is performed.
+                  nbest_size > 1: samples from the nbest_size results.
+                  nbest_size < 0: assuming that nbest_size is infinite and samples
+                    from the all hypothesis (lattice) using
+                    forward-filtering-and-backward-sampling algorithm.
+      alpha: Soothing parameter for unigram sampling, and merge probability for
+        BPE-dropout.
+    """
+
+    if out_type is None:
+      out_type = self._out_type
+    if add_bos is None:
+      add_bos = self._add_bos
+    if add_eos is None:
+      add_eos = self._add_eos
+    if reverse is None:
+      reverse = self._reverse
+    if enable_sampling is None:
+      enable_sampling = self._enable_sampling
+    if nbest_size is None:
+      nbest_size = self._nbest_size
+    if alpha is None:
+      alpha = self._alpha
+
+    if enable_sampling == True and (nbest_size is None or nbest_size == 0 or
+                                        nbest_size == 1 or alpha is None or
+                                        alpha <= 0.0 or alpha > 1.0):
+      raise RuntimeError(
+          'When enable_sampling is True, We must specify "nbest_size > 1" or "nbest_size = -1", '
+          'and "0.0 < alpha < 1.0". "nbest_size = -1" is enabled only on unigram mode and '
+          'samples from all candidates on the lattice instead of nbest segmentations. '
+      )
+
+    def _encode(text):
+      if out_type is int:
+        if enable_sampling:
+          result = self.SampleEncodeAsIds(text, nbest_size, alpha)
+        else:
+          result = self.EncodeAsIds(text)
+      else:
+        if enable_sampling:
+          result = self.SampleEncodeAsPieces(text, nbest_size, alpha)
+        else:
+          result = self.EncodeAsPieces(text)
+
+      if reverse:
+        result.reverse()
+      if add_bos:
+        if out_type is int:
+          result = [self.bos_id()] + result
+        else:
+          result = [self.IdToPiece(self.bos_id())] + result
+
+      if add_eos:
+        if out_type is int:
+          result = result + [self.eos_id()]
+        else:
+          result = result + [self.IdToPiece(self.eos_id())]
+
+      return result
+
+    if type(input) is list:
+      return [_encode(n) for n in input]
+
+    return _encode(input)
+
+
+  def Decode(self, input):
+    """Decode processed id or token sequences."""
+
+    if not input:
+      return self.DecodeIds([])
+    elif type(input) is int:
+      return self.DecodeIds([input])
+    elif type(input) is str:
+      return self.DecodePieces([input])
+
+    def _decode(input):
+      if not input:
+        return self.DecodeIds([])
+      if type(input[0]) is int:
+        return self.DecodeIds(input)
+      return self.DecodePieces(input)
+
+    if type(input[0]) is list:
+      return [_decode(n) for n in input]
+
+    return _decode(input)
+
+
+  def piece_size(self):
+    return self.GetPieceSize()
+
+
+  def vocab_size(self):
+    return self.GetPieceSize()
+
+
+  def __getstate__(self):
+    return self.serialized_model_proto()
+
+
+  def __setstate__(self, serialized_model_proto):
+    self.__init__()
+    self.LoadFromSerializedProto(serialized_model_proto)
+
+
+  def __len__(self):
+    return self.GetPieceSize()
+
+
+  def __getitem__(self, piece):
+    return self.PieceToId(piece)
+
+
+  def Load(self, model_file=None, model_proto=None):
+    """Overwride SentencePieceProcessor.Load to support both model_file and model_proto.
+
+    Args:
+      model_file: The sentencepiece model file path.
+      model_proto: The sentencepiece model serialized proto. Either `model_file`
+        or `model_proto` must be set.
+    """
+    if model_file and model_proto:
+      raise RuntimeError('model_file and model_proto must be exclusive.')
+    if model_proto:
+      return self.LoadFromSerializedProto(model_proto)
+    return self.LoadFromFile(model_file)
+}
+}
+
+%extend sentencepiece::SentencePieceTrainer {
+  static void _TrainFromString(absl::string_view arg) {
+    const auto _status = sentencepiece::SentencePieceTrainer::Train(arg);
+    if (!_status.ok()) throw _status;
+    return;
   }
 
-  util::Status set_encode_extra_options(
-      sentencepiece::util::min_string_view extra_option) {
-    return $self->SetEncodeExtraOptions(extra_option);
+  static void _TrainFromMap(const std::map<std::string, std::string> &args) {
+    const auto _status = sentencepiece::SentencePieceTrainer::Train(args);
+    if (!_status.ok()) throw _status;
+    return;
   }
 
-  util::Status set_decode_extra_options(
-      sentencepiece::util::min_string_view extra_option) {
-    return $self->SetDecodeExtraOptions(extra_option);
+  static void _TrainFromMap2(const std::map<std::string, std::string> &args,
+                            SentenceIterator *iter) {
+    const auto _status = sentencepiece::SentencePieceTrainer::Train(args, iter);
+    if (!_status.ok()) throw _status;
+    return;
   }
 
-  util::Status set_vocabulary(
-      const std::vector<std::string> &valid_vocab) {
-    return $self->SetVocabulary(valid_vocab);
+  static sentencepiece::util::bytes _TrainFromMap3(const std::map<std::string, std::string> &args) {
+    sentencepiece::util::bytes model_proto;
+    const auto _status = sentencepiece::SentencePieceTrainer::Train(args, nullptr, &model_proto);
+    if (!_status.ok()) throw _status;
+    return model_proto;
   }
 
-  util::Status reset_vocabulary() {
-    return $self->ResetVocabulary();
+  static sentencepiece::util::bytes _TrainFromMap4(const std::map<std::string, std::string> &args,
+                                                  SentenceIterator *iter) {
+    sentencepiece::util::bytes model_proto;
+    const auto _status = sentencepiece::SentencePieceTrainer::Train(args, iter, &model_proto);
+    if (!_status.ok()) throw _status;
+    return model_proto;
   }
 
-  util::Status load_vocabulary(sentencepiece::util::min_string_view filename,
-                               int threshold) {
-    return $self->LoadVocabulary(filename, threshold);
-  }
+%pythoncode {
+  @staticmethod
+  def Train(arg=None, **kwargs):
+    """Train Sentencepiece model. Accept both kwargs and legacy string arg."""
+    if arg is not None and type(arg) is str:
+      return SentencePieceTrainer._TrainFromString(arg)
 
-  std::vector<std::string> encode_as_pieces(
-      sentencepiece::util::min_string_view input) const {
-    return $self->EncodeAsPieces(input);
-  }
+    def _encode(value):
+      """Encode value to CSV.."""
+      if type(value) is list:
+        if sys.version_info[0] == 3:
+          f = StringIO()
+        else:
+          f = BytesIO()
+        writer = csv.writer(f, lineterminator='')
+        writer.writerow([str(v) for v in value])
+        return f.getvalue()
+      else:
+        return str(value)
 
-  std::vector<int> encode_as_ids(
-      sentencepiece::util::min_string_view input) const {
-    return $self->EncodeAsIds(input);
-  }
+    sentence_iterator = None
+    model_writer = None
+    new_kwargs = {}
+    for key, value in kwargs.items():
+      if key in ['sentence_iterator', 'sentence_reader']:
+        sentence_iterator = value
+      elif key in ['model_writer']:
+        model_writer = value
+      else:
+        new_kwargs[key] = _encode(value)
 
-  std::vector<std::vector<std::string>> nbest_encode_as_pieces(
-      sentencepiece::util::min_string_view input, int nbest_size) const {
-    return $self->NBestEncodeAsPieces(input, nbest_size);
-  }
+    if model_writer:
+      if sentence_iterator:
+        model_proto = SentencePieceTrainer._TrainFromMap4(new_kwargs,
+                                                         sentence_iterator)
+      else:
+        model_proto = SentencePieceTrainer._TrainFromMap3(new_kwargs)
+      model_writer.write(model_proto)
+    else:
+      if sentence_iterator:
+        return SentencePieceTrainer._TrainFromMap2(new_kwargs, sentence_iterator)
+      else:
+        return SentencePieceTrainer._TrainFromMap(new_kwargs)
 
-  std::vector<std::vector<int>> nbest_encode_as_ids(
-      sentencepiece::util::min_string_view input,
-      int nbest_size) const {
-    return $self->NBestEncodeAsIds(input, nbest_size);
-  }
-
-  std::vector<std::string> sample_encode_as_pieces(
-      sentencepiece::util::min_string_view input,
-      int nbest_size, float alpha) const {
-    return $self->SampleEncodeAsPieces(input, nbest_size, alpha);
-  }
-
-  std::vector<int> sample_encode_as_ids(
-      sentencepiece::util::min_string_view input,
-      int nbest_size, float alpha) const {
-    return $self->SampleEncodeAsIds(input, nbest_size, alpha);
-  }
-
-  std::string decode_pieces(const std::vector<std::string>& input) const {
-    return $self->DecodePieces(input);
-  }
-
-  std::string decode_ids(const std::vector<int>& input) const {
-    return $self->DecodeIds(input);
-  }
-
-  util::bytes encode_as_serialized_proto(util::min_string_view input) const {
-    return $self->EncodeAsSerializedProto(input);
-  }
-
-  util::bytes sample_encode_as_serialized_proto(util::min_string_view input,
-                                          int nbest_size, float alpha) const {
-    return $self->SampleEncodeAsSerializedProto(input, nbest_size, alpha);
-  }
-
-  util::bytes nbest_encode_as_serialized_proto(util::min_string_view input,
-                                         int nbest_size) const {
-    return $self->NBestEncodeAsSerializedProto(input, nbest_size);
-  }
-
-  util::bytes decode_pieces_as_serialized_proto(
-      const std::vector<std::string> &pieces) const {
-    return $self->DecodePiecesAsSerializedProto(pieces);
-  }
-
-  util::bytes decode_ids_as_serialized_proto(const std::vector<int> &ids) const {
-    return $self->DecodeIdsAsSerializedProto(ids);
-  }
-
-  int get_piece_size() const {
-    return $self->GetPieceSize();
-  }
-
-  int piece_to_id(sentencepiece::util::min_string_view piece) const {
-    return $self->PieceToId(piece);
-  }
-
-  std::string id_to_piece(int id) const {
-    return $self->IdToPiece(id);
-  }
-
-  float get_score(int id) const {
-    return $self->GetScore(id);
-  }
-
-  bool is_unknown(int id) const {
-    return $self->IsUnused(id);
-  }
-
-  bool is_control(int id) const {
-    return $self->IsControl(id);
-  }
-
-  bool is_unused(int id) const {
-    return $self->IsUnused(id);
-  }
-
-  int __len__() {
-    return $self->GetPieceSize();
-  }
-
-  int __getitem__(sentencepiece::util::min_string_view key) const {
-    return $self->PieceToId(key);
-  }
+    return None
+}
 }
 
 %typemap(out) std::vector<int> {
@@ -344,16 +541,16 @@ int ToSwigError(sentencepiece::util::error::Code code) {
   $1 = new std::string(ustring.data(), ustring.size());
 }
 
-%typemap(typecheck) sentencepiece::util::min_string_view = char *;
+%typemap(typecheck) absl::string_view = char *;
 
-%typemap(in) sentencepiece::util::min_string_view {
+%typemap(in) absl::string_view {
   const PyInputString ustring($input);
   if (!ustring.IsAvalable()) {
     PyErr_SetString(PyExc_TypeError, "not a string");
     SWIG_fail;
   }
   resultobj = ustring.input_type();
-  $1 = sentencepiece::util::min_string_view(ustring.data(), ustring.size());
+  $1 = absl::string_view(ustring.data(), ustring.size());
 }
 
 %typemap(in) const std::vector<std::string>& {
@@ -399,6 +596,42 @@ int ToSwigError(sentencepiece::util::error::Code code) {
   $1 = out;
 }
 
+%typemap(in) const std::map<std::string, std::string> & {
+  std::map<std::string, std::string> *out = nullptr;
+  if (PyDict_Check($input)) {
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
+    out = new std::map<std::string, std::string>;
+    while (PyDict_Next($input, &pos, &key, &value)) {
+      const PyInputString key_ustring(key);
+      const PyInputString value_ustring(value);
+      if (key_ustring.IsAvalable() && value_ustring.IsAvalable()) {
+        out->emplace(std::string(key_ustring.data(), key_ustring.size()),
+                     std::string(value_ustring.data(), value_ustring.size()));
+      } else {
+        PyErr_SetString(PyExc_TypeError, "map must contain strings.");
+        SWIG_fail;
+      }
+      resultobj = key_ustring.input_type();
+    }
+  } else {
+    PyErr_SetString(PyExc_TypeError, "not a dictionary");
+    SWIG_fail;
+  }
+  $1 = out;
+}
+
+%typemap(in) sentencepiece::SentenceIterator * {
+  sentencepiece::SentenceIterator *out = nullptr;
+  if (PyIter_Check($input)) {
+    out = new PySentenceIterator($input);
+  } else {
+    PyErr_SetString(PyExc_TypeError, "not a iterator");
+    SWIG_fail;
+  }
+  $1 = out;
+}
+
 %typemap(freearg) const std::string& {
   delete $1;
 }
@@ -419,5 +652,64 @@ int ToSwigError(sentencepiece::util::error::Code code) {
   delete $1;
 }
 
+%typemap(freearg) const std::map<std::string, std::string> & {
+  delete $1;
+}
+
+%typemap(freearg) sentencepiece::SentenceIterator * {
+  delete $1;
+}
+
 %include <sentencepiece_processor.h>
 %include <sentencepiece_trainer.h>
+
+%pythoncode %{
+
+import re
+import csv
+import sys
+from io import StringIO
+from io import BytesIO
+
+
+def _add_snake_case(classname):
+  """Added snake_cased method from CammelCased method."""
+
+  snake_map = {}
+  for k, v in classname.__dict__.items():
+    if re.match(r'^[A-Z]+', k):
+      snake = re.sub(r'(?<!^)(?=[A-Z])', '_',
+                     k).lower().replace('n_best', 'nbest')
+      snake_map[snake] = v
+  for k, v in snake_map.items():
+    setattr(classname, k, v)
+
+
+def _batchnize(classname, name):
+  """Enables batch request for the method classname.name."""
+  func = getattr(classname, name, None)
+
+  def _batched_func(self, arg):
+    if type(arg) is list:
+      return [func(self, n) for n in arg]
+    else:
+      return func(self, arg)
+
+  setattr(classname, name, _batched_func)
+
+
+_sentencepiece_processor_init_native = SentencePieceProcessor.__init__
+setattr(SentencePieceProcessor, '__init__', SentencePieceProcessor.Init)
+
+SentencePieceProcessor.Tokenize = SentencePieceProcessor.Encode
+SentencePieceProcessor.Detokenize = SentencePieceProcessor.Decode
+
+for m in [
+    'PieceToId', 'IdToPiece', 'GetScore', 'IsUnknown', 'IsControl', 'IsUnused',
+    'IsByte'
+]:
+  _batchnize(SentencePieceProcessor, m)
+
+_add_snake_case(SentencePieceProcessor)
+_add_snake_case(SentencePieceTrainer)
+%}

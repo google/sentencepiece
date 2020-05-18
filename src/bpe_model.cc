@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "bpe_model.h"
-
 #include <functional>
 #include <memory>
 #include <queue>
+#include <random>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include "bpe_model.h"
 #include "freelist.h"
 #include "util.h"
 
@@ -33,8 +34,8 @@ Model::Model(const ModelProto &model_proto) {
 
 Model::~Model() {}
 
-std::vector<std::pair<absl::string_view, int>> Model::Encode(
-    absl::string_view normalized) const {
+std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
+    absl::string_view normalized, float alpha) const {
   if (!status().ok() || normalized.empty()) {
     return {};
   }
@@ -127,6 +128,15 @@ std::vector<std::pair<absl::string_view, int>> Model::Encode(
     MaybeAddNewSymbolPair(i - 1, i);
   }
 
+  // BPE-dropout: https://arxiv.org/pdf/1910.13267.pdf
+  std::mt19937 *rand_gen = nullptr;
+  auto skip_merge = [&]() {
+    if (alpha <= 0.0) return false;
+    if (rand_gen == nullptr) rand_gen = random::GetRandomGenerator();
+    std::uniform_real_distribution<> gen(0.0, 1.0);
+    return gen(*rand_gen) < alpha;
+  };
+
   // Main loop.
   while (!agenda.empty()) {
     SymbolPair *top = agenda.top();
@@ -138,6 +148,11 @@ std::vector<std::pair<absl::string_view, int>> Model::Encode(
             top->size) {
       continue;
     }
+
+    // Note that orignal BPE-dropout paper assumes that all merged symbols are
+    // pre computed, but here we randomly skip merge opration inside this loop.
+    // This implemenation is theoretically equivalent to the original one.
+    if (skip_merge()) continue;
 
     // Replaces symbols with `top` rule.
     symbols[top->left].piece = absl::string_view(

@@ -467,8 +467,8 @@ class string_view {
   // Finds the last occurrence of any of the characters not in `s` within the
   // `string_view`, returning the start position of the last non-match, or
   // `npos` if no non-match was found.
-  size_type find_last_not_of(string_view s, size_type pos = npos) const
-      noexcept;
+  size_type find_last_not_of(string_view s,
+                             size_type pos = npos) const noexcept;
 
   // Overload of `string_view::find_last_not_of()` for finding a character
   // that is not `c` within the `string_view`.

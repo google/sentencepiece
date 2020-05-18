@@ -234,7 +234,8 @@ class SentencePieceProcssorOpTest(unittest.TestCase):
 
   def testLoadModelProto(self):
     # Makes a serialized model proto.
-    model_proto = open(self._getSentencePieceModelFile(), 'rb').read()
+    with open(self._getSentencePieceModelFile(), 'rb') as f:
+      model_proto = f.read()
     with tf.Session() as sess:
       sentences = ['Hello world.']
       a = tf.constant(sentences)
