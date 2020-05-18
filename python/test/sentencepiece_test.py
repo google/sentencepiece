@@ -21,6 +21,7 @@ import sentencepiece as spm
 import unittest
 import sys
 import os
+import pickle
 
 from collections import defaultdict
 
@@ -130,6 +131,19 @@ class TestSentencepieceProcessor(unittest.TestCase):
     if sys.version_info < (3, 0, 0):
       text = text.encode('utf-8')
       self.assertEqual(text, self.jasp_.DecodeIds(ids))
+
+  def test_pickle(self):
+    with open('sp.pickle', 'wb') as f:
+      pickle.dump(self.sp_, f)
+
+    id1 = self.sp_.encode('hello world.', out_type=int)
+
+    with open('sp.pickle', 'rb') as f:
+      sp = pickle.load(f)
+
+    id2 = sp.encode('hello world.', out_type=int)
+
+    self.assertEqual(id1, id2)
 
   def test_train(self):
     spm.SentencePieceTrainer.Train('--input=' +
