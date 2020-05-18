@@ -105,7 +105,9 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
     CopyValue();
   }
 
-  ~PySentenceIterator() {}
+  ~PySentenceIterator() {
+    if (iter_) Py_DECREF(iter_);
+  }
 
   bool done() const override {
     return item_ == nullptr;
