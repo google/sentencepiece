@@ -54,14 +54,7 @@ Builder::Chars UnicodeNormalize(UNormalizationMode mode,
   const std::string utf8 = string_util::UnicodeTextToUTF8(input);
   CHECK(!utf8.empty());
 
-  icu::UnicodeString ustr;
-  const size_t utf8_length = utf8.size();
-  UChar *utf16 = ustr.getBuffer(utf8.size() + 1);
-  int32 utf16_length = 0;
-  icu::ErrorCode icuerrorcode;
-  u_strFromUTF8Lenient(utf16, ustr.getCapacity(), &utf16_length, utf8.data(),
-                       utf8_length, icuerrorcode);
-  ustr.releaseBuffer(utf16_length);
+  icu::UnicodeString ustr = icu::UnicodeString::fromUTF8(utf8.c_str());
 
   UErrorCode status = U_ZERO_ERROR;
   icu::UnicodeString dst;

@@ -127,6 +127,10 @@ class Model : public ModelInterface {
   EncodeResult SampleEncode(absl::string_view normalized,
                             float theta) const override;
 
+  bool IsSampleEncodeAvailable() const override { return true; }
+
+  bool IsNBestEncodeAvailable() const override { return true; }
+
   // Returns the minimum score in sentence pieces.
   // min_score() - 10 is used for the cost of unknown sentence.
   float min_score() const { return min_score_; }

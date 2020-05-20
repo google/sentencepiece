@@ -2664,8 +2664,8 @@ SWIGINTERN PyObject *SWIG_PyStaticMethod_New(PyObject *SWIGUNUSEDPARM(self), PyO
 #define SWIGTYPE_p_sentencepiece__SentenceIterator swig_types[1]
 #define SWIGTYPE_p_sentencepiece__SentencePieceProcessor swig_types[2]
 #define SWIGTYPE_p_sentencepiece__SentencePieceTrainer swig_types[3]
-#define SWIGTYPE_p_std__mapT_std__string_std__string_t swig_types[4]
-#define SWIGTYPE_p_std__string swig_types[5]
+#define SWIGTYPE_p_std__string swig_types[4]
+#define SWIGTYPE_p_std__unordered_mapT_std__string_std__string_t swig_types[5]
 #define SWIGTYPE_p_std__vectorT_int_t swig_types[6]
 #define SWIGTYPE_p_std__vectorT_std__string_t swig_types[7]
 static swig_type_info *swig_types[9];
@@ -3290,23 +3290,23 @@ SWIGINTERN void sentencepiece_SentencePieceTrainer__TrainFromString(absl::string
     if (!_status.ok()) throw _status;
     return;
   }
-SWIGINTERN void sentencepiece_SentencePieceTrainer__TrainFromMap(std::map< std::string,std::string > const &args){
+SWIGINTERN void sentencepiece_SentencePieceTrainer__TrainFromMap(std::unordered_map< std::string,std::string > const &args){
     const auto _status = sentencepiece::SentencePieceTrainer::Train(args);
     if (!_status.ok()) throw _status;
     return;
   }
-SWIGINTERN void sentencepiece_SentencePieceTrainer__TrainFromMap2(std::map< std::string,std::string > const &args,sentencepiece::SentenceIterator *iter){
+SWIGINTERN void sentencepiece_SentencePieceTrainer__TrainFromMap2(std::unordered_map< std::string,std::string > const &args,sentencepiece::SentenceIterator *iter){
     const auto _status = sentencepiece::SentencePieceTrainer::Train(args, iter);
     if (!_status.ok()) throw _status;
     return;
   }
-SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceTrainer__TrainFromMap3(std::map< std::string,std::string > const &args){
+SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceTrainer__TrainFromMap3(std::unordered_map< std::string,std::string > const &args){
     sentencepiece::util::bytes model_proto;
     const auto _status = sentencepiece::SentencePieceTrainer::Train(args, nullptr, &model_proto);
     if (!_status.ok()) throw _status;
     return model_proto;
   }
-SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceTrainer__TrainFromMap4(std::map< std::string,std::string > const &args,sentencepiece::SentenceIterator *iter){
+SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceTrainer__TrainFromMap4(std::unordered_map< std::string,std::string > const &args,sentencepiece::SentenceIterator *iter){
     sentencepiece::util::bytes model_proto;
     const auto _status = sentencepiece::SentencePieceTrainer::Train(args, iter, &model_proto);
     if (!_status.ok()) throw _status;
@@ -4995,17 +4995,17 @@ fail:
 
 SWIGINTERN PyObject *_wrap_SentencePieceTrainer__TrainFromMap(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
-  std::map< std::string,std::string > *arg1 = 0 ;
+  std::unordered_map< std::string,std::string > *arg1 = 0 ;
   PyObject *swig_obj[1] ;
   
   if (!args) SWIG_fail;
   swig_obj[0] = args;
   {
-    std::map<std::string, std::string> *out = nullptr;
+    std::unordered_map<std::string, std::string> *out = nullptr;
     if (PyDict_Check(swig_obj[0])) {
       PyObject *key, *value;
       Py_ssize_t pos = 0;
-      out = new std::map<std::string, std::string>;
+      out = new std::unordered_map<std::string, std::string>;
       while (PyDict_Next(swig_obj[0], &pos, &key, &value)) {
         const PyInputString key_ustring(key);
         const PyInputString value_ustring(value);
@@ -5026,7 +5026,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceTrainer__TrainFromMap(PyObject *SWIGUNUS
   }
   {
     try {
-      sentencepiece_SentencePieceTrainer__TrainFromMap((std::map< std::string,std::string > const &)*arg1);
+      sentencepiece_SentencePieceTrainer__TrainFromMap((std::unordered_map< std::string,std::string > const &)*arg1);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -5048,17 +5048,17 @@ fail:
 
 SWIGINTERN PyObject *_wrap_SentencePieceTrainer__TrainFromMap2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
-  std::map< std::string,std::string > *arg1 = 0 ;
+  std::unordered_map< std::string,std::string > *arg1 = 0 ;
   sentencepiece::SentenceIterator *arg2 = (sentencepiece::SentenceIterator *) 0 ;
   PyObject *swig_obj[2] ;
   
   if (!SWIG_Python_UnpackTuple(args, "SentencePieceTrainer__TrainFromMap2", 2, 2, swig_obj)) SWIG_fail;
   {
-    std::map<std::string, std::string> *out = nullptr;
+    std::unordered_map<std::string, std::string> *out = nullptr;
     if (PyDict_Check(swig_obj[0])) {
       PyObject *key, *value;
       Py_ssize_t pos = 0;
-      out = new std::map<std::string, std::string>;
+      out = new std::unordered_map<std::string, std::string>;
       while (PyDict_Next(swig_obj[0], &pos, &key, &value)) {
         const PyInputString key_ustring(key);
         const PyInputString value_ustring(value);
@@ -5089,7 +5089,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceTrainer__TrainFromMap2(PyObject *SWIGUNU
   }
   {
     try {
-      sentencepiece_SentencePieceTrainer__TrainFromMap2((std::map< std::string,std::string > const &)*arg1,arg2);
+      sentencepiece_SentencePieceTrainer__TrainFromMap2((std::unordered_map< std::string,std::string > const &)*arg1,arg2);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -5117,18 +5117,18 @@ fail:
 
 SWIGINTERN PyObject *_wrap_SentencePieceTrainer__TrainFromMap3(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
-  std::map< std::string,std::string > *arg1 = 0 ;
+  std::unordered_map< std::string,std::string > *arg1 = 0 ;
   PyObject *swig_obj[1] ;
   sentencepiece::util::bytes result;
   
   if (!args) SWIG_fail;
   swig_obj[0] = args;
   {
-    std::map<std::string, std::string> *out = nullptr;
+    std::unordered_map<std::string, std::string> *out = nullptr;
     if (PyDict_Check(swig_obj[0])) {
       PyObject *key, *value;
       Py_ssize_t pos = 0;
-      out = new std::map<std::string, std::string>;
+      out = new std::unordered_map<std::string, std::string>;
       while (PyDict_Next(swig_obj[0], &pos, &key, &value)) {
         const PyInputString key_ustring(key);
         const PyInputString value_ustring(value);
@@ -5149,7 +5149,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceTrainer__TrainFromMap3(PyObject *SWIGUNU
   }
   {
     try {
-      result = sentencepiece_SentencePieceTrainer__TrainFromMap3((std::map< std::string,std::string > const &)*arg1);
+      result = sentencepiece_SentencePieceTrainer__TrainFromMap3((std::unordered_map< std::string,std::string > const &)*arg1);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -5173,18 +5173,18 @@ fail:
 
 SWIGINTERN PyObject *_wrap_SentencePieceTrainer__TrainFromMap4(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
-  std::map< std::string,std::string > *arg1 = 0 ;
+  std::unordered_map< std::string,std::string > *arg1 = 0 ;
   sentencepiece::SentenceIterator *arg2 = (sentencepiece::SentenceIterator *) 0 ;
   PyObject *swig_obj[2] ;
   sentencepiece::util::bytes result;
   
   if (!SWIG_Python_UnpackTuple(args, "SentencePieceTrainer__TrainFromMap4", 2, 2, swig_obj)) SWIG_fail;
   {
-    std::map<std::string, std::string> *out = nullptr;
+    std::unordered_map<std::string, std::string> *out = nullptr;
     if (PyDict_Check(swig_obj[0])) {
       PyObject *key, *value;
       Py_ssize_t pos = 0;
-      out = new std::map<std::string, std::string>;
+      out = new std::unordered_map<std::string, std::string>;
       while (PyDict_Next(swig_obj[0], &pos, &key, &value)) {
         const PyInputString key_ustring(key);
         const PyInputString value_ustring(value);
@@ -5215,7 +5215,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceTrainer__TrainFromMap4(PyObject *SWIGUNU
   }
   {
     try {
-      result = sentencepiece_SentencePieceTrainer__TrainFromMap4((std::map< std::string,std::string > const &)*arg1,arg2);
+      result = sentencepiece_SentencePieceTrainer__TrainFromMap4((std::unordered_map< std::string,std::string > const &)*arg1,arg2);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -5311,8 +5311,8 @@ static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_sentencepiece__SentenceIterator = {"_p_sentencepiece__SentenceIterator", "sentencepiece::SentenceIterator *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_sentencepiece__SentencePieceProcessor = {"_p_sentencepiece__SentencePieceProcessor", "sentencepiece::SentencePieceProcessor *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_sentencepiece__SentencePieceTrainer = {"_p_sentencepiece__SentencePieceTrainer", "sentencepiece::SentencePieceTrainer *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_std__mapT_std__string_std__string_t = {"_p_std__mapT_std__string_std__string_t", "std::map< std::string,std::string > *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__string = {"_p_std__string", "sentencepiece::util::bytes *|std::string *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_std__unordered_mapT_std__string_std__string_t = {"_p_std__unordered_mapT_std__string_std__string_t", "std::unordered_map< std::string,std::string > *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__vectorT_int_t = {"_p_std__vectorT_int_t", "std::vector< int > *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__vectorT_std__string_t = {"_p_std__vectorT_std__string_t", "std::vector< std::string > *", 0, 0, (void*)0, 0};
 
@@ -5321,8 +5321,8 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_sentencepiece__SentenceIterator,
   &_swigt__p_sentencepiece__SentencePieceProcessor,
   &_swigt__p_sentencepiece__SentencePieceTrainer,
-  &_swigt__p_std__mapT_std__string_std__string_t,
   &_swigt__p_std__string,
+  &_swigt__p_std__unordered_mapT_std__string_std__string_t,
   &_swigt__p_std__vectorT_int_t,
   &_swigt__p_std__vectorT_std__string_t,
 };
@@ -5331,8 +5331,8 @@ static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0,
 static swig_cast_info _swigc__p_sentencepiece__SentenceIterator[] = {  {&_swigt__p_sentencepiece__SentenceIterator, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_sentencepiece__SentencePieceProcessor[] = {  {&_swigt__p_sentencepiece__SentencePieceProcessor, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_sentencepiece__SentencePieceTrainer[] = {  {&_swigt__p_sentencepiece__SentencePieceTrainer, 0, 0, 0},{0, 0, 0, 0}};
-static swig_cast_info _swigc__p_std__mapT_std__string_std__string_t[] = {  {&_swigt__p_std__mapT_std__string_std__string_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__string[] = {  {&_swigt__p_std__string, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_std__unordered_mapT_std__string_std__string_t[] = {  {&_swigt__p_std__unordered_mapT_std__string_std__string_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__vectorT_int_t[] = {  {&_swigt__p_std__vectorT_int_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__vectorT_std__string_t[] = {  {&_swigt__p_std__vectorT_std__string_t, 0, 0, 0},{0, 0, 0, 0}};
 
@@ -5341,8 +5341,8 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_sentencepiece__SentenceIterator,
   _swigc__p_sentencepiece__SentencePieceProcessor,
   _swigc__p_sentencepiece__SentencePieceTrainer,
-  _swigc__p_std__mapT_std__string_std__string_t,
   _swigc__p_std__string,
+  _swigc__p_std__unordered_mapT_std__string_std__string_t,
   _swigc__p_std__vectorT_int_t,
   _swigc__p_std__vectorT_std__string_t,
 };

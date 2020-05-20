@@ -286,9 +286,8 @@ class SentencePieceProcessor {
   //
   // - BPE (--model_type=bpe):
   // `alpha` is the merge probability `p` in https://arxiv.org/abs/1910.13267
-  // when alpha<=0, no sampling is performed but the best segmentation is
-  // returned. Nbest-based sampling is not supported so you need to specify
-  // nbest_size = 0 in BPE.
+  // Nbest-based sampling is not supported so nbest_size parameter is ignored in
+  // BPE.
   virtual util::Status SampleEncode(absl::string_view input, int nbest_size,
                                     float alpha,
                                     std::vector<std::string> *pieces) const;
@@ -503,13 +502,10 @@ namespace io {
 //  io::LoadModelProto("//path/spm.model", model_proto.get());
 //  SentencePieceProcessor sp;
 //  CHECK_OK(sp.Load(std::move(model_proto)));
-util::Status LoadModelProto(absl::string_view filename,
-                            ModelProto *model_proto);
+util::Status LoadModelProto(absl::string_view, ModelProto *model_proto);
 
 // Saves `model_proto` as `filename`.
-util::Status SaveModelProto(absl::string_view filename,
-                            const ModelProto &model_proto);
-
+util::Status SaveModelProto(absl::string_view, const ModelProto &model_proto);
 }  // namespace io
 #endif  // SWIG
 }  // namespace sentencepiece

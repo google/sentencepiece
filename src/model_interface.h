@@ -106,6 +106,12 @@ class ModelInterface {
     return EncodeResult();
   }
 
+  // Return true if SampleEncode returns a valid result.
+  virtual bool IsSampleEncodeAvailable() const { return false; }
+
+  // Return true if NBestEncode returns a valid result.
+  virtual bool IsNBestEncodeAvailable() const { return false; }
+
   // Returns the vocab id of `piece`.
   // Returns UNK(0) if `piece` is unknown
   virtual int PieceToId(absl::string_view piece) const;

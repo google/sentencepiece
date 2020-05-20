@@ -25,7 +25,6 @@
 #include "third_party/absl/strings/string_view.h"
 
 using sentencepiece::normalizer::Builder;
-using util::Status;
 
 DEFINE_bool(output_precompiled_header, false, "make normalization_rule.h file");
 
@@ -157,8 +156,9 @@ struct BinaryBlob {
 int main(int argc, char **argv) {
   sentencepiece::flags::ParseCommandLineFlags(argv[0], &argc, &argv, true);
 
-  const std::vector<
-      std::pair<std::string, std::function<Status(Builder::CharsMap *)>>>
+  const std::vector<std::pair<
+      std::string,
+      std::function<sentencepiece::util::Status(Builder::CharsMap *)>>>
       kRuleList = {{"nfkc", Builder::BuildNFKCMap},
                    {"nmt_nfkc", Builder::BuildNmtNFKCMap},
                    {"nfkc_cf", Builder::BuildNFKC_CFMap},

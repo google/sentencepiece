@@ -396,27 +396,27 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
     return;
   }
 
-  static void _TrainFromMap(const std::map<std::string, std::string> &args) {
+  static void _TrainFromMap(const std::unordered_map<std::string, std::string> &args) {
     const auto _status = sentencepiece::SentencePieceTrainer::Train(args);
     if (!_status.ok()) throw _status;
     return;
   }
 
-  static void _TrainFromMap2(const std::map<std::string, std::string> &args,
+  static void _TrainFromMap2(const std::unordered_map<std::string, std::string> &args,
                             SentenceIterator *iter) {
     const auto _status = sentencepiece::SentencePieceTrainer::Train(args, iter);
     if (!_status.ok()) throw _status;
     return;
   }
 
-  static sentencepiece::util::bytes _TrainFromMap3(const std::map<std::string, std::string> &args) {
+  static sentencepiece::util::bytes _TrainFromMap3(const std::unordered_map<std::string, std::string> &args) {
     sentencepiece::util::bytes model_proto;
     const auto _status = sentencepiece::SentencePieceTrainer::Train(args, nullptr, &model_proto);
     if (!_status.ok()) throw _status;
     return model_proto;
   }
 
-  static sentencepiece::util::bytes _TrainFromMap4(const std::map<std::string, std::string> &args,
+  static sentencepiece::util::bytes _TrainFromMap4(const std::unordered_map<std::string, std::string> &args,
                                                   SentenceIterator *iter) {
     sentencepiece::util::bytes model_proto;
     const auto _status = sentencepiece::SentencePieceTrainer::Train(args, iter, &model_proto);
@@ -596,12 +596,12 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
   $1 = out;
 }
 
-%typemap(in) const std::map<std::string, std::string> & {
-  std::map<std::string, std::string> *out = nullptr;
+%typemap(in) const std::unordered_map<std::string, std::string> & {
+  std::unordered_map<std::string, std::string> *out = nullptr;
   if (PyDict_Check($input)) {
     PyObject *key, *value;
     Py_ssize_t pos = 0;
-    out = new std::map<std::string, std::string>;
+    out = new std::unordered_map<std::string, std::string>;
     while (PyDict_Next($input, &pos, &key, &value)) {
       const PyInputString key_ustring(key);
       const PyInputString value_ustring(value);
@@ -652,7 +652,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
   delete $1;
 }
 
-%typemap(freearg) const std::map<std::string, std::string> & {
+%typemap(freearg) const std::unordered_map<std::string, std::string> & {
   delete $1;
 }
 

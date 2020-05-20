@@ -42,6 +42,10 @@ class Model : public ModelInterface {
   // When alpha <= 0.0, no sampling is performed.
   EncodeResult SampleEncode(absl::string_view normalized,
                             float alpha) const override;
+
+  bool IsSampleEncodeAvailable() const override { return true; }
+
+  bool IsNBestEncodeAvailable() const override { return false; }
 };
 }  // namespace bpe
 }  // namespace sentencepiece

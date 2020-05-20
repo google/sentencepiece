@@ -63,6 +63,10 @@ class MockModel : public ModelInterface {
     return nbest_output_;
   }
 
+  bool IsSampleEncodeAvailable() const override { return true; }
+
+  bool IsNBestEncodeAvailable() const override { return true; }
+
   bool IsControl(int id) const { return id == 1 || id == 2; }
 
   bool IsUnknown(int id) const { return id == 0; }

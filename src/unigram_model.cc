@@ -578,7 +578,7 @@ bool Model::VerifyOutputsEquivalent(absl::string_view expected,
           } else {
             const int length = p.size();
             total_score += IsUserDefinedInlined(id)
-                               ? (length * max_score_ + 1.0)
+                               ? (length * max_score_ - 0.1)
                                : GetScoreInlined(id);
           }
         }
@@ -688,7 +688,7 @@ EncodeResult Model::EncodeOptimized(absl::string_view normalized) const {
         const auto length = (key_pos - starts_at);
         // User defined symbol receives extra bonus to always be selected.
         const auto score = IsUserDefinedInlined(ret)
-                               ? (length * max_score_ + 1.0)
+                               ? (length * max_score_ - 0.1)
                                : GetScoreInlined(ret);
         const auto candidate_best_path_score =
             score + best_path_score_till_here;
