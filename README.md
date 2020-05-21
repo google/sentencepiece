@@ -23,7 +23,7 @@ with the extension of direct training from raw sentences. SentencePiece allows u
   models from sentences. Pre-tokenization ([Moses tokenizer](https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/tokenizer.perl)/[MeCab](http://taku910.github.io/mecab/)/[KyTea](http://www.phontron.com/kytea/)) is not always required.
 - **Language independent**: SentencePiece treats the sentences just as sequences of Unicode characters. There is no language-dependent logic.
 - **Multiple subword algorithms**: **BPE**  [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)] are supported.
-- **Subword regularization**: SentencePiece implements subword sampling for [subword regularization](https://arxiv.org/abs/1804.10959) which helps to improve the robustness and accuracy of NMT models.
+- **Subword regularization**: SentencePiece implements subword sampling for [subword regularization] (https://arxiv.org/abs/1804.10959) and [BPE-dropout](https://arxiv.org/abs/1910.13267) which help to improve the robustness and accuracy of NMT models.
 - **Fast and lightweight**: Segmentation speed is around 50k sentences/sec, and memory footprint is around 6MB.
 - **Self-contained**: The same tokenization/detokenization is obtained as long as the same model file is used.
 - **Direct vocabulary id generation**: SentencePiece manages vocabulary to id mapping and can directly generate vocabulary id sequences from raw sentences.
@@ -96,19 +96,18 @@ special symbol. Tokenized sequences do not preserve the necessary information to
 * (en) Hello world.   → [Hello] [World] [.]   \(A space between Hello and World\)
 * (ja) こんにちは世界。  → [こんにちは] [世界] [。] \(No space between こんにちは and 世界\)
 
-#### Subword regularization
-Subword regularization [[Kudo.](https://arxiv.org/abs/1804.10959)] is a simple regularization method
-that virtually augments training data with on-the-fly subword sampling, which helps to improve the accuracy as well as robustness of NMT models.
+#### Subword regularization and BPE-dropout
+Subword regularization [[Kudo.](https://arxiv.org/abs/1804.10959)] and BPE-droptout [Provilkov et al](https://arxiv.org/abs/1910.13267) are simple regularization methods
+that virtually augment training data with on-the-fly subword sampling, which helps to improve the accuracy as well as robustness of NMT models.
 
 To enable subword regularization, you would like to integrate SentencePiece library 
-([C++](doc/api.md#sampling-subword-regularization)/[Python](python/README.md)) into the NMT system to sample one segmentation for each parameter update, which is different from the standard off-line data preparations. Here's the example of [Python library](python/README.md). You can find that 'New York' is segmented differently on each ``SampleEncode`` call. The details of sampling parameters are found in [sentencepiece_processor.h](src/sentencepiece_processor.h).
+([C++](doc/api.md#sampling-subword-regularization)/[Python](python/README.md)) into the NMT system to sample one segmentation for each parameter update, which is different from the standard off-line data preparations. Here's the example of [Python library](python/README.md). You can find that 'New York' is segmented differently on each ``SampleEncode (C++)`` or ``encode with enable_sampling=True (Python)`` calls. The details of sampling parameters are found in [sentencepiece_processor.h](src/sentencepiece_processor.h).
 
 ```
 >>> import sentencepiece as spm
->>> s = spm.SentencePieceProcessor()
->>> s.Load('spm.model')
+>>> s = spm.SentencePieceProcessor(model_file='spm.model')
 >>> for n in range(5):
-...     s.SampleEncodeAsPieces('New York', -1, 0.1)
+...     s.encode('New York', out_type=str, enable_sampling=True, alpha=0.1, nbest=-1)
 ... 
 ['▁', 'N', 'e', 'w', '▁York']
 ['▁', 'New', '▁York']
