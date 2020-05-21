@@ -92,6 +92,31 @@ trainer_interface.cc(619) LOG(INFO) Saving vocabs: m.vocab
 >>>
 ```
 
+### Training without local filesystem
+Sentencepiece trainer can receive any iterable object to feed training sentences. You can also pass a file object (instance with write() method) to emit the output model to any devices. These features are useful to run sentencepiece on environment that have limited access to the local file system (e.g., Google colab.)
+
+```
+import urllib.request
+import io
+import sentencepiece as spm
+
+# Loads model from URL as iterator and stores the model to BytesIO.
+model = io.BytesIO()
+with urllib.request.urlopen(
+    'https://raw.githubusercontent.com/google/sentencepiece/master/data/botchan.txt'
+) as response:
+  spm.SentencePieceTrainer.train(
+      sentence_iterator=response, model_writer=model, vocab_size=1000)
+
+# Serialize the model as file.
+# with open('out.model', 'wb') as f:
+#   f.write(model.getvalue())
+
+# Directly load the model from serialized model.
+sp = spm.SentencePieceProcessor(model_proto=model.getvalue())
+print(sp.encode('this is test'))
+```
+
 
 ### Segmentation (old interface)
 ```
