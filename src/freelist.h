@@ -37,7 +37,7 @@ class FreeList {
     const int size = std::min<int>(chunk_index_ + 1, freelist_.size());
     for (int i = 0; i < size; ++i) {
       T* chunk = freelist_[i];
-      memset(chunk, 0, sizeof(*chunk) * chunk_size_);
+      memset(static_cast<void*>(chunk), 0, sizeof(*chunk) * chunk_size_);
     }
     chunk_index_ = 0;
     element_index_ = 0;
@@ -60,7 +60,7 @@ class FreeList {
 
     if (chunk_index_ == freelist_.size()) {
       T* chunk = new T[chunk_size_];
-      memset(chunk, 0, sizeof(*chunk) * chunk_size_);
+      memset(static_cast<void*>(chunk), 0, sizeof(*chunk) * chunk_size_);
       freelist_.push_back(chunk);
     }
 

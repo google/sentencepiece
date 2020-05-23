@@ -22,6 +22,7 @@
 #include "normalizer.h"
 #include "sentencepiece_trainer.h"
 #include "spec_parser.h"
+#include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_split.h"
 #include "third_party/absl/strings/string_view.h"
@@ -143,6 +144,11 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
       denormalizer_spec->set_add_dummy_prefix(false);
       denormalizer_spec->set_remove_extra_whitespaces(false);
       denormalizer_spec->set_escape_whitespaces(false);
+      continue;
+    } else if (key == "minloglevel") {
+      int v = 0;
+      CHECK_OR_RETURN(absl::SimpleAtoi(value, &v));
+      flags::SetMinLogLevel(v);
       continue;
     }
 
