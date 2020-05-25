@@ -81,7 +81,7 @@ if (NOT MSVC)
   install(FILES "${CMAKE_BINARY_DIR}/sentencepiece.pc" DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
 
-include_directories(${CMAKE_SOURCE_DIR} ${PROJECT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 
 if (SPM_BUILD_TEST)
   enable_testing()
