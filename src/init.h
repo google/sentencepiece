@@ -12,19 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "init.h"
-#include "testharness.h"
+#ifndef INIT_H_
+#define INIT_H_
 
-#ifdef OS_WIN
-ABSL_FLAG(std::string, test_srcdir, "..\\data", "Data directory.");
-#else
-ABSL_FLAG(std::string, test_srcdir, "../data", "Data directory.");
-#endif
+namespace sentencepiece {
+void ParseCommandLineFlags(const char *usage, int *argc, char ***argv,
+                           bool remvoe_flags = true);
+}  // namespace sentencepiece
 
-ABSL_FLAG(std::string, test_tmpdir, "test_tmp", "Temporary directory.");
-
-int main(int argc, char **argv) {
-  sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
-  sentencepiece::test::RunAllTests();
-  return 0;
-}
+#endif  // INIT_H_

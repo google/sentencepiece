@@ -12,39 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "flags.h"
+#include "init.h"
 
 #include "common.h"
 #include "testharness.h"
 
-DEFINE_int32(int32_f, 10, "int32_flags");
-DEFINE_bool(bool_f, false, "bool_flags");
-DEFINE_int64(int64_f, 20, "int64_flags");
-DEFINE_uint64(uint64_f, 30, "uint64_flags");
-DEFINE_double(double_f, 40.0, "double_flags");
-DEFINE_string(string_f, "str", "string_flags");
+ABSL_FLAG(int32, int32_f, 10, "int32_flags");
+ABSL_FLAG(bool, bool_f, false, "bool_flags");
+ABSL_FLAG(int64, int64_f, 20, "int64_flags");
+ABSL_FLAG(uint64, uint64_f, 30, "uint64_flags");
+ABSL_FLAG(double, double_f, 40.0, "double_flags");
+ABSL_FLAG(std::string, string_f, "str", "string_flags");
 
-namespace sentencepiece {
-namespace flags {
+using sentencepiece::ParseCommandLineFlags;
 
+namespace absl {
 TEST(FlagsTest, DefaultValueTest) {
-  EXPECT_EQ(10, FLAGS_int32_f);
-  EXPECT_EQ(false, FLAGS_bool_f);
-  EXPECT_EQ(20, FLAGS_int64_f);
-  EXPECT_EQ(30, FLAGS_uint64_f);
-  EXPECT_EQ(40.0, FLAGS_double_f);
-  EXPECT_EQ("str", FLAGS_string_f);
-}
-
-TEST(FlagsTest, PrintHelpTest) {
-  const std::string help = PrintHelp("foobar");
-  EXPECT_NE(std::string::npos, help.find("foobar"));
-  EXPECT_NE(std::string::npos, help.find("int32_flags"));
-  EXPECT_NE(std::string::npos, help.find("bool_flags"));
-  EXPECT_NE(std::string::npos, help.find("int64_flags"));
-  EXPECT_NE(std::string::npos, help.find("uint64_flags"));
-  EXPECT_NE(std::string::npos, help.find("double_flags"));
-  EXPECT_NE(std::string::npos, help.find("string_flags"));
+  EXPECT_EQ(10, absl::GetFlag(FLAGS_int32_f));
+  EXPECT_EQ(false, absl::GetFlag(FLAGS_bool_f));
+  EXPECT_EQ(20, absl::GetFlag(FLAGS_int64_f));
+  EXPECT_EQ(30, absl::GetFlag(FLAGS_uint64_f));
+  EXPECT_EQ(40.0, absl::GetFlag(FLAGS_double_f));
+  EXPECT_EQ("str", absl::GetFlag(FLAGS_string_f));
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsTest) {
@@ -56,12 +45,12 @@ TEST(FlagsTest, ParseCommandLineFlagsTest) {
   char **argv = const_cast<char **>(kFlags);
   ParseCommandLineFlags(kFlags[0], &argc, &argv);
 
-  EXPECT_EQ(100, FLAGS_int32_f);
-  EXPECT_EQ(true, FLAGS_bool_f);
-  EXPECT_EQ(200, FLAGS_int64_f);
-  EXPECT_EQ(300, FLAGS_uint64_f);
-  EXPECT_EQ(400.0, FLAGS_double_f);
-  EXPECT_EQ("foo", FLAGS_string_f);
+  EXPECT_EQ(100, absl::GetFlag(FLAGS_int32_f));
+  EXPECT_EQ(true, absl::GetFlag(FLAGS_bool_f));
+  EXPECT_EQ(200, absl::GetFlag(FLAGS_int64_f));
+  EXPECT_EQ(300, absl::GetFlag(FLAGS_uint64_f));
+  EXPECT_EQ(400.0, absl::GetFlag(FLAGS_double_f));
+  EXPECT_EQ("foo", absl::GetFlag(FLAGS_string_f));
   EXPECT_EQ(4, argc);
   EXPECT_EQ("program", std::string(argv[0]));
   EXPECT_EQ("other1", std::string(argv[1]));
@@ -77,10 +66,10 @@ TEST(FlagsTest, ParseCommandLineFlagsTest2) {
   char **argv = const_cast<char **>(kFlags);
   ParseCommandLineFlags(kFlags[0], &argc, &argv);
 
-  EXPECT_EQ(500, FLAGS_int32_f);
-  EXPECT_EQ(600, FLAGS_int64_f);
-  EXPECT_EQ(700, FLAGS_uint64_f);
-  EXPECT_FALSE(FLAGS_bool_f);
+  EXPECT_EQ(500, absl::GetFlag(FLAGS_int32_f));
+  EXPECT_EQ(600, absl::GetFlag(FLAGS_int64_f));
+  EXPECT_EQ(700, absl::GetFlag(FLAGS_uint64_f));
+  EXPECT_FALSE(absl::GetFlag(FLAGS_bool_f));
   EXPECT_EQ(1, argc);
 }
 
@@ -90,8 +79,8 @@ TEST(FlagsTest, ParseCommandLineFlagsTest3) {
   int argc = arraysize(kFlags);
   char **argv = const_cast<char **>(kFlags);
   ParseCommandLineFlags(kFlags[0], &argc, &argv);
-  EXPECT_TRUE(FLAGS_bool_f);
-  EXPECT_EQ(800, FLAGS_int32_f);
+  EXPECT_TRUE(absl::GetFlag(FLAGS_bool_f));
+  EXPECT_EQ(800, absl::GetFlag(FLAGS_int32_f));
   EXPECT_EQ(1, argc);
 }
 
@@ -129,7 +118,7 @@ TEST(FlagsTest, ParseCommandLineFlagsEmptyStringArgs) {
   char **argv = const_cast<char **>(kFlags);
   ParseCommandLineFlags(kFlags[0], &argc, &argv);
   EXPECT_EQ(1, argc);
-  EXPECT_EQ("", FLAGS_string_f);
+  EXPECT_EQ("", absl::GetFlag(FLAGS_string_f));
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsEmptyBoolArgs) {
@@ -138,7 +127,7 @@ TEST(FlagsTest, ParseCommandLineFlagsEmptyBoolArgs) {
   char **argv = const_cast<char **>(kFlags);
   ParseCommandLineFlags(kFlags[0], &argc, &argv);
   EXPECT_EQ(1, argc);
-  EXPECT_TRUE(FLAGS_bool_f);
+  EXPECT_TRUE(absl::GetFlag(FLAGS_bool_f));
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsEmptyIntArgs) {
@@ -147,5 +136,4 @@ TEST(FlagsTest, ParseCommandLineFlagsEmptyIntArgs) {
   char **argv = const_cast<char **>(kFlags);
   EXPECT_DEATH(ParseCommandLineFlags(kFlags[0], &argc, &argv), );
 }
-}  // namespace flags
-}  // namespace sentencepiece
+}  // namespace absl

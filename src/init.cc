@@ -13,18 +13,20 @@
 // limitations under the License.!
 
 #include "init.h"
-#include "testharness.h"
 
-#ifdef OS_WIN
-ABSL_FLAG(std::string, test_srcdir, "..\\data", "Data directory.");
-#else
-ABSL_FLAG(std::string, test_srcdir, "../data", "Data directory.");
-#endif
+#include "third_party/absl/flags/flag.h"
 
-ABSL_FLAG(std::string, test_tmpdir, "test_tmp", "Temporary directory.");
+namespace sentencepiece {
 
-int main(int argc, char **argv) {
-  sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
-  sentencepiece::test::RunAllTests();
-  return 0;
+void ParseCommandLineFlags(const char *usage, int *argc, char ***argv,
+                           bool remove_arg) {
+  const auto unused_args = absl::ParseCommandLine(*argc, *argv);
+
+  if (remove_arg) {
+    char **argv_val = *argv;
+    *argv = argv_val = argv_val + *argc - unused_args.size();
+    std::copy(unused_args.begin(), unused_args.end(), argv_val);
+    *argc = static_cast<int>(unused_args.size());
+  }
 }
+}  // namespace sentencepiece

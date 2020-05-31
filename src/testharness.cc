@@ -26,6 +26,8 @@
 #include <vector>
 
 #include "common.h"
+#include "init.h"
+#include "third_party/absl/flags/flag.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "util.h"
 
@@ -56,9 +58,9 @@ bool RegisterTest(const char *base, const char *name, void (*func)()) {
 int RunAllTests() {
   int num = 0;
 #ifdef OS_WIN
-  _mkdir(FLAGS_test_tmpdir.c_str());
+  _mkdir(absl::GetFlag(FLAGS_test_tmpdir).c_str());
 #else
-  mkdir(FLAGS_test_tmpdir.c_str(), S_IRUSR | S_IWUSR | S_IXUSR);
+  mkdir(absl::GetFlag(FLAGS_test_tmpdir).c_str(), S_IRUSR | S_IWUSR | S_IXUSR);
 #endif
 
   if (tests == nullptr) {

@@ -78,7 +78,7 @@ set(SPM_SRCS
   util.h
   freelist.h
   filesystem.h
-  flags.h
+  init.h
   sentencepiece_processor.h
   word_model.h
   model_factory.h
@@ -90,7 +90,7 @@ set(SPM_SRCS
   char_model.cc
   error.cc
   filesystem.cc
-  flags.cc
+  init.cc
   model_factory.cc
   model_interface.cc
   normalizer.cc
@@ -98,7 +98,8 @@ set(SPM_SRCS
   unigram_model.cc
   util.cc
   word_model.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/strings/string_view.cc)
+  ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/strings/string_view.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/flags/flag.cc)
 
 set(SPM_TRAIN_SRCS
   ${SPM_PROTO_HDRS}
@@ -136,7 +137,7 @@ set(SPM_TEST_SRCS
   char_model_test.cc
   char_model_trainer_test.cc
   filesystem_test.cc
-  flags_test.cc
+  init_test.cc
   model_factory_test.cc
   model_interface_test.cc
   normalizer_test.cc

@@ -49,8 +49,10 @@ void CheckNormalizer(absl::string_view filename, bool expected_has_normalizer,
 }
 
 TEST(SentencePieceTrainerTest, TrainFromArgsTest) {
-  const std::string input = util::JoinPath(FLAGS_test_srcdir, kTestData);
-  const std::string model = util::JoinPath(FLAGS_test_tmpdir, "m");
+  const std::string input =
+      util::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kTestData);
+  const std::string model =
+      util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "m");
 
   ASSERT_TRUE(SentencePieceTrainer::Train(
                   absl::StrCat("--input=", input, " --model_prefix=", model,
@@ -114,8 +116,10 @@ TEST(SentencePieceTrainerTest, TrainFromIterator) {
     size_t idx_ = 0;
   };
 
-  const std::string input = util::JoinPath(FLAGS_test_srcdir, kTestData);
-  const std::string model = util::JoinPath(FLAGS_test_tmpdir, "m");
+  const std::string input =
+      util::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kTestData);
+  const std::string model =
+      util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "m");
 
   std::vector<std::string> sentences;
   {
@@ -135,9 +139,12 @@ TEST(SentencePieceTrainerTest, TrainFromIterator) {
 }
 
 TEST(SentencePieceTrainerTest, TrainWithCustomNormalizationRule) {
-  std::string input = util::JoinPath(FLAGS_test_srcdir, kTestData);
-  std::string rule = util::JoinPath(FLAGS_test_srcdir, kNfkcTestData);
-  const std::string model = util::JoinPath(FLAGS_test_tmpdir, "m");
+  std::string input =
+      util::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kTestData);
+  std::string rule =
+      util::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kNfkcTestData);
+  const std::string model =
+      util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "m");
 
   EXPECT_TRUE(SentencePieceTrainer::Train(
                   absl::StrCat("--input=", input, " --model_prefix=", model,
@@ -148,12 +155,14 @@ TEST(SentencePieceTrainerTest, TrainWithCustomNormalizationRule) {
 }
 
 TEST(SentencePieceTrainerTest, TrainWithCustomDenormalizationRule) {
-  const std::string input_file = util::JoinPath(FLAGS_test_srcdir, kTestDataJa);
-  const std::string model = util::JoinPath(FLAGS_test_tmpdir, "m");
+  const std::string input_file =
+      util::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kTestDataJa);
+  const std::string model =
+      util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "m");
   const std::string norm_rule_tsv =
-      util::JoinPath(FLAGS_test_srcdir, kIdsNormTsv);
+      util::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kIdsNormTsv);
   const std::string denorm_rule_tsv =
-      util::JoinPath(FLAGS_test_srcdir, kIdsDenormTsv);
+      util::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kIdsDenormTsv);
   EXPECT_TRUE(
       SentencePieceTrainer::Train(
           absl::StrCat("--input=", input_file, " --model_prefix=", model,
@@ -175,8 +184,10 @@ TEST(SentencePieceTrainerTest, TrainErrorTest) {
 
 TEST(SentencePieceTrainerTest, TrainTest) {
   TrainerSpec trainer_spec;
-  trainer_spec.add_input(util::JoinPath(FLAGS_test_srcdir, kTestData));
-  trainer_spec.set_model_prefix(util::JoinPath(FLAGS_test_tmpdir, "m"));
+  trainer_spec.add_input(
+      util::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kTestData));
+  trainer_spec.set_model_prefix(
+      util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "m"));
   trainer_spec.set_vocab_size(1000);
   NormalizerSpec normalizer_spec;
   ASSERT_TRUE(SentencePieceTrainer::Train(trainer_spec, normalizer_spec).ok());

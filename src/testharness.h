@@ -21,11 +21,12 @@
 #include <string>
 
 #include "common.h"
-#include "flags.h"
+#include "init.h"
+#include "third_party/absl/flags/flag.h"
 #include "third_party/absl/strings/string_view.h"
 
-DECLARE_string(test_tmpdir);
-DECLARE_string(test_srcdir);
+ABSL_DECLARE_FLAG(std::string, test_tmpdir);
+ABSL_DECLARE_FLAG(std::string, test_srcdir);
 
 namespace sentencepiece {
 namespace test {
@@ -130,11 +131,11 @@ class Tester {
 #define EXPECT_OK(c) EXPECT_EQ(c, ::sentencepiece::util::OkStatus())
 #define EXPECT_NOT_OK(c) EXPECT_NE(c, ::sentencepiece::util::OkStatus())
 
-#define EXPECT_DEATH(statement, condition) \
-  {                                        \
-    error::SetTestCounter(1);              \
-    statement;                             \
-    error::SetTestCounter(0);              \
+#define EXPECT_DEATH(statement, condition)   \
+  {                                          \
+    sentencepiece::error::SetTestCounter(1); \
+    statement;                               \
+    sentencepiece::error::SetTestCounter(0); \
   };
 
 #define ASSERT_TRUE EXPECT_TRUE
