@@ -16,12 +16,12 @@
 #include <set>
 #include <utility>
 
-#include "builtin_pb/sentencepiece.pb.h"
 #include "common.h"
 #include "filesystem.h"
 #include "model_factory.h"
 #include "model_interface.h"
 #include "normalizer.h"
+#include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/numbers.h"

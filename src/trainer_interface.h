@@ -19,15 +19,15 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "builtin_pb/sentencepiece_model.pb.h"
 #include "common.h"
 #include "filesystem.h"
+#include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -44,7 +44,7 @@ std::vector<std::pair<K, V>> Sorted(const std::vector<std::pair<K, V>> &m) {
 }
 
 template <typename K, typename V>
-std::vector<std::pair<K, V>> Sorted(const std::unordered_map<K, V> &m) {
+std::vector<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V> &m) {
   std::vector<std::pair<K, V>> v(m.begin(), m.end());
   return Sorted(v);
 }
@@ -129,7 +129,7 @@ class TrainerInterface {
 
   // Set of characters which must be included in the final vocab.
   // The value of this map stores the frequency.
-  std::unordered_map<char32, int64> required_chars_;
+  absl::flat_hash_map<char32, int64> required_chars_;
 
   // Final output pieces
   std::vector<std::pair<std::string, float>> final_pieces_;

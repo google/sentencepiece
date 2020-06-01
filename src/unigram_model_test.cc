@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#include "builtin_pb/sentencepiece_model.pb.h"
+#include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "testharness.h"
 #include "third_party/absl/strings/str_cat.h"

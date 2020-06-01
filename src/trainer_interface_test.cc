@@ -466,7 +466,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   trainer_spec.set_model_prefix("model");
   trainer_spec.set_character_coverage(0.98);
 
-  using E = std::unordered_map<char32, int64>;
+  using E = absl::flat_hash_map<char32, int64>;
   {
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_OK(trainer.LoadSentences());

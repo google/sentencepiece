@@ -14,8 +14,8 @@
 
 #include <map>
 
-#include "builtin_pb/sentencepiece_model.pb.h"
 #include "init.h"
+#include "sentencepiece_model.pb.h"
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/flags/flag.h"
 #include "third_party/absl/strings/ascii.h"

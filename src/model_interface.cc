@@ -14,8 +14,8 @@
 
 #include <algorithm>
 
-#include "builtin_pb/sentencepiece_model.pb.h"
 #include "model_interface.h"
+#include "sentencepiece_model.pb.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/str_format.h"
 #include "util.h"
@@ -174,7 +174,7 @@ std::string ByteToPiece(unsigned char c) {
 }
 
 int PieceToByte(absl::string_view piece) {
-  using PieceToByteMap = std::unordered_map<std::string, unsigned char>;
+  using PieceToByteMap = absl::flat_hash_map<std::string, unsigned char>;
   static const auto *const kMap = []() -> PieceToByteMap * {
     auto *m = new PieceToByteMap();
     for (int i = 0; i < 256; ++i) {

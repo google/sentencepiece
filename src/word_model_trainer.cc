@@ -14,8 +14,8 @@
 
 #include <cmath>
 #include <string>
-#include <unordered_map>
 
+#include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/strings/string_view.h"
 #include "util.h"
 #include "word_model.h"
@@ -32,7 +32,7 @@ util::Status Trainer::Train() {
 
   RETURN_IF_ERROR(LoadSentences());
 
-  std::unordered_map<std::string, uint64> freq;
+  absl::flat_hash_map<std::string, uint64> freq;
   for (const auto &it : sentences_) {
     for (const auto &s : SplitIntoWords(it.first)) {
       freq[std::string(s)] += it.second;

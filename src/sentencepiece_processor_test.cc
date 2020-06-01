@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include <unordered_map>
 #include <utility>
 
 #include "builder.h"
-#include "builtin_pb/sentencepiece.pb.h"
-#include "builtin_pb/sentencepiece_model.pb.h"
 #include "filesystem.h"
 #include "model_interface.h"
 #include "normalizer.h"
+#include "sentencepiece.pb.h"
+#include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/string_view.h"
@@ -551,8 +551,8 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
     int GetPieceSize() const override { return 7; }
 
     int PieceToId(absl::string_view piece) const override {
-      static std::unordered_map<absl::string_view, int,
-                                string_util::string_view_hash>
+      static absl::flat_hash_map<absl::string_view, int,
+                                 string_util::string_view_hash>
           kMap = {{"<unk>", 0}, {"<s>", 1}, {"</s>", 2},    {WS "ABC", 3},
                   {WS "DE", 4}, {"F", 5},   {"G" WS "H", 6}};
       return port::FindWithDefault(kMap, piece, 0);
@@ -695,7 +695,7 @@ TEST(SentencepieceProcessorTest, ByteFallbackDecodeTest) {
     }
 
     int PieceToId(absl::string_view piece) const override {
-      using Map = std::unordered_map<std::string, int>;
+      using Map = absl::flat_hash_map<std::string, int>;
       static const Map kMap = []() -> Map {
         Map m = {
             {"<unk>", 0}, {"<s>", 1}, {"</s>", 2}, {"A", 3}, {"B", 4}, {"C", 5},

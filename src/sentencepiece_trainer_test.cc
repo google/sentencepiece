@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "builtin_pb/sentencepiece_model.pb.h"
 #include "filesystem.h"
+#include "sentencepiece_model.pb.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
 #include "third_party/absl/strings/str_cat.h"

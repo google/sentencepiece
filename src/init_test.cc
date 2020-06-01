@@ -24,6 +24,9 @@ ABSL_FLAG(uint64, uint64_f, 30, "uint64_flags");
 ABSL_FLAG(double, double_f, 40.0, "double_flags");
 ABSL_FLAG(std::string, string_f, "str", "string_flags");
 
+ABSL_DECLARE_FLAG(bool, help);
+ABSL_DECLARE_FLAG(bool, version);
+
 using sentencepiece::ParseCommandLineFlags;
 
 namespace absl {
@@ -89,6 +92,7 @@ TEST(FlagsTest, ParseCommandLineFlagsHelpTest) {
   int argc = arraysize(kFlags);
   char **argv = const_cast<char **>(kFlags);
   EXPECT_DEATH(ParseCommandLineFlags(kFlags[0], &argc, &argv), "");
+  absl::SetFlag(&FLAGS_help, false);
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsVersionTest) {
@@ -96,6 +100,7 @@ TEST(FlagsTest, ParseCommandLineFlagsVersionTest) {
   int argc = arraysize(kFlags);
   char **argv = const_cast<char **>(kFlags);
   EXPECT_DEATH(ParseCommandLineFlags(kFlags[0], &argc, &argv), "");
+  absl::SetFlag(&FLAGS_version, false);
 }
 
 TEST(FlagsTest, ParseCommandLineFlagsUnknownTest) {

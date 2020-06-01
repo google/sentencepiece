@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "bpe_model_trainer.h"
+#include "third_party/absl/container/flat_hash_set.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -210,7 +211,7 @@ util::Status Trainer::Train() {
   // We may see duplicated pieces that are extracted with different path.
   // In real segmentation phase, we can consider them as one symbol.
   // e.g., "aaa" => "aa" + "a" or "a" + "aa".
-  std::unordered_set<std::string> dup;
+  absl::flat_hash_set<std::string> dup;
 
   // Main loop.
   CHECK_OR_RETURN(final_pieces_.empty());

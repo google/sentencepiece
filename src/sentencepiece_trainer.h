@@ -16,9 +16,9 @@
 #define SENTENCEPIECE_TRAINER_H_
 
 #include <string>
-#include <unordered_map>
 
 #include "sentencepiece_processor.h"
+#include "third_party/absl/container/flat_hash_map.h"
 
 namespace sentencepiece {
 
@@ -85,7 +85,7 @@ class SentencePieceTrainer {
   // Trains SentencePiece model with mapin `kwargs`.
   // e.g., {{"input", "data"}, {"model_prefix, "m"}, {"vocab_size", "8192"}...}
   static util::Status Train(
-      const std::unordered_map<std::string, std::string> &kwargs,
+      const absl::flat_hash_map<std::string, std::string> &kwargs,
       SentenceIterator *sentence_iterator = nullptr,
       std::string *serialized_model_proto = nullptr);
 
@@ -100,9 +100,9 @@ class SentencePieceTrainer {
                                              bool is_denormalizer = false);
 
   // Overrides `trainer_spec`, `normalizer_spec`, `denormalizer_spec` with the
-  // std::unordered_map in `kargs`.
+  // absl::flat_hash_map in `kargs`.
   static util::Status MergeSpecsFromArgs(
-      const std::unordered_map<std::string, std::string> &kwargs,
+      const absl::flat_hash_map<std::string, std::string> &kwargs,
       TrainerSpec *trainer_spec, NormalizerSpec *normalizer_spec,
       NormalizerSpec *denormalizer_spec);
 

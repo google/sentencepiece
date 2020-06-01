@@ -14,14 +14,14 @@
 
 #include <functional>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
-#include "builtin_pb/sentencepiece.pb.h"
 #include "common.h"
 #include "filesystem.h"
 #include "init.h"
+#include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/flags/flag.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_join.h"
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
   std::vector<int> ids;
   std::vector<std::vector<std::string>> nbest_sps;
   std::vector<std::vector<int>> nbest_ids;
-  std::unordered_map<std::string, int> vocab;
+  absl::flat_hash_map<std::string, int> vocab;
   sentencepiece::SentencePieceText spt;
   sentencepiece::NBestSentencePieceText nbest_spt;
   std::function<void(const std::string &line)> process;

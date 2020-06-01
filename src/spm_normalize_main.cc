@@ -13,12 +13,12 @@
 // limitations under the License.!
 
 #include "builder.h"
-#include "builtin_pb/sentencepiece.pb.h"
-#include "builtin_pb/sentencepiece_model.pb.h"
 #include "common.h"
 #include "filesystem.h"
 #include "init.h"
 #include "normalizer.h"
+#include "sentencepiece.pb.h"
+#include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/flags/flag.h"

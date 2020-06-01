@@ -19,13 +19,13 @@
 #include <memory>
 #include <numeric>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "normalizer.h"
 #include "pretokenizer_for_training.h"
 #include "sentencepiece_trainer.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/esaxx/esa.hxx"  // Suffix array library.
 #include "unicode_script.h"
@@ -107,7 +107,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
 
   // Merges all sentences into one array with 0x0000 delimiter.
   std::vector<char32> array;
-  std::unordered_map<std::string, int64> all_chars;
+  absl::flat_hash_map<std::string, int64> all_chars;
   constexpr char32 kSentenceBoundary = 0x0000;
 
   for (const auto &w : sentences_) {
@@ -421,9 +421,9 @@ TrainerModel::SentencePieces Trainer::PruneSentencePieces(
 TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
     const TrainerModel &model) const {
   const auto &sentencepieces = model.GetSentencePieces();
-  std::unordered_map<std::string, float> final_sentencepieces;
-  std::unordered_map<std::string, float> sp(sentencepieces.begin(),
-                                            sentencepieces.end());
+  absl::flat_hash_map<std::string, float> final_sentencepieces;
+  absl::flat_hash_map<std::string, float> sp(sentencepieces.begin(),
+                                             sentencepieces.end());
 
   // required_chars_ must be included in the final sentencepieces.
   float min_score_penalty = 0.0;

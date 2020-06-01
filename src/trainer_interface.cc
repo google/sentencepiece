@@ -16,7 +16,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -26,6 +25,7 @@
 #include "normalizer.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -434,7 +434,7 @@ END:
   // Count character frequencies.
   int64 all_chars_count = 0;
   // A map from a character to {is_required_char, character count}.
-  std::unordered_map<char32, std::pair<bool, int64>> chars_count;
+  absl::flat_hash_map<char32, std::pair<bool, int64>> chars_count;
   for (const char32 c :
        string_util::UTF8ToUnicodeText(trainer_spec_.required_chars())) {
     CHECK_OR_RETURN(string_util::IsValidCodepoint(c));
@@ -526,7 +526,7 @@ END:
 void TrainerInterface::SplitSentencesByWhitespace() {
   LOG(INFO) << "Tokenizing input sentences with whitespace: "
             << sentences_.size();
-  std::unordered_map<std::string, int64> tokens;
+  absl::flat_hash_map<std::string, int64> tokens;
   for (const auto &s : sentences_) {
     for (const auto &w :
          SplitIntoWords(s.first, trainer_spec_.treat_whitespace_as_suffix())) {

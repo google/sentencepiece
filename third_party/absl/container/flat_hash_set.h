@@ -12,23 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#ifndef WORD_MODEL_H_
-#define WORD_MODEL_H_
+#ifndef ABSL_CONTAINER_FLAT_HASH_SET_
+#define ABSL_CONTAINER_FLAT_HASH_SET_
 
-#include "model_interface.h"
-#include "sentencepiece_model.pb.h"
+#include <unordered_set>
 
-namespace sentencepiece {
-namespace word {
+namespace absl {
 
-// Tokenize text with whitespaces.
-class Model : public ModelInterface {
- public:
-  explicit Model(const ModelProto &model_proto);
-  ~Model() override;
+template <typename T, typename Hash = std::hash<T>,
+          typename Eq = std::equal_to<T>,
+          typename Allocator = std::allocator<T>>
+using flat_hash_set = std::unordered_set<T, Hash, Eq, Allocator>;
 
-  EncodeResult Encode(absl::string_view normalized) const override;
-};
-}  // namespace word
-}  // namespace sentencepiece
-#endif  // WORD_MODEL_H_
+}
+
+#endif  // ABSL_CONTAINER_FLAT_HASH_SET_

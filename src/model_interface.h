@@ -18,14 +18,14 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "builtin_pb/sentencepiece_model.pb.h"
 #include "common.h"
 #include "normalizer.h"
+#include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
 #include "util.h"
@@ -52,8 +52,8 @@ class ModelProto;
 // Given a normalized string, returns a sequence of sentence pieces with ids.
 class ModelInterface {
  public:
-  using PieceToIdMap =
-      std::unordered_map<absl::string_view, int, string_util::string_view_hash>;
+  using PieceToIdMap = absl::flat_hash_map<absl::string_view, int,
+                                           string_util::string_view_hash>;
 
   absl::string_view unk_piece() const;
   absl::string_view bos_piece() const;
