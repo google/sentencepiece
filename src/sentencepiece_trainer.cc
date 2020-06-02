@@ -108,7 +108,7 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
 
   if (args.empty()) return util::OkStatus();
 
-  absl::flat_hash_map<std::string, std::string> kwargs;
+  std::unordered_map<std::string, std::string> kwargs;
   for (auto arg : absl::StrSplit(args, " ")) {
     absl::ConsumePrefix(&arg, "--");
     std::string key, value;
@@ -128,7 +128,7 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
 
 // static
 util::Status SentencePieceTrainer::MergeSpecsFromArgs(
-    const absl::flat_hash_map<std::string, std::string> &kwargs,
+    const std::unordered_map<std::string, std::string> &kwargs,
     TrainerSpec *trainer_spec, NormalizerSpec *normalizer_spec,
     NormalizerSpec *denormalizer_spec) {
   CHECK_OR_RETURN(trainer_spec) << "`trainer_spec` must not be null.";
@@ -188,7 +188,7 @@ util::Status SentencePieceTrainer::Train(absl::string_view args,
 
 // static
 util::Status SentencePieceTrainer::Train(
-    const absl::flat_hash_map<std::string, std::string> &kwargs,
+    const std::unordered_map<std::string, std::string> &kwargs,
     SentenceIterator *sentence_iterator, std::string *serialized_model_proto) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
@@ -230,7 +230,7 @@ util::Status SentencePieceTrainer::PopulateNormalizerSpec(
 // static
 util::Status SentencePieceTrainer::PopulateModelTypeFromString(
     absl::string_view type, TrainerSpec *spec) {
-  static const absl::flat_hash_map<std::string, TrainerSpec::ModelType>
+  static const std::unordered_map<std::string, TrainerSpec::ModelType>
       kModelTypeMap = {{"unigram", TrainerSpec::UNIGRAM},
                        {"bpe", TrainerSpec::BPE},
                        {"word", TrainerSpec::WORD},
