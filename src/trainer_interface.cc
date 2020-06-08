@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "trainer_interface.h"
+
 #include <cstdlib>
 #include <memory>
 #include <set>
@@ -32,7 +34,6 @@
 #include "third_party/absl/strings/str_format.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_split.h"
-#include "trainer_interface.h"
 #include "unicode_script.h"
 #include "util.h"
 
@@ -55,16 +56,6 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
       trainer_spec.model_type() == TrainerSpec::BPE) {
     CHECK_OR_RETURN(!trainer_spec.use_all_vocab())
         << "--use_all_vocab=true is valid for WORD/CHAR model.";
-  }
-
-  if (trainer_spec.has_mining_sentence_size()) {
-    LOG(WARNING)
-        << "--mining_sentence_size() is deprecated. Use --input_sentence_size";
-  }
-
-  if (trainer_spec.has_training_sentence_size()) {
-    LOG(WARNING) << "--training_sentence_size() is deprecated. Use "
-                    "--input_sentence_size";
   }
 
 #define CHECK_RANGE(variable, minval, maxval) \
