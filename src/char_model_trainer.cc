@@ -37,7 +37,7 @@ util::Status Trainer::Train() {
     sum += it.second;
   }
 
-  const float logsum = log(sum);
+  const auto logsum = std::log(static_cast<float>(sum));
 
   CHECK_OR_RETURN(final_pieces_.empty());
   for (const auto &it : Sorted(required_chars_)) {
@@ -46,7 +46,7 @@ util::Status Trainer::Train() {
       break;
     }
     final_pieces_.emplace_back(string_util::UnicodeCharToUTF8(it.first),
-                               log(it.second) - logsum);
+                               std::log(static_cast<float>(it.second)) - logsum);
   }
 
   if (trainer_spec_.use_all_vocab()) {

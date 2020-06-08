@@ -43,7 +43,7 @@ double Digamma(double x) {
   const double xx = 1.0 / x;
   const double xx2 = xx * xx;
   const double xx4 = xx2 * xx2;
-  result += log(x) + (1.0 / 24.0) * xx2 - (7.0 / 960.0) * xx4 +
+  result += std::log(x) + (1.0 / 24.0) * xx2 - (7.0 / 960.0) * xx4 +
             (31.0 / 8064.0) * xx4 * xx2 - (127.0 / 30720.0) * xx4 * xx4;
   return result;
 }
