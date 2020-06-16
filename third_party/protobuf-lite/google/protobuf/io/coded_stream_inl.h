@@ -28,68 +28,63 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <google/protobuf/generated_enum_util.h>
+// Author: jasonh@google.com (Jason Hsueh)
+//
+// Implements methods of coded_stream.h that need to be inlined for performance
+// reasons, but should not be defined in a public header.
 
-#include <algorithm>
+#ifndef GOOGLE_PROTOBUF_IO_CODED_STREAM_INL_H__
+#define GOOGLE_PROTOBUF_IO_CODED_STREAM_INL_H__
 
-#include <google/protobuf/generated_message_util.h>
+#include <google/protobuf/stubs/logging.h>
+#include <google/protobuf/stubs/common.h>
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
+#include <string>
+#include <google/protobuf/stubs/stl_util.h>
 
 namespace google {
 namespace protobuf {
-namespace internal {
-namespace {
+namespace io {
 
-bool EnumCompareByName(const EnumEntry& a, const EnumEntry& b) {
-  return StringPiece(a.name) < StringPiece(b.name);
-}
+inline bool CodedInputStream::InternalReadStringInline(string* buffer,
+                                                       int size) {
+  if (size < 0) return false;  // security: size is often user-supplied
 
-// Gets the numeric value of the EnumEntry at the given index, but returns a
-// special value for the index -1. This gives a way to use std::lower_bound on a
-// sorted array of indices while searching for value that we associate with -1.
-int GetValue(const EnumEntry* enums, int i, int target) {
-  if (i == -1) {
-    return target;
-  } else {
-    return enums[i].value;
-  }
-}
-
-}  // namespace
-
-bool LookUpEnumValue(const EnumEntry* enums, size_t size,
-                     StringPiece name, int* value) {
-  EnumEntry target{name, 0};
-  auto it = std::lower_bound(enums, enums + size, target, EnumCompareByName);
-  if (it != enums + size && it->name == name) {
-    *value = it->value;
+  if (BufferSize() >= size) {
+    STLStringResizeUninitialized(buffer, size);
+    std::pair<char*, bool> z = as_string_data(buffer);
+    if (z.second) {
+      // Oddly enough, memcpy() requires its first two args to be non-NULL even
+      // if we copy 0 bytes.  So, we have ensured that z.first is non-NULL here.
+      GOOGLE_DCHECK(z.first != NULL);
+      memcpy(z.first, buffer_, size);
+      Advance(size);
+    }
     return true;
   }
-  return false;
+
+  return ReadStringFallback(buffer, size);
 }
 
-int LookUpEnumName(const EnumEntry* enums, const int* sorted_indices,
-                   size_t size, int value) {
-  auto comparator = [enums, value](int a, int b) {
-    return GetValue(enums, a, value) < GetValue(enums, b, value);
-  };
-  auto it =
-      std::lower_bound(sorted_indices, sorted_indices + size, -1, comparator);
-  if (it != sorted_indices + size && enums[*it].value == value) {
-    return it - sorted_indices;
+inline bool CodedInputStream::InternalReadRawInline(void* buffer, int size) {
+  int current_buffer_size;
+  while ((current_buffer_size = BufferSize()) < size) {
+    // Reading past end of buffer.  Copy what we have, then refresh.
+    memcpy(buffer, buffer_, current_buffer_size);
+    buffer = reinterpret_cast<uint8*>(buffer) + current_buffer_size;
+    size -= current_buffer_size;
+    Advance(current_buffer_size);
+    if (!Refresh()) return false;
   }
-  return -1;
-}
 
-bool InitializeEnumStrings(
-    const EnumEntry* enums, const int* sorted_indices, size_t size,
-    internal::ExplicitlyConstructed<std::string>* enum_strings) {
-  for (int i = 0; i < size; ++i) {
-    enum_strings[i].Construct(enums[sorted_indices[i]].name);
-    internal::OnShutdownDestroyString(enum_strings[i].get_mutable());
-  }
+  memcpy(buffer, buffer_, size);
+  Advance(size);
+
   return true;
 }
 
-}  // namespace internal
+}  // namespace io
 }  // namespace protobuf
 }  // namespace google
+#endif  // GOOGLE_PROTOBUF_IO_CODED_STREAM_INL_H__

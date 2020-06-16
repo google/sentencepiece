@@ -33,8 +33,6 @@
 #include <string.h>
 #include <algorithm>
 
-#include <google/protobuf/stubs/logging.h>
-
 namespace google {
 namespace protobuf {
 namespace strings {
@@ -115,7 +113,7 @@ char* GrowingArrayByteSink::GetBuffer(size_t* nbytes) {
   ShrinkToFit();
   char* b = buf_;
   *nbytes = size_;
-  buf_ = nullptr;
+  buf_ = NULL;
   size_ = capacity_ = 0;
   return b;
 }

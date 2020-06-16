@@ -142,12 +142,12 @@ string FormatNanos(int32 nanos) {
 
 // Parses an integer from a null-terminated char sequence. The method
 // consumes at most "width" chars. Returns a pointer after the consumed
-// integer, or nullptr if the data does not start with an integer or the
+// integer, or NULL if the data does not start with an integer or the
 // integer value does not fall in the range of [min_value, max_value].
 const char* ParseInt(const char* data, int width, int min_value,
                      int max_value, int* result) {
   if (!ascii_isdigit(*data)) {
-    return nullptr;
+    return NULL;
   }
   int value = 0;
   for (int i = 0; i < width; ++i, ++data) {
@@ -161,7 +161,7 @@ const char* ParseInt(const char* data, int width, int min_value,
     *result = value;
     return data;
   } else {
-    return nullptr;
+    return NULL;
   }
 }
 
@@ -169,7 +169,7 @@ const char* ParseInt(const char* data, int width, int min_value,
 // "010" will be parsed to 10000000 nanos.
 const char* ParseNanos(const char* data, int32* nanos) {
   if (!ascii_isdigit(*data)) {
-    return nullptr;
+    return NULL;
   }
   int value = 0;
   int len = 0;
@@ -193,15 +193,15 @@ const char* ParseNanos(const char* data, int32* nanos) {
 const char* ParseTimezoneOffset(const char* data, int64* offset) {
   // Accept format "HH:MM". E.g., "08:00"
   int hour;
-  if ((data = ParseInt(data, 2, 0, 23, &hour)) == nullptr) {
-    return nullptr;
+  if ((data = ParseInt(data, 2, 0, 23, &hour)) == NULL) {
+    return NULL;
   }
   if (*data++ != ':') {
-    return nullptr;
+    return NULL;
   }
   int minute;
-  if ((data = ParseInt(data, 2, 0, 59, &minute)) == nullptr) {
-    return nullptr;
+  if ((data = ParseInt(data, 2, 0, 59, &minute)) == NULL) {
+    return NULL;
   }
   *offset = (hour * 60 + minute) * 60;
   return data;
@@ -212,7 +212,7 @@ bool SecondsToDateTime(int64 seconds, DateTime* time) {
   if (seconds < kMinTime || seconds > kMaxTime) {
     return false;
   }
-  // It's easier to calculate the DateTime starting from 0001-01-01T00:00:00
+  // It's easier to calcuate the DateTime starting from 0001-01-01T00:00:00
   seconds = seconds + kSecondsFromEraToEpoch;
   int year = 1;
   if (seconds >= kSecondsPer400Years) {
@@ -264,7 +264,7 @@ bool DateTimeToSeconds(const DateTime& time, int64* seconds) {
 void GetCurrentTime(int64* seconds, int32* nanos) {
   // TODO(xiaofeng): Improve the accuracy of this implementation (or just
   // remove this method from protobuf).
-  *seconds = time(nullptr);
+  *seconds = time(NULL);
   *nanos = 0;
 }
 
@@ -290,37 +290,37 @@ bool ParseTime(const string& value, int64* seconds, int32* nanos) {
   //   With UTC offset: 2015-05-20T13:29:35.120-08:00
 
   // Parse year
-  if ((data = ParseInt(data, 4, 1, 9999, &time.year)) == nullptr) {
+  if ((data = ParseInt(data, 4, 1, 9999, &time.year)) == NULL) {
     return false;
   }
   // Expect '-'
   if (*data++ != '-') return false;
   // Parse month
-  if ((data = ParseInt(data, 2, 1, 12, &time.month)) == nullptr) {
+  if ((data = ParseInt(data, 2, 1, 12, &time.month)) == NULL) {
     return false;
   }
   // Expect '-'
   if (*data++ != '-') return false;
   // Parse day
-  if ((data = ParseInt(data, 2, 1, 31, &time.day)) == nullptr) {
+  if ((data = ParseInt(data, 2, 1, 31, &time.day)) == NULL) {
     return false;
   }
   // Expect 'T'
   if (*data++ != 'T') return false;
   // Parse hour
-  if ((data = ParseInt(data, 2, 0, 23, &time.hour)) == nullptr) {
+  if ((data = ParseInt(data, 2, 0, 23, &time.hour)) == NULL) {
     return false;
   }
   // Expect ':'
   if (*data++ != ':') return false;
   // Parse minute
-  if ((data = ParseInt(data, 2, 0, 59, &time.minute)) == nullptr) {
+  if ((data = ParseInt(data, 2, 0, 59, &time.minute)) == NULL) {
     return false;
   }
   // Expect ':'
   if (*data++ != ':') return false;
   // Parse second
-  if ((data = ParseInt(data, 2, 0, 59, &time.second)) == nullptr) {
+  if ((data = ParseInt(data, 2, 0, 59, &time.second)) == NULL) {
     return false;
   }
   if (!DateTimeToSeconds(time, seconds)) {
@@ -330,7 +330,7 @@ bool ParseTime(const string& value, int64* seconds, int32* nanos) {
   if (*data == '.') {
     ++data;
     // Parse nanoseconds.
-    if ((data = ParseNanos(data, nanos)) == nullptr) {
+    if ((data = ParseNanos(data, nanos)) == NULL) {
       return false;
     }
   } else {
@@ -342,14 +342,14 @@ bool ParseTime(const string& value, int64* seconds, int32* nanos) {
   } else if (*data == '+') {
     ++data;
     int64 offset;
-    if ((data = ParseTimezoneOffset(data, &offset)) == nullptr) {
+    if ((data = ParseTimezoneOffset(data, &offset)) == NULL) {
       return false;
     }
     *seconds -= offset;
   } else if (*data == '-') {
     ++data;
     int64 offset;
-    if ((data = ParseTimezoneOffset(data, &offset)) == nullptr) {
+    if ((data = ParseTimezoneOffset(data, &offset)) == NULL) {
       return false;
     }
     *seconds += offset;

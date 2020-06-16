@@ -31,15 +31,13 @@
 #ifndef GOOGLE_PROTOBUF_CASTS_H__
 #define GOOGLE_PROTOBUF_CASTS_H__
 
-#include <google/protobuf/stubs/common.h>
-
-#include <google/protobuf/port_def.inc>
 #include <type_traits>
+
+#include <google/protobuf/stubs/common.h>
 
 namespace google {
 namespace protobuf {
 namespace internal {
-
 // Use implicit_cast as a safe version of static_cast or const_cast
 // for upcasting in the type hierarchy (i.e. casting a pointer to Foo
 // to a pointer to SuperclassOfFoo or casting a pointer to Foo to
@@ -90,8 +88,8 @@ inline To down_cast(From* f) {                   // so we only accept pointers
     implicit_cast<From*, To>(0);
   }
 
-#if !defined(NDEBUG) && PROTOBUF_RTTI
-  assert(f == nullptr || dynamic_cast<To>(f) != nullptr);  // RTTI: debug mode only!
+#if !defined(NDEBUG) && !defined(GOOGLE_PROTOBUF_NO_RTTI)
+  assert(f == NULL || dynamic_cast<To>(f) != NULL);  // RTTI: debug mode only!
 #endif
   return static_cast<To>(f);
 }
@@ -107,9 +105,9 @@ inline To down_cast(From& f) {
     implicit_cast<From*, ToAsPointer>(0);
   }
 
-#if !defined(NDEBUG) && PROTOBUF_RTTI
+#if !defined(NDEBUG) && !defined(GOOGLE_PROTOBUF_NO_RTTI)
   // RTTI: debug mode only!
-  assert(dynamic_cast<ToAsPointer>(&f) != nullptr);
+  assert(dynamic_cast<ToAsPointer>(&f) != NULL);
 #endif
   return *static_cast<ToAsPointer>(&f);
 }
@@ -133,7 +131,4 @@ using internal::bit_cast;
 
 }  // namespace protobuf
 }  // namespace google
-
-#include <google/protobuf/port_undef.inc>
-
 #endif  // GOOGLE_PROTOBUF_CASTS_H__

@@ -28,16 +28,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// A common header that is included across all protobuf headers.  We do our best
-// to avoid #defining any macros here; instead we generally put macros in
-// port_def.inc and port_undef.inc so they are not visible from outside of
-// protobuf.
+// The ArenaString implementation is not included in the open-source release. Do
+// not include this file in the distribution.
 
-#ifndef GOOGLE_PROTOBUF_PORT_H__
-#define GOOGLE_PROTOBUF_PORT_H__
+#include <google/protobuf/arenastring.h>
 
-
-#include <google/protobuf/stubs/port.h>
+namespace google {
+namespace protobuf {
+namespace internal {
 
 
-#endif  // GOOGLE_PROTOBUF_PORT_H__
+}  // namespace internal
+}  // namespace protobuf
+}  // namespace google
