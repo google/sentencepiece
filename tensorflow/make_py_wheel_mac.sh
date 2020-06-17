@@ -51,7 +51,7 @@ build_tf_wrapper() {
 }
 
 build() {
-  VERSION="3.7.0"
+  VERSION="3.7"
   URL="https://www.python.org/ftp/python/3.7.0/python-3.7.0-macosx10.6.pkg"
   INSTALL_PATH="/Library/Frameworks/Python.framework/Versions/${VERSION}/bin"
   CURRENT_PATH=${PATH}
