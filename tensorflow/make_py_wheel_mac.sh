@@ -65,6 +65,8 @@ build() {
     ln -s ${INSTALL_PATH}/pip3           ${INSTALL_PATH}/pip
   fi
 
+  curl -L -O https://bootstrap.pypa.io/get-pip.py
+
   export PATH="${INSTALL_PATH}:${CURRENT_PATH}"
   ls -l ${INSTALL_PATH}
   which python
@@ -86,6 +88,7 @@ build() {
   make install
   cd ..
 
+  # Remove pre-installed Linux so files.
   rm -f tf_sentencepiece/*.so
 
   build_tf_wrapper "2.2.0"
