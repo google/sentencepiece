@@ -70,7 +70,9 @@ build() {
   sudo python get-pip.py --no-setuptools --no-wheel --ignore-installed
   pip install --upgrade setuptools
   pip install wheel
+  rm -f tf_sentencepiece/*.so
 
+  build_tf_wrapper "2.2.0"
   build_tf_wrapper "2.1.0"
 #  build_tf_wrapper "2.0.1"
   build_tf_wrapper "2.0.0"
