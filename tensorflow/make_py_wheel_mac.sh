@@ -89,7 +89,7 @@ build() {
   cd ..
 
   # Remove pre-installed Linux so files.
-  rm -f tf_sentencepiece/*.so
+  rm -f tf_sentencepiece/*.so.*
 
   build_tf_wrapper "2.2.0"
   build_tf_wrapper "2.1.0"
