@@ -207,6 +207,7 @@ util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
   PARSE_BOOL(split_by_unicode_script);
   PARSE_BOOL(split_by_number);
   PARSE_BOOL(split_by_whitespace);
+  PARSE_BOOL(split_digits);
   PARSE_BOOL(treat_whitespace_as_suffix);
   PARSE_REPEATED_STRING(control_symbols);
   PARSE_REPEATED_STRING(user_defined_symbols);
