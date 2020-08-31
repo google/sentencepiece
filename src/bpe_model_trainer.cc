@@ -269,7 +269,7 @@ util::Status Trainer::Train() {
       const Position pos = DecodePos(encoded_pos);
 
       if (symbols_[pos.sid][pos.left] == nullptr) {
-        // left index might be NULL (set in the privous iteration)
+        // left index might be NULL (set in the previous iteration)
         // when left_symbol == right_symbol.
         continue;
       }
