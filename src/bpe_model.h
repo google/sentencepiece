@@ -37,7 +37,7 @@ class Model : public ModelInterface {
   }
 
   // Sampling with BPE-dropout: https://arxiv.org/pdf/1910.13267.pdf
-  // `alpha` is merge probability in BPE-dropout paper.
+  // `alpha` is dropout probability in BPE-dropout paper.
   // Skips merge operation with `alpha` probability.
   // When alpha <= 0.0, no sampling is performed.
   EncodeResult SampleEncode(absl::string_view normalized,

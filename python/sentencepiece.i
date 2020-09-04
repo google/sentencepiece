@@ -223,8 +223,8 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
                   nbest_size < 0: assuming that nbest_size is infinite and samples
                     from the all hypothesis (lattice) using
                     forward-filtering-and-backward-sampling algorithm.
-      alpha: Soothing parameter for unigram sampling, and merge probability for
-        BPE-dropout.
+      alpha: Soothing parameter for unigram sampling, and dropout probability of
+        merge operations for BPE-dropout.
     """
 
     _sentencepiece_processor_init_native(self)
