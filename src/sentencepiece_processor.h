@@ -285,7 +285,8 @@ class SentencePieceProcessor {
   // in https://arxiv.org/abs/1804.10959  (nbest_size < 0 means l = infinity)
   //
   // - BPE (--model_type=bpe):
-  // `alpha` is the merge probability `p` in https://arxiv.org/abs/1910.13267
+  // `alpha` is the dropout probability `p` of bpe merge operations
+  // in https://arxiv.org/abs/1910.13267
   // Nbest-based sampling is not supported so nbest_size parameter is ignored in
   // BPE.
   virtual util::Status SampleEncode(absl::string_view input, int nbest_size,
