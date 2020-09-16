@@ -73,7 +73,7 @@ build() {
 if [ "$1" = "native" ]; then
   build $2
 elif [ "$#" -eq 1 ]; then
-  run_docker quay.io/pypa/manylinux1_${1}  ${1}
+  run_docker quay.io/pypa/manylinux2014_${1}  ${1}
 else
   run_docker quay.io/pypa/manylinux1_i686 i686
   run_docker quay.io/pypa/manylinux1_x86_64 x86_64
