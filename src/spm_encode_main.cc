@@ -45,7 +45,7 @@ ABSL_FLAG(std::string, vocabulary, "",
           "tokens in \"vocabulary\" file");
 ABSL_FLAG(int32, vocabulary_threshold, 0,
           "Words with frequency < threshold will be treated as OOV");
-ABSL_FLAG(int32, generate_vocabulary, false,
+ABSL_FLAG(bool, generate_vocabulary, false,
           "Generates vocabulary file instead of segmentation");
 
 int main(int argc, char *argv[]) {
