@@ -26,6 +26,15 @@ matrix:
       env: IMAGE=ubuntu:rolling COMMAND=build_linux_clang_ubuntu
       services: docker
     - os: linux
+      arch: arm64
+      env: IMAGE=native COMMAND=build_linux_gcc_ubuntu
+    - os: linux
+      arch: ppc64le
+      env: IMAGE=native COMMAND=build_linux_gcc_ubuntu
+    - os: linux
+      arch: s390x
+      env: IMAGE=native COMMAND=build_linux_gcc_ubuntu
+    - os: linux
       env: IMAGE=x86_64 COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
       script:
         - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
