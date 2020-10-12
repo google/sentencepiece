@@ -27,7 +27,11 @@ matrix:
       services: docker
     - os: linux
       arch: arm64
-      env: IMAGE=arm64/ubuntu:rolling COMMAND=build_linux_gcc_ubuntu
+      env: IMAGE=arm64v8/ubuntu:rolling COMMAND=build_linux_gcc_ubuntu
+      services: docker
+    - os: linux
+      arch: arm64
+      env: IMAGE=arm32v7/ubuntu:rolling COMMAND=build_linux_gcc_ubuntu
       services: docker
     - os: linux
       arch: ppc64le
@@ -45,6 +49,27 @@ matrix:
       services: docker
     - os: linux
       env: IMAGE=i686 COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
+      script:
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
+        - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
+      services: docker
+    - os: linux
+      arch: arm64
+      env: IMAGE=aarch64 COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
+      script:
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
+        - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
+      services: docker
+    - os: linux
+      arch: ppc64le
+      env: IMAGE=ppc64le COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
+      script:
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
+        - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
+      services: docker
+    - os: linux
+      arch: s390x
+      env: IMAGE=s390x COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
       script:
         - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
         - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi

@@ -33,15 +33,6 @@ build() {
   mkdir -p build
   cd build
 
-  # Install cmake
-  curl -L -O https://cmake.org/files/v3.12/cmake-${CMAKE_VERSION}.tar.gz
-  tar zxfv cmake-${CMAKE_VERSION}.tar.gz
-  cd cmake-${CMAKE_VERSION}
-  ./bootstrap
-  make -j4
-  make install
-  cd ..
-
   # Install sentencepiece
   cmake ../.. -DSPM_ENABLE_SHARED=OFF
   make -j4
@@ -75,6 +66,6 @@ if [ "$1" = "native" ]; then
 elif [ "$#" -eq 1 ]; then
   run_docker quay.io/pypa/manylinux2014_${1}  ${1}
 else
-  run_docker quay.io/pypa/manylinux1_i686 i686
-  run_docker quay.io/pypa/manylinux1_x86_64 x86_64
+  run_docker quay.io/pypa/manylinux2014_i686 i686
+  run_docker quay.io/pypa/manylinux2014_x86_64 x86_64
 fi
