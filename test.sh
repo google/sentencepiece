@@ -62,15 +62,6 @@ build_python() {
   cd ..
 }
 
-build_tensorflow() {
-  cd tensorflow
-  pip3 install tensorflow
-  python3 setup.py bdist_wheel
-  python3 setup.py sdist
-  python3 setup.py test
-  cd ..
-}
-
 build_linux_gcc_coverall_ubuntu() {
   setup_debian
   apt-get install -y lcov
@@ -78,7 +69,6 @@ build_linux_gcc_coverall_ubuntu() {
   pip3 install 'requests[security]'
   build_generic
   build_python
-  build_tensorflow
   mkdir -p build
   cd build
   cmake .. -DSPM_COVERAGE=ON
@@ -89,13 +79,6 @@ build_linux_gcc_coverall_ubuntu() {
 }
 
 build_linux_gcc_ubuntu() {
-  setup_ubuntu
-  build_generic
-  build_python
-  build_tensorflow
-}
-
-build_linux_gcc_ubuntu_no_tf() {
   setup_ubuntu
   build_generic
   build_python
@@ -111,14 +94,12 @@ build_linux_gcc_debian() {
   setup_debian
   build_generic
   build_python
-  build_tensorflow
 }
 
 build_linux_gcc_fedora() {
   setup_fedora
   build_generic
   build_python
-#  build_tensorflow
 }
 
 build_linux_clang_ubuntu() {
