@@ -36,7 +36,7 @@
 #include <pthread.h>
 #endif
 
-#if !defined(__APPLE__) && BYTE_ORDER == __BIG_ENDIAN
+#if !defined(__APPLE__) && !defined(_WIN32) && BYTE_ORDER == __BIG_ENDIAN
 #define IS_BIG_ENDIAN
 #endif
 

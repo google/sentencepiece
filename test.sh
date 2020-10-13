@@ -45,7 +45,7 @@ build_generic() {
   cd build
   cmake .. -DSPM_BUILD_TEST=ON
   make -j2
-  make test
+  make CTEST_OUTPUT_ON_FAILURE=1 test
   make package_source
   cd ..
 }
