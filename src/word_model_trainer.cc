@@ -58,7 +58,8 @@ util::Status Trainer::Train() {
         final_pieces_.size() == static_cast<size_t>(vocab_size)) {
       break;
     }
-    final_pieces_.emplace_back(it.first, std::log(static_cast<float>(it.second)) - logsum);
+    final_pieces_.emplace_back(
+        it.first, std::log(static_cast<float>(it.second)) - logsum);
   }
 
   if (trainer_spec_.use_all_vocab()) {

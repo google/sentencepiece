@@ -121,7 +121,11 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
     }
   }
 
+  CHECK_LE(array.size(),
+           static_cast<size_t>(std::numeric_limits<node_int_type>::max()))
+      << "Input corpus too large, try with train_extremely_large_corpus=true";
   const node_int_type n = array.size();
+
   std::vector<node_int_type> SA(n);  // suffix array
   std::vector<node_int_type> L(n);   // left boundaries of internal node
   std::vector<node_int_type> R(n);   // right boundaries of internal node

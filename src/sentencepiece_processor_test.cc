@@ -685,6 +685,28 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
     EXPECT_EQ("ABC<UNK> DEFG HI", spt.text());
     EXPECT_EQ(8, spt.pieces_size());
   }
+
+  {
+    SentencePieceProcessor sp;
+    auto proto = absl::make_unique<ModelProto>();
+    proto->mutable_trainer_spec()->set_unk_surface("");
+    proto->mutable_normalizer_spec()->set_add_dummy_prefix(false);
+    proto->mutable_normalizer_spec()->set_remove_extra_whitespaces(false);
+    sp.Load(std::move(proto)).IgnoreError();
+
+    auto mock = absl::make_unique<DecodeMockModel>();
+    sp.SetModel(std::move(mock));
+
+    const auto normalization_spec = MakeDefaultNormalizerSpec();
+    sp.SetNormalizer(
+        absl::make_unique<normalizer::Normalizer>(normalization_spec));
+
+    SentencePieceText spt;
+
+    EXPECT_TRUE(sp.Decode(input, &spt).ok());
+    EXPECT_EQ(" ABC DEFG HI", spt.text());
+    EXPECT_EQ(8, spt.pieces_size());
+  }
 }
 
 TEST(SentencepieceProcessorTest, ByteFallbackDecodeTest) {

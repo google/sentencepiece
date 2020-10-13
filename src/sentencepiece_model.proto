@@ -19,9 +19,6 @@ option optimize_for = LITE_RUNTIME;
 
 package sentencepiece;
 
-// BEGIN GOOGLE-INTERNAL
-// LINT.IfChange
-// END GOOGLE-INTERNAL
 // TrainerSpec encodes a various parameters for SentencePiece training.
 message TrainerSpec {
   ///////////////////////////////////////////////////////////////////
@@ -249,11 +246,6 @@ message NormalizerSpec {
   // are open to third-party extensions.
   extensions 200 to max;
 }
-// BEGIN GOOGLE-INTERNAL
-// LINT.ThenChange(
-//  //depot/google3/third_party/sentencepiece/src/spm_train_main.cc,
-//  //depot/google3/third_party/sentencepiece/src/spec_parser.h)
-// END GOOGLE-INTERNAL
 
 // Proto to store samples for self-testing.
 message SelfTestData {

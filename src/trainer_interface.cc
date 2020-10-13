@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "trainer_interface.h"
-
 #include <cstdlib>
 #include <memory>
 #include <set>
@@ -34,6 +32,7 @@
 #include "third_party/absl/strings/str_format.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_split.h"
+#include "trainer_interface.h"
 #include "unicode_script.h"
 #include "util.h"
 

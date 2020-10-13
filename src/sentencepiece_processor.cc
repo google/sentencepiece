@@ -362,7 +362,7 @@ util::Status SentencePieceProcessor::PopulateSentencePieceText(
       CHECK_LE_OR_RETURN(orig_end, input.size());
       CHECK_LE_OR_RETURN(orig_begin, orig_end);
       const auto surface =
-          absl::ClippedSubstr(input.data(), orig_begin, orig_end - orig_begin);
+          absl::ClippedSubstr(input, orig_begin, orig_end - orig_begin);
 
       if (is_unk && model_->ByteFallbackEnabled()) {
         // Decomposes an unknown piece into UTF-8 bytes
@@ -520,7 +520,11 @@ util::Status SentencePieceProcessor::Decode(
       }
     }
 
-    if (is_bos_ws) {
+    if (is_bos_ws &&
+        (!model_proto_ ||
+         (model_proto_ &&
+          (model_proto_->normalizer_spec().add_dummy_prefix() ||
+           model_proto_->normalizer_spec().remove_extra_whitespaces())))) {
       // Consume if the current position is bos and
       // piece starts with kSpaceSymbol.
       absl::ConsumePrefix(&piece, kSpaceSymbol);
