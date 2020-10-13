@@ -51,7 +51,7 @@ void Normalizer::Init() {
     LOG(INFO) << "precompiled_charsmap is empty. use identity normalization.";
   } else {
     absl::string_view trie_blob, normalized;
-#ifdef __BIG_ENDIAN__
+#ifdef IS_BIG_ENDIAN
     status_ = DecodePrecompiledCharsMap(index, &trie_blob, &normalized,
                                         &precompiled_charsmap_buffer_);
 #else
@@ -264,7 +264,7 @@ std::string Normalizer::EncodePrecompiledCharsMap(
   blob.append(trie_blob.data(), trie_blob.size());
   blob.append(normalized.data(), normalized.size());
 
-#ifdef __BIG_ENDIAN__
+#ifdef IS_BIG_ENDIAN
   uint32 *data = reinterpret_cast<uint32 *>(const_cast<char *>(blob.data()));
   for (int i = 0; i <= trie_blob.size() / 4; ++i)
     data[i] = util::Swap32(data[i]);
@@ -286,7 +286,7 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
     return util::InternalError("Blob for normalization rule is broken.");
   }
 
-#ifdef __BIG_ENDIAN__
+#ifdef IS_BIG_ENDIAN
   trie_blob_size = util::Swap32(trie_blob_size);
 #endif
 
@@ -295,7 +295,7 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
 
   blob.remove_prefix(sizeof(trie_blob_size));
 
-#ifdef __BIG_ENDIAN__
+#ifdef IS_BIG_ENDIAN
   buffer->assign(blob.data(), trie_blob_size);
   uint32 *data = reinterpret_cast<uint32 *>(const_cast<char *>(buffer->data()));
   for (int i = 0; i < trie_blob_size / 4; ++i) data[i] = util::Swap32(data[i]);

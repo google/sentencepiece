@@ -36,6 +36,10 @@
 #include <pthread.h>
 #endif
 
+#if __BYTE_ORDER == __BIG_ENDIAN
+#define IS_BIG_ENDIAN
+#endif
+
 namespace sentencepiece {
 
 template <typename T>
@@ -412,7 +416,9 @@ class StatusBuilder {
 #define CHECK_GT_OR_RETURN(a, b) CHECK_OR_RETURN((a) > (b))
 #define CHECK_LT_OR_RETURN(a, b) CHECK_OR_RETURN((a) < (b))
 
+#ifdef IS_BIG_ENDIAN
 inline uint32 Swap32(uint32 x) { return __builtin_bswap32(x); }
+#endif
 
 }  // namespace util
 
