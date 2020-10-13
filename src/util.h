@@ -36,12 +36,11 @@
 #include <pthread.h>
 #endif
 
-#if __BYTE_ORDER == __BIG_ENDIAN
+#if !defined(__APPLE__) && BYTE_ORDER == __BIG_ENDIAN
 #define IS_BIG_ENDIAN
 #endif
 
 namespace sentencepiece {
-
 template <typename T>
 std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
   for (const auto n : v) {
