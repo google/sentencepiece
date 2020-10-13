@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "sentencepiece_processor.h"
+
 #include <map>
 #include <set>
 #include <utility>
@@ -22,7 +24,6 @@
 #include "model_interface.h"
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
-#include "sentencepiece_processor.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -77,6 +78,13 @@ util::Status SentencePieceProcessor::Load(
     std::unique_ptr<ModelProto> model_proto) {
   model_proto_ = std::move(model_proto);
   model_ = ModelFactory::Create(*model_proto_);
+
+  if (!model_proto_->normalizer_spec().precompiled_charsmap().empty()) {
+    RETURN_IF_ERROR(normalizer::Normalizer::MaybeSwapEndian(
+        model_proto_->mutable_normalizer_spec()->mutable_precompiled_charsmap(),
+        0));
+  }
+
   normalizer_ = absl::make_unique<normalizer::Normalizer>(
       model_proto_->normalizer_spec(), model_proto_->trainer_spec());
   if (model_proto_->has_denormalizer_spec() &&

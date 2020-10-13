@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "normalizer.h"
+
 #include <utility>
 #include <vector>
 
 #include "common.h"
-#include "normalizer.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/match.h"
 #include "third_party/absl/strings/string_view.h"
@@ -257,6 +258,9 @@ std::string Normalizer::EncodePrecompiledCharsMap(
   blob.append(string_util::EncodePOD<uint32>(trie_blob.size()));
   blob.append(trie_blob.data(), trie_blob.size());
   blob.append(normalized.data(), normalized.size());
+
+  MaybeSwapEndian(&blob, trie_blob.size()).IgnoreError();
+
   return blob;
 }
 
@@ -278,6 +282,36 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
 
   blob.remove_prefix(trie_blob_size);
   *normalized = absl::string_view(blob.data(), blob.size());
+
+  return util::OkStatus();
+}
+
+util::Status Normalizer::MaybeSwapEndian(std::string *precompiled_chars_map,
+                                         uint32 trie_blob_size) {
+#ifdef __BIG_ENDIAN__
+  auto swap32 = [](uint32 x) -> uint32 { return __builtin_bswap32(x); };
+
+  auto blob = absl::string_view(precompiled_chars_map->data(),
+                                precompiled_chars_map->size());
+
+  if (trie_blob_size == 0) {
+    if (blob.size() <= sizeof(trie_blob_size) ||
+        !string_util::DecodePOD<uint32>(
+            absl::string_view(blob.data(), sizeof(trie_blob_size)),
+            &trie_blob_size)) {
+      return util::InternalError("Blob for normalization rule is broken.");
+    }
+    trie_blob_size = swap32(trie_blob_size);
+  }
+
+  if (trie_blob_size + 1 >= precompiled_chars_map->size())
+    return util::InternalError("Blob for normalization rule is broken.");
+
+  uint32 *data = reinterpret_cast<uint32 *>(
+      const_cast<char *>(precompiled_chars_map->data()));
+  for (int i = 0; i <= trie_blob_size; ++i) data[i] = swap32(data[i]);
+
+#endif  // __BIG_ENDIAN__
 
   return util::OkStatus();
 }

@@ -95,6 +95,10 @@ class Normalizer {
 
   friend class Builder;
 
+  // Swap endian in `compiled_chars_map`. Only called big-endian machine.
+  static util::Status MaybeSwapEndian(std::string *compiled_chars_map,
+                                      uint32 trie_blob_size);
+
  private:
   FRIEND_TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest);
 

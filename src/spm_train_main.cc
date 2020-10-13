@@ -14,11 +14,13 @@
 
 #include <map>
 
+#include "filesystem.h"
 #include "init.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/flags/flag.h"
 #include "third_party/absl/strings/ascii.h"
+#include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_split.h"
 #include "util.h"
 
@@ -79,11 +81,17 @@ ABSL_FLAG(bool, treat_whitespace_as_suffix,
           "treat whitespace marker as suffix instead of prefix.");
 ABSL_FLAG(std::string, control_symbols, "",
           "comma separated list of control symbols");
+ABSL_FLAG(std::string, control_symbols_file, "",
+          "load control_symbols from file.");
 ABSL_FLAG(std::string, user_defined_symbols, "",
           "comma separated list of user defined symbols");
+ABSL_FLAG(std::string, user_defined_symbols_file, "",
+          "load user_defined_symbols from file.");
 ABSL_FLAG(std::string, required_chars, "",
           "UTF8 characters in this flag are always used in the character "
           "set regardless of --character_coverage");
+ABSL_FLAG(std::string, required_chars_file, "",
+          "load required_chars from file.");
 ABSL_FLAG(bool, byte_fallback, kDefaultTrainerSpec.byte_fallback(),
           "decompose unknown pieces into UTF-8 byte pieces");
 ABSL_FLAG(bool, vocabulary_output_piece_score,
@@ -140,6 +148,15 @@ int main(int argc, char *argv[]) {
   CHECK(!absl::GetFlag(FLAGS_input).empty());
   CHECK(!absl::GetFlag(FLAGS_model_prefix).empty());
 
+  auto load_lines = [](absl::string_view filename) {
+    std::vector<std::string> lines;
+    auto input = sentencepiece::filesystem::NewReadableFile(filename);
+    CHECK_OK(input->status());
+    std::string line;
+    while (input->ReadLine(&line)) lines.emplace_back(line);
+    return lines;
+  };
+
 // Populates the value from flags to spec.
 #define SetTrainerSpecFromFlag(name) \
   trainer_spec.set_##name(absl::GetFlag(FLAGS_##name));
@@ -147,12 +164,25 @@ int main(int argc, char *argv[]) {
 #define SetNormalizerSpecFromFlag(name) \
   normalizer_spec.set_##name(absl::GetFlag(FLAGS_##name));
 
+#define SetTrainerSpecFromFile(name)                                   \
+  if (!absl::GetFlag(FLAGS_##name##_file).empty()) {                   \
+    const auto lines = load_lines(absl::GetFlag(FLAGS_##name##_file)); \
+    trainer_spec.set_##name(absl::StrJoin(lines, ""));                 \
+  }
+
 #define SetRepeatedTrainerSpecFromFlag(name)                                \
   if (!absl::GetFlag(FLAGS_##name).empty()) {                               \
     for (const auto &v :                                                    \
          sentencepiece::util::StrSplitAsCSV(absl::GetFlag(FLAGS_##name))) { \
       trainer_spec.add_##name(v);                                           \
     }                                                                       \
+  }
+
+#define SetRepeatedTrainerSpecFromFile(name)                               \
+  if (!absl::GetFlag(FLAGS_##name##_file).empty()) {                       \
+    for (const auto &v : load_lines(absl::GetFlag(FLAGS_##name##_file))) { \
+      trainer_spec.add_##name(v);                                          \
+    }                                                                      \
   }
 
   SetRepeatedTrainerSpecFromFlag(input);
@@ -188,11 +218,15 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(pad_piece);
   SetTrainerSpecFromFlag(unk_surface);
   SetTrainerSpecFromFlag(required_chars);
+  SetTrainerSpecFromFile(required_chars);
   SetTrainerSpecFromFlag(vocabulary_output_piece_score);
   SetRepeatedTrainerSpecFromFlag(accept_language);
   SetRepeatedTrainerSpecFromFlag(control_symbols);
   SetRepeatedTrainerSpecFromFlag(user_defined_symbols);
   SetTrainerSpecFromFlag(train_extremely_large_corpus);
+
+  SetRepeatedTrainerSpecFromFile(control_symbols);
+  SetRepeatedTrainerSpecFromFile(user_defined_symbols);
 
   normalizer_spec.set_name(absl::GetFlag(FLAGS_normalization_rule_name));
   SetNormalizerSpecFromFlag(normalization_rule_tsv);
