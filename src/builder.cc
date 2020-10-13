@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "builder.h"
+
 #include <algorithm>
 #include <functional>
 #include <utility>
 
-#include "builder.h"
 #include "filesystem.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_replace.h"
@@ -218,8 +219,9 @@ util::Status Builder::DecompileCharsMap(absl::string_view blob,
   chars_map->clear();
 
   absl::string_view trie_blob, normalized;
-  RETURN_IF_ERROR(
-      Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob, &normalized));
+  std::string buf;
+  RETURN_IF_ERROR(Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob,
+                                                        &normalized, &buf));
 
   Darts::DoubleArray trie;
   trie.set_array(const_cast<char *>(trie_blob.data()),
