@@ -79,12 +79,6 @@ util::Status SentencePieceProcessor::Load(
   model_proto_ = std::move(model_proto);
   model_ = ModelFactory::Create(*model_proto_);
 
-  if (!model_proto_->normalizer_spec().precompiled_charsmap().empty()) {
-    RETURN_IF_ERROR(normalizer::Normalizer::MaybeSwapEndian(
-        model_proto_->mutable_normalizer_spec()->mutable_precompiled_charsmap(),
-        0));
-  }
-
   normalizer_ = absl::make_unique<normalizer::Normalizer>(
       model_proto_->normalizer_spec(), model_proto_->trainer_spec());
   if (model_proto_->has_denormalizer_spec() &&

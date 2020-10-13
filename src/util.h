@@ -339,7 +339,7 @@ inline std::string JoinPath(absl::string_view path) {
 }
 
 template <typename... T>
-inline std::string JoinPath(absl::string_view first, const T &... rest) {
+inline std::string JoinPath(absl::string_view first, const T &...rest) {
 #ifdef OS_WIN
   return JoinPath(first) + "\\" + JoinPath(rest...);
 #else
@@ -411,6 +411,8 @@ class StatusBuilder {
 #define CHECK_LE_OR_RETURN(a, b) CHECK_OR_RETURN((a) <= (b))
 #define CHECK_GT_OR_RETURN(a, b) CHECK_OR_RETURN((a) > (b))
 #define CHECK_LT_OR_RETURN(a, b) CHECK_OR_RETURN((a) < (b))
+
+inline uint32 Swap32(uint32 x) { return __builtin_bswap32(x); }
 
 }  // namespace util
 

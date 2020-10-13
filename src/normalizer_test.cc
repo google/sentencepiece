@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "normalizer.h"
+
 #include <vector>
 
 #include "builder.h"
-#include "normalizer.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
 #include "util.h"
@@ -358,16 +359,17 @@ TEST(NormalizerTest, NormalizeFullTest) {
 
 TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest) {
   const std::string blob = Normalizer::EncodePrecompiledCharsMap("foo", "bar");
+  std::string buf;
   absl::string_view trie_blob, normalized_blob;
-  EXPECT_TRUE(
-      Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob, &normalized_blob)
-          .ok());
+  EXPECT_TRUE(Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob,
+                                                    &normalized_blob, &buf)
+                  .ok());
   EXPECT_EQ("foo", trie_blob);
   EXPECT_EQ("bar", normalized_blob);
 
-  EXPECT_FALSE(
-      Normalizer::DecodePrecompiledCharsMap("", &trie_blob, &normalized_blob)
-          .ok());
+  EXPECT_FALSE(Normalizer::DecodePrecompiledCharsMap("", &trie_blob,
+                                                     &normalized_blob, &buf)
+                   .ok());
 }
 
 TEST(NormalizerTest, StatusTest) {

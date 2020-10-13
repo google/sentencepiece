@@ -95,10 +95,6 @@ class Normalizer {
 
   friend class Builder;
 
-  // Swap endian in `compiled_chars_map`. Only called big-endian machine.
-  static util::Status MaybeSwapEndian(std::string *compiled_chars_map,
-                                      uint32 trie_blob_size);
-
  private:
   FRIEND_TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest);
 
@@ -126,7 +122,8 @@ class Normalizer {
   // Decodes blob into trie_blob and normalized string.
   static util::Status DecodePrecompiledCharsMap(absl::string_view blob,
                                                 absl::string_view *trie_blob,
-                                                absl::string_view *normalized);
+                                                absl::string_view *normalized,
+                                                std::string *buffer = nullptr);
 
   // Maximum size of the return value of Trie, which corresponds
   // to the maximum size of shared common prefix in the chars map.
@@ -148,6 +145,11 @@ class Normalizer {
   // Split hello world into "hello_" and "world_" instead of
   // "_hello" and "_world".
   const bool treat_whitespace_as_suffix_ = false;
+
+#ifndef __BIG_ENDIAN__
+  // Stores the blob for TRIE encoded in big-endian.
+  std::string precompiled_charsmap_buffer_;
+#endif
 
   // Normalizer's status.
   util::Status status_;
