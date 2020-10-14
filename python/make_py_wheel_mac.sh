@@ -73,9 +73,9 @@ build() {
 # build_python 3.4 https://www.python.org/ftp/python/3.4.4/python-3.4.4-macosx10.6.pkg
   build_python 3.5 https://www.python.org/ftp/python/3.5.4/python-3.5.4-macosx10.6.pkg
   build_python 3.6 https://www.python.org/ftp/python/3.6.6/python-3.6.6-macosx10.6.pkg
-  build_python 3.7 https://www.python.org/ftp/python/3.7.9/python-3.7.9-macosx10.6.pkg
+  build_python 3.7 https://www.python.org/ftp/python/3.7.9/python-3.7.9-macosx10.9.pkg
   build_python 3.8 https://www.python.org/ftp/python/3.8.6/python-3.8.6-macosx10.9.pkg
-  build_python 3.8 https://www.python.org/ftp/python/3.8.0/python-3.9.0-macosx10.9.pkg
+  build_python 3.8 https://www.python.org/ftp/python/3.9.0/python-3.9.0-macosx10.9.pkg
 
   cd ..
 
