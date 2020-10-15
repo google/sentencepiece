@@ -84,7 +84,7 @@ Then, this text is segmented into small pieces, for example:
 Since the whitespace is preserved in the segmented text, we can detokenize the text without any ambiguities.
 
 ```
-  detokenized = ''.join(pieces).replace('_', ' ')
+  detokenized = ''.join(pieces).replace('▁', ' ')
 ```
 
 This feature makes it possible to perform detokenization without relying on language-specific resources.
