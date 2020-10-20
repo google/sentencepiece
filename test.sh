@@ -54,8 +54,8 @@ build_python() {
   cd build
   make install
   cd ..
-  export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-  export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+  export LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64:$LD_LIBRARY_PATH
+  export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig
   ldconfig -v
   cd python
   python3 setup.py test
