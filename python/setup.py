@@ -88,14 +88,15 @@ if os.name == 'nt':
       '..\\build\\root\\lib\\sentencepiece_train.lib'
   ]
   SENTENCEPIECE_EXT = Extension(
-      '_sentencepiece',
-      sources=['sentencepiece_wrap.cxx'],
+      'sentencepiece._sentencepiece',
+      sources=['src/sentencepiece/sentencepiece_wrap.cxx'],
       extra_compile_args=cflags,
       extra_link_args=libs)
   cmdclass = {}
 else:
   SENTENCEPIECE_EXT = Extension(
-      '_sentencepiece', sources=['sentencepiece_wrap.cxx'])
+      'sentencepiece._sentencepiece',
+      sources=['src/sentencepiece/sentencepiece_wrap.cxx'])
   cmdclass = {'build_ext': build_ext}
 
 setup(
@@ -106,11 +107,13 @@ setup(
     long_description=long_description(),
     long_description_content_type='text/markdown',
     version=version(),
+    package_dir={'': 'src'},
     url='https://github.com/google/sentencepiece',
     license='Apache',
     platforms='Unix',
     py_modules=[
-        'sentencepiece', 'sentencepiece_model_pb2', 'sentencepiece_pb2'
+        'sentencepiece/__init__', 'sentencepiece/sentencepiece_model_pb2',
+        'sentencepiece/sentencepiece_pb2'
     ],
     ext_modules=[SENTENCEPIECE_EXT],
     cmdclass=cmdclass,

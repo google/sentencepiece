@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "common.h"
+#incldue "util.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "third_party/absl/strings/string_view.h"
@@ -146,7 +147,7 @@ class Normalizer {
   // "_hello" and "_world".
   const bool treat_whitespace_as_suffix_ = false;
 
-#ifndef __BIG_ENDIAN__
+#ifdef IS_BIG_ENDIAN
   // Stores the blob for TRIE encoded in big-endian.
   std::string precompiled_charsmap_buffer_;
 #endif
