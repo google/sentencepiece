@@ -195,6 +195,13 @@ target_link_libraries(sentencepiece_train-static INTERFACE sentencepiece-static 
 if (SPM_ENABLE_SHARED)
   target_link_libraries(sentencepiece ${SPM_LIBS})
   target_link_libraries(sentencepiece_train ${SPM_LIBS} sentencepiece)
+  if ((${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armv7l") OR
+      (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "mips") OR
+      (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "m68k") OR
+      (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "ppc") OR
+      (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "sh4"))
+    list(APPEND SPM_LIBS "atomic")
+  endif()
   set(SPM_INSTALLTARGETS sentencepiece sentencepiece_train sentencepiece-static sentencepiece_train-static)
   set_target_properties(sentencepiece sentencepiece_train PROPERTIES SOVERSION 0 VERSION 0.0.0)
   set_target_properties(sentencepiece PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
