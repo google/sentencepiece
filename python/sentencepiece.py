@@ -263,10 +263,10 @@ class SentencePieceProcessor(object):
 
       if enable_sampling == True and (nbest_size is None or nbest_size == 0 or
                                           nbest_size == 1 or alpha is None or
-                                          alpha <= 0.0 or alpha > 1.0):
+                                          alpha < 0.0 or alpha > 1.0):
         raise RuntimeError(
             'When enable_sampling is True, We must specify "nbest_size > 1" or "nbest_size = -1", '
-            'and "0.0 < alpha < 1.0". "nbest_size = -1" is enabled only on unigram mode and '
+            'and "0.0 <= alpha <= 1.0". "nbest_size = -1" is enabled only on unigram mode and '
             'samples from all candidates on the lattice instead of nbest segmentations. '
         )
 
