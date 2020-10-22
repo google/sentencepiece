@@ -42,7 +42,7 @@ build() {
   for i in /opt/python/*
   do
     $i/bin/python setup.py bdist
-    strip build/*/*.so
+    strip build/*/*/*.so
     $i/bin/python setup.py bdist_wheel
     $i/bin/python setup.py test
     rm -fr build

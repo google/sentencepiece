@@ -53,9 +53,11 @@ def run_pkg_config(section, pkg_config_path=None):
 
 
 def is_sentencepiece_installed():
-  return subprocess.run(
-      'pkg-config sentencepiece --libs', shell=True,
-      check=False).returncode == 0
+  try:
+    subprocess.check_call('pkg-config sentencepiece --libs', shell=True)
+    return True
+  except subprocess.CalledProcessError:
+    return False
 
 
 class build_ext(_build_ext):
