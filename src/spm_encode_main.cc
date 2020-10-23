@@ -28,15 +28,16 @@
 #include "trainer_interface.h"
 
 ABSL_FLAG(std::string, model, "", "model file name");
-ABSL_FLAG(
-    std::string, output_format, "piece",
-    "choose from piece, id, proto, nbest_piece, nbest_id, or nbest_proto");
+ABSL_FLAG(std::string, output_format, "piece",
+          "choose from piece, id, proto, nbest_piece, nbest_id, nbest_proto,
+          "sample_piece, sample_id or sample_proto.");
 ABSL_FLAG(std::string, input, "", "input filename");
 ABSL_FLAG(std::string, output, "", "output filename");
 ABSL_FLAG(std::string, extra_options, "",
           "':' separated encoder extra options, e.g., \"reverse:bos:eos\"");
 ABSL_FLAG(int32, nbest_size, 10, "NBest size");
 ABSL_FLAG(double, alpha, 0.5, "Smoothing parameter for sampling mode.");
+ABSL_FLAG(int32, random_seed, -1, "Seed value for random generator.");
 
 // Piece restriction with vocabulary file.
 // https://github.com/rsennrich/subword-nmt#best-practice-advice-for-byte-pair-encoding-in-nmt

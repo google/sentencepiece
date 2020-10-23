@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "bpe_model.h"
+
 #include <functional>
 #include <memory>
 #include <queue>
@@ -19,7 +21,6 @@
 #include <utility>
 #include <vector>
 
-#include "bpe_model.h"
 #include "freelist.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "util.h"
@@ -132,6 +133,7 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
   std::mt19937 *rand_gen = nullptr;
   auto skip_merge = [&]() {
     if (alpha <= 0.0) return false;
+    if (alpha >= 1.0) return true;
     if (rand_gen == nullptr) rand_gen = random::GetRandomGenerator();
     std::uniform_real_distribution<> gen(0.0, 1.0);
     return gen(*rand_gen) < alpha;

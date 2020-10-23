@@ -71,3 +71,4 @@ cmake_install.cmake
 libsentencepiece.so*
 libsentencepiece_train.so*
 python/bundled
+_sentencepiece.*.so

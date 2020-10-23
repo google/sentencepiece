@@ -176,6 +176,8 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
 %ignore sentencepiece::SentencePieceProcessor::SampleEncode;
 %ignore sentencepiece::SentencePieceProcessor::NBestEncode;
 %ignore sentencepiece::SentencePieceProcessor::Decode;
+%ignore sentencepiece::SentencePieceProcessor::DecodeIds;
+%ignore sentencepiece::SentencePieceProcessor::DecodeIdsAsSerializedProto;
 %ignore sentencepiece::SentencePieceProcessor::model_proto;
 %ignore sentencepiece::SentencePieceProcessor::Load;
 %ignore sentencepiece::SentencePieceProcessor::LoadOrDie;
@@ -194,6 +196,26 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
 %extend sentencepiece::SentencePieceProcessor {
   sentencepiece::util::Status LoadFromFile(absl::string_view arg) {
     return $self->Load(arg);
+  }
+
+  std::string DecodeIdsWithCheck(
+      const std::vector<int> &ids) const {
+    for (int id : ids)
+      if (id < 0 || id >= $self->GetPieceSize())
+        throw sentencepiece::util::Status(
+            sentencepiece::util::StatusCode::kOutOfRange,
+            "piece id is out of range.");
+    return $self->DecodeIds(ids);
+  }
+
+  util::bytes DecodeIdsAsSerializedProtoWithCheck(
+      const std::vector<int> &ids) const {
+    for (int id : ids)
+      if (id < 0 || id >= $self->GetPieceSize())
+        throw sentencepiece::util::Status(
+            sentencepiece::util::StatusCode::kOutOfRange,
+            "piece id is out of range.");
+    return $self->DecodeIdsAsSerializedProto(ids);
   }
 
 %pythoncode {
@@ -264,7 +286,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
                     from the all hypothesis (lattice) using
                     forward-filtering-and-backward-sampling algorithm.
       alpha: Soothing parameter for unigram sampling, and merge probability for
-        BPE-dropout.
+             BPE-dropout (probablity 'p' in BPE-dropout paper).
     """
 
     if out_type is None:
@@ -283,12 +305,12 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
       alpha = self._alpha
 
     if enable_sampling == True and (nbest_size is None or nbest_size == 0 or
-                                        nbest_size == 1 or alpha is None or
-                                        alpha <= 0.0 or alpha > 1.0):
+                                    nbest_size == 1 or alpha is None):
       raise RuntimeError(
           'When enable_sampling is True, We must specify "nbest_size > 1" or "nbest_size = -1", '
-          'and "0.0 < alpha < 1.0". "nbest_size = -1" is enabled only on unigram mode and '
-          'samples from all candidates on the lattice instead of nbest segmentations. '
+          'and "alpha". "nbest_size" is enabled only on unigram mode ignored in BPE-dropout. '
+          'when "nbest_size = -1" , this method samples from all candidates on the lattice '
+          'instead of nbest segmentations.'
       )
 
     def _encode(text):
@@ -331,7 +353,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
     if not input:
       return self.DecodeIds([])
     elif type(input) is int:
-      return self.DecodeIds([input])
+      return self.DecodeIdsWithCheck([input])
     elif type(input) is str:
       return self.DecodePieces([input])
 
@@ -339,7 +361,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
       if not input:
         return self.DecodeIds([])
       if type(input[0]) is int:
-        return self.DecodeIds(input)
+        return self.DecodeIdsWithCheck(input)
       return self.DecodePieces(input)
 
     if type(input[0]) is list:
@@ -688,12 +710,16 @@ def _add_snake_case(classname):
 def _batchnize(classname, name):
   """Enables batch request for the method classname.name."""
   func = getattr(classname, name, None)
+  def _func(v, n):
+    if type(n) is int and (n < 0 or n >= v.piece_size()):
+      raise IndexError('piece id is out of range.')
+    return func(v, n)
 
   def _batched_func(self, arg):
     if type(arg) is list:
-      return [func(self, n) for n in arg]
+      return [_func(self, n) for n in arg]
     else:
-      return func(self, arg)
+      return _func(self, arg)
 
   setattr(classname, name, _batched_func)
 
@@ -703,6 +729,8 @@ setattr(SentencePieceProcessor, '__init__', SentencePieceProcessor.Init)
 
 SentencePieceProcessor.Tokenize = SentencePieceProcessor.Encode
 SentencePieceProcessor.Detokenize = SentencePieceProcessor.Decode
+SentencePieceProcessor.DecodeIds = SentencePieceProcessor.DecodeIdsWithCheck
+SentencePieceProcessor.DecodeIdsAsSerializedProto = SentencePieceProcessor.DecodeIdsAsSerializedProtoWithCheck
 
 for m in [
     'PieceToId', 'IdToPiece', 'GetScore', 'IsUnknown', 'IsControl', 'IsUnused',

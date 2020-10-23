@@ -12,11 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include <iostream>
-
 #include "util.h"
 
+#include <iostream>
+
 namespace sentencepiece {
+namespace {
+constexpr unsigned int kDefaultSeed = static_cast<unsigned int>(-1);
+static unsigned int g_seed = kDefaultSeed;
+}  // namespace
+
+void SetRandomGeneratorSeed(unsigned int seed) {
+  if (seed != kDefaultSeed) g_seed = seed;
+}
+
 namespace string_util {
 
 // mblen sotres the number of bytes consumed after decoding.
@@ -144,7 +153,8 @@ class RandomGeneratorStorage {
   std::mt19937 *Get() {
     auto *result = static_cast<std::mt19937 *>(pthread_getspecific(key_));
     if (result == nullptr) {
-      result = new std::mt19937(std::random_device{}());
+      result = new std::mt19937(g_seed == kDefaultSeed ? std::random_device{}()
+                                                       : g_seed);
       pthread_setspecific(key_, result);
     }
     return result;
@@ -162,7 +172,8 @@ std::mt19937 *GetRandomGenerator() {
 }
 #else
 std::mt19937 *GetRandomGenerator() {
-  thread_local static std::mt19937 mt(std::random_device{}());
+  thread_local static std::mt19937 mt(
+      g_seed == kDefaultSeed ? std::random_device{}() : g_seed);
   return &mt;
 }
 #endif

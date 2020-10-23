@@ -493,6 +493,12 @@ class SentencePieceProcessor {
   std::vector<ExtraOption> decode_extra_options_;
 };
 
+// Set seed value of random generator.
+// Do not set static_cast<unique_int>(-1),
+// as this seed is reserved for initializing from
+// std::random_device.
+void SetRandomGeneratorSeed(unsigned int seed);
+
 #ifndef SWIG
 // IO related functions to absorb model formats.
 namespace io {

@@ -372,6 +372,22 @@ class TestSentencepieceProcessor(unittest.TestCase):
       ++ids2[' '.join(sp.encode('hello world', enable_sampling=False))]
     self.assertEqual(len(ids2), 1)
 
+  def test_valid_range(self):
+    size = self.sp_.piece_size()
+    funcs = [
+        'IdToPiece', 'GetScore', 'IsUnknown', 'IsControl', 'IsUnused', 'IsByte',
+        'DecodeIds', 'DecodeIdsAsSerializedProto'
+    ]
+    for m in funcs:
+      getattr(self.sp_, m)([10, 20, 30])
+
+    for m in funcs:
+      try:
+        getattr(self.sp_, m)([size])
+        self.assertTrue(False)
+      except:
+        self.assertTrue(True)
+
 
 def suite():
   suite = unittest.TestSuite()
