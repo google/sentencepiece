@@ -29,7 +29,7 @@
 
 ABSL_FLAG(std::string, model, "", "model file name");
 ABSL_FLAG(std::string, output_format, "piece",
-          "choose from piece, id, proto, nbest_piece, nbest_id, nbest_proto,
+          "choose from piece, id, proto, nbest_piece, nbest_id, nbest_proto, "
           "sample_piece, sample_id or sample_proto.");
 ABSL_FLAG(std::string, input, "", "input filename");
 ABSL_FLAG(std::string, output, "", "output filename");
