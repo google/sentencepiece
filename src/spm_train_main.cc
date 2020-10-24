@@ -137,6 +137,7 @@ ABSL_FLAG(std::string, unk_surface, kDefaultTrainerSpec.unk_surface(),
 ABSL_FLAG(bool, train_extremely_large_corpus,
           kDefaultTrainerSpec.train_extremely_large_corpus(),
           "Increase bit depth for unigram tokenization.");
+ABSL_FLAG(int32, random_seed, -1, "Seed value for random generator.");
 
 int main(int argc, char *argv[]) {
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
@@ -147,6 +148,9 @@ int main(int argc, char *argv[]) {
 
   CHECK(!absl::GetFlag(FLAGS_input).empty());
   CHECK(!absl::GetFlag(FLAGS_model_prefix).empty());
+
+  if (absl::GetFlag(FLAGS_random_seed) != -1)
+    sentencepiece::SetRandomGeneratorSeed(absl::GetFlag(FLAGS_random_seed));
 
   auto load_lines = [](absl::string_view filename) {
     std::vector<std::string> lines;

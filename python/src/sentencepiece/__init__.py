@@ -370,6 +370,9 @@ class SentencePieceProcessor(object):
 # Register SentencePieceProcessor in _sentencepiece:
 _sentencepiece.SentencePieceProcessor_swigregister(SentencePieceProcessor)
 
+
+def SetRandomGeneratorSeed(seed):
+    return _sentencepiece.SetRandomGeneratorSeed(seed)
 class SentencePieceTrainer(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
 
@@ -516,6 +519,7 @@ for m in [
 
 _add_snake_case(SentencePieceProcessor)
 _add_snake_case(SentencePieceTrainer)
+set_random_generator_seed = SetRandomGeneratorSeed
 
 
 

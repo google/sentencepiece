@@ -49,6 +49,8 @@ std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
   return out;
 }
 
+uint32 GetRandomGeneratorSeed();
+
 // String utilities
 namespace string_util {
 
@@ -306,7 +308,7 @@ template <typename T>
 class ReservoirSampler {
  public:
   explicit ReservoirSampler(std::vector<T> *sampled, size_t size)
-      : sampled_(sampled), size_(size), engine_(std::random_device{}()) {}
+      : sampled_(sampled), size_(size), engine_(GetRandomGeneratorSeed()) {}
   explicit ReservoirSampler(std::vector<T> *sampled, size_t size, size_t seed)
       : sampled_(sampled), size_(size), engine_(seed) {}
   virtual ~ReservoirSampler() {}

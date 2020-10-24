@@ -26,6 +26,10 @@ void SetRandomGeneratorSeed(unsigned int seed) {
   if (seed != kDefaultSeed) g_seed = seed;
 }
 
+uint32 GetRandomGeneratorSeed() {
+  return g_seed == kDefaultSeed ? std::random_device{}() : g_seed;
+}
+
 namespace string_util {
 
 // mblen sotres the number of bytes consumed after decoding.
@@ -153,8 +157,7 @@ class RandomGeneratorStorage {
   std::mt19937 *Get() {
     auto *result = static_cast<std::mt19937 *>(pthread_getspecific(key_));
     if (result == nullptr) {
-      result = new std::mt19937(g_seed == kDefaultSeed ? std::random_device{}()
-                                                       : g_seed);
+      result = new std::mt19937(GetRandomGeneratorSeed());
       pthread_setspecific(key_, result);
     }
     return result;
@@ -172,8 +175,7 @@ std::mt19937 *GetRandomGenerator() {
 }
 #else
 std::mt19937 *GetRandomGenerator() {
-  thread_local static std::mt19937 mt(
-      g_seed == kDefaultSeed ? std::random_device{}() : g_seed);
+  thread_local static std::mt19937 mt(GetRandomGeneratorSeed());
   return &mt;
 }
 #endif

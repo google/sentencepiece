@@ -61,6 +61,9 @@ int main(int argc, char *argv[]) {
     rest_args.push_back(absl::GetFlag(FLAGS_input));
   }
 
+  if (absl::GetFlag(FLAGS_random_seed) != -1)
+    sentencepiece::SetRandomGeneratorSeed(absl::GetFlag(FLAGS_random_seed));
+
   if (rest_args.empty())
     rest_args.push_back("");  // empty means that reading from stdin.
 
