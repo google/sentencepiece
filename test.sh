@@ -104,13 +104,10 @@ build_linux_gcc_fedora() {
 
 build_linux_clang_ubuntu() {
   setup_ubuntu
-#  for v in 3.9 4.0 5.0 6.0; do
-  for v in 6.0; do
-    apt-get install -y clang-${v}
-    export CXX="clang++-${v}" CC="clang-${v}"
-    build_generic
-    rm -fr build
-   done
+  apt-get install -y clang
+  export CXX="clang++" CC="clang"
+  build_generic
+  rm -fr build
 }
 
 build_osx() {
