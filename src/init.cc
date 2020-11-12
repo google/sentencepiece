@@ -14,7 +14,10 @@
 
 #include "init.h"
 
+#include "common.h"
 #include "third_party/absl/flags/flag.h"
+
+ABSL_DECLARE_FLAG(int32, minloglevel);
 
 namespace sentencepiece {
 
@@ -28,5 +31,7 @@ void ParseCommandLineFlags(const char *usage, int *argc, char ***argv,
     std::copy(unused_args.begin(), unused_args.end(), argv_val);
     *argc = static_cast<int>(unused_args.size());
   }
+
+  logging::SetMinLogLevel(absl::GetFlag(FLAGS_minloglevel));
 }
 }  // namespace sentencepiece

@@ -13,7 +13,7 @@
 # limitations under the License.!
 
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-file(STRINGS "VERSION" SPM_VERSION)
+file(STRINGS "VERSION.txt" SPM_VERSION)
 message(STATUS "VERSION: ${SPM_VERSION}")
 project(sentencepiece VERSION ${SPM_VERSION} LANGUAGES C CXX)
 

@@ -132,6 +132,9 @@ enum LogSeverity {
   LOG_SEVERITY_SIZE = 4,
 };
 
+int GetMinLogLevel();
+void SetMinLogLevel(int v);
+
 inline const char *BaseName(const char *path) {
 #ifdef OS_WIN
   const char *p = strrchr(path, '\\');
@@ -144,10 +147,8 @@ inline const char *BaseName(const char *path) {
 }  // namespace logging
 }  // namespace sentencepiece
 
-ABSL_DECLARE_FLAG(int32, minloglevel);
-
 #define LOG(severity)                                                        \
-  (absl::GetFlag(FLAGS_minloglevel) >                                        \
+  (::sentencepiece::logging::GetMinLogLevel() >                              \
    ::sentencepiece::logging::LOG_##severity)                                 \
       ? 0                                                                    \
       : ::sentencepiece::error::Die(                                         \
