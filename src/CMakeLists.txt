@@ -17,6 +17,7 @@ if (SPM_USE_BUILTIN_PROTOBUF)
   set(SPM_PROTO_SRCS builtin_pb/sentencepiece.pb.cc)
   set(SPM_MODEL_PROTO_HDRS builtin_pb/sentencepiece_model.pb.h)
   set(SPM_MODEL_PROTO_SRCS builtin_pb/sentencepiece_model.pb.cc)
+  set(ABSL_FLAGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/flags/flag.cc)
   set(PROTOBUF_LITE_LIBRARY "")
   set(PROTOBUF_LITE_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/arena.cc
@@ -90,7 +91,6 @@ set(SPM_SRCS
   char_model.cc
   error.cc
   filesystem.cc
-  init.cc
   model_factory.cc
   model_interface.cc
   normalizer.cc
@@ -98,8 +98,7 @@ set(SPM_SRCS
   unigram_model.cc
   util.cc
   word_model.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/strings/string_view.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/flags/flag.cc)
+  ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/strings/string_view.cc)
 
 set(SPM_TRAIN_SRCS
   ${SPM_PROTO_HDRS}
@@ -153,7 +152,8 @@ set(SPM_TEST_SRCS
   util_test.cc
   word_model_test.cc
   word_model_trainer_test.cc
-  pretokenizer_for_training_test.cc)
+  pretokenizer_for_training_test.cc
+  ${ABSL_FLAGS_SRCS})
 
 find_package(Threads REQUIRED)
 
@@ -246,11 +246,11 @@ if (NOT MSVC)
   endif()
 endif()
 
-add_executable(spm_encode spm_encode_main.cc)
-add_executable(spm_decode spm_decode_main.cc)
-add_executable(spm_normalize spm_normalize_main.cc)
-add_executable(spm_train spm_train_main.cc)
-add_executable(spm_export_vocab spm_export_vocab_main.cc)
+add_executable(spm_encode spm_encode_main.cc ${ABSL_FLAGS_SRCS})
+add_executable(spm_decode spm_decode_main.cc ${ABSL_FLAGS_SRCS})
+add_executable(spm_normalize spm_normalize_main.cc ${ABSL_FLAGS_SRCS})
+add_executable(spm_train spm_train_main.cc ${ABSL_FLAGS_SRCS})
+add_executable(spm_export_vocab spm_export_vocab_main.cc ${ABSL_FLAGS_SRCS})
 
 target_link_libraries(spm_encode sentencepiece)
 target_link_libraries(spm_decode sentencepiece)
