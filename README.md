@@ -119,18 +119,6 @@ To enable subword regularization, you would like to integrate SentencePiece libr
 
 ## Installation
 
-### Building sentencepiece - Using vcpkg
-
-You can download and install sentencepiece using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
-
-    git clone https://github.com/Microsoft/vcpkg.git
-    cd vcpkg
-    ./bootstrap-vcpkg.sh
-    ./vcpkg integrate install
-    ./vcpkg install sentencepiece
-
-The sentencepiece port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
-
 ### Python module
 SentencePiece provides Python wrapper that supports both SentencePiece training and segmentation.
 You can install Python binary package of SentencePiece with.
@@ -141,7 +129,7 @@ You can install Python binary package of SentencePiece with.
 
 For more detail, see [Python module](python/README.md)
 
-### C++ (from source)
+### Build and install SentencePiece command line tools from C++ source
 The following tools and libraries are required to build SentencePiece:
 
 * [cmake](https://cmake.org/)
@@ -152,9 +140,11 @@ On Ubuntu, the build tools can be installed with apt-get:
 ```
 % sudo apt-get install cmake build-essential pkg-config libgoogle-perftools-dev
 ```
-#### Build and Install SentencePiece
+
+Then, you can build and install command line tools as follows.
 ```
-% cd /path/to/sentencepiece
+% git clone https://github.com/google/sentencepiece.git 
+% cd sentencepiece
 % mkdir build
 % cd build
 % cmake ..
@@ -164,8 +154,17 @@ On Ubuntu, the build tools can be installed with apt-get:
 ```
 On OSX/macOS, replace the last command with `sudo update_dyld_shared_cache`
 
-### TensorFlow module
-See [tensorflow/README.md](tensorflow/README.md)
+### Build and install using vcpkg
+
+You can download and install sentencepiece using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
+
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    ./bootstrap-vcpkg.sh
+    ./vcpkg integrate install
+    ./vcpkg install sentencepiece
+
+The sentencepiece port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
 
 ## Usage instructions
 ### Train SentencePiece Model
