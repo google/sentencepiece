@@ -66,7 +66,7 @@ class build_ext(_build_ext):
   def build_extension(self, ext):
     pkg_config_path = None
     if not is_sentencepiece_installed():
-      subprocess.run(['./build_bundled.sh', version()], check=True)
+      subprocess.check_call(['./build_bundled.sh', version()])
       pkg_config_path = './bundled/lib/pkgconfig:./bundled/lib64/pkgconfig'
 
     cflags = ['-std=c++11']
