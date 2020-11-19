@@ -30,6 +30,7 @@ cc_proto_library(
 
 cc_library(
     name = "common",
+    srcs = ["error.cc"],
     hdrs = ["common.h"],
     deps = [
         "//src/deps:basic_types",
@@ -71,16 +72,15 @@ cc_library(
             ":common",
             ":sentencepiece_cc_proto",
             ":sentencepiece_model_cc_proto",
+            "//src/deps:status",
+            "//src/deps:threadpool",
+            "//third_party/darts_clone",
             "@com_github_gflags_gflags//:gflags",
-            "@com_google_glog//:glog",
-            "@com_google_googletest//:gtest",
-            "@com_google_absl//absl/memory",
-            "@com_google_absl//absl/strings",
             "@com_google_absl//absl/container:flat_hash_map",
             "@com_google_absl//absl/container:flat_hash_set",
-            "//third_party/darts_clone",
-            "//src/deps:threadpool",
-            "//src/deps:status",
+            "@com_google_absl//absl/memory",
+            "@com_google_absl//absl/strings",
+            "@com_google_googletest//:gtest",
         ],
 )
 
@@ -118,7 +118,6 @@ cc_library(
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/container:node_hash_set",
         "@com_google_absl//absl/memory",
-        "@com_google_glog//:glog",
     ],
 )
 
@@ -130,7 +129,6 @@ cc_library(
         ":common",
         ":sentencepiece_cc_proto",
         "@com_google_absl//absl/strings",
-        "@com_google_glog//:glog",
     ],
 )
 
@@ -142,7 +140,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -158,7 +155,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -174,7 +170,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -190,7 +185,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -206,7 +200,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -222,7 +215,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -238,7 +230,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -254,7 +245,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -267,7 +257,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -283,7 +272,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -299,7 +287,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -315,7 +302,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -331,7 +317,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -347,7 +332,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -363,7 +347,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -379,7 +362,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -392,7 +374,6 @@ cc_test(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
-        "@com_google_glog//:glog",
         "@com_google_googletest//:gtest_main",
     ],
 )
