@@ -75,7 +75,6 @@ cc_library(
             "//src/deps:status",
             "//src/deps:threadpool",
             "//third_party/darts_clone",
-            "@com_github_gflags_gflags//:gflags",
             "@com_google_absl//absl/container:flat_hash_map",
             "@com_google_absl//absl/container:flat_hash_set",
             "@com_google_absl//absl/memory",
@@ -381,13 +380,19 @@ cc_test(
 cc_binary(
     name = "spm_encode",
     srcs = ["spm_encode_main.cc"],
-    deps = [":sentencepiece_processor"],
+    deps = [
+        ":sentencepiece_processor",
+        "@com_github_gflags_gflags//:gflags",
+    ],
 )
 
 cc_binary(
     name = "spm_decode",
     srcs = ["spm_decode_main.cc"],
-    deps = [":sentencepiece_processor"],
+    deps = [
+        ":sentencepiece_processor",
+        "@com_github_gflags_gflags//:gflags",
+    ],
 )
 
 cc_binary(
@@ -396,6 +401,7 @@ cc_binary(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -405,13 +411,17 @@ cc_binary(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
 cc_binary(
     name = "spm_export_vocab",
     srcs = ["spm_export_vocab_main.cc"],
-    deps = [":sentencepiece_processor"],
+    deps = [
+        ":sentencepiece_processor",
+        "@com_github_gflags_gflags//:gflags",
+    ],
 )
 
 cc_binary(
@@ -420,6 +430,7 @@ cc_binary(
     deps = [
         ":sentencepiece_processor",
         ":sentencepiece_trainer",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
