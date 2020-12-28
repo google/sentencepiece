@@ -26,12 +26,14 @@ if (SPM_USE_BUILTIN_PROTOBUF)
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/coded_stream.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/common.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/extension_set.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/generated_enum_util.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/generated_message_table_driven_lite.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/generated_message_util.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/implicit_weak_message.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/int128.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/io_win32.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/message_lite.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/parse_context.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/repeated_field.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/status.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/statusor.cc
@@ -42,6 +44,7 @@ if (SPM_USE_BUILTIN_PROTOBUF)
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/time.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/wire_format_lite.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/zero_copy_stream.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/zero_copy_stream_impl.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/zero_copy_stream_impl_lite.cc)
   if (MSVC)
     add_definitions("/DHAVE_PTHREAD /wd4018 /wd4514")
