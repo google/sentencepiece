@@ -28,28 +28,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GOOGLE_PROTOBUF_STUBS_ONCE_H__
-#define GOOGLE_PROTOBUF_STUBS_ONCE_H__
+// A common header that is included across all protobuf headers.  We do our best
+// to avoid #defining any macros here; instead we generally put macros in
+// port_def.inc and port_undef.inc so they are not visible from outside of
+// protobuf.
 
-#include <mutex>
-#include <utility>
+#ifndef GOOGLE_PROTOBUF_PORT_H__
+#define GOOGLE_PROTOBUF_PORT_H__
 
-#include <google/protobuf/port_def.inc>
 
-namespace google {
-namespace protobuf {
-namespace internal {
+#include <google/protobuf/stubs/port.h>
 
-using once_flag = std::once_flag;
-template <typename... Args>
-void call_once(Args&&... args ) {
-  std::call_once(std::forward<Args>(args)...);
-}
 
-}  // namespace internal
-}  // namespace protobuf
-}  // namespace google
-
-#include <google/protobuf/port_undef.inc>
-
-#endif  // GOOGLE_PROTOBUF_STUBS_ONCE_H__
+#endif  // GOOGLE_PROTOBUF_PORT_H__
