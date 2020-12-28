@@ -35,13 +35,17 @@ inline std::string StrCat(absl::string_view str) {
 }
 
 template <typename... T>
-inline std::string StrCat(absl::string_view first, const T &... rest) {
+inline std::string StrCat(absl::string_view first, const T &...rest) {
   return StrCat(first) + StrCat(rest...);
 }
 
 template <typename... T>
-inline std::string StrCat(int first, const T &... rest) {
+inline std::string StrCat(int first, const T &...rest) {
   return StrCat(first) + StrCat(rest...);
+}
+
+inline void StrAppend(std::string *base, absl::string_view str) {
+  base->append(str.data(), str.size());
 }
 
 }  // namespace absl
