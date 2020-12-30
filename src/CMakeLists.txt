@@ -17,6 +17,7 @@ if (SPM_USE_BUILTIN_PROTOBUF)
   set(SPM_PROTO_SRCS builtin_pb/sentencepiece.pb.cc)
   set(SPM_MODEL_PROTO_HDRS builtin_pb/sentencepiece_model.pb.h)
   set(SPM_MODEL_PROTO_SRCS builtin_pb/sentencepiece_model.pb.cc)
+  set(ABSL_FLAGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/flags/flag.cc)
   set(PROTOBUF_LITE_LIBRARY "")
   set(PROTOBUF_LITE_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/arena.cc
