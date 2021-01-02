@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
+set(ABSL_FLAGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/flags/flag.cc)
+set(ABSL_STRINGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/strings/string_view.cc)
+
 if (SPM_USE_BUILTIN_PROTOBUF)
   set(SPM_PROTO_HDRS builtin_pb/sentencepiece.pb.h)
   set(SPM_PROTO_SRCS builtin_pb/sentencepiece.pb.cc)
   set(SPM_MODEL_PROTO_HDRS builtin_pb/sentencepiece_model.pb.h)
   set(SPM_MODEL_PROTO_SRCS builtin_pb/sentencepiece_model.pb.cc)
-  set(ABSL_FLAGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/flags/flag.cc)
   set(PROTOBUF_LITE_LIBRARY "")
   set(PROTOBUF_LITE_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/arena.cc
@@ -51,6 +53,7 @@ if (SPM_USE_BUILTIN_PROTOBUF)
   else()
     add_definitions("-pthread -DHAVE_PTHREAD=1 -Wno-sign-compare")
   endif()
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite)
   include_directories(builtin_pb)
 else()
@@ -58,9 +61,9 @@ else()
   include_directories(${Protobuf_INCLUDE_DIRS})
   protobuf_generate_cpp(SPM_PROTO_SRCS SPM_PROTO_HDRS sentencepiece.proto)
   protobuf_generate_cpp(SPM_MODEL_PROTO_SRCS SPM_MODEL_PROTO_HDRS sentencepiece_model.proto)
-  set(ABSL_FLAGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/flags/flag.cc)
   set(PROTOBUF_LITE_SRCS "")
   include_directories(${PROTOBUF_INCLUDE_DIR})
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -101,8 +104,7 @@ set(SPM_SRCS
   sentencepiece_processor.cc
   unigram_model.cc
   util.cc
-  word_model.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/strings/string_view.cc)
+  word_model.cc)
 
 set(SPM_TRAIN_SRCS
   ${SPM_PROTO_HDRS}
@@ -156,12 +158,12 @@ set(SPM_TEST_SRCS
   util_test.cc
   word_model_test.cc
   word_model_trainer_test.cc
-  pretokenizer_for_training_test.cc
-  ${ABSL_FLAGS_SRCS})
+  pretokenizer_for_training_test.cc)
 
 find_package(Threads REQUIRED)
 
 set(SPM_LIBS ${PROTOBUF_LITE_LIBRARY} Threads::Threads)
+ # absl::strings absl::flags absl::flags_parse)
 
 if (SPM_ENABLE_NFKC_COMPILE)
   find_package(ICU 4.4 COMPONENTS i18n data uc REQUIRED)
@@ -185,6 +187,9 @@ if (SPM_ENABLE_TCMALLOC)
   endif()
 endif()
 
+add_library(absl_flags-static STATIC ${ABSL_FLAGS_SRCS})
+add_library(absl_strings-static STATIC ${ABSL_STRINGS_SRCS})
+
 if (SPM_ENABLE_SHARED)
   add_library(sentencepiece SHARED ${SPM_SRCS})
   add_library(sentencepiece_train SHARED ${SPM_TRAIN_SRCS})
@@ -193,12 +198,12 @@ endif()
 add_library(sentencepiece-static STATIC ${SPM_SRCS})
 add_library(sentencepiece_train-static STATIC ${SPM_TRAIN_SRCS})
 
-target_link_libraries(sentencepiece-static INTERFACE ${SPM_LIBS})
-target_link_libraries(sentencepiece_train-static INTERFACE sentencepiece-static ${SPM_LIBS})
+target_link_libraries(sentencepiece-static INTERFACE ${SPM_LIBS} absl_strings-static)
+target_link_libraries(sentencepiece_train-static INTERFACE sentencepiece-static ${SPM_LIBS} absl_strings-static)
 
 if (SPM_ENABLE_SHARED)
-  target_link_libraries(sentencepiece ${SPM_LIBS})
-  target_link_libraries(sentencepiece_train ${SPM_LIBS} sentencepiece)
+  target_link_libraries(sentencepiece ${SPM_LIBS} absl_strings-static)
+  target_link_libraries(sentencepiece_train ${SPM_LIBS} sentencepiece absl_strings-static)
   if ((${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armv7l") OR
       (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "mips") OR
       (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "m68k") OR
@@ -250,17 +255,17 @@ if (NOT MSVC)
   endif()
 endif()
 
-add_executable(spm_encode spm_encode_main.cc ${ABSL_FLAGS_SRCS})
-add_executable(spm_decode spm_decode_main.cc ${ABSL_FLAGS_SRCS})
-add_executable(spm_normalize spm_normalize_main.cc ${ABSL_FLAGS_SRCS})
-add_executable(spm_train spm_train_main.cc ${ABSL_FLAGS_SRCS})
-add_executable(spm_export_vocab spm_export_vocab_main.cc ${ABSL_FLAGS_SRCS})
+add_executable(spm_encode spm_encode_main.cc)
+add_executable(spm_decode spm_decode_main.cc)
+add_executable(spm_normalize spm_normalize_main.cc)
+add_executable(spm_train spm_train_main.cc)
+add_executable(spm_export_vocab spm_export_vocab_main.cc)
 
-target_link_libraries(spm_encode sentencepiece)
-target_link_libraries(spm_decode sentencepiece)
-target_link_libraries(spm_normalize sentencepiece sentencepiece_train)
-target_link_libraries(spm_train sentencepiece sentencepiece_train)
-target_link_libraries(spm_export_vocab sentencepiece)
+target_link_libraries(spm_encode sentencepiece absl_flags-static)
+target_link_libraries(spm_decode sentencepiece absl_flags-static)
+target_link_libraries(spm_normalize sentencepiece sentencepiece_train absl_flags-static)
+target_link_libraries(spm_train sentencepiece sentencepiece_train absl_flags-static)
+target_link_libraries(spm_export_vocab sentencepiece absl_flags-static)
 
 if (SPM_ENABLE_NFKC_COMPILE)
   add_executable(compile_charsmap compile_charsmap_main.cc)

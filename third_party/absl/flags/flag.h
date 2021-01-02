@@ -52,8 +52,6 @@ void SetFlag(Flag<T> *flag, const V &v) {
   const T value(v);
   flag->set_value(value);
 }
-
-std::vector<char *> ParseCommandLine(int argc, char *argv[]);
 }  // namespace absl
 
 #define ABSL_FLAG(Type, name, defautl_value, help) \

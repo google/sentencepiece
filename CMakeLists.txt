@@ -26,6 +26,7 @@ option(SPM_ENABLE_TCMALLOC "Enable TCMalloc if available." ON)
 option(SPM_TCMALLOC_STATIC "Link static library of TCMALLOC." OFF)
 option(SPM_NO_THREADLOCAL "Disable thread_local operator" OFF)
 option(SPM_USE_BUILTIN_PROTOBUF "Use built-in protobuf" ON)
+option(SPM_USE_EXTERNAL_ABSL "Use external protobuf" OFF)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -97,6 +98,7 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(third_party)
+# add_subdirectory(third_party/abseil-cpp)
 
 set(CPACK_SOURCE_GENERATOR "TXZ")
 set(CPACK_GENERATOR "7Z")
@@ -108,3 +110,22 @@ set(CPACK_PACKAGE_CONTACT "taku@google.com")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Taku Kudo")
 set(CPACK_SOURCE_IGNORE_FILES "/build/;/.git/;/dist/;/sdist/;~$;${CPACK_SOURCE_IGNORE_FILES}")
 include(CPack)
+
+
+if (SPM_USE_EXTERNAL_ABSL)
+ include(ExternalProject)
+ ExternalProject_Add(abseil-cpp
+   PREFIX abseil-cpp
+   GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
+   CONFIGURE_COMMAND ""
+   BUILD_COMMAND ""
+   INSTALL_COMMAND ""
+   TEST_COMMAND "")
+ ExternalProject_Get_Property(abseil-cpp ABSL_SOURCE_DIR)
+ ExternalProject_Add_Step(
+     abseil-cpp
+     copySource
+     WORKING_DIRECTORY ${ABSL_SOURCE_DIR}
+     COMMAND mkdir -p "${PROJECT_SOURCE_DIR}/third_party/abseil-cpp"
+     COMMAND ${CMAKE_COMMAND} -E copy_directory "${ABSL_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/third_party/abseil-cpp")
+endif()
