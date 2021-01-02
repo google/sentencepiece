@@ -19,9 +19,7 @@
 #include "third_party/absl/flags/flag.h"
 #include "third_party/absl/flags/parse.h"
 
-ABSL_FLAG(int, minloglevel, 0,
-          "Messages logged at a lower level than this don't actually get "
-          "logged anywhere");
+ABSL_DECLARE_FLAG(int32, minloglevel);
 
 namespace sentencepiece {
 

@@ -289,9 +289,9 @@ if (SPM_BUILD_TEST OR SPM_COVERAGE)
   add_executable(spm_test test_main.cc ${SPM_TEST_SRCS})
 
   if (SPM_COVERAGE)
-    target_link_libraries(spm_test sentencepiece sentencepiece_train "-lgcov")
+    target_link_libraries(spm_test sentencepiece sentencepiece_train "-lgcov" absl_flags-static)
   else()
-    target_link_libraries(spm_test sentencepiece sentencepiece_train)
+    target_link_libraries(spm_test sentencepiece sentencepiece_train absl_flags-static)
   endif()
 
   set(MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --show-leak-kinds=definite,possible --error-exitcode=1")
