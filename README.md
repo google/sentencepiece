@@ -30,6 +30,9 @@ with the extension of direct training from raw sentences. SentencePiece allows u
 - **Direct vocabulary id generation**: SentencePiece manages vocabulary to id mapping and can directly generate vocabulary id sequences from raw sentences.
 - **NFKC-based normalization**: SentencePiece performs NFKC-based text normalization.
 
+For those unfamiliar with SentencePiece as a software/algorithm, one can read [a gentle introduction here](https://medium.com/@jacky2wong/understanding-sentencepiece-under-standing-sentence-piece-ac8da59f6b08).
+
+
 ## Comparisons with other implementations
 |Feature|SentencePiece|[subword-nmt](https://github.com/rsennrich/subword-nmt)|[WordPiece](https://arxiv.org/pdf/1609.08144.pdf)|
 |:---|:---:|:---:|:---:|
@@ -277,3 +280,4 @@ Then segment train/test corpus with ```--vocabulary``` option
 * [Python Module](python/README.md)
 * [TensorFlow Module](tensorflow/README.md)
 * [Segmentation and training algorithms in detail]
+
