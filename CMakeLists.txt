@@ -98,7 +98,6 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(third_party)
-# add_subdirectory(third_party/abseil-cpp)
 
 set(CPACK_SOURCE_GENERATOR "TXZ")
 set(CPACK_GENERATOR "7Z")
@@ -121,11 +120,11 @@ if (SPM_USE_EXTERNAL_ABSL)
    BUILD_COMMAND ""
    INSTALL_COMMAND ""
    TEST_COMMAND "")
- ExternalProject_Get_Property(abseil-cpp ABSL_SOURCE_DIR)
+ ExternalProject_Get_Property(abseil-cpp SOURCE_DIR)
  ExternalProject_Add_Step(
      abseil-cpp
      copySource
-     WORKING_DIRECTORY ${ABSL_SOURCE_DIR}
+     WORKING_DIRECTORY ${SOURCE_DIR}
      COMMAND mkdir -p "${PROJECT_SOURCE_DIR}/third_party/abseil-cpp"
-     COMMAND ${CMAKE_COMMAND} -E copy_directory "${ABSL_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/third_party/abseil-cpp")
+     COMMAND ${CMAKE_COMMAND} -E copy_directory "${SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/third_party/abseil-cpp")
 endif()
