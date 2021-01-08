@@ -87,6 +87,8 @@ TEST(FlagsTest, ParseCommandLineFlagsTest3) {
   EXPECT_EQ(1, argc);
 }
 
+#ifndef _USE_EXTERNAL_ABSL
+
 TEST(FlagsTest, ParseCommandLineFlagsHelpTest) {
   const char *kFlags[] = {"program", "--help"};
   int argc = arraysize(kFlags);
@@ -141,4 +143,5 @@ TEST(FlagsTest, ParseCommandLineFlagsEmptyIntArgs) {
   char **argv = const_cast<char **>(kFlags);
   EXPECT_DEATH(ParseCommandLineFlags(kFlags[0], &argc, &argv), );
 }
+#endif  // _USE_EXTERNAL_ABSL
 }  // namespace absl

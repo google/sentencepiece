@@ -18,6 +18,11 @@ if (SPM_USE_EXTERNAL_ABSL)
   list(APPEND SPM_LIBS absl::strings)
   list(APPEND SPM_LIBS absl::flags)
   list(APPEND SPM_LIBS absl::flags_parse)
+  if (MSVC)
+   add_definitions("/D_USE_EXTERNAL_ABSL")
+  else()
+   add_definitions("-D_USE_EXTERNAL_ABSL")
+  endif()
 else()
   set(ABSL_FLAGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/flags/flag.cc)
   set(ABSL_STRINGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/strings/string_view.cc)
@@ -73,6 +78,7 @@ else()
 endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 
 if (MSVC)
   add_definitions("/D_USE_INTERNAL_STRING_VIEW")
@@ -170,7 +176,7 @@ set(SPM_TEST_SRCS
 
 find_package(Threads REQUIRED)
 
-set(SPM_LIBS ${PROTOBUF_LITE_LIBRARY} Threads::Threads)
+list(APPEND SPM_LIBS ${PROTOBUF_LITE_LIBRARY} Threads::Threads)
 
 if (SPM_ENABLE_NFKC_COMPILE)
   find_package(ICU 4.4 COMPONENTS i18n data uc REQUIRED)

@@ -21,8 +21,8 @@
 #include <string>
 
 #include "common.h"
-#include "init.h"
 #include "third_party/absl/flags/flag.h"
+#include "third_party/absl/flags/parse.h"
 #include "third_party/absl/strings/string_view.h"
 
 ABSL_DECLARE_FLAG(std::string, test_tmpdir);
