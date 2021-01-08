@@ -297,13 +297,13 @@ class TrainerSpec::_Internal {
     (*has_bits)[0] |= 1048576u;
   }
   static void set_has_input_sentence_size(HasBits* has_bits) {
-    (*has_bits)[0] |= 512u;
+    (*has_bits)[0] |= 1024u;
   }
   static void set_has_shuffle_input_sentence(HasBits* has_bits) {
     (*has_bits)[0] |= 134217728u;
   }
   static void set_has_mining_sentence_size(HasBits* has_bits) {
-    (*has_bits)[0] |= 1024u;
+    (*has_bits)[0] |= 512u;
   }
   static void set_has_training_sentence_size(HasBits* has_bits) {
     (*has_bits)[0] |= 2048u;
@@ -686,7 +686,7 @@ const char* TrainerSpec::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID
           ptr += sizeof(float);
         } else goto handle_unusual;
         continue;
-      // optional int32 input_sentence_size = 11 [default = 0];
+      // optional uint64 input_sentence_size = 11 [default = 0];
       case 11:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 88)) {
           _Internal::set_has_input_sentence_size(&_has_bits_);
@@ -1036,14 +1036,14 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteFloatToArray(10, this->_internal_character_coverage(), target);
   }
 
-  // optional int32 input_sentence_size = 11 [default = 0];
-  if (cached_has_bits & 0x00000200u) {
+  // optional uint64 input_sentence_size = 11 [default = 0];
+  if (cached_has_bits & 0x00000400u) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(11, this->_internal_input_sentence_size(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(11, this->_internal_input_sentence_size(), target);
   }
 
   // optional int32 mining_sentence_size = 12 [deprecated = true];
-  if (cached_has_bits & 0x00000400u) {
+  if (cached_has_bits & 0x00000200u) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(12, this->_internal_mining_sentence_size(), target);
   }
@@ -1353,18 +1353,18 @@ size_t TrainerSpec::ByteSizeLong() const {
           this->_internal_self_test_sample_size());
     }
 
-    // optional int32 input_sentence_size = 11 [default = 0];
+    // optional int32 mining_sentence_size = 12 [deprecated = true];
     if (cached_has_bits & 0x00000200u) {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
-          this->_internal_input_sentence_size());
+          this->_internal_mining_sentence_size());
     }
 
-    // optional int32 mining_sentence_size = 12 [deprecated = true];
+    // optional uint64 input_sentence_size = 11 [default = 0];
     if (cached_has_bits & 0x00000400u) {
       total_size += 1 +
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
-          this->_internal_mining_sentence_size());
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+          this->_internal_input_sentence_size());
     }
 
     // optional int32 training_sentence_size = 13 [deprecated = true];
@@ -1581,10 +1581,10 @@ void TrainerSpec::MergeFrom(const TrainerSpec& from) {
       self_test_sample_size_ = from.self_test_sample_size_;
     }
     if (cached_has_bits & 0x00000200u) {
-      input_sentence_size_ = from.input_sentence_size_;
+      mining_sentence_size_ = from.mining_sentence_size_;
     }
     if (cached_has_bits & 0x00000400u) {
-      mining_sentence_size_ = from.mining_sentence_size_;
+      input_sentence_size_ = from.input_sentence_size_;
     }
     if (cached_has_bits & 0x00000800u) {
       training_sentence_size_ = from.training_sentence_size_;

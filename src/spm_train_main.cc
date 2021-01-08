@@ -47,7 +47,8 @@ ABSL_FLAG(int32, self_test_sample_size,
           "the size of self test samples");
 ABSL_FLAG(double, character_coverage, kDefaultTrainerSpec.character_coverage(),
           "character coverage to determine the minimum symbols");
-ABSL_FLAG(int32, input_sentence_size, kDefaultTrainerSpec.input_sentence_size(),
+ABSL_FLAG(std::uint64_t, input_sentence_size,
+          kDefaultTrainerSpec.input_sentence_size(),
           "maximum size of sentences the trainer loads");
 ABSL_FLAG(bool, shuffle_input_sentence,
           kDefaultTrainerSpec.shuffle_input_sentence(),

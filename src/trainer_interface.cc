@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "trainer_interface.h"
+
 #include <cstdlib>
 #include <memory>
 #include <set>
@@ -32,7 +34,6 @@
 #include "third_party/absl/strings/str_format.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_split.h"
-#include "trainer_interface.h"
 #include "unicode_script.h"
 #include "util.h"
 
@@ -120,16 +121,14 @@ class SentenceSelector {
   }
 
   bool Add(const std::pair<std::string, int64> &sentence) {
-    if (spec_->input_sentence_size() <= 0) {
+    if (spec_->input_sentence_size() == 0) {
       sentences_->emplace_back(sentence);
     } else {
       if (spec_->shuffle_input_sentence()) {
         sampler_->Add(sentence);
       } else {
         sentences_->emplace_back(sentence);
-        if (sentences_->size() >=
-            static_cast<size_t>(spec_->input_sentence_size()))
-          return false;
+        if (sentences_->size() >= spec_->input_sentence_size()) return false;
       }
     }
 

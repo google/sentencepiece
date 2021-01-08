@@ -307,9 +307,9 @@ std::mt19937 *GetRandomGenerator();
 template <typename T>
 class ReservoirSampler {
  public:
-  explicit ReservoirSampler(std::vector<T> *sampled, size_t size)
+  explicit ReservoirSampler(std::vector<T> *sampled, uint64 size)
       : sampled_(sampled), size_(size), engine_(GetRandomGeneratorSeed()) {}
-  explicit ReservoirSampler(std::vector<T> *sampled, size_t size, size_t seed)
+  explicit ReservoirSampler(std::vector<T> *sampled, uint64 size, uint64 seed)
       : sampled_(sampled), size_(size), engine_(seed) {}
   virtual ~ReservoirSampler() {}
 
@@ -320,18 +320,18 @@ class ReservoirSampler {
     if (sampled_->size() < size_) {
       sampled_->push_back(item);
     } else {
-      std::uniform_int_distribution<size_t> dist(0, total_ - 1);
-      const size_t n = dist(engine_);
+      std::uniform_int_distribution<uint64> dist(0, total_ - 1);
+      const uint64 n = dist(engine_);
       if (n < sampled_->size()) (*sampled_)[n] = item;
     }
   }
 
-  size_t total_size() const { return total_; }
+  uint64 total_size() const { return total_; }
 
  private:
   std::vector<T> *sampled_ = nullptr;
-  size_t size_ = 0;
-  size_t total_ = 0;
+  uint64 size_ = 0;
+  uint64 total_ = 0;
   std::mt19937 engine_;
 };
 

@@ -74,7 +74,7 @@ message TrainerSpec {
   // Maximum size of sentences the trainer loads from `input` parameter.
   // Trainer simply loads the `input` files in sequence.
   // It is better to shuffle the input corpus randomly.
-  optional int32 input_sentence_size = 11 [default = 0];
+  optional uint64 input_sentence_size = 11 [default = 0];
   optional bool shuffle_input_sentence = 19 [default = true];
 
   // Maximum size of sentences to make seed sentence pieces.

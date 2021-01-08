@@ -274,8 +274,8 @@ class TrainerSpec PROTOBUF_FINAL :
     kEosPieceFieldNumber = 47,
     kPadPieceFieldNumber = 48,
     kSelfTestSampleSizeFieldNumber = 6,
-    kInputSentenceSizeFieldNumber = 11,
     kMiningSentenceSizeFieldNumber = 12,
+    kInputSentenceSizeFieldNumber = 11,
     kTrainingSentenceSizeFieldNumber = 13,
     kTreatWhitespaceAsSuffixFieldNumber = 24,
     kSplitDigitsFieldNumber = 25,
@@ -571,19 +571,6 @@ class TrainerSpec PROTOBUF_FINAL :
   void _internal_set_self_test_sample_size(::PROTOBUF_NAMESPACE_ID::int32 value);
   public:
 
-  // optional int32 input_sentence_size = 11 [default = 0];
-  bool has_input_sentence_size() const;
-  private:
-  bool _internal_has_input_sentence_size() const;
-  public:
-  void clear_input_sentence_size();
-  ::PROTOBUF_NAMESPACE_ID::int32 input_sentence_size() const;
-  void set_input_sentence_size(::PROTOBUF_NAMESPACE_ID::int32 value);
-  private:
-  ::PROTOBUF_NAMESPACE_ID::int32 _internal_input_sentence_size() const;
-  void _internal_set_input_sentence_size(::PROTOBUF_NAMESPACE_ID::int32 value);
-  public:
-
   // optional int32 mining_sentence_size = 12 [deprecated = true];
   PROTOBUF_DEPRECATED bool has_mining_sentence_size() const;
   private:
@@ -595,6 +582,19 @@ class TrainerSpec PROTOBUF_FINAL :
   private:
   ::PROTOBUF_NAMESPACE_ID::int32 _internal_mining_sentence_size() const;
   void _internal_set_mining_sentence_size(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
+  // optional uint64 input_sentence_size = 11 [default = 0];
+  bool has_input_sentence_size() const;
+  private:
+  bool _internal_has_input_sentence_size() const;
+  public:
+  void clear_input_sentence_size();
+  ::PROTOBUF_NAMESPACE_ID::uint64 input_sentence_size() const;
+  void set_input_sentence_size(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_input_sentence_size() const;
+  void _internal_set_input_sentence_size(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
   // optional int32 training_sentence_size = 13 [deprecated = true];
@@ -952,8 +952,8 @@ class TrainerSpec PROTOBUF_FINAL :
   static const ::PROTOBUF_NAMESPACE_ID::internal::LazyString _i_give_permission_to_break_this_code_default_pad_piece_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr pad_piece_;
   ::PROTOBUF_NAMESPACE_ID::int32 self_test_sample_size_;
-  ::PROTOBUF_NAMESPACE_ID::int32 input_sentence_size_;
   ::PROTOBUF_NAMESPACE_ID::int32 mining_sentence_size_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 input_sentence_size_;
   ::PROTOBUF_NAMESPACE_ID::int32 training_sentence_size_;
   bool treat_whitespace_as_suffix_;
   bool split_digits_;
@@ -2365,30 +2365,30 @@ inline void TrainerSpec::set_character_coverage(float value) {
   // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.character_coverage)
 }
 
-// optional int32 input_sentence_size = 11 [default = 0];
+// optional uint64 input_sentence_size = 11 [default = 0];
 inline bool TrainerSpec::_internal_has_input_sentence_size() const {
-  bool value = (_has_bits_[0] & 0x00000200u) != 0;
+  bool value = (_has_bits_[0] & 0x00000400u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_input_sentence_size() const {
   return _internal_has_input_sentence_size();
 }
 inline void TrainerSpec::clear_input_sentence_size() {
-  input_sentence_size_ = 0;
-  _has_bits_[0] &= ~0x00000200u;
+  input_sentence_size_ = PROTOBUF_ULONGLONG(0);
+  _has_bits_[0] &= ~0x00000400u;
 }
-inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_input_sentence_size() const {
+inline ::PROTOBUF_NAMESPACE_ID::uint64 TrainerSpec::_internal_input_sentence_size() const {
   return input_sentence_size_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::input_sentence_size() const {
+inline ::PROTOBUF_NAMESPACE_ID::uint64 TrainerSpec::input_sentence_size() const {
   // @@protoc_insertion_point(field_get:sentencepiece.TrainerSpec.input_sentence_size)
   return _internal_input_sentence_size();
 }
-inline void TrainerSpec::_internal_set_input_sentence_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[0] |= 0x00000200u;
+inline void TrainerSpec::_internal_set_input_sentence_size(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _has_bits_[0] |= 0x00000400u;
   input_sentence_size_ = value;
 }
-inline void TrainerSpec::set_input_sentence_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
+inline void TrainerSpec::set_input_sentence_size(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   _internal_set_input_sentence_size(value);
   // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.input_sentence_size)
 }
@@ -2423,7 +2423,7 @@ inline void TrainerSpec::set_shuffle_input_sentence(bool value) {
 
 // optional int32 mining_sentence_size = 12 [deprecated = true];
 inline bool TrainerSpec::_internal_has_mining_sentence_size() const {
-  bool value = (_has_bits_[0] & 0x00000400u) != 0;
+  bool value = (_has_bits_[0] & 0x00000200u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_mining_sentence_size() const {
@@ -2431,7 +2431,7 @@ inline bool TrainerSpec::has_mining_sentence_size() const {
 }
 inline void TrainerSpec::clear_mining_sentence_size() {
   mining_sentence_size_ = 0;
-  _has_bits_[0] &= ~0x00000400u;
+  _has_bits_[0] &= ~0x00000200u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_mining_sentence_size() const {
   return mining_sentence_size_;
@@ -2441,7 +2441,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::mining_sentence_size() const 
   return _internal_mining_sentence_size();
 }
 inline void TrainerSpec::_internal_set_mining_sentence_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[0] |= 0x00000400u;
+  _has_bits_[0] |= 0x00000200u;
   mining_sentence_size_ = value;
 }
 inline void TrainerSpec::set_mining_sentence_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
