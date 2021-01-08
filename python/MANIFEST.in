@@ -1,3 +1,3 @@
 recursive-include test *.py *.model botchan.txt
 recursive-include src *.i
-include *.md VERSION build_bundled.sh
+include *.md VERSION.* build_bundled.sh
