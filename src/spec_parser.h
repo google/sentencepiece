@@ -55,6 +55,16 @@ namespace sentencepiece {
     return util::OkStatus();                                                  \
   }
 
+#define PARSE_UINT64(param_name)                                              \
+  if (name == #param_name) {                                                  \
+    uint64 v;                                                                 \
+    if (!string_util::lexical_cast(value, &v))                                \
+      return util::StatusBuilder(util::StatusCode::kInvalidArgument, GTL_LOC) \
+             << "cannot parse \"" << value << "\" as int.";                   \
+    message->set_##param_name(v);                                             \
+    return util::OkStatus();                                                  \
+  }
+
 #define PARSE_DOUBLE(param_name)                                              \
   if (name == #param_name) {                                                  \
     double v;                                                                 \
@@ -196,7 +206,7 @@ util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
   PARSE_REPEATED_STRING(accept_language);
   PARSE_INT32(self_test_sample_size);
   PARSE_DOUBLE(character_coverage);
-  PARSE_INT32(input_sentence_size);
+  PARSE_UINT64(input_sentence_size);
   PARSE_BOOL(shuffle_input_sentence);
   PARSE_INT32(seed_sentencepiece_size);
   PARSE_DOUBLE(shrinking_factor);
