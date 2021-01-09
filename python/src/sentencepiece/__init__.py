@@ -116,6 +116,9 @@ class SentencePieceProcessor(object):
     def DecodePieces(self, pieces):
         return _sentencepiece.SentencePieceProcessor_DecodePieces(self, pieces)
 
+    def DecodeIds(self, ids):
+        return _sentencepiece.SentencePieceProcessor_DecodeIds(self, ids)
+
     def EncodeAsSerializedProto(self, input):
         return _sentencepiece.SentencePieceProcessor_EncodeAsSerializedProto(self, input)
 
@@ -127,6 +130,9 @@ class SentencePieceProcessor(object):
 
     def DecodePiecesAsSerializedProto(self, pieces):
         return _sentencepiece.SentencePieceProcessor_DecodePiecesAsSerializedProto(self, pieces)
+
+    def DecodeIdsAsSerializedProto(self, ids):
+        return _sentencepiece.SentencePieceProcessor_DecodeIdsAsSerializedProto(self, ids)
 
     def GetPieceSize(self):
         return _sentencepiece.SentencePieceProcessor_GetPieceSize(self)
@@ -312,7 +318,7 @@ class SentencePieceProcessor(object):
         if not input:
           return self.DecodeIds([])
         if type(input[0]) is int:
-          return self.DecodeId(input)
+          return self.DecodeIds(input)
         return self.DecodePieces(input)
 
       if type(input[0]) is list:

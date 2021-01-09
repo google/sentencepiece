@@ -176,8 +176,6 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
 %ignore sentencepiece::SentencePieceProcessor::SampleEncode;
 %ignore sentencepiece::SentencePieceProcessor::NBestEncode;
 %ignore sentencepiece::SentencePieceProcessor::Decode;
-%ignore sentencepiece::SentencePieceProcessor::DecodeIds;
-%ignore sentencepiece::SentencePieceProcessor::DecodeIdsAsSerializedProto;
 %ignore sentencepiece::SentencePieceProcessor::model_proto;
 %ignore sentencepiece::SentencePieceProcessor::Load;
 %ignore sentencepiece::SentencePieceProcessor::LoadOrDie;
@@ -341,7 +339,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
       if not input:
         return self.DecodeIds([])
       if type(input[0]) is int:
-        return self.DecodeId(input)
+        return self.DecodeIds(input)
       return self.DecodePieces(input)
 
     if type(input[0]) is list:
