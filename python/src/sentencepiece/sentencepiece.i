@@ -198,26 +198,6 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
     return $self->Load(arg);
   }
 
-  std::string DecodeIdsWithCheck(
-      const std::vector<int> &ids) const {
-    for (int id : ids)
-      if (id < 0 || id >= $self->GetPieceSize())
-        throw sentencepiece::util::Status(
-            sentencepiece::util::StatusCode::kOutOfRange,
-            "piece id is out of range.");
-    return $self->DecodeIds(ids);
-  }
-
-  util::bytes DecodeIdsAsSerializedProtoWithCheck(
-      const std::vector<int> &ids) const {
-    for (int id : ids)
-      if (id < 0 || id >= $self->GetPieceSize())
-        throw sentencepiece::util::Status(
-            sentencepiece::util::StatusCode::kOutOfRange,
-            "piece id is out of range.");
-    return $self->DecodeIdsAsSerializedProto(ids);
-  }
-
 %pythoncode {
   def Init(self,
            model_file=None,
@@ -353,7 +333,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
     if not input:
       return self.DecodeIds([])
     elif type(input) is int:
-      return self.DecodeIdsWithCheck([input])
+      return self.DecodeIds([input])
     elif type(input) is str:
       return self.DecodePieces([input])
 
@@ -361,7 +341,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
       if not input:
         return self.DecodeIds([])
       if type(input[0]) is int:
-        return self.DecodeIdsWithCheck(input)
+        return self.DecodeId(input)
       return self.DecodePieces(input)
 
     if type(input[0]) is list:
@@ -729,8 +709,6 @@ setattr(SentencePieceProcessor, '__init__', SentencePieceProcessor.Init)
 
 SentencePieceProcessor.Tokenize = SentencePieceProcessor.Encode
 SentencePieceProcessor.Detokenize = SentencePieceProcessor.Decode
-SentencePieceProcessor.DecodeIds = SentencePieceProcessor.DecodeIdsWithCheck
-SentencePieceProcessor.DecodeIdsAsSerializedProto = SentencePieceProcessor.DecodeIdsAsSerializedProtoWithCheck
 
 for m in [
     'PieceToId', 'IdToPiece', 'GetScore', 'IsUnknown', 'IsControl', 'IsUnused',

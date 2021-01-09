@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "sentencepiece_processor.h"
+
 #include <map>
 #include <set>
 #include <utility>
@@ -22,7 +24,6 @@
 #include "model_interface.h"
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
-#include "sentencepiece_processor.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -627,8 +628,13 @@ util::Status SentencePieceProcessor::Decode(
 util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
                                             SentencePieceText *spt) const {
   std::vector<std::string> pieces;
+  const int num_pieces = GetPieceSize();
   pieces.reserve(ids.size());
   for (const int id : ids) {
+    if (id < 0 || id >= num_pieces) {
+      return util::Status(util::StatusCode::kOutOfRange,
+                          absl::StrCat("Invalid id: ", id));
+    }
     pieces.emplace_back(IdToPiece(id));
   }
   return Decode(pieces, spt);

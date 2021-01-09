@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "sentencepiece_processor.h"
+
 #include <utility>
 
 #include "builder.h"
@@ -20,7 +22,6 @@
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
-#include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
 #include "third_party/absl/container/flat_hash_map.h"
@@ -741,6 +742,8 @@ TEST(SentencepieceProcessorTest, ByteFallbackDecodeTest) {
       return kMap[id];
     }
 
+    int GetPieceSize() const override { return 256; }
+
     bool IsUnknown(int id) const override { return (id == 0); }
 
     bool IsControl(int id) const override { return (id == 1 || id == 2); }
@@ -1134,6 +1137,13 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
     const std::vector<int> ids = {3, 4, 5};
     EXPECT_TRUE(sp.Decode(ids, &output).ok());
     EXPECT_EQ("cba", output);
+  }
+
+  // Out of range
+  {
+    std::string output;
+    const std::vector<int> ids = {3, 4, 127};
+    EXPECT_FALSE(sp.Decode(ids, &output).ok());
   }
 
   {
