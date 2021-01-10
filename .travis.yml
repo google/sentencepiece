@@ -5,6 +5,9 @@ matrix:
       env: IMAGE=ubuntu:rolling COMMAND=build_linux_gcc_coverall_ubuntu RELEASE_FILES="$TRAVIS_BUILD_DIR/build/*.xz"
       services: docker
     - os: linux
+      env: IMAGE=ubuntu:focal COMMAND=build_linux_gcc_ubuntu
+      services: docker      
+    - os: linux
       env: IMAGE=ubuntu:bionic COMMAND=build_linux_gcc_ubuntu
       services: docker
     - os: linux
