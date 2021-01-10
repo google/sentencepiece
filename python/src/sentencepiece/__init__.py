@@ -116,9 +116,6 @@ class SentencePieceProcessor(object):
     def DecodePieces(self, pieces):
         return _sentencepiece.SentencePieceProcessor_DecodePieces(self, pieces)
 
-    def DecodeIds(self, ids):
-        return _sentencepiece.SentencePieceProcessor_DecodeIds(self, ids)
-
     def EncodeAsSerializedProto(self, input):
         return _sentencepiece.SentencePieceProcessor_EncodeAsSerializedProto(self, input)
 
@@ -130,9 +127,6 @@ class SentencePieceProcessor(object):
 
     def DecodePiecesAsSerializedProto(self, pieces):
         return _sentencepiece.SentencePieceProcessor_DecodePiecesAsSerializedProto(self, pieces)
-
-    def DecodeIdsAsSerializedProto(self, ids):
-        return _sentencepiece.SentencePieceProcessor_DecodeIdsAsSerializedProto(self, ids)
 
     def GetPieceSize(self):
         return _sentencepiece.SentencePieceProcessor_GetPieceSize(self)
@@ -175,6 +169,12 @@ class SentencePieceProcessor(object):
 
     def LoadFromFile(self, arg):
         return _sentencepiece.SentencePieceProcessor_LoadFromFile(self, arg)
+
+    def DecodeIdsWithCheck(self, ids):
+        return _sentencepiece.SentencePieceProcessor_DecodeIdsWithCheck(self, ids)
+
+    def DecodeIdsAsSerializedProtoWithCheck(self, ids):
+        return _sentencepiece.SentencePieceProcessor_DecodeIdsAsSerializedProtoWithCheck(self, ids)
 
     def Init(self,
              model_file=None,
@@ -310,7 +310,7 @@ class SentencePieceProcessor(object):
       if not input:
         return self.DecodeIds([])
       elif type(input) is int:
-        return self.DecodeIds([input])
+        return self.DecodeIdsWithCheck([input])
       elif type(input) is str:
         return self.DecodePieces([input])
 
@@ -318,7 +318,7 @@ class SentencePieceProcessor(object):
         if not input:
           return self.DecodeIds([])
         if type(input[0]) is int:
-          return self.DecodeIds(input)
+          return self.DecodeIdsWithCheck(input)
         return self.DecodePieces(input)
 
       if type(input[0]) is list:
@@ -508,6 +508,8 @@ setattr(SentencePieceProcessor, '__init__', SentencePieceProcessor.Init)
 
 SentencePieceProcessor.Tokenize = SentencePieceProcessor.Encode
 SentencePieceProcessor.Detokenize = SentencePieceProcessor.Decode
+SentencePieceProcessor.DecodeIds = SentencePieceProcessor.DecodeIdsWithCheck
+SentencePieceProcessor.DecodeIdsAsSerializedProto = SentencePieceProcessor.DecodeIdsAsSerializedProtoWithCheck
 
 for m in [
     'PieceToId', 'IdToPiece', 'GetScore', 'IsUnknown', 'IsControl', 'IsUnused',
