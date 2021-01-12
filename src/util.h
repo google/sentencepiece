@@ -36,8 +36,11 @@
 #include <pthread.h>
 #endif
 
-#if !defined(__APPLE__) && !defined(_WIN32) && BYTE_ORDER == __BIG_ENDIAN
+#if !defined(__APPLE__) && !defined(_WIN32)
+#include <endian.h>
+#if defined(BYTE_ORDER) && defined(__BIG_ENDIAN) && BYTE_ORDER == __BIG_ENDIAN
 #define IS_BIG_ENDIAN
+#endif
 #endif
 
 namespace sentencepiece {
