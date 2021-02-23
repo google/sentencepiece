@@ -368,7 +368,6 @@ util::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
   nfkc_map[{0xFEFF}] = {0x20};  // ZERO WIDTH NO-BREAK
   nfkc_map[{0xFFFD}] = {0x20};  // REPLACEMENT CHARACTER
   nfkc_map[{0x200C}] = {0x20};  // ZERO WIDTH NON-JOINER
-  nfkc_map[{0x200D}] = {0x20};  // ZERO WIDTH JOINER
 
   // Ascii Control characters
   nfkc_map[{0x0001}] = {};
