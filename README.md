@@ -179,7 +179,7 @@ The sentencepiece port in vcpkg is kept up to date by Microsoft team members and
   the input with Unicode NFKC. You can pass a comma-separated list of files.
 * `--model_prefix`: output model name prefix. `<model_name>.model` and `<model_name>.vocab` are generated.
 * `--vocab_size`: vocabulary size, e.g., 8000, 16000, or 32000
-* `--character_coverage`: amount of characters covered by the model, good defaults are: `0.9995` for languages with rich character set like Japanse or Chinese and `1.0` for other languages with small character set.
+* `--character_coverage`: amount of characters covered by the model, good defaults are: `0.9995` for languages with rich character set like Japanese or Chinese and `1.0` for other languages with small character set.
 * `--model_type`: model type. Choose from `unigram` (default), `bpe`, `char`, or `word`. The input sentence must be pretokenized when using `word` type.
 
 Use `--help` flag to display all parameters for training, or see [here](doc/options.md) for an overview.
