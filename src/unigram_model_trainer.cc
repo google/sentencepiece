@@ -119,6 +119,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
         all_chars[string_util::UnicodeCharToUTF8(c)] += w.second;
       }
     }
+    array.push_back(kSentenceBoundary);  // sentence boundary marker.
   }
 
   CHECK_LE(array.size(),
