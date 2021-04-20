@@ -111,7 +111,7 @@ To enable subword regularization, you would like to integrate SentencePiece libr
 >>> import sentencepiece as spm
 >>> s = spm.SentencePieceProcessor(model_file='spm.model')
 >>> for n in range(5):
-...     s.encode('New York', out_type=str, enable_sampling=True, alpha=0.1, nbest=-1)
+...     s.encode('New York', out_type=str, enable_sampling=True, alpha=0.1, nbest_size=-1)
 ...
 ['▁', 'N', 'e', 'w', '▁York']
 ['▁', 'New', '▁York']
