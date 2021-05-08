@@ -101,7 +101,7 @@ special symbol. Tokenized sequences do not preserve the necessary information to
 * (ja) こんにちは世界。  → [こんにちは] [世界] [。] \(No space between こんにちは and 世界\)
 
 #### Subword regularization and BPE-dropout
-Subword regularization [[Kudo.](https://arxiv.org/abs/1804.10959)] and BPE-droptout [Provilkov et al](https://arxiv.org/abs/1910.13267) are simple regularization methods
+Subword regularization [[Kudo.](https://arxiv.org/abs/1804.10959)] and BPE-dropout [Provilkov et al](https://arxiv.org/abs/1910.13267) are simple regularization methods
 that virtually augment training data with on-the-fly subword sampling, which helps to improve the accuracy as well as robustness of NMT models.
 
 To enable subword regularization, you would like to integrate SentencePiece library
