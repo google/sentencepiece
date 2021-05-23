@@ -15,7 +15,13 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 file(STRINGS "VERSION" SPM_VERSION)
 message(STATUS "VERSION: ${SPM_VERSION}")
+option(SPM_ALT_PROJNAME "Call sentencepiece sentencepiecelatest to avoid conflicts" OFF)
+
+if (SPM_ALT_PROJNAME)
+project(sentencepiecelatest VERSION ${SPM_VERSION} LANGUAGES C CXX)
+else()
 project(sentencepiece VERSION ${SPM_VERSION} LANGUAGES C CXX)
+endif()
 
 option(SPM_ENABLE_NFKC_COMPILE "Enables NFKC compile" OFF)
 option(SPM_ENABLE_SHARED "Builds shared libaries in addition to static libraries." ON)
@@ -97,6 +103,14 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(third_party)
+
+if (SPM_ALT_PROJNAME)
+set_target_properties(sentencepiece PROPERTIES OUTPUT_NAME "sentencepiecelatest")
+set_target_properties(sentencepiece_train PROPERTIES OUTPUT_NAME "sentencepiece_train_latest")
+set_target_properties(sentencepiece-static PROPERTIES OUTPUT_NAME "sentencepiecelatest")
+set_target_properties(sentencepiece_train-static PROPERTIES OUTPUT_NAME "sentencepiece_train_latest")
+else()
+endif()
 
 set(CPACK_SOURCE_GENERATOR "TXZ")
 set(CPACK_GENERATOR "7Z")
