@@ -15,7 +15,10 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 file(STRINGS "VERSION" SPM_VERSION)
 message(STATUS "VERSION: ${SPM_VERSION}")
-project(sentencepiece VERSION ${SPM_VERSION} LANGUAGES C CXX)
+SET(SPM_ARTIFACT_NAME "sentencepiece" CACHE STRING "Default name of the \
+            generated artifacts. Override to avoid name conflicts.")
+
+project(${SPM_ARTIFACT_NAME} VERSION ${SPM_VERSION} LANGUAGES C CXX)
 
 option(SPM_ENABLE_NFKC_COMPILE "Enables NFKC compile" OFF)
 option(SPM_ENABLE_SHARED "Builds shared libaries in addition to static libraries." ON)
@@ -97,6 +100,13 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(third_party)
+
+if (NOT SPM_ARTIFACT_NAME STREQUAL "sentencepiece")
+  set_target_properties(sentencepiece PROPERTIES OUTPUT_NAME ${SPM_ARTIFACT_NAME})
+  set_target_properties(sentencepiece_train PROPERTIES OUTPUT_NAME "${SPM_ARTIFACT_NAME}_train")
+  set_target_properties(sentencepiece-static PROPERTIES OUTPUT_NAME ${SPM_ARTIFACT_NAME})
+  set_target_properties(sentencepiece_train-static PROPERTIES OUTPUT_NAME "${SPM_ARTIFACT_NAME}_train")
+endif()
 
 set(CPACK_SOURCE_GENERATOR "TXZ")
 set(CPACK_GENERATOR "7Z")
