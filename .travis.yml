@@ -2,7 +2,7 @@ language: cpp
 matrix:
   include:
     - os: linux
-      env: IMAGE=ubuntu:rolling COMMAND=build_linux_gcc_coverall_ubuntu RELEASE_FILES="$TRAVIS_BUILD_DIR/build/*.xz"
+      env: IMAGE=ubuntu:latest COMMAND=build_linux_gcc_coverall_ubuntu RELEASE_FILES="$TRAVIS_BUILD_DIR/build/*.xz"
       services: docker
     - os: linux
       env: IMAGE=ubuntu:focal COMMAND=build_linux_gcc_ubuntu
@@ -23,19 +23,19 @@ matrix:
       env: IMAGE=fedora:latest COMMAND=build_linux_gcc_fedora
       services: docker
     - os: linux
-      env: IMAGE=ubuntu:rolling COMMAND=build_linux_clang_ubuntu
+      env: IMAGE=ubuntu:latest COMMAND=build_linux_clang_ubuntu
       services: docker
     - os: linux
       arch: arm64
-      env: IMAGE=arm64v8/ubuntu:rolling COMMAND=build_linux_gcc_ubuntu
+      env: IMAGE=arm64v8/ubuntu:latest COMMAND=build_linux_gcc_ubuntu
       services: docker
     - os: linux
       arch: ppc64le
-      env: IMAGE=ppc64le/ubuntu:rolling COMMAND=build_linux_gcc_ubuntu
+      env: IMAGE=ppc64le/ubuntu:latest COMMAND=build_linux_gcc_ubuntu
       services: docker
     - os: linux
       arch: s390x
-      env: IMAGE=s390x/ubuntu:rolling COMMAND=build_linux_gcc_ubuntu
+      env: IMAGE=s390x/ubuntu:latest COMMAND=build_linux_gcc_ubuntu
       services: docker
     - os: linux
       env: IMAGE=x86_64 COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
