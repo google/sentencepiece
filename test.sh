@@ -111,12 +111,12 @@ build_linux_clang_ubuntu() {
 }
 
 build_osx() {
-  brew update
-  brew install protobuf || brew link --overwrite protobuf
-  brew link --overwrite python@2
+#  brew update
+#  brew install protobuf || brew link --overwrite protobuf
+#  brew link --overwrite python@2
   build_generic
-  cd build
-  make install
+#  cd build
+#  make install
 }
 
 run_docker() {
