@@ -412,6 +412,50 @@ TEST(ModelInterfaceTest, SplitIntoWordsSuffixTest) {
   }
 }
 
+TEST(ModelInterfaceTest, SplitIntoWordsWhiteSpaceOnly) {
+  {
+    const auto v =
+        SplitIntoWords("this" WS "is" WS "a" WS "pen" WS, true, true);
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ("this" WS, v[0]);
+    EXPECT_EQ("is" WS, v[1]);
+    EXPECT_EQ("a" WS, v[2]);
+    EXPECT_EQ("pen" WS, v[3]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS WS "a", false, true);
+    EXPECT_EQ(1, v.size());
+    EXPECT_EQ(WS WS WS "a", v[0]);
+  }
+
+  {
+    const auto v = SplitIntoWords("a" WS WS WS, true, true);
+    EXPECT_EQ(1, v.size());
+    EXPECT_EQ("a" WS WS WS, v[0]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS, true, true);
+    EXPECT_EQ(1, v.size());
+    EXPECT_EQ(WS WS, v[0]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS "a" WS, true, true);
+    EXPECT_EQ(2, v.size());
+    EXPECT_EQ(WS WS, v[0]);
+    EXPECT_EQ("a" WS, v[1]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS "a" WS, false, true);
+    EXPECT_EQ(2, v.size());
+    EXPECT_EQ(WS WS "a", v[0]);
+    EXPECT_EQ(WS, v[1]);
+  }
+}
+
 TEST(ModelInterfaceTest, ByteToPieceTest) {
   EXPECT_EQ(ByteToPiece(0), "<0x00>");
   EXPECT_EQ(ByteToPiece(1), "<0x01>");

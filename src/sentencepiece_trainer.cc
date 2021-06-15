@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "sentencepiece_trainer.h"
-
 #include <string>
 #include <vector>
 
@@ -22,7 +20,9 @@
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
+#include "sentencepiece_trainer.h"
 #include "spec_parser.h"
+#include "third_party/absl/flags/flag.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_split.h"
@@ -30,6 +30,8 @@
 #include "third_party/absl/strings/strip.h"
 #include "trainer_factory.h"
 #include "util.h"
+
+ABSL_DECLARE_FLAG(int, minloglevel);
 
 namespace sentencepiece {
 namespace {
@@ -110,7 +112,7 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
   for (auto arg : absl::StrSplit(args, " ")) {
     absl::ConsumePrefix(&arg, "--");
     std::string key, value;
-    const auto pos = arg.find("=");
+    const auto pos = arg.find('=');
     if (pos == absl::string_view::npos) {
       key = std::string(arg);
     } else {
@@ -149,7 +151,7 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
     } else if (key == "minloglevel") {
       int v = 0;
       CHECK_OR_RETURN(absl::SimpleAtoi(value, &v));
-      logging::SetMinLogLevel(v);
+      absl::SetFlag(&FLAGS_minloglevel, v);
       continue;
     }
 

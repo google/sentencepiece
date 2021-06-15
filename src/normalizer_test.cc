@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "normalizer.h"
-
 #include <vector>
 
 #include "builder.h"
+#include "normalizer.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
 #include "util.h"

@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "util.h"
-
 #include <iostream>
 
+#include "util.h"
+
 namespace sentencepiece {
+
 namespace {
 constexpr unsigned int kDefaultSeed = static_cast<unsigned int>(-1);
 static unsigned int g_seed = kDefaultSeed;

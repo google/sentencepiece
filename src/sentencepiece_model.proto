@@ -139,6 +139,10 @@ message TrainerSpec {
   // of sentence.
   optional bool treat_whitespace_as_suffix = 24 [default = false];
 
+  // Allows pieces that only contain whitespaces instead of appearing only as
+  // prefix or suffix of other pieces.
+  optional bool allow_whitespace_only_pieces = 26 [default = false];
+
   // Split all digits (0-9) into separate pieces.
   optional bool split_digits = 25 [default = false];
 
