@@ -117,13 +117,6 @@ build_osx() {
   build_generic
   cd build
   make install
-  cd ..
-  cd python
-  python setup.py test
-  python setup.py clean
-  /usr/local/bin/python setup.py test
-  /usr/local/bin/python setup.py clean
-  cd ..
 }
 
 run_docker() {
