@@ -31,8 +31,6 @@
 #include "trainer_factory.h"
 #include "util.h"
 
-ABSL_DECLARE_FLAG(int, minloglevel);
-
 namespace sentencepiece {
 namespace {
 static constexpr char kDefaultNormalizerName[] = "nmt_nfkc";
@@ -151,7 +149,7 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
     } else if (key == "minloglevel") {
       int v = 0;
       CHECK_OR_RETURN(absl::SimpleAtoi(value, &v));
-      absl::SetFlag(&FLAGS_minloglevel, v);
+      logging::SetMinLogLevel(v);
       continue;
     }
 
