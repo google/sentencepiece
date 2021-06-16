@@ -171,6 +171,7 @@ void Flag<bool>::set_value_as_str(const std::string &value_as_str) {
 
 template class Flag<std::string>;
 template class Flag<int32>;
+template class Flag<uint32>;
 template class Flag<double>;
 template class Flag<bool>;
 template class Flag<int64>;

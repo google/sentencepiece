@@ -81,6 +81,7 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
 
   trainer_spec.set_split_by_whitespace(false);
   EXPECT_TRUE(IsValid(WS));
+  EXPECT_TRUE(IsValid(WS WS WS "a"));
   EXPECT_TRUE(IsValid(WS "a"));
   EXPECT_FALSE(IsValid("a" WS));
   EXPECT_FALSE(IsValid(WS "a" WS));
@@ -88,7 +89,17 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_TRUE(IsValid(WS "a" WS "b"));
   EXPECT_TRUE(IsValid(WS "a" WS "b" WS "c"));
   EXPECT_FALSE(IsValid("a" WS "b" WS));
+  EXPECT_FALSE(IsValid(WS WS));
+  EXPECT_FALSE(IsValid(WS WS WS));
 
+  trainer_spec.set_allow_whitespace_only_pieces(true);
+  EXPECT_TRUE(IsValid(WS));
+  EXPECT_TRUE(IsValid(WS WS));
+  EXPECT_TRUE(IsValid(WS WS WS));
+  EXPECT_TRUE(IsValid(WS WS "a"));
+  EXPECT_FALSE(IsValid("a" WS WS));  // suffix whitespace illegal without flag
+
+  trainer_spec.set_allow_whitespace_only_pieces(false);
   trainer_spec.set_split_by_unicode_script(false);
   EXPECT_TRUE(IsValid("あいう"));
   EXPECT_TRUE(IsValid("グーグル"));
@@ -124,6 +135,15 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_FALSE(IsValid(WS "a" WS "b"));
   EXPECT_FALSE(IsValid("a" WS "b" WS));
 
+  trainer_spec.set_allow_whitespace_only_pieces(true);
+  EXPECT_TRUE(IsValid(WS));
+  EXPECT_TRUE(IsValid(WS WS));
+  EXPECT_FALSE(IsValid(WS "a" WS));
+  EXPECT_FALSE(IsValid("a" WS "b"));
+  EXPECT_FALSE(IsValid(WS "a" WS "b"));
+  EXPECT_FALSE(IsValid("a" WS "b" WS));
+
+  trainer_spec.set_allow_whitespace_only_pieces(false);
   trainer_spec.set_split_by_whitespace(false);
   EXPECT_TRUE(IsValid(WS));
   EXPECT_FALSE(IsValid(WS "a"));
@@ -146,6 +166,12 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_FALSE(IsValid("2007"));
   EXPECT_FALSE(IsValid("x1"));
   EXPECT_FALSE(IsValid("2x"));
+  // Fullwidth digits.
+  EXPECT_TRUE(IsValid("１"));
+  EXPECT_FALSE(IsValid("５９"));
+  EXPECT_FALSE(IsValid("２００７"));
+  EXPECT_FALSE(IsValid("＊１"));
+  EXPECT_FALSE(IsValid("２＊"));
 }
 
 TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {

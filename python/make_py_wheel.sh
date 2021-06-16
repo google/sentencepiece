@@ -42,6 +42,7 @@ build() {
   for i in /opt/python/*
   do
     export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib
+    $i/bin/python setup.py clean
     $i/bin/python setup.py bdist
     strip build/*/*/*.so
     $i/bin/python setup.py bdist_wheel

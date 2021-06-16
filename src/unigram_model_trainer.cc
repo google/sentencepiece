@@ -223,7 +223,7 @@ std::vector<float> Trainer::RunEStep(const TrainerModel &model, float *obj,
         lattice.SetSentence(w);
         model.PopulateNodes(&lattice);
         const float Z = lattice.PopulateMarginal(freq, &expected[n]);
-        ntokens[n] += lattice.Viterbi().size();
+        ntokens[n] += lattice.Viterbi().first.size();
         CHECK(!std::isnan(Z))
             << "likelihood is NAN. Input sentence may be too long";
         objs[n] -= Z / all_sentence_freq;
@@ -297,17 +297,17 @@ TrainerModel::SentencePieces Trainer::PruneSentencePieces(
     const auto &w = sentencepieces[i];
     lattice.SetSentence(w.first);
     model.PopulateNodes(&lattice);
-    const auto nbests = lattice.NBest(2);
+    const auto nbests = lattice.NBest(2, false, 0.0);
     if (nbests.size() == 1) {
       // No second-best result is found. always keep this sentencepiece.
       always_keep[i] = true;
       continue;
-    } else if (nbests[0].size() >= 2) {
+    } else if (nbests[0].first.size() >= 2) {
       // Can safely remove this sentencepiece if its Viterbi path is split.
       always_keep[i] = false;
-    } else if (nbests[0].size() == 1) {
+    } else if (nbests[0].first.size() == 1) {
       always_keep[i] = true;
-      for (const auto *node : nbests[1]) {
+      for (const auto *node : nbests[1].first) {
         alternatives[i].push_back(node->id);
       }
     }
@@ -339,7 +339,7 @@ TrainerModel::SentencePieces Trainer::PruneSentencePieces(
           lattice.SetSentence(w.first);
           model.PopulateNodes(&lattice);
           vsums[n] += w.second;
-          for (const auto *node : lattice.Viterbi()) {
+          for (const auto *node : lattice.Viterbi().first) {
             if (node->id >= 0) {
               freqs[n][node->id] += w.second;
               inverteds[n][node->id].push_back(i);

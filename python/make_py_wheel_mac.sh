@@ -40,6 +40,7 @@ build_python() {
   pip install --upgrade setuptools
   pip install wheel
   pip install delocate
+  python setup.py clean
   python setup.py bdist_wheel --plat-name=macosx_10_6_x86_64
   python setup.py test
   delocate-listdeps dist/*.whl

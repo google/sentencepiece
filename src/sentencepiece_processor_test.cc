@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "sentencepiece_processor.h"
-
 #include <utility>
 
 #include "builder.h"
@@ -22,6 +20,7 @@
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
+#include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
 #include "third_party/absl/container/flat_hash_map.h"
@@ -1139,13 +1138,6 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
     EXPECT_EQ("cba", output);
   }
 
-  // Out of range
-  {
-    std::string output;
-    const std::vector<int> ids = {3, 4, 127};
-    EXPECT_FALSE(sp.Decode(ids, &output).ok());
-  }
-
   {
     EXPECT_TRUE(sp.SetDecodeExtraOptions("bos:eos").ok());
 
@@ -1170,6 +1162,13 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
     const std::vector<int> ids = {3, 4, 5};
     EXPECT_TRUE(sp.Decode(ids, &output).ok());
     EXPECT_EQ("cba", output);
+  }
+
+  // Out of range
+  {
+    std::string output;
+    const std::vector<int> ids = {3, 4, 127};
+    EXPECT_FALSE(sp.Decode(ids, &output).ok());
   }
 
   {
