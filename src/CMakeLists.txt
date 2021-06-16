@@ -94,6 +94,7 @@ set(SPM_SRCS
   model_factory.cc
   model_interface.cc
   normalizer.cc
+  case_encoder.cc
   sentencepiece_processor.cc
   unigram_model.cc
   util.cc

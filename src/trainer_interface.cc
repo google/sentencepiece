@@ -565,7 +565,7 @@ util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
   *(model_proto->mutable_trainer_spec()) = trainer_spec_;
   *(model_proto->mutable_normalizer_spec()) = normalizer_spec_;
 
-  if (!denormalizer_spec_.normalization_rule_tsv().empty()) {
+  if (!denormalizer_spec_.normalization_rule_tsv().empty() || denormalizer_spec_.decode_case()) {
     *(model_proto->mutable_denormalizer_spec()) = denormalizer_spec_;
   }
 

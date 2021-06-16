@@ -155,6 +155,7 @@ class Normalizer {
   // Normalizer's status.
   util::Status status_;
 };
+
 }  // namespace normalizer
 }  // namespace sentencepiece
 #endif  // NORMALIZER_NORMALIZER_H_

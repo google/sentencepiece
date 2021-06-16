@@ -81,6 +81,7 @@ util::Status SentencePieceProcessor::Load(
 
   normalizer_ = absl::make_unique<normalizer::Normalizer>(
       model_proto_->normalizer_spec(), model_proto_->trainer_spec());
+
   if (model_proto_->has_denormalizer_spec() &&
       !model_proto_->denormalizer_spec().precompiled_charsmap().empty()) {
     denormalizer_ = absl::make_unique<normalizer::Normalizer>(

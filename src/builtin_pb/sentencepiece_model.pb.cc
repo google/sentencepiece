@@ -1802,6 +1802,8 @@ const int NormalizerSpec::kAddDummyPrefixFieldNumber;
 const int NormalizerSpec::kRemoveExtraWhitespacesFieldNumber;
 const int NormalizerSpec::kEscapeWhitespacesFieldNumber;
 const int NormalizerSpec::kNormalizationRuleTsvFieldNumber;
+const int NormalizerSpec::kEncodeCaseFieldNumber;
+const int NormalizerSpec::kDecodeCaseFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 NormalizerSpec::NormalizerSpec()
@@ -1829,9 +1831,9 @@ NormalizerSpec::NormalizerSpec(const NormalizerSpec& from)
   if (from.has_normalization_rule_tsv()) {
     normalization_rule_tsv_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.normalization_rule_tsv_);
   }
-  ::memcpy(&add_dummy_prefix_, &from.add_dummy_prefix_,
+  ::memcpy(&encode_case_, &from.encode_case_,
     static_cast<size_t>(reinterpret_cast<char*>(&escape_whitespaces_) -
-    reinterpret_cast<char*>(&add_dummy_prefix_)) + sizeof(escape_whitespaces_));
+    reinterpret_cast<char*>(&encode_case_)) + sizeof(escape_whitespaces_));
   // @@protoc_insertion_point(copy_constructor:sentencepiece.NormalizerSpec)
 }
 
@@ -1839,6 +1841,9 @@ void NormalizerSpec::SharedCtor() {
   name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   precompiled_charsmap_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   normalization_rule_tsv_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  ::memset(&encode_case_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&decode_case_) -
+      reinterpret_cast<char*>(&encode_case_)) + sizeof(decode_case_));
   add_dummy_prefix_ = true;
   remove_extra_whitespaces_ = true;
   escape_whitespaces_ = true;
@@ -1872,7 +1877,7 @@ void NormalizerSpec::Clear() {
 
   _extensions_.Clear();
   cached_has_bits = _has_bits_[0];
-  if (cached_has_bits & 63u) {
+  if (cached_has_bits & 7u) {
     if (cached_has_bits & 0x00000001u) {
       name_.ClearNonDefaultToEmptyNoArena();
     }
@@ -1882,6 +1887,11 @@ void NormalizerSpec::Clear() {
     if (cached_has_bits & 0x00000004u) {
       normalization_rule_tsv_.ClearNonDefaultToEmptyNoArena();
     }
+  }
+  ::memset(&encode_case_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&decode_case_) -
+      reinterpret_cast<char*>(&encode_case_)) + sizeof(decode_case_));
+  if (cached_has_bits & 224u) {
     add_dummy_prefix_ = true;
     remove_extra_whitespaces_ = true;
     escape_whitespaces_ = true;
@@ -1984,6 +1994,34 @@ bool NormalizerSpec::MergePartialFromCodedStream(
         break;
       }
 
+      // optional bool encode_case = 7 [default = false];
+      case 7: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(56u /* 56 & 0xFF */)) {
+          set_has_encode_case();
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &encode_case_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
+      // optional bool decode_case = 8 [default = false];
+      case 8: {
+        if (static_cast< ::google::protobuf::uint8>(tag) ==
+            static_cast< ::google::protobuf::uint8>(64u /* 64 & 0xFF */)) {
+          set_has_decode_case();
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &decode_case_)));
+        } else {
+          goto handle_unusual;
+        }
+        break;
+      }
+
       default: {
       handle_unusual:
         if (tag == 0) {
@@ -2030,17 +2068,17 @@ void NormalizerSpec::SerializeWithCachedSizes(
   }
 
   // optional bool add_dummy_prefix = 3 [default = true];
-  if (cached_has_bits & 0x00000008u) {
+  if (cached_has_bits & 0x00000020u) {
     ::google::protobuf::internal::WireFormatLite::WriteBool(3, this->add_dummy_prefix(), output);
   }
 
   // optional bool remove_extra_whitespaces = 4 [default = true];
-  if (cached_has_bits & 0x00000010u) {
+  if (cached_has_bits & 0x00000040u) {
     ::google::protobuf::internal::WireFormatLite::WriteBool(4, this->remove_extra_whitespaces(), output);
   }
 
   // optional bool escape_whitespaces = 5 [default = true];
-  if (cached_has_bits & 0x00000020u) {
+  if (cached_has_bits & 0x00000080u) {
     ::google::protobuf::internal::WireFormatLite::WriteBool(5, this->escape_whitespaces(), output);
   }
 
@@ -2048,6 +2086,16 @@ void NormalizerSpec::SerializeWithCachedSizes(
   if (cached_has_bits & 0x00000004u) {
     ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
       6, this->normalization_rule_tsv(), output);
+  }
+
+  // optional bool encode_case = 7 [default = false];
+  if (cached_has_bits & 0x00000008u) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(7, this->encode_case(), output);
+  }
+
+  // optional bool decode_case = 8 [default = false];
+  if (cached_has_bits & 0x00000010u) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(8, this->decode_case(), output);
   }
 
   // Extension range [200, 536870912)
@@ -2067,7 +2115,7 @@ size_t NormalizerSpec::ByteSizeLong() const {
 
   total_size += _internal_metadata_.unknown_fields().size();
 
-  if (_has_bits_[0 / 32] & 63u) {
+  if (_has_bits_[0 / 32] & 255u) {
     // optional string name = 1;
     if (has_name()) {
       total_size += 1 +
@@ -2087,6 +2135,16 @@ size_t NormalizerSpec::ByteSizeLong() const {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::StringSize(
           this->normalization_rule_tsv());
+    }
+
+    // optional bool encode_case = 7 [default = false];
+    if (has_encode_case()) {
+      total_size += 1 + 1;
+    }
+
+    // optional bool decode_case = 8 [default = false];
+    if (has_decode_case()) {
+      total_size += 1 + 1;
     }
 
     // optional bool add_dummy_prefix = 3 [default = true];
@@ -2124,7 +2182,7 @@ void NormalizerSpec::MergeFrom(const NormalizerSpec& from) {
   (void) cached_has_bits;
 
   cached_has_bits = from._has_bits_[0];
-  if (cached_has_bits & 63u) {
+  if (cached_has_bits & 255u) {
     if (cached_has_bits & 0x00000001u) {
       set_has_name();
       name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.name_);
@@ -2138,12 +2196,18 @@ void NormalizerSpec::MergeFrom(const NormalizerSpec& from) {
       normalization_rule_tsv_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.normalization_rule_tsv_);
     }
     if (cached_has_bits & 0x00000008u) {
-      add_dummy_prefix_ = from.add_dummy_prefix_;
+      encode_case_ = from.encode_case_;
     }
     if (cached_has_bits & 0x00000010u) {
-      remove_extra_whitespaces_ = from.remove_extra_whitespaces_;
+      decode_case_ = from.decode_case_;
     }
     if (cached_has_bits & 0x00000020u) {
+      add_dummy_prefix_ = from.add_dummy_prefix_;
+    }
+    if (cached_has_bits & 0x00000040u) {
+      remove_extra_whitespaces_ = from.remove_extra_whitespaces_;
+    }
+    if (cached_has_bits & 0x00000080u) {
       escape_whitespaces_ = from.escape_whitespaces_;
     }
     _has_bits_[0] |= cached_has_bits;
@@ -2177,6 +2241,8 @@ void NormalizerSpec::InternalSwap(NormalizerSpec* other) {
     GetArenaNoVirtual());
   normalization_rule_tsv_.Swap(&other->normalization_rule_tsv_, &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
     GetArenaNoVirtual());
+  swap(encode_case_, other->encode_case_);
+  swap(decode_case_, other->decode_case_);
   swap(add_dummy_prefix_, other->add_dummy_prefix_);
   swap(remove_extra_whitespaces_, other->remove_extra_whitespaces_);
   swap(escape_whitespaces_, other->escape_whitespaces_);

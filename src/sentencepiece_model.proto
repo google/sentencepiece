@@ -242,6 +242,10 @@ message NormalizerSpec {
   // compiles the rule into the binary rule stored in `precompiled_charsmap`.
   optional string normalization_rule_tsv = 6;
 
+  // Handle uppercase characters
+  optional bool encode_case = 7 [default = false];
+  optional bool decode_case = 8 [default = false];
+
   // Customized extensions: the range of field numbers
   // are open to third-party extensions.
   extensions 200 to max;

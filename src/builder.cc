@@ -35,6 +35,7 @@
 
 #include <set>
 
+#include "case_encoder.h"
 #include "normalization_rule.h"
 #include "normalizer.h"
 #include "third_party/darts_clone/darts.h"
@@ -472,6 +473,82 @@ util::Status Builder::BuildNmtNFKC_CFMap(CharsMap *chars_map) {
              << " rebuild with ./configure --enable-nfkc-compile";
 #endif
 
+  return util::OkStatus();
+}
+
+util::Status Builder::BuildUncaserMap(Builder::CharsMap *chars_map) {
+#ifdef ENABLE_NFKC_COMPILE
+  LOG(INFO) << "Running BuildUncaserMap";
+
+  constexpr char32 ucMarker = (char32)normalizer::cUppercase;
+  constexpr char32 ncMarker = (char32)normalizer::cPunctuation;
+  
+  constexpr int kMaxUnicode = 0x10FFFF;
+  for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
+    if (!U_IS_UNICODE_CHAR(cp)) {
+      continue;
+    }
+
+    if(u_ispunct(cp))
+      (*chars_map)[{cp}] = {ncMarker, cp};
+
+    if(u_isupper(cp)) {
+      const char32 trg = u_foldCase(cp, U_FOLD_CASE_DEFAULT);
+      if (trg != cp && u_islower(trg))
+        (*chars_map)[{cp}] = {ucMarker, trg};
+    }
+  }
+
+  LOG(INFO) << "Character map size for Uncaser: " << chars_map->size();
+
+  RETURN_IF_ERROR(RemoveRedundantMap(chars_map));
+#endif
+
+  return util::OkStatus();
+}
+
+util::Status Builder::BuildRecaserMap(Builder::CharsMap *chars_map) {
+#ifdef ENABLE_NFKC_COMPILE
+  LOG(INFO) << "Running BuildRecaserMap";
+
+  constexpr char32 ucMarker = (char32)normalizer::cUppercase;
+  constexpr char32 tcMarker = (char32)normalizer::cTitlecase;
+  constexpr int kMaxUnicode = 0x10FFFF;
+  for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
+    if (!U_IS_UNICODE_CHAR(cp)) {
+      continue;
+    }
+    if(u_isupper(cp)) {
+      const char32 trg = u_foldCase(cp, U_FOLD_CASE_DEFAULT);
+      if (trg != cp && u_islower(trg)) {
+        if(chars_map->find({ucMarker, trg}) == chars_map->end())
+          (*chars_map)[{ucMarker, trg}] = {cp};
+        if(chars_map->find({tcMarker, trg}) == chars_map->end())
+          (*chars_map)[{tcMarker, trg}] = {cp};
+      }
+    }
+  }
+
+  RETURN_IF_ERROR(RemoveRedundantMap(chars_map));
+#endif
+
+  return util::OkStatus();
+}
+
+// static
+util::Status Builder::ComposeCharsMaps(const Builder::CharsMap &outer_chars_map, Builder::CharsMap *chars_map, bool add_rest) {
+  for(auto& cp : *chars_map) {
+    auto found = outer_chars_map.find(cp.second);
+    if(found != outer_chars_map.end())
+      cp.second = found->second;
+  }
+  if(add_rest) {
+    for(auto& cp : outer_chars_map) {
+      auto found = chars_map->find(cp.first);
+      if(found == chars_map->end())
+        (*chars_map)[cp.first] = cp.second;
+    }
+  }
   return util::OkStatus();
 }
 

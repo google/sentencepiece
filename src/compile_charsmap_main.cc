@@ -164,7 +164,9 @@ int main(int argc, char **argv) {
       kRuleList = {{"nfkc", Builder::BuildNFKCMap},
                    {"nmt_nfkc", Builder::BuildNmtNFKCMap},
                    {"nfkc_cf", Builder::BuildNFKC_CFMap},
-                   {"nmt_nfkc_cf", Builder::BuildNmtNFKC_CFMap}};
+                   {"nmt_nfkc_cf", Builder::BuildNmtNFKC_CFMap},
+                   {"case_uncaser", Builder::BuildUncaserMap},
+                   {"case_recaser", Builder::BuildRecaserMap}};
 
   std::vector<std::pair<std::string, std::string>> data;
   for (const auto &p : kRuleList) {

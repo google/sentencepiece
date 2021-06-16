@@ -24,6 +24,7 @@
 #include "third_party/absl/strings/strip.h"
 #include "third_party/darts_clone/darts.h"
 #include "util.h"
+#include "case_encoder.h"
 
 namespace sentencepiece {
 namespace normalizer {
@@ -130,9 +131,22 @@ util::Status Normalizer::Normalize(absl::string_view input,
   // "_world" as one symbol.
   if (!treat_whitespace_as_suffix_ && spec_->add_dummy_prefix()) add_ws();
 
+  typedef std::function<std::pair<absl::string_view, int>(absl::string_view)> NormalizePrefixFn;
+  NormalizePrefixFn normalize_prefix_fn = [this](absl::string_view input) { 
+    return NormalizePrefix(input); 
+  };
+
+  std::unique_ptr<CaseEncoder> case_encoder = CaseEncoder::Create(spec_->encode_case(), spec_->decode_case(), spec_->remove_extra_whitespaces());
+  if(case_encoder) {
+    case_encoder->setNormalizer(normalize_prefix_fn);
+    normalize_prefix_fn = [&case_encoder](absl::string_view input) { 
+      return case_encoder->normalizePrefix(input); 
+    };
+  }
+
   bool is_prev_space = spec_->remove_extra_whitespaces();
   while (!input.empty()) {
-    auto p = NormalizePrefix(input);
+    auto p = normalize_prefix_fn(input);
     absl::string_view sp = p.first;
 
     // Removes heading spaces in sentence piece,
@@ -151,14 +165,14 @@ util::Status Normalizer::Normalize(absl::string_view input,
           }
         } else {
           *normalized += data[n];
-          norm_to_orig->push_back(consumed);
+          norm_to_orig->push_back(consumed); 
         }
       }
       // Checks whether the last character of sp is whitespace.
       is_prev_space = absl::EndsWith(sp, " ");
     }
 
-    consumed += p.second;
+    consumed += p.second; 
     input.remove_prefix(p.second);
     if (!spec_->remove_extra_whitespaces()) {
       is_prev_space = false;
@@ -182,6 +196,9 @@ util::Status Normalizer::Normalize(absl::string_view input,
   if (treat_whitespace_as_suffix_ && spec_->add_dummy_prefix()) add_ws();
 
   norm_to_orig->push_back(consumed);
+
+  if(case_encoder)
+    case_encoder->postProcess(normalized, norm_to_orig);
 
   CHECK_EQ_OR_RETURN(norm_to_orig->size(), normalized->size() + 1);
 
