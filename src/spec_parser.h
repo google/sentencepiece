@@ -145,7 +145,6 @@ inline std::string PrintProto(const TrainerSpec &message,
   PRINT_PARAM(split_by_whitespace);
   PRINT_PARAM(split_digits);
   PRINT_PARAM(treat_whitespace_as_suffix);
-  PRINT_PARAM(allow_whitespace_only_pieces);
   PRINT_REPEATED_STRING(control_symbols);
   PRINT_REPEATED_STRING(user_defined_symbols);
   PRINT_PARAM(required_chars);
@@ -220,7 +219,6 @@ util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
   PARSE_BOOL(split_by_whitespace);
   PARSE_BOOL(split_digits);
   PARSE_BOOL(treat_whitespace_as_suffix);
-  PARSE_BOOL(allow_whitespace_only_pieces);
   PARSE_REPEATED_STRING(control_symbols);
   PARSE_REPEATED_STRING(user_defined_symbols);
   PARSE_STRING(required_chars);

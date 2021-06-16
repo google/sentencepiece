@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "normalizer.h"
+
 #include <utility>
 #include <vector>
 
 #include "common.h"
-#include "normalizer.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/match.h"
 #include "third_party/absl/strings/string_view.h"
@@ -277,11 +278,11 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
     absl::string_view blob, absl::string_view *trie_blob,
     absl::string_view *normalized, std::string *buffer) {
   uint32 trie_blob_size = 0;
+
   if (blob.size() <= sizeof(trie_blob_size) ||
       !string_util::DecodePOD<uint32>(
           absl::string_view(blob.data(), sizeof(trie_blob_size)),
-          &trie_blob_size) ||
-      trie_blob_size >= blob.size()) {
+          &trie_blob_size)) {
     return util::InternalError("Blob for normalization rule is broken.");
   }
 

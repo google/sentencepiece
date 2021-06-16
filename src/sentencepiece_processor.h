@@ -315,15 +315,6 @@ class SentencePieceProcessor {
   virtual util::Status SampleEncode(absl::string_view input, int nbest_size,
                                     float alpha, SentencePieceText *spt) const;
 
-  // Samples N segmentation and returns the scores as well
-  virtual util::Status SampleEncodeAndScore(
-      absl::string_view input, int samples, float theta, bool wor,
-      bool include_best, NBestSentencePieceText *samples_spt) const;
-
-  // Calculate entropy of possible tokenisations
-  virtual util::Status CalculateEntropy(absl::string_view input, float theta,
-                                        float *entropy) const;
-
   // Given a sequence of pieces, decodes it into SentencePieceText.
   virtual util::Status Decode(const std::vector<std::string> &pieces,
                               SentencePieceText *spt) const;

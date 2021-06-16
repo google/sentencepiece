@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "sentencepiece_processor.h"
+
 #include <map>
 #include <set>
 #include <utility>
@@ -22,7 +24,6 @@
 #include "model_interface.h"
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
-#include "sentencepiece_processor.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -503,43 +504,6 @@ util::Status SentencePieceProcessor::SampleEncode(
   return util::OkStatus();
 }
 
-util::Status SentencePieceProcessor::SampleEncodeAndScore(
-    absl::string_view input, int samples, float theta, bool wor,
-    bool include_best, NBestSentencePieceText *samples_spt) const {
-  CHECK_OR_RETURN(model_->IsSampleEncodeAndScoreAvailable())
-      << "SampleEncodeAndScore is not available for the current model.";
-  std::string normalized;
-  std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
-
-  const auto results = model_->SampleEncodeAndScore(normalized, theta, samples,
-                                                    wor, include_best);
-  CHECK_OR_RETURN(!results.empty())
-      << "SampleEncodeAndScore returns empty result.";
-
-  for (const auto &result : results) {
-    auto *spt = samples_spt->add_nbests();
-    spt->set_score(result.second);
-    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
-                                              result.first, spt));
-  }
-
-  return util::OkStatus();
-}
-
-util::Status SentencePieceProcessor::CalculateEntropy(absl::string_view input,
-                                                      float theta,
-                                                      float *entropy) const {
-  CHECK_OR_RETURN(model_->IsCalculateEntropyAvailable())
-      << "CalculateEntropy is not available for the current model.";
-  std::string normalized;
-  std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
-
-  *entropy = model_->CalculateEntropy(normalized, theta);
-  return util::OkStatus();
-}
-
 util::Status SentencePieceProcessor::Decode(
     const std::vector<std::string> &pieces, SentencePieceText *spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
@@ -868,12 +832,6 @@ const ModelProto &SentencePieceProcessor::model_proto() const {
 std::string SentencePieceProcessor::serialized_model_proto() const {
   return model_proto_ ? model_proto_->SerializeAsString() : "";
 }
-
-// Set seed value of random generator.
-// Do not set static_cast<unique_int>(-1),
-// as this seed is reserved for initializing from
-// std::random_device.
-void SetRandomGeneratorSeed(unsigned int seed);
 
 namespace io {
 

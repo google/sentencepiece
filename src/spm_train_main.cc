@@ -80,9 +80,6 @@ ABSL_FLAG(bool, split_digits, kDefaultTrainerSpec.split_digits(),
 ABSL_FLAG(bool, treat_whitespace_as_suffix,
           kDefaultTrainerSpec.treat_whitespace_as_suffix(),
           "treat whitespace marker as suffix instead of prefix.");
-ABSL_FLAG(bool, allow_whitespace_only_pieces,
-          kDefaultTrainerSpec.allow_whitespace_only_pieces(),
-          "allow pieces that only contain (consecutive) whitespace tokens");
 ABSL_FLAG(std::string, control_symbols, "",
           "comma separated list of control symbols");
 ABSL_FLAG(std::string, control_symbols_file, "",
@@ -141,8 +138,7 @@ ABSL_FLAG(std::string, unk_surface, kDefaultTrainerSpec.unk_surface(),
 ABSL_FLAG(bool, train_extremely_large_corpus,
           kDefaultTrainerSpec.train_extremely_large_corpus(),
           "Increase bit depth for unigram tokenization.");
-ABSL_FLAG(uint32, random_seed, static_cast<uint32>(-1),
-          "Seed value for random generator.");
+ABSL_FLAG(int32, random_seed, -1, "Seed value for random generator.");
 
 int main(int argc, char *argv[]) {
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
@@ -154,9 +150,8 @@ int main(int argc, char *argv[]) {
   CHECK(!absl::GetFlag(FLAGS_input).empty());
   CHECK(!absl::GetFlag(FLAGS_model_prefix).empty());
 
-  if (absl::GetFlag(FLAGS_random_seed) != -1) {
+  if (absl::GetFlag(FLAGS_random_seed) != -1)
     sentencepiece::SetRandomGeneratorSeed(absl::GetFlag(FLAGS_random_seed));
-  }
 
   auto load_lines = [](absl::string_view filename) {
     std::vector<std::string> lines;
@@ -216,7 +211,6 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(split_digits);
   SetTrainerSpecFromFlag(byte_fallback);
   SetTrainerSpecFromFlag(treat_whitespace_as_suffix);
-  SetTrainerSpecFromFlag(allow_whitespace_only_pieces);
   SetTrainerSpecFromFlag(hard_vocab_limit);
   SetTrainerSpecFromFlag(use_all_vocab);
   SetTrainerSpecFromFlag(unk_id);

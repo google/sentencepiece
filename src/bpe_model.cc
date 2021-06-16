@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "bpe_model.h"
+
 #include <functional>
 #include <memory>
 #include <queue>
@@ -19,7 +21,6 @@
 #include <utility>
 #include <vector>
 
-#include "bpe_model.h"
 #include "freelist.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "util.h"

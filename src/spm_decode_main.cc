@@ -64,7 +64,6 @@ int main(int argc, char *argv[]) {
 
   auto ToIds = [&](const std::vector<std::string> &pieces) {
     std::vector<int> ids;
-    ids.reserve(pieces.size());
     for (const auto &s : pieces) {
       ids.push_back(atoi(s.c_str()));
     }
