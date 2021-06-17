@@ -15,6 +15,7 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
+#include <endian.h>
 #include <stdio.h>
 #include <string.h>
 
