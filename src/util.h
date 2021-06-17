@@ -15,7 +15,6 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
-#include <endian.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -37,8 +36,12 @@
 #include <pthread.h>
 #endif
 
-#if !defined(__APPLE__) && !defined(_WIN32) && BYTE_ORDER == __BIG_ENDIAN
+#if !defined(__APPLE__) && !defined(_WIN32)
+#include <endian.h>
+#if BYTE_ORDER == __BIG_ENDIAN
 #define IS_BIG_ENDIAN
+foo();
+#endif
 #endif
 
 namespace sentencepiece {
