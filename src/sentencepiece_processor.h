@@ -315,12 +315,20 @@ class SentencePieceProcessor {
   virtual util::Status SampleEncode(absl::string_view input, int nbest_size,
                                     float alpha, SentencePieceText *spt) const;
 
-  // Samples N segmentation and returns the scores as well
+  // Sample `samples` segmentations from the segmentation lattice.
+  // If `wor` is true, the samples are taken without replacement, and the scores
+  // are the inclusion probabilities of the elements in the sample; otherwise
+  // the samples are taken with replacement and the scores are the log-probes of
+  // sample elements.
+  // If `include_best` is true, the best tokenization is always included in the
+  // sample, and the remaining elements are sampled excluding the best.
+  // This method is only available in Unigram mode.
   virtual util::Status SampleEncodeAndScore(
       absl::string_view input, int samples, float theta, bool wor,
       bool include_best, NBestSentencePieceText *samples_spt) const;
 
-  // Calculate entropy of possible tokenisations
+  // Calculate entropy of possible tokenization.
+  // Only available in unigram mode.
   virtual util::Status CalculateEntropy(absl::string_view input, float theta,
                                         float *entropy) const;
 

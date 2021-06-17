@@ -107,12 +107,12 @@ class ModelInterface {
     return EncodeResult();
   }
 
-  // Sample `samples` many tokenisations from the segmentation lattice
+  // Sample `samples` many tokenizations from the segmentation lattice
   // If `wor` is true, the samples are taken without replacement, and the scores
   // are the inclusion probabilities of the elements in the sample; otherwise
   // the samples are taken with replacement and the scores are the log-probs of
   // sample elements
-  // If `include_best` is true, the best tokenisation is always included in the
+  // If `include_best` is true, the best tokenization is always included in the
   // sample, and the remaining elements are sampled excluding the best.
   virtual NBestEncodeResult SampleEncodeAndScore(absl::string_view normalized,
                                                  float alpha, int samples,
