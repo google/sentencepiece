@@ -40,7 +40,6 @@
 #include <endian.h>
 #if BYTE_ORDER == __BIG_ENDIAN
 #define IS_BIG_ENDIAN
-foo();
 #endif
 #endif
 
