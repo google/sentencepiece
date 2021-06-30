@@ -8,7 +8,8 @@ The training options for the `spm_train` can be listed using `spm_train --help`.
 --minloglevel (Messages logged at a lower level than this don't actually get logged anywhere)  type: int default: 0
 --input (comma separated list of input sentences)  type: std::string default: ""
 --input_format (Input format. Supported format is `text` or `tsv`.)  type: std::string default: ""
---model_prefix (output model prefix)  type: std::string default: "" --model_type (model algorithm: unigram, bpe, word or char)  type: std::string default: "unigram"
+--model_prefix (output model prefix)  type: std::string default: ""
+--model_type (model algorithm: unigram, bpe, word or char)  type: std::string default: "unigram"
 --vocab_size (vocabulary size)  type: int32 default: 8000
 --accept_language (comma-separated list of languages this model can accept)  type: std::string default: ""
 --self_test_sample_size (the size of self test samples)  type: int32 default: 0
