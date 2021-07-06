@@ -17,6 +17,26 @@
 #include "util.h"
 
 namespace sentencepiece {
+
+namespace {
+constexpr unsigned int kDefaultSeed = static_cast<unsigned int>(-1);
+static unsigned int g_seed = kDefaultSeed;
+static int g_minloglevel = 0;
+}  // namespace
+
+void SetRandomGeneratorSeed(unsigned int seed) {
+  if (seed != kDefaultSeed) g_seed = seed;
+}
+
+uint32 GetRandomGeneratorSeed() {
+  return g_seed == kDefaultSeed ? std::random_device{}() : g_seed;
+}
+
+namespace logging {
+int GetMinLogLevel() { return g_minloglevel; }
+void SetMinLogLevel(int v) { g_minloglevel = v; }
+}  // namespace logging
+
 namespace string_util {
 
 // mblen sotres the number of bytes consumed after decoding.
@@ -144,7 +164,7 @@ class RandomGeneratorStorage {
   std::mt19937 *Get() {
     auto *result = static_cast<std::mt19937 *>(pthread_getspecific(key_));
     if (result == nullptr) {
-      result = new std::mt19937(std::random_device{}());
+      result = new std::mt19937(GetRandomGeneratorSeed());
       pthread_setspecific(key_, result);
     }
     return result;
@@ -162,7 +182,7 @@ std::mt19937 *GetRandomGenerator() {
 }
 #else
 std::mt19937 *GetRandomGenerator() {
-  thread_local static std::mt19937 mt(std::random_device{}());
+  thread_local static std::mt19937 mt(GetRandomGeneratorSeed());
   return &mt;
 }
 #endif

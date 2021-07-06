@@ -14,8 +14,8 @@
 
 #include <algorithm>
 
-#include "builtin_pb/sentencepiece_model.pb.h"
 #include "model_interface.h"
+#include "sentencepiece_model.pb.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/str_format.h"
 #include "util.h"
@@ -134,32 +134,53 @@ void ModelInterface::InitializePieces() {
 }
 
 std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
-                                              bool treat_whitespace_as_suffix) {
+                                              bool treat_ws_as_suffix,
+                                              bool allow_ws_only_pieces) {
   const char *begin = text.data();
   const char *end = text.data() + text.size();
 
   // Space symbol (U+2581)
   const absl::string_view kSpaceSymbol = "\xe2\x96\x81";
+  bool in_ws_sequence = false;
 
   std::vector<absl::string_view> result;
-  if (treat_whitespace_as_suffix) {
+  if (treat_ws_as_suffix) {  // put ws tokens at the end of non-ws sequences.
     if (begin < end) result.emplace_back(begin, 0);
     while (begin < end) {
       const int mblen =
           std::min<int>(string_util::OneCharLen(begin), end - begin);
       const bool is_ws = absl::string_view(begin, mblen) == kSpaceSymbol;
+
+      if (is_ws) {  // keep track of sequences consecutive ws tokens.
+        in_ws_sequence = true;
+      } else if (in_ws_sequence) {
+        if (allow_ws_only_pieces) result.emplace_back(begin, 0);
+
+        in_ws_sequence = false;
+      }
+
       result.back() =
           absl::string_view(result.back().data(), result.back().size() + mblen);
       begin += mblen;
-      if (begin < end && is_ws) result.emplace_back(begin, 0);
+
+      if (begin < end && is_ws && !allow_ws_only_pieces)
+        result.emplace_back(begin, 0);
     }
   } else {
     while (begin < end) {
       const int mblen =
           std::min<int>(string_util::OneCharLen(begin), end - begin);
+      bool is_ws = absl::string_view(begin, mblen) == kSpaceSymbol;
+
+      // if is whitespace (and not in sequence if allow_ws_only_pieces is True)
       if (begin == text.data() ||
-          absl::string_view(begin, mblen) == kSpaceSymbol)
+          (is_ws && (!in_ws_sequence || !allow_ws_only_pieces))) {
         result.emplace_back(begin, 0);  // add empty string piece.
+        in_ws_sequence = true;
+      }
+
+      if (in_ws_sequence && !is_ws) in_ws_sequence = false;
+
       result.back() =
           absl::string_view(result.back().data(), result.back().size() + mblen);
       begin += mblen;
@@ -174,7 +195,7 @@ std::string ByteToPiece(unsigned char c) {
 }
 
 int PieceToByte(absl::string_view piece) {
-  using PieceToByteMap = std::unordered_map<std::string, unsigned char>;
+  using PieceToByteMap = absl::flat_hash_map<std::string, unsigned char>;
   static const auto *const kMap = []() -> PieceToByteMap * {
     auto *m = new PieceToByteMap();
     for (int i = 0; i < 256; ++i) {

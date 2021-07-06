@@ -55,6 +55,16 @@ namespace sentencepiece {
     return util::OkStatus();                                                  \
   }
 
+#define PARSE_UINT64(param_name)                                              \
+  if (name == #param_name) {                                                  \
+    uint64 v;                                                                 \
+    if (!string_util::lexical_cast(value, &v))                                \
+      return util::StatusBuilder(util::StatusCode::kInvalidArgument, GTL_LOC) \
+             << "cannot parse \"" << value << "\" as int.";                   \
+    message->set_##param_name(v);                                             \
+    return util::OkStatus();                                                  \
+  }
+
 #define PARSE_DOUBLE(param_name)                                              \
   if (name == #param_name) {                                                  \
     double v;                                                                 \
@@ -135,6 +145,7 @@ inline std::string PrintProto(const TrainerSpec &message,
   PRINT_PARAM(split_by_whitespace);
   PRINT_PARAM(split_digits);
   PRINT_PARAM(treat_whitespace_as_suffix);
+  PRINT_PARAM(allow_whitespace_only_pieces);
   PRINT_REPEATED_STRING(control_symbols);
   PRINT_REPEATED_STRING(user_defined_symbols);
   PRINT_PARAM(required_chars);
@@ -196,7 +207,7 @@ util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
   PARSE_REPEATED_STRING(accept_language);
   PARSE_INT32(self_test_sample_size);
   PARSE_DOUBLE(character_coverage);
-  PARSE_INT32(input_sentence_size);
+  PARSE_UINT64(input_sentence_size);
   PARSE_BOOL(shuffle_input_sentence);
   PARSE_INT32(seed_sentencepiece_size);
   PARSE_DOUBLE(shrinking_factor);
@@ -207,7 +218,9 @@ util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
   PARSE_BOOL(split_by_unicode_script);
   PARSE_BOOL(split_by_number);
   PARSE_BOOL(split_by_whitespace);
+  PARSE_BOOL(split_digits);
   PARSE_BOOL(treat_whitespace_as_suffix);
+  PARSE_BOOL(allow_whitespace_only_pieces);
   PARSE_REPEATED_STRING(control_symbols);
   PARSE_REPEATED_STRING(user_defined_symbols);
   PARSE_STRING(required_chars);

@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include <unordered_map>
 #include <utility>
 
 #include "builder.h"
-#include "builtin_pb/sentencepiece.pb.h"
-#include "builtin_pb/sentencepiece_model.pb.h"
 #include "filesystem.h"
 #include "model_interface.h"
 #include "normalizer.h"
+#include "sentencepiece.pb.h"
+#include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/string_view.h"
@@ -62,6 +62,10 @@ class MockModel : public ModelInterface {
     EXPECT_EQ(normalized, input_);
     return nbest_output_;
   }
+
+  bool IsSampleEncodeAvailable() const override { return true; }
+
+  bool IsNBestEncodeAvailable() const override { return true; }
 
   bool IsControl(int id) const { return id == 1 || id == 2; }
 
@@ -547,8 +551,8 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
     int GetPieceSize() const override { return 7; }
 
     int PieceToId(absl::string_view piece) const override {
-      static std::unordered_map<absl::string_view, int,
-                                string_util::string_view_hash>
+      static absl::flat_hash_map<absl::string_view, int,
+                                 string_util::string_view_hash>
           kMap = {{"<unk>", 0}, {"<s>", 1}, {"</s>", 2},    {WS "ABC", 3},
                   {WS "DE", 4}, {"F", 5},   {"G" WS "H", 6}};
       return port::FindWithDefault(kMap, piece, 0);
@@ -681,6 +685,28 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
     EXPECT_EQ("ABC<UNK> DEFG HI", spt.text());
     EXPECT_EQ(8, spt.pieces_size());
   }
+
+  {
+    SentencePieceProcessor sp;
+    auto proto = absl::make_unique<ModelProto>();
+    proto->mutable_trainer_spec()->set_unk_surface("");
+    proto->mutable_normalizer_spec()->set_add_dummy_prefix(false);
+    proto->mutable_normalizer_spec()->set_remove_extra_whitespaces(false);
+    sp.Load(std::move(proto)).IgnoreError();
+
+    auto mock = absl::make_unique<DecodeMockModel>();
+    sp.SetModel(std::move(mock));
+
+    const auto normalization_spec = MakeDefaultNormalizerSpec();
+    sp.SetNormalizer(
+        absl::make_unique<normalizer::Normalizer>(normalization_spec));
+
+    SentencePieceText spt;
+
+    EXPECT_TRUE(sp.Decode(input, &spt).ok());
+    EXPECT_EQ(" ABC DEFG HI", spt.text());
+    EXPECT_EQ(8, spt.pieces_size());
+  }
 }
 
 TEST(SentencepieceProcessorTest, ByteFallbackDecodeTest) {
@@ -691,7 +717,7 @@ TEST(SentencepieceProcessorTest, ByteFallbackDecodeTest) {
     }
 
     int PieceToId(absl::string_view piece) const override {
-      using Map = std::unordered_map<std::string, int>;
+      using Map = absl::flat_hash_map<std::string, int>;
       static const Map kMap = []() -> Map {
         Map m = {
             {"<unk>", 0}, {"<s>", 1}, {"</s>", 2}, {"A", 3}, {"B", 4}, {"C", 5},
@@ -715,6 +741,8 @@ TEST(SentencepieceProcessorTest, ByteFallbackDecodeTest) {
       return kMap[id];
     }
 
+    int GetPieceSize() const override { return 256; }
+
     bool IsUnknown(int id) const override { return (id == 0); }
 
     bool IsControl(int id) const override { return (id == 1 || id == 2); }
@@ -733,24 +761,39 @@ TEST(SentencepieceProcessorTest, ByteFallbackDecodeTest) {
       absl::make_unique<normalizer::Normalizer>(normalization_spec));
 
   {
-    const std::vector<std::string> input = {"<s>", "A", "B",
-                                            // "あ" -> 0xE3 0x81 0x82
-                                            "<0xE3>", "<0x81>", "<0x82>",
-                                            // "Z" -> 0x5A
-                                            "<0x5A>",
-                                            // "Ω" -> 0xCE 0xA9
-                                            "<0xCE>", "<0xA9>", "C",
-                                            // Invalid UTF-8 bytes.
-                                            "<0xE0>", "<0x80>",
-                                            // "い" -> 0xE3 0x81 0x84
-                                            "<0xE3>", "<0x81>", "<0x84>"};
+    const std::vector<std::string> input = {
+        "<s>",
+        "A",
+        "B",
+        // "あ" -> 0xE3 0x81 0x82
+        "<0xE3>",
+        "<0x81>",
+        "<0x82>",
+        // "Z" -> 0x5A
+        "<0x5A>",
+        // "Ω" -> 0xCE 0xA9
+        "<0xCE>",
+        "<0xA9>",
+        "C",
+        // Invalid UTF-8 bytes.
+        "<0xE0>",
+        "<0x80>",
+        // "い" -> 0xE3 0x81 0x84
+        "<0xE3>",
+        "<0x81>",
+        "<0x84>",
+        // REPLACEMENT CHARACTER as byte pieces.
+        "<0xEF>",
+        "<0xBF>",
+        "<0xBD>",
+    };
 
     SentencePieceText spt;
     EXPECT_TRUE(sp.Decode(input, &spt).ok());
-    EXPECT_EQ("ABあZΩC\xEF\xBF\xBD\xEF\xBF\xBDい", spt.text());
-    EXPECT_EQ(15, spt.pieces_size());
+    EXPECT_EQ("ABあZΩC\xEF\xBF\xBD\xEF\xBF\xBDい\xEF\xBF\xBD", spt.text());
+    EXPECT_EQ(18, spt.pieces_size());
 
-    for (int i = 0; i < 15; ++i) {
+    for (int i = 0; i < 18; ++i) {
       EXPECT_EQ(input[i], spt.pieces(i).piece());
     }
 
@@ -808,6 +851,16 @@ TEST(SentencepieceProcessorTest, ByteFallbackDecodeTest) {
     EXPECT_EQ(15, spt.pieces(13).end());
     EXPECT_EQ(15, spt.pieces(14).begin());
     EXPECT_EQ(18, spt.pieces(14).end());
+
+    EXPECT_EQ("", spt.pieces(15).surface());
+    EXPECT_EQ("", spt.pieces(16).surface());
+    EXPECT_EQ("\xEF\xBF\xBD", spt.pieces(17).surface());
+    EXPECT_EQ(18, spt.pieces(15).begin());
+    EXPECT_EQ(18, spt.pieces(15).end());
+    EXPECT_EQ(18, spt.pieces(16).begin());
+    EXPECT_EQ(18, spt.pieces(16).end());
+    EXPECT_EQ(18, spt.pieces(17).begin());
+    EXPECT_EQ(21, spt.pieces(17).end());
   }
 }
 
@@ -862,12 +915,13 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
 
   {
     auto output = filesystem::NewWritableFile(
-        util::JoinPath(FLAGS_test_tmpdir, "model"), true);
+        util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "model"), true);
     output->Write(model_proto.SerializeAsString());
   }
 
   SentencePieceProcessor sp;
-  EXPECT_TRUE(sp.Load(util::JoinPath(FLAGS_test_tmpdir, "model")).ok());
+  EXPECT_TRUE(
+      sp.Load(util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "model")).ok());
 
   EXPECT_EQ(model_proto.SerializeAsString(),
             sp.model_proto().SerializeAsString());
@@ -1110,6 +1164,13 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
     EXPECT_EQ("cba", output);
   }
 
+  // Out of range
+  {
+    std::string output;
+    const std::vector<int> ids = {3, 4, 127};
+    EXPECT_FALSE(sp.Decode(ids, &output).ok());
+  }
+
   {
     EXPECT_TRUE(sp.SetDecodeExtraOptions("bos:eos:reverse").ok());
 
@@ -1339,10 +1400,10 @@ TEST(SentencePieceProcessorTest, VocabularyTest) {
   auto GetInlineFilename = [](const std::string content) {
     {
       auto out = filesystem::NewWritableFile(
-          util::JoinPath(FLAGS_test_tmpdir, "vocab.txt"));
+          util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "vocab.txt"));
       out->Write(content);
     }
-    return util::JoinPath(FLAGS_test_tmpdir, "vocab.txt");
+    return util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "vocab.txt");
   };
 
   sp1->set_type(ModelProto::SentencePiece::UNKNOWN);

@@ -2,19 +2,19 @@ language: cpp
 matrix:
   include:
     - os: linux
-      env: IMAGE=ubuntu:rolling COMMAND=build_linux_gcc_coverall_ubuntu RELEASE_FILES="$TRAVIS_BUILD_DIR/build/*.xz"
+      env: IMAGE=ubuntu:latest COMMAND=build_linux_gcc_coverall_ubuntu RELEASE_FILES="$TRAVIS_BUILD_DIR/build/*.xz"
       services: docker
     - os: linux
-      env: IMAGE=i386/ubuntu:rolling COMMAND=build_linux_gcc_ubuntu_i386
+      env: IMAGE=ubuntu:focal COMMAND=build_linux_gcc_ubuntu
+      services: docker      
+    - os: linux
+      env: IMAGE=ubuntu:bionic COMMAND=build_linux_gcc_ubuntu
       services: docker
     - os: linux
-      env: IMAGE=ubuntu:bionic COMMAND=build_linux_gcc_ubuntu_no_tf
+      env: IMAGE=ubuntu:xenial COMMAND=build_linux_gcc_ubuntu
       services: docker
     - os: linux
-      env: IMAGE=ubuntu:xenial COMMAND=build_linux_gcc_ubuntu_no_tf
-      services: docker
-    - os: linux
-      env: IMAGE=ubuntu:trusty COMMAND=build_linux_gcc_ubuntu_no_tf
+      env: IMAGE=ubuntu:trusty COMMAND=build_linux_gcc_ubuntu
       services: docker
     - os: linux
       env: IMAGE=debian:stable COMMAND=build_linux_gcc_debian
@@ -23,7 +23,19 @@ matrix:
       env: IMAGE=fedora:latest COMMAND=build_linux_gcc_fedora
       services: docker
     - os: linux
-      env: IMAGE=ubuntu:rolling COMMAND=build_linux_clang_ubuntu
+      env: IMAGE=ubuntu:latest COMMAND=build_linux_clang_ubuntu
+      services: docker
+    - os: linux
+      arch: arm64
+      env: IMAGE=arm64v8/ubuntu:latest COMMAND=build_linux_gcc_ubuntu
+      services: docker
+    - os: linux
+      arch: ppc64le
+      env: IMAGE=ppc64le/ubuntu:latest COMMAND=build_linux_gcc_ubuntu
+      services: docker
+    - os: linux
+      arch: s390x
+      env: IMAGE=s390x/ubuntu:latest COMMAND=build_linux_gcc_ubuntu
       services: docker
     - os: linux
       env: IMAGE=x86_64 COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
@@ -38,9 +50,24 @@ matrix:
         - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
       services: docker
     - os: linux
-      env: IMAGE=x86_64 COMMAND=make_py_wheel_tf RELEASE_FILES="$TRAVIS_BUILD_DIR/tensorflow/dist/*.whl"
+      arch: arm64
+      env: IMAGE=aarch64 COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
       script:
-        - $TRAVIS_BUILD_DIR/tensorflow/make_py_wheel.sh
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
+        - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
+      services: docker
+    - os: linux
+      arch: ppc64le
+      env: IMAGE=ppc64le COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
+      script:
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
+        - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
+      services: docker
+    - os: linux
+      arch: s390x
+      env: IMAGE=s390x COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
+      script:
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
         - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
       services: docker
     - os: osx
@@ -51,12 +78,6 @@ matrix:
       env: IMAGE=native COMMAND=make_py_wheel_mac_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/delocated_wheel/*.whl"
       script:
         - $TRAVIS_BUILD_DIR/python/make_py_wheel_mac.sh
-        - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
-    - os: osx
-      osx_image: xcode9.4
-      env: IMAGE=native COMMAND=make_py_wheel_mac_tf RELEASE_FILES="$TRAVIS_BUILD_DIR/tensorflow/dist/*.whl"
-      script:
-        - $TRAVIS_BUILD_DIR/tensorflow/make_py_wheel_mac.sh
         - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
 script:
   - $TRAVIS_BUILD_DIR/test.sh ${IMAGE} ${COMMAND}

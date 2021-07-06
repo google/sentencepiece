@@ -16,12 +16,12 @@
 #include <memory>
 #include <queue>
 #include <random>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "bpe_model.h"
 #include "freelist.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -70,9 +70,9 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
 
   // Reverse merge rules.
   // key: merged symbol, value: pair of original symbols.
-  std::unordered_map<absl::string_view,
-                     std::pair<absl::string_view, absl::string_view>,
-                     string_util::string_view_hash>
+  absl::flat_hash_map<absl::string_view,
+                      std::pair<absl::string_view, absl::string_view>,
+                      string_util::string_view_hash>
       rev_merge;
 
   // Pre-allocates SymbolPair for efficiency.
@@ -132,6 +132,7 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
   std::mt19937 *rand_gen = nullptr;
   auto skip_merge = [&]() {
     if (alpha <= 0.0) return false;
+    if (alpha >= 1.0) return true;
     if (rand_gen == nullptr) rand_gen = random::GetRandomGenerator();
     std::uniform_real_distribution<> gen(0.0, 1.0);
     return gen(*rand_gen) < alpha;

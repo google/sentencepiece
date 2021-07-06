@@ -17,10 +17,10 @@
 
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
-#include "builtin_pb/sentencepiece_model.pb.h"
+#include "sentencepiece_model.pb.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "trainer_interface.h"
 
 namespace sentencepiece {
@@ -111,7 +111,7 @@ class Trainer : public TrainerInterface {
   void UpdateActiveSymbols();
 
   // All unique symbols. Key is a fingerprint of Symbol.
-  std::unordered_map<uint64, Symbol *> symbols_cache_;
+  absl::flat_hash_map<uint64, Symbol *> symbols_cache_;
 
   // Set of symbols from which we find the best symbol in each iteration.
   std::set<Symbol *> active_symbols_;

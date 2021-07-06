@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "sentencepiece_trainer.h"
-
 #include <string>
 #include <vector>
 
 #include "builder.h"
-#include "builtin_pb/sentencepiece.pb.h"
-#include "builtin_pb/sentencepiece_model.pb.h"
 #include "common.h"
 #include "normalizer.h"
+#include "sentencepiece.pb.h"
+#include "sentencepiece_model.pb.h"
+#include "sentencepiece_trainer.h"
 #include "spec_parser.h"
+#include "third_party/absl/flags/flag.h"
+#include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_split.h"
 #include "third_party/absl/strings/string_view.h"
@@ -75,10 +76,15 @@ util::Status SentencePieceTrainer::Train(
 
   LOG(INFO) << "Starts training with : \n" << info;
 
-  trainer->SetSentenceIterator(sentence_iterator);
-  trainer->SetOutputSerializedModelProto(serialized_model_proto);
+  if (serialized_model_proto) {
+    ModelProto model_proto;
+    RETURN_IF_ERROR(trainer->Train(sentence_iterator, &model_proto));
+    *serialized_model_proto = model_proto.SerializeAsString();
+  } else {
+    RETURN_IF_ERROR(trainer->Train(sentence_iterator, nullptr));
+  }
 
-  return trainer->Train();
+  return util::OkStatus();
 }
 
 // static
@@ -100,11 +106,11 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
 
   if (args.empty()) return util::OkStatus();
 
-  std::map<std::string, std::string> kwargs;
+  std::unordered_map<std::string, std::string> kwargs;
   for (auto arg : absl::StrSplit(args, " ")) {
     absl::ConsumePrefix(&arg, "--");
     std::string key, value;
-    const auto pos = arg.find("=");
+    const auto pos = arg.find('=');
     if (pos == absl::string_view::npos) {
       key = std::string(arg);
     } else {
@@ -120,8 +126,9 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
 
 // static
 util::Status SentencePieceTrainer::MergeSpecsFromArgs(
-    const std::map<std::string, std::string> &kwargs, TrainerSpec *trainer_spec,
-    NormalizerSpec *normalizer_spec, NormalizerSpec *denormalizer_spec) {
+    const std::unordered_map<std::string, std::string> &kwargs,
+    TrainerSpec *trainer_spec, NormalizerSpec *normalizer_spec,
+    NormalizerSpec *denormalizer_spec) {
   CHECK_OR_RETURN(trainer_spec) << "`trainer_spec` must not be null.";
   CHECK_OR_RETURN(normalizer_spec) << "`normalizer_spec` must not be null.";
   CHECK_OR_RETURN(denormalizer_spec) << "`denormalizer_spec` must not be null.";
@@ -138,6 +145,11 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
       denormalizer_spec->set_add_dummy_prefix(false);
       denormalizer_spec->set_remove_extra_whitespaces(false);
       denormalizer_spec->set_escape_whitespaces(false);
+      continue;
+    } else if (key == "minloglevel") {
+      int v = 0;
+      CHECK_OR_RETURN(absl::SimpleAtoi(value, &v));
+      logging::SetMinLogLevel(v);
       continue;
     }
 
@@ -174,7 +186,7 @@ util::Status SentencePieceTrainer::Train(absl::string_view args,
 
 // static
 util::Status SentencePieceTrainer::Train(
-    const std::map<std::string, std::string> &kwargs,
+    const std::unordered_map<std::string, std::string> &kwargs,
     SentenceIterator *sentence_iterator, std::string *serialized_model_proto) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
@@ -216,11 +228,11 @@ util::Status SentencePieceTrainer::PopulateNormalizerSpec(
 // static
 util::Status SentencePieceTrainer::PopulateModelTypeFromString(
     absl::string_view type, TrainerSpec *spec) {
-  static const std::map<std::string, TrainerSpec::ModelType> kModelTypeMap = {
-      {"unigram", TrainerSpec::UNIGRAM},
-      {"bpe", TrainerSpec::BPE},
-      {"word", TrainerSpec::WORD},
-      {"char", TrainerSpec::CHAR}};
+  static const std::unordered_map<std::string, TrainerSpec::ModelType>
+      kModelTypeMap = {{"unigram", TrainerSpec::UNIGRAM},
+                       {"bpe", TrainerSpec::BPE},
+                       {"word", TrainerSpec::WORD},
+                       {"char", TrainerSpec::CHAR}};
   const auto it = kModelTypeMap.find(absl::AsciiStrToLower(type));
   if (it != kModelTypeMap.end()) {
     spec->set_model_type(it->second);

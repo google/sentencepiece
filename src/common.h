@@ -15,10 +15,10 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
-#include <setjmp.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <iostream>
 #include <memory>
 #include <string>
@@ -26,7 +26,6 @@
 #include <vector>
 
 #include "config.h"
-#include "flags.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #define OS_WIN
@@ -90,11 +89,6 @@ std::string WideToUtf8(const std::wstring &input);
 }  // namespace win32
 #endif
 
-namespace flags {
-int GetMinLogLevel();
-void SetMinLogLevel(int minloglevel);
-}  // namespace flags
-
 namespace error {
 
 void Abort();
@@ -137,6 +131,9 @@ enum LogSeverity {
   LOG_SEVERITY_SIZE = 4,
 };
 
+int GetMinLogLevel();
+void SetMinLogLevel(int v);
+
 inline const char *BaseName(const char *path) {
 #ifdef OS_WIN
   const char *p = strrchr(path, '\\');
@@ -150,7 +147,7 @@ inline const char *BaseName(const char *path) {
 }  // namespace sentencepiece
 
 #define LOG(severity)                                                        \
-  (sentencepiece::flags::GetMinLogLevel() >                                  \
+  (::sentencepiece::logging::GetMinLogLevel() >                              \
    ::sentencepiece::logging::LOG_##severity)                                 \
       ? 0                                                                    \
       : ::sentencepiece::error::Die(                                         \

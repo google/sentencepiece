@@ -57,6 +57,7 @@ inline std::string StrReplaceAll(
   std::string prev(s.data(), s.size());
   std::string result;
   for (const auto &it : patterns) {
+    result.clear();
     StringReplace(prev, it.first, it.second, true, &result);
     prev = result;
   }

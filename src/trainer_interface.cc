@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "trainer_interface.h"
-
+#include <algorithm>
 #include <cstdlib>
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -28,12 +26,14 @@
 #include "normalizer.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_format.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_split.h"
+#include "trainer_interface.h"
 #include "unicode_script.h"
 #include "util.h"
 
@@ -50,23 +50,12 @@ const char TrainerInterface::kUPPBoundaryStr[] = "\t";
 
 namespace {
 util::Status VerifySpec(const TrainerSpec &trainer_spec) {
-  //  CHECK_OR_RETURN(!trainer_spec.model_prefix().empty());
   CHECK_GT_OR_RETURN(trainer_spec.vocab_size(), 0);
 
   if (trainer_spec.model_type() == TrainerSpec::UNIGRAM ||
       trainer_spec.model_type() == TrainerSpec::BPE) {
     CHECK_OR_RETURN(!trainer_spec.use_all_vocab())
         << "--use_all_vocab=true is valid for WORD/CHAR model.";
-  }
-
-  if (trainer_spec.has_mining_sentence_size()) {
-    LOG(WARNING)
-        << "--mining_sentence_size() is deprecated. Use --input_sentence_size";
-  }
-
-  if (trainer_spec.has_training_sentence_size()) {
-    LOG(WARNING) << "--training_sentence_size() is deprecated. Use "
-                    "--input_sentence_size";
   }
 
 #define CHECK_RANGE(variable, minval, maxval) \
@@ -95,6 +84,10 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
   }
 
   return util::OkStatus();
+}
+
+bool is_unicode_decimal_number(char32 c) {
+  return (c >= 0x30 && c <= 0x39) || (c >= 0xff10 && c <= 0xff19);
 }
 
 class SentenceSelector {
@@ -132,16 +125,14 @@ class SentenceSelector {
   }
 
   bool Add(const std::pair<std::string, int64> &sentence) {
-    if (spec_->input_sentence_size() <= 0) {
+    if (spec_->input_sentence_size() == 0) {
       sentences_->emplace_back(sentence);
     } else {
       if (spec_->shuffle_input_sentence()) {
         sampler_->Add(sentence);
       } else {
         sentences_->emplace_back(sentence);
-        if (sentences_->size() >=
-            static_cast<size_t>(spec_->input_sentence_size()))
-          return false;
+        if (sentences_->size() >= spec_->input_sentence_size()) return false;
       }
     }
 
@@ -223,9 +214,10 @@ bool TrainerInterface::IsValidSentencePiece(
   constexpr unicode_script::ScriptType kAnyType =
       static_cast<unicode_script::ScriptType>(-1);
 
-  auto is_number = [](char32 c) { return (c >= 0x30 && c <= 0x39); };
-
   unicode_script::ScriptType prev_script = kAnyType;
+  bool all_whitespace_piece =
+      std::all_of(sentencepiece.begin(), sentencepiece.end(),
+                  [](char32 c) { return c == kWSChar; });
 
   for (size_t pos = 0; pos < sentencepiece.size(); ++pos) {
     const char32 c = sentencepiece[pos];
@@ -248,25 +240,30 @@ bool TrainerInterface::IsValidSentencePiece(
     }
 
     if (c == kWSChar) {
-      // Only allows whitespace to appear as a prefix of piece.
+      // Only allows whitespace to appear as a prefix of piece unless
+      // allow_whitespace_only_pieces is True.
       // When split_by_whitespace is false, we allow whitespaces to
       // appear in the middle, "foo_bar", but do not allow them
       // to appear as suffix, "foo_bar_".
       // Regardless of the setting of split_by_whitespace,
       // whitespace is treated as a prefix/infix of symbol or
-      // independent symbol.
-      if (trainer_spec_.treat_whitespace_as_suffix()) {
-        if ((trainer_spec_.split_by_whitespace() &&
-             pos < sentencepiece.size() - 1) ||
-            (!trainer_spec_.split_by_whitespace() &&
-             pos < sentencepiece.size() - 1 && pos == 0)) {
-          return false;
-        }
-      } else {
-        if ((trainer_spec_.split_by_whitespace() && pos > 0) ||
-            (!trainer_spec_.split_by_whitespace() && pos > 0 &&
-             pos == sentencepiece.size() - 1)) {
-          return false;
+      // independent symbol, unless allow_whitespace_only_pieces() is true,
+      // in which case whitespace only pieces can occur.
+      if (!trainer_spec_.allow_whitespace_only_pieces() ||
+          !all_whitespace_piece) {
+        if (trainer_spec_.treat_whitespace_as_suffix()) {
+          if ((trainer_spec_.split_by_whitespace() &&
+               pos < sentencepiece.size() - 1) ||
+              (!trainer_spec_.split_by_whitespace() &&
+               pos < sentencepiece.size() - 1 && pos == 0)) {
+            return false;
+          }
+        } else {
+          if ((trainer_spec_.split_by_whitespace() && pos > 0) ||
+              (!trainer_spec_.split_by_whitespace() && pos > 0 &&
+               pos == sentencepiece.size() - 1)) {
+            return false;
+          }
         }
       }
     } else {
@@ -278,11 +275,11 @@ bool TrainerInterface::IsValidSentencePiece(
         s = unicode_script::U_Han;
       }
 
-      if (!trainer_spec_.split_by_number() && is_number(c)) {
+      if (!trainer_spec_.split_by_number() && is_unicode_decimal_number(c)) {
         s = kAnyType;
       }
 
-      if (trainer_spec_.split_digits() && is_number(c)) {
+      if (trainer_spec_.split_digits() && is_unicode_decimal_number(c)) {
         if (sentencepiece.size() > 1) return false;
       }
 
@@ -313,10 +310,10 @@ util::Status TrainerInterface::LoadSentences() {
       (sentence_iterator_ == nullptr && !trainer_spec_.input().empty()))
       << "SentenceIterator and trainer_spec.input() must be exclusive.";
 
-  CHECK_OR_RETURN((serialized_model_proto_ != nullptr &&
-                   trainer_spec_.model_prefix().empty()) ||
-                  (serialized_model_proto_ == nullptr &&
-                   !trainer_spec_.model_prefix().empty()))
+  CHECK_OR_RETURN(
+      (output_model_proto_ != nullptr &&
+       trainer_spec_.model_prefix().empty()) ||
+      (output_model_proto_ == nullptr && !trainer_spec_.model_prefix().empty()))
       << "ModelProto and trainer_spec.model_prefix() must be exclusive.";
 
   const bool is_tsv = trainer_spec_.input_format() == "tsv";
@@ -436,7 +433,7 @@ END:
   // Count character frequencies.
   int64 all_chars_count = 0;
   // A map from a character to {is_required_char, character count}.
-  std::unordered_map<char32, std::pair<bool, int64>> chars_count;
+  absl::flat_hash_map<char32, std::pair<bool, int64>> chars_count;
   for (const char32 c :
        string_util::UTF8ToUnicodeText(trainer_spec_.required_chars())) {
     CHECK_OR_RETURN(string_util::IsValidCodepoint(c));
@@ -528,10 +525,11 @@ END:
 void TrainerInterface::SplitSentencesByWhitespace() {
   LOG(INFO) << "Tokenizing input sentences with whitespace: "
             << sentences_.size();
-  std::unordered_map<std::string, int64> tokens;
+  absl::flat_hash_map<std::string, int64> tokens;
   for (const auto &s : sentences_) {
     for (const auto &w :
-         SplitIntoWords(s.first, trainer_spec_.treat_whitespace_as_suffix())) {
+         SplitIntoWords(s.first, trainer_spec_.treat_whitespace_as_suffix(),
+                        trainer_spec_.allow_whitespace_only_pieces())) {
       tokens[std::string(w)] += s.second;
     }
   }
@@ -647,10 +645,8 @@ util::Status TrainerInterface::SaveVocab(absl::string_view filename) const {
 }
 
 util::Status TrainerInterface::Save() const {
-  if (serialized_model_proto_) {
-    ModelProto model_proto;
-    RETURN_IF_ERROR(Serialize(&model_proto));
-    *serialized_model_proto_ = model_proto.SerializeAsString();
+  if (output_model_proto_) {
+    RETURN_IF_ERROR(Serialize(output_model_proto_));
   } else {
     RETURN_IF_ERROR(SaveModel(trainer_spec_.model_prefix() + ".model"));
     RETURN_IF_ERROR(SaveVocab(trainer_spec_.model_prefix() + ".vocab"));

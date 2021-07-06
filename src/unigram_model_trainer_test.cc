@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "builtin_pb/sentencepiece_model.pb.h"
+#include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
@@ -38,12 +38,14 @@ TEST(UnigramTrainerTest, TrainerModelTest) {
 static constexpr char kTestInputData[] = "wagahaiwa_nekodearu.txt";
 
 TEST(UnigramTrainerTest, EndToEndTest) {
-  const std::string input = util::JoinPath(FLAGS_test_srcdir, kTestInputData);
+  const std::string input =
+      util::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kTestInputData);
 
   ASSERT_TRUE(
       SentencePieceTrainer::Train(
           absl::StrCat(
-              "--model_prefix=", util::JoinPath(FLAGS_test_tmpdir, "tmp_model"),
+              "--model_prefix=",
+              util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "tmp_model"),
               " --input=", input,
               " --vocab_size=8000 --normalization_rule_name=identity",
               " --model_type=unigram --user_defined_symbols=<user>",
@@ -51,8 +53,9 @@ TEST(UnigramTrainerTest, EndToEndTest) {
           .ok());
 
   SentencePieceProcessor sp;
-  EXPECT_TRUE(
-      sp.Load(util::JoinPath(FLAGS_test_tmpdir, "tmp_model.model")).ok());
+  EXPECT_TRUE(sp.Load(util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir),
+                                     "tmp_model.model"))
+                  .ok());
   EXPECT_EQ(8000, sp.GetPieceSize());
 
   const int cid = sp.PieceToId("<ctrl>");

@@ -1,7 +1,7 @@
 # SentencePiece TensorFlow module
 
 ## WARNING
-tf_sentencepiece is s going to be deprecated in tensorflow 2.3.0. tf_sentencepiece for tensorflow 2.2.0x is the last release of tf_sentencepiece. Use [tensoflow_text](https://github.com/tensorflow/text) to run sentencepiece on tensorflow.
+tf_sentencepiece is going to be deprecated in tensorflow 2.3.0. tf_sentencepiece for tensorflow 2.2.0x is the last release of tf_sentencepiece. Use [tensoflow_text](https://github.com/tensorflow/text) to run sentencepiece on tensorflow.
 
 Example
 ```Python

@@ -81,6 +81,7 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
 
   trainer_spec.set_split_by_whitespace(false);
   EXPECT_TRUE(IsValid(WS));
+  EXPECT_TRUE(IsValid(WS WS WS "a"));
   EXPECT_TRUE(IsValid(WS "a"));
   EXPECT_FALSE(IsValid("a" WS));
   EXPECT_FALSE(IsValid(WS "a" WS));
@@ -88,7 +89,17 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_TRUE(IsValid(WS "a" WS "b"));
   EXPECT_TRUE(IsValid(WS "a" WS "b" WS "c"));
   EXPECT_FALSE(IsValid("a" WS "b" WS));
+  EXPECT_FALSE(IsValid(WS WS));
+  EXPECT_FALSE(IsValid(WS WS WS));
 
+  trainer_spec.set_allow_whitespace_only_pieces(true);
+  EXPECT_TRUE(IsValid(WS));
+  EXPECT_TRUE(IsValid(WS WS));
+  EXPECT_TRUE(IsValid(WS WS WS));
+  EXPECT_TRUE(IsValid(WS WS "a"));
+  EXPECT_FALSE(IsValid("a" WS WS));  // suffix whitespace illegal without flag
+
+  trainer_spec.set_allow_whitespace_only_pieces(false);
   trainer_spec.set_split_by_unicode_script(false);
   EXPECT_TRUE(IsValid("あいう"));
   EXPECT_TRUE(IsValid("グーグル"));
@@ -124,6 +135,15 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_FALSE(IsValid(WS "a" WS "b"));
   EXPECT_FALSE(IsValid("a" WS "b" WS));
 
+  trainer_spec.set_allow_whitespace_only_pieces(true);
+  EXPECT_TRUE(IsValid(WS));
+  EXPECT_TRUE(IsValid(WS WS));
+  EXPECT_FALSE(IsValid(WS "a" WS));
+  EXPECT_FALSE(IsValid("a" WS "b"));
+  EXPECT_FALSE(IsValid(WS "a" WS "b"));
+  EXPECT_FALSE(IsValid("a" WS "b" WS));
+
+  trainer_spec.set_allow_whitespace_only_pieces(false);
   trainer_spec.set_split_by_whitespace(false);
   EXPECT_TRUE(IsValid(WS));
   EXPECT_FALSE(IsValid(WS "a"));
@@ -146,6 +166,12 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_FALSE(IsValid("2007"));
   EXPECT_FALSE(IsValid("x1"));
   EXPECT_FALSE(IsValid("2x"));
+  // Fullwidth digits.
+  EXPECT_TRUE(IsValid("１"));
+  EXPECT_FALSE(IsValid("５９"));
+  EXPECT_FALSE(IsValid("２００７"));
+  EXPECT_FALSE(IsValid("＊１"));
+  EXPECT_FALSE(IsValid("２＊"));
 }
 
 TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
@@ -441,7 +467,8 @@ TEST(TrainerInterfaceTest, SerializeTest) {
 }
 
 TEST(TrainerInterfaceTest, CharactersTest) {
-  const std::string input_file = util::JoinPath(FLAGS_test_tmpdir, "input");
+  const std::string input_file =
+      util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "input");
   {
     auto output = filesystem::NewWritableFile(input_file);
     // Make a single line with 50 "a", 49 "あ", and 1 "b".
@@ -465,7 +492,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   trainer_spec.set_model_prefix("model");
   trainer_spec.set_character_coverage(0.98);
 
-  using E = std::unordered_map<char32, int64>;
+  using E = absl::flat_hash_map<char32, int64>;
   {
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_OK(trainer.LoadSentences());
@@ -507,8 +534,8 @@ TEST(TrainerInterfaceTest, MultiFileSentenceIteratorTest) {
   std::vector<std::string> files;
   std::vector<std::string> expected;
   for (int i = 0; i < 10; ++i) {
-    const std::string file =
-        util::JoinPath(FLAGS_test_tmpdir, absl::StrCat("input", i));
+    const std::string file = util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir),
+                                            absl::StrCat("input", i));
     auto output = filesystem::NewWritableFile(file);
     int num_line = (rand() % 100) + 1;
     for (int n = 0; n < num_line; ++n) {
@@ -529,8 +556,8 @@ TEST(TrainerInterfaceTest, MultiFileSentenceIteratorTest) {
 TEST(TrainerInterfaceTest, MultiFileSentenceIteratorErrorTest) {
   std::vector<std::string> files;
   for (int i = 0; i < 10; ++i) {
-    const std::string file =
-        util::JoinPath(FLAGS_test_tmpdir, absl::StrCat("input_not_exist", i));
+    const std::string file = util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir),
+                                            absl::StrCat("input_not_exist", i));
     files.push_back(file);
   }
 

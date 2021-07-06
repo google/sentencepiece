@@ -21,6 +21,7 @@ call :BuildPython C:\Python35%PLATFORM_PREFIX%
 call :BuildPython C:\Python36%PLATFORM_PREFIX%
 call :BuildPython C:\Python37%PLATFORM_PREFIX%
 call :BuildPython C:\Python38%PLATFORM_PREFIX%
+call :BuildPython C:\Python39%PLATFORM_PREFIX%
 c:\Python38%PLATFORM_PREFIX%\python setup.py sdist || goto :error
 exit
 

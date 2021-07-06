@@ -54,14 +54,7 @@ Builder::Chars UnicodeNormalize(UNormalizationMode mode,
   const std::string utf8 = string_util::UnicodeTextToUTF8(input);
   CHECK(!utf8.empty());
 
-  icu::UnicodeString ustr;
-  const size_t utf8_length = utf8.size();
-  UChar *utf16 = ustr.getBuffer(utf8.size() + 1);
-  int32 utf16_length = 0;
-  icu::ErrorCode icuerrorcode;
-  u_strFromUTF8Lenient(utf16, ustr.getCapacity(), &utf16_length, utf8.data(),
-                       utf8_length, icuerrorcode);
-  ustr.releaseBuffer(utf16_length);
+  icu::UnicodeString ustr = icu::UnicodeString::fromUTF8(utf8.c_str());
 
   UErrorCode status = U_ZERO_ERROR;
   icu::UnicodeString dst;
@@ -225,8 +218,9 @@ util::Status Builder::DecompileCharsMap(absl::string_view blob,
   chars_map->clear();
 
   absl::string_view trie_blob, normalized;
-  RETURN_IF_ERROR(
-      Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob, &normalized));
+  std::string buf;
+  RETURN_IF_ERROR(Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob,
+                                                        &normalized, &buf));
 
   Darts::DoubleArray trie;
   trie.set_array(const_cast<char *>(trie_blob.data()),
@@ -373,7 +367,7 @@ util::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
   nfkc_map[{0xFEFF}] = {0x20};  // ZERO WIDTH NO-BREAK
   nfkc_map[{0xFFFD}] = {0x20};  // REPLACEMENT CHARACTER
   nfkc_map[{0x200C}] = {0x20};  // ZERO WIDTH NON-JOINER
-  nfkc_map[{0x200D}] = {0x20};  // ZERO WIDTH JOINER
+//  nfkc_map[{0x200D}] = {0x20};  // ZERO WIDTH JOINER
 
   // Ascii Control characters
   nfkc_map[{0x0001}] = {};
@@ -483,7 +477,7 @@ util::Status Builder::BuildNmtNFKC_CFMap(CharsMap *chars_map) {
 // static
 util::Status Builder::LoadCharsMap(absl::string_view filename,
                                    CharsMap *chars_map) {
-  LOG(INFO) << "Loading maping file: " << filename.data();
+  LOG(INFO) << "Loading mapping file: " << filename.data();
   CHECK_OR_RETURN(chars_map);
 
   auto input = filesystem::NewReadableFile(filename);
@@ -494,16 +488,16 @@ util::Status Builder::LoadCharsMap(absl::string_view filename,
   chars_map->clear();
   while (input->ReadLine(&line)) {
     std::vector<std::string> fields =
-        absl::StrSplit(line, "\t", absl::AllowEmpty());
+        absl::StrSplit(line, '\t', absl::AllowEmpty());
     CHECK_GE(fields.size(), 1);
     if (fields.size() == 1) fields.push_back("");  // Deletion rule.
     std::vector<char32> src, trg;
-    for (auto s : absl::StrSplit(fields[0], " ")) {
+    for (auto s : absl::StrSplit(fields[0], ' ')) {
       if (s.empty()) continue;
       absl::ConsumePrefix(&s, "U+");
       src.push_back(string_util::HexToInt<char32>(s));
     }
-    for (auto s : absl::StrSplit(fields[1], " ")) {
+    for (auto s : absl::StrSplit(fields[1], ' ')) {
       if (s.empty()) continue;
       absl::ConsumePrefix(&s, "U+");
       trg.push_back(string_util::HexToInt<char32>(s));

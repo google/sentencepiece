@@ -15,6 +15,8 @@
 # limitations under the License.!
 
 from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext as _build_ext
+from setuptools.command.build_py import build_py as _build_py
 import codecs
 import string
 import subprocess
@@ -23,65 +25,100 @@ import os
 
 sys.path.append(os.path.join('.', 'test'))
 
-with codecs.open('README.md', 'r', 'utf-8') as f:
-  long_description = f.read()
 
-with codecs.open('VERSION', 'r', 'utf-8') as f:
-  version = f.read().rstrip()
+def long_description():
+  with codecs.open('README.md', 'r', 'utf-8') as f:
+    long_description = f.read()
+  return long_description
 
 
-def cmd(line):
+def version():
+  with codecs.open('VERSION.txt', 'r', 'utf-8') as f:
+    version = f.read().rstrip()
+    return version
+
+
+def run_pkg_config(section, pkg_config_path=None):
   try:
-    output = subprocess.check_output(line, shell=True)
+    cmd = 'pkg-config sentencepiece --{}'.format(section)
+    if pkg_config_path:
+      cmd = 'env PKG_CONFIG_PATH={} {}'.format(pkg_config_path, cmd)
+    output = subprocess.check_output(cmd, shell=True)
     if sys.version_info >= (3, 0, 0):
       output = output.decode('utf-8')
   except subprocess.CalledProcessError:
-    sys.stderr.write('Failed to find sentencepiece pkgconfig\n')
+    sys.stderr.write('Failed to find sentencepiece pkg-config\n')
     sys.exit(1)
   return output.strip().split()
 
 
-# Fix compile on some versions of Mac OSX
-# See: https://github.com/neulab/xnmt/issues/199
-def cflags():
-  if sys.platform == 'win32':
-    return ['/MT', '/I..\\build\\root\\include']
-  args = ['-std=c++11']
-  if sys.platform == 'darwin':
-    args.append('-mmacosx-version-min=10.9')
-  args = args + cmd('pkg-config sentencepiece --cflags')
-  return args
+def is_sentencepiece_installed():
+  try:
+    subprocess.check_call('pkg-config sentencepiece --libs', shell=True)
+    return True
+  except subprocess.CalledProcessError:
+    return False
 
 
-def libs():
-  if sys.platform == 'win32':
-    return [
-        '..\\build\\root\\lib\\sentencepiece.lib',
-        '..\\build\\root\\lib\\sentencepiece_train.lib'
-    ]
+class build_ext(_build_ext):
+  """Override build_extension to run cmake."""
 
-  return cmd('pkg-config sentencepiece --libs')
+  def build_extension(self, ext):
+    pkg_config_path = None
+    if not is_sentencepiece_installed():
+      subprocess.check_call(['./build_bundled.sh', version()])
+      pkg_config_path = './bundled/lib/pkgconfig:./bundled/lib64/pkgconfig'
 
+    cflags = ['-std=c++11']
+    # Fix compile on some versions of Mac OSX
+    # See: https://github.com/neulab/xnmt/issues/199
+    if sys.platform == 'darwin':
+      cflags.append('-mmacosx-version-min=10.9')
+    cflags = cflags + run_pkg_config('cflags', pkg_config_path)
+    libs = run_pkg_config('libs', pkg_config_path)
+    print('## cflags={}'.format(' '.join(cflags)))
+    print('## libs={}'.format(' '.join(libs)))
+    ext.extra_compile_args = cflags
+    ext.extra_link_args = libs
+    _build_ext.build_extension(self, ext)
+
+
+if os.name == 'nt':
+  cflags = ['/MT', '/I..\\build\\root\\include']
+  libs = [
+      '..\\build\\root\\lib\\sentencepiece.lib',
+      '..\\build\\root\\lib\\sentencepiece_train.lib'
+  ]
+  SENTENCEPIECE_EXT = Extension(
+      'sentencepiece._sentencepiece',
+      sources=['src/sentencepiece/sentencepiece_wrap.cxx'],
+      extra_compile_args=cflags,
+      extra_link_args=libs)
+  cmdclass = {}
+else:
+  SENTENCEPIECE_EXT = Extension(
+      'sentencepiece._sentencepiece',
+      sources=['src/sentencepiece/sentencepiece_wrap.cxx'])
+  cmdclass = {'build_ext': build_ext}
 
 setup(
     name='sentencepiece',
     author='Taku Kudo',
     author_email='taku@google.com',
     description='SentencePiece python wrapper',
-    long_description=long_description,
+    long_description=long_description(),
     long_description_content_type='text/markdown',
-    version=version,
+    version=version(),
+    package_dir={'': 'src'},
     url='https://github.com/google/sentencepiece',
     license='Apache',
     platforms='Unix',
-    py_modules=['sentencepiece'],
-    ext_modules=[
-        Extension(
-            '_sentencepiece',
-            sources=['sentencepiece_wrap.cxx'],
-            extra_compile_args=cflags(),
-            extra_link_args=libs())
+    py_modules=[
+        'sentencepiece/__init__', 'sentencepiece/sentencepiece_model_pb2',
+        'sentencepiece/sentencepiece_pb2'
     ],
+    ext_modules=[SENTENCEPIECE_EXT],
+    cmdclass=cmdclass,
     classifiers=[
         'Development Status :: 5 - Production/Stable', 'Environment :: Console',
         'Intended Audience :: Developers',

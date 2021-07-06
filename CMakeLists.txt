@@ -13,7 +13,7 @@
 # limitations under the License.!
 
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-file(STRINGS "VERSION" SPM_VERSION)
+file(STRINGS "VERSION.txt" SPM_VERSION)
 message(STATUS "VERSION: ${SPM_VERSION}")
 project(sentencepiece VERSION ${SPM_VERSION} LANGUAGES C CXX)
 
@@ -26,14 +26,30 @@ option(SPM_ENABLE_TCMALLOC "Enable TCMalloc if available." ON)
 option(SPM_TCMALLOC_STATIC "Link static library of TCMALLOC." OFF)
 option(SPM_NO_THREADLOCAL "Disable thread_local operator" OFF)
 option(SPM_USE_BUILTIN_PROTOBUF "Use built-in protobuf" ON)
+option(SPM_USE_EXTERNAL_ABSL "Use external protobuf" OFF)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(prefix ${CMAKE_INSTALL_PREFIX})
-set(exec_prefix "\${prefix}")
-set(libdir "\${exec_prefix}/lib")
-set(includedir "\${prefix}/include")
+if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND
+     CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 10.0) OR
+   (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND
+     CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 8.0))
+  string(APPEND CMAKE_CXX_FLAGS " -fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=''")
+endif()
+
+if (UNIX)
+  include(GNUInstallDirs)
+  set(prefix ${CMAKE_INSTALL_PREFIX})
+  set(exec_prefix "\${prefix}")
+  set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
+  set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+else()
+  set(prefix ${CMAKE_INSTALL_PREFIX})
+  set(exec_prefix "\${prefix}")
+  set(libdir "\${exec_prefix}/lib")
+  set(includedir "\${prefix}/include")
+endif()
 set(GNUCXX_STD_SUPPORT_VERSION "4.3")
 
 if (SPM_USE_BUILTIN_PROTOBUF)
@@ -78,13 +94,17 @@ configure_file("${PROJECT_SOURCE_DIR}/config.h.in" "config.h")
 configure_file("${PROJECT_SOURCE_DIR}/sentencepiece.pc.in" "sentencepiece.pc" @ONLY)
 
 if (NOT MSVC)
-  install(FILES "${CMAKE_BINARY_DIR}/sentencepiece.pc" DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece.pc" DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
 
-include_directories(${CMAKE_SOURCE_DIR} ${PROJECT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 
 if (SPM_BUILD_TEST)
   enable_testing()
+endif()
+
+if (SPM_USE_EXTERNAL_ABSL)
+ add_subdirectory(third_party/abseil-cpp)
 endif()
 
 add_subdirectory(src)

@@ -40,6 +40,7 @@ build_python() {
   pip install --upgrade setuptools
   pip install wheel
   pip install delocate
+  python setup.py clean
   python setup.py bdist_wheel --plat-name=macosx_10_6_x86_64
   python setup.py test
   delocate-listdeps dist/*.whl
@@ -66,15 +67,18 @@ build() {
   cd ..
 
   mkdir -p dist/delocated_wheel
-  curl -L -O https://bootstrap.pypa.io/get-pip.py
 
-  build_python 2.7 https://www.python.org/ftp/python/2.7.15/python-2.7.15-macosx10.6.pkg
+#  build_python 2.7 https://www.python.org/ftp/python/2.7.15/python-2.7.15-macosx10.6.pkg
 # latest pip doesn't support Py3.4
-# build_python 3.4 https://www.python.org/ftp/python/3.4.4/python-3.4.4-macosx10.6.pkg
+  # build_python 3.4 https://www.python.org/ftp/python/3.4.4/python-3.4.4-macosx10.6.pkg
+  curl -L -O https://bootstrap.pypa.io/pip/3.5/get-pip.py
   build_python 3.5 https://www.python.org/ftp/python/3.5.4/python-3.5.4-macosx10.6.pkg
+
+  curl -L -O https://bootstrap.pypa.io/get-pip.py
   build_python 3.6 https://www.python.org/ftp/python/3.6.6/python-3.6.6-macosx10.6.pkg
-  build_python 3.7 https://www.python.org/ftp/python/3.7.0/python-3.7.0-macosx10.6.pkg
-  build_python 3.8 https://www.python.org/ftp/python/3.8.0/python-3.8.0-macosx10.9.pkg
+  build_python 3.7 https://www.python.org/ftp/python/3.7.9/python-3.7.9-macosx10.9.pkg
+  build_python 3.8 https://www.python.org/ftp/python/3.8.6/python-3.8.6-macosx10.9.pkg
+  build_python 3.9 https://www.python.org/ftp/python/3.9.0/python-3.9.0-macosx10.9.pkg
 
   cd ..
 

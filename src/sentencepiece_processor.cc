@@ -12,18 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "sentencepiece_processor.h"
-
 #include <map>
 #include <set>
 #include <utility>
 
-#include "builtin_pb/sentencepiece.pb.h"
 #include "common.h"
 #include "filesystem.h"
 #include "model_factory.h"
 #include "model_interface.h"
 #include "normalizer.h"
+#include "sentencepiece.pb.h"
+#include "sentencepiece_processor.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -45,6 +44,9 @@ const char kSpaceSymbol[] = "\xe2\x96\x81";
 // since this character can be useful both for user and
 // developer. We can easily figure out that <unk> is emitted.
 const char kDefaultUnknownSymbol[] = " \xE2\x81\x87 ";
+
+// REPLACEMENT CHARACTER (U+FFFD) in UTF-8.
+const char kReplacementCharacter[] = "\xef\xbf\xbd";
 }  // namespace
 
 SentencePieceProcessor::SentencePieceProcessor() {}
@@ -363,7 +365,7 @@ util::Status SentencePieceProcessor::PopulateSentencePieceText(
       CHECK_LE_OR_RETURN(orig_end, input.size());
       CHECK_LE_OR_RETURN(orig_begin, orig_end);
       const auto surface =
-          absl::ClippedSubstr(input.data(), orig_begin, orig_end - orig_begin);
+          absl::ClippedSubstr(input, orig_begin, orig_end - orig_begin);
 
       if (is_unk && model_->ByteFallbackEnabled()) {
         // Decomposes an unknown piece into UTF-8 bytes
@@ -446,6 +448,9 @@ util::Status SentencePieceProcessor::NBestEncode(
   std::vector<size_t> norm_to_orig;
   RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
+  CHECK_OR_RETURN(model_->IsNBestEncodeAvailable())
+      << "NBestEncode is not available for the current model.";
+
   const auto nbests = model_->NBestEncode(normalized, nbest_size);
   CHECK_OR_RETURN(!nbests.empty()) << "NBestEncode returns empty result.";
 
@@ -470,7 +475,13 @@ util::Status SentencePieceProcessor::SampleEncode(
   std::vector<size_t> norm_to_orig;
   RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
-  if (nbest_size == 1 || nbest_size == 0) {
+  if (!model_->IsNBestEncodeAvailable() || nbest_size < 0) {
+    CHECK_OR_RETURN(model_->IsSampleEncodeAvailable())
+        << "SampleEncode is not available for the current model.";
+    const auto result = model_->SampleEncode(normalized, alpha);
+    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
+                                              result, spt));
+  } else if (nbest_size == 1 || nbest_size == 0) {
     const auto result = model_->Encode(normalized);
     RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
                                               result, spt));
@@ -487,13 +498,45 @@ util::Status SentencePieceProcessor::SampleEncode(
     std::discrete_distribution<int> dist(probs.begin(), probs.end());
     RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
                                               nbests[dist(*mt)].first, spt));
-
-  } else if (nbest_size < 0) {
-    const auto result = model_->SampleEncode(normalized, alpha);
-    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
-                                              result, spt));
   }
 
+  return util::OkStatus();
+}
+
+util::Status SentencePieceProcessor::SampleEncodeAndScore(
+    absl::string_view input, int samples, float theta, bool wor,
+    bool include_best, NBestSentencePieceText *samples_spt) const {
+  CHECK_OR_RETURN(model_->IsSampleEncodeAndScoreAvailable())
+      << "SampleEncodeAndScore is not available for the current model.";
+  std::string normalized;
+  std::vector<size_t> norm_to_orig;
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+
+  const auto results = model_->SampleEncodeAndScore(normalized, theta, samples,
+                                                    wor, include_best);
+  CHECK_OR_RETURN(!results.empty())
+      << "SampleEncodeAndScore returns empty result.";
+
+  for (const auto &result : results) {
+    auto *spt = samples_spt->add_nbests();
+    spt->set_score(result.second);
+    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
+                                              result.first, spt));
+  }
+
+  return util::OkStatus();
+}
+
+util::Status SentencePieceProcessor::CalculateEntropy(absl::string_view input,
+                                                      float theta,
+                                                      float *entropy) const {
+  CHECK_OR_RETURN(model_->IsCalculateEntropyAvailable())
+      << "CalculateEntropy is not available for the current model.";
+  std::string normalized;
+  std::vector<size_t> norm_to_orig;
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+
+  *entropy = model_->CalculateEntropy(normalized, theta);
   return util::OkStatus();
 }
 
@@ -517,7 +560,11 @@ util::Status SentencePieceProcessor::Decode(
       }
     }
 
-    if (is_bos_ws) {
+    if (is_bos_ws &&
+        (!model_proto_ ||
+         (model_proto_ &&
+          (model_proto_->normalizer_spec().add_dummy_prefix() ||
+           model_proto_->normalizer_spec().remove_extra_whitespaces())))) {
       // Consume if the current position is bos and
       // piece starts with kSpaceSymbol.
       absl::ConsumePrefix(&piece, kSpaceSymbol);
@@ -535,49 +582,67 @@ util::Status SentencePieceProcessor::Decode(
   RETURN_IF_ERROR(ApplyExtraOptions(decode_extra_options_, spt));
 
   std::string *text = spt->mutable_text();
-  auto SetSurface = [&](int index, const std::string &surface) {
+  auto SetSurface = [&](int index, absl::string_view surface) {
     auto *sp = spt->mutable_pieces(index);
-    sp->set_surface(surface);
+    sp->set_surface(std::string(surface));
     sp->set_begin(text->size());
     sp->set_end(text->size() + surface.size());
-    *text += surface;
+    absl::StrAppend(text, surface);
   };
-  auto ProcessBytePieces = [&](int begin, int end) -> util::Status {
-    if (begin < end) {
-      // Constructs byte sequence.
-      std::string bytes;
-      for (int i = begin; i < end; ++i) {
-        const auto &sp = spt->pieces(i);
-        const int byte = PieceToByte(sp.piece());
-        CHECK_LE_OR_RETURN(0, byte);
-        bytes.append(1, byte);
-      }
-      // Decodes byte sequence as UTF-8 and encodes the result into UTF-8 bytes
-      // again.
-      int i = begin;
-      for (const char32 uc :
-           string_util::UTF8ToUnicodeText(absl::string_view(bytes))) {
-        if (uc == kUnicodeError) {
-          // Invalid UTF-8 bytes are mapped to REPLACEMENT CHARACTER (U+FFFD).
-          SetSurface(i++, string_util::UnicodeCharToUTF8(kUnicodeError));
-        } else {
-          const std::string utf8 = string_util::UnicodeCharToUTF8(uc);
-          for (int j = 0; j < utf8.size(); j++) {
-            // The last byte piece holds the surface of the original unknown
-            // character. The other byte pieces hold an empty string as
-            // surface.
-            if (j == utf8.size() - 1) {
-              SetSurface(i++, utf8);
-            } else {
-              SetSurface(i++, "");
-            }
+
+  auto ProcessBytePieces = [&](int token_index_begin,
+                               int token_index_end) -> util::Status {
+    if (token_index_begin >= token_index_end) {
+      return util::OkStatus();
+    }
+
+    // Constructs byte sequence.
+    std::string bytes;
+    for (int i = token_index_begin; i < token_index_end; ++i) {
+      const auto &sp = spt->pieces(i);
+      const int byte = PieceToByte(sp.piece());
+      CHECK_LE_OR_RETURN(0, byte);
+      bytes.append(1, byte);
+    }
+
+    // Set surfaces of `bytes` for each Unicode character.
+    int offset = 0;
+    const int bytes_len = bytes.size();
+    while (offset < bytes_len) {
+      // Consume `bytes` by one Unicode character.
+      size_t consumed;  // Number of bytes consumed in this iteration.
+      const bool is_valid = string_util::IsValidDecodeUTF8(
+          absl::string_view(bytes).substr(offset), &consumed);
+
+      // Set surfaces of the consumed byte pieces.
+      const int token_index = token_index_begin + offset;
+
+      if (!is_valid) {
+        // The byte piece at `token_index` is structurally invalid. Map it to
+        // REPLACEMENT CHARACTER (U+FFFD).
+        CHECK_EQ_OR_RETURN(consumed, 1);
+        SetSurface(token_index, kReplacementCharacter);
+      } else {
+        const absl::string_view utf8 =
+            absl::string_view(bytes).substr(offset, consumed);
+        for (int j = 0; j < consumed; j++) {
+          // The last byte piece holds the surface of the original unknown
+          // character. The other byte pieces hold an empty string as
+          // surface.
+          if (j == consumed - 1) {
+            SetSurface(token_index + j, utf8);
+          } else {
+            SetSurface(token_index + j, "");
           }
         }
       }
-      CHECK_EQ_OR_RETURN(i, end);
+      offset += consumed;
     }
+    CHECK_EQ_OR_RETURN(token_index_begin + offset, token_index_end);
+
     return util::OkStatus();
   };
+
   int byte_start = 0;
   for (int i = 0; i < spt->pieces_size(); ++i) {
     const auto &sp = spt->pieces(i);
@@ -599,8 +664,13 @@ util::Status SentencePieceProcessor::Decode(
 util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
                                             SentencePieceText *spt) const {
   std::vector<std::string> pieces;
+  const int num_pieces = GetPieceSize();
   pieces.reserve(ids.size());
   for (const int id : ids) {
+    if (id < 0 || id >= num_pieces) {
+      return util::Status(util::StatusCode::kOutOfRange,
+                          absl::StrCat("Invalid id: ", id));
+    }
     pieces.emplace_back(IdToPiece(id));
   }
   return Decode(pieces, spt);
@@ -799,6 +869,12 @@ std::string SentencePieceProcessor::serialized_model_proto() const {
   return model_proto_ ? model_proto_->SerializeAsString() : "";
 }
 
+// Set seed value of random generator.
+// Do not set static_cast<unique_int>(-1),
+// as this seed is reserved for initializing from
+// std::random_device.
+void SetRandomGeneratorSeed(unsigned int seed);
+
 namespace io {
 
 util::Status LoadModelProto(absl::string_view filename,
@@ -828,6 +904,5 @@ util::Status SaveModelProto(absl::string_view filename,
 
   return util::OkStatus();
 }
-
 }  // namespace io
 }  // namespace sentencepiece

@@ -285,10 +285,10 @@ class SentencePieceProcessor {
   // in https://arxiv.org/abs/1804.10959  (nbest_size < 0 means l = infinity)
   //
   // - BPE (--model_type=bpe):
-  // `alpha` is the merge probability `p` in https://arxiv.org/abs/1910.13267
-  // when alpha<=0, no sampling is performed but the best segmentation is
-  // returned. Nbest-based sampling is not supported so you need to specify
-  // nbest_size = 0 in BPE.
+  // `alpha` is the dropout probability `p` of bpe merge operations
+  // in https://arxiv.org/abs/1910.13267
+  // Nbest-based sampling is not supported so nbest_size parameter is ignored in
+  // BPE.
   virtual util::Status SampleEncode(absl::string_view input, int nbest_size,
                                     float alpha,
                                     std::vector<std::string> *pieces) const;
@@ -314,6 +314,23 @@ class SentencePieceProcessor {
   // (Lattice).
   virtual util::Status SampleEncode(absl::string_view input, int nbest_size,
                                     float alpha, SentencePieceText *spt) const;
+
+  // Sample `samples` segmentations from the segmentation lattice.
+  // If `wor` is true, the samples are taken without replacement, and the scores
+  // are the inclusion probabilities of the elements in the sample; otherwise
+  // the samples are taken with replacement and the scores are the log-probes of
+  // sample elements.
+  // If `include_best` is true, the best tokenization is always included in the
+  // sample, and the remaining elements are sampled excluding the best.
+  // This method is only available in Unigram mode.
+  virtual util::Status SampleEncodeAndScore(
+      absl::string_view input, int samples, float theta, bool wor,
+      bool include_best, NBestSentencePieceText *samples_spt) const;
+
+  // Calculate entropy of possible tokenization.
+  // Only available in unigram mode.
+  virtual util::Status CalculateEntropy(absl::string_view input, float theta,
+                                        float *entropy) const;
 
   // Given a sequence of pieces, decodes it into SentencePieceText.
   virtual util::Status Decode(const std::vector<std::string> &pieces,
@@ -493,6 +510,12 @@ class SentencePieceProcessor {
   std::vector<ExtraOption> decode_extra_options_;
 };
 
+// Set seed value of random generator.
+// Do not set static_cast<unique_int>(-1),
+// as this seed is reserved for initializing from
+// std::random_device.
+void SetRandomGeneratorSeed(unsigned int seed);
+
 #ifndef SWIG
 // IO related functions to absorb model formats.
 namespace io {
@@ -503,13 +526,10 @@ namespace io {
 //  io::LoadModelProto("//path/spm.model", model_proto.get());
 //  SentencePieceProcessor sp;
 //  CHECK_OK(sp.Load(std::move(model_proto)));
-util::Status LoadModelProto(absl::string_view filename,
-                            ModelProto *model_proto);
+util::Status LoadModelProto(absl::string_view, ModelProto *model_proto);
 
 // Saves `model_proto` as `filename`.
-util::Status SaveModelProto(absl::string_view filename,
-                            const ModelProto &model_proto);
-
+util::Status SaveModelProto(absl::string_view, const ModelProto &model_proto);
 }  // namespace io
 #endif  // SWIG
 }  // namespace sentencepiece

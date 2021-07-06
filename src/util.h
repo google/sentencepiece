@@ -36,8 +36,14 @@
 #include <pthread.h>
 #endif
 
-namespace sentencepiece {
+#if !defined(__APPLE__) && !defined(_WIN32)
+#include <endian.h>
+#if BYTE_ORDER == __BIG_ENDIAN
+#define IS_BIG_ENDIAN
+#endif
+#endif
 
+namespace sentencepiece {
 template <typename T>
 std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
   for (const auto n : v) {
@@ -45,6 +51,8 @@ std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
   }
   return out;
 }
+
+uint32 GetRandomGeneratorSeed();
 
 // String utilities
 namespace string_util {
@@ -302,9 +310,9 @@ std::mt19937 *GetRandomGenerator();
 template <typename T>
 class ReservoirSampler {
  public:
-  explicit ReservoirSampler(std::vector<T> *sampled, size_t size)
-      : sampled_(sampled), size_(size), engine_(std::random_device{}()) {}
-  explicit ReservoirSampler(std::vector<T> *sampled, size_t size, size_t seed)
+  explicit ReservoirSampler(std::vector<T> *sampled, uint64 size)
+      : sampled_(sampled), size_(size), engine_(GetRandomGeneratorSeed()) {}
+  explicit ReservoirSampler(std::vector<T> *sampled, uint64 size, uint64 seed)
       : sampled_(sampled), size_(size), engine_(seed) {}
   virtual ~ReservoirSampler() {}
 
@@ -315,18 +323,18 @@ class ReservoirSampler {
     if (sampled_->size() < size_) {
       sampled_->push_back(item);
     } else {
-      std::uniform_int_distribution<size_t> dist(0, total_ - 1);
-      const size_t n = dist(engine_);
+      std::uniform_int_distribution<uint64> dist(0, total_ - 1);
+      const uint64 n = dist(engine_);
       if (n < sampled_->size()) (*sampled_)[n] = item;
     }
   }
 
-  size_t total_size() const { return total_; }
+  uint64 total_size() const { return total_; }
 
  private:
   std::vector<T> *sampled_ = nullptr;
-  size_t size_ = 0;
-  size_t total_ = 0;
+  uint64 size_ = 0;
+  uint64 total_ = 0;
   std::mt19937 engine_;
 };
 
@@ -339,7 +347,7 @@ inline std::string JoinPath(absl::string_view path) {
 }
 
 template <typename... T>
-inline std::string JoinPath(absl::string_view first, const T &... rest) {
+inline std::string JoinPath(absl::string_view first, const T &...rest) {
 #ifdef OS_WIN
   return JoinPath(first) + "\\" + JoinPath(rest...);
 #else
@@ -411,6 +419,10 @@ class StatusBuilder {
 #define CHECK_LE_OR_RETURN(a, b) CHECK_OR_RETURN((a) <= (b))
 #define CHECK_GT_OR_RETURN(a, b) CHECK_OR_RETURN((a) > (b))
 #define CHECK_LT_OR_RETURN(a, b) CHECK_OR_RETURN((a) < (b))
+
+#ifdef IS_BIG_ENDIAN
+inline uint32 Swap32(uint32 x) { return __builtin_bswap32(x); }
+#endif
 
 }  // namespace util
 
