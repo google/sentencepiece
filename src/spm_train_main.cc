@@ -143,16 +143,16 @@ ABSL_FLAG(bool, train_extremely_large_corpus,
           "Increase bit depth for unigram tokenization.");
 ABSL_FLAG(uint32, random_seed, static_cast<uint32>(-1),
           "Seed value for random generator.");
-DEFINE_bool(add_punctuation,
+ABSL_FLAG(bool, add_punctuation,
             false,
             "Add punctuation symbols as symbols");
-DEFINE_bool(add_punctuation_cjk,
+ABSL_FLAG(bool, add_punctuation_cjk,
             false,
             "Add CJK punctuation symbols as symbols");
-DEFINE_bool(add_numbers,
+ABSL_FLAG(bool, add_numbers,
             false,
             "Add numbers as symbols");
-DEFINE_bool(add_fullwidth_numbers,
+ABSL_FLAG(bool, add_fullwidth_numbers,
             false,
             "Add fullwidth numbers as symbols");
 
