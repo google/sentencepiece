@@ -153,6 +153,12 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
       CHECK_OR_RETURN(absl::SimpleAtoi(value, &v));
       absl::SetFlag(&FLAGS_minloglevel, v);
       continue;
+    } else if(key == "encode_unicode_case") {
+      bool encode_unicode_case;
+      std::istringstream(value) >> std::boolalpha >> encode_unicode_case;
+      normalizer_spec->set_encode_case(encode_unicode_case);
+      denormalizer_spec->set_decode_case(encode_unicode_case);
+      continue;
     }
 
     const auto status_train = SetProtoField(key, value, trainer_spec);
