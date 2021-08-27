@@ -158,6 +158,9 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
       std::istringstream(value) >> std::boolalpha >> encode_unicode_case;
       normalizer_spec->set_encode_case(encode_unicode_case);
       denormalizer_spec->set_decode_case(encode_unicode_case);
+      denormalizer_spec->set_add_dummy_prefix(false);
+      denormalizer_spec->set_remove_extra_whitespaces(false);
+      denormalizer_spec->set_escape_whitespaces(false);
       continue;
     }
 
