@@ -512,7 +512,7 @@ util::Status SentencePieceProcessor::Decode(
     unk_surface = model_proto_->trainer_spec().unk_surface().c_str();
 
   auto DecodeSentencePiece = [&](absl::string_view piece, int id,
-                                 bool is_bos_ws) -> std::string {
+                                 bool is_bos_ws, bool is_eos_ws) -> std::string {
     if (IsControl(id)) {  // <s>, </s>
       return "";          // invisible symbol.
     } else if (IsUnknown(id)) {
@@ -523,14 +523,28 @@ util::Status SentencePieceProcessor::Decode(
       }
     }
 
-    if (is_bos_ws &&
-        (!model_proto_ ||
-         (model_proto_ &&
-          (model_proto_->normalizer_spec().add_dummy_prefix() ||
-           model_proto_->normalizer_spec().remove_extra_whitespaces())))) {
-      // Consume if the current position is bos and
-      // piece starts with kSpaceSymbol.
-      absl::ConsumePrefix(&piece, kSpaceSymbol);
+    if(!model_proto_ || !model_proto_->has_trainer_spec()
+       || !model_proto_->trainer_spec().treat_whitespace_as_suffix()) {
+      if(is_bos_ws &&
+          (!model_proto_ ||
+           (model_proto_ &&
+            (model_proto_->normalizer_spec().add_dummy_prefix() ||
+             model_proto_->normalizer_spec().remove_extra_whitespaces())))) {
+        // Consume if the current position is bos and
+        // piece starts with kSpaceSymbol.
+        absl::ConsumePrefix(&piece, kSpaceSymbol);
+      }
+    } else {
+        if(is_eos_ws &&
+            (!model_proto_ ||
+             (model_proto_ &&
+              (model_proto_->normalizer_spec().add_dummy_prefix() ||
+               model_proto_->normalizer_spec().remove_extra_whitespaces())))) {
+          // Consume if the current position is eos and
+          // piece ends with kSpaceSymbol.
+          if(absl::EndsWith(piece, kSpaceSymbol))
+            piece.remove_suffix(3);
+        }
     }
 
     return absl::StrReplaceAll(piece, {{kSpaceSymbol, " "}});
@@ -594,13 +608,60 @@ util::Status SentencePieceProcessor::Decode(
     if (!IsByte(sp.id())) {
       RETURN_IF_ERROR(ProcessBytePieces(byte_start, i));
       byte_start = i + 1;
-      SetSurface(i, DecodeSentencePiece(sp.piece(), sp.id(), text->empty()));
+      bool is_eos_space = i == spt->pieces_size() - 1;
+      SetSurface(i, DecodeSentencePiece(sp.piece(), sp.id(), text->empty(), is_eos_space));
     }
   }
   RETURN_IF_ERROR(ProcessBytePieces(byte_start, spt->pieces_size()));
 
+  // If there is a denormalizer, we need to remap the surface strings on
+  // the individual pieces based on the norm_to_orig mapping from the
+  // denormalizer. Otherwise, if the number of characters differ across the
+  // denormalized and normalized form, the surface strings would be the 
+  // pre-denormalized surface strings, rather than post-denormalized. This
+  // is particularly a problem with case encoding.
   if (denormalizer_) {
-    *text = denormalizer_->Normalize(*text);
+    std::string normalized;
+    std::vector<size_t> norm_to_orig;
+    denormalizer_->Normalize(*text, &normalized, &norm_to_orig);
+    *text = normalized;
+
+    // Since this is denormalization, we really want orig_to_norm mapping
+    // here instead. Constructing that
+    std::map<int, int> orig_to_norm;
+    for(int i = 0; i < norm_to_orig.size(); i++) {
+      if (orig_to_norm.find(norm_to_orig[i]) == orig_to_norm.end()) {
+        orig_to_norm[norm_to_orig[i]] = i;
+      }
+    }
+
+    int normalized_piece_surface_index = 0;
+    int text_piece_surface_index = 0;
+    int last_consumed_byte = -1;
+    for(int i = 0; i < spt->pieces_size(); i++) {
+      auto *spiece = spt->mutable_pieces(i);
+      auto curr_surface = spiece->surface();
+
+      // Determine the new surface string based on orig_to_norm indices
+      std::string new_surface;
+      for(int j = text_piece_surface_index; j < text_piece_surface_index + curr_surface.size();
+          j++) {
+        auto norm_index = orig_to_norm.find(j + 1);
+        if(norm_index != orig_to_norm.end()) {
+          for(int k = last_consumed_byte + 1; k <=  norm_index->second - 1; k++)
+            new_surface.push_back(normalized[k]);
+          last_consumed_byte = norm_index->second - 1;
+        }
+      }
+
+      text_piece_surface_index += curr_surface.size();
+
+      // Reset the piece information with updated surface string
+      spiece->set_surface(new_surface);
+      spiece->set_begin(normalized_piece_surface_index);
+      normalized_piece_surface_index += new_surface.size();
+      spiece->set_end(normalized_piece_surface_index);
+    }
   }
 
   return util::OkStatus();
