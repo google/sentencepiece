@@ -37,7 +37,11 @@
 #endif
 
 #if !defined(__APPLE__) && !defined(_WIN32)
+#if defined(__FreeBSD__)
+#include <sys/endian.h>
+#else
 #include <endian.h>
+#endif
 #if BYTE_ORDER == __BIG_ENDIAN
 #define IS_BIG_ENDIAN
 #endif
