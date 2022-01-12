@@ -298,6 +298,20 @@ class SentencePieceProcessor {
                                     float alpha, std::vector<int> *ids) const;
 
   //////////////////////////////////////////////////////////////
+  // SampleEncodeAndScore API.
+  // Similar to SampleEncode, but returns samples results.
+  virtual util::Status SampleEncodeAndScore(
+      absl::string_view input, int samples,
+      float theta, bool wor, bool include_best,
+      std::vector<std::pair<std::vector<std::string>, float>> *pieces) const;
+
+  // Same as above, but returns a sequence of ids.
+  virtual util::Status SampleEncodeAndScore(
+      absl::string_view input, int samples,
+      float theta, bool wor, bool include_best,
+      std::vector<std::pair<std::vector<int>, float>> *ids) const;
+
+  //////////////////////////////////////////////////////////////
   // Advanced API returning SentencePieceText, which manages
   // utf8-byte alignments between user-input/detokenized text
   // and internal sentencepiece sequence.
@@ -389,6 +403,22 @@ class SentencePieceProcessor {
                                              float alpha) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(SampleEncode, std::vector<int>, input,
                                 nbest_size, alpha);
+  }
+
+  virtual std::vector<std::pair<std::vector<std::string>, float>> SampleEncodeAndScoreAsPieces(
+      absl::string_view input, int samples, float theta, bool wor, bool include_best) const {
+    std::vector<std::pair<std::vector<std::string>, float>> output;
+    const auto _status = SampleEncodeAndScore(input, samples, theta, wor, include_best, &output);
+    if (!_status.ok()) throw _status;
+    return output;
+  }
+
+  virtual std::vector<std::pair<std::vector<int>, float>> SampleEncodeAndScoreAsIds(
+      absl::string_view input, int samples, float theta, bool wor, bool include_best) const {
+    std::vector<std::pair<std::vector<int>, float>> output;
+    const auto _status = SampleEncodeAndScore(input, samples, theta, wor, include_best, &output);
+    if (!_status.ok()) throw _status;
+    return output;
   }
 
   virtual std::string DecodePieces(

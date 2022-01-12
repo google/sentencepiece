@@ -333,6 +333,42 @@ util::Status SentencePieceProcessor::SampleEncode(absl::string_view input,
   return util::OkStatus();
 }
 
+util::Status SentencePieceProcessor::SampleEncodeAndScore(
+    absl::string_view input, int samples, float theta, bool wor, bool include_best,
+    std::vector<std::pair<std::vector<std::string>, float>> *pieces) const {
+  CHECK_OR_RETURN_STATUS_STL(pieces);
+
+  NBestSentencePieceText spt;
+  RETURN_IF_ERROR(SampleEncodeAndScore(input, samples, theta, wor, include_best, &spt));
+  for (const auto &nbest : spt.nbests()) {
+    std::vector<std::string> result;
+    for (const auto &sp : nbest.pieces()) {
+      result.emplace_back(sp.piece());
+    }
+    pieces->emplace_back(result, nbest.score());
+  }
+
+  return util::OkStatus();
+}
+
+util::Status SentencePieceProcessor::SampleEncodeAndScore(
+    absl::string_view input, int samples, float theta, bool wor, bool include_best,
+    std::vector<std::pair<std::vector<int>, float>> *ids) const {
+  CHECK_OR_RETURN_STATUS_STL(ids);
+
+  NBestSentencePieceText spt;
+  RETURN_IF_ERROR(SampleEncodeAndScore(input, samples, theta, wor, include_best, &spt));
+  for (const auto &nbest : spt.nbests()) {
+    std::vector<int> result;
+    for (const auto &sp : nbest.pieces()) {
+      result.emplace_back(sp.id());
+    }
+    ids->emplace_back(result, nbest.score());
+  }
+
+  return util::OkStatus();
+}
+
 util::Status SentencePieceProcessor::PopulateSentencePieceText(
     absl::string_view input, absl::string_view normalized,
     const std::vector<size_t> &norm_to_orig, const EncodeResult &result,

@@ -174,6 +174,8 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
 %ignore sentencepiece::SentencePieceProcessor::status;
 %ignore sentencepiece::SentencePieceProcessor::Encode;
 %ignore sentencepiece::SentencePieceProcessor::SampleEncode;
+%ignore sentencepiece::SentencePieceProcessor::SampleEncodeAndScore;
+%ignore sentencepiece::SentencePieceProcessor::CalculateEntropy;
 %ignore sentencepiece::SentencePieceProcessor::NBestEncode;
 %ignore sentencepiece::SentencePieceProcessor::Decode;
 %ignore sentencepiece::SentencePieceProcessor::DecodeIds;
@@ -218,6 +220,12 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
             sentencepiece::util::StatusCode::kOutOfRange,
             "piece id is out of range.");
     return $self->DecodeIdsAsSerializedProto(ids);
+  }
+
+  float EntropyWrapper(const std::string &input, float theta) const {
+    float result;
+    $self->CalculateEntropy(input, theta, &result);
+    return result;
   }
 
 %pythoncode {
@@ -347,6 +355,102 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
       return [_encode(n) for n in input]
 
     return _encode(input)
+
+
+  def EncodeAndScore(self,
+                     input,
+                     out_type=None,
+                     add_bos=None,
+                     add_eos=None,
+                     reverse=None,
+                     samples=None,
+                     theta=None,
+                     wor=None,
+                     include_best=None):
+    """Encode text input to segmented ids or tokens.
+
+      Args:
+      input: input string. accepsts list of string.
+      out_type: output type. int or str.
+      add_bos: Add <s> to the result (Default = false)
+      add_eos: Add </s> to the result (Default = false) <s>/</s> is added after
+        reversing (if enabled).
+      reverse: Reverses the tokenized sequence (Default = false)
+      samples: How many samples to return (Default = 1)
+      theta: inverse temperature for sampling
+      wor: whether to sample without replacement (Default = false)
+      include_best: whether to include the best tokenization, requires wor=True
+        (Default = false)
+    """
+
+    if out_type is None:
+      out_type = self._out_type
+    if add_bos is None:
+      add_bos = self._add_bos
+    if add_eos is None:
+      add_eos = self._add_eos
+    if reverse is None:
+      reverse = self._reverse
+    if samples is None:
+      samples = 1
+    if theta is None:
+      theta = 1.
+    if wor is None:
+      wor = False
+    if include_best is None:
+      include_best = False
+
+    if include_best and not wor:
+      raise RuntimeError(
+          'When include_best is True, We must specify "wor = True".'
+      )
+
+    def _encode(text):
+      if out_type is int:
+        result = self.SampleEncodeAndScoreAsIds(text, samples, theta, wor, include_best)
+      else:
+        result = self.SampleEncodeAndScoreAsPieces(text, samples, theta, wor, include_best)
+
+      if reverse:
+        for r, _ in result:
+          r.reverse()
+      if add_bos:
+        if out_type is int:
+          result = [([self.bos_id()] + r, s) for r, s in result]
+        else:
+          result = [([self.IdToPiece(self.bos_id())] + r, s) for r, s in result]
+
+      if add_eos:
+        if out_type is int:
+          result = [(r + [self.eos_id()], s) for r, s in result]
+        else:
+          result = [(r + [self.IdToPiece(self.eos_id())], s) for r, s in result]
+
+      return result
+
+    if type(input) is list:
+      return [_encode(n) for n in input]
+
+    return _encode(input)
+
+
+  def Entropy(self,
+              input,
+              theta=None):
+    """Calculate entropy of the input string
+
+      Args:
+      input: input string. accepsts list of string.
+      theta: inverse temperature for sampling
+    """
+
+    if theta is None:
+      theta = 1.
+
+    if type(input) is list:
+      return [self.EntropyWrapper(n, theta) for n in input]
+
+    return self.EntropyWrapper(input, theta)
 
 
   def Decode(self, input):
@@ -531,6 +635,30 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
       PyList_SetItem(obj, j, MakePyOutputString($1[i][j], input_type));
     }
     PyList_SetItem($result, i, obj);
+  }
+}
+
+%typemap(out) std::vector<std::pair<std::vector<std::string>, float>> {
+  PyObject *input_type = resultobj;
+  $result = PyList_New($1.size());
+  for (size_t i = 0; i < $1.size(); ++i) {
+    PyObject *obj = PyList_New($1[i].first.size());
+    for (size_t j = 0; j < $1[i].first.size(); ++j) {
+      PyList_SetItem(obj, j, MakePyOutputString($1[i].first[j], input_type));
+    }
+    PyList_SetItem($result, i, PyTuple_Pack(2, obj, PyFloat_FromDouble(static_cast<double>($1[i].second))));
+  }
+}
+
+%typemap(out) std::vector<std::pair<std::vector<int>, float>> {
+  PyObject *input_type = resultobj;
+  $result = PyList_New($1.size());
+  for (size_t i = 0; i < $1.size(); ++i) {
+    PyObject *obj = PyList_New($1[i].first.size());
+    for (size_t j = 0; j < $1[i].first.size(); ++j) {
+      PyList_SetItem(obj, j, PyInt_FromLong(static_cast<long>($1[i].first[j])));
+    }
+    PyList_SetItem($result, i, PyTuple_Pack(2, obj, PyFloat_FromDouble(static_cast<double>($1[i].second))));
   }
 }
 
