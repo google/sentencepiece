@@ -246,7 +246,7 @@ You can find that the original input sentence is restored from the vocabulary id
 ```
 % spm_train --bos_id=0 --eos_id=1 --unk_id=5 --input=... --model_prefix=... --character_coverage=...
 ```
-When setting -1 id e.g., ```bos_id=-1```, this special token is disabled. Note that the unknow id cannot be disabled.  We can define an id for padding (&lt;pad&gt;) as ```--pad_id=3```.  
+When setting -1 id e.g., ```bos_id=-1```, this special token is disabled. Note that the unknown id cannot be disabled.  We can define an id for padding (&lt;pad&gt;) as ```--pad_id=3```.  
 
 If you want to assign another special tokens, please see [Use custom symbols](doc/special_symbols.md).
 
