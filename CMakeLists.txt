@@ -52,6 +52,10 @@ else()
 endif()
 set(GNUCXX_STD_SUPPORT_VERSION "4.3")
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+add_definitions(-D_FREEBSD)
+endif()
+
 if (SPM_USE_BUILTIN_PROTOBUF)
   set(libprotobuf_lite "")
 else()
