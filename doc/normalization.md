@@ -45,6 +45,6 @@ See [data/nfkc.tsv](../data/nfkc.tsv) as an example. Once a TSV file is prepared
 ## Command line tool to perform normalization
 ```
 % spm_normalize --model=<model_file> file1 file2.. 
-% spm_normalize --normalizatoin_rule_tsv=custom.tsv file1 file2..
+% spm_normalize --normalization_rule_tsv=custom.tsv file1 file2..
 ```
 The first command line uses the normalization rule embedded in the model file. The second command line uses the normalization rule in TSV file and is useful to make normalization rule interactively.
