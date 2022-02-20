@@ -271,7 +271,7 @@ install(TARGETS ${SPM_INSTALLTARGETS}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(FILES sentencepiece_trainer.h sentencepiece_processor.h
+install(FILES sentencepiece_trainer.h sentencepiece_processor.h builtin_pb/sentencepiece.pb.h
   DESTINATION ${CMAKE_INSTALL_INCDIR})
 
 file(TO_NATIVE_PATH "${PROJECT_SOURCE_DIR}/data" data_dir)
