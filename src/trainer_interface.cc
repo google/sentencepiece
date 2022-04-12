@@ -274,6 +274,9 @@ bool TrainerInterface::IsValidSentencePiece(
           c == 0x30FC) {  // long vowel sound (Katakana) should be Katakana
         s = unicode_script::U_Han;
       }
+      else if (s == unicode_script::U_Inherited) {
+        s = prev_script;
+      }
 
       if (!trainer_spec_.split_by_number() && is_unicode_decimal_number(c)) {
         s = kAnyType;
