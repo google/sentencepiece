@@ -2,6 +2,7 @@
 %include exception.i
 
 %{
+#include <limits>
 #include <cmath>
 #include <sentencepiece_processor.h>
 #include <sentencepiece_trainer.h>
