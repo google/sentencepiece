@@ -548,18 +548,24 @@ util::Status SentencePieceProcessor::Decode(
   if (model_proto_ && model_proto_->trainer_spec().has_unk_surface())
     unk_surface = model_proto_->trainer_spec().unk_surface().c_str();
 
-  auto DecodeSentencePiece = [&](absl::string_view piece, int id,
-                                 bool is_bos_ws) -> std::string {
-    if (IsControl(id)) {  // <s>, </s>
-      return "";          // invisible symbol.
+  // Returns decoded piece and a boolean indicating if the function has consumed
+  // a bos whitespace token (a piece starting with a kSpaceSymbol). This is used
+  // to strip only the first whitespace token from the decoded sequence for
+  // add_dummy_prefix.
+  auto DecodeSentencePiece =
+      [&](absl::string_view piece, int id,
+          bool is_bos_ws) -> std::pair<std::string, bool> {
+    if (IsControl(id)) {                 // <s>, </s>
+      return std::make_pair("", false);  // invisible symbol.
     } else if (IsUnknown(id)) {
       if (IdToPiece(id) == piece) {  // <unk>
-        return unk_surface;
+        return std::make_pair(unk_surface, false);
       } else {  // return piece when piece is not <unk>.
-        return std::string(piece);
+        return std::make_pair(std::string(piece), false);
       }
     }
 
+    bool has_bos_ws = false;  // whether the token starts with a kSpaceSymbol
     if (is_bos_ws &&
         (!model_proto_ ||
          (model_proto_ &&
@@ -567,10 +573,17 @@ util::Status SentencePieceProcessor::Decode(
            model_proto_->normalizer_spec().remove_extra_whitespaces())))) {
       // Consume if the current position is bos and
       // piece starts with kSpaceSymbol.
-      absl::ConsumePrefix(&piece, kSpaceSymbol);
+      has_bos_ws = absl::ConsumePrefix(&piece, kSpaceSymbol);
+
+      if (model_proto_ &&
+          model_proto_->normalizer_spec().remove_extra_whitespaces()) {
+        // if we are removing extra whitespace, we remove all leading whitespace
+        has_bos_ws = false;
+      }
     }
 
-    return absl::StrReplaceAll(piece, {{kSpaceSymbol, " "}});
+    return std::make_pair(absl::StrReplaceAll(piece, {{kSpaceSymbol, " "}}),
+                          has_bos_ws);
   };
 
   for (const std::string &w : pieces) {
@@ -644,12 +657,23 @@ util::Status SentencePieceProcessor::Decode(
   };
 
   int byte_start = 0;
+  bool is_bos_ws = true;  // whether we expect a bos ws token to consume.
+  bool bos_ws_seen = false;
+  std::string decoded;
+
   for (int i = 0; i < spt->pieces_size(); ++i) {
     const auto &sp = spt->pieces(i);
     if (!IsByte(sp.id())) {
       RETURN_IF_ERROR(ProcessBytePieces(byte_start, i));
+
+      // if we have seen a bos_ws token or any non-empty token
+      if (bos_ws_seen || !text->empty()) is_bos_ws = false;
+
       byte_start = i + 1;
-      SetSurface(i, DecodeSentencePiece(sp.piece(), sp.id(), text->empty()));
+      std::tie(decoded, bos_ws_seen) =
+          DecodeSentencePiece(sp.piece(), sp.id(), is_bos_ws);
+
+      SetSurface(i, decoded);
     }
   }
   RETURN_IF_ERROR(ProcessBytePieces(byte_start, spt->pieces_size()));

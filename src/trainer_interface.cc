@@ -28,6 +28,8 @@
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/memory/memory.h"
+#include "third_party/absl/random/distributions.h"
+#include "third_party/absl/random/random.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_format.h"
@@ -273,8 +275,7 @@ bool TrainerInterface::IsValidSentencePiece(
       if (s == unicode_script::U_Hiragana || s == unicode_script::U_Katakana ||
           c == 0x30FC) {  // long vowel sound (Katakana) should be Katakana
         s = unicode_script::U_Han;
-      }
-      else if (s == unicode_script::U_Inherited) {
+      } else if (s == unicode_script::U_Inherited) {
         s = prev_script;
       }
 
@@ -297,6 +298,22 @@ bool TrainerInterface::IsValidSentencePiece(
     }
   }
   return true;
+}
+
+template <typename T>
+void AddDPNoise(const TrainerSpec &trainer_spec, absl::SharedBitGen &generator,
+                T *to_update) {
+  if (trainer_spec.differential_privacy_noise_level() > 0) {
+    float random_num = absl::Gaussian<float>(
+        generator, 0, trainer_spec.differential_privacy_noise_level());
+
+    *to_update =
+        std::round(std::max(0.f, random_num + static_cast<float>(*to_update)));
+  }
+  // Clip anything below the clipping threshold to 0.
+  if (*to_update < trainer_spec.differential_privacy_clipping_threshold()) {
+    *to_update = 0;
+  }
 }
 
 util::Status TrainerInterface::LoadSentences() {
@@ -390,6 +407,7 @@ END:
     LOG(INFO) << "Sampled " << sentences_.size() << " sentences from "
               << selector.total_size() << " sentences.";
   }
+
   if (too_long_lines > 0)
     LOG(INFO) << "Skipped " << too_long_lines << " too long sentences.";
   if (self_test_samples_.size() > 0)
@@ -431,6 +449,54 @@ END:
         sentences_.resize(sentences_.size() - 1);
       }
     }
+  }
+
+  // If DP is required, add the noise/clip the input.
+  if (trainer_spec_.enable_differential_privacy()) {
+    if (trainer_spec_.input_format() != "tsv") {
+      LOG(ERROR)
+          << "Dp version will not work correctly with text input format.";
+    }
+    if (trainer_spec_.differential_privacy_noise_level() <= 0) {
+      LOG(WARNING) << "Private version with <=0 noise level will give "
+                      "infinity epsilon gurantees.";
+    }
+    if (trainer_spec_.differential_privacy_clipping_threshold() <= 0) {
+      LOG(WARNING) << "Private version with <=0 clipping threshold will give "
+                      "infinity epsilon gurantees.";
+    }
+
+    // Add noise to all the sentences via threadpool.
+
+    // This line is mainly for tests with small num of sentences.
+    const auto num_workers =
+        std::min<uint64>(trainer_spec_.num_threads(), sentences_.size() - 1);
+
+    {
+      auto pool = absl::make_unique<ThreadPool>(num_workers);
+      pool->StartWorkers();
+      for (int n = 0; n < num_workers; ++n) {
+        pool->Schedule([&, n]() {
+          // One per thread generator.
+          absl::SharedBitGen generator;
+          for (size_t i = n; i < sentences_.size(); i += num_workers) {
+            AddDPNoise<int64>(trainer_spec_, generator,
+                              &(sentences_[i].second));
+          }
+        });
+      }
+    }
+
+    // Remove zero freq elements.
+    const auto before_size = sentences_.size();
+    auto it = std::remove_if(sentences_.begin(), sentences_.end(),
+                             [](const Sentence &s) { return s.second <= 0; });
+    const auto new_size = std::distance(sentences_.begin(), it);
+    const int num_erased = before_size - new_size;
+    sentences_.erase(it, sentences_.end());
+
+    LOG(INFO) << "DP noise resulted in " << 1.0 * num_erased / before_size
+              << " fraction of sentences removed.";
   }
 
   // Count character frequencies.
@@ -617,6 +683,7 @@ util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
 util::Status TrainerInterface::SaveModel(absl::string_view filename) const {
   LOG(INFO) << "Saving model: " << filename;
   ModelProto model_proto;
+
   RETURN_IF_ERROR(Serialize(&model_proto));
 
   auto output = filesystem::NewWritableFile(filename.data(), true);

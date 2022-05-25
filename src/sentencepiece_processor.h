@@ -163,6 +163,7 @@ namespace normalizer {
 class Normalizer;
 }  // namespace normalizer
 
+#ifndef SWIG
 // Defines the multiple versions of encoder within each model. Currently only
 // the Unigram model has an optimized encoder.
 enum class EncoderVersion {
@@ -170,13 +171,16 @@ enum class EncoderVersion {
   kOriginal    // The original encoder (user may choose to fall back to this
                // just in case).
 };
+#endif
 
+#ifndef SWIGGO
 namespace util {
 // Redefine std::string for serialized_proto interface as Python's string is
 // a Unicode string. We can enforce the return value to be raw byte sequence
 // with SWIG's typemap.
 using bytes = std::string;
 }  // namespace util
+#endif
 
 class SentencePieceProcessor {
  public:
@@ -250,6 +254,7 @@ class SentencePieceProcessor {
   virtual util::Status Decode(const std::vector<int> &ids,
                               std::string *detokenized) const;
 
+#ifndef SWIG
   // Sets the encoder version. Normally users do not need to call this function.
   // But they can call this fucntion just in case if they want to fall back to
   // the original encoder.
@@ -257,6 +262,7 @@ class SentencePieceProcessor {
 
   // Returns the current encoder version in use.
   virtual EncoderVersion GetEncoderVersion() const;
+#endif
 
   //////////////////////////////////////////////////////////////
   // NBest API.
@@ -315,20 +321,12 @@ class SentencePieceProcessor {
   virtual util::Status SampleEncode(absl::string_view input, int nbest_size,
                                     float alpha, SentencePieceText *spt) const;
 
-  // Sample `samples` segmentations from the segmentation lattice.
-  // If `wor` is true, the samples are taken without replacement, and the scores
-  // are the inclusion probabilities of the elements in the sample; otherwise
-  // the samples are taken with replacement and the scores are the log-probes of
-  // sample elements.
-  // If `include_best` is true, the best tokenization is always included in the
-  // sample, and the remaining elements are sampled excluding the best.
-  // This method is only available in Unigram mode.
+  // Samples N segmentation and returns the scores as well
   virtual util::Status SampleEncodeAndScore(
       absl::string_view input, int samples, float theta, bool wor,
       bool include_best, NBestSentencePieceText *samples_spt) const;
 
-  // Calculate entropy of possible tokenization.
-  // Only available in unigram mode.
+  // Calculate entropy of possible tokenisations
   virtual util::Status CalculateEntropy(absl::string_view input, float theta,
                                         float *entropy) const;
 

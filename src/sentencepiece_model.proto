@@ -20,6 +20,7 @@ option optimize_for = LITE_RUNTIME;
 package sentencepiece;
 
 // TrainerSpec encodes a various parameters for SentencePiece training.
+// Next id: 53
 message TrainerSpec {
   ///////////////////////////////////////////////////////////////////
   // General parameters
@@ -61,6 +62,16 @@ message TrainerSpec {
 
   // Size of self-test samples, which are encoded in the model file.
   optional int32 self_test_sample_size = 6 [default = 0];
+
+  // Whether to use DP version of sentencepiece. Use it with TSV input format
+  // (requires precomputed word tab counts to work).
+  optional bool enable_differential_privacy = 50 [default = false];
+  // Set these parameters if you need DP version of sentencepiece.
+  // std of noise to add.
+  optional float differential_privacy_noise_level = 51 [default = 0.0];
+  // Clipping threshold to apply after adding noise. All the words with
+  // frequency less than this value are dropped.
+  optional uint64 differential_privacy_clipping_threshold = 52 [default = 0];
 
   ///////////////////////////////////////////////////////////////////
   // Training parameters.

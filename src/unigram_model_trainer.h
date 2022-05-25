@@ -70,15 +70,15 @@ class Trainer : public TrainerInterface {
 
   util::Status Train() override;
 
- private:
-  FRIEND_TEST(TrainerTest, IsValidSentencePieceTest);
-
   // Makes seed pieces from the training corpus.
   // The size of seed pieces is determined by seed_sentencepiece_size.
   // node_int_type should be of integer type (int32 or int64),
   // determined by train_extremely_large_corpus.
   template <typename node_int_type>
   TrainerModel::SentencePieces MakeSeedSentencePieces() const;
+
+ private:
+  FRIEND_TEST(TrainerTest, IsValidSentencePieceTest);
 
   // Executes the E step of EM and returns expected count.
   // The index of return array is the vocab id.

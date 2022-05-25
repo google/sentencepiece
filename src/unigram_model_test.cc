@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "unigram_model.h"
-
 #include <cmath>
 #include <map>
 #include <string>
@@ -24,6 +22,7 @@
 #include "testharness.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_join.h"
+#include "unigram_model.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -268,8 +267,8 @@ TEST(LatticeTest, NBestSampleTest) {
     for (auto &it : probs) it.second /= Z;
 
     std::map<std::pair<std::string, std::string>, float> pair_probs;
-    for (const auto first : strings) {
-      for (const auto second : strings) {
+    for (const auto &first : strings) {
+      for (const auto &second : strings) {
         if (first == second) {
           pair_probs[std::make_pair(first, second)] = 0;
         } else {
@@ -281,12 +280,12 @@ TEST(LatticeTest, NBestSampleTest) {
     }
 
     std::map<std::string, float> inclusion_probs;
-    for (const auto string : strings) {
+    for (const auto &string : strings) {
       float inclusion_prob = 0.0;
-      for (const auto other_string : strings) {
+      for (const auto &other_string : strings) {
         inclusion_prob += pair_probs[std::make_pair(string, other_string)];
       }
-      for (const auto other_string : strings) {
+      for (const auto &other_string : strings) {
         inclusion_prob += pair_probs[std::make_pair(other_string, string)];
       }
       inclusion_probs[string] = inclusion_prob / 2;
@@ -300,7 +299,7 @@ TEST(LatticeTest, NBestSampleTest) {
       std::map<std::string, int> counts;
       for (int i = 0; i < kTrials; i++) {
         auto nbests = lattice.NBest(num_samples, true, theta);
-        for (const auto nbest : nbests) {
+        for (const auto &nbest : nbests) {
           counts[GetTokenized(nbest.first)]++;
         }
       }
@@ -550,25 +549,25 @@ TEST(UnigramModelTest, SampleEncodeAndScoreTest) {
     for (auto &it : probs) it.second /= Z;
 
     std::map<std::pair<std::string, std::string>, float> pair_probs;
-    for (const auto first : strings) {
-      for (const auto second : strings) {
+    for (const auto &first : strings) {
+      for (const auto &second : strings) {
         if (first == second) {
           pair_probs[std::make_pair(first, second)] = 0;
         } else {
-          float first_prob = probs[first];
-          float second_prob = probs[second] / (1 - first_prob);
+          const float first_prob = probs[first];
+          const float second_prob = probs[second] / (1 - first_prob);
           pair_probs[std::make_pair(first, second)] = first_prob * second_prob;
         }
       }
     }
 
     std::map<std::string, float> inclusion_probs;
-    for (const auto string : strings) {
+    for (const auto &string : strings) {
       float inclusion_prob = 0.0;
-      for (const auto other_string : strings) {
+      for (const auto &other_string : strings) {
         inclusion_prob += pair_probs[std::make_pair(string, other_string)];
       }
-      for (const auto other_string : strings) {
+      for (const auto &other_string : strings) {
         inclusion_prob += pair_probs[std::make_pair(other_string, string)];
       }
       inclusion_probs[string] = inclusion_prob / 2;

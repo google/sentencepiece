@@ -173,6 +173,7 @@ template class Flag<std::string>;
 template class Flag<int32>;
 template class Flag<uint32>;
 template class Flag<double>;
+template class Flag<float>;
 template class Flag<bool>;
 template class Flag<int64>;
 template class Flag<uint64>;

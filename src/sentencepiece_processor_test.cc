@@ -709,6 +709,87 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
   }
 }
 
+TEST(SentencepieceProcessorTest, DummyPrefixDecodeTest) {
+  class DecodeMockModel : public ModelInterface {
+   public:
+    EncodeResult Encode(absl::string_view normalized) const override {
+      return {};
+    }
+
+    int GetPieceSize() const override { return 7; }
+
+    int PieceToId(absl::string_view piece) const override {
+      static absl::flat_hash_map<absl::string_view, int,
+                                 string_util::string_view_hash>
+          kMap = {{"<unk>", 0}, {"<s>", 1}, {"</s>", 2},     {WS "ABC", 3},
+                  {WS "DE", 4}, {"F", 5},   {"G" WS "H", 6}, {WS, 7}};
+      return port::FindWithDefault(kMap, piece, 0);
+    }
+
+    const std::string &IdToPiece(int id) const override {
+      static std::vector<std::string> kMap = {
+          "<unk>", "<s>", "</s>", WS "ABC", WS "DE", "F", "G" WS "H", WS};
+      return kMap[id];
+    }
+
+    bool IsUnknown(int id) const override { return (id == 0); }
+
+    bool IsControl(int id) const override { return (id == 1 || id == 2); }
+
+    bool IsByte(int id) const override { return false; }
+
+    float GetScore(int id) const override { return 0.0; }
+  };
+
+  // start the sequence with a whitespace token
+  const std::vector<std::string> input = {
+      "<s>", WS, WS "ABC", "<unk>", WS "DE", "F", "G" WS "H", "I", "</s>"};
+
+  {
+    SentencePieceProcessor sp;
+    auto proto = absl::make_unique<ModelProto>();
+    proto->mutable_trainer_spec()->set_unk_surface("");
+    proto->mutable_normalizer_spec()->set_add_dummy_prefix(true);
+    proto->mutable_normalizer_spec()->set_remove_extra_whitespaces(false);
+    sp.Load(std::move(proto)).IgnoreError();
+
+    auto mock = absl::make_unique<DecodeMockModel>();
+    sp.SetModel(std::move(mock));
+
+    const auto normalization_spec = MakeDefaultNormalizerSpec();
+    sp.SetNormalizer(
+        absl::make_unique<normalizer::Normalizer>(normalization_spec));
+
+    SentencePieceText spt;
+
+    EXPECT_TRUE(sp.Decode(input, &spt).ok());
+    EXPECT_EQ(" ABC DEFG HI", spt.text());
+    EXPECT_EQ(9, spt.pieces_size());
+  }
+
+  {
+    SentencePieceProcessor sp;
+    auto proto = absl::make_unique<ModelProto>();
+    proto->mutable_trainer_spec()->set_unk_surface("");
+    proto->mutable_normalizer_spec()->set_add_dummy_prefix(true);
+    proto->mutable_normalizer_spec()->set_remove_extra_whitespaces(true);
+    sp.Load(std::move(proto)).IgnoreError();
+
+    auto mock = absl::make_unique<DecodeMockModel>();
+    sp.SetModel(std::move(mock));
+
+    const auto normalization_spec = MakeDefaultNormalizerSpec();
+    sp.SetNormalizer(
+        absl::make_unique<normalizer::Normalizer>(normalization_spec));
+
+    SentencePieceText spt;
+
+    EXPECT_TRUE(sp.Decode(input, &spt).ok());
+    EXPECT_EQ("ABC DEFG HI", spt.text());
+    EXPECT_EQ(9, spt.pieces_size());
+  }
+}
+
 TEST(SentencepieceProcessorTest, ByteFallbackDecodeTest) {
   class ByteFallbackDecodeMockModel : public ModelInterface {
    public:

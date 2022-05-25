@@ -26,7 +26,6 @@
 #include "sentencepiece_processor.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
-#include "util.h"
 
 namespace sentencepiece {
 namespace normalizer {

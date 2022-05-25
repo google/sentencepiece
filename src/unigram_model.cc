@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/str_split.h"
 #include "third_party/absl/strings/string_view.h"
@@ -289,6 +290,58 @@ float Lattice::CalculateEntropy(float theta) const {
   return -H[begin_nodes_[len][0]->node_id];
 }
 
+namespace {
+
+// The node structure to support A* algorithm in Lattice::NBest()
+struct Hypothesis {
+  Lattice::Node *node;
+  Hypothesis *next;
+  float fx;  // the priority to pop a new hypothesis from the priority queue.
+  float gx;  // the sum of scores from EOS to the left-most node in x.
+};
+
+// Helper function for cloning a Hypothesis and the ones on their next paths.
+// The graph structure is preserved.
+//
+//   to_clone:  the Hypothesis to clone.
+//   clone_map: mapping between the old pointers and the new pointers.
+//   allocator: allocate and own the cloned Hypothesis.
+//
+// Returns the cloned Hypothesis*. All Hypothesis on its "next" chain are also
+// guaranteed to have been allocated via "allocator", and "clone_map" is updated
+// with all new mappings.
+Hypothesis *CloneHypAndDependents(
+    const Hypothesis *to_clone,
+    absl::flat_hash_map<const Hypothesis *, Hypothesis *> *clone_map,
+    model::FreeList<Hypothesis> *allocator) {
+  Hypothesis *cloned = nullptr;
+  Hypothesis **result_callback = &cloned;
+
+  // Iteratively clone "to_clone" and its dependencies.
+  // The new pointer will be written back to *result_callback.
+  while (to_clone != nullptr) {
+    // If "to_clone" has already been cloned before, we just look up the result.
+    auto iter = clone_map->find(to_clone);
+    if (iter != clone_map->end()) {
+      *result_callback = iter->second;
+      break;
+    }
+
+    // Allocate a new Hypothesis and copy the values.
+    Hypothesis *new_hyp = allocator->Allocate();
+    *new_hyp = *to_clone;
+    *result_callback = new_hyp;
+    clone_map->insert({to_clone, new_hyp});
+
+    // Move on to clone "to_clone->next".
+    to_clone = to_clone->next;
+    result_callback = &(new_hyp->next);
+  }
+  return cloned;
+}
+
+}  // namespace
+
 std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
                                                           bool sample,
                                                           float theta) {
@@ -312,12 +365,6 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
   //
   // As left-to-right Viterbi search can tell the *exact* value of h(x),
   // we can obtain the exact n-best results with A*.
-  struct Hypothesis {
-    Node *node;
-    Hypothesis *next;
-    float fx;
-    float gx;
-  };
 
   class HypothesisComparator {
    public:
@@ -353,6 +400,8 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
   }
   agenda.push(eos);
 
+  int shrink_count = 0;  // Number of times agenda has shrunk. For logging only.
+  bool printed_memory_warning = false;  // For logging only.
   while (!agenda.empty()) {
     auto *top = agenda.top();
     agenda.pop();
@@ -416,21 +465,42 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
       agenda.push(hyp);
     }
 
+    static constexpr int kOneBillion = 1000000000;  // 10^9.
+    if (hypothesis_allocator.size() >= kOneBillion) {
+      if (!printed_memory_warning) {
+        printed_memory_warning = true;
+        LOG(WARNING) << "Allocator size exceeds " << kOneBillion
+                     << " with an example of length " << this->size();
+      }
+    }
+
     // When the input is too long or contains duplicated phrases,
     // `agenda` will get extremely big. Here we avoid this case by
     // dynamically shrinking the agenda.
-    constexpr int kMaxAgendaSize = 100000;
+    constexpr int kMaxAgendaSize = 10000;
     constexpr int kMinAgendaSize = 512;
     if (agenda.size() >= kMaxAgendaSize) {
-      LOG(WARNING) << "Too big agenda. shrinking";
       // Keeps the top `kMinAgendaSize` hypothesis.
       Agenda new_agenda;
+      // Keeps the top hypothesis and the ones on their "next" paths.
+      model::FreeList<Hypothesis> new_allocator(kPreallocatedHypothesisSize);
+      // Map between old Hypothesis* and new Hypothesis*.
+      absl::flat_hash_map<const Hypothesis *, Hypothesis *> clone_map;
+
       const int size = std::min<int>(kMinAgendaSize, nbest_size * 10);
+      shrink_count++;
+      LOG(WARNING) << "Too big agenda size " << agenda.size()
+                   << ". Shrinking (round " << shrink_count << ") down to "
+                   << size << ".";
       for (int i = 0; i < size; ++i) {
-        new_agenda.push(agenda.top());
+        const Hypothesis *top_hyp = agenda.top();
+        Hypothesis *cloned_hyp =
+            CloneHypAndDependents(top_hyp, &clone_map, &new_allocator);
+        new_agenda.push(cloned_hyp);
         agenda.pop();
       }
       agenda = std::move(new_agenda);
+      hypothesis_allocator.swap(new_allocator);
     }
   }
 
