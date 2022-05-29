@@ -449,9 +449,9 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
     return model_proto;
   }
 
-%pythoncode {
+%pythoncode {    
   @staticmethod
-  def Train(arg=None, **kwargs):
+  def _Train(arg=None, **kwargs):
     """Train Sentencepiece model. Accept both kwargs and legacy string arg."""
     if arg is not None and type(arg) is str:
       return SentencePieceTrainer._TrainFromString(arg)
@@ -494,6 +494,11 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
         return SentencePieceTrainer._TrainFromMap(new_kwargs)
 
     return None
+
+  @staticmethod
+  def Train(arg=None, logstream=None, **kwargs):
+    with _LogStream(ostream=logstream):
+      SentencePieceTrainer._Train(arg=arg, **kwargs)
 }
 }
 
@@ -693,6 +698,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
 import re
 import csv
 import sys
+import os
 from io import StringIO
 from io import BytesIO
 
@@ -744,4 +750,24 @@ for m in [
 _add_snake_case(SentencePieceProcessor)
 _add_snake_case(SentencePieceTrainer)
 set_random_generator_seed = SetRandomGeneratorSeed
+
+from ._version import __version__
+
+class _LogStream(object):
+  def __init__(self, ostream=None):
+    self.ostream = ostream
+    if self.ostream is not None:
+      self.orig_stream_fileno = sys.stderr.fileno()
+
+  def __enter__(self):
+    if self.ostream is not None:
+      self.orig_stream_dup = os.dup(self.orig_stream_fileno)
+      os.dup2(self.ostream.fileno(), self.orig_stream_fileno)
+
+  def __exit__(self, type, value, traceback):
+    if self.ostream is not None:
+      os.close(self.orig_stream_fileno)
+      os.dup2(self.orig_stream_dup, self.orig_stream_fileno)
+      os.close(self.orig_stream_dup)
+      self.ostream.close()
 %}

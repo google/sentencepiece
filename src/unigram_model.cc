@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "unigram_model.h"
+
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
@@ -26,7 +28,6 @@
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/str_split.h"
 #include "third_party/absl/strings/string_view.h"
-#include "unigram_model.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -698,6 +699,10 @@ NBestEncodeResult Model::NBestEncode(absl::string_view normalized,
   }
 
   nbest_size = std::max<int>(1, std::min<int>(nbest_size, 1024));
+
+  if (nbest_size <= 1) {
+    return {std::pair<EncodeResult, float>(Encode(normalized), 0.0)};
+  }
 
   Lattice lattice;
   lattice.SetSentence(normalized);

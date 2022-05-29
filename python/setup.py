@@ -32,10 +32,7 @@ def long_description():
   return long_description
 
 
-def version():
-  with codecs.open('VERSION.txt', 'r', 'utf-8') as f:
-    version = f.read().rstrip()
-    return version
+exec(open('src/sentencepiece/_version.py').read())
 
 
 def run_pkg_config(section, pkg_config_path=None):
@@ -108,13 +105,14 @@ setup(
     description='SentencePiece python wrapper',
     long_description=long_description(),
     long_description_content_type='text/markdown',
-    version=version(),
+    version=__version__,
     package_dir={'': 'src'},
     url='https://github.com/google/sentencepiece',
     license='Apache',
     platforms='Unix',
     py_modules=[
-        'sentencepiece/__init__', 'sentencepiece/sentencepiece_model_pb2',
+        'sentencepiece/__init__', 'sentencepiece/_version',
+        'sentencepiece/sentencepiece_model_pb2',
         'sentencepiece/sentencepiece_pb2'
     ],
     ext_modules=[SENTENCEPIECE_EXT],

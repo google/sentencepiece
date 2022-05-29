@@ -25,6 +25,8 @@ import pickle
 
 from collections import defaultdict
 
+print('VERSION={}'.format(spm.__version__))
+
 data_dir = 'test'
 if sys.platform == 'win32':
   data_dir = os.path.join('..', 'data')
@@ -189,11 +191,13 @@ class TestSentencepieceProcessor(unittest.TestCase):
                      [sp2.id_to_piece(i) for i in range(sp2.get_piece_size())])
 
   def test_train_kwargs(self):
+    # suppress logging (redirect to /dev/null)
     spm.SentencePieceTrainer.train(
         input=[os.path.join(data_dir, 'botchan.txt')],
         model_prefix='m',
         vocab_size=1002,
-        user_defined_symbols=['foo', 'bar', ','])
+        user_defined_symbols=['foo', 'bar', ','],
+        logstream=open(os.devnull, 'w'))
     sp = spm.SentencePieceProcessor()
     sp.Load('m.model')
     with codecs.open(

@@ -61,8 +61,6 @@ class _SwigNonDynamicMeta(type):
     __setattr__ = _swig_setattr_nondynamic_class_variable(type.__setattr__)
 
 
-EncoderVersion_kOptimized = _sentencepiece.EncoderVersion_kOptimized
-EncoderVersion_kOriginal = _sentencepiece.EncoderVersion_kOriginal
 class SentencePieceProcessor(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
@@ -89,11 +87,11 @@ class SentencePieceProcessor(object):
     def LoadVocabulary(self, filename, threshold):
         return _sentencepiece.SentencePieceProcessor_LoadVocabulary(self, filename, threshold)
 
-    def SetEncoderVersion(self, encoder_version):
-        return _sentencepiece.SentencePieceProcessor_SetEncoderVersion(self, encoder_version)
+    def SampleEncodeAndScore(self, input, samples, theta, wor, include_best, samples_spt):
+        return _sentencepiece.SentencePieceProcessor_SampleEncodeAndScore(self, input, samples, theta, wor, include_best, samples_spt)
 
-    def GetEncoderVersion(self):
-        return _sentencepiece.SentencePieceProcessor_GetEncoderVersion(self)
+    def CalculateEntropy(self, input, theta, entropy):
+        return _sentencepiece.SentencePieceProcessor_CalculateEntropy(self, input, theta, entropy)
 
     def EncodeAsPieces(self, input):
         return _sentencepiece.SentencePieceProcessor_EncodeAsPieces(self, input)
@@ -401,7 +399,7 @@ class SentencePieceTrainer(object):
         return _sentencepiece.SentencePieceTrainer__TrainFromMap4(args, iter)
 
     @staticmethod
-    def Train(arg=None, **kwargs):
+    def _Train(arg=None, **kwargs):
       """Train Sentencepiece model. Accept both kwargs and legacy string arg."""
       if arg is not None and type(arg) is str:
         return SentencePieceTrainer._TrainFromString(arg)
@@ -445,6 +443,11 @@ class SentencePieceTrainer(object):
 
       return None
 
+    @staticmethod
+    def Train(arg=None, logstream=None, **kwargs):
+      with _LogStream(ostream=logstream):
+        SentencePieceTrainer._Train(arg=arg, **kwargs)
+
 
 # Register SentencePieceTrainer in _sentencepiece:
 _sentencepiece.SentencePieceTrainer_swigregister(SentencePieceTrainer)
@@ -469,6 +472,7 @@ def SentencePieceTrainer__TrainFromMap4(args, iter):
 import re
 import csv
 import sys
+import os
 from io import StringIO
 from io import BytesIO
 
@@ -520,6 +524,26 @@ for m in [
 _add_snake_case(SentencePieceProcessor)
 _add_snake_case(SentencePieceTrainer)
 set_random_generator_seed = SetRandomGeneratorSeed
+
+from ._version import __version__
+
+class _LogStream(object):
+  def __init__(self, ostream=None):
+    self.ostream = ostream
+    if self.ostream is not None:
+      self.orig_stream_fileno = sys.stderr.fileno()
+
+  def __enter__(self):
+    if self.ostream is not None:
+      self.orig_stream_dup = os.dup(self.orig_stream_fileno)
+      os.dup2(self.ostream.fileno(), self.orig_stream_fileno)
+
+  def __exit__(self, type, value, traceback):
+    if self.ostream is not None:
+      os.close(self.orig_stream_fileno)
+      os.dup2(self.orig_stream_dup, self.orig_stream_fileno)
+      os.close(self.orig_stream_dup)
+      self.ostream.close()
 
 
 
