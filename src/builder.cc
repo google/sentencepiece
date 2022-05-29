@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "builder.h"
+
 #include <algorithm>
 #include <functional>
 #include <utility>
 
-#include "builder.h"
 #include "filesystem.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_replace.h"
@@ -46,6 +47,12 @@ namespace {
 constexpr int kMaxUnicode = 0x10FFFF;
 
 static constexpr char kDefaultNormalizerName[] = "nfkc";
+
+#ifndef ENABLE_NFKC_COMPILE
+static constexpr char kCompileError[] =
+    "NFK compile is not enabled. rebuild with ./configure "
+    "--enable-nfkc-compile";
+#endif
 
 #ifdef ENABLE_NFKC_COMPILE
 // Normalize `input` with ICU's normalizer with `mode`.
@@ -338,8 +345,7 @@ util::Status Builder::BuildNFKCMap(CharsMap *chars_map) {
   *chars_map = std::move(nfkc_map);
 
 #else
-  LOG(ERROR) << "NFKC compile is not enabled."
-             << " rebuild with ./configure --enable-nfkc-compile";
+  LOG(ERROR) << kCompileError;
 #endif
 
   return util::OkStatus();
@@ -412,8 +418,7 @@ util::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
   *chars_map = std::move(nfkc_map);
 
 #else
-  LOG(ERROR) << "NFKC compile is not enabled."
-             << " rebuild with ./configure --enable-nfkc-compile";
+  LOG(ERROR) << kCompileError;
 #endif
 
   return util::OkStatus();
@@ -452,8 +457,7 @@ util::Status Builder::BuildNFKC_CFMap(CharsMap *chars_map) {
   RETURN_IF_ERROR(Builder::MergeUnicodeCaseFoldMap(&nfkc_map));
   *chars_map = std::move(nfkc_map);
 #else
-  LOG(ERROR) << "NFKC_CF compile is not enabled."
-             << " rebuild with ./configure --enable-nfkc-compile";
+  LOG(ERROR) << kCompileError;
 #endif
 
   return util::OkStatus();
@@ -467,10 +471,28 @@ util::Status Builder::BuildNmtNFKC_CFMap(CharsMap *chars_map) {
   RETURN_IF_ERROR(Builder::MergeUnicodeCaseFoldMap(&nfkc_map));
   *chars_map = std::move(nfkc_map);
 #else
-  LOG(ERROR) << "NMT_NFKC_CF compile is not enabled."
-             << " rebuild with ./configure --enable-nfkc-compile";
+  LOG(ERROR) << kCompileError;
 #endif
 
+  return util::OkStatus();
+}
+
+// static
+util::Status Builder::BuildNFKDMap(CharsMap *chars_map) {
+#ifdef ENABLE_NFKC_COMPILE
+  constexpr int kMaxUnicode = 0x10FFFF;
+  for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
+    if (!U_IS_UNICODE_CHAR(cp)) {
+      continue;
+    }
+    const auto nfkd = ToNFKD({cp});
+    if (nfkd.size() >= 2 || (nfkd.size() == 1 && nfkd[0] != cp)) {
+      (*chars_map)[{cp}] = nfkd;
+    }
+  }
+#else
+  LOG(ERROR) << kCompileError;
+#endif
   return util::OkStatus();
 }
 

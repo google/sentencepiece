@@ -104,6 +104,9 @@ class Builder {
   // Makes NMT NFKC with Unicode case folding.
   static util::Status BuildNmtNFKC_CFMap(CharsMap *chars_map);
 
+  // Given NFKC maps, convert them to NFKD.
+  static util::Status BuildNFKDMap(CharsMap *chars_map);
+
   // Builds Chars map save in `filename`.
   // Format:
   // src_uchar1 src_uchar2 ... <tab> trg_uchar1 trg_uchar2...
