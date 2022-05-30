@@ -87,12 +87,6 @@ class SentencePieceProcessor(object):
     def LoadVocabulary(self, filename, threshold):
         return _sentencepiece.SentencePieceProcessor_LoadVocabulary(self, filename, threshold)
 
-    def SampleEncodeAndScore(self, input, samples, theta, wor, include_best, samples_spt):
-        return _sentencepiece.SentencePieceProcessor_SampleEncodeAndScore(self, input, samples, theta, wor, include_best, samples_spt)
-
-    def CalculateEntropy(self, input, theta, entropy):
-        return _sentencepiece.SentencePieceProcessor_CalculateEntropy(self, input, theta, entropy)
-
     def EncodeAsPieces(self, input):
         return _sentencepiece.SentencePieceProcessor_EncodeAsPieces(self, input)
 
@@ -111,8 +105,17 @@ class SentencePieceProcessor(object):
     def SampleEncodeAsIds(self, input, nbest_size, alpha):
         return _sentencepiece.SentencePieceProcessor_SampleEncodeAsIds(self, input, nbest_size, alpha)
 
+    def SampleEncodeAndScoreAsPieces(self, input, num_samples, theta, wor, include_best):
+        return _sentencepiece.SentencePieceProcessor_SampleEncodeAndScoreAsPieces(self, input, num_samples, theta, wor, include_best)
+
+    def SampleEncodeAndScoreAsIds(self, input, num_samples, theta, wor, include_best):
+        return _sentencepiece.SentencePieceProcessor_SampleEncodeAndScoreAsIds(self, input, num_samples, theta, wor, include_best)
+
     def DecodePieces(self, pieces):
         return _sentencepiece.SentencePieceProcessor_DecodePieces(self, pieces)
+
+    def CalculateEntropy(self, text, theta):
+        return _sentencepiece.SentencePieceProcessor_CalculateEntropy(self, text, theta)
 
     def EncodeAsSerializedProto(self, input):
         return _sentencepiece.SentencePieceProcessor_EncodeAsSerializedProto(self, input)
@@ -174,6 +177,24 @@ class SentencePieceProcessor(object):
     def DecodeIdsAsSerializedProtoWithCheck(self, ids):
         return _sentencepiece.SentencePieceProcessor_DecodeIdsAsSerializedProtoWithCheck(self, ids)
 
+    def _EncodeAsIds(self, text, enabele_sampling, nbest_size, alpha, add_bos, add_eos, reverse):
+        return _sentencepiece.SentencePieceProcessor__EncodeAsIds(self, text, enabele_sampling, nbest_size, alpha, add_bos, add_eos, reverse)
+
+    def _EncodeAsPieces(self, text, enabele_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
+        return _sentencepiece.SentencePieceProcessor__EncodeAsPieces(self, text, enabele_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
+
+    def _NBestEncodeAsIds(self, text, nbest_size, add_bos, add_eos, reverse):
+        return _sentencepiece.SentencePieceProcessor__NBestEncodeAsIds(self, text, nbest_size, add_bos, add_eos, reverse)
+
+    def _NBestEncodeAsPieces(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece):
+        return _sentencepiece.SentencePieceProcessor__NBestEncodeAsPieces(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
+
+    def _SampleEncodeAndScoreAsIds(self, text, num_samples, theta, wor, include_best, add_bos, add_eos, reverse):
+        return _sentencepiece.SentencePieceProcessor__SampleEncodeAndScoreAsIds(self, text, num_samples, theta, wor, include_best, add_bos, add_eos, reverse)
+
+    def _SampleEncodeAndScoreAsPieces(self, text, num_samples, theta, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece):
+        return _sentencepiece.SentencePieceProcessor__SampleEncodeAndScoreAsPieces(self, text, num_samples, theta, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
+
     def Init(self,
              model_file=None,
              model_proto=None,
@@ -181,6 +202,7 @@ class SentencePieceProcessor(object):
              add_bos=False,
              add_eos=False,
              reverse=False,
+             emit_unk_piece=False,
              enable_sampling=False,
              nbest_size=-1,
              alpha=0.1):
@@ -194,6 +216,7 @@ class SentencePieceProcessor(object):
         add_eos: Add </s> to the result (Default = false) <s>/</s> is added after
           reversing (if enabled).
         reverse: Reverses the tokenized sequence (Default = false)
+        emit_unk_piece: Emits the unk literal string (Default = false)
         nbest_size: sampling parameters for unigram. Invalid for BPE-Dropout.
                     nbest_size = {0,1}: No sampling is performed.
                     nbest_size > 1: samples from the nbest_size results.
@@ -209,6 +232,7 @@ class SentencePieceProcessor(object):
       self._add_bos = add_bos
       self._add_eos = add_eos
       self._reverse = reverse
+      self._emit_unk_piece = emit_unk_piece
       self._enable_sampling = enable_sampling
       self._nbest_size = nbest_size
       self._alpha = alpha
@@ -222,6 +246,7 @@ class SentencePieceProcessor(object):
                add_bos=None,
                add_eos=None,
                reverse=None,
+               emit_unk_piece=None,
                enable_sampling=None,
                nbest_size=None,
                alpha=None):
@@ -234,6 +259,7 @@ class SentencePieceProcessor(object):
         add_eos: Add </s> to the result (Default = false) <s>/</s> is added after
           reversing (if enabled).
         reverse: Reverses the tokenized sequence (Default = false)
+        emit_unk_piece: Emits the unk literal string (Default = false)
         nbest_size: sampling parameters for unigram. Invalid for BPE-Dropout.
                     nbest_size = {0,1}: No sampling is performed.
                     nbest_size > 1: samples from the nbest_size results.
@@ -252,6 +278,8 @@ class SentencePieceProcessor(object):
         add_eos = self._add_eos
       if reverse is None:
         reverse = self._reverse
+      if emit_unk_piece is None:
+        emit_unk_piece = self._emit_unk_piece
       if enable_sampling is None:
         enable_sampling = self._enable_sampling
       if nbest_size is None:
@@ -270,31 +298,125 @@ class SentencePieceProcessor(object):
 
       def _encode(text):
         if out_type is int:
-          if enable_sampling:
-            result = self.SampleEncodeAsIds(text, nbest_size, alpha)
-          else:
-            result = self.EncodeAsIds(text)
+          return self._EncodeAsIds(text, enable_sampling, nbest_size,
+                                   alpha, add_bos, add_eos, reverse)
         else:
-          if enable_sampling:
-            result = self.SampleEncodeAsPieces(text, nbest_size, alpha)
-          else:
-            result = self.EncodeAsPieces(text)
+          return self._EncodeAsPieces(text, enable_sampling, nbest_size,
+                                      alpha, add_bos, add_eos, reverse, emit_unk_piece)
 
-        if reverse:
-          result.reverse()
-        if add_bos:
-          if out_type is int:
-            result = [self.bos_id()] + result
-          else:
-            result = [self.IdToPiece(self.bos_id())] + result
+      if type(input) is list:
+        return [_encode(n) for n in input]
 
-        if add_eos:
-          if out_type is int:
-            result = result + [self.eos_id()]
-          else:
-            result = result + [self.IdToPiece(self.eos_id())]
+      return _encode(input)
 
-        return result
+
+    def NBestEncode(self,
+                    input,
+                    out_type=None,
+                    add_bos=None,
+                    add_eos=None,
+                    reverse=None,
+                    emit_unk_piece=None,
+                    nbest_size=None):
+      """NBestEncode text input to segmented ids or tokens.
+
+        Args:
+        input: input string. accepsts list of string.
+        out_type: output type. int or str.
+        add_bos: Add <s> to the result (Default = false)
+        add_eos: Add </s> to the result (Default = false) <s>/</s> is added after reversing (if enabled).
+        reverse: Reverses the tokenized sequence (Default = false)
+        emit_unk_piece: Emits the unk literal string (Default = false)
+        nbest_size: nbest size
+      """
+
+      if out_type is None:
+        out_type = self._out_type
+      if add_bos is None:
+        add_bos = self._add_bos
+      if add_eos is None:
+        add_eos = self._add_eos
+      if reverse is None:
+        reverse = self._reverse
+      if emit_unk_piece is None:
+        emit_unk_piece = self._emit_unk_piece
+      if nbest_size is None:
+        nbest_size = self._nbest_size
+
+      if nbest_size <= 0:
+        nbest_size=1
+
+      def _encode(text):
+        if out_type is int:
+          return self._NBestEncodeAsIds(text, nbest_size, add_bos, add_eos, reverse)
+        else:
+          return self._NBestEncodeAsPieces(text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
+
+      if type(input) is list:
+        return [_encode(n) for n in input]
+
+      return _encode(input)
+
+
+    def SampleEncodeAndScore(self,
+                             input,
+                             out_type=None,
+                             add_bos=None,
+                             add_eos=None,
+                             reverse=None,
+                             emit_unk_piece=None,
+                             num_samples=None,
+                             theta=None,
+                             wor=None,
+                             include_best=None):
+      """SampleEncodeAndScore text input to segmented ids or tokens.
+
+        Args:
+        input: input string. accepsts list of string.
+        out_type: output type. int or str.
+        add_bos: Add <s> to the result (Default = false)
+        add_eos: Add </s> to the result (Default = false) <s>/</s> is added after reversing (if enabled).
+        reverse: Reverses the tokenized sequence (Default = false)
+        emit_unk_piece: Emits the unk literal string (Default = false)
+        num_samples: How many samples to return (Default = 1)
+        theta: inverse temperature for sampling
+        wor: whether to sample without replacement (Default = false)
+        include_best: whether to include the best tokenization, requires wor=True (Default = false)
+      """
+
+      if out_type is None:
+        out_type = self._out_type
+      if add_bos is None:
+        add_bos = self._add_bos
+      if add_eos is None:
+        add_eos = self._add_eos
+      if reverse is None:
+        reverse = self._reverse
+      if emit_unk_piece is None:
+        emit_unk_piece = self._emit_unk_piece
+      if num_samples is None:
+        num_samples = 1
+      if theta is None:
+        theta = 1.
+      if wor is None:
+        wor = False
+      if include_best is None:
+        include_best = False
+
+      if num_samples <= 0:
+        raise RuntimeError('num_examples must be positive')
+
+      if include_best and not wor:
+        raise RuntimeError('When include_best is True, We must specify "wor = True".')
+
+
+      def _encode(text):
+        if out_type is int:
+          return self._SampleEncodeAndScoreAsIds(text, num_samples, theta, wor, include_best,
+                                                 add_bos, add_eos, reverse)
+        else:
+          return self._SampleEncodeAndScoreAsPieces(text, num_samples, theta, wor, include_best,
+                                                    add_bos, add_eos, reverse, emit_unk_piece)
 
       if type(input) is list:
         return [_encode(n) for n in input]
@@ -323,6 +445,14 @@ class SentencePieceProcessor(object):
         return [_decode(n) for n in input]
 
       return _decode(input)
+
+
+    def Entropy(self, input, theta):
+      """Calculate sentence entropy"""
+
+      if type(input) is list:
+        return [self.CalculateEntropy(n, theta) for n in input]
+      return self.CalculateEntropy(input, theta)
 
 
     def piece_size(self):

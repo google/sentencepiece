@@ -304,6 +304,20 @@ class SentencePieceProcessor {
                                     float alpha, std::vector<int> *ids) const;
 
   //////////////////////////////////////////////////////////////
+  // SampleEncodeAndScore API.
+  // Similar to SampleEncode, but returns samples results.
+  virtual util::Status SampleEncodeAndScore(
+      absl::string_view input, int num_samples, float theta, bool wor,
+      bool include_best,
+      std::vector<std::pair<std::vector<std::string>, float>> *pieces) const;
+
+  // Same as above, but returns a sequence of ids.
+  virtual util::Status SampleEncodeAndScore(
+      absl::string_view input, int num_samples, float theta, bool wor,
+      bool include_best,
+      std::vector<std::pair<std::vector<int>, float>> *ids) const;
+
+  //////////////////////////////////////////////////////////////
   // Advanced API returning SentencePieceText, which manages
   // utf8-byte alignments between user-input/detokenized text
   // and internal sentencepiece sequence.
@@ -326,9 +340,11 @@ class SentencePieceProcessor {
       absl::string_view input, int samples, float theta, bool wor,
       bool include_best, NBestSentencePieceText *samples_spt) const;
 
+#ifndef SWIG
   // Calculate entropy of possible tokenisations
   virtual util::Status CalculateEntropy(absl::string_view input, float theta,
                                         float *entropy) const;
+#endif
 
   // Given a sequence of pieces, decodes it into SentencePieceText.
   virtual util::Status Decode(const std::vector<std::string> &pieces,
@@ -389,6 +405,22 @@ class SentencePieceProcessor {
                                 nbest_size, alpha);
   }
 
+  virtual std::vector<std::pair<std::vector<std::string>, float>>
+  SampleEncodeAndScoreAsPieces(absl::string_view input, int num_samples,
+                               float theta, bool wor, bool include_best) const {
+    using _T = std::vector<std::pair<std::vector<std::string>, float>>;
+    DEFINE_SPP_DIRECT_FUNC_IMPL(SampleEncodeAndScore, _T, input, num_samples,
+                                theta, wor, include_best);
+  }
+
+  virtual std::vector<std::pair<std::vector<int>, float>>
+  SampleEncodeAndScoreAsIds(absl::string_view input, int num_samples,
+                            float theta, bool wor, bool include_best) const {
+    using _T = std::vector<std::pair<std::vector<int>, float>>;
+    DEFINE_SPP_DIRECT_FUNC_IMPL(SampleEncodeAndScore, _T, input, num_samples,
+                                theta, wor, include_best);
+  }
+
   virtual std::string DecodePieces(
       const std::vector<std::string> &pieces) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(Decode, std::string, pieces);
@@ -396,6 +428,10 @@ class SentencePieceProcessor {
 
   virtual std::string DecodeIds(const std::vector<int> &ids) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(Decode, std::string, ids);
+  }
+
+  virtual float CalculateEntropy(absl::string_view text, float theta) const {
+    DEFINE_SPP_DIRECT_FUNC_IMPL(CalculateEntropy, float, text, theta);
   }
 
 #undef DEFINE_SPP_DIRECT_FUNC_IMPL
@@ -483,7 +519,7 @@ class SentencePieceProcessor {
   util::bytes serialized_model_proto() const;
 
  private:
-  enum ExtraOption { REVERSE, BOS, EOS };
+  enum ExtraOption { REVERSE, BOS, EOS, UNK_PIECE };
 
   util::Status ParseExtraOptions(absl::string_view extra_option,
                                  std::vector<ExtraOption> *extra_options) const;

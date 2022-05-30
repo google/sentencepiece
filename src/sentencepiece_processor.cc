@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "sentencepiece_processor.h"
+
 #include <map>
 #include <set>
 #include <utility>
@@ -22,7 +24,6 @@
 #include "model_interface.h"
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
-#include "sentencepiece_processor.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -328,6 +329,56 @@ util::Status SentencePieceProcessor::SampleEncode(absl::string_view input,
   RETURN_IF_ERROR(SampleEncode(input, nbest_size, alpha, &spt));
   for (const auto &sp : spt.pieces()) {
     ids->emplace_back(sp.id());
+  }
+
+  return util::OkStatus();
+}
+
+util::Status SentencePieceProcessor::SampleEncodeAndScore(
+    absl::string_view input, int num_samples, float theta, bool wor,
+    bool include_best,
+    std::vector<std::pair<std::vector<std::string>, float>> *pieces) const {
+  CHECK_OR_RETURN_STATUS_STL(pieces);
+
+  NBestSentencePieceText spt;
+  RETURN_IF_ERROR(
+      SampleEncodeAndScore(input, num_samples, theta, wor, include_best, &spt));
+
+  pieces->clear();
+  pieces->reserve(spt.nbests_size());
+
+  for (const auto &nbest : spt.nbests()) {
+    std::vector<std::string> result;
+    result.reserve(nbest.pieces_size());
+    for (const auto &sp : nbest.pieces()) {
+      result.emplace_back(sp.piece());
+    }
+    pieces->emplace_back(result, nbest.score());
+  }
+
+  return util::OkStatus();
+}
+
+util::Status SentencePieceProcessor::SampleEncodeAndScore(
+    absl::string_view input, int num_samples, float theta, bool wor,
+    bool include_best,
+    std::vector<std::pair<std::vector<int>, float>> *ids) const {
+  CHECK_OR_RETURN_STATUS_STL(ids);
+
+  NBestSentencePieceText spt;
+  RETURN_IF_ERROR(
+      SampleEncodeAndScore(input, num_samples, theta, wor, include_best, &spt));
+
+  ids->clear();
+  ids->reserve(spt.nbests_size());
+
+  for (const auto &nbest : spt.nbests()) {
+    std::vector<int> result;
+    result.reserve(nbest.pieces_size());
+    for (const auto &sp : nbest.pieces()) {
+      result.emplace_back(sp.id());
+    }
+    ids->emplace_back(result, nbest.score());
   }
 
   return util::OkStatus();
@@ -833,6 +884,15 @@ util::Status SentencePieceProcessor::ApplyExtraOptions(
         piece->set_piece(model_->bos_piece().data(),
                          model_->bos_piece().size());
       } break;
+      case UNK_PIECE: {
+        for (int i = 0; i < spt->pieces_size(); ++i) {
+          auto *piece = spt->mutable_pieces(i);
+          if (IsUnknown(piece->id())) {
+            piece->set_piece(model_->unk_piece().data(),
+                             model_->unk_piece().size());
+          }
+        }
+      } break;
       default:
         return util::InternalError("unknown extra_option type.");
     }
@@ -855,7 +915,9 @@ util::Status SentencePieceProcessor::ParseExtraOptions(
   static std::map<absl::string_view, SentencePieceProcessor::ExtraOption>
       extra_option_map = {{"bos", SentencePieceProcessor::BOS},
                           {"eos", SentencePieceProcessor::EOS},
-                          {"reverse", SentencePieceProcessor::REVERSE}};
+                          {"reverse", SentencePieceProcessor::REVERSE},
+                          {"unk", SentencePieceProcessor::UNK_PIECE},
+                          {"unk_piece", SentencePieceProcessor::UNK_PIECE}};
   for (const auto &s : absl::StrSplit(extra_option, ":")) {
     const auto it = extra_option_map.find(s);
     CHECK_OR_RETURN(it != extra_option_map.end())

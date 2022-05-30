@@ -2,6 +2,7 @@
 %include exception.i
 
 %{
+#include <algorithm>
 #include <limits>
 #include <cmath>
 #include <sentencepiece_processor.h>
@@ -20,29 +21,13 @@ inline void ReleaseResultObject(PyObject *obj) {
 class PyInputString {
  public:
   explicit PyInputString(PyObject* obj) {
-#if PY_VERSION_HEX >= 0x03000000
     if (PyUnicode_Check(obj)) {
-       // Python3, Unicode
       str_ = const_cast<char *>(PyUnicode_AsUTF8AndSize(obj, &size_));
       input_type_ = kUnicodeInput;
     } else if (PyBytes_Check(obj)) {
-       // Python3, Bytes
       PyBytes_AsStringAndSize(obj, &str_, &size_);
       input_type_ = kByteInput;
-    }
-#else
-    if (PyUnicode_Check(obj)) {
-      // Python2, Unicode
-      PyObject *utf8_obj = PyUnicode_AsUTF8String(obj);
-      PyString_AsStringAndSize(utf8_obj, &str_, &size_);
-      input_type_ = utf8_obj;
-    } else if (PyString_Check(obj)) {
-      // Python2, Bytes,
-      PyString_AsStringAndSize(obj, &str_, &size_);
-      input_type_ = kByteInput;
-    }
-#endif
-    else {
+    } else {
       str_ = nullptr;
     }
   }
@@ -52,11 +37,7 @@ class PyInputString {
   PyObject *input_type() const { return input_type_; }
 
   static bool IsUnicode(PyObject *resultobj) {
-#if PY_VERSION_HEX >= 0x03000000
     return (resultobj == nullptr || resultobj == kUnicodeInput);
-#else
-    return (resultobj != nullptr && resultobj != kByteInput);
-#endif
   }
 
  private:
@@ -70,19 +51,11 @@ PyObject* MakePyOutputString(const std::string& output,
   if (PyInputString::IsUnicode(resultobj)) {
     return PyUnicode_FromStringAndSize(output.data(), output.size());
   }
-#if PY_VERSION_HEX >= 0x03000000
   return PyBytes_FromStringAndSize(output.data(), output.size());
-#else
-  return PyString_FromStringAndSize(output.data(), output.size());
-#endif
 }
 
 PyObject* MakePyOutputBytes(const std::string& output) {
-#if PY_VERSION_HEX >= 0x03000000
   return PyBytes_FromStringAndSize(output.data(), output.size());
-#else
-  return PyString_FromStringAndSize(output.data(), output.size());
-#endif
 }
 
 int ToSwigError(sentencepiece::util::StatusCode code) {
@@ -152,7 +125,34 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
    std::string value_;
    sentencepiece::util::Status status_;
 };
+
+void RewriteIds(const sentencepiece::SentencePieceProcessor &sp,
+                std::vector<int> *ids,
+                bool add_bos, bool add_eos, bool reverse) {
+  if (!add_bos && !add_eos && !reverse) return;
+  if (reverse) std::reverse(ids->begin(), ids->end());
+  if (add_bos) ids->insert(ids->begin(), sp.bos_id());
+  if (add_eos) ids->push_back(sp.eos_id());
 }
+
+void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
+                   std::vector<std::string> *pieces,
+                   bool add_bos, bool add_eos, bool reverse, bool emit_unk_piece) {
+  if (!add_bos && !add_eos && !reverse && !emit_unk_piece) return;
+  if (reverse) std::reverse(pieces->begin(), pieces->end());
+  if (add_bos) pieces->insert(pieces->begin(), sp.IdToPiece(sp.bos_id()));
+  if (add_eos) pieces->push_back(sp.IdToPiece(sp.eos_id()));
+  if (emit_unk_piece) {
+    const auto &unk = sp.IdToPiece(sp.unk_id());
+    for (auto &piece : *pieces) {
+      const int id = sp.PieceToId(piece);
+      if (id == sp.unk_id()) {
+        piece = unk;
+      }
+    }
+  }
+}
+}  // namespace
 %}
 
 %exception {
@@ -176,6 +176,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
 %ignore sentencepiece::SentencePieceProcessor::Encode;
 %ignore sentencepiece::SentencePieceProcessor::SampleEncode;
 %ignore sentencepiece::SentencePieceProcessor::NBestEncode;
+%ignore sentencepiece::SentencePieceProcessor::SampleEncodeAndScore;
 %ignore sentencepiece::SentencePieceProcessor::Decode;
 %ignore sentencepiece::SentencePieceProcessor::DecodeIds;
 %ignore sentencepiece::SentencePieceProcessor::DecodeIdsAsSerializedProto;
@@ -201,25 +202,102 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
 
   std::string DecodeIdsWithCheck(
       const std::vector<int> &ids) const {
-    const int num_pieces = $self->GetPieceSize(); 
-    for (int id : ids)
-      if (id < 0 || id >= num_pieces)
+    const int num_pieces = $self->GetPieceSize();
+    for (int id : ids) {
+      if (id < 0 || id >= num_pieces) {
         throw sentencepiece::util::Status(
             sentencepiece::util::StatusCode::kOutOfRange,
             "piece id is out of range.");
+      }
+    }
     return $self->DecodeIds(ids);
   }
 
   util::bytes DecodeIdsAsSerializedProtoWithCheck(
       const std::vector<int> &ids) const {
-    const int num_pieces = $self->GetPieceSize(); 
-    for (int id : ids)
-      if (id < 0 || id >= num_pieces)
+    const int num_pieces = $self->GetPieceSize();
+    for (int id : ids) {
+      if (id < 0 || id >= num_pieces) {
         throw sentencepiece::util::Status(
             sentencepiece::util::StatusCode::kOutOfRange,
             "piece id is out of range.");
+      }
+    }
     return $self->DecodeIdsAsSerializedProto(ids);
   }
+
+  std::vector<int> _EncodeAsIds(absl::string_view text,
+                                bool enabele_sampling,
+                                int nbest_size, float alpha,
+                                bool add_bos, bool add_eos, bool reverse) {
+    auto ids = enabele_sampling ?
+               $self->SampleEncodeAsIds(text, nbest_size, alpha) :
+               $self->EncodeAsIds(text);
+    RewriteIds(*$self, &ids, add_bos, add_eos, reverse);
+    return ids;
+  }
+
+  std::vector<std::string> _EncodeAsPieces(absl::string_view text,
+                                           bool enabele_sampling,
+                                           int nbest_size, float alpha,
+                                           bool add_bos, bool add_eos, bool reverse,
+                                           bool emit_unk_piece) {
+    auto pieces = enabele_sampling ?
+                  $self->SampleEncodeAsPieces(text, nbest_size, alpha) :
+                  $self->EncodeAsPieces(text);
+    RewritePieces(*$self, &pieces, add_bos, add_eos, reverse, emit_unk_piece);
+    return pieces;
+  }
+
+  std::vector<std::vector<int>>
+      _NBestEncodeAsIds(absl::string_view text,
+                        int nbest_size,
+                        bool add_bos, bool add_eos, bool reverse) {
+    auto idss = $self->NBestEncodeAsIds(text, nbest_size);
+    for (auto &ids : idss) {
+      RewriteIds(*$self, &ids, add_bos, add_eos, reverse);
+    }
+    return idss;
+  }
+
+  std::vector<std::vector<std::string>>
+      _NBestEncodeAsPieces(absl::string_view text,
+                           int nbest_size,
+                           bool add_bos, bool add_eos, bool reverse,
+                           bool emit_unk_piece) {
+    auto piecess = $self->NBestEncodeAsPieces(text, nbest_size);
+    for (auto &pieces : piecess) {
+      RewritePieces(*$self, &pieces, add_bos, add_eos, reverse, emit_unk_piece);
+    }
+    return piecess;
+  }
+
+  std::vector<std::pair<std::vector<int>, float>>
+      _SampleEncodeAndScoreAsIds(absl::string_view text,
+                                 int num_samples, float theta, bool wor,
+                                 bool include_best,
+                                 bool add_bos, bool add_eos, bool reverse) {
+    auto idss = $self->SampleEncodeAndScoreAsIds(text, num_samples,
+                                                 theta, wor, include_best);
+    for (auto &ids : idss) {
+      RewriteIds(*$self, &ids.first, add_bos, add_eos, reverse);
+    }
+    return idss;
+  }
+
+  std::vector<std::pair<std::vector<std::string>, float>>  
+      _SampleEncodeAndScoreAsPieces(absl::string_view text,
+                                    int num_samples, float theta, bool wor,
+                                    bool include_best,
+                                    bool add_bos, bool add_eos, bool reverse,
+                                    bool emit_unk_piece) {
+    auto piecess = $self->SampleEncodeAndScoreAsPieces(text, num_samples,
+                                                       theta, wor, include_best);
+    for (auto &pieces : piecess) {
+      RewritePieces(*$self, &pieces.first, add_bos, add_eos, reverse, emit_unk_piece);
+    }
+    return piecess;
+  }      
 
 %pythoncode {
   def Init(self,
@@ -229,6 +307,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
            add_bos=False,
            add_eos=False,
            reverse=False,
+           emit_unk_piece=False,
            enable_sampling=False,
            nbest_size=-1,
            alpha=0.1):
@@ -242,6 +321,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
       add_eos: Add </s> to the result (Default = false) <s>/</s> is added after
         reversing (if enabled).
       reverse: Reverses the tokenized sequence (Default = false)
+      emit_unk_piece: Emits the unk literal string (Default = false)
       nbest_size: sampling parameters for unigram. Invalid for BPE-Dropout.
                   nbest_size = {0,1}: No sampling is performed.
                   nbest_size > 1: samples from the nbest_size results.
@@ -257,6 +337,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
     self._add_bos = add_bos
     self._add_eos = add_eos
     self._reverse = reverse
+    self._emit_unk_piece = emit_unk_piece
     self._enable_sampling = enable_sampling
     self._nbest_size = nbest_size
     self._alpha = alpha
@@ -270,6 +351,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
              add_bos=None,
              add_eos=None,
              reverse=None,
+             emit_unk_piece=None,
              enable_sampling=None,
              nbest_size=None,
              alpha=None):
@@ -282,6 +364,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
       add_eos: Add </s> to the result (Default = false) <s>/</s> is added after
         reversing (if enabled).
       reverse: Reverses the tokenized sequence (Default = false)
+      emit_unk_piece: Emits the unk literal string (Default = false)
       nbest_size: sampling parameters for unigram. Invalid for BPE-Dropout.
                   nbest_size = {0,1}: No sampling is performed.
                   nbest_size > 1: samples from the nbest_size results.
@@ -300,6 +383,8 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
       add_eos = self._add_eos
     if reverse is None:
       reverse = self._reverse
+    if emit_unk_piece is None:
+      emit_unk_piece = self._emit_unk_piece
     if enable_sampling is None:
       enable_sampling = self._enable_sampling
     if nbest_size is None:
@@ -318,31 +403,125 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
 
     def _encode(text):
       if out_type is int:
-        if enable_sampling:
-          result = self.SampleEncodeAsIds(text, nbest_size, alpha)
-        else:
-          result = self.EncodeAsIds(text)
+        return self._EncodeAsIds(text, enable_sampling, nbest_size,
+                                 alpha, add_bos, add_eos, reverse)
       else:
-        if enable_sampling:
-          result = self.SampleEncodeAsPieces(text, nbest_size, alpha)
-        else:
-          result = self.EncodeAsPieces(text)
+        return self._EncodeAsPieces(text, enable_sampling, nbest_size,
+                                    alpha, add_bos, add_eos, reverse, emit_unk_piece)
 
-      if reverse:
-        result.reverse()
-      if add_bos:
-        if out_type is int:
-          result = [self.bos_id()] + result
-        else:
-          result = [self.IdToPiece(self.bos_id())] + result
+    if type(input) is list:
+      return [_encode(n) for n in input]
 
-      if add_eos:
-        if out_type is int:
-          result = result + [self.eos_id()]
-        else:
-          result = result + [self.IdToPiece(self.eos_id())]
+    return _encode(input)
 
-      return result
+
+  def NBestEncode(self,
+                  input,
+                  out_type=None,
+                  add_bos=None,
+                  add_eos=None,
+                  reverse=None,
+                  emit_unk_piece=None,
+                  nbest_size=None):
+    """NBestEncode text input to segmented ids or tokens.
+
+      Args:
+      input: input string. accepsts list of string.
+      out_type: output type. int or str.
+      add_bos: Add <s> to the result (Default = false)
+      add_eos: Add </s> to the result (Default = false) <s>/</s> is added after reversing (if enabled).
+      reverse: Reverses the tokenized sequence (Default = false)
+      emit_unk_piece: Emits the unk literal string (Default = false)
+      nbest_size: nbest size
+    """
+
+    if out_type is None:
+      out_type = self._out_type
+    if add_bos is None:
+      add_bos = self._add_bos
+    if add_eos is None:
+      add_eos = self._add_eos
+    if reverse is None:
+      reverse = self._reverse
+    if emit_unk_piece is None:
+      emit_unk_piece = self._emit_unk_piece
+    if nbest_size is None:
+      nbest_size = self._nbest_size
+
+    if nbest_size <= 0:
+      nbest_size=1
+
+    def _encode(text):
+      if out_type is int:
+        return self._NBestEncodeAsIds(text, nbest_size, add_bos, add_eos, reverse)
+      else:
+        return self._NBestEncodeAsPieces(text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
+
+    if type(input) is list:
+      return [_encode(n) for n in input]
+
+    return _encode(input)
+
+
+  def SampleEncodeAndScore(self,
+                           input,
+                           out_type=None,
+                           add_bos=None,
+                           add_eos=None,
+                           reverse=None,
+                           emit_unk_piece=None,
+                           num_samples=None,
+                           theta=None,
+                           wor=None,
+                           include_best=None):
+    """SampleEncodeAndScore text input to segmented ids or tokens.
+
+      Args:
+      input: input string. accepsts list of string.
+      out_type: output type. int or str.
+      add_bos: Add <s> to the result (Default = false)
+      add_eos: Add </s> to the result (Default = false) <s>/</s> is added after reversing (if enabled).
+      reverse: Reverses the tokenized sequence (Default = false)
+      emit_unk_piece: Emits the unk literal string (Default = false)
+      num_samples: How many samples to return (Default = 1)
+      theta: inverse temperature for sampling
+      wor: whether to sample without replacement (Default = false)
+      include_best: whether to include the best tokenization, requires wor=True (Default = false)
+    """
+
+    if out_type is None:
+      out_type = self._out_type
+    if add_bos is None:
+      add_bos = self._add_bos
+    if add_eos is None:
+      add_eos = self._add_eos
+    if reverse is None:
+      reverse = self._reverse
+    if emit_unk_piece is None:
+      emit_unk_piece = self._emit_unk_piece
+    if num_samples is None:
+      num_samples = 1
+    if theta is None:
+      theta = 1.
+    if wor is None:
+      wor = False
+    if include_best is None:
+      include_best = False
+
+    if num_samples <= 0:
+      raise RuntimeError('num_examples must be positive')
+
+    if include_best and not wor:
+      raise RuntimeError('When include_best is True, We must specify "wor = True".')
+                        
+
+    def _encode(text):
+      if out_type is int:
+        return self._SampleEncodeAndScoreAsIds(text, num_samples, theta, wor, include_best,
+                                               add_bos, add_eos, reverse)
+      else:
+        return self._SampleEncodeAndScoreAsPieces(text, num_samples, theta, wor, include_best,
+                                                  add_bos, add_eos, reverse, emit_unk_piece)
 
     if type(input) is list:
       return [_encode(n) for n in input]
@@ -371,6 +550,14 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
       return [_decode(n) for n in input]
 
     return _decode(input)
+
+
+  def Entropy(self, input, theta):
+    """Calculate sentence entropy"""
+
+    if type(input) is list:
+      return [self.CalculateEntropy(n, theta) for n in input]
+    return self.CalculateEntropy(input, theta)
 
 
   def piece_size(self):
@@ -449,7 +636,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
     return model_proto;
   }
 
-%pythoncode {    
+%pythoncode {
   @staticmethod
   def _Train(arg=None, **kwargs):
     """Train Sentencepiece model. Accept both kwargs and legacy string arg."""
@@ -649,6 +836,29 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
     SWIG_fail;
   }
   $1 = out;
+}
+
+%typemap(out) std::vector<std::pair<std::vector<std::string>, float>> {
+  PyObject *input_type = resultobj;
+  $result = PyList_New($1.size());
+  for (size_t i = 0; i < $1.size(); ++i) {
+    PyObject *obj = PyList_New($1[i].first.size());
+    for (size_t j = 0; j < $1[i].first.size(); ++j) {
+      PyList_SetItem(obj, j, MakePyOutputString($1[i].first[j], input_type));
+    }
+    PyList_SetItem($result, i, PyTuple_Pack(2, obj, PyFloat_FromDouble(static_cast<double>($1[i].second))));
+  }
+}
+
+%typemap(out) std::vector<std::pair<std::vector<int>, float>> {
+  $result = PyList_New($1.size());
+  for (size_t i = 0; i < $1.size(); ++i) {
+    PyObject *obj = PyList_New($1[i].first.size());
+    for (size_t j = 0; j < $1[i].first.size(); ++j) {
+      PyList_SetItem(obj, j, PyInt_FromLong(static_cast<long>($1[i].first[j])));
+    }
+    PyList_SetItem($result, i, PyTuple_Pack(2, obj, PyFloat_FromDouble(static_cast<double>($1[i].second))));
+  }
 }
 
 %typemap(in) sentencepiece::SentenceIterator * {
