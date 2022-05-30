@@ -19,7 +19,8 @@ set -x  # display all commands
 
 setup_ubuntu() {
   export DEBIAN_FRONTEND=noninteractive
-  apt-get update
+  # temporarlly disables as Ubuntu 22.04 failes to run apt-get update
+  # apt-get update 
   apt-get install -y build-essential cmake git pkg-config python3-pip
   pip3 install --upgrade pip
 
@@ -33,11 +34,6 @@ setup_ubuntu() {
 
 setup_debian() {
   setup_ubuntu
-}
-
-setup_fedora() {
-  dnf update -y
-  dnf install -y rpm-build gcc-c++ make cmake pkg-config python-pip python-devel
 }
 
 build_generic() {
@@ -92,12 +88,6 @@ build_linux_gcc_ubuntu_i386() {
 
 build_linux_gcc_debian() {
   setup_debian
-  build_generic
-  build_python
-}
-
-build_linux_gcc_fedora() {
-  setup_fedora
   build_generic
   build_python
 }

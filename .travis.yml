@@ -20,9 +20,6 @@ matrix:
       env: IMAGE=debian:stable COMMAND=build_linux_gcc_debian
       services: docker
     - os: linux
-      env: IMAGE=fedora:latest COMMAND=build_linux_gcc_fedora
-      services: docker
-    - os: linux
       env: IMAGE=ubuntu:latest COMMAND=build_linux_clang_ubuntu
       services: docker
     - os: linux

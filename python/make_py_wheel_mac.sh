@@ -36,7 +36,8 @@ build_python() {
   which python
   which pip
   python --version
-  sudo python get-pip.py --no-setuptools --no-wheel --ignore-installed
+  curl -L -o get-pip.py https://bootstrap.pypa.io/pip/3.6/get-pip.py
+  sudo python ./get-pip.py --no-setuptools --no-wheel --ignore-installed
   pip install --upgrade setuptools
   pip install wheel
   pip install delocate
