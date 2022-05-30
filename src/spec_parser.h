@@ -163,6 +163,9 @@ inline std::string PrintProto(const TrainerSpec &message,
   PRINT_PARAM(eos_piece);
   PRINT_PARAM(pad_piece);
   PRINT_PARAM(unk_surface);
+  PRINT_PARAM(enable_differential_privacy);
+  PRINT_PARAM(differential_privacy_noise_level);
+  PRINT_PARAM(differential_privacy_clipping_threshold);
 
   os << "}\n";
 
@@ -238,6 +241,9 @@ util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
   PARSE_STRING(eos_piece);
   PARSE_STRING(pad_piece);
   PARSE_STRING(unk_surface);
+  PARSE_BOOL(enable_differential_privacy);
+  PARSE_DOUBLE(differential_privacy_noise_level);
+  PARSE_UINT64(differential_privacy_clipping_threshold);
 
   return util::StatusBuilder(util::StatusCode::kNotFound, GTL_LOC)
          << "unknown field name \"" << name << "\" in TrainerSpec.";

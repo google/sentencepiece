@@ -376,6 +376,26 @@ class TestSentencepieceProcessor(unittest.TestCase):
       ++ids2[' '.join(sp.encode('hello world', enable_sampling=False))]
     self.assertEqual(len(ids2), 1)
 
+  def test_new_api_nbest(self):
+    sp = spm.SentencePieceProcessor(
+        model_file=os.path.join('test', 'test_model.model'))
+    results = sp.nbest_encode('hello world', nbest_size=10, out_type=str)
+    for n in results:
+      self.assertEqual(sp.decode(n), 'hello world')
+    results = sp.nbest_encode('hello world', nbest_size=10, out_type=int)
+    for n in results:
+      self.assertEqual(sp.decode(n), 'hello world')
+
+  def test_new_api_sample_and_score(self):
+    sp = spm.SentencePieceProcessor(
+        model_file=os.path.join('test', 'test_model.model'))
+    results = sp.sample_encode_and_score('hello world', wor=True, out_type=str)
+    for n in results:
+      self.assertEqual(sp.decode(n[0]), 'hello world')
+    results = sp.sample_encode_and_score('hello world', wor=True, out_type=int)
+    for n in results:
+      self.assertEqual(sp.decode(n[0]), 'hello world')
+
   def test_valid_range(self):
     size = self.sp_.piece_size()
     funcs = [
