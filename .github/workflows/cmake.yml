@@ -1,0 +1,33 @@
+name: CI for general build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v3
+
+    - name: config
+      run: cmake -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON
+
+    - name: build
+      # Build your program with the given configuration
+      run: cmake --build ${{github.workspace}}/build
+
+    - name: test
+      working-directory: ${{github.workspace}}/build
+      run: ctest
