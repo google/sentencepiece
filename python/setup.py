@@ -62,16 +62,15 @@ class build_ext(_build_ext):
 
   def build_extension(self, ext):
     cflags = ['-std=c++11']
-    if os.path.exists('./bundled') or not is_sentencepiece_installed():
+    if os.path.exists('../build/root'):
+      cflags = cflags + ['-I../build/root/include']
+      libs = ['-L../build/root/lib', '-lsentencepiece', '-lsentencepiece_train']
+    elif not is_sentencepiece_installed():
       # Build sentencepiece from scratch with build_bundled.sh
       # This is useally called as a fallback of pip command.
-      if not os.path.exists('./bundled'):
-        subprocess.check_call(['./build_bundled.sh', __version__])
+      subprocess.check_call(['./build_bundled.sh', __version__])
       cflags = cflags + ['-I./bundled/include']
-      libs = ['-L./bundled/lib' '-lsentencepiece', '-lsentencepiece_train']
-    elif os.path.exists('../build/root'):
-      cflags = cflags + ['-I../build/root/include']
-      libs = ['-L../build/root/lib' '-lsentencepiece', '-lsentencepiece_train']
+      libs = ['-L./bundled/lib', '-lsentencepiece', '-lsentencepiece_train']
     else:
       cflags = cflags + run_pkg_config('cflags')
       libs = run_pkg_config('libs')
