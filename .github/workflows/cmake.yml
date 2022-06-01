@@ -17,13 +17,17 @@ jobs:
     - name: checkout
       uses: actions/checkout@v3
 
-    - name: config
-      run: cmake -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON
+    - name: config for Windows
+      if: runner_os == 'Windows'
+      run: cmake -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
+      
+    - name: config for Unix
+      if: runner_os != 'Windows'
+      run: cmake -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
 
     - name: build
-      # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build
+      run: cmake --build ${{github.workspace}}/build --config Release --target install
 
     - name: test
       working-directory: ${{github.workspace}}/build
-      run: ctest
+      run: ctest -C Release
