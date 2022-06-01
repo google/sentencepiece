@@ -91,7 +91,7 @@ class build_ext(_build_ext):
 
 if os.name == 'nt':
   # Must pre-install sentencepice into bundled directory.
-  cflags = ['/MT', '/I.\\bundled\\include']
+  cflags = ['/MT', '/I..\\build\\root\\include']
   libs = [
       '..\\build\\root\\lib\\sentencepiece.lib',
       '..\\build\\root\\lib\\sentencepiece_train.lib'
