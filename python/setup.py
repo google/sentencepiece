@@ -64,7 +64,10 @@ class build_ext(_build_ext):
     cflags = ['-std=c++11']
     if os.path.exists('../build/root'):
       cflags = cflags + ['-I../build/root/include']
-      libs = ['-L../build/root/lib', '-lsentencepiece', '-lsentencepiece_train']
+      libs = [
+          '../build/root/lib/sentencepiece.a',
+          '../build/root/lib/sentencepiece_train.a'
+      ]
     elif not is_sentencepiece_installed():
       # Build sentencepiece from scratch with build_bundled.sh
       # This is useally called as a fallback of pip command.
@@ -90,8 +93,8 @@ if os.name == 'nt':
   # Must pre-install sentencepice into bundled directory.
   cflags = ['/MT', '/I.\\bundled\\include']
   libs = [
-      '.\\bundled\\lib\\sentencepiece.lib',
-      '.\\bundled\\lib\\sentencepiece_train.lib'
+      '..\\build\\root\\lib\\sentencepiece.lib',
+      '..\\build\\root\\lib\\sentencepiece_train.lib'
   ]
   SENTENCEPIECE_EXT = Extension(
       'sentencepiece._sentencepiece',
