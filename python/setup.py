@@ -65,8 +65,8 @@ class build_ext(_build_ext):
     if os.path.exists('../build/root'):
       cflags = cflags + ['-I../build/root/include']
       libs = [
-          '../build/root/lib/sentencepiece.a',
-          '../build/root/lib/sentencepiece_train.a'
+          '../build/root/lib/libsentencepiece.a',
+          '../build/root/lib/libsentencepiece_train.a'
       ]
     elif not is_sentencepiece_installed():
       # Build sentencepiece from scratch with build_bundled.sh
