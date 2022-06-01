@@ -38,4 +38,4 @@ jobs:
 
     - name: python
       working-directory: ${{github.workspace}}/python
-      run: python setup.py test bdist_wheel
+      run: python3 setup.py test bdist_wheel
