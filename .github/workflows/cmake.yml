@@ -14,7 +14,7 @@ jobs:
         arch: [ x64 ]
         include:
           - os: windows-latest
-            arch: win32
+            arch: x86
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -22,10 +22,17 @@ jobs:
     - uses: actions/setup-python@v3
       with:
         python-version: '3.x'
+        architecture: ${{matrix.arch}}
 
     - name: config for Windows
       if: runner.os == 'Windows'
-      run: cmake -A ${{ matrix.arch }} -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
+      run: |
+        if (${{matrix.arch}} -eq "x64") {
+          $msbuildPlatform = "x64"
+        } else {
+          $msbuildPlatform = "Win32"
+        }
+        cmake -A $msbuildPlatform -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
       
     - name: config for Unix
       if: runner.os != 'Windows'
