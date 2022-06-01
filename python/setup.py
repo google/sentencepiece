@@ -61,18 +61,25 @@ class build_ext(_build_ext):
   """Override build_extension to run cmake."""
 
   def build_extension(self, ext):
-    pkg_config_path = None
-    if not is_sentencepiece_installed():
-      subprocess.check_call(['./build_bundled.sh', version()])
-      pkg_config_path = './bundled/lib/pkgconfig:./bundled/lib64/pkgconfig'
-
     cflags = ['-std=c++11']
+    if os.path.exists('./bundled') or not is_sentencepiece_installed():
+      # Build sentencepiece from scratch with build_bundled.sh
+      # This is useally called as a fallback of pip command.
+      if not os.path.exists('./bundled'):
+        subprocess.check_call(['./build_bundled.sh', __version__])
+      cflags = cflags + ['-I./bundled/include']
+      libs = ['-L./bundled/lib' '-lsentencepiece', '-lsentencepiece_train']
+    elif os.path.exists('../build/root'):
+      cflags = cflags + ['-I../build/root/include']
+      libs = ['-L../build/root/lib' '-lsentencepiece', '-lsentencepiece_train']
+    else:
+      cflags = cflags + run_pkg_config('cflags')
+      libs = run_pkg_config('libs')
+
     # Fix compile on some versions of Mac OSX
     # See: https://github.com/neulab/xnmt/issues/199
     if sys.platform == 'darwin':
       cflags.append('-mmacosx-version-min=10.9')
-    cflags = cflags + run_pkg_config('cflags', pkg_config_path)
-    libs = run_pkg_config('libs', pkg_config_path)
     print('## cflags={}'.format(' '.join(cflags)))
     print('## libs={}'.format(' '.join(libs)))
     ext.extra_compile_args = cflags
@@ -81,10 +88,11 @@ class build_ext(_build_ext):
 
 
 if os.name == 'nt':
-  cflags = ['/MT', '/I..\\build\\root\\include']
+  # Must pre-install sentencepice into bundled directory.
+  cflags = ['/MT', '/I.\\bundled\\include']
   libs = [
-      '..\\build\\root\\lib\\sentencepiece.lib',
-      '..\\build\\root\\lib\\sentencepiece_train.lib'
+      '.\\bundled\\lib\\sentencepiece.lib',
+      '.\\bundled\\lib\\sentencepiece_train.lib'
   ]
   SENTENCEPIECE_EXT = Extension(
       'sentencepiece._sentencepiece',
