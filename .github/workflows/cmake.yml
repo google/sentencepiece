@@ -10,7 +10,11 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ ubuntu-latest, ubuntu-18.04, windows-latest, macos-latest ]
+        os: [ ubuntu-latest, ubuntu-18.04, windows-latest ]
+        arch: [ x64 ]
+        include:
+          - os: windows-latest
+            arch: win32
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -21,7 +25,7 @@ jobs:
 
     - name: config for Windows
       if: runner.os == 'Windows'
-      run: cmake -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
+      run: cmake -A ${{ matrix.arch }} -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
       
     - name: config for Unix
       if: runner.os != 'Windows'
