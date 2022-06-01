@@ -31,3 +31,11 @@ jobs:
     - name: test
       working-directory: ${{github.workspace}}/build
       run: ctest -C Release
+      
+    - name: package
+      working-directory: ${{github.workspace}}/build
+      run: cpack
+
+    - name: python
+      working-directory: ${{github.workspace}}/python
+      run: python setup.py test bdist_wheel
