@@ -27,7 +27,7 @@ jobs:
     - name: config for Windows
       if: runner.os == 'Windows'
       run: |
-        if (${{matrix.arch}} -eq "x64") {
+        if ("${{matrix.arch}}" -eq "x64") {
           $msbuildPlatform = "x64"
         } else {
           $msbuildPlatform = "Win32"
