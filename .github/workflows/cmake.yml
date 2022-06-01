@@ -18,11 +18,11 @@ jobs:
       uses: actions/checkout@v3
 
     - name: config for Windows
-      if: runner_os == 'Windows'
+      if: runner.os == 'Windows'
       run: cmake -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
       
     - name: config for Unix
-      if: runner_os != 'Windows'
+      if: runner.os != 'Windows'
       run: cmake -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
 
     - name: build
