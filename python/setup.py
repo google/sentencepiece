@@ -58,7 +58,7 @@ def is_sentencepiece_installed():
 
 
 def get_cflags_and_libs(root):
-  cflags = cflags + ['-std=c++11', '-I' + os.path.join(root, 'include')]
+  cflags = ['-std=c++11', '-I' + os.path.join(root, 'include')]
   libs = []
   if os.path.exists(os.path.join(root, 'lib/pkgconfig/sentencepiece.pc')):
     libs = [
