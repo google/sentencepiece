@@ -41,6 +41,6 @@ jobs:
           CIBW_ARCHS_MACOS: x86_64 universal2 arm64
           CIBW_SKIP: pp*
           CIBW_BEFORE_ALL: >
-            cmake --build ${{github.workspace}}/build -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root &&
+            cmake ${{github.workspace}} -B ${{github.workspace}}/build -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root &&
             cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
             
