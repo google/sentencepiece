@@ -26,8 +26,7 @@ jobs:
         with:
           platforms: arm64
           
-      - name: Build static libraries 
-        shell: bash
+      - name: Build static libraries
         run: |
           cmake -B ${{github.workspace}}/build -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
           cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
