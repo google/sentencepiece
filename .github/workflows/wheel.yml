@@ -25,12 +25,7 @@ jobs:
         uses: docker/setup-qemu-action@v1
         with:
           platforms: arm64
-          
-      - name: Build static libraries
-        run: |
-          cmake -B ${{github.workspace}}/build -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
-          cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
-          
+
       - name: Install cibuildwheel
         working-directory: ${{github.workspace}}/python
         run: |
@@ -45,3 +40,7 @@ jobs:
           CIBW_ARCHS_LINUX: auto aarch64
           CIBW_ARCHS_MACOS: x86_64 universal2 arm64
           CIBW_SKIP: pp*
+          CIBW_BEFORE_ALL: >
+            cmake --build ${{github.workspace}}/build -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root &&
+            cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
+            
