@@ -40,9 +40,4 @@ jobs:
           CIBW_ARCHS_LINUX: auto aarch64
           CIBW_ARCHS_MACOS: x86_64 universal2 arm64
           CIBW_SKIP: pp*
-          CIBW_BEFORE_ALL: >
-              echo "project={project} package={package} wheel={wheel}" &&
-              ls -l {project} &&
-              ls -l {package} &&
-              ls -l {wheel}
-            
+          CIBW_BEFORE_ALL: ls -l {project}/..
