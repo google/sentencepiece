@@ -19,7 +19,6 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: "3.x"
-          cache: "pip"
 
       - name: Set up QEMU
         if: runner.os == 'Linux'
@@ -27,16 +26,21 @@ jobs:
         with:
           platforms: arm64
           
-      - name: Prepare 
+      - name: Build static libraries 
         shell: bash
         run: |
           cmake -B ${{github.workspace}}/build -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
           cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
           
       - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel==2.6.0
+        working-directory: ${{github.workspace}}/python
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine
+          python -m pip install cibuildwheel==2.6.0
 
       - name: Build wheels
+        working-directory: ${{github.workspace}}/python
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_ARCHS_LINUX: auto aarch64
