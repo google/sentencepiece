@@ -57,26 +57,32 @@ def is_sentencepiece_installed():
     return False
 
 
+def get_cflags_and_libs(root):
+  cflags = ['-std=c++11']
+  libs = []
+  if os.path.exists(os.path.join(root, 'lib/pkgconfig/sentencepiece.pc')):
+    cflags = cflags + ['-I' + os.path.join(root, 'include')]
+    libs = [
+        os.path.join(root, 'lib/libsentencepiece.a'),
+        os.path.join(root, 'lib/libsentencepiece_train.a'),
+    ]
+  return cflags, libs
+
+
 class build_ext(_build_ext):
   """Override build_extension to run cmake."""
 
   def build_extension(self, ext):
-    cflags = ['-std=c++11']
-    if os.path.exists('../build/root'):
-      cflags = cflags + ['-I../build/root/include']
-      libs = [
-          '../build/root/lib/libsentencepiece.a',
-          '../build/root/lib/libsentencepiece_train.a'
-      ]
-    elif not is_sentencepiece_installed():
-      # Build sentencepiece from scratch with build_bundled.sh
-      # This is useally called as a fallback of pip command.
-      subprocess.check_call(['./build_bundled.sh', __version__])
-      cflags = cflags + ['-I./bundled/include']
-      libs = ['-L./bundled/lib', '-lsentencepiece', '-lsentencepiece_train']
-    else:
+    cflags, libs = get_cflags_and_libs('../build/root')
+    if len(libs) == 0:
+      cflags, libs = get_cflags_and_libs('./bundled/root')
+
+    if len(libs) == 0 and is_sentencepiece_installed():
       cflags = cflags + run_pkg_config('cflags')
       libs = run_pkg_config('libs')
+    else:
+      subprocess.check_call(['./build_bundled.sh', __version__])
+      cflags, libs = get_cflags_and_libs('./bundled/root')
 
     # Fix compile on some versions of Mac OSX
     # See: https://github.com/neulab/xnmt/issues/199
