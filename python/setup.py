@@ -18,6 +18,7 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.build_py import build_py as _build_py
 import codecs
+import platform
 import string
 import subprocess
 import sys
@@ -101,11 +102,21 @@ class build_ext(_build_ext):
 
 if os.name == 'nt':
   # Must pre-install sentencepice into bundled directory.
-  cflags = ['/MT', '/I..\\build\\root\\include']
-  libs = [
-      '..\\build\\root\\lib\\sentencepiece.lib',
-      '..\\build\\root\\lib\\sentencepiece_train.lib'
-  ]
+  arch = platform.machine().lower()
+  print('### arch={}'.format(arch))
+  if os.path.exists('..\\build\\root_{}\\lib'.format(arch)):
+    cflags = ['/MT', '/I..\\build\\root_{}\\include'.format(arch)]
+    libs = [
+        '..\\build\\root_{}\\lib\\sentencepiece.lib'.format(arch),
+        '..\\build\\root_{}\\lib\\sentencepiece_train.lib'.format(arch)
+    ]
+  else:
+    cflags = ['/MT', '/I..\\build\\root\\include']
+    libs = [
+        '..\\build\\root\\lib\\sentencepiece.lib',
+        '..\\build\\root\\lib\\sentencepiece_train.lib'
+    ]
+
   SENTENCEPIECE_EXT = Extension(
       'sentencepiece._sentencepiece',
       sources=['src/sentencepiece/sentencepiece_wrap.cxx'],
