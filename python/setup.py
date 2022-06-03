@@ -18,7 +18,6 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.build_py import build_py as _build_py
 import codecs
-import platform
 import string
 import subprocess
 import sys
@@ -102,7 +101,9 @@ class build_ext(_build_ext):
 
 if os.name == 'nt':
   # Must pre-install sentencepice into bundled directory.
-  arch = platform.machine().lower()
+  arch = 'win32'
+  if sys.maxsize > 2**32:
+    arch = 'amd64'
   print('### arch={}'.format(arch))
   if os.path.exists('..\\build\\root_{}\\lib'.format(arch)):
     cflags = ['/MT', '/I..\\build\\root_{}\\include'.format(arch)]
