@@ -10,7 +10,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ ubuntu-latest, ubuntu-18.04, windows-latest, mac-latest ]
+        os: [ ubuntu-latest, ubuntu-18.04, windows-latest, macOS-10.15 ]
         arch: [ x64 ]
         include:
           - os: windows-latest
