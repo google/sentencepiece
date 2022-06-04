@@ -32,15 +32,15 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           cmake -A Win32 -B ${{github.workspace}}/build_win32 -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root_win32
-          cmake --build ${{github.workspace}}/build_win32 --config Release --target install
+          cmake --build ${{github.workspace}}/build_win32 --config Release --target install --parallel 8
           cmake -A x64   -B ${{github.workspace}}/build_amd64 -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root_amd64
-          cmake --build ${{github.workspace}}/build_amd64 --config Release --target install
+          cmake --build ${{github.workspace}}/build_amd64 --config Release --target install --parallel 8
 
       - name: Build for Mac
         if: runner.os == 'macOS'
         run: |
           cmake -B ${{github.workspace}}/build -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
-          cmake --build ${{github.workspace}}/build --config Release --target install
+          cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
         env:
           CMAKE_OSX_ARCHITECTURES: arm64;x86_64
 
@@ -59,25 +59,21 @@ jobs:
           CIBW_ARCHS_MACOS: x86_64 universal2 arm64
           CIBW_SKIP: pp*
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: upload
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./wheelhouse/*.whl            
+
+      - name: Upload Release Assets
+        uses: actions/checkout@v3
         if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -x
+          assets=()
+          for asset in ./wheelhouse/*.whl; do
+            assets+=("-a" "$asset")
+          done
+          tag_name="${GITHUB_REF##*/}"
+          hub release create "${assets[@]}" -m "$tag_name" "$tag_name"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: true
-          prerelease: true
-    
-      - name: Upload Release Asset
-        id: upload-release-asset 
-        uses: actions/upload-release-asset@v1
-        if: startsWith(github.ref, 'refs/tags/') 
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/*.whl
-          asset_content_type: application/x-7z-compressed
