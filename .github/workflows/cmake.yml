@@ -81,4 +81,3 @@ jobs:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./build/*.7z
         asset_content_type: application/x-7z-compressed
-
