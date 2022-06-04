@@ -3,9 +3,11 @@ name: CI for general build
 on:
   push:
     branches: [ master ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ master ]
-
+ 
 jobs:
   build:
     strategy:
@@ -56,3 +58,27 @@ jobs:
         pip install setuptools wheel twine
         python setup.py test
         python setup.py bdist_wheel
+        
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: true
+        prerelease: true
+    
+    - name: Upload Release Asset
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      if: startsWith(github.ref, 'refs/tags/') 
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./build/*.7z
+        asset_content_type: application/x-7z-compressed
+
