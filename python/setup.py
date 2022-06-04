@@ -81,12 +81,13 @@ class build_ext(_build_ext):
     if len(libs) == 0:
       cflags, libs = get_cflags_and_libs('./bundled/root')
 
-    if len(libs) == 0 and is_sentencepiece_installed():
-      cflags = cflags + run_pkg_config('cflags')
-      libs = run_pkg_config('libs')
-    else:
-      subprocess.check_call(['./build_bundled.sh', __version__])
-      cflags, libs = get_cflags_and_libs('./bundled/root')
+    if len(libs) == 0:
+      if is_sentencepiece_installed():
+        cflags = cflags + run_pkg_config('cflags')
+        libs = run_pkg_config('libs')
+      else:
+        subprocess.check_call(['./build_bundled.sh', __version__])
+        cflags, libs = get_cflags_and_libs('./bundled/root')
 
     # Fix compile on some versions of Mac OSX
     # See: https://github.com/neulab/xnmt/issues/199
@@ -104,7 +105,6 @@ if os.name == 'nt':
   arch = 'win32'
   if sys.maxsize > 2**32:
     arch = 'amd64'
-  print('### arch={}'.format(arch))
   if os.path.exists('..\\build\\root_{}\\lib'.format(arch)):
     cflags = ['/MT', '/I..\\build\\root_{}\\include'.format(arch)]
     libs = [
