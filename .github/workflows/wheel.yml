@@ -10,7 +10,7 @@ jobs:
   build_wheels:
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [macOS-10.15]
     runs-on: ${{ matrix.os }}
     name: Build wheels on ${{ matrix.os }}
 
