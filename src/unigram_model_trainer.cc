@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "unigram_model_trainer.h"
+
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
@@ -29,7 +31,6 @@
 #include "third_party/absl/memory/memory.h"
 #include "third_party/esaxx/esa.hxx"  // Suffix array library.
 #include "unicode_script.h"
-#include "unigram_model_trainer.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -95,9 +96,15 @@ void TrainerModel::SetSentencePieces(SentencePieces &&sentencepieces) {
   CHECK(status().ok());
 }
 
+TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
+  return trainer_spec_.train_extremely_large_corpus()
+             ? MakeSeedSentencePiecesInternal<int64>()
+             : MakeSeedSentencePiecesInternal<int32>();
+}
+
 // Returns seed sentencepieces for EM training.
 template <typename node_int_type>
-TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
+TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() const {
   CHECK(!sentences_.empty());
   CHECK(!required_chars_.empty());
 
@@ -474,13 +481,8 @@ util::Status Trainer::Train() {
   RETURN_IF_ERROR(model.status());
   RETURN_IF_ERROR(LoadSentences());
 
-  if (trainer_spec_.train_extremely_large_corpus()) {
-    auto seed_sentencepieces = MakeSeedSentencePieces<int64>();
-    model.SetSentencePieces(std::move(seed_sentencepieces));
-  } else {
-    auto seed_sentencepieces = MakeSeedSentencePieces<int32>();
-    model.SetSentencePieces(std::move(seed_sentencepieces));
-  }
+  auto seed_sentencepieces = MakeSeedSentencePieces();
+  model.SetSentencePieces(std::move(seed_sentencepieces));
 
   if (trainer_spec_.split_by_whitespace()) {
     SplitSentencesByWhitespace();

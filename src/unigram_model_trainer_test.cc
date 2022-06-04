@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "unigram_model_trainer.h"
+
 #include <string>
 #include <vector>
 
@@ -22,7 +24,6 @@
 #include "testharness.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_join.h"
-#include "unigram_model_trainer.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -79,7 +80,7 @@ TrainerResult RunTrainer(const std::vector<std::string>& input, int size,
   {
     Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_OK(trainer.LoadSentences());
-    TrainerModel::SentencePieces res = trainer.MakeSeedSentencePieces<int32>();
+    TrainerModel::SentencePieces res = trainer.MakeSeedSentencePieces();
 
     for (const auto& piece : res) {
       seed_pieces.emplace_back(piece.first, piece.second);
