@@ -58,7 +58,6 @@ jobs:
           CIBW_ARCHS_LINUX: auto aarch64
           CIBW_ARCHS_MACOS: x86_64 universal2 arm64
           CIBW_SKIP: pp*
-          CIBW_TEST_COMMAND: python setup.py test
 
       - name: Create Release
         id: create_release
