@@ -65,7 +65,6 @@ jobs:
         path: ./build/*.7z
 
     - name: Upload Release Assets
-      uses: actions/checkout@v3
       if: startsWith(github.ref, 'refs/tags/')
       run: |
         set -x
