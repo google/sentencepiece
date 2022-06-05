@@ -27,7 +27,7 @@ jobs:
         uses: docker/setup-qemu-action@v1
         with:
           platforms: arm64
-          
+
       - name: Build for Windows
         if: runner.os == 'Windows'
         run: |
@@ -62,17 +62,16 @@ jobs:
       - name: upload
         uses: actions/upload-artifact@v3
         with:
-          path: ./python/wheelhouse/*.whl            
+          path: ./python/wheelhouse/*.whl
 
       - name: Upload Release Assets
         if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          set -x
-          assets=()
-          for asset in ./wheelhouse/*.whl; do
-            assets+=("-a" "$asset")
-          done
-          tag_name="${GITHUB_REF##*/}"
-          hub release create "${assets[@]}" -m "$tag_name" "$tag_name"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./python/wheelhouse/*.whl
+          tag: ${{ github.ref }}
+          overwrite: true
+          prerelease: true
+          file_glob: true
+          body: "This is my release text"

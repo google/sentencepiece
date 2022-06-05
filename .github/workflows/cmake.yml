@@ -7,7 +7,7 @@ on:
       - 'v*'
   pull_request:
     branches: [ master ]
- 
+
 jobs:
   build:
     strategy:
@@ -35,7 +35,7 @@ jobs:
           $msbuildPlatform = "Win32"
         }
         cmake -A $msbuildPlatform -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
-      
+
     - name: Config for Unix
       if: runner.os != 'Windows'
       run: cmake -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
@@ -46,7 +46,7 @@ jobs:
     - name: Test
       working-directory: ${{github.workspace}}/build
       run: ctest -C Release
-      
+
     - name: Package
       working-directory: ${{github.workspace}}/build
       run: cpack
@@ -66,13 +66,12 @@ jobs:
 
     - name: Upload Release Assets
       if: startsWith(github.ref, 'refs/tags/')
-      run: |
-        set -x
-        assets=()
-        for asset in ./build/*.7z; do
-          assets+=("-a" "$asset")
-        done
-        tag_name="${GITHUB_REF##*/}"
-        hub release create "${assets[@]}" -m "$tag_name" "$tag_name"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ./build/*.7z
+        tag: ${{ github.ref }}
+        overwrite: true
+        prerelease: true
+        file_glob: true
+        body: "This is my release text"
