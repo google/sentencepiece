@@ -60,7 +60,7 @@ jobs:
           CIBW_SKIP: "pp* *-musllinux_*"
           CIBW_BUILD_VERBOSITY: 1
 
-      - name: Build sdist:
+      - name: Build sdist
         working-directory: ${{github.workspace}}/python
         run: python setup.py sdist
 
