@@ -2,15 +2,21 @@
 %include exception.i
 
 %{
+#include <iostream>
 #include <algorithm>
+#include <functional>
 #include <limits>
 #include <cmath>
+#include <thread>
+#include <vector>
 #include <sentencepiece_processor.h>
 #include <sentencepiece_trainer.h>
 
 namespace {
 PyObject* kUnicodeInput = reinterpret_cast<PyObject* >(0x1);
 PyObject* kByteInput = reinterpret_cast<PyObject* >(0x2);
+
+using BytesArray = std::vector<sentencepiece::util::bytes>;
 
 inline void ReleaseResultObject(PyObject *obj) {
   if (obj != nullptr && obj != kUnicodeInput && obj != kByteInput) {
@@ -54,7 +60,7 @@ PyObject* MakePyOutputString(const std::string& output,
   return PyBytes_FromStringAndSize(output.data(), output.size());
 }
 
-PyObject* MakePyOutputBytes(const std::string& output) {
+PyObject* MakePyOutputBytes(const sentencepiece::util::bytes& output) {
   return PyBytes_FromStringAndSize(output.data(), output.size());
 }
 
@@ -126,18 +132,18 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
    sentencepiece::util::Status status_;
 };
 
-void RewriteIds(const sentencepiece::SentencePieceProcessor &sp,
-                std::vector<int> *ids,
-                bool add_bos, bool add_eos, bool reverse) {
+inline void RewriteIds(const sentencepiece::SentencePieceProcessor &sp,
+                       std::vector<int> *ids,
+                       bool add_bos, bool add_eos, bool reverse, bool emit_unk_piece) {
   if (!add_bos && !add_eos && !reverse) return;
   if (reverse) std::reverse(ids->begin(), ids->end());
   if (add_bos) ids->insert(ids->begin(), sp.bos_id());
   if (add_eos) ids->push_back(sp.eos_id());
 }
 
-void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
-                   std::vector<std::string> *pieces,
-                   bool add_bos, bool add_eos, bool reverse, bool emit_unk_piece) {
+inline void RewriteIds(const sentencepiece::SentencePieceProcessor &sp,
+                       std::vector<std::string> *pieces,
+                       bool add_bos, bool add_eos, bool reverse, bool emit_unk_piece) {
   if (!add_bos && !add_eos && !reverse && !emit_unk_piece) return;
   if (reverse) std::reverse(pieces->begin(), pieces->end());
   if (add_bos) pieces->insert(pieces->begin(), sp.IdToPiece(sp.bos_id()));
@@ -152,6 +158,91 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
     }
   }
 }
+
+inline void RewriteIds(const sentencepiece::SentencePieceProcessor &sp,
+                       sentencepiece::util::bytes *proto,
+                       bool add_bos, bool add_eos, bool reverse, bool emit_unk_piece) {
+  if (add_bos || add_eos || reverse || emit_unk_piece) {
+    throw sentencepiece::util::Status(
+        sentencepiece::util::StatusCode::kUnimplemented,
+        "add_bos, add_eos, reverse, and emit_unk_piece is not supported in AsSerialize API");
+  }
+}
+
+inline void CheckIds(const std::vector<int> &ids, int num_pieces) {
+  for (int id : ids) {
+    if (id < 0 || id >= num_pieces) {
+      throw sentencepiece::util::Status(
+          sentencepiece::util::StatusCode::kOutOfRange,
+          "piece id is out of range.");
+    }
+  }
+}
+
+inline void CheckIds(const std::vector<std::string> &ids, int num_pieces) {}
+
+class ThreadPool {
+ public:
+  explicit ThreadPool(size_t request_size) :
+    request_size_(request_size) {}
+
+  virtual ~ThreadPool() {
+    for (auto &task : tasks_) {
+      task.join();
+    }
+  }
+
+  void Schedule(std::function<void()> closure) {
+    static constexpr size_t kMinThreadSize = 2;
+    if (request_size_ < kMinThreadSize) {
+      closure();
+    } else {
+      tasks_.emplace_back(closure);
+    }
+  }
+
+ private:
+  size_t request_size_ = 0;
+  std::vector<std::thread> tasks_;
+};
+
+#define DEFINE_ENCODE_BATCH_FUNC_IMPL(FuncName, InType, OutType)        \
+  std::vector<OutType> outs(ins.size());                                \
+  num_threads = std::max<int>(1, std::min<int>({num_threads, static_cast<int>(ins.size()), 256})); \
+  {                                                                     \
+    ThreadPool pool(ins.size());                                        \
+    for (int n = 0;  n < num_threads; ++n) {                            \
+      pool.Schedule([&, n]() {                                          \
+          for (size_t i = n; i < ins.size(); i += num_threads) {        \
+            auto out = enable_sampling ?                                \
+                       self->Sample##FuncName(ins[i],                   \
+                                              nbest_size, alpha) :      \
+                       self->FuncName(ins[i]);                          \
+            RewriteIds(*self, &out, add_bos, add_eos, reverse,          \
+                       emit_unk_piece);                                 \
+            outs[i] = std::move(out);                                   \
+          }                                                             \
+        });                                                             \
+    }                                                                   \
+  }                                                                     \
+  return outs;
+
+#define DEFINE_DECODE_BATCH_FUNC_IMPL(FuncName, InType, OutType)        \
+  std::vector<OutType> outs(ins.size());                                \
+  num_threads = std::max<int>(1, std::min<int>({num_threads, static_cast<int>(ins.size()), 256})); \
+  {                                                                     \
+    ThreadPool pool(ins.size());                                        \
+    for (int n = 0;  n < num_threads; ++n) {                            \
+      pool.Schedule([&, n]() {                                          \
+          for (size_t i = n; i < ins.size(); i += num_threads) {        \
+            CheckIds(ins[i], self->GetPieceSize());                     \
+            outs[i] = self->FuncName(ins[i]);                           \
+          }                                                             \
+        });                                                             \
+    }                                                                   \
+  }                                                                     \
+  return outs;
+
 }  // namespace
 %}
 
@@ -171,15 +262,27 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
 %ignore sentencepiece::SentencePieceText;
 %ignore sentencepiece::NormalizerSpec;
 %ignore sentencepiece::TrainerSpec;
-
 %ignore sentencepiece::SentencePieceProcessor::status;
+
 %ignore sentencepiece::SentencePieceProcessor::Encode;
+%ignore sentencepiece::SentencePieceProcessor::EncodeAsPieces;
+%ignore sentencepiece::SentencePieceProcessor::EncodeAsIds;
+%ignore sentencepiece::SentencePieceProcessor::EncodeAsSerializedProto;
 %ignore sentencepiece::SentencePieceProcessor::SampleEncode;
+%ignore sentencepiece::SentencePieceProcessor::SampleEncodeAsIds;
+%ignore sentencepiece::SentencePieceProcessor::SampleEncodeAsPieces;
+%ignore sentencepiece::SentencePieceProcessor::SampleEncodeAsSerializedProto;
 %ignore sentencepiece::SentencePieceProcessor::NBestEncode;
+%ignore sentencepiece::SentencePieceProcessor::NBestEncodeAsIds;
+%ignore sentencepiece::SentencePieceProcessor::NBestEncodeAsSerializedProto;
 %ignore sentencepiece::SentencePieceProcessor::SampleEncodeAndScore;
+
 %ignore sentencepiece::SentencePieceProcessor::Decode;
 %ignore sentencepiece::SentencePieceProcessor::DecodeIds;
+%ignore sentencepiece::SentencePieceProcessor::DecodePieces;
+%ignore sentencepiece::SentencePieceProcessor::DecodePiecesAsSerializedProto;
 %ignore sentencepiece::SentencePieceProcessor::DecodeIdsAsSerializedProto;
+
 %ignore sentencepiece::SentencePieceProcessor::model_proto;
 %ignore sentencepiece::SentencePieceProcessor::Load;
 %ignore sentencepiece::SentencePieceProcessor::LoadOrDie;
@@ -200,62 +303,131 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
     return $self->Load(arg);
   }
 
-  std::string DecodeIdsWithCheck(
-      const std::vector<int> &ids) const {
-    const int num_pieces = $self->GetPieceSize();
-    for (int id : ids) {
-      if (id < 0 || id >= num_pieces) {
-        throw sentencepiece::util::Status(
-            sentencepiece::util::StatusCode::kOutOfRange,
-            "piece id is out of range.");
-      }
-    }
-    return $self->DecodeIds(ids);
-  }
-
-  util::bytes DecodeIdsAsSerializedProtoWithCheck(
-      const std::vector<int> &ids) const {
-    const int num_pieces = $self->GetPieceSize();
-    for (int id : ids) {
-      if (id < 0 || id >= num_pieces) {
-        throw sentencepiece::util::Status(
-            sentencepiece::util::StatusCode::kOutOfRange,
-            "piece id is out of range.");
-      }
-    }
-    return $self->DecodeIdsAsSerializedProto(ids);
-  }
-
+  /////////////////////////////////////////////////////////////////////////////
+  // EncodeAs* (Single request)
   std::vector<int> _EncodeAsIds(absl::string_view text,
-                                bool enabele_sampling,
+                                bool enable_sampling,
                                 int nbest_size, float alpha,
-                                bool add_bos, bool add_eos, bool reverse) {
-    auto ids = enabele_sampling ?
+                                bool add_bos, bool add_eos, bool reverse,
+                                bool emit_unk_piece) const {
+    auto ids = enable_sampling ?
                $self->SampleEncodeAsIds(text, nbest_size, alpha) :
                $self->EncodeAsIds(text);
-    RewriteIds(*$self, &ids, add_bos, add_eos, reverse);
+    RewriteIds(*$self, &ids, add_bos, add_eos, reverse, emit_unk_piece);
     return ids;
   }
 
   std::vector<std::string> _EncodeAsPieces(absl::string_view text,
-                                           bool enabele_sampling,
+                                           bool enable_sampling,
                                            int nbest_size, float alpha,
                                            bool add_bos, bool add_eos, bool reverse,
-                                           bool emit_unk_piece) {
-    auto pieces = enabele_sampling ?
+                                           bool emit_unk_piece) const {
+    auto pieces = enable_sampling ?
                   $self->SampleEncodeAsPieces(text, nbest_size, alpha) :
                   $self->EncodeAsPieces(text);
-    RewritePieces(*$self, &pieces, add_bos, add_eos, reverse, emit_unk_piece);
+    RewriteIds(*$self, &pieces, add_bos, add_eos, reverse, emit_unk_piece);
     return pieces;
   }
 
+  sentencepiece::util::bytes _EncodeAsSerializedProto(absl::string_view text,
+                                                      bool enable_sampling,
+                                                      int nbest_size, float alpha,
+                                                      bool add_bos, bool add_eos, bool reverse,
+                                                      bool emit_unk_piece) const {
+    auto proto = enable_sampling ?
+                 $self->SampleEncodeAsSerializedProto(text, nbest_size, alpha) :
+                 $self->EncodeAsSerializedProto(text);
+    RewriteIds(*$self, &proto, add_bos, add_eos, reverse, emit_unk_piece);
+    return proto;
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // EncodeAs* (Batch request)
+  std::vector<std::vector<int>> _EncodeAsIdsBatch(
+      const std::vector<absl::string_view> &ins, int num_threads,
+      bool enable_sampling, int nbest_size, float alpha,
+      bool add_bos, bool add_eos, bool reverse,
+      bool emit_unk_piece) const {
+    DEFINE_ENCODE_BATCH_FUNC_IMPL(EncodeAsIds,
+                                  absl::string_view, std::vector<int>);
+  }
+
+  std::vector<std::vector<std::string>> _EncodeAsPiecesBatch(
+      const std::vector<absl::string_view> &ins, int num_threads,
+      bool enable_sampling, int nbest_size, float alpha,
+      bool add_bos, bool add_eos, bool reverse,
+      bool emit_unk_piece) const {
+    DEFINE_ENCODE_BATCH_FUNC_IMPL(EncodeAsPieces,
+                                  absl::string_view, std::vector<std::string>);
+  }
+
+  BytesArray _EncodeAsSerializedProtoBatch(
+      const std::vector<absl::string_view> &ins, int num_threads,
+      bool enable_sampling, int nbest_size, float alpha,
+      bool add_bos, bool add_eos, bool reverse,
+      bool emit_unk_piece) const {
+    DEFINE_ENCODE_BATCH_FUNC_IMPL(EncodeAsSerializedProto,
+                                  absl::string_view,
+                                  sentencepiece::util::bytes);
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // DecodeAs* (Single request)
+  std::string _DecodeIds(const std::vector<int> &ids) const {
+    CheckIds(ids, $self->GetPieceSize());
+    return $self->DecodeIds(ids);
+  }
+
+  std::string _DecodePieces(const std::vector<std::string> &pieces) const {
+    return $self->DecodePieces(pieces);
+  }
+
+  sentencepiece::util::bytes _DecodeIdsAsSerializedProto(
+      const std::vector<int> &ids) const {
+    CheckIds(ids, $self->GetPieceSize());
+    return $self->DecodeIdsAsSerializedProto(ids);
+  }
+
+  sentencepiece::util::bytes _DecodePiecesAsSerializedProto(
+      const std::vector<std::string> &pieces) const {
+    CheckIds(pieces, $self->GetPieceSize());
+    return $self->DecodePiecesAsSerializedProto(pieces);
+  }  
+
+  /////////////////////////////////////////////////////////////////////////////
+  // DecodeAs* (Batch request)
+  std::vector<std::string> _DecodeIdsBatch(
+      const std::vector<std::vector<int>> &ins, int num_threads) const {
+    DEFINE_DECODE_BATCH_FUNC_IMPL(DecodeIds, int, std::string);
+  }
+
+  BytesArray _DecodeIdsAsSerializedProtoBatch(
+      const std::vector<std::vector<int>> &ins, int num_threads) const {
+    DEFINE_DECODE_BATCH_FUNC_IMPL(DecodeIdsAsSerializedProto, int,
+                                  sentencepiece::util::bytes);
+  }
+
+  std::vector<std::string> _DecodePiecesBatch(
+      const std::vector<std::vector<std::string>> &ins, int num_threads) const {
+    DEFINE_DECODE_BATCH_FUNC_IMPL(DecodePieces, std::string, std::string);
+  }
+
+  BytesArray _DecodePiecesAsSerializedProtoBatch(
+      const std::vector<std::vector<std::string>> &ins, int num_threads) const {
+    DEFINE_DECODE_BATCH_FUNC_IMPL(DecodePiecesAsSerializedProto, std::string,
+                                  sentencepiece::util::bytes);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  // NBestEncodeAs* (Single request)
   std::vector<std::vector<int>>
       _NBestEncodeAsIds(absl::string_view text,
                         int nbest_size,
-                        bool add_bos, bool add_eos, bool reverse) {
+                        bool add_bos, bool add_eos, bool reverse,
+                        bool emit_unk_piece) const {
     auto idss = $self->NBestEncodeAsIds(text, nbest_size);
     for (auto &ids : idss) {
-      RewriteIds(*$self, &ids, add_bos, add_eos, reverse);
+      RewriteIds(*$self, &ids, add_bos, add_eos, reverse, emit_unk_piece);
     }
     return idss;
   }
@@ -264,28 +436,40 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
       _NBestEncodeAsPieces(absl::string_view text,
                            int nbest_size,
                            bool add_bos, bool add_eos, bool reverse,
-                           bool emit_unk_piece) {
+                           bool emit_unk_piece) const {
     auto piecess = $self->NBestEncodeAsPieces(text, nbest_size);
     for (auto &pieces : piecess) {
-      RewritePieces(*$self, &pieces, add_bos, add_eos, reverse, emit_unk_piece);
+      RewriteIds(*$self, &pieces, add_bos, add_eos, reverse, emit_unk_piece);
     }
     return piecess;
   }
 
+  sentencepiece::util::bytes _NBestEncodeAsSerializedProto(absl::string_view text,
+                                                           int nbest_size,
+                                                           bool add_bos, bool add_eos, bool reverse,
+                                                           bool emit_unk_piece) const {
+    RewriteIds(*$self, static_cast<sentencepiece::util::bytes *>(nullptr),
+               add_bos, add_eos, reverse, emit_unk_piece);
+    return $self->NBestEncodeAsSerializedProto(text, nbest_size);
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // SampleEncodeAndScoreAs* (Single request)
   std::vector<std::pair<std::vector<int>, float>>
       _SampleEncodeAndScoreAsIds(absl::string_view text,
                                  int num_samples, float theta, bool wor,
                                  bool include_best,
-                                 bool add_bos, bool add_eos, bool reverse) {
+                                 bool add_bos, bool add_eos, bool reverse,
+                                 bool emit_unk_piece) {
     auto idss = $self->SampleEncodeAndScoreAsIds(text, num_samples,
                                                  theta, wor, include_best);
     for (auto &ids : idss) {
-      RewriteIds(*$self, &ids.first, add_bos, add_eos, reverse);
+      RewriteIds(*$self, &ids.first, add_bos, add_eos, reverse, emit_unk_piece);
     }
     return idss;
   }
 
-  std::vector<std::pair<std::vector<std::string>, float>>  
+  std::vector<std::pair<std::vector<std::string>, float>>
       _SampleEncodeAndScoreAsPieces(absl::string_view text,
                                     int num_samples, float theta, bool wor,
                                     bool include_best,
@@ -294,10 +478,10 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
     auto piecess = $self->SampleEncodeAndScoreAsPieces(text, num_samples,
                                                        theta, wor, include_best);
     for (auto &pieces : piecess) {
-      RewritePieces(*$self, &pieces.first, add_bos, add_eos, reverse, emit_unk_piece);
+      RewriteIds(*$self, &pieces.first, add_bos, add_eos, reverse, emit_unk_piece);
     }
     return piecess;
-  }      
+  }
 
 %pythoncode {
   def Init(self,
@@ -310,7 +494,8 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
            emit_unk_piece=False,
            enable_sampling=False,
            nbest_size=-1,
-           alpha=0.1):
+           alpha=0.1,
+           num_threads=1):
     """Initialzie sentencepieceProcessor.
 
     Args:
@@ -330,6 +515,7 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
                     forward-filtering-and-backward-sampling algorithm.
       alpha: Soothing parameter for unigram sampling, and dropout probability of
         merge operations for BPE-dropout.
+      num_threads: number of threads in batch processing.
     """
 
     _sentencepiece_processor_init_native(self)
@@ -341,6 +527,7 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
     self._enable_sampling = enable_sampling
     self._nbest_size = nbest_size
     self._alpha = alpha
+    self._num_threads = num_threads
     if model_file or model_proto:
       self.Load(model_file=model_file, model_proto=model_proto)
 
@@ -354,7 +541,8 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
              emit_unk_piece=None,
              enable_sampling=None,
              nbest_size=None,
-             alpha=None):
+             alpha=None,
+             num_threads=None):
     """Encode text input to segmented ids or tokens.
 
       Args:
@@ -373,6 +561,7 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
                     forward-filtering-and-backward-sampling algorithm.
       alpha: Soothing parameter for unigram sampling, and merge probability for
              BPE-dropout (probablity 'p' in BPE-dropout paper).
+      num_threads: the number of threads used in the batch processin (Default = 1).
     """
 
     if out_type is None:
@@ -391,6 +580,8 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
       nbest_size = self._nbest_size
     if alpha is None:
       alpha = self._alpha
+    if num_threads is None:
+      num_threads = self._num_threads
 
     if enable_sampling == True and (nbest_size is None or nbest_size == 0 or
                                     nbest_size == 1 or alpha is None):
@@ -401,18 +592,59 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
           'instead of nbest segmentations.'
       )
 
-    def _encode(text):
-      if out_type is int:
-        return self._EncodeAsIds(text, enable_sampling, nbest_size,
-                                 alpha, add_bos, add_eos, reverse)
-      else:
-        return self._EncodeAsPieces(text, enable_sampling, nbest_size,
-                                    alpha, add_bos, add_eos, reverse, emit_unk_piece)
+    if num_threads is None or type(num_threads) is not int:
+      raise RuntimeError('num_threads must be int')
 
     if type(input) is list:
-      return [_encode(n) for n in input]
+      if out_type is int:
+        return self._EncodeAsIdsBatch(input, num_threads, enable_sampling, nbest_size,
+                                      alpha, add_bos, add_eos, reverse, emit_unk_piece)
+      if out_type is str:
+        return self._EncodeAsPiecesBatch(input, num_threads, enable_sampling, nbest_size,
+                                         alpha, add_bos, add_eos, reverse, emit_unk_piece)
+      if out_type == 'proto':
+        return self._EncodeAsSerializedProtoBatch(input, num_threads, enable_sampling, nbest_size,
+                                                  alpha, add_bos, add_eos, reverse, emit_unk_piece)
 
-    return _encode(input)
+    if out_type is int:
+      return self._EncodeAsIds(input, enable_sampling, nbest_size,
+                               alpha, add_bos, add_eos, reverse, emit_unk_piece)
+    if out_type is str:
+      return self._EncodeAsPieces(input, enable_sampling, nbest_size,
+                                  alpha, add_bos, add_eos, reverse, emit_unk_piece)
+    if out_type == 'proto':
+      return self._EncodeAsSerializedProto(input, enable_sampling, nbest_size,
+                                           alpha, add_bos, add_eos, reverse, emit_unk_piece)
+
+    raise RuntimeError('unknown out_type={}'.format(out_type))
+    return None
+
+
+  def EncodeAsPieces(self, input, **kwargs):
+    return self.Encode(input=input, out_type=str, **kwargs)
+
+
+  def EncodeAsIds(self, input, **kwargs):
+    return self.Encode(input=input, out_type=int, **kwargs)
+
+
+  def EncodeAsSerializedProto(self, input, **kwargs):
+    return self.Encode(input=input, out_type='proto', **kwargs)
+
+
+  def SampleEncodeAsPieces(self, input, nbest_size=None, alpha=None, **kwargs):
+    return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
+                       out_type=str, enable_sampling=True, **kwargs)
+
+
+  def SampleEncodeAsIds(self, input, nbest_size=None, alpha=None,**kwargs):
+    return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
+                       out_type=int, enable_sampling=True, **kwargs)
+
+
+  def SampleEncodeAsSerializedProto(self, input, nbest_size=None, alpha=None, **kwargs):
+    return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
+                       out_type='proto', enable_sampling=True, **kwargs)
 
 
   def NBestEncode(self,
@@ -453,14 +685,34 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
 
     def _encode(text):
       if out_type is int:
-        return self._NBestEncodeAsIds(text, nbest_size, add_bos, add_eos, reverse)
-      else:
-        return self._NBestEncodeAsPieces(text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
+        return self._NBestEncodeAsIds(text, nbest_size,
+                                      add_bos, add_eos, reverse, emit_unk_piece)
+      if out_type is str:
+        return self._NBestEncodeAsPieces(text, nbest_size,
+                                         add_bos, add_eos, reverse, emit_unk_piece)
+      if out_type == 'proto':
+        return self._NBestEncodeAsSerializedProto(text, nbest_size,
+                                                  add_bos, add_eos, reverse, emit_unk_piece)
 
     if type(input) is list:
       return [_encode(n) for n in input]
 
     return _encode(input)
+
+
+  def NBestEncodeAsPieces(self, input, nbest_size=None,  **kwargs):
+    return self.NBestEncode(input=input, nbest_size=nbest_size,
+                            out_type=str, **kwargs)
+
+
+  def NBestEncodeAsIds(self, input, nbest_size=None, **kwargs):
+    return self.NBestEncode(input=input, nbest_size=nbest_size,
+                            out_type=int, **kwargs)
+
+
+  def NBestEncodeAsSerializedProto(self, input, nbest_size=None, **kwargs):
+    return self.NBestEncode(input=input, nbest_size=nbest_size,
+                            out_type='proto', **kwargs)
 
 
   def SampleEncodeAndScore(self,
@@ -478,7 +730,7 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
 
       Args:
       input: input string. accepsts list of string.
-      out_type: output type. int or str.
+      out_type: output type. int or str or 'proto'.
       add_bos: Add <s> to the result (Default = false)
       add_eos: Add </s> to the result (Default = false) <s>/</s> is added after reversing (if enabled).
       reverse: Reverses the tokenized sequence (Default = false)
@@ -513,12 +765,12 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
 
     if include_best and not wor:
       raise RuntimeError('When include_best is True, We must specify "wor = True".')
-                        
+
 
     def _encode(text):
       if out_type is int:
         return self._SampleEncodeAndScoreAsIds(text, num_samples, theta, wor, include_best,
-                                               add_bos, add_eos, reverse)
+                                               add_bos, add_eos, reverse, emit_unk_piece)
       else:
         return self._SampleEncodeAndScoreAsPieces(text, num_samples, theta, wor, include_best,
                                                   add_bos, add_eos, reverse, emit_unk_piece)
@@ -529,27 +781,86 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
     return _encode(input)
 
 
-  def Decode(self, input):
-    """Decode processed id or token sequences."""
+  def Decode(self, input, out_type=str, num_threads=None):
+    """Decode processed id or token sequences.
+
+    Args:
+      out_type: output type. str or 'proto' (Default = str)
+      num_threads: the number of threads used in the batch processin (Default = 1).
+    """
+
+    if num_threads is None:
+      num_threads = self._num_threads
+
+    if num_threads is None or type(num_threads) is not int:
+      raise RuntimeError('num_threads must be int')
 
     if not input:
-      return self.DecodeIds([])
-    elif type(input) is int:
-      return self.DecodeIdsWithCheck([input])
-    elif type(input) is str:
-      return self.DecodePieces([input])
+      return ''
 
-    def _decode(input):
-      if not input:
-        return self.DecodeIds([])
-      if type(input[0]) is int:
-        return self.DecodeIdsWithCheck(input)
-      return self.DecodePieces(input)
+    if out_type is str:
+      if type(input) is int:
+        return self._DecodeIds([input])
+      if type(input) is str:
+        return self._DecodePieces([input])
 
-    if type(input[0]) is list:
-      return [_decode(n) for n in input]
+      if type(input) is list:
+        if len(input) == 0:
+          return []
+        if type(input[0]) is int:
+          return self._DecodeIds(input)
+        if type(input[0]) is str:
+          return self._DecodePieces(input)
 
-    return _decode(input)
+        if type(input[0]) is list:
+          if len(input[0]) == 0:
+            return [[]]
+          if type(input[0][0]) is int:
+           return self._DecodeIdsBatch(input, num_threads)
+          if type(input[0][0]) is str:
+           return self._DecodePiecesBatch(input, num_threads)
+
+    if out_type == 'proto':
+      if type(input) is int:
+        return self._DecodeIdsAsSerializedProto([input])
+      if type(input) is str:
+        return self._DecodePiecesAsSerializedProto([input])
+
+      if type(input) is list:
+        if len(input) == 0:
+          return []
+        if type(input[0]) is int:
+          return self._DecodeIdsAsSerializedProto(input)
+        if type(input[0]) is str:
+          return self._DecodePiecesAsSerializedProto(input)
+
+        if type(input[0]) is list:
+          if len(input[0]) == 0:
+            return [[]]
+          if type(input[0][0]) is int:
+           return self._DecodeIdsAsSerializedProtoBatch(input, num_threads)
+          if type(input[0][0]) is str:
+           return self._DecodePiecesAsSerializedProtoBatch(input, num_threads)
+    
+
+    raise RuntimeError('unknown output or input type')
+    return None
+
+
+  def DecodePieces(self, input, out_type=str, **kwargs):
+    return self.Decode(input=input, out_type=out_type, **kwargs)
+
+
+  def DecodeIds(self, input, out_type=str, **kwargs):
+    return self.Decode(input=input, out_type=out_type, **kwargs)
+
+
+  def DecodePiecesAsSerializedProto(self, input, out_type='proto', **kwargs):
+    return self.Decode(input=input, out_type=out_type, **kwargs)
+
+
+  def DecodeIdsAsSerializedProto(self, input, out_type='proto', **kwargs):
+    return self.Decode(input=input, out_type=out_type, **kwargs)
 
 
   def Entropy(self, input, theta):
@@ -715,6 +1026,13 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
   }
 }
 
+%typemap(out) BytesArray {
+  $result = PyList_New($1.size());
+  for (size_t i = 0; i < $1.size(); ++i) {
+    PyList_SetItem($result, i, MakePyOutputBytes($1[i]));
+  }
+}
+
 %typemap(out) std::vector<std::vector<std::string>> {
   PyObject *input_type = resultobj;
   $result = PyList_New($1.size());
@@ -778,7 +1096,51 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
     for (size_t i = 0; i < size; ++i) {
       const PyInputString ustring(PyList_GetItem($input, i));
       if (ustring.IsAvalable()) {
-        (*out)[i] = std::string(ustring.data(), ustring.size());
+        (*out)[i].assign(ustring.data(), ustring.size());
+      } else {
+        PyErr_SetString(PyExc_TypeError, "list must contain strings");
+        SWIG_fail;
+      }
+      resultobj = ustring.input_type();
+    }
+  } else {
+    PyErr_SetString(PyExc_TypeError, "not a list");
+    SWIG_fail;
+  }
+  $1 = out;
+}
+
+%typemap(in) const std::vector<absl::string_view>& {
+  std::vector<absl::string_view> *out = nullptr;
+  if (PyList_Check($input)) {
+    const size_t size = PyList_Size($input);
+    out = new std::vector<std::string>(size);
+    for (size_t i = 0; i < size; ++i) {
+      const PyInputString ustring(PyList_GetItem($input, i));
+      if (ustring.IsAvalable()) {
+        (*out)[i] = absl::string_view(ustring.data(), ustring.size());
+      } else {
+        PyErr_SetString(PyExc_TypeError, "list must contain strings");
+        SWIG_fail;
+      }
+      resultobj = ustring.input_type();
+    }
+  } else {
+    PyErr_SetString(PyExc_TypeError, "not a list");
+    SWIG_fail;
+  }
+  $1 = out;
+}
+
+%typemap(in) const std::vector<absl::string_view>& {
+  std::vector<absl::string_view> *out = nullptr;
+  if (PyList_Check($input)) {
+    const size_t size = PyList_Size($input);
+    out = new std::vector<absl::string_view>(size);
+    for (size_t i = 0; i < size; ++i) {
+      const PyInputString ustring(PyList_GetItem($input, i));
+      if (ustring.IsAvalable()) {
+        (*out)[i] = absl::string_view(ustring.data(), ustring.size());
       } else {
         PyErr_SetString(PyExc_TypeError, "list must contain strings");
         SWIG_fail;
@@ -803,6 +1165,69 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
         (*out)[i] = static_cast<int>(PyInt_AsLong(o));
       } else {
         PyErr_SetString(PyExc_TypeError,"list must contain integers");
+        SWIG_fail;
+      }
+    }
+  } else {
+    PyErr_SetString(PyExc_TypeError,"not a list");
+    SWIG_fail;
+  }
+  $1 = out;
+}
+
+%typemap(in) const std::vector<std::vector<std::string>>& {
+  std::vector<std::vector<std::string>> *out = nullptr;
+  if (PyList_Check($input)) {
+    const size_t size = PyList_Size($input);
+    out = new std::vector<std::vector<std::string>>(size);
+    for (size_t i = 0; i < size; ++i) {
+      PyObject *o = PyList_GetItem($input, i);
+      if (PyList_Check(o)) {
+        const size_t size2 = PyList_Size(o);
+        (*out)[i].resize(size2);
+        for (size_t j = 0; j < size2; ++j) {
+          const PyInputString ustring(PyList_GetItem(o, j));
+          if (ustring.IsAvalable()) {
+            (*out)[i][j].assign(ustring.data(), ustring.size());
+          } else {
+            PyErr_SetString(PyExc_TypeError,"list must contain integers");
+            SWIG_fail;
+          }
+          resultobj = ustring.input_type();
+        }
+      } else {
+        PyErr_SetString(PyExc_TypeError,"not a list");
+        SWIG_fail;
+      }
+    }
+  } else {
+    PyErr_SetString(PyExc_TypeError,"not a list");
+    SWIG_fail;
+  }
+  $1 = out;
+}
+
+%typemap(in) const std::vector<std::vector<int>>& {
+  std::vector<std::vector<int>> *out = nullptr;
+  if (PyList_Check($input)) {
+    const size_t size = PyList_Size($input);
+    out = new std::vector<std::vector<int>>(size);
+    for (size_t i = 0; i < size; ++i) {
+      PyObject *o = PyList_GetItem($input, i);
+      if (PyList_Check(o)) {
+        const size_t size2 = PyList_Size(o);
+        (*out)[i].resize(size2);
+        for (size_t j = 0; j < size2; ++j) {
+          PyObject *o2 = PyList_GetItem(o, j);
+          if (PyInt_Check(o2)) {
+            (*out)[i][j] = static_cast<int>(PyInt_AsLong(o2));
+          } else {
+            PyErr_SetString(PyExc_TypeError, "list must contain strings");
+            SWIG_fail;
+          }
+        }
+      } else {
+        PyErr_SetString(PyExc_TypeError, "not a list");
         SWIG_fail;
       }
     }
@@ -880,6 +1305,10 @@ void RewritePieces(const sentencepiece::SentencePieceProcessor &sp,
   delete $1;
 }
 
+%typemap(freearg) const std::vector<absl::string_view>& {
+  delete $1;
+}
+
 %typemap(freearg) const std::vector<std::vector<std::string>>& {
   delete $1;
 }
@@ -948,8 +1377,6 @@ setattr(SentencePieceProcessor, '__init__', SentencePieceProcessor.Init)
 
 SentencePieceProcessor.Tokenize = SentencePieceProcessor.Encode
 SentencePieceProcessor.Detokenize = SentencePieceProcessor.Decode
-SentencePieceProcessor.DecodeIds = SentencePieceProcessor.DecodeIdsWithCheck
-SentencePieceProcessor.DecodeIdsAsSerializedProto = SentencePieceProcessor.DecodeIdsAsSerializedProtoWithCheck
 
 for m in [
     'PieceToId', 'IdToPiece', 'GetScore', 'IsUnknown', 'IsControl', 'IsUnused',

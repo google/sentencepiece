@@ -15,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
-import codecs
 import io
 import sentencepiece as spm
 import unittest
@@ -118,21 +117,12 @@ class TestSentencepieceProcessor(unittest.TestCase):
     pieces = self.sp_.EncodeAsPieces(text)
     self.assertEqual(text, self.sp_.DecodePieces(pieces))
     self.assertEqual(text, self.sp_.DecodeIds(ids))
-    # python2 returns `str`.
-    if sys.version_info < (3, 0, 0):
-      text = text.encode('utf-8')
-      self.assertEqual(text, self.sp_.DecodeIds(ids))
-      self.assertEqual(text, self.sp_.DecodePieces(pieces))
 
   def test_unicode_ja_roundtrip(self):
     text = u'清水寺は京都にある。'
     ids = self.jasp_.EncodeAsIds(text)
     pieces = self.jasp_.EncodeAsPieces(text)
     self.assertEqual(text, self.jasp_.DecodePieces(pieces))
-    # python2 returns `str`.
-    if sys.version_info < (3, 0, 0):
-      text = text.encode('utf-8')
-      self.assertEqual(text, self.jasp_.DecodeIds(ids))
 
   def test_pickle(self):
     with open('sp.pickle', 'wb') as f:
@@ -153,7 +143,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
                                    ' --model_prefix=m --vocab_size=1000')
     sp = spm.SentencePieceProcessor()
     sp.Load('m.model')
-    with codecs.open(
+    with open(
         os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
       for line in file:
         sp.DecodePieces(sp.EncodeAsPieces(line))
@@ -200,7 +190,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
         logstream=open(os.devnull, 'w'))
     sp = spm.SentencePieceProcessor()
     sp.Load('m.model')
-    with codecs.open(
+    with open(
         os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
       for line in file:
         sp.DecodePieces(sp.EncodeAsPieces(line))
@@ -278,20 +268,12 @@ class TestSentencepieceProcessor(unittest.TestCase):
     ids = self.sp_.encode_as_ids(text)
     pieces = self.sp_.encode_as_pieces(text)
     self.assertEqual(text, self.sp_.decode_pieces(pieces))
-    # python2 returns `str`.
-    if sys.version_info < (3, 0, 0):
-      text = text.encode('utf-8')
-      self.assertEqual(text, self.sp_.decode_ids(ids))
 
   def test_unicode_ja_roundtrip_snake(self):
     text = u'清水寺は京都にある。'
     ids = self.jasp_.encode_as_ids(text)
     pieces = self.jasp_.encode_as_pieces(text)
     self.assertEqual(text, self.jasp_.decode_pieces(pieces))
-    # python2 returns `str`.
-    if sys.version_info < (3, 0, 0):
-      text = text.encode('utf-8')
-      self.assertEqual(text, self.jasp_.decode_ids(ids))
 
   def test_train_snake(self):
     spm.SentencePieceTrainer.train('--input=' +
@@ -299,7 +281,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
                                    ' --model_prefix=m --vocab_size=1000')
     sp = spm.SentencePieceProcessor()
     sp.load('m.model')
-    with codecs.open(
+    with open(
         os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
       for line in file:
         sp.decode_pieces(sp.encode_as_pieces(line))
@@ -361,6 +343,22 @@ class TestSentencepieceProcessor(unittest.TestCase):
     pieces = ['<s>'] + self.sp_.EncodeAsPieces(text) + ['</s>']
     self.assertEqual(pieces, sp.encode(text))
 
+    pieces = self.sp_.EncodeAsPieces(text) + ['</s>']
+    self.assertEqual(pieces, sp.encode(text, add_bos=False, add_eos=True))
+
+    pieces = list(reversed(self.sp_.EncodeAsPieces(text)))
+    self.assertEqual(
+        pieces, sp.encode(text, add_bos=False, add_eos=False, reverse=True))
+
+    pieces = self.sp_.EncodeAsIds('藤', emit_unk_piece=True)
+    self.assertEqual(pieces[1], sp.unk_id())
+
+    pieces = self.sp_.EncodeAsPieces('藤', emit_unk_piece=True)
+    self.assertEqual(pieces[1], '<unk>')
+
+    pieces = self.sp_.EncodeAsPieces('藤', emit_unk_piece=False)
+    self.assertEqual(pieces[1], '藤')
+
   def test_new_api_sampling(self):
     sp = spm.SentencePieceProcessor(
         model_file=os.path.join('test', 'test_model.model'),
@@ -411,6 +409,63 @@ class TestSentencepieceProcessor(unittest.TestCase):
         self.assertTrue(False)
       except:
         self.assertTrue(True)
+
+  def test_batch(self):
+    sp = spm.SentencePieceProcessor(
+        model_file=os.path.join('test', 'test_model.model'))
+    with open(
+        os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
+      texts = file.readlines()
+
+    r1 = sp.encode(texts, out_type=str, num_threads=None)
+    r2 = sp.encode(texts, out_type=str, num_threads=1)
+    r3 = sp.encode(texts, out_type=str, num_threads=-1)
+    r4 = sp.encode(texts, out_type=str, num_threads=8)
+    r5 = [sp.encode(s, out_type=str) for s in texts]
+    self.assertEqual(r1, r2)
+    self.assertEqual(r1, r3)
+    self.assertEqual(r1, r4)
+    self.assertEqual(r1, r5)
+
+    d1 = sp.decode(r1, num_threads=None)
+    d2 = sp.decode(r2, num_threads=1)
+    d3 = sp.decode(r3, num_threads=-1)
+    d4 = sp.decode(r4, num_threads=8)
+    d5 = [sp.decode(s) for s in r5]
+    self.assertEqual(d1, d2)
+    self.assertEqual(d1, d3)
+    self.assertEqual(d1, d4)
+    self.assertEqual(d1, d5)
+
+    r1 = sp.encode(texts, out_type=int, num_threads=None)
+    r2 = sp.encode(texts, out_type=int, num_threads=1)
+    r3 = sp.encode(texts, out_type=int, num_threads=-1)
+    r4 = sp.encode(texts, out_type=int, num_threads=8)
+    r5 = [sp.encode(s, out_type=int) for s in texts]
+    self.assertEqual(r1, r2)
+    self.assertEqual(r1, r3)
+    self.assertEqual(r1, r4)
+    self.assertEqual(r1, r5)
+
+    d1 = sp.decode(r1, num_threads=None)
+    d2 = sp.decode(r2, num_threads=1)
+    d3 = sp.decode(r3, num_threads=-1)
+    d4 = sp.decode(r4, num_threads=8)
+    d5 = [sp.decode(s) for s in r5]
+    self.assertEqual(d1, d2)
+    self.assertEqual(d1, d3)
+    self.assertEqual(d1, d4)
+    self.assertEqual(d1, d5)
+
+    r1 = sp.encode(texts, out_type='proto', num_threads=None)
+    r2 = sp.encode(texts, out_type='proto', num_threads=1)
+    r3 = sp.encode(texts, out_type='proto', num_threads=-1)
+    r4 = sp.encode(texts, out_type='proto', num_threads=8)
+    r5 = [sp.encode(s, out_type='proto') for s in texts]
+    self.assertEqual(r1, r2)
+    self.assertEqual(r1, r3)
+    self.assertEqual(r1, r4)
+    self.assertEqual(r1, r5)
 
 
 def suite():
