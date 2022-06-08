@@ -93,8 +93,9 @@ class build_ext(_build_ext):
     # See: https://github.com/neulab/xnmt/issues/199
     if sys.platform == 'darwin':
       cflags.append('-mmacosx-version-min=10.9')
-    cflags.append('-Wl,-strip-all')
-    libs.append('-Wl,-strip-all')
+    else:
+      cflags.append('-Wl,-strip-all')
+      libs.append('-Wl,-strip-all')
     print('## cflags={}'.format(' '.join(cflags)))
     print('## libs={}'.format(' '.join(libs)))
     ext.extra_compile_args = cflags
