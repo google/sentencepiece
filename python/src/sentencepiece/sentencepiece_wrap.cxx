@@ -3012,9 +3012,16 @@ class ThreadPool {
   std::vector<std::thread> tasks_;
 };
 
+template <typename T>
+inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
+  *num_threads = std::max<int>(1,
+                               std::min<int>({*num_threads,
+                                   static_cast<int>(ins.size()), 256}));
+}
+
 #define DEFINE_ENCODE_BATCH_FUNC_IMPL(FuncName, InType, OutType)        \
   std::vector<OutType> outs(ins.size());                                \
-  num_threads = std::max<int>(1, std::min<int>({num_threads, static_cast<int>(ins.size()), 256})); \
+  InitNumThreads(ins, &num_threads);                                  \
   {                                                                     \
     ThreadPool pool(ins.size());                                        \
     for (int n = 0;  n < num_threads; ++n) {                            \
@@ -3035,7 +3042,7 @@ class ThreadPool {
 
 #define DEFINE_DECODE_BATCH_FUNC_IMPL(FuncName, InType, OutType)        \
   std::vector<OutType> outs(ins.size());                                \
-  num_threads = std::max<int>(1, std::min<int>({num_threads, static_cast<int>(ins.size()), 256})); \
+  InitNumThreads(ins, &num_threads);                                  \
   {                                                                     \
     ThreadPool pool(ins.size());                                        \
     for (int n = 0;  n < num_threads; ++n) {                            \
@@ -3510,7 +3517,7 @@ SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceProcessor__NBes
                add_bos, add_eos, reverse, emit_unk_piece);
     return self->NBestEncodeAsSerializedProto(text, nbest_size);
   }
-SWIGINTERN std::vector< std::pair< std::vector< int >,float > > sentencepiece_SentencePieceProcessor__SampleEncodeAndScoreAsIds(sentencepiece::SentencePieceProcessor *self,absl::string_view text,int num_samples,float theta,bool wor,bool include_best,bool add_bos,bool add_eos,bool reverse,bool emit_unk_piece){
+SWIGINTERN std::vector< std::pair< std::vector< int >,float > > sentencepiece_SentencePieceProcessor__SampleEncodeAndScoreAsIds(sentencepiece::SentencePieceProcessor const *self,absl::string_view text,int num_samples,float theta,bool wor,bool include_best,bool add_bos,bool add_eos,bool reverse,bool emit_unk_piece){
     auto idss = self->SampleEncodeAndScoreAsIds(text, num_samples,
                                                  theta, wor, include_best);
     for (auto &ids : idss) {
@@ -3518,13 +3525,31 @@ SWIGINTERN std::vector< std::pair< std::vector< int >,float > > sentencepiece_Se
     }
     return idss;
   }
-SWIGINTERN std::vector< std::pair< std::vector< std::string >,float > > sentencepiece_SentencePieceProcessor__SampleEncodeAndScoreAsPieces(sentencepiece::SentencePieceProcessor *self,absl::string_view text,int num_samples,float theta,bool wor,bool include_best,bool add_bos,bool add_eos,bool reverse,bool emit_unk_piece){
+SWIGINTERN std::vector< std::pair< std::vector< std::string >,float > > sentencepiece_SentencePieceProcessor__SampleEncodeAndScoreAsPieces(sentencepiece::SentencePieceProcessor const *self,absl::string_view text,int num_samples,float theta,bool wor,bool include_best,bool add_bos,bool add_eos,bool reverse,bool emit_unk_piece){
     auto piecess = self->SampleEncodeAndScoreAsPieces(text, num_samples,
                                                        theta, wor, include_best);
     for (auto &pieces : piecess) {
       RewriteIds(*self, &pieces.first, add_bos, add_eos, reverse, emit_unk_piece);
     }
     return piecess;
+  }
+SWIGINTERN float sentencepiece_SentencePieceProcessor__CalculateEntropy(sentencepiece::SentencePieceProcessor *self,absl::string_view text,float theta){
+    return self->CalculateEntropy(text, theta);
+  }
+SWIGINTERN std::vector< float > sentencepiece_SentencePieceProcessor__CalculateEntropyBatch(sentencepiece::SentencePieceProcessor *self,std::vector< absl::string_view > const &ins,float theta,int num_threads){
+    std::vector<float> outs(ins.size());
+    InitNumThreads(ins, &num_threads);
+    {
+      ThreadPool pool(ins.size());
+      for (int n = 0;  n < num_threads; ++n) {
+        pool.Schedule([&, n]() {
+            for (size_t i = n; i < ins.size(); i += num_threads) {
+              outs[i] = self->CalculateEntropy(ins[i], theta);
+          }
+        });
+      }
+    }
+    return outs;
   }
 
 SWIGINTERN int
@@ -3951,64 +3976,6 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_LoadVocabulary(PyObject *SWIGU
       SWIG_exception(ToSwigError((&result)->code()), (&result)->ToString().c_str());
     }
     resultobj = SWIG_From_bool((&result)->ok());
-  }
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_SentencePieceProcessor_NBestEncodeAsPieces(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
-  absl::string_view arg2 ;
-  int arg3 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  int val3 ;
-  int ecode3 = 0 ;
-  PyObject *swig_obj[3] ;
-  std::vector< std::vector< std::string > > result;
-  
-  if (!SWIG_Python_UnpackTuple(args, "SentencePieceProcessor_NBestEncodeAsPieces", 3, 3, swig_obj)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor_NBestEncodeAsPieces" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor const *""'"); 
-  }
-  arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
-  {
-    const PyInputString ustring(swig_obj[1]);
-    if (!ustring.IsAvalable()) {
-      PyErr_SetString(PyExc_TypeError, "not a string");
-      SWIG_fail;
-    }
-    resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
-  }
-  ecode3 = SWIG_AsVal_int(swig_obj[2], &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "SentencePieceProcessor_NBestEncodeAsPieces" "', argument " "3"" of type '" "int""'");
-  } 
-  arg3 = static_cast< int >(val3);
-  {
-    try {
-      result = ((sentencepiece::SentencePieceProcessor const *)arg1)->NBestEncodeAsPieces(arg2,arg3);
-      ReleaseResultObject(resultobj);
-    }
-    catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
-    }
-  }
-  {
-    PyObject *input_type = resultobj;
-    resultobj = PyList_New((&result)->size());
-    for (size_t i = 0; i < (&result)->size(); ++i) {
-      PyObject *obj = PyList_New(result[i].size());
-      for (size_t j = 0; j < result[i].size(); ++j) {
-        PyList_SetItem(obj, j, MakePyOutputString(result[i][j], input_type));
-      }
-      PyList_SetItem(resultobj, i, obj);
-    }
   }
   return resultobj;
 fail:
@@ -6283,7 +6250,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__SampleEncodeAndScoreAsIds(PyO
   if (!SWIG_Python_UnpackTuple(args, "SentencePieceProcessor__SampleEncodeAndScoreAsIds", 10, 10, swig_obj)) SWIG_fail;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor__SampleEncodeAndScoreAsIds" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor__SampleEncodeAndScoreAsIds" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
   {
@@ -6337,7 +6304,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__SampleEncodeAndScoreAsIds(PyO
   arg10 = static_cast< bool >(val10);
   {
     try {
-      result = sentencepiece_SentencePieceProcessor__SampleEncodeAndScoreAsIds(arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9,arg10);
+      result = sentencepiece_SentencePieceProcessor__SampleEncodeAndScoreAsIds((sentencepiece::SentencePieceProcessor const *)arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9,arg10);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -6396,7 +6363,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__SampleEncodeAndScoreAsPieces(
   if (!SWIG_Python_UnpackTuple(args, "SentencePieceProcessor__SampleEncodeAndScoreAsPieces", 10, 10, swig_obj)) SWIG_fail;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor__SampleEncodeAndScoreAsPieces" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor__SampleEncodeAndScoreAsPieces" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
   {
@@ -6450,7 +6417,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__SampleEncodeAndScoreAsPieces(
   arg10 = static_cast< bool >(val10);
   {
     try {
-      result = sentencepiece_SentencePieceProcessor__SampleEncodeAndScoreAsPieces(arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9,arg10);
+      result = sentencepiece_SentencePieceProcessor__SampleEncodeAndScoreAsPieces((sentencepiece::SentencePieceProcessor const *)arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9,arg10);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -6470,6 +6437,133 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__SampleEncodeAndScoreAsPieces(
   }
   return resultobj;
 fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceProcessor__CalculateEntropy(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
+  absl::string_view arg2 ;
+  float arg3 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  float val3 ;
+  int ecode3 = 0 ;
+  PyObject *swig_obj[3] ;
+  float result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "SentencePieceProcessor__CalculateEntropy", 3, 3, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor__CalculateEntropy" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
+  {
+    const PyInputString ustring(swig_obj[1]);
+    if (!ustring.IsAvalable()) {
+      PyErr_SetString(PyExc_TypeError, "not a string");
+      SWIG_fail;
+    }
+    resultobj = ustring.input_type();
+    arg2 = absl::string_view(ustring.data(), ustring.size());
+  }
+  ecode3 = SWIG_AsVal_float(swig_obj[2], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "SentencePieceProcessor__CalculateEntropy" "', argument " "3"" of type '" "float""'");
+  } 
+  arg3 = static_cast< float >(val3);
+  {
+    try {
+      result = (float)sentencepiece_SentencePieceProcessor__CalculateEntropy(arg1,arg2,arg3);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  resultobj = SWIG_From_float(static_cast< float >(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceProcessor__CalculateEntropyBatch(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
+  std::vector< absl::string_view > *arg2 = 0 ;
+  float arg3 ;
+  int arg4 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  float val3 ;
+  int ecode3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  PyObject *swig_obj[4] ;
+  std::vector< float > result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "SentencePieceProcessor__CalculateEntropyBatch", 4, 4, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor__CalculateEntropyBatch" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
+  {
+    std::vector<absl::string_view> *out = nullptr;
+    if (PyList_Check(swig_obj[1])) {
+      const size_t size = PyList_Size(swig_obj[1]);
+      out = new std::vector<absl::string_view>(size);
+      for (size_t i = 0; i < size; ++i) {
+        const PyInputString ustring(PyList_GetItem(swig_obj[1], i));
+        if (ustring.IsAvalable()) {
+          (*out)[i] = absl::string_view(ustring.data(), ustring.size());
+        } else {
+          PyErr_SetString(PyExc_TypeError, "list must contain strings");
+          SWIG_fail;
+        }
+        resultobj = ustring.input_type();
+      }
+    } else {
+      PyErr_SetString(PyExc_TypeError, "not a list");
+      SWIG_fail;
+    }
+    arg2 = out;
+  }
+  ecode3 = SWIG_AsVal_float(swig_obj[2], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "SentencePieceProcessor__CalculateEntropyBatch" "', argument " "3"" of type '" "float""'");
+  } 
+  arg3 = static_cast< float >(val3);
+  ecode4 = SWIG_AsVal_int(swig_obj[3], &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "SentencePieceProcessor__CalculateEntropyBatch" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = static_cast< int >(val4);
+  {
+    try {
+      result = sentencepiece_SentencePieceProcessor__CalculateEntropyBatch(arg1,(std::vector< absl::string_view > const &)*arg2,arg3,arg4);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    resultobj = PyList_New((&result)->size());
+    for (size_t i = 0; i < (&result)->size(); ++i) {
+      PyList_SetItem(resultobj, i, PyFloat_FromDouble(static_cast<double>(result[i])));
+    }
+  }
+  {
+    delete arg2;
+  }
+  return resultobj;
+fail:
+  {
+    delete arg2;
+  }
   return NULL;
 }
 
@@ -6814,7 +6908,6 @@ static PyMethodDef SwigMethods[] = {
 	 { "SentencePieceProcessor_SetVocabulary", _wrap_SentencePieceProcessor_SetVocabulary, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor_ResetVocabulary", _wrap_SentencePieceProcessor_ResetVocabulary, METH_O, NULL},
 	 { "SentencePieceProcessor_LoadVocabulary", _wrap_SentencePieceProcessor_LoadVocabulary, METH_VARARGS, NULL},
-	 { "SentencePieceProcessor_NBestEncodeAsPieces", _wrap_SentencePieceProcessor_NBestEncodeAsPieces, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor_SampleEncodeAndScoreAsPieces", _wrap_SentencePieceProcessor_SampleEncodeAndScoreAsPieces, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor_SampleEncodeAndScoreAsIds", _wrap_SentencePieceProcessor_SampleEncodeAndScoreAsIds, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor_CalculateEntropy", _wrap_SentencePieceProcessor_CalculateEntropy, METH_VARARGS, NULL},
@@ -6851,6 +6944,8 @@ static PyMethodDef SwigMethods[] = {
 	 { "SentencePieceProcessor__NBestEncodeAsSerializedProto", _wrap_SentencePieceProcessor__NBestEncodeAsSerializedProto, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor__SampleEncodeAndScoreAsIds", _wrap_SentencePieceProcessor__SampleEncodeAndScoreAsIds, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor__SampleEncodeAndScoreAsPieces", _wrap_SentencePieceProcessor__SampleEncodeAndScoreAsPieces, METH_VARARGS, NULL},
+	 { "SentencePieceProcessor__CalculateEntropy", _wrap_SentencePieceProcessor__CalculateEntropy, METH_VARARGS, NULL},
+	 { "SentencePieceProcessor__CalculateEntropyBatch", _wrap_SentencePieceProcessor__CalculateEntropyBatch, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor_swigregister", SentencePieceProcessor_swigregister, METH_O, NULL},
 	 { "SentencePieceProcessor_swiginit", SentencePieceProcessor_swiginit, METH_VARARGS, NULL},
 	 { "SetRandomGeneratorSeed", _wrap_SetRandomGeneratorSeed, METH_O, NULL},

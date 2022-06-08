@@ -61,6 +61,17 @@ class TestSentencepieceProcessor(unittest.TestCase):
       piece = self.sp_.IdToPiece(i)
       self.assertEqual(i, self.sp_.PieceToId(piece))
 
+    self.assertEqual(1000, self.sp_.get_piece_size())
+    self.assertEqual(0, self.sp_.piece_to_id('<unk>'))
+    self.assertEqual(1, self.sp_.piece_to_id('<s>'))
+    self.assertEqual(2, self.sp_.piece_to_id('</s>'))
+    self.assertEqual('<unk>', self.sp_.id_to_piece(0))
+    self.assertEqual('<s>', self.sp_.id_to_piece(1))
+    self.assertEqual('</s>', self.sp_.id_to_piece(2))
+    for i in range(self.sp_.get_piece_size()):
+      piece = self.sp_.id_to_piece(i)
+      self.assertEqual(i, self.sp_.piece_to_id(piece))
+
   def test_roundtrip(self):
     text = 'I saw a girl with a telescope.'
     ids = self.sp_.EncodeAsIds(text)
@@ -81,6 +92,34 @@ class TestSentencepieceProcessor(unittest.TestCase):
       self.assertEqual(
           text, self.sp_.DecodeIds(self.sp_.SampleEncodeAsIds(text, -1, 0.5)))
 
+    ids2 = self.sp_.encode_as_ids(text)
+    pieces3 = self.sp_.encode_as_pieces(text)
+    pieces4 = self.sp_.nbest_encode_as_pieces(text, 10)[0]
+    self.assertEqual(pieces3, pieces4)
+    self.assertEqual(pieces1, pieces3)
+    self.assertEqual(ids, ids2)
+    self.assertEqual(text, self.sp_.decode_pieces(pieces3))
+    self.assertEqual(text, self.sp_.decode_ids(ids2))
+    for n in range(100):
+      self.assertEqual(
+          text,
+          self.sp_.decode_pieces(
+              self.sp_.sample_encode_as_pieces(text, 64, 0.5)))
+      self.assertEqual(
+          text,
+          self.sp_.decode_pieces(
+              self.sp_.sample_encode_as_pieces(text, -1, 0.5)))
+      self.assertEqual(
+          text,
+          self.sp_.decode_ids(self.sp_.sample_encode_as_ids(text, 64, 0.5)))
+      self.assertEqual(
+          text,
+          self.sp_.decode_ids(self.sp_.sample_encode_as_ids(text, -1, 0.5)))
+
+    self.assertEqual(
+        self.sp_.calculate_entropy(text, 0.1),
+        self.sp_.CalculateEntropy(text, 0.1))
+
   def test_ja_load(self):
     self.assertEqual(8000, self.jasp_.GetPieceSize())
     self.assertEqual(0, self.jasp_.PieceToId('<unk>'))
@@ -92,6 +131,17 @@ class TestSentencepieceProcessor(unittest.TestCase):
     for i in range(self.jasp_.GetPieceSize()):
       piece = self.jasp_.IdToPiece(i)
       self.assertEqual(i, self.jasp_.PieceToId(piece))
+
+    self.assertEqual(8000, self.jasp_.get_piece_size())
+    self.assertEqual(0, self.jasp_.piece_to_id('<unk>'))
+    self.assertEqual(1, self.jasp_.piece_to_id('<s>'))
+    self.assertEqual(2, self.jasp_.piece_to_id('</s>'))
+    self.assertEqual('<unk>', self.jasp_.id_to_piece(0))
+    self.assertEqual('<s>', self.jasp_.id_to_piece(1))
+    self.assertEqual('</s>', self.jasp_.id_to_piece(2))
+    for i in range(self.jasp_.get_piece_size()):
+      piece = self.jasp_.id_to_piece(i)
+      self.assertEqual(i, self.jasp_.piece_to_id(piece))
 
   def test_ja_roundtrip(self):
     text = '清水寺は京都にある。'
@@ -111,31 +161,27 @@ class TestSentencepieceProcessor(unittest.TestCase):
           self.jasp_.DecodePieces(
               self.jasp_.SampleEncodeAsPieces(text, -1, 0.5)))
 
-  def test_unicode_roundtrip(self):
-    text = u'I saw a girl with a telescope.'
-    ids = self.sp_.EncodeAsIds(text)
-    pieces = self.sp_.EncodeAsPieces(text)
-    self.assertEqual(text, self.sp_.DecodePieces(pieces))
-    self.assertEqual(text, self.sp_.DecodeIds(ids))
+    ids2 = self.jasp_.encode_as_ids(text)
+    pieces3 = self.jasp_.encode_as_pieces(text)
+    pieces4 = self.jasp_.nbest_encode_as_pieces(text, 10)[0]
+    self.assertEqual(pieces3, pieces4)
+    self.assertEqual(pieces1, pieces3)
+    self.assertEqual(ids, ids2)
+    self.assertEqual(text, self.jasp_.decode_pieces(pieces1))
+    self.assertEqual(text, self.jasp_.decode_ids(ids2))
+    for n in range(100):
+      self.assertEqual(
+          text,
+          self.jasp_.decode_pieces(
+              self.jasp_.sample_encode_as_pieces(text, 64, 0.5)))
+      self.assertEqual(
+          text,
+          self.jasp_.decode_pieces(
+              self.jasp_.sample_encode_as_pieces(text, -1, 0.5)))
 
-  def test_unicode_ja_roundtrip(self):
-    text = u'清水寺は京都にある。'
-    ids = self.jasp_.EncodeAsIds(text)
-    pieces = self.jasp_.EncodeAsPieces(text)
-    self.assertEqual(text, self.jasp_.DecodePieces(pieces))
-
-  def test_pickle(self):
-    with open('sp.pickle', 'wb') as f:
-      pickle.dump(self.sp_, f)
-
-    id1 = self.sp_.encode('hello world.', out_type=int)
-
-    with open('sp.pickle', 'rb') as f:
-      sp = pickle.load(f)
-
-    id2 = sp.encode('hello world.', out_type=int)
-
-    self.assertEqual(id1, id2)
+      self.assertEqual(
+          self.jasp_.calculate_entropy(text, 0.1),
+          self.jasp_.CalculateEntropy(text, 0.1))
 
   def test_train(self):
     spm.SentencePieceTrainer.Train('--input=' +
@@ -143,37 +189,45 @@ class TestSentencepieceProcessor(unittest.TestCase):
                                    ' --model_prefix=m --vocab_size=1000')
     sp = spm.SentencePieceProcessor()
     sp.Load('m.model')
-    with open(
-        os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
+    with open(os.path.join(data_dir, 'botchan.txt'), 'r') as file:
       for line in file:
         sp.DecodePieces(sp.EncodeAsPieces(line))
         sp.DecodeIds(sp.EncodeAsIds(line))
 
-  def test_train(self):
+  def test_train_iterator(self):
     spm.SentencePieceTrainer.Train('--input=' +
                                    os.path.join(data_dir, 'botchan.txt') +
                                    ' --model_prefix=m --vocab_size=1000')
     # Load as 'rb' for Python3.5/2.7.
-    is1 = open(os.path.join(data_dir, 'botchan.txt'), 'rb')
-    is2 = open(os.path.join(data_dir, 'botchan.txt'), 'rb')
     os1 = io.BytesIO()
     os2 = io.BytesIO()
 
+    # suppress logging (redirect to /dev/null)
     spm.SentencePieceTrainer.train(
         input=os.path.join(data_dir, 'botchan.txt'),
         model_prefix='m',
-        vocab_size=1000)
+        vocab_size=1000,
+        logstream=open(os.devnull, 'w'))
 
-    spm.SentencePieceTrainer.train(
-        sentence_iterator=is1, model_prefix='m', vocab_size=1000)
+    with open(os.path.join(data_dir, 'botchan.txt'), 'rb') as is1:
+      spm.SentencePieceTrainer.train(
+          sentence_iterator=is1,
+          model_prefix='m',
+          vocab_size=1000,
+          logstream=open(os.devnull, 'w'))
 
     spm.SentencePieceTrainer.train(
         input=os.path.join(data_dir, 'botchan.txt'),
         model_writer=os1,
-        vocab_size=1000)
+        vocab_size=1000,
+        logstream=open(os.devnull, 'w'))
 
-    spm.SentencePieceTrainer.train(
-        sentence_iterator=is2, model_writer=os2, vocab_size=1000)
+    with open(os.path.join(data_dir, 'botchan.txt'), 'rb') as is2:
+      spm.SentencePieceTrainer.train(
+          sentence_iterator=is2,
+          model_writer=os2,
+          vocab_size=1000,
+          logstream=open(os.devnull, 'w'))
 
     sp1 = spm.SentencePieceProcessor(model_proto=os1.getvalue())
     sp2 = spm.SentencePieceProcessor(model_proto=os2.getvalue())
@@ -196,113 +250,31 @@ class TestSentencepieceProcessor(unittest.TestCase):
         sp.DecodePieces(sp.EncodeAsPieces(line))
         sp.DecodeIds(sp.EncodeAsIds(line))
 
-  # snake case API.
-  def test_load_snake(self):
-    self.assertEqual(1000, self.sp_.get_piece_size())
-    self.assertEqual(0, self.sp_.piece_to_id('<unk>'))
-    self.assertEqual(1, self.sp_.piece_to_id('<s>'))
-    self.assertEqual(2, self.sp_.piece_to_id('</s>'))
-    self.assertEqual('<unk>', self.sp_.id_to_piece(0))
-    self.assertEqual('<s>', self.sp_.id_to_piece(1))
-    self.assertEqual('</s>', self.sp_.id_to_piece(2))
-    for i in range(self.sp_.get_piece_size()):
-      piece = self.sp_.id_to_piece(i)
-      self.assertEqual(i, self.sp_.piece_to_id(piece))
-
-  def test_roundtrip_snake(self):
-    text = 'I saw a girl with a telescope.'
-    ids = self.sp_.encode_as_ids(text)
-    pieces1 = self.sp_.encode_as_pieces(text)
-    pieces2 = self.sp_.nbest_encode_as_pieces(text, 10)[0]
-    self.assertEqual(pieces1, pieces2)
-    self.assertEqual(text, self.sp_.decode_pieces(pieces1))
-    self.assertEqual(text, self.sp_.decode_ids(ids))
-    for n in range(100):
-      self.assertEqual(
-          text,
-          self.sp_.decode_pieces(
-              self.sp_.sample_encode_as_pieces(text, 64, 0.5)))
-      self.assertEqual(
-          text,
-          self.sp_.decode_pieces(
-              self.sp_.sample_encode_as_pieces(text, -1, 0.5)))
-      self.assertEqual(
-          text,
-          self.sp_.decode_ids(self.sp_.sample_encode_as_ids(text, 64, 0.5)))
-      self.assertEqual(
-          text,
-          self.sp_.decode_ids(self.sp_.sample_encode_as_ids(text, -1, 0.5)))
-
-  def test_ja_load_snake(self):
-    self.assertEqual(8000, self.jasp_.get_piece_size())
-    self.assertEqual(0, self.jasp_.piece_to_id('<unk>'))
-    self.assertEqual(1, self.jasp_.piece_to_id('<s>'))
-    self.assertEqual(2, self.jasp_.piece_to_id('</s>'))
-    self.assertEqual('<unk>', self.jasp_.id_to_piece(0))
-    self.assertEqual('<s>', self.jasp_.id_to_piece(1))
-    self.assertEqual('</s>', self.jasp_.id_to_piece(2))
-    for i in range(self.jasp_.get_piece_size()):
-      piece = self.jasp_.id_to_piece(i)
-      self.assertEqual(i, self.jasp_.piece_to_id(piece))
-
-  def test_ja_roundtrip_snake(self):
-    text = '清水寺は京都にある。'
-    ids = self.jasp_.encode_as_ids(text)
-    pieces1 = self.jasp_.encode_as_pieces(text)
-    pieces2 = self.jasp_.nbest_encode_as_pieces(text, 10)[0]
-    self.assertEqual(pieces1, pieces2)
-    self.assertEqual(text, self.jasp_.decode_pieces(pieces1))
-    self.assertEqual(text, self.jasp_.decode_ids(ids))
-    for n in range(100):
-      self.assertEqual(
-          text,
-          self.jasp_.decode_pieces(
-              self.jasp_.sample_encode_as_pieces(text, 64, 0.5)))
-      self.assertEqual(
-          text,
-          self.jasp_.decode_pieces(
-              self.jasp_.sample_encode_as_pieces(text, -1, 0.5)))
-
-  def test_unicode_roundtrip_snake(self):
-    text = u'I saw a girl with a telescope.'
-    ids = self.sp_.encode_as_ids(text)
-    pieces = self.sp_.encode_as_pieces(text)
-    self.assertEqual(text, self.sp_.decode_pieces(pieces))
-
-  def test_unicode_ja_roundtrip_snake(self):
-    text = u'清水寺は京都にある。'
-    ids = self.jasp_.encode_as_ids(text)
-    pieces = self.jasp_.encode_as_pieces(text)
-    self.assertEqual(text, self.jasp_.decode_pieces(pieces))
-
-  def test_train_snake(self):
-    spm.SentencePieceTrainer.train('--input=' +
-                                   os.path.join(data_dir, 'botchan.txt') +
-                                   ' --model_prefix=m --vocab_size=1000')
-    sp = spm.SentencePieceProcessor()
-    sp.load('m.model')
-    with open(
-        os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
-      for line in file:
-        sp.decode_pieces(sp.encode_as_pieces(line))
-        sp.decode_ids(sp.encode_as_ids(line))
-
   def test_serialized_proto(self):
-    text = u'I saw a girl with a telescope.'
-    self.assertNotEqual('', self.sp_.EncodeAsSerializedProto(text))
-    self.assertNotEqual('',
-                        self.sp_.SampleEncodeAsSerializedProto(text, 10, 0.2))
-    self.assertNotEqual('', self.sp_.NBestEncodeAsSerializedProto(text, 10))
-    self.assertNotEqual('',
-                        self.sp_.DecodePiecesAsSerializedProto(['foo', 'bar']))
-    self.assertNotEqual('', self.sp_.DecodeIdsAsSerializedProto([20, 30]))
-    self.assertNotEqual('', self.sp_.encode_as_serialized_proto(text))
-    self.assertNotEqual(
-        '', self.sp_.sample_encode_as_serialized_proto(text, 10, 0.2))
-    self.assertNotEqual('', self.sp_.nbest_encode_as_serialized_proto(text, 10))
-    self.assertNotEqual(
-        '', self.sp_.decode_pieces_as_serialized_proto(['foo', 'bar']))
-    self.assertNotEqual('', self.sp_.decode_ids_as_serialized_proto([20, 30]))
+    text = 'I saw a girl with a telescope.'
+    s1 = self.sp_.EncodeAsSerializedProto(text)
+    s2 = self.sp_.SampleEncodeAsSerializedProto(text, 10, 0.2)
+    s3 = self.sp_.NBestEncodeAsSerializedProto(text, 10)
+    s4 = self.sp_.DecodePiecesAsSerializedProto(['foo', 'bar'])
+    s5 = self.sp_.DecodeIdsAsSerializedProto([20, 30])
+
+    t1 = self.sp_.encode_as_serialized_proto(text)
+    t2 = self.sp_.sample_encode_as_serialized_proto(text, 10, 0.2)
+    t3 = self.sp_.nbest_encode_as_serialized_proto(text, 10)
+    t4 = self.sp_.decode_pieces_as_serialized_proto(['foo', 'bar'])
+    t5 = self.sp_.decode_ids_as_serialized_proto([20, 30])
+
+    self.assertEqual(type(s1), bytes)
+    self.assertEqual(type(s2), bytes)
+    self.assertEqual(type(t2), bytes)
+    self.assertEqual(type(s3), bytes)
+    self.assertEqual(type(s4), bytes)
+    self.assertEqual(type(s5), bytes)
+
+    self.assertEqual(s1, t1)
+    self.assertEqual(s3, t3)
+    self.assertEqual(s4, t4)
+    self.assertEqual(s5, t5)
 
   def test_new_api(self):
     sp = spm.SentencePieceProcessor(
@@ -313,25 +285,62 @@ class TestSentencepieceProcessor(unittest.TestCase):
     ids2 = self.sp_.EncodeAsIds(text2)
     pieces = self.sp_.EncodeAsPieces(text)
     pieces2 = self.sp_.EncodeAsPieces(text2)
-    self.assertEqual(sp.encode(text), ids)
+    protos = self.sp_.EncodeAsSerializedProto(text)
+    proto2 = self.sp_.EncodeAsSerializedProto(text2)
+
+    self.assertEqual(sp.encode(text, out_type=int), ids)
     self.assertEqual(sp.encode(text, out_type=str), pieces)
+    self.assertEqual(sp.encode(text, out_type='proto'), protos)
+
+    self.assertEqual(sp.encode([text], out_type=int), [ids])
+    self.assertEqual(sp.encode([text], out_type=str), [pieces])
+    self.assertEqual(sp.encode([text], out_type='proto'), [protos])
+
     detok_ids = self.sp_.DecodeIds(ids)
     detok_pieces = self.sp_.DecodePieces(pieces)
     self.assertEqual(sp.decode(ids), detok_ids)
     self.assertEqual(sp.decode(pieces), detok_pieces)
+    self.assertEqual(sp.decode([]), '')
+    self.assertEqual(sp.decode([[]]), [''])
 
     # add_bos, add_eos, reverse
     self.assertEqual([sp.bos_id()] + ids, sp.encode(text, add_bos=True))
     self.assertEqual(ids + [sp.eos_id()], sp.encode(text, add_eos=True))
+    self.assertEqual(ids + [sp.eos_id()], sp.EncodeAsIds(text, add_eos=True))
     rids = ids[:]
     rids.reverse()
+
     self.assertEqual(rids, sp.encode(text, reverse=True))
+    self.assertEqual(rids, sp.EncodeAsIds(text, reverse=True))
 
     # different shape.
     self.assertEqual([ids, ids2], sp.encode([text, text2]))
     self.assertEqual([pieces, pieces2], sp.encode([text, text2], out_type=str))
     self.assertEqual([text, text2], sp.decode([ids, ids2]))
     self.assertEqual([text, text2], sp.decode([pieces, pieces2]))
+
+    pieces = list(reversed(self.sp_.EncodeAsPieces(text)))
+    self.assertEqual(pieces, sp.encode(text, reverse=True, out_type=str))
+
+    # emit unk piece
+    unk_char = '藤'
+    pieces = self.sp_.EncodeAsIds(unk_char, emit_unk_piece=True)
+    pieces2 = self.sp_.encode(unk_char, out_type=int, emit_unk_piece=True)
+    self.assertEqual(pieces[1], sp.unk_id())
+    self.assertEqual(pieces2[1], sp.unk_id())
+    self.assertEqual(pieces, pieces2)
+
+    pieces = self.sp_.EncodeAsPieces(unk_char, emit_unk_piece=True)
+    pieces2 = self.sp_.encode(unk_char, out_type=str, emit_unk_piece=True)
+    self.assertEqual(pieces[1], '<unk>')
+    self.assertEqual(pieces2[1], '<unk>')
+    self.assertEqual(pieces, pieces2)
+
+    pieces = self.sp_.EncodeAsPieces(unk_char, emit_unk_piece=False)
+    pieces2 = self.sp_.encode(unk_char, out_type=str, emit_unk_piece=False)
+    self.assertEqual(pieces[1], unk_char)
+    self.assertEqual(pieces2[1], unk_char)
+    self.assertEqual(pieces, pieces2)
 
   def test_new_api_init(self):
     sp = spm.SentencePieceProcessor(
@@ -346,20 +355,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
     pieces = self.sp_.EncodeAsPieces(text) + ['</s>']
     self.assertEqual(pieces, sp.encode(text, add_bos=False, add_eos=True))
 
-    pieces = list(reversed(self.sp_.EncodeAsPieces(text)))
-    self.assertEqual(
-        pieces, sp.encode(text, add_bos=False, add_eos=False, reverse=True))
-
-    pieces = self.sp_.EncodeAsIds('藤', emit_unk_piece=True)
-    self.assertEqual(pieces[1], sp.unk_id())
-
-    pieces = self.sp_.EncodeAsPieces('藤', emit_unk_piece=True)
-    self.assertEqual(pieces[1], '<unk>')
-
-    pieces = self.sp_.EncodeAsPieces('藤', emit_unk_piece=False)
-    self.assertEqual(pieces[1], '藤')
-
-  def test_new_api_sampling(self):
+  def test_sampling(self):
     sp = spm.SentencePieceProcessor(
         model_file=os.path.join('test', 'test_model.model'),
         out_type=str,
@@ -374,25 +370,35 @@ class TestSentencepieceProcessor(unittest.TestCase):
       ++ids2[' '.join(sp.encode('hello world', enable_sampling=False))]
     self.assertEqual(len(ids2), 1)
 
-  def test_new_api_nbest(self):
+  def test_nbest(self):
     sp = spm.SentencePieceProcessor(
         model_file=os.path.join('test', 'test_model.model'))
-    results = sp.nbest_encode('hello world', nbest_size=10, out_type=str)
+    text = 'hello world'
+    results = sp.nbest_encode(text, nbest_size=10, out_type=str)
+    self.assertEqual(results, sp.NBestEncode(text, nbest_size=10, out_type=str))
     for n in results:
-      self.assertEqual(sp.decode(n), 'hello world')
-    results = sp.nbest_encode('hello world', nbest_size=10, out_type=int)
+      self.assertEqual(sp.decode(n), text)
+    decoded = sp.decode(results)
+    for n in decoded:
+      self.assertEqual(n, text)
+    results = sp.nbest_encode(text, nbest_size=10, out_type=int)
+    self.assertEqual(results, sp.NBestEncode(text, nbest_size=10, out_type=int))
     for n in results:
-      self.assertEqual(sp.decode(n), 'hello world')
+      self.assertEqual(sp.decode(n), text)
+    decoded = sp.decode(results)
+    for n in decoded:
+      self.assertEqual(n, text)
 
-  def test_new_api_sample_and_score(self):
+  def test_sample_and_score(self):
     sp = spm.SentencePieceProcessor(
         model_file=os.path.join('test', 'test_model.model'))
-    results = sp.sample_encode_and_score('hello world', wor=True, out_type=str)
+    text = 'hello world'
+    results = sp.sample_encode_and_score(text, wor=True, out_type=str)
     for n in results:
-      self.assertEqual(sp.decode(n[0]), 'hello world')
-    results = sp.sample_encode_and_score('hello world', wor=True, out_type=int)
+      self.assertEqual(sp.decode(n[0]), text)
+    results = sp.sample_encode_and_score(text, wor=True, out_type=int)
     for n in results:
-      self.assertEqual(sp.decode(n[0]), 'hello world')
+      self.assertEqual(sp.decode(n[0]), text)
 
   def test_valid_range(self):
     size = self.sp_.piece_size()
@@ -466,6 +472,25 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual(r1, r3)
     self.assertEqual(r1, r4)
     self.assertEqual(r1, r5)
+
+    e1 = sp.calculate_entropy(texts, theta=1.0, num_threads=10)
+    e2 = sp.CalculateEntropy(texts, theta=1.0, num_threads=10)
+    e3 = [sp.calculate_entropy(s, theta=1.0) for s in texts]
+    self.assertEqual(e1, e2)
+    self.assertEqual(e1, e3)
+
+  def test_pickle(self):
+    with open('sp.pickle', 'wb') as f:
+      pickle.dump(self.sp_, f)
+
+    id1 = self.sp_.encode('hello world.', out_type=int)
+
+    with open('sp.pickle', 'rb') as f:
+      sp = pickle.load(f)
+
+    id2 = sp.encode('hello world.', out_type=int)
+
+    self.assertEqual(id1, id2)
 
 
 def suite():

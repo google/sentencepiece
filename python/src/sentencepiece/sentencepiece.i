@@ -206,9 +206,16 @@ class ThreadPool {
   std::vector<std::thread> tasks_;
 };
 
+template <typename T>
+inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
+  *num_threads = std::max<int>(1,
+                               std::min<int>({*num_threads,
+                                   static_cast<int>(ins.size()), 256}));
+}
+
 #define DEFINE_ENCODE_BATCH_FUNC_IMPL(FuncName, InType, OutType)        \
   std::vector<OutType> outs(ins.size());                                \
-  num_threads = std::max<int>(1, std::min<int>({num_threads, static_cast<int>(ins.size()), 256})); \
+  InitNumThreads(ins, &num_threads);                                  \
   {                                                                     \
     ThreadPool pool(ins.size());                                        \
     for (int n = 0;  n < num_threads; ++n) {                            \
@@ -229,7 +236,7 @@ class ThreadPool {
 
 #define DEFINE_DECODE_BATCH_FUNC_IMPL(FuncName, InType, OutType)        \
   std::vector<OutType> outs(ins.size());                                \
-  num_threads = std::max<int>(1, std::min<int>({num_threads, static_cast<int>(ins.size()), 256})); \
+  InitNumThreads(ins, &num_threads);                                  \
   {                                                                     \
     ThreadPool pool(ins.size());                                        \
     for (int n = 0;  n < num_threads; ++n) {                            \
@@ -273,6 +280,7 @@ class ThreadPool {
 %ignore sentencepiece::SentencePieceProcessor::SampleEncodeAsPieces;
 %ignore sentencepiece::SentencePieceProcessor::SampleEncodeAsSerializedProto;
 %ignore sentencepiece::SentencePieceProcessor::NBestEncode;
+%ignore sentencepiece::SentencePieceProcessor::NBestEncodeAsPieces;
 %ignore sentencepiece::SentencePieceProcessor::NBestEncodeAsIds;
 %ignore sentencepiece::SentencePieceProcessor::NBestEncodeAsSerializedProto;
 %ignore sentencepiece::SentencePieceProcessor::SampleEncodeAndScore;
@@ -392,7 +400,7 @@ class ThreadPool {
       const std::vector<std::string> &pieces) const {
     CheckIds(pieces, $self->GetPieceSize());
     return $self->DecodePiecesAsSerializedProto(pieces);
-  }  
+  }
 
   /////////////////////////////////////////////////////////////////////////////
   // DecodeAs* (Batch request)
@@ -460,7 +468,7 @@ class ThreadPool {
                                  int num_samples, float theta, bool wor,
                                  bool include_best,
                                  bool add_bos, bool add_eos, bool reverse,
-                                 bool emit_unk_piece) {
+                                 bool emit_unk_piece) const {
     auto idss = $self->SampleEncodeAndScoreAsIds(text, num_samples,
                                                  theta, wor, include_best);
     for (auto &ids : idss) {
@@ -474,13 +482,35 @@ class ThreadPool {
                                     int num_samples, float theta, bool wor,
                                     bool include_best,
                                     bool add_bos, bool add_eos, bool reverse,
-                                    bool emit_unk_piece) {
+                                    bool emit_unk_piece) const {
     auto piecess = $self->SampleEncodeAndScoreAsPieces(text, num_samples,
                                                        theta, wor, include_best);
     for (auto &pieces : piecess) {
       RewriteIds(*$self, &pieces.first, add_bos, add_eos, reverse, emit_unk_piece);
     }
     return piecess;
+  }
+
+  // Calculate Entropy
+  float _CalculateEntropy(absl::string_view text, float theta)  {
+    return $self->CalculateEntropy(text, theta);
+  }
+
+  std::vector<float> _CalculateEntropyBatch(const std::vector<absl::string_view> &ins,
+                                            float theta, int num_threads)  {
+    std::vector<float> outs(ins.size());
+    InitNumThreads(ins, &num_threads);
+    {
+      ThreadPool pool(ins.size());
+      for (int n = 0;  n < num_threads; ++n) {
+        pool.Schedule([&, n]() {
+            for (size_t i = n; i < ins.size(); i += num_threads) {
+              outs[i] = self->CalculateEntropy(ins[i], theta);
+          }
+        });
+      }
+    }
+    return outs;
   }
 
 %pythoncode {
@@ -805,17 +835,13 @@ class ThreadPool {
         return self._DecodePieces([input])
 
       if type(input) is list:
-        if len(input) == 0:
-          return []
-        if type(input[0]) is int:
+        if len(input) == 0 or type(input[0]) is int:
           return self._DecodeIds(input)
         if type(input[0]) is str:
           return self._DecodePieces(input)
 
         if type(input[0]) is list:
-          if len(input[0]) == 0:
-            return [[]]
-          if type(input[0][0]) is int:
+          if len(input[0]) == 0 or type(input[0][0]) is int:
            return self._DecodeIdsBatch(input, num_threads)
           if type(input[0][0]) is str:
            return self._DecodePiecesBatch(input, num_threads)
@@ -827,21 +853,17 @@ class ThreadPool {
         return self._DecodePiecesAsSerializedProto([input])
 
       if type(input) is list:
-        if len(input) == 0:
-          return []
-        if type(input[0]) is int:
+        if len(input) == 0 or type(input[0]) is int:
           return self._DecodeIdsAsSerializedProto(input)
         if type(input[0]) is str:
           return self._DecodePiecesAsSerializedProto(input)
 
         if type(input[0]) is list:
-          if len(input[0]) == 0:
-            return [[]]
-          if type(input[0][0]) is int:
+          if len(input[0]) == 0 or type(input[0][0]) is int:
            return self._DecodeIdsAsSerializedProtoBatch(input, num_threads)
           if type(input[0][0]) is str:
            return self._DecodePiecesAsSerializedProtoBatch(input, num_threads)
-    
+
 
     raise RuntimeError('unknown output or input type')
     return None
@@ -863,12 +885,16 @@ class ThreadPool {
     return self.Decode(input=input, out_type=out_type, **kwargs)
 
 
-  def Entropy(self, input, theta):
+  def CalculateEntropy(self, input, theta, num_threads=None):
     """Calculate sentence entropy"""
-
     if type(input) is list:
-      return [self.CalculateEntropy(n, theta) for n in input]
-    return self.CalculateEntropy(input, theta)
+      if num_threads is None:
+        num_threads = self._num_threads
+      if num_threads is None or type(num_threads) is not int:
+        raise RuntimeError('num_threads must be int')
+      return self._CalculateEntropyBatch(input, theta, num_threads)
+
+    return self._CalculateEntropy(input, theta)
 
 
   def piece_size(self):
@@ -1004,6 +1030,13 @@ class ThreadPool {
   $result = PyList_New($1.size());
   for (size_t i = 0; i < $1.size(); ++i) {
     PyList_SetItem($result, i, PyInt_FromLong(static_cast<long>($1[i])));
+  }
+}
+
+%typemap(out) std::vector<float> {
+  $result = PyList_New($1.size());
+  for (size_t i = 0; i < $1.size(); ++i) {
+    PyList_SetItem($result, i, PyFloat_FromDouble(static_cast<double>($1[i])));
   }
 }
 
@@ -1314,6 +1347,10 @@ class ThreadPool {
 }
 
 %typemap(freearg) const std::vector<int>& {
+  delete $1;
+}
+
+%typemap(freearg) const std::vector<float>& {
   delete $1;
 }
 

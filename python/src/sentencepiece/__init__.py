@@ -87,9 +87,6 @@ class SentencePieceProcessor(object):
     def LoadVocabulary(self, filename, threshold):
         return _sentencepiece.SentencePieceProcessor_LoadVocabulary(self, filename, threshold)
 
-    def NBestEncodeAsPieces(self, input, nbest_size):
-        return _sentencepiece.SentencePieceProcessor_NBestEncodeAsPieces(self, input, nbest_size)
-
     def SampleEncodeAndScoreAsPieces(self, input, num_samples, theta, wor, include_best):
         return _sentencepiece.SentencePieceProcessor_SampleEncodeAndScoreAsPieces(self, input, num_samples, theta, wor, include_best)
 
@@ -197,6 +194,12 @@ class SentencePieceProcessor(object):
 
     def _SampleEncodeAndScoreAsPieces(self, text, num_samples, theta, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece):
         return _sentencepiece.SentencePieceProcessor__SampleEncodeAndScoreAsPieces(self, text, num_samples, theta, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
+
+    def _CalculateEntropy(self, text, theta):
+        return _sentencepiece.SentencePieceProcessor__CalculateEntropy(self, text, theta)
+
+    def _CalculateEntropyBatch(self, ins, theta, num_threads):
+        return _sentencepiece.SentencePieceProcessor__CalculateEntropyBatch(self, ins, theta, num_threads)
 
     def Init(self,
              model_file=None,
@@ -519,17 +522,13 @@ class SentencePieceProcessor(object):
           return self._DecodePieces([input])
 
         if type(input) is list:
-          if len(input) == 0:
-            return []
-          if type(input[0]) is int:
+          if len(input) == 0 or type(input[0]) is int:
             return self._DecodeIds(input)
           if type(input[0]) is str:
             return self._DecodePieces(input)
 
           if type(input[0]) is list:
-            if len(input[0]) == 0:
-              return [[]]
-            if type(input[0][0]) is int:
+            if len(input[0]) == 0 or type(input[0][0]) is int:
              return self._DecodeIdsBatch(input, num_threads)
             if type(input[0][0]) is str:
              return self._DecodePiecesBatch(input, num_threads)
@@ -541,17 +540,13 @@ class SentencePieceProcessor(object):
           return self._DecodePiecesAsSerializedProto([input])
 
         if type(input) is list:
-          if len(input) == 0:
-            return []
-          if type(input[0]) is int:
+          if len(input) == 0 or type(input[0]) is int:
             return self._DecodeIdsAsSerializedProto(input)
           if type(input[0]) is str:
             return self._DecodePiecesAsSerializedProto(input)
 
           if type(input[0]) is list:
-            if len(input[0]) == 0:
-              return [[]]
-            if type(input[0][0]) is int:
+            if len(input[0]) == 0 or type(input[0][0]) is int:
              return self._DecodeIdsAsSerializedProtoBatch(input, num_threads)
             if type(input[0][0]) is str:
              return self._DecodePiecesAsSerializedProtoBatch(input, num_threads)
@@ -577,12 +572,16 @@ class SentencePieceProcessor(object):
       return self.Decode(input=input, out_type=out_type, **kwargs)
 
 
-    def Entropy(self, input, theta):
+    def CalculateEntropy(self, input, theta, num_threads=None):
       """Calculate sentence entropy"""
-
       if type(input) is list:
-        return [self.CalculateEntropy(n, theta) for n in input]
-      return self.CalculateEntropy(input, theta)
+        if num_threads is None:
+          num_threads = self._num_threads
+        if num_threads is None or type(num_threads) is not int:
+          raise RuntimeError('num_threads must be int')
+        return self._CalculateEntropyBatch(input, theta, num_threads)
+
+      return self._CalculateEntropy(input, theta)
 
 
     def piece_size(self):
