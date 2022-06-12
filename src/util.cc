@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include <iostream>
-
 #include "util.h"
+
+#include <iostream>
 
 namespace sentencepiece {
 
@@ -217,7 +217,6 @@ std::vector<std::string> StrSplitAsCSV(absl::string_view text) {
 
   std::vector<std::string> result;
   for (; str < eos; ++str) {
-    while (*str == ' ' || *str == '\t') ++str;
     if (*str == '"') {
       start = ++str;
       end = start;

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "trainer_interface.h"
+
 #include <algorithm>
 #include <cstdlib>
 #include <memory>
@@ -35,7 +37,6 @@
 #include "third_party/absl/strings/str_format.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_split.h"
-#include "trainer_interface.h"
 #include "unicode_script.h"
 #include "util.h"
 
@@ -698,6 +699,14 @@ util::Status TrainerInterface::SaveVocab(absl::string_view filename) const {
   RETURN_IF_ERROR(Serialize(&model_proto));
   auto output = filesystem::NewWritableFile(filename);
   RETURN_IF_ERROR(output->status());
+
+  for (const auto &piece : model_proto.pieces()) {
+    if (piece.piece().find_first_of(" \t\r\n") != std::string::npos) {
+      LOG(WARNING) << "The piece [" << piece.piece()
+                   << "] contains escaped characters that break the format of "
+                   << filename;
+    }
+  }
 
   if (trainer_spec_.vocabulary_output_piece_score()) {
     for (const auto &piece : model_proto.pieces()) {
