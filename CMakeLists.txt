@@ -28,7 +28,7 @@ option(SPM_NO_THREADLOCAL "Disable thread_local operator" OFF)
 option(SPM_USE_BUILTIN_PROTOBUF "Use built-in protobuf" ON)
 option(SPM_USE_EXTERNAL_ABSL "Use external abseil" OFF)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND
@@ -98,6 +98,8 @@ configure_file("${PROJECT_SOURCE_DIR}/config.h.in" "config.h")
 configure_file("${PROJECT_SOURCE_DIR}/sentencepiece.pc.in" "sentencepiece.pc" @ONLY)
 
 if (NOT MSVC)
+  # suppress warning for C++11 features.
+#  add_definitions("-Wno-deprecated-declarations -Wno-deprecated-enum-enum-conversion")
   install(FILES "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece.pc" DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
 

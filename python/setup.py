@@ -58,7 +58,7 @@ def is_sentencepiece_installed():
 
 
 def get_cflags_and_libs(root):
-  cflags = ['-std=c++11', '-I' + os.path.join(root, 'include')]
+  cflags = ['-std=c++17', '-I' + os.path.join(root, 'include')]
   libs = []
   if os.path.exists(os.path.join(root, 'lib/pkgconfig/sentencepiece.pc')):
     libs = [
@@ -109,13 +109,13 @@ if os.name == 'nt':
   if sys.maxsize > 2**32:
     arch = 'amd64'
   if os.path.exists('..\\build\\root_{}\\lib'.format(arch)):
-    cflags = ['/MT', '/I..\\build\\root_{}\\include'.format(arch)]
+    cflags = ['/std:c++17', '/MT', '/I..\\build\\root_{}\\include'.format(arch)]
     libs = [
         '..\\build\\root_{}\\lib\\sentencepiece.lib'.format(arch),
         '..\\build\\root_{}\\lib\\sentencepiece_train.lib'.format(arch)
     ]
   else:
-    cflags = ['/MT', '/I..\\build\\root\\include']
+    cflags = ['/std:c++17', '/MT', '/I..\\build\\root\\include']
     libs = [
         '..\\build\\root\\lib\\sentencepiece.lib',
         '..\\build\\root\\lib\\sentencepiece_train.lib'

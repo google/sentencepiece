@@ -18,33 +18,13 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
-#if defined(_USE_INTERNAL_STRING_VIEW)
-#include "third_party/absl/strings/string_view.h"
-#elif defined(_USE_TF_STRING_VIEW)
-#include "absl/strings/string_view.h"
-#else
-// Minimum absl::string_view class that is used only for
-// the argument of public APIs.
 namespace absl {
-class string_view {
- public:
-  string_view() : ptr_(nullptr), length_(0) {}
-  string_view(const std::string &str) : ptr_(str.data()), length_(str.size()) {}
-  string_view(const char *str) : ptr_(str), length_(std::strlen(str)) {}
-  string_view(const char *data, size_t len) : ptr_(data), length_(len) {}
-
-  const char *data() const { return ptr_; }
-  size_t size() const { return length_; }
-
- private:
-  const char *ptr_ = nullptr;
-  size_t length_ = 0;
-};
-}  // namespace absl
-#endif
+using std::string_view;
+}
 
 namespace sentencepiece {
 
