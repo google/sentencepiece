@@ -240,15 +240,17 @@ class TestSentencepieceProcessor(unittest.TestCase):
         input=[os.path.join(data_dir, 'botchan.txt')],
         model_prefix='m',
         vocab_size=1002,
-        user_defined_symbols=['foo', 'bar', ','],
+        user_defined_symbols=['foo', 'bar', ',', ' ', '\t', '\b', '\n', '\r'],
         logstream=open(os.devnull, 'w'))
     sp = spm.SentencePieceProcessor()
     sp.Load('m.model')
-    with open(
-        os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
+    with open(os.path.join(data_dir, 'botchan.txt'), 'r') as file:
       for line in file:
         sp.DecodePieces(sp.EncodeAsPieces(line))
         sp.DecodeIds(sp.EncodeAsIds(line))
+
+    s = 'hello\tworld\r\nthis\tis a \b pen'
+    self.assertEqual(s, sp.decode(sp.encode(s)))
 
   def test_serialized_proto(self):
     text = 'I saw a girl with a telescope.'
@@ -419,8 +421,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
   def test_batch(self):
     sp = spm.SentencePieceProcessor(
         model_file=os.path.join('test', 'test_model.model'))
-    with open(
-        os.path.join(data_dir, 'botchan.txt'), 'r', encoding='utf-8') as file:
+    with open(os.path.join(data_dir, 'botchan.txt'), 'r') as file:
       texts = file.readlines()
 
     r1 = sp.encode(texts, out_type=str, num_threads=None)
