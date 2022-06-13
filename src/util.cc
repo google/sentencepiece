@@ -14,27 +14,28 @@
 
 #include "util.h"
 
+#include <atomic>
 #include <iostream>
 
 namespace sentencepiece {
 
 namespace {
 constexpr unsigned int kDefaultSeed = static_cast<unsigned int>(-1);
-static unsigned int g_seed = kDefaultSeed;
-static int g_minloglevel = 0;
+static std::atomic<unsigned int> g_seed = kDefaultSeed;
+static std::atomic<int> g_minloglevel = 0;
 }  // namespace
 
 void SetRandomGeneratorSeed(unsigned int seed) {
-  if (seed != kDefaultSeed) g_seed = seed;
+  if (seed != kDefaultSeed) g_seed.store(seed);
 }
 
 uint32 GetRandomGeneratorSeed() {
-  return g_seed == kDefaultSeed ? std::random_device{}() : g_seed;
+  return g_seed == kDefaultSeed ? std::random_device{}() : g_seed.load();
 }
 
 namespace logging {
-int GetMinLogLevel() { return g_minloglevel; }
-void SetMinLogLevel(int v) { g_minloglevel = v; }
+int GetMinLogLevel() { return g_minloglevel.load(); }
+void SetMinLogLevel(int v) { g_minloglevel.store(v); }
 }  // namespace logging
 
 namespace string_util {
