@@ -93,8 +93,8 @@ class SentencePieceProcessor(object):
     def SampleEncodeAndScoreAsIds(self, input, num_samples, theta, wor, include_best):
         return _sentencepiece.SentencePieceProcessor_SampleEncodeAndScoreAsIds(self, input, num_samples, theta, wor, include_best)
 
-    def CalculateEntropy(self, text, theta):
-        return _sentencepiece.SentencePieceProcessor_CalculateEntropy(self, text, theta)
+    def CalculateEntropy(self, *args):
+        return _sentencepiece.SentencePieceProcessor_CalculateEntropy(self, *args)
 
     def GetPieceSize(self):
         return _sentencepiece.SentencePieceProcessor_GetPieceSize(self)

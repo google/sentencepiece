@@ -25,10 +25,10 @@
 
 namespace sentencepiece {
 
-#define PARSE_STRING(param_name)      \
-  if (name == #param_name) {          \
-    message->set_##param_name(value); \
-    return util::OkStatus();          \
+#define PARSE_STRING(param_name)                   \
+  if (name == #param_name) {                       \
+    message->set_##param_name(std::string(value)); \
+    return util::OkStatus();                       \
   }
 
 #define PARSE_REPEATED_STRING(param_name)                       \
@@ -189,8 +189,8 @@ inline std::string PrintProto(const NormalizerSpec &message,
   return os.str();
 }
 
-util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
-                                                 const std::string &value,
+util::Status SentencePieceTrainer::SetProtoField(absl::string_view name,
+                                                 absl::string_view value,
                                                  TrainerSpec *message) {
   CHECK_OR_RETURN(message);
 
@@ -249,8 +249,8 @@ util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
          << "unknown field name \"" << name << "\" in TrainerSpec.";
 }
 
-util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
-                                                 const std::string &value,
+util::Status SentencePieceTrainer::SetProtoField(absl::string_view name,
+                                                 absl::string_view value,
                                                  NormalizerSpec *message) {
   CHECK_OR_RETURN(message);
 

@@ -129,12 +129,12 @@ class SentencePieceTrainer {
   // with comma-separated values. `field_name` must not be a nested message.
   // The body of these functions are automatically generated with
   // data/gen_spec_parser.pl
-  static util::Status SetProtoField(const std::string &name,
-                                    const std::string &value,
+  static util::Status SetProtoField(absl::string_view name,
+                                    absl::string_view value,
                                     TrainerSpec *message);
 
-  static util::Status SetProtoField(const std::string &name,
-                                    const std::string &value,
+  static util::Status SetProtoField(absl::string_view name,
+                                    absl::string_view value,
                                     NormalizerSpec *message);
 
   // Populates model type from string representation, e.g., "bpe".

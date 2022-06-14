@@ -22,9 +22,11 @@
 #include <utility>
 #include <vector>
 
+#ifndef SWIG
 namespace absl {
 using std::string_view;
 }
+#endif  // SWIG
 
 namespace sentencepiece {
 
@@ -58,8 +60,7 @@ class Status {
  public:
   Status();
   ~Status();
-  Status(StatusCode code, const char *error_message);
-  Status(StatusCode code, const std::string &error_message);
+  Status(StatusCode code, absl::string_view error_message);
   Status(const Status &s);
   void operator=(const Status &s);
   bool operator==(const Status &s) const;
@@ -204,7 +205,7 @@ class SentencePieceProcessor {
   // Restricts the vocabulary set.
   // The input sentences are encoded into the tokens in `valid_vocab`.
   virtual util::Status SetVocabulary(
-      const std::vector<std::string> &valid_vocab);
+      const std::vector<absl::string_view> &valid_vocab);
 
   // Reverts the vocabulary restriction.
   virtual util::Status ResetVocabulary();
@@ -228,6 +229,10 @@ class SentencePieceProcessor {
 
   // Given a sequence of pieces, decodes it into a detokenized output.
   virtual util::Status Decode(const std::vector<std::string> &pieces,
+                              std::string *detokenized) const;
+
+  // Given a sequence of pieces, decodes it into a detokenized output.
+  virtual util::Status Decode(const std::vector<absl::string_view> &pieces,
                               std::string *detokenized) const;
 
   // Given a sequence of ids, decodes it into a detokenized output.
@@ -320,14 +325,17 @@ class SentencePieceProcessor {
       absl::string_view input, int samples, float theta, bool wor,
       bool include_best, NBestSentencePieceText *samples_spt) const;
 
-#ifndef SWIG
   // Calculate entropy of possible tokenisations
   virtual util::Status CalculateEntropy(absl::string_view input, float theta,
                                         float *entropy) const;
-#endif
 
   // Given a sequence of pieces, decodes it into SentencePieceText.
+  // TODO(taku): Remove this API and use std::vector<std::string_view>
   virtual util::Status Decode(const std::vector<std::string> &pieces,
+                              SentencePieceText *spt) const;
+
+  // Given a sequence of pieces, decodes it into SentencePieceText.
+  virtual util::Status Decode(const std::vector<absl::string_view> &pieces,
                               SentencePieceText *spt) const;
 
   // Given a sequence of ids, decodes it into SentencePieceText.
@@ -401,8 +409,14 @@ class SentencePieceProcessor {
                                 theta, wor, include_best);
   }
 
+  // TODO(taku): Remove this API and use std::vector<std::string_view>
   virtual std::string DecodePieces(
       const std::vector<std::string> &pieces) const {
+    DEFINE_SPP_DIRECT_FUNC_IMPL(Decode, std::string, pieces);
+  }
+
+  virtual std::string DecodePieces(
+      const std::vector<absl::string_view> &pieces) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(Decode, std::string, pieces);
   }
 
@@ -428,8 +442,12 @@ class SentencePieceProcessor {
   virtual util::bytes NBestEncodeAsSerializedProto(absl::string_view input,
                                                    int nbest_size) const;
 
+  // TODO(taku): Remove this API and use std::vector<std::string_view>
   virtual util::bytes DecodePiecesAsSerializedProto(
       const std::vector<std::string> &pieces) const;
+
+  virtual util::bytes DecodePiecesAsSerializedProto(
+      const std::vector<absl::string_view> &pieces) const;
 
   virtual util::bytes DecodeIdsAsSerializedProto(
       const std::vector<int> &ids) const;

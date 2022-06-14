@@ -272,7 +272,7 @@ util::Status Builder::DecompileCharsMap(absl::string_view blob,
 }
 
 // static
-util::Status Builder::GetPrecompiledCharsMap(const std::string &name,
+util::Status Builder::GetPrecompiledCharsMap(absl::string_view name,
                                              std::string *output) {
   CHECK_OR_RETURN(output);
 

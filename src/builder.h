@@ -51,7 +51,7 @@ class Builder {
                                         CharsMap *chars_map);
 
   // Returns a pre-compiled binary index with `name`.
-  static util::Status GetPrecompiledCharsMap(const std::string &name,
+  static util::Status GetPrecompiledCharsMap(absl::string_view name,
                                              std::string *output);
 
   // Makes a normalization mapping based on NFKC.

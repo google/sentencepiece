@@ -71,8 +71,7 @@ char (&ArraySizeHelper(const T (&array)[N]))[N];
 namespace sentencepiece {
 #ifdef OS_WIN
 namespace win32 {
-std::wstring Utf8ToWide(const std::string &input);
-std::string WideToUtf8(const std::wstring &input);
+std::wstring Utf8ToWide(const absl::string_view input);
 }  // namespace win32
 #endif
 

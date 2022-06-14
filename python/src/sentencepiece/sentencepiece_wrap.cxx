@@ -2693,16 +2693,16 @@ SWIGINTERN PyObject *SWIG_PyStaticMethod_New(PyObject *SWIGUNUSEDPARM(self), PyO
 /* -------- TYPES TABLE (BEGIN) -------- */
 
 #define SWIGTYPE_p_char swig_types[0]
-#define SWIGTYPE_p_sentencepiece__SentenceIterator swig_types[1]
-#define SWIGTYPE_p_sentencepiece__SentencePieceProcessor swig_types[2]
-#define SWIGTYPE_p_sentencepiece__SentencePieceTrainer swig_types[3]
-#define SWIGTYPE_p_std__string swig_types[4]
-#define SWIGTYPE_p_std__unordered_mapT_std__string_std__string_t swig_types[5]
-#define SWIGTYPE_p_std__vectorT_absl__string_view_t swig_types[6]
-#define SWIGTYPE_p_std__vectorT_int_t swig_types[7]
-#define SWIGTYPE_p_std__vectorT_std__string_t swig_types[8]
-#define SWIGTYPE_p_std__vectorT_std__vectorT_int_t_t swig_types[9]
-#define SWIGTYPE_p_std__vectorT_std__vectorT_std__string_t_t swig_types[10]
+#define SWIGTYPE_p_float swig_types[1]
+#define SWIGTYPE_p_sentencepiece__SentenceIterator swig_types[2]
+#define SWIGTYPE_p_sentencepiece__SentencePieceProcessor swig_types[3]
+#define SWIGTYPE_p_sentencepiece__SentencePieceTrainer swig_types[4]
+#define SWIGTYPE_p_std__string swig_types[5]
+#define SWIGTYPE_p_std__unordered_mapT_std__string_std__string_t swig_types[6]
+#define SWIGTYPE_p_std__vectorT_absl__string_view_t swig_types[7]
+#define SWIGTYPE_p_std__vectorT_int_t swig_types[8]
+#define SWIGTYPE_p_std__vectorT_std__vectorT_absl__string_view_t_t swig_types[9]
+#define SWIGTYPE_p_std__vectorT_std__vectorT_int_t_t swig_types[10]
 static swig_type_info *swig_types[12];
 static swig_module_info swig_module = {swig_types, 11, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
@@ -2843,6 +2843,7 @@ class PyInputString {
       str_ = nullptr;
     }
   }
+  absl::string_view str() const { return absl::string_view(data(), size()); }
   const char* data() const { return str_; }
   Py_ssize_t size() const { return size_; }
   bool IsAvalable() const { return str_ != nullptr; }
@@ -2985,7 +2986,7 @@ inline void CheckIds(const std::vector<int> &ids, int num_pieces) {
   }
 }
 
-inline void CheckIds(const std::vector<std::string> &ids, int num_pieces) {}
+inline void CheckIds(const std::vector<absl::string_view> &ids, int num_pieces) {}
 
 class ThreadPool {
  public:
@@ -3473,14 +3474,14 @@ SWIGINTERN std::string sentencepiece_SentencePieceProcessor__DecodeIds(sentencep
     CheckIds(ids, self->GetPieceSize());
     return self->DecodeIds(ids);
   }
-SWIGINTERN std::string sentencepiece_SentencePieceProcessor__DecodePieces(sentencepiece::SentencePieceProcessor const *self,std::vector< std::string > const &pieces){
+SWIGINTERN std::string sentencepiece_SentencePieceProcessor__DecodePieces(sentencepiece::SentencePieceProcessor const *self,std::vector< absl::string_view > const &pieces){
     return self->DecodePieces(pieces);
   }
 SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceProcessor__DecodeIdsAsSerializedProto(sentencepiece::SentencePieceProcessor const *self,std::vector< int > const &ids){
     CheckIds(ids, self->GetPieceSize());
     return self->DecodeIdsAsSerializedProto(ids);
   }
-SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceProcessor__DecodePiecesAsSerializedProto(sentencepiece::SentencePieceProcessor const *self,std::vector< std::string > const &pieces){
+SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceProcessor__DecodePiecesAsSerializedProto(sentencepiece::SentencePieceProcessor const *self,std::vector< absl::string_view > const &pieces){
     CheckIds(pieces, self->GetPieceSize());
     return self->DecodePiecesAsSerializedProto(pieces);
   }
@@ -3491,10 +3492,10 @@ SWIGINTERN BytesArray sentencepiece_SentencePieceProcessor__DecodeIdsAsSerialize
     DEFINE_DECODE_BATCH_FUNC_IMPL(DecodeIdsAsSerializedProto, int,
                                   sentencepiece::util::bytes);
   }
-SWIGINTERN std::vector< std::string > sentencepiece_SentencePieceProcessor__DecodePiecesBatch(sentencepiece::SentencePieceProcessor const *self,std::vector< std::vector< std::string > > const &ins,int num_threads){
+SWIGINTERN std::vector< std::string > sentencepiece_SentencePieceProcessor__DecodePiecesBatch(sentencepiece::SentencePieceProcessor const *self,std::vector< std::vector< absl::string_view > > const &ins,int num_threads){
     DEFINE_DECODE_BATCH_FUNC_IMPL(DecodePieces, std::string, std::string);
   }
-SWIGINTERN BytesArray sentencepiece_SentencePieceProcessor__DecodePiecesAsSerializedProtoBatch(sentencepiece::SentencePieceProcessor const *self,std::vector< std::vector< std::string > > const &ins,int num_threads){
+SWIGINTERN BytesArray sentencepiece_SentencePieceProcessor__DecodePiecesAsSerializedProtoBatch(sentencepiece::SentencePieceProcessor const *self,std::vector< std::vector< absl::string_view > > const &ins,int num_threads){
     DEFINE_DECODE_BATCH_FUNC_IMPL(DecodePiecesAsSerializedProto, std::string,
                                   sentencepiece::util::bytes);
   }
@@ -3718,7 +3719,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_LoadFromSerializedProto(PyObje
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   {
     try {
@@ -3763,7 +3764,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SetEncodeExtraOptions(PyObject
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   {
     try {
@@ -3808,7 +3809,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SetDecodeExtraOptions(PyObject
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   {
     try {
@@ -3834,7 +3835,7 @@ fail:
 SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SetVocabulary(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
-  std::vector< std::string > *arg2 = 0 ;
+  std::vector< absl::string_view > *arg2 = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   PyObject *swig_obj[2] ;
@@ -3847,14 +3848,14 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SetVocabulary(PyObject *SWIGUN
   }
   arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
   {
-    std::vector<std::string> *out = nullptr;
+    std::vector<absl::string_view> *out = nullptr;
     if (PyList_Check(swig_obj[1])) {
       const size_t size = PyList_Size(swig_obj[1]);
-      out = new std::vector<std::string>(size);
+      out = new std::vector<absl::string_view>(size);
       for (size_t i = 0; i < size; ++i) {
         const PyInputString ustring(PyList_GetItem(swig_obj[1], i));
         if (ustring.IsAvalable()) {
-          (*out)[i].assign(ustring.data(), ustring.size());
+          (*out)[i] = ustring.str();
         } else {
           PyErr_SetString(PyExc_TypeError, "list must contain strings");
           SWIG_fail;
@@ -3869,7 +3870,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SetVocabulary(PyObject *SWIGUN
   }
   {
     try {
-      result = (arg1)->SetVocabulary((std::vector< std::string > const &)*arg2);
+      result = (arg1)->SetVocabulary((std::vector< absl::string_view > const &)*arg2);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -3955,7 +3956,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_LoadVocabulary(PyObject *SWIGU
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   ecode3 = SWIG_AsVal_int(swig_obj[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
@@ -3965,6 +3966,66 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_LoadVocabulary(PyObject *SWIGU
   {
     try {
       result = (arg1)->LoadVocabulary(arg2,arg3);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    if (!(&result)->ok()) {
+      SWIG_exception(ToSwigError((&result)->code()), (&result)->ToString().c_str());
+    }
+    resultobj = SWIG_From_bool((&result)->ok());
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceProcessor_CalculateEntropy__SWIG_0(PyObject *SWIGUNUSEDPARM(self), Py_ssize_t nobjs, PyObject **swig_obj) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
+  absl::string_view arg2 ;
+  float arg3 ;
+  float *arg4 = (float *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  float val3 ;
+  int ecode3 = 0 ;
+  void *argp4 = 0 ;
+  int res4 = 0 ;
+  sentencepiece::util::Status result;
+  
+  if ((nobjs < 4) || (nobjs > 4)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor_CalculateEntropy" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor const *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
+  {
+    const PyInputString ustring(swig_obj[1]);
+    if (!ustring.IsAvalable()) {
+      PyErr_SetString(PyExc_TypeError, "not a string");
+      SWIG_fail;
+    }
+    resultobj = ustring.input_type();
+    arg2 = ustring.str();
+  }
+  ecode3 = SWIG_AsVal_float(swig_obj[2], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "SentencePieceProcessor_CalculateEntropy" "', argument " "3"" of type '" "float""'");
+  } 
+  arg3 = static_cast< float >(val3);
+  res4 = SWIG_ConvertPtr(swig_obj[3], &argp4,SWIGTYPE_p_float, 0 |  0 );
+  if (!SWIG_IsOK(res4)) {
+    SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "SentencePieceProcessor_CalculateEntropy" "', argument " "4"" of type '" "float *""'"); 
+  }
+  arg4 = reinterpret_cast< float * >(argp4);
+  {
+    try {
+      result = ((sentencepiece::SentencePieceProcessor const *)arg1)->CalculateEntropy(arg2,arg3,arg4);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -4017,7 +4078,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SampleEncodeAndScoreAsPieces(P
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   ecode3 = SWIG_AsVal_int(swig_obj[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
@@ -4054,9 +4115,9 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SampleEncodeAndScoreAsPieces(P
     for (size_t i = 0; i < (&result)->size(); ++i) {
       PyObject *obj = PyList_New(result[i].first.size());
       for (size_t j = 0; j < result[i].first.size(); ++j) {
-        PyList_SetItem(obj, j, MakePyOutputString(result[i].first[j], input_type));
+        PyList_SET_ITEM(obj, j, MakePyOutputString(result[i].first[j], input_type));
       }
-      PyList_SetItem(resultobj, i, PyTuple_Pack(2, obj, PyFloat_FromDouble(static_cast<double>(result[i].second))));
+      PyList_SET_ITEM(resultobj, i, PyTuple_Pack(2, obj, PyFloat_FromDouble(static_cast<double>(result[i].second))));
     }
   }
   return resultobj;
@@ -4099,7 +4160,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SampleEncodeAndScoreAsIds(PyOb
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   ecode3 = SWIG_AsVal_int(swig_obj[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
@@ -4135,9 +4196,9 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_SampleEncodeAndScoreAsIds(PyOb
     for (size_t i = 0; i < (&result)->size(); ++i) {
       PyObject *obj = PyList_New(result[i].first.size());
       for (size_t j = 0; j < result[i].first.size(); ++j) {
-        PyList_SetItem(obj, j, PyInt_FromLong(static_cast<long>(result[i].first[j])));
+        PyList_SET_ITEM(obj, j, PyInt_FromLong(static_cast<long>(result[i].first[j])));
       }
-      PyList_SetItem(resultobj, i, PyTuple_Pack(2, obj, PyFloat_FromDouble(static_cast<double>(result[i].second))));
+      PyList_SET_ITEM(resultobj, i, PyTuple_Pack(2, obj, PyFloat_FromDouble(static_cast<double>(result[i].second))));
     }
   }
   return resultobj;
@@ -4146,7 +4207,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_SentencePieceProcessor_CalculateEntropy(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_SentencePieceProcessor_CalculateEntropy__SWIG_1(PyObject *SWIGUNUSEDPARM(self), Py_ssize_t nobjs, PyObject **swig_obj) {
   PyObject *resultobj = 0;
   sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
   absl::string_view arg2 ;
@@ -4155,10 +4216,9 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_CalculateEntropy(PyObject *SWI
   int res1 = 0 ;
   float val3 ;
   int ecode3 = 0 ;
-  PyObject *swig_obj[3] ;
   float result;
   
-  if (!SWIG_Python_UnpackTuple(args, "SentencePieceProcessor_CalculateEntropy", 3, 3, swig_obj)) SWIG_fail;
+  if ((nobjs < 3) || (nobjs > 3)) SWIG_fail;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor_CalculateEntropy" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor const *""'"); 
@@ -4171,7 +4231,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_CalculateEntropy(PyObject *SWI
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   ecode3 = SWIG_AsVal_float(swig_obj[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
@@ -4191,6 +4251,67 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_CalculateEntropy(PyObject *SWI
   return resultobj;
 fail:
   return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceProcessor_CalculateEntropy(PyObject *self, PyObject *args) {
+  Py_ssize_t argc;
+  PyObject *argv[5] = {
+    0
+  };
+  
+  if (!(argc = SWIG_Python_UnpackTuple(args, "SentencePieceProcessor_CalculateEntropy", 0, 4, argv))) SWIG_fail;
+  --argc;
+  if (argc == 3) {
+    int _v;
+    void *vptr = 0;
+    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      int res = SWIG_AsCharPtrAndSize(argv[1], 0, NULL, 0);
+      _v = SWIG_CheckState(res);
+      if (_v) {
+        {
+          int res = SWIG_AsVal_float(argv[2], NULL);
+          _v = SWIG_CheckState(res);
+        }
+        if (_v) {
+          return _wrap_SentencePieceProcessor_CalculateEntropy__SWIG_1(self, argc, argv);
+        }
+      }
+    }
+  }
+  if (argc == 4) {
+    int _v;
+    void *vptr = 0;
+    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      int res = SWIG_AsCharPtrAndSize(argv[1], 0, NULL, 0);
+      _v = SWIG_CheckState(res);
+      if (_v) {
+        {
+          int res = SWIG_AsVal_float(argv[2], NULL);
+          _v = SWIG_CheckState(res);
+        }
+        if (_v) {
+          void *vptr = 0;
+          int res = SWIG_ConvertPtr(argv[3], &vptr, SWIGTYPE_p_float, 0);
+          _v = SWIG_CheckState(res);
+          if (_v) {
+            return _wrap_SentencePieceProcessor_CalculateEntropy__SWIG_0(self, argc, argv);
+          }
+        }
+      }
+    }
+  }
+  
+fail:
+  SWIG_Python_RaiseOrModifyTypeError("Wrong number or type of arguments for overloaded function 'SentencePieceProcessor_CalculateEntropy'.\n"
+    "  Possible C/C++ prototypes are:\n"
+    "    sentencepiece::SentencePieceProcessor::CalculateEntropy(absl::string_view,float,float *) const\n"
+    "    sentencepiece::SentencePieceProcessor::CalculateEntropy(absl::string_view,float) const\n");
+  return 0;
 }
 
 
@@ -4247,7 +4368,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_PieceToId(PyObject *SWIGUNUSED
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   {
     try {
@@ -4675,7 +4796,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor_LoadFromFile(PyObject *SWIGUNU
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   {
     try {
@@ -4741,7 +4862,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__EncodeAsIds(PyObject *SWIGUNU
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   ecode3 = SWIG_AsVal_bool(swig_obj[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
@@ -4790,7 +4911,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__EncodeAsIds(PyObject *SWIGUNU
   {
     resultobj = PyList_New((&result)->size());
     for (size_t i = 0; i < (&result)->size(); ++i) {
-      PyList_SetItem(resultobj, i, PyInt_FromLong(static_cast<long>(result[i])));
+      PyList_SET_ITEM(resultobj, i, PyInt_FromLong(static_cast<long>(result[i])));
     }
   }
   return resultobj;
@@ -4842,7 +4963,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__EncodeAsPieces(PyObject *SWIG
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   ecode3 = SWIG_AsVal_bool(swig_obj[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
@@ -4892,7 +5013,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__EncodeAsPieces(PyObject *SWIG
     PyObject *input_type = resultobj;
     resultobj = PyList_New((&result)->size());
     for (size_t i = 0; i < (&result)->size(); ++i) {
-      PyList_SetItem(resultobj, i, MakePyOutputString(result[i], input_type));
+      PyList_SET_ITEM(resultobj, i, MakePyOutputString(result[i], input_type));
     }
   }
   return resultobj;
@@ -4944,7 +5065,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__EncodeAsSerializedProto(PyObj
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   ecode3 = SWIG_AsVal_bool(swig_obj[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
@@ -5046,7 +5167,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__EncodeAsIdsBatch(PyObject *SW
       for (size_t i = 0; i < size; ++i) {
         const PyInputString ustring(PyList_GetItem(swig_obj[1], i));
         if (ustring.IsAvalable()) {
-          (*out)[i] = absl::string_view(ustring.data(), ustring.size());
+          (*out)[i] = ustring.str();
         } else {
           PyErr_SetString(PyExc_TypeError, "list must contain strings");
           SWIG_fail;
@@ -5113,9 +5234,9 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__EncodeAsIdsBatch(PyObject *SW
     for (size_t i = 0; i < (&result)->size(); ++i) {
       PyObject *obj = PyList_New(result[i].size());
       for (size_t j = 0; j < result[i].size(); ++j) {
-        PyList_SetItem(obj, j, PyInt_FromLong(static_cast<long>(result[i][j])));
+        PyList_SET_ITEM(obj, j, PyInt_FromLong(static_cast<long>(result[i][j])));
       }
-      PyList_SetItem(resultobj, i, obj);
+      PyList_SET_ITEM(resultobj, i, obj);
     }
   }
   {
@@ -5177,7 +5298,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__EncodeAsPiecesBatch(PyObject 
       for (size_t i = 0; i < size; ++i) {
         const PyInputString ustring(PyList_GetItem(swig_obj[1], i));
         if (ustring.IsAvalable()) {
-          (*out)[i] = absl::string_view(ustring.data(), ustring.size());
+          (*out)[i] = ustring.str();
         } else {
           PyErr_SetString(PyExc_TypeError, "list must contain strings");
           SWIG_fail;
@@ -5245,9 +5366,9 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__EncodeAsPiecesBatch(PyObject 
     for (size_t i = 0; i < (&result)->size(); ++i) {
       PyObject *obj = PyList_New(result[i].size());
       for (size_t j = 0; j < result[i].size(); ++j) {
-        PyList_SetItem(obj, j, MakePyOutputString(result[i][j], input_type));
+        PyList_SET_ITEM(obj, j, MakePyOutputString(result[i][j], input_type));
       }
-      PyList_SetItem(resultobj, i, obj);
+      PyList_SET_ITEM(resultobj, i, obj);
     }
   }
   {
@@ -5309,7 +5430,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__EncodeAsSerializedProtoBatch(
       for (size_t i = 0; i < size; ++i) {
         const PyInputString ustring(PyList_GetItem(swig_obj[1], i));
         if (ustring.IsAvalable()) {
-          (*out)[i] = absl::string_view(ustring.data(), ustring.size());
+          (*out)[i] = ustring.str();
         } else {
           PyErr_SetString(PyExc_TypeError, "list must contain strings");
           SWIG_fail;
@@ -5374,7 +5495,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__EncodeAsSerializedProtoBatch(
   {
     resultobj = PyList_New((&result)->size());
     for (size_t i = 0; i < (&result)->size(); ++i) {
-      PyList_SetItem(resultobj, i, MakePyOutputBytes(result[i]));
+      PyList_SET_ITEM(resultobj, i, MakePyOutputBytes(result[i]));
     }
   }
   {
@@ -5452,7 +5573,7 @@ fail:
 SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePieces(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
-  std::vector< std::string > *arg2 = 0 ;
+  std::vector< absl::string_view > *arg2 = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   PyObject *swig_obj[2] ;
@@ -5465,14 +5586,14 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePieces(PyObject *SWIGUN
   }
   arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
   {
-    std::vector<std::string> *out = nullptr;
+    std::vector<absl::string_view> *out = nullptr;
     if (PyList_Check(swig_obj[1])) {
       const size_t size = PyList_Size(swig_obj[1]);
-      out = new std::vector<std::string>(size);
+      out = new std::vector<absl::string_view>(size);
       for (size_t i = 0; i < size; ++i) {
         const PyInputString ustring(PyList_GetItem(swig_obj[1], i));
         if (ustring.IsAvalable()) {
-          (*out)[i].assign(ustring.data(), ustring.size());
+          (*out)[i] = ustring.str();
         } else {
           PyErr_SetString(PyExc_TypeError, "list must contain strings");
           SWIG_fail;
@@ -5487,7 +5608,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePieces(PyObject *SWIGUN
   }
   {
     try {
-      result = sentencepiece_SentencePieceProcessor__DecodePieces((sentencepiece::SentencePieceProcessor const *)arg1,(std::vector< std::string > const &)*arg2);
+      result = sentencepiece_SentencePieceProcessor__DecodePieces((sentencepiece::SentencePieceProcessor const *)arg1,(std::vector< absl::string_view > const &)*arg2);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -5572,7 +5693,7 @@ fail:
 SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesAsSerializedProto(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
-  std::vector< std::string > *arg2 = 0 ;
+  std::vector< absl::string_view > *arg2 = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   PyObject *swig_obj[2] ;
@@ -5585,14 +5706,14 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesAsSerializedProto
   }
   arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
   {
-    std::vector<std::string> *out = nullptr;
+    std::vector<absl::string_view> *out = nullptr;
     if (PyList_Check(swig_obj[1])) {
       const size_t size = PyList_Size(swig_obj[1]);
-      out = new std::vector<std::string>(size);
+      out = new std::vector<absl::string_view>(size);
       for (size_t i = 0; i < size; ++i) {
         const PyInputString ustring(PyList_GetItem(swig_obj[1], i));
         if (ustring.IsAvalable()) {
-          (*out)[i].assign(ustring.data(), ustring.size());
+          (*out)[i] = ustring.str();
         } else {
           PyErr_SetString(PyExc_TypeError, "list must contain strings");
           SWIG_fail;
@@ -5607,7 +5728,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesAsSerializedProto
   }
   {
     try {
-      result = sentencepiece_SentencePieceProcessor__DecodePiecesAsSerializedProto((sentencepiece::SentencePieceProcessor const *)arg1,(std::vector< std::string > const &)*arg2);
+      result = sentencepiece_SentencePieceProcessor__DecodePiecesAsSerializedProto((sentencepiece::SentencePieceProcessor const *)arg1,(std::vector< absl::string_view > const &)*arg2);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -5695,7 +5816,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodeIdsBatch(PyObject *SWIG
     PyObject *input_type = resultobj;
     resultobj = PyList_New((&result)->size());
     for (size_t i = 0; i < (&result)->size(); ++i) {
-      PyList_SetItem(resultobj, i, MakePyOutputString(result[i], input_type));
+      PyList_SET_ITEM(resultobj, i, MakePyOutputString(result[i], input_type));
     }
   }
   {
@@ -5775,7 +5896,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodeIdsAsSerializedProtoBat
   {
     resultobj = PyList_New((&result)->size());
     for (size_t i = 0; i < (&result)->size(); ++i) {
-      PyList_SetItem(resultobj, i, MakePyOutputBytes(result[i]));
+      PyList_SET_ITEM(resultobj, i, MakePyOutputBytes(result[i]));
     }
   }
   {
@@ -5793,7 +5914,7 @@ fail:
 SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesBatch(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
-  std::vector< std::vector< std::string > > *arg2 = 0 ;
+  std::vector< std::vector< absl::string_view > > *arg2 = 0 ;
   int arg3 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -5809,10 +5930,10 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesBatch(PyObject *S
   }
   arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
   {
-    std::vector<std::vector<std::string>> *out = nullptr;
+    std::vector<std::vector<absl::string_view>> *out = nullptr;
     if (PyList_Check(swig_obj[1])) {
       const size_t size = PyList_Size(swig_obj[1]);
-      out = new std::vector<std::vector<std::string>>(size);
+      out = new std::vector<std::vector<absl::string_view>>(size);
       for (size_t i = 0; i < size; ++i) {
         PyObject *o = PyList_GetItem(swig_obj[1], i);
         if (PyList_Check(o)) {
@@ -5821,7 +5942,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesBatch(PyObject *S
           for (size_t j = 0; j < size2; ++j) {
             const PyInputString ustring(PyList_GetItem(o, j));
             if (ustring.IsAvalable()) {
-              (*out)[i][j].assign(ustring.data(), ustring.size());
+              (*out)[i][j] = ustring.str();
             } else {
               PyErr_SetString(PyExc_TypeError,"list must contain integers");
               SWIG_fail;
@@ -5846,7 +5967,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesBatch(PyObject *S
   arg3 = static_cast< int >(val3);
   {
     try {
-      result = sentencepiece_SentencePieceProcessor__DecodePiecesBatch((sentencepiece::SentencePieceProcessor const *)arg1,(std::vector< std::vector< std::string > > const &)*arg2,arg3);
+      result = sentencepiece_SentencePieceProcessor__DecodePiecesBatch((sentencepiece::SentencePieceProcessor const *)arg1,(std::vector< std::vector< absl::string_view > > const &)*arg2,arg3);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -5857,17 +5978,11 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesBatch(PyObject *S
     PyObject *input_type = resultobj;
     resultobj = PyList_New((&result)->size());
     for (size_t i = 0; i < (&result)->size(); ++i) {
-      PyList_SetItem(resultobj, i, MakePyOutputString(result[i], input_type));
+      PyList_SET_ITEM(resultobj, i, MakePyOutputString(result[i], input_type));
     }
-  }
-  {
-    delete arg2;
   }
   return resultobj;
 fail:
-  {
-    delete arg2;
-  }
   return NULL;
 }
 
@@ -5875,7 +5990,7 @@ fail:
 SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesAsSerializedProtoBatch(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
-  std::vector< std::vector< std::string > > *arg2 = 0 ;
+  std::vector< std::vector< absl::string_view > > *arg2 = 0 ;
   int arg3 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -5891,10 +6006,10 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesAsSerializedProto
   }
   arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
   {
-    std::vector<std::vector<std::string>> *out = nullptr;
+    std::vector<std::vector<absl::string_view>> *out = nullptr;
     if (PyList_Check(swig_obj[1])) {
       const size_t size = PyList_Size(swig_obj[1]);
-      out = new std::vector<std::vector<std::string>>(size);
+      out = new std::vector<std::vector<absl::string_view>>(size);
       for (size_t i = 0; i < size; ++i) {
         PyObject *o = PyList_GetItem(swig_obj[1], i);
         if (PyList_Check(o)) {
@@ -5903,7 +6018,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesAsSerializedProto
           for (size_t j = 0; j < size2; ++j) {
             const PyInputString ustring(PyList_GetItem(o, j));
             if (ustring.IsAvalable()) {
-              (*out)[i][j].assign(ustring.data(), ustring.size());
+              (*out)[i][j] = ustring.str();
             } else {
               PyErr_SetString(PyExc_TypeError,"list must contain integers");
               SWIG_fail;
@@ -5928,7 +6043,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesAsSerializedProto
   arg3 = static_cast< int >(val3);
   {
     try {
-      result = sentencepiece_SentencePieceProcessor__DecodePiecesAsSerializedProtoBatch((sentencepiece::SentencePieceProcessor const *)arg1,(std::vector< std::vector< std::string > > const &)*arg2,arg3);
+      result = sentencepiece_SentencePieceProcessor__DecodePiecesAsSerializedProtoBatch((sentencepiece::SentencePieceProcessor const *)arg1,(std::vector< std::vector< absl::string_view > > const &)*arg2,arg3);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -5938,17 +6053,11 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesAsSerializedProto
   {
     resultobj = PyList_New((&result)->size());
     for (size_t i = 0; i < (&result)->size(); ++i) {
-      PyList_SetItem(resultobj, i, MakePyOutputBytes(result[i]));
+      PyList_SET_ITEM(resultobj, i, MakePyOutputBytes(result[i]));
     }
-  }
-  {
-    delete arg2;
   }
   return resultobj;
 fail:
-  {
-    delete arg2;
-  }
   return NULL;
 }
 
@@ -5990,7 +6099,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__NBestEncodeAsIds(PyObject *SW
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   ecode3 = SWIG_AsVal_int(swig_obj[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
@@ -6031,9 +6140,9 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__NBestEncodeAsIds(PyObject *SW
     for (size_t i = 0; i < (&result)->size(); ++i) {
       PyObject *obj = PyList_New(result[i].size());
       for (size_t j = 0; j < result[i].size(); ++j) {
-        PyList_SetItem(obj, j, PyInt_FromLong(static_cast<long>(result[i][j])));
+        PyList_SET_ITEM(obj, j, PyInt_FromLong(static_cast<long>(result[i][j])));
       }
-      PyList_SetItem(resultobj, i, obj);
+      PyList_SET_ITEM(resultobj, i, obj);
     }
   }
   return resultobj;
@@ -6079,7 +6188,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__NBestEncodeAsPieces(PyObject 
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   ecode3 = SWIG_AsVal_int(swig_obj[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
@@ -6121,9 +6230,9 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__NBestEncodeAsPieces(PyObject 
     for (size_t i = 0; i < (&result)->size(); ++i) {
       PyObject *obj = PyList_New(result[i].size());
       for (size_t j = 0; j < result[i].size(); ++j) {
-        PyList_SetItem(obj, j, MakePyOutputString(result[i][j], input_type));
+        PyList_SET_ITEM(obj, j, MakePyOutputString(result[i][j], input_type));
       }
-      PyList_SetItem(resultobj, i, obj);
+      PyList_SET_ITEM(resultobj, i, obj);
     }
   }
   return resultobj;
@@ -6169,7 +6278,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__NBestEncodeAsSerializedProto(
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   ecode3 = SWIG_AsVal_int(swig_obj[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
@@ -6260,7 +6369,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__SampleEncodeAndScoreAsIds(PyO
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   ecode3 = SWIG_AsVal_int(swig_obj[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
@@ -6316,9 +6425,9 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__SampleEncodeAndScoreAsIds(PyO
     for (size_t i = 0; i < (&result)->size(); ++i) {
       PyObject *obj = PyList_New(result[i].first.size());
       for (size_t j = 0; j < result[i].first.size(); ++j) {
-        PyList_SetItem(obj, j, PyInt_FromLong(static_cast<long>(result[i].first[j])));
+        PyList_SET_ITEM(obj, j, PyInt_FromLong(static_cast<long>(result[i].first[j])));
       }
-      PyList_SetItem(resultobj, i, PyTuple_Pack(2, obj, PyFloat_FromDouble(static_cast<double>(result[i].second))));
+      PyList_SET_ITEM(resultobj, i, PyTuple_Pack(2, obj, PyFloat_FromDouble(static_cast<double>(result[i].second))));
     }
   }
   return resultobj;
@@ -6373,7 +6482,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__SampleEncodeAndScoreAsPieces(
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   ecode3 = SWIG_AsVal_int(swig_obj[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
@@ -6430,9 +6539,9 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__SampleEncodeAndScoreAsPieces(
     for (size_t i = 0; i < (&result)->size(); ++i) {
       PyObject *obj = PyList_New(result[i].first.size());
       for (size_t j = 0; j < result[i].first.size(); ++j) {
-        PyList_SetItem(obj, j, MakePyOutputString(result[i].first[j], input_type));
+        PyList_SET_ITEM(obj, j, MakePyOutputString(result[i].first[j], input_type));
       }
-      PyList_SetItem(resultobj, i, PyTuple_Pack(2, obj, PyFloat_FromDouble(static_cast<double>(result[i].second))));
+      PyList_SET_ITEM(resultobj, i, PyTuple_Pack(2, obj, PyFloat_FromDouble(static_cast<double>(result[i].second))));
     }
   }
   return resultobj;
@@ -6466,7 +6575,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__CalculateEntropy(PyObject *SW
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg2 = absl::string_view(ustring.data(), ustring.size());
+    arg2 = ustring.str();
   }
   ecode3 = SWIG_AsVal_float(swig_obj[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
@@ -6518,7 +6627,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__CalculateEntropyBatch(PyObjec
       for (size_t i = 0; i < size; ++i) {
         const PyInputString ustring(PyList_GetItem(swig_obj[1], i));
         if (ustring.IsAvalable()) {
-          (*out)[i] = absl::string_view(ustring.data(), ustring.size());
+          (*out)[i] = ustring.str();
         } else {
           PyErr_SetString(PyExc_TypeError, "list must contain strings");
           SWIG_fail;
@@ -6553,7 +6662,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__CalculateEntropyBatch(PyObjec
   {
     resultobj = PyList_New((&result)->size());
     for (size_t i = 0; i < (&result)->size(); ++i) {
-      PyList_SetItem(resultobj, i, PyFloat_FromDouble(static_cast<double>(result[i])));
+      PyList_SET_ITEM(resultobj, i, PyFloat_FromDouble(static_cast<double>(result[i])));
     }
   }
   {
@@ -6623,7 +6732,7 @@ SWIGINTERN PyObject *_wrap_SentencePieceTrainer__TrainFromString(PyObject *SWIGU
       SWIG_fail;
     }
     resultobj = ustring.input_type();
-    arg1 = absl::string_view(ustring.data(), ustring.size());
+    arg1 = ustring.str();
   }
   {
     try {
@@ -6966,6 +7075,7 @@ static PyMethodDef SwigMethods_proxydocs[] = {
 /* -------- TYPE CONVERSION AND EQUIVALENCE RULES (BEGIN) -------- */
 
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_float = {"_p_float", "float *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_sentencepiece__SentenceIterator = {"_p_sentencepiece__SentenceIterator", "sentencepiece::SentenceIterator *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_sentencepiece__SentencePieceProcessor = {"_p_sentencepiece__SentencePieceProcessor", "sentencepiece::SentencePieceProcessor *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_sentencepiece__SentencePieceTrainer = {"_p_sentencepiece__SentencePieceTrainer", "sentencepiece::SentencePieceTrainer *", 0, 0, (void*)0, 0};
@@ -6973,12 +7083,12 @@ static swig_type_info _swigt__p_std__string = {"_p_std__string", "sentencepiece:
 static swig_type_info _swigt__p_std__unordered_mapT_std__string_std__string_t = {"_p_std__unordered_mapT_std__string_std__string_t", "std::unordered_map< std::string,std::string > *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__vectorT_absl__string_view_t = {"_p_std__vectorT_absl__string_view_t", "std::vector< absl::string_view > *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__vectorT_int_t = {"_p_std__vectorT_int_t", "std::vector< int > *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_std__vectorT_std__string_t = {"_p_std__vectorT_std__string_t", "std::vector< std::string > *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_std__vectorT_std__vectorT_absl__string_view_t_t = {"_p_std__vectorT_std__vectorT_absl__string_view_t_t", "std::vector< std::vector< absl::string_view > > *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__vectorT_std__vectorT_int_t_t = {"_p_std__vectorT_std__vectorT_int_t_t", "std::vector< std::vector< int > > *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_std__vectorT_std__vectorT_std__string_t_t = {"_p_std__vectorT_std__vectorT_std__string_t_t", "std::vector< std::vector< std::string > > *", 0, 0, (void*)0, 0};
 
 static swig_type_info *swig_type_initial[] = {
   &_swigt__p_char,
+  &_swigt__p_float,
   &_swigt__p_sentencepiece__SentenceIterator,
   &_swigt__p_sentencepiece__SentencePieceProcessor,
   &_swigt__p_sentencepiece__SentencePieceTrainer,
@@ -6986,12 +7096,12 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_std__unordered_mapT_std__string_std__string_t,
   &_swigt__p_std__vectorT_absl__string_view_t,
   &_swigt__p_std__vectorT_int_t,
-  &_swigt__p_std__vectorT_std__string_t,
+  &_swigt__p_std__vectorT_std__vectorT_absl__string_view_t_t,
   &_swigt__p_std__vectorT_std__vectorT_int_t_t,
-  &_swigt__p_std__vectorT_std__vectorT_std__string_t_t,
 };
 
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_float[] = {  {&_swigt__p_float, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_sentencepiece__SentenceIterator[] = {  {&_swigt__p_sentencepiece__SentenceIterator, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_sentencepiece__SentencePieceProcessor[] = {  {&_swigt__p_sentencepiece__SentencePieceProcessor, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_sentencepiece__SentencePieceTrainer[] = {  {&_swigt__p_sentencepiece__SentencePieceTrainer, 0, 0, 0},{0, 0, 0, 0}};
@@ -6999,12 +7109,12 @@ static swig_cast_info _swigc__p_std__string[] = {  {&_swigt__p_std__string, 0, 0
 static swig_cast_info _swigc__p_std__unordered_mapT_std__string_std__string_t[] = {  {&_swigt__p_std__unordered_mapT_std__string_std__string_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__vectorT_absl__string_view_t[] = {  {&_swigt__p_std__vectorT_absl__string_view_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__vectorT_int_t[] = {  {&_swigt__p_std__vectorT_int_t, 0, 0, 0},{0, 0, 0, 0}};
-static swig_cast_info _swigc__p_std__vectorT_std__string_t[] = {  {&_swigt__p_std__vectorT_std__string_t, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_std__vectorT_std__vectorT_absl__string_view_t_t[] = {  {&_swigt__p_std__vectorT_std__vectorT_absl__string_view_t_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__vectorT_std__vectorT_int_t_t[] = {  {&_swigt__p_std__vectorT_std__vectorT_int_t_t, 0, 0, 0},{0, 0, 0, 0}};
-static swig_cast_info _swigc__p_std__vectorT_std__vectorT_std__string_t_t[] = {  {&_swigt__p_std__vectorT_std__vectorT_std__string_t_t, 0, 0, 0},{0, 0, 0, 0}};
 
 static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_char,
+  _swigc__p_float,
   _swigc__p_sentencepiece__SentenceIterator,
   _swigc__p_sentencepiece__SentencePieceProcessor,
   _swigc__p_sentencepiece__SentencePieceTrainer,
@@ -7012,9 +7122,8 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_std__unordered_mapT_std__string_std__string_t,
   _swigc__p_std__vectorT_absl__string_view_t,
   _swigc__p_std__vectorT_int_t,
-  _swigc__p_std__vectorT_std__string_t,
+  _swigc__p_std__vectorT_std__vectorT_absl__string_view_t_t,
   _swigc__p_std__vectorT_std__vectorT_int_t_t,
-  _swigc__p_std__vectorT_std__vectorT_std__string_t_t,
 };
 
 

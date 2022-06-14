@@ -61,15 +61,10 @@ struct Status::Rep {
   std::string error_message;
 };
 
-Status::Status(StatusCode code, const char* error_message) : rep_(new Rep) {
-  rep_->code = code;
-  rep_->error_message = error_message;
-}
-
-Status::Status(StatusCode code, const std::string& error_message)
+Status::Status(StatusCode code, absl::string_view error_message)
     : rep_(new Rep) {
   rep_->code = code;
-  rep_->error_message = error_message;
+  rep_->error_message = std::string(error_message);
 }
 
 Status::Status(const Status& s)

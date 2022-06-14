@@ -48,6 +48,12 @@ const char kDefaultUnknownSymbol[] = " \xE2\x81\x87 ";
 
 // REPLACEMENT CHARACTER (U+FFFD) in UTF-8.
 const char kReplacementCharacter[] = "\xef\xbf\xbd";
+
+std::vector<absl::string_view> ToPieceArray(const std::vector<std::string> &v) {
+  std::vector<absl::string_view> out(v.size());
+  for (int i = 0; i < v.size(); ++i) out[i] = v[i];
+  return out;
+}
 }  // namespace
 
 SentencePieceProcessor::SentencePieceProcessor() {}
@@ -146,7 +152,7 @@ util::Status SentencePieceProcessor::status() const {
 }
 
 util::Status SentencePieceProcessor::SetVocabulary(
-    const std::vector<std::string> &valid_vocab) {
+    const std::vector<absl::string_view> &valid_vocab) {
   RETURN_IF_ERROR(status());
 
   // TODO(taku): supports vocabulary constraint in BPE model.
@@ -154,7 +160,8 @@ util::Status SentencePieceProcessor::SetVocabulary(
   CHECK_OR_RETURN(type == TrainerSpec::UNIGRAM || type == TrainerSpec::BPE)
       << "Vocabulary constraint is only enabled in subword units.";
 
-  const std::set<std::string> vocab(valid_vocab.begin(), valid_vocab.end());
+  const std::set<absl::string_view> vocab(valid_vocab.begin(),
+                                          valid_vocab.end());
 
   for (int i = 0; i < model_proto_->pieces_size(); ++i) {
     auto *piece = model_proto_->mutable_pieces(i);
@@ -207,7 +214,7 @@ util::Status SentencePieceProcessor::LoadVocabulary(absl::string_view filename,
     }
   }
 
-  return SetVocabulary(vocab);
+  return SetVocabulary(ToPieceArray(vocab));
 }
 
 #define CHECK_OR_RETURN_STATUS_STL(container)               \
@@ -250,6 +257,12 @@ util::Status SentencePieceProcessor::Encode(absl::string_view input,
 
 util::Status SentencePieceProcessor::Decode(
     const std::vector<std::string> &pieces, std::string *detokenized) const {
+  return Decode(ToPieceArray(pieces), detokenized);
+}
+
+util::Status SentencePieceProcessor::Decode(
+    const std::vector<absl::string_view> &pieces,
+    std::string *detokenized) const {
   CHECK_OR_RETURN_STATUS_STL(detokenized);
 
   SentencePieceText spt;
@@ -593,6 +606,12 @@ util::Status SentencePieceProcessor::CalculateEntropy(absl::string_view input,
 
 util::Status SentencePieceProcessor::Decode(
     const std::vector<std::string> &pieces, SentencePieceText *spt) const {
+  return Decode(ToPieceArray(pieces), spt);
+}
+
+util::Status SentencePieceProcessor::Decode(
+    const std::vector<absl::string_view> &pieces,
+    SentencePieceText *spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
   const char *unk_surface = kDefaultUnknownSymbol;
@@ -637,9 +656,9 @@ util::Status SentencePieceProcessor::Decode(
                           has_bos_ws);
   };
 
-  for (const std::string &w : pieces) {
+  for (absl::string_view w : pieces) {
     auto *sp = spt->add_pieces();
-    sp->set_piece(w);
+    sp->mutable_piece()->assign(w.data(), w.size());
     sp->set_id(PieceToId(w));
   }
 
@@ -774,6 +793,13 @@ std::string SentencePieceProcessor::NBestEncodeAsSerializedProto(
 
 std::string SentencePieceProcessor::DecodePiecesAsSerializedProto(
     const std::vector<std::string> &pieces) const {
+  SentencePieceText spt;
+  if (!Decode(pieces, &spt).ok()) return "";
+  return spt.SerializeAsString();
+}
+
+std::string SentencePieceProcessor::DecodePiecesAsSerializedProto(
+    const std::vector<absl::string_view> &pieces) const {
   SentencePieceText spt;
   if (!Decode(pieces, &spt).ok()) return "";
   return spt.SerializeAsString();
