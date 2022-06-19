@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "normalizer.h"
+
 #include <utility>
 #include <vector>
 
 #include "common.h"
-#include "normalizer.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/match.h"
 #include "third_party/absl/strings/string_view.h"
@@ -46,9 +47,7 @@ Normalizer::~Normalizer() {}
 
 void Normalizer::Init() {
   absl::string_view index = spec_->precompiled_charsmap();
-  if (index.empty()) {
-    LOG(INFO) << "precompiled_charsmap is empty. use identity normalization.";
-  } else {
+  if (!index.empty()) {
     absl::string_view trie_blob, normalized;
 #ifdef IS_BIG_ENDIAN
     status_ = DecodePrecompiledCharsMap(index, &trie_blob, &normalized,
