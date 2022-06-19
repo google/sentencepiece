@@ -45,7 +45,7 @@ jobs:
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      run: ctest -C Release
+      run: ctest -C Release --output-on-failure
 
     - name: Package
       working-directory: ${{github.workspace}}/build
