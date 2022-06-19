@@ -173,6 +173,18 @@ class Model : public ModelInterface {
   bool VerifyOutputsEquivalent(absl::string_view expected,
                                absl::string_view actual) const override;
 
+  enum EncoderVersion {
+    kOptimized,  // The optimized encoder.
+    kOriginal    // The original encoder.
+  };
+
+  void SetEncoderVersion(EncoderVersion encoder_version) {
+    encoder_version_ = encoder_version;
+  }
+
+  // Returns the current encoder version in use.
+  EncoderVersion GetEncoderVersion() const { return encoder_version_; }
+
  protected:
   // Builds a Trie index.
   void BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces);
@@ -195,6 +207,9 @@ class Model : public ModelInterface {
   // Maximum size of the return value of Trie, which corresponds
   // to the maximum size of shared common prefix in the sentence pieces.
   int trie_results_size_;
+
+  // encoder version.
+  EncoderVersion encoder_version_ = kOptimized;
 };
 
 }  // namespace unigram

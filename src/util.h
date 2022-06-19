@@ -60,17 +60,6 @@ uint32 GetRandomGeneratorSeed();
 // String utilities
 namespace string_util {
 
-struct string_view_hash {
-  // DJB hash function.
-  inline size_t operator()(const absl::string_view &sp) const {
-    size_t hash = 5381;
-    for (size_t i = 0; i < sp.size(); ++i) {
-      hash = ((hash << 5) + hash) + sp[i];
-    }
-    return hash;
-  }
-};
-
 template <typename Target>
 inline bool lexical_cast(absl::string_view arg, Target *result) {
   std::stringstream ss;

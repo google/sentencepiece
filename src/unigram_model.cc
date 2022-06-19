@@ -198,16 +198,17 @@ Lattice::LatticePathWithScore Lattice::Viterbi() {
   return retval;
 }
 
-std::vector<float> Lattice::ForwardAlgorithm(float theta) const {
+std::vector<float> Lattice::ForwardAlgorithm(float inv_theta) const {
   const int len = size();
   std::vector<float> alpha(node_allocator_.size(), 0.0);
 
   for (int pos = 0; pos <= len; ++pos) {
     for (Node *rnode : begin_nodes_[pos]) {
       for (Node *lnode : end_nodes_[pos]) {
-        alpha[rnode->node_id] = LogSumExp(
-            alpha[rnode->node_id], theta * lnode->score + alpha[lnode->node_id],
-            lnode == end_nodes_[pos][0]);
+        alpha[rnode->node_id] =
+            LogSumExp(alpha[rnode->node_id],
+                      inv_theta * lnode->score + alpha[lnode->node_id],
+                      lnode == end_nodes_[pos][0]);
       }
     }
   }
@@ -215,7 +216,7 @@ std::vector<float> Lattice::ForwardAlgorithm(float theta) const {
   return alpha;
 }
 
-std::vector<float> Lattice::BackwardAlgorithm(float theta) const {
+std::vector<float> Lattice::BackwardAlgorithm(float inv_theta) const {
   const int len = size();
   std::vector<float> beta(node_allocator_.size(), 0.0);
 
@@ -260,17 +261,16 @@ float Lattice::PopulateMarginal(float freq,
   return freq * Z;
 }
 
-float Lattice::CalculateEntropy(float theta) const {
+float Lattice::CalculateEntropy(float inv_theta) const {
   const int len = size();
 
   // alpha[node_id] is the marginal prob of sequence up to start of node
   // H is entropy of sequence
   // the index of alpha/H is Node::node_id.
-  std::vector<float> alpha(node_allocator_.size(), 0.0);
   std::vector<float> H(node_allocator_.size(), 0.0);
 
   // Populate the forward marginals to get the normalising constant
-  alpha = ForwardAlgorithm(theta);
+  const auto alpha = ForwardAlgorithm(inv_theta);
 
   // Now populate the forward entropies
   for (int pos = 0; pos <= len; ++pos) {
@@ -280,7 +280,7 @@ float Lattice::CalculateEntropy(float theta) const {
 
         // We have to normalise p(lnode) by the marginal contribution it makes
         const float lnode_transition_prob =
-            ((theta * lnode->score) + alpha[lnode->node_id] -
+            ((inv_theta * lnode->score) + alpha[lnode->node_id] -
              alpha[rnode->node_id]);
         H[rnode->node_id] += std::exp(lnode_transition_prob) *
                              (H[lnode->node_id] + lnode_transition_prob);
@@ -345,7 +345,7 @@ Hypothesis *CloneHypAndDependents(
 
 std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
                                                           bool sample,
-                                                          float theta) {
+                                                          float inv_theta) {
   if (nbest_size < 1) {
     LOG(WARNING) << "nbest_size >= 1. Returns empty result.";
     return {};
@@ -391,7 +391,7 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
 
   if (sample) {
     // Run forwards algorithm to get normalising constants
-    alpha = ForwardAlgorithm(theta);
+    alpha = ForwardAlgorithm(inv_theta);
     // f(eos) = Gumbel(0), as it is the perturbed score of the entire lattice.
     eos->fx = Gumbel();
   } else {
@@ -432,7 +432,8 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
       for (int i = 0; i < end_nodes(node->pos).size(); i++) {
         Node *lnode = end_nodes(node->pos)[i];
         // Calculate backwards transition score
-        probs[i] = top->gx + alpha[lnode->node_id] + (theta * lnode->score) - Z;
+        probs[i] =
+            top->gx + alpha[lnode->node_id] + (inv_theta * lnode->score) - Z;
         perturbed_probs[i] = probs[i] + Gumbel();
         if (perturbed_probs[i] > max_score) {
           max_score = perturbed_probs[i];
@@ -508,13 +509,13 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
   return results;
 }
 
-std::vector<Lattice::Node *> Lattice::Sample(float theta) {
+std::vector<Lattice::Node *> Lattice::Sample(float inv_theta) {
   const int len = size();
   if (len == 0) return {};
 
   std::vector<float> alpha(node_allocator_.size(), 0.0);
 
-  alpha = ForwardAlgorithm(theta);
+  alpha = ForwardAlgorithm(inv_theta);
 
   auto *mt = random::GetRandomGenerator();
 
@@ -526,8 +527,8 @@ std::vector<Lattice::Node *> Lattice::Sample(float theta) {
   while (true) {
     probs.clear();
     for (const Node *lnode : end_nodes_[node->pos]) {
-      probs.push_back(std::exp(static_cast<double>(alpha[lnode->node_id] +
-                                                   theta * lnode->score - Z)));
+      probs.push_back(std::exp(static_cast<double>(
+          alpha[lnode->node_id] + inv_theta * lnode->score - Z)));
     }
     std::discrete_distribution<int> dist(probs.begin(), probs.end());
     node = end_nodes_[node->pos][dist(*mt)];
@@ -721,7 +722,7 @@ NBestEncodeResult Model::NBestEncode(absl::string_view normalized,
 }
 
 EncodeResult Model::SampleEncode(absl::string_view normalized,
-                                 float theta) const {
+                                 float inv_theta) const {
   if (!status().ok() || normalized.empty()) {
     return {};
   }
@@ -731,7 +732,7 @@ EncodeResult Model::SampleEncode(absl::string_view normalized,
   PopulateNodes(&lattice);
 
   EncodeResult results;
-  for (const auto *node : lattice.Sample(theta)) {
+  for (const auto *node : lattice.Sample(inv_theta)) {
     results.emplace_back(node->piece, node->id);
   }
 
@@ -739,7 +740,7 @@ EncodeResult Model::SampleEncode(absl::string_view normalized,
 }
 
 NBestEncodeResult Model::SampleEncodeAndScore(absl::string_view normalized,
-                                              float theta, int samples,
+                                              float inv_theta, int samples,
                                               bool wor,
                                               bool include_best) const {
   if (!status().ok() || normalized.empty()) {
@@ -750,16 +751,16 @@ NBestEncodeResult Model::SampleEncodeAndScore(absl::string_view normalized,
   lattice.SetSentence(normalized);
   PopulateNodes(&lattice);
 
-  std::vector<float> alpha = lattice.ForwardAlgorithm(theta);
-  float marginal = alpha[lattice.eos_node()->node_id];
+  const std::vector<float> alpha = lattice.ForwardAlgorithm(inv_theta);
+  const float marginal = alpha[lattice.eos_node()->node_id];
 
   if (include_best) {
     if (!wor) {
-      LOG(FATAL) << "include_best not supported for wor false";
+      LOG(ERROR) << "include_best not supported for wor false";
+      return {};
     }
     EncodeResult result;
-    Lattice::LatticePathWithScore best_path = lattice.Viterbi();
-
+    const auto best_path = lattice.Viterbi();
     for (const auto *node : best_path.first) {
       result.emplace_back(node->piece, node->id);
     }
@@ -770,8 +771,7 @@ NBestEncodeResult Model::SampleEncodeAndScore(absl::string_view normalized,
 
   if (wor) {
     // Draw k+1 samples as we need perturbed score of k+1th element
-    std::vector<Lattice::LatticePathWithScore> nbest_samples =
-        lattice.NBest(samples + 1, true, theta);
+    auto nbest_samples = lattice.NBest(samples + 1, true, inv_theta);
 
     if (include_best) {
       std::vector<std::vector<Lattice::Node *>> nbest_paths(
@@ -780,14 +780,13 @@ NBestEncodeResult Model::SampleEncodeAndScore(absl::string_view normalized,
         nbest_paths[i] = nbest_samples[i].first;
       }
       // Remove the best result from the samples if necessary
-      Lattice::LatticePathWithScore best_path = lattice.Viterbi();
+      const auto best_path = lattice.Viterbi();
 
       const int index_of_best =
           (std::find(nbest_paths.begin(), nbest_paths.end(), best_path.first) -
            nbest_paths.begin());
 
       if (index_of_best != nbest_samples.size()) {
-        LOG(INFO) << "removing best path from samples";
         nbest_samples.erase(nbest_samples.begin() + index_of_best);
       } else {
         nbest_samples.pop_back();
@@ -803,7 +802,7 @@ NBestEncodeResult Model::SampleEncodeAndScore(absl::string_view normalized,
       float score = 0.0;
 
       for (const auto *node : nbest.first) {
-        score += (theta * node->score);
+        score += (inv_theta * node->score);
         result.emplace_back(node->piece, node->id);
       }
 
@@ -814,8 +813,8 @@ NBestEncodeResult Model::SampleEncodeAndScore(absl::string_view normalized,
     for (auto &it : results) {
       // Only modify non best sample inclusion probabilities.
       if (it.second != 0.0) {
-        double x = it.second - kappa;
-        double y = std::exp(x);
+        const double x = it.second - kappa;
+        const double y = std::exp(x);
         double inclusion_prob;
         if (x <= -10) {
           // Series expansion of the log Gumbel survival function up to eps.
@@ -835,10 +834,10 @@ NBestEncodeResult Model::SampleEncodeAndScore(absl::string_view normalized,
 
       float score = 0.0;
       EncodeResult result;
-      std::vector<Lattice::Node *> sample = lattice.Sample(theta);
+      const std::vector<Lattice::Node *> sample = lattice.Sample(inv_theta);
       for (const auto *node : sample) {
         result.emplace_back(node->piece, node->id);
-        score += (theta * node->score);
+        score += (inv_theta * node->score);
       }
       results.emplace_back(result, score - marginal);
     }
@@ -847,12 +846,13 @@ NBestEncodeResult Model::SampleEncodeAndScore(absl::string_view normalized,
   return results;
 }
 
-float Model::CalculateEntropy(absl::string_view normalized, float theta) const {
+float Model::CalculateEntropy(absl::string_view normalized,
+                              float inv_theta) const {
   Lattice lattice;
   lattice.SetSentence(normalized);
   PopulateNodes(&lattice);
 
-  return lattice.CalculateEntropy(theta);
+  return lattice.CalculateEntropy(inv_theta);
 }
 
 bool Model::VerifyOutputsEquivalent(absl::string_view expected,
