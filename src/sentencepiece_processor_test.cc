@@ -1596,7 +1596,7 @@ TEST(SentencePieceProcessorTest, ImmutableSentencePieceTextTest) {
     ++n;
   }
 
-  //  EXPECT_EQ(v->text(), spt.text())
+  EXPECT_EQ(v->text(), spt.text());
   EXPECT_EQ(v->score(), spt.score());
   EXPECT_EQ(v->SerializeAsString(), spt.SerializeAsString());
 
@@ -1623,7 +1623,7 @@ TEST(SentencePieceProcessorTest, ImmutableNBestSentencePieceTextTest) {
 
   EXPECT_EQ(v->nbests_size(), spt.nbests_size());
   for (int i = 0; i < v->nbests_size(); ++i) {
-    //    EXPECT_EQ(v->nbests(i).text(), spt.nbests(i).text());
+    EXPECT_EQ(v->nbests(i).text(), spt.nbests(i).text());
     EXPECT_EQ(v->nbests(i).score(), spt.nbests(i).score());
   }
   EXPECT_EQ(v->SerializeAsString(), spt.SerializeAsString());

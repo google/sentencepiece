@@ -98,15 +98,6 @@ class Die {
  private:
   bool die_;
 };
-
-template <typename T>
-T &&CheckNotNull(const char *file, int line, const char *exprtext, T &&t) {
-  if (t == nullptr) {
-    std::cerr << file << "(" << line << ") " << exprtext;
-    Abort();
-  }
-  return std::forward<T>(t);
-}
 }  // namespace error
 
 namespace logging {
@@ -158,10 +149,6 @@ inline const char *BaseName(const char *path) {
 #define CHECK_LE(a, b) CHECK((a) <= (b))
 #define CHECK_GT(a, b) CHECK((a) > (b))
 #define CHECK_LT(a, b) CHECK((a) < (b))
-#define CHECK_NOTNULL(val)                                    \
-  ::sentencepiece::error::CheckNotNull(                       \
-      ::sentencepiece::logging::BaseName(__FILE__), __LINE__, \
-      "'" #val "' Must be non NULL", (val))
 
 #define FRIEND_TEST(a, b) friend class a##_Test_##b;
 

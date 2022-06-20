@@ -165,8 +165,8 @@ class ImmutableSentencePieceText {
   class ImmutableSentencePiece {
    public:
     ~ImmutableSentencePiece() = default;
-    absl::string_view piece() const;
-    absl::string_view surface() const;
+    const std::string &piece() const;
+    const std::string &surface() const;
     uint32_t id() const;
     uint32_t begin() const;
     uint32_t end() const;
@@ -182,7 +182,7 @@ class ImmutableSentencePieceText {
   std::vector<ImmutableSentencePiece> pieces() const;
   size_t pieces_size() const;
   ImmutableSentencePiece pieces(int index) const;
-  absl::string_view text() const;
+  const std::string &text() const;
   float score() const;
 
   std::string SerializeAsString() const;
@@ -193,7 +193,6 @@ class ImmutableSentencePieceText {
   SentencePieceText *mutable_proto();
 
   friend class ImmutableNBestSentencePieceText;
-  friend class SentencePieceProcessor;
 
  private:
   explicit ImmutableSentencePieceText(const SentencePieceText &spt);
@@ -221,8 +220,6 @@ class ImmutableNBestSentencePieceText {
   // Do not use this outside of SentencePieceProcessor, as
   // it returns the raw pointer managed by the shared_ptr.
   NBestSentencePieceText *mutable_proto();
-
-  friend class SentencePieceProcessor;
 
  private:
   std::shared_ptr<NBestSentencePieceText> rep_;

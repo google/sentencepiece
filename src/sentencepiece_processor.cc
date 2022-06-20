@@ -67,12 +67,12 @@ ImmutableSentencePieceText::ImmutableSentencePiece::ImmutableSentencePiece(
     const SentencePieceText_SentencePiece &sp)
     : sp_(&sp) {}
 
-absl::string_view ImmutableSentencePieceText::ImmutableSentencePiece::piece()
+const std::string &ImmutableSentencePieceText::ImmutableSentencePiece::piece()
     const {
   return sp_->piece();
 }
 
-absl::string_view ImmutableSentencePieceText::ImmutableSentencePiece::surface()
+const std::string &ImmutableSentencePieceText::ImmutableSentencePiece::surface()
     const {
   return sp_->surface();
 }
@@ -109,8 +109,10 @@ ImmutableSentencePieceText::pieces(int index) const {
       spt_->pieces(index));
 }
 
-absl::string_view ImmutableSentencePieceText::text() const {
-  return spt_ ? spt_->text() : "";
+const std::string &ImmutableSentencePieceText::text() const {
+  if (spt_) return spt_->text();
+  static std::string *kEmptyString = new std::string();
+  return *kEmptyString;
 }
 
 float ImmutableSentencePieceText::score() const {

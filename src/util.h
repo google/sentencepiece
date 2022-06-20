@@ -94,7 +94,6 @@ inline bool lexical_cast(absl::string_view arg, std::string *result) {
 
 template <typename T>
 inline bool DecodePOD(absl::string_view str, T *result) {
-  CHECK_NOTNULL(result);
   if (sizeof(*result) != str.size()) {
     return false;
   }
