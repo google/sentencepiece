@@ -1564,6 +1564,10 @@ TEST(SentencePieceProcessorTest, VocabularyTest) {
 
 TEST(SentencePieceProcessorTest, ImmutableSentencePieceTextTest) {
   ImmutableSentencePieceText spt;
+  EXPECT_TRUE(spt.text().empty());
+  EXPECT_EQ(spt.score(), 0.0);
+  EXPECT_TRUE(spt.SerializeAsString().empty());
+
   auto *v = spt.mutable_proto();
 
   v->set_text("hello world");
@@ -1586,52 +1590,123 @@ TEST(SentencePieceProcessorTest, ImmutableSentencePieceTextTest) {
     EXPECT_EQ(v->pieces(i).end(), spt.pieces(i).end());
   }
 
-  int n = 0;
-  for (auto &p : spt.pieces()) {
-    EXPECT_EQ(v->pieces(n).surface(), p.surface());
-    EXPECT_EQ(v->pieces(n).piece(), p.piece());
-    EXPECT_EQ(v->pieces(n).id(), p.id());
-    EXPECT_EQ(v->pieces(n).begin(), p.begin());
-    EXPECT_EQ(v->pieces(n).end(), p.end());
-    ++n;
-  }
-
-  EXPECT_EQ(v->text(), spt.text());
-  EXPECT_EQ(v->score(), spt.score());
-  EXPECT_EQ(v->SerializeAsString(), spt.SerializeAsString());
+  auto check_proto = [&v](const ImmutableSentencePieceText &s) {
+    int n = 0;
+    for (auto &p : s.pieces()) {
+      EXPECT_EQ(v->pieces(n).surface(), p.surface());
+      EXPECT_EQ(v->pieces(n).piece(), p.piece());
+      EXPECT_EQ(v->pieces(n).id(), p.id());
+      EXPECT_EQ(v->pieces(n).begin(), p.begin());
+      EXPECT_EQ(v->pieces(n).end(), p.end());
+      ++n;
+    }
+    EXPECT_EQ(v->text(), s.text());
+    EXPECT_EQ(v->score(), s.score());
+    EXPECT_EQ(v->SerializeAsString(), s.SerializeAsString());
+  };
 
   // test copy.
-  auto spt2 = spt;
-  EXPECT_EQ(spt2.pieces_size(), spt.pieces_size());
-  for (int i = 0; i < spt.pieces_size(); ++i) {
-    EXPECT_EQ(spt2.pieces(i).surface(), spt.pieces(i).surface());
-    EXPECT_EQ(spt2.pieces(i).piece(), spt.pieces(i).piece());
-    EXPECT_EQ(spt2.pieces(i).id(), spt.pieces(i).id());
-    EXPECT_EQ(spt2.pieces(i).begin(), spt.pieces(i).begin());
-    EXPECT_EQ(spt2.pieces(i).end(), spt.pieces(i).end());
-  }
+  const auto spt2 = spt;
+  check_proto(spt2);
+
+  // test assign.
+  const ImmutableSentencePieceText spt3(spt);
+  check_proto(spt3);
+
+  // default piece.
+  const ImmutableSentencePieceText_ImmutableSentencePiece piece;
+  EXPECT_TRUE(piece.surface().empty());
+  EXPECT_TRUE(piece.piece().empty());
+  EXPECT_EQ(piece.begin(), 0);
+  EXPECT_EQ(piece.end(), 0);
+  EXPECT_EQ(piece.id(), 0);
 }
 
 TEST(SentencePieceProcessorTest, ImmutableNBestSentencePieceTextTest) {
   ImmutableNBestSentencePieceText spt;
+  EXPECT_EQ(spt.nbests_size(), 0);
+  EXPECT_TRUE(spt.SerializeAsString().empty());
+
   auto *v = spt.mutable_proto();
+
   for (int i = 0; i < 10; ++i) {
     auto *p = v->add_nbests();
     p->set_text(absl::StrCat("text_", i));
     p->set_score(2.0 * i);
   }
 
-  EXPECT_EQ(v->nbests_size(), spt.nbests_size());
-  for (int i = 0; i < v->nbests_size(); ++i) {
-    EXPECT_EQ(v->nbests(i).text(), spt.nbests(i).text());
-    EXPECT_EQ(v->nbests(i).score(), spt.nbests(i).score());
-  }
-  EXPECT_EQ(v->SerializeAsString(), spt.SerializeAsString());
+  auto check_proto = [&v](const ImmutableNBestSentencePieceText &s) {
+    EXPECT_EQ(v->nbests_size(), s.nbests_size());
+    for (int i = 0; i < v->nbests_size(); ++i) {
+      EXPECT_EQ(v->nbests(i).text(), s.nbests(i).text());
+      EXPECT_EQ(v->nbests(i).score(), s.nbests(i).score());
+    }
+    EXPECT_EQ(v->SerializeAsString(), s.SerializeAsString());
+  };
+
+  check_proto(spt);
 
   // test copy.
-  auto spt2 = spt;
-  EXPECT_EQ(spt2.nbests_size(), spt.nbests_size());
-  EXPECT_EQ(spt2.SerializeAsString(), spt.SerializeAsString());
+  const auto spt2 = spt;
+  check_proto(spt2);
+
+  // test assign.
+  const ImmutableNBestSentencePieceText spt3(spt);
+  check_proto(spt3);
+}
+
+TEST(SentencePieceProcessorTest, ConvertToUnicodeSpansTest) {
+  auto make_spt = [&](const std::vector<std::string> &tokens) {
+    SentencePieceText spt;
+    int prev = 0;
+    std::string text;
+    for (const auto &tok : tokens) {
+      auto *piece = spt.add_pieces();
+      piece->set_surface(tok);
+      piece->set_piece(tok);
+      piece->set_begin(prev);
+      piece->set_end(prev + tok.size());
+      prev += tok.size();
+      text += tok;
+    }
+    spt.set_text(text);
+    ConvertToUnicodeSpans(&spt);
+    return spt;
+  };
+
+  {
+    const auto spt = make_spt({"hello", "_world", "."});
+    EXPECT_EQ(spt.pieces_size(), 3);
+    EXPECT_EQ(spt.pieces(0).begin(), 0);
+    EXPECT_EQ(spt.pieces(0).end(), 5);
+    EXPECT_EQ(spt.pieces(1).begin(), 5);
+    EXPECT_EQ(spt.pieces(1).end(), 11);
+    EXPECT_EQ(spt.pieces(2).begin(), 11);
+    EXPECT_EQ(spt.pieces(2).end(), 12);
+  }
+
+  {
+    const auto spt = make_spt({"これは", "test", "です"});
+    EXPECT_EQ(spt.pieces_size(), 3);
+    EXPECT_EQ(spt.pieces(0).begin(), 0);
+    EXPECT_EQ(spt.pieces(0).end(), 3);
+    EXPECT_EQ(spt.pieces(1).begin(), 3);
+    EXPECT_EQ(spt.pieces(1).end(), 7);
+
+    EXPECT_EQ(spt.pieces(2).begin(), 7);
+    EXPECT_EQ(spt.pieces(2).end(), 9);
+  }
+
+  {
+    const auto spt = make_spt({"いABは", "にほCD", "へと"});
+    EXPECT_EQ(spt.pieces_size(), 3);
+    EXPECT_EQ(spt.pieces(0).begin(), 0);
+    EXPECT_EQ(spt.pieces(0).end(), 4);
+    EXPECT_EQ(spt.pieces(1).begin(), 4);
+    EXPECT_EQ(spt.pieces(1).end(), 8);
+    EXPECT_EQ(spt.pieces(2).begin(), 8);
+    EXPECT_EQ(spt.pieces(2).end(), 10);
+  }
 }
 
 }  // namespace sentencepiece

@@ -287,16 +287,44 @@ class TestSentencepieceProcessor(unittest.TestCase):
     ids2 = self.sp_.EncodeAsIds(text2)
     pieces = self.sp_.EncodeAsPieces(text)
     pieces2 = self.sp_.EncodeAsPieces(text2)
-    protos = self.sp_.EncodeAsSerializedProto(text)
-    proto2 = self.sp_.EncodeAsSerializedProto(text2)
+    sprotos = self.sp_.EncodeAsSerializedProto(text)
+    sproto2 = self.sp_.EncodeAsSerializedProto(text2)
+    iprotos = self.sp_.EncodeAsImmutableProto(text)
+    iprotos2 = self.sp_.EncodeAsImmutableProto(text2)
 
     self.assertEqual(sp.encode(text, out_type=int), ids)
     self.assertEqual(sp.encode(text, out_type=str), pieces)
-    self.assertEqual(sp.encode(text, out_type='proto'), protos)
+    self.assertEqual(sp.encode(text, out_type='serialized_proto'), sprotos)
+    self.assertEqual(sp.encode(text, out_type='immutable_proto'), iprotos)
 
     self.assertEqual(sp.encode([text], out_type=int), [ids])
     self.assertEqual(sp.encode([text], out_type=str), [pieces])
-    self.assertEqual(sp.encode([text], out_type='proto'), [protos])
+    self.assertEqual(sp.encode([text], out_type='serialized_proto'), [sprotos])
+    self.assertEqual(sp.encode([text], out_type='immutable_proto'), [iprotos])
+
+    self.assertEqual(len(iprotos), len(pieces))
+    self.assertEqual(len(iprotos), len(ids))
+    self.assertEqual(iprotos.text(), text)
+
+    self.assertEqual(len(iprotos2), len(pieces2))
+    self.assertEqual(len(iprotos2), len(ids2))
+    self.assertEqual(iprotos2.text(), text2)
+
+    for i in range(len(iprotos)):
+      self.assertEqual(ids[i], iprotos.pieces(i).id())
+      self.assertEqual(pieces[i], iprotos.pieces(i).piece())
+
+    for i, piece in enumerate(iprotos):
+      self.assertEqual(ids[i], piece.id())
+      self.assertEqual(pieces[i], piece.piece())
+
+    for i in range(len(iprotos2)):
+      self.assertEqual(ids2[i], iprotos2.pieces(i).id())
+      self.assertEqual(pieces2[i], iprotos2.pieces(i).piece())
+
+    for i, piece in enumerate(iprotos2):
+      self.assertEqual(ids2[i], piece.id())
+      self.assertEqual(pieces2[i], piece.piece())
 
     detok_ids = self.sp_.DecodeIds(ids)
     detok_pieces = self.sp_.DecodePieces(pieces)
@@ -464,19 +492,29 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual(d1, d4)
     self.assertEqual(d1, d5)
 
-    r1 = sp.encode(texts, out_type='proto', num_threads=None)
-    r2 = sp.encode(texts, out_type='proto', num_threads=1)
-    r3 = sp.encode(texts, out_type='proto', num_threads=-1)
-    r4 = sp.encode(texts, out_type='proto', num_threads=8)
-    r5 = [sp.encode(s, out_type='proto') for s in texts]
+    r1 = sp.encode(texts, out_type='serialized_proto', num_threads=None)
+    r2 = sp.encode(texts, out_type='serialized_proto', num_threads=1)
+    r3 = sp.encode(texts, out_type='serialized_proto', num_threads=-1)
+    r4 = sp.encode(texts, out_type='serialized_proto', num_threads=8)
+    r5 = [sp.encode(s, out_type='serialized_proto') for s in texts]
     self.assertEqual(r1, r2)
     self.assertEqual(r1, r3)
     self.assertEqual(r1, r4)
     self.assertEqual(r1, r5)
 
-    e1 = sp.calculate_entropy(texts, theta=1.0, num_threads=10)
-    e2 = sp.CalculateEntropy(texts, theta=1.0, num_threads=10)
-    e3 = [sp.calculate_entropy(s, theta=1.0) for s in texts]
+    r1 = sp.encode(texts, out_type='immutable_proto', num_threads=None)
+    r2 = sp.encode(texts, out_type='immutable_proto', num_threads=1)
+    r3 = sp.encode(texts, out_type='immutable_proto', num_threads=-1)
+    r4 = sp.encode(texts, out_type='immutable_proto', num_threads=8)
+    r5 = [sp.encode(s, out_type='immutable_proto') for s in texts]
+    self.assertEqual(r1, r2)
+    self.assertEqual(r1, r3)
+    self.assertEqual(r1, r4)
+    self.assertEqual(r1, r5)
+
+    e1 = sp.calculate_entropy(texts, alpha=1.0, num_threads=10)
+    e2 = sp.CalculateEntropy(texts, alpha=1.0, num_threads=10)
+    e3 = [sp.calculate_entropy(s, alpha=1.0) for s in texts]
     self.assertEqual(e1, e2)
     self.assertEqual(e1, e3)
 

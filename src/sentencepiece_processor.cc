@@ -54,65 +54,70 @@ std::vector<absl::string_view> ToPieceArray(const std::vector<std::string> &v) {
   for (int i = 0; i < v.size(); ++i) out[i] = v[i];
   return out;
 }
+
 }  // namespace
 
-ImmutableSentencePieceText::ImmutableSentencePieceText() {}
-ImmutableSentencePieceText::~ImmutableSentencePieceText() {}
+ImmutableSentencePieceText::ImmutableSentencePieceText()
+    : spt_(&SentencePieceText::default_instance()) {}
 
 ImmutableSentencePieceText::ImmutableSentencePieceText(
     const SentencePieceText &spt)
     : spt_(&spt) {}
 
-ImmutableSentencePieceText::ImmutableSentencePiece::ImmutableSentencePiece(
-    const SentencePieceText_SentencePiece &sp)
+ImmutableSentencePieceText::~ImmutableSentencePieceText() {}
+
+ImmutableSentencePieceText_ImmutableSentencePiece::
+    ImmutableSentencePieceText_ImmutableSentencePiece()
+    : sp_(&SentencePieceText_SentencePiece::default_instance()) {}
+
+ImmutableSentencePieceText_ImmutableSentencePiece::
+    ImmutableSentencePieceText_ImmutableSentencePiece(
+        const SentencePieceText_SentencePiece &sp)
     : sp_(&sp) {}
 
-const std::string &ImmutableSentencePieceText::ImmutableSentencePiece::piece()
+const std::string &ImmutableSentencePieceText_ImmutableSentencePiece::piece()
     const {
   return sp_->piece();
 }
 
-const std::string &ImmutableSentencePieceText::ImmutableSentencePiece::surface()
+const std::string &ImmutableSentencePieceText_ImmutableSentencePiece::surface()
     const {
   return sp_->surface();
 }
 
-uint32_t ImmutableSentencePieceText::ImmutableSentencePiece::id() const {
+uint32_t ImmutableSentencePieceText_ImmutableSentencePiece::id() const {
   return sp_->id();
 }
 
-uint32_t ImmutableSentencePieceText::ImmutableSentencePiece::begin() const {
+uint32_t ImmutableSentencePieceText_ImmutableSentencePiece::begin() const {
   return sp_->begin();
 }
 
-uint32_t ImmutableSentencePieceText::ImmutableSentencePiece::end() const {
+uint32_t ImmutableSentencePieceText_ImmutableSentencePiece::end() const {
   return sp_->end();
 }
 
-std::vector<ImmutableSentencePieceText::ImmutableSentencePiece>
+std::vector<ImmutableSentencePieceText_ImmutableSentencePiece>
 ImmutableSentencePieceText::pieces() const {
-  std::vector<ImmutableSentencePieceText::ImmutableSentencePiece> pieces;
-  if (spt_ == nullptr) return pieces;
-  pieces.reserve(spt_->pieces_size());
+  std::vector<ImmutableSentencePieceText_ImmutableSentencePiece> pieces(
+      spt_->pieces_size());
   for (int i = 0; i < spt_->pieces_size(); ++i)
-    pieces[i] = ImmutableSentencePiece(spt_->pieces(i));
+    pieces[i] =
+        ImmutableSentencePieceText_ImmutableSentencePiece(spt_->pieces(i));
   return pieces;
 }
 
 size_t ImmutableSentencePieceText::pieces_size() const {
-  return spt_ ? spt_->pieces_size() : 0;
+  return spt_->pieces_size();
 }
 
-ImmutableSentencePieceText::ImmutableSentencePiece
+ImmutableSentencePieceText_ImmutableSentencePiece
 ImmutableSentencePieceText::pieces(int index) const {
-  return ImmutableSentencePieceText::ImmutableSentencePiece(
-      spt_->pieces(index));
+  return ImmutableSentencePieceText_ImmutableSentencePiece(spt_->pieces(index));
 }
 
 const std::string &ImmutableSentencePieceText::text() const {
-  if (spt_) return spt_->text();
-  static std::string *kEmptyString = new std::string();
-  return *kEmptyString;
+  return spt_->text();
 }
 
 float ImmutableSentencePieceText::score() const {
@@ -127,8 +132,8 @@ SentencePieceText *ImmutableSentencePieceText::mutable_proto() {
   return rep_.get();
 }
 
-std::string ImmutableSentencePieceText::SerializeAsString() const {
-  return spt_ ? spt_->SerializeAsString() : "";
+util::bytes ImmutableSentencePieceText::SerializeAsString() const {
+  return spt_->SerializeAsString();
 }
 
 ImmutableNBestSentencePieceText::ImmutableNBestSentencePieceText() {}
@@ -145,9 +150,8 @@ ImmutableSentencePieceText ImmutableNBestSentencePieceText::nbests(
 
 std::vector<ImmutableSentencePieceText>
 ImmutableNBestSentencePieceText::nbests() const {
-  std::vector<ImmutableSentencePieceText> nbests;
-  if (rep_ == nullptr) return nbests;
-  nbests.reserve(rep_->nbests_size());
+  if (rep_ == nullptr) return {};
+  std::vector<ImmutableSentencePieceText> nbests(rep_->nbests_size());
   for (int i = 0; i < rep_->nbests_size(); ++i)
     nbests[i] = ImmutableSentencePieceText(rep_->nbests(i));
   return nbests;
@@ -160,7 +164,7 @@ NBestSentencePieceText *ImmutableNBestSentencePieceText::mutable_proto() {
   return rep_.get();
 }
 
-std::string ImmutableNBestSentencePieceText::SerializeAsString() const {
+util::bytes ImmutableNBestSentencePieceText::SerializeAsString() const {
   return rep_ ? rep_->SerializeAsString() : "";
 }
 
@@ -1044,8 +1048,35 @@ std::string SentencePieceProcessor::serialized_model_proto() const {
 // std::random_device.
 void SetRandomGeneratorSeed(unsigned int seed);
 
-namespace io {
+void ConvertToUnicodeSpans(SentencePieceText *spt) {
+  if (spt == nullptr) return;
 
+  std::vector<int> utf8_to_unicode(spt->text().size() + 1, 0);
+  absl::string_view str = spt->text();
+  size_t prev = 0;
+  int ulen = 0;
+  while (!str.empty()) {
+    const size_t mblen = string_util::OneCharLen(str.data());
+    for (int i = prev; i < prev + mblen; ++i) {
+      utf8_to_unicode[i] = ulen;
+    }
+    ++ulen;
+    prev += mblen;
+    str.remove_prefix(mblen);
+  }
+  utf8_to_unicode[prev] = ulen;
+
+  auto clip = [&](int s) {
+    return std::min<int>(std::max<int>(0, s), utf8_to_unicode.size() - 1);
+  };
+
+  for (auto &piece : *(spt->mutable_pieces())) {
+    piece.set_begin(utf8_to_unicode[clip(piece.begin())]);
+    piece.set_end(utf8_to_unicode[clip(piece.end())]);
+  }
+}
+
+namespace io {
 util::Status LoadModelProto(absl::string_view filename,
                             ModelProto *model_proto) {
   if (filename.empty()) {

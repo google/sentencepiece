@@ -157,35 +157,39 @@ class SentencePieceText_SentencePiece;
 // This wrapper only allows an immutable access to the proto and
 // hides the actual implementation of protobuf.
 // See sentencepiece.proto for the details of this class.
+class ImmutableSentencePieceText_ImmutableSentencePiece {
+ public:
+  ImmutableSentencePieceText_ImmutableSentencePiece();
+  ~ImmutableSentencePieceText_ImmutableSentencePiece() = default;
+
+  const std::string &piece() const;
+  const std::string &surface() const;
+  uint32_t id() const;
+  uint32_t begin() const;
+  uint32_t end() const;
+
+  friend class ImmutableSentencePieceText;
+
+ private:
+  explicit ImmutableSentencePieceText_ImmutableSentencePiece(
+      const SentencePieceText_SentencePiece &sp);
+  const SentencePieceText_SentencePiece *sp_ = nullptr;
+};
+
 class ImmutableSentencePieceText {
  public:
   ImmutableSentencePieceText();
   virtual ~ImmutableSentencePieceText();
 
-  class ImmutableSentencePiece {
-   public:
-    ~ImmutableSentencePiece() = default;
-    const std::string &piece() const;
-    const std::string &surface() const;
-    uint32_t id() const;
-    uint32_t begin() const;
-    uint32_t end() const;
+  std::vector<ImmutableSentencePieceText_ImmutableSentencePiece> pieces() const;
 
-    friend class ImmutableSentencePieceText;
-
-   private:
-    ImmutableSentencePiece() = default;
-    explicit ImmutableSentencePiece(const SentencePieceText_SentencePiece &sp);
-    const SentencePieceText_SentencePiece *sp_ = nullptr;
-  };
-
-  std::vector<ImmutableSentencePiece> pieces() const;
   size_t pieces_size() const;
-  ImmutableSentencePiece pieces(int index) const;
+  ImmutableSentencePieceText_ImmutableSentencePiece pieces(int index) const;
+
   const std::string &text() const;
   float score() const;
 
-  std::string SerializeAsString() const;
+  util::bytes SerializeAsString() const;
 
   // Returns the actual mutable proto.
   // Do not use this outside of SentencePieceProcessor, as
@@ -214,7 +218,7 @@ class ImmutableNBestSentencePieceText {
   size_t nbests_size() const;
   ImmutableSentencePieceText nbests(int index) const;
 
-  std::string SerializeAsString() const;
+  util::bytes SerializeAsString() const;
 
   // Returns the actual mutable proto.
   // Do not use this outside of SentencePieceProcessor, as
@@ -398,7 +402,7 @@ class SentencePieceProcessor {
                                     float alpha, SentencePieceText *spt) const;
 
   virtual util::Status SampleEncodeAndScore(
-      absl::string_view input, int samples, float alpha, bool wor,
+      absl::string_view input, int num_samples, float alpha, bool wor,
       bool include_best, NBestSentencePieceText *samples_spt) const;
 
   // DEPRECATED: Remove this API and use std::vector<std::string_view>
@@ -534,11 +538,11 @@ class SentencePieceProcessor {
   }
 
   virtual util::bytes SampleEncodeAndScoreAsSerializedProto(
-      absl::string_view input, int samples, float alpha, bool wor,
-      bool include_best, int nbest_size) const {
+      absl::string_view input, int num_samples, float alpha, bool wor,
+      bool include_best) const {
     DEFINE_SPP_SERIALIZED_PROTO_IMPL(SampleEncodeAndScore,
                                      ImmutableNBestSentencePieceText, input,
-                                     samples, alpha, wor, include_best);
+                                     num_samples, alpha, wor, include_best);
   }
 
   // TODO(taku): Remove this API and use std::vector<std::string_view>
@@ -579,11 +583,11 @@ class SentencePieceProcessor {
   }
 
   virtual ImmutableNBestSentencePieceText SampleEncodeAndScoreAsImmutableProto(
-      absl::string_view input, int samples, float alpha, bool wor,
-      bool include_best, int nbest_size) const {
+      absl::string_view input, int num_samples, float alpha, bool wor,
+      bool include_best) const {
     DEFINE_SPP_IMMUTABLE_PROTO_IMPL(SampleEncodeAndScore,
                                     ImmutableNBestSentencePieceText, input,
-                                    samples, alpha, wor, include_best);
+                                    num_samples, alpha, wor, include_best);
   }
 
   // TODO(taku): Remove this API and use std::vector<std::string_view>
@@ -702,6 +706,9 @@ class SentencePieceProcessor {
 // as this seed is reserved for initializing from
 // std::random_device.
 void SetRandomGeneratorSeed(unsigned int seed);
+
+// Converts the utf8 byte spans into Unicode char span.
+void ConvertToUnicodeSpans(SentencePieceText *spt);
 
 #ifndef SWIG
 // IO related functions to absorb model formats.
