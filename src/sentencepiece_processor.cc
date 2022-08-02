@@ -55,6 +55,34 @@ std::vector<absl::string_view> ToPieceArray(const std::vector<std::string> &v) {
   return out;
 }
 
+void ConvertToUnicodeSpansInternal(SentencePieceText *spt) {
+  if (spt == nullptr) return;
+
+  std::vector<int> utf8_to_unicode(spt->text().size() + 1, 0);
+  absl::string_view str = spt->text();
+  size_t prev = 0;
+  int ulen = 0;
+  while (!str.empty()) {
+    const size_t mblen = string_util::OneCharLen(str.data());
+    for (int i = prev; i < prev + mblen; ++i) {
+      utf8_to_unicode[i] = ulen;
+    }
+    ++ulen;
+    prev += mblen;
+    str.remove_prefix(mblen);
+  }
+  utf8_to_unicode[prev] = ulen;
+
+  auto clip = [&](int s) {
+    return std::min<int>(std::max<int>(0, s), utf8_to_unicode.size() - 1);
+  };
+
+  for (auto &piece : *(spt->mutable_pieces())) {
+    piece.set_begin(utf8_to_unicode[clip(piece.begin())]);
+    piece.set_end(utf8_to_unicode[clip(piece.end())]);
+  }
+}
+
 }  // namespace
 
 ImmutableSentencePieceText::ImmutableSentencePieceText()
@@ -132,6 +160,10 @@ SentencePieceText *ImmutableSentencePieceText::mutable_proto() {
   return rep_.get();
 }
 
+void ImmutableSentencePieceText::ConvertToUnicodeSpans() {
+  ConvertToUnicodeSpansInternal(mutable_proto());
+}
+
 util::bytes ImmutableSentencePieceText::SerializeAsString() const {
   return spt_->SerializeAsString();
 }
@@ -162,6 +194,13 @@ NBestSentencePieceText *ImmutableNBestSentencePieceText::mutable_proto() {
     rep_ = std::make_shared<NBestSentencePieceText>();
   }
   return rep_.get();
+}
+
+void ImmutableNBestSentencePieceText::ConvertToUnicodeSpans() {
+  if (!mutable_proto()) return;
+  for (auto &spt : *(mutable_proto()->mutable_nbests())) {
+    ConvertToUnicodeSpansInternal(&spt);
+  }
 }
 
 util::bytes ImmutableNBestSentencePieceText::SerializeAsString() const {
@@ -1047,34 +1086,6 @@ std::string SentencePieceProcessor::serialized_model_proto() const {
 // as this seed is reserved for initializing from
 // std::random_device.
 void SetRandomGeneratorSeed(unsigned int seed);
-
-void ConvertToUnicodeSpans(SentencePieceText *spt) {
-  if (spt == nullptr) return;
-
-  std::vector<int> utf8_to_unicode(spt->text().size() + 1, 0);
-  absl::string_view str = spt->text();
-  size_t prev = 0;
-  int ulen = 0;
-  while (!str.empty()) {
-    const size_t mblen = string_util::OneCharLen(str.data());
-    for (int i = prev; i < prev + mblen; ++i) {
-      utf8_to_unicode[i] = ulen;
-    }
-    ++ulen;
-    prev += mblen;
-    str.remove_prefix(mblen);
-  }
-  utf8_to_unicode[prev] = ulen;
-
-  auto clip = [&](int s) {
-    return std::min<int>(std::max<int>(0, s), utf8_to_unicode.size() - 1);
-  };
-
-  for (auto &piece : *(spt->mutable_pieces())) {
-    piece.set_begin(utf8_to_unicode[clip(piece.begin())]);
-    piece.set_end(utf8_to_unicode[clip(piece.end())]);
-  }
-}
 
 namespace io {
 util::Status LoadModelProto(absl::string_view filename,

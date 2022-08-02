@@ -1657,11 +1657,12 @@ TEST(SentencePieceProcessorTest, ImmutableNBestSentencePieceTextTest) {
 
 TEST(SentencePieceProcessorTest, ConvertToUnicodeSpansTest) {
   auto make_spt = [&](const std::vector<std::string> &tokens) {
-    SentencePieceText spt;
+    ImmutableSentencePieceText ispt;
+    auto *spt = ispt.mutable_proto();
     int prev = 0;
     std::string text;
     for (const auto &tok : tokens) {
-      auto *piece = spt.add_pieces();
+      auto *piece = spt->add_pieces();
       piece->set_surface(tok);
       piece->set_piece(tok);
       piece->set_begin(prev);
@@ -1669,9 +1670,9 @@ TEST(SentencePieceProcessorTest, ConvertToUnicodeSpansTest) {
       prev += tok.size();
       text += tok;
     }
-    spt.set_text(text);
-    ConvertToUnicodeSpans(&spt);
-    return spt;
+    spt->set_text(text);
+    ispt.ConvertToUnicodeSpans();
+    return ispt;
   };
 
   {

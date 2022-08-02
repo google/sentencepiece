@@ -25,8 +25,8 @@
 #ifndef SWIG
 namespace absl {
 using std::string_view;
-}
-#endif  // SWIG
+}  // namespace absl
+#endif
 
 namespace sentencepiece {
 namespace util {
@@ -196,6 +196,9 @@ class ImmutableSentencePieceText {
   // it returns the raw pointer managed by the shared_ptr.
   SentencePieceText *mutable_proto();
 
+  // Converts the utf8 byte spans into Unicode char span.
+  void ConvertToUnicodeSpans();
+
   friend class ImmutableNBestSentencePieceText;
 
  private:
@@ -224,6 +227,8 @@ class ImmutableNBestSentencePieceText {
   // Do not use this outside of SentencePieceProcessor, as
   // it returns the raw pointer managed by the shared_ptr.
   NBestSentencePieceText *mutable_proto();
+
+  void ConvertToUnicodeSpans();
 
  private:
   std::shared_ptr<NBestSentencePieceText> rep_;
@@ -415,14 +420,16 @@ class SentencePieceProcessor {
   virtual util::Status Decode(const std::vector<int> &ids,
                               SentencePieceText *spt) const;
 
-#ifdef SWIG
+#ifdef SWIGPYTHON
+#define CONVERT_TO_UNICODE_SPAN output.ConvertToUnicodeSpans();
 #define SPP_SWIG_CHECK_AND_THROW \
   if (!status.ok()) throw status;
 #else
+#define CONVERT_TO_UNICODE_SPAN
 #define SPP_SWIG_CHECK_AND_THROW \
   if (!status.ok()) {            \
   }
-#endif  // SWIG
+#endif  // SWIGPYTHON
 
 #define DEFINE_SPP_DIRECT_FUNC_IMPL(FuncName, OutType, ...) \
   OutType output;                                           \
@@ -439,6 +446,7 @@ class SentencePieceProcessor {
 #define DEFINE_SPP_IMMUTABLE_PROTO_IMPL(FuncName, OutType, ...)      \
   OutType output;                                                    \
   const auto status = FuncName(__VA_ARGS__, output.mutable_proto()); \
+  CONVERT_TO_UNICODE_SPAN;                                           \
   SPP_SWIG_CHECK_AND_THROW;                                          \
   return output;
 
@@ -706,9 +714,6 @@ class SentencePieceProcessor {
 // as this seed is reserved for initializing from
 // std::random_device.
 void SetRandomGeneratorSeed(unsigned int seed);
-
-// Converts the utf8 byte spans into Unicode char span.
-void ConvertToUnicodeSpans(SentencePieceText *spt);
 
 #ifndef SWIG
 // IO related functions to absorb model formats.
