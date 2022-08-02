@@ -2,6 +2,7 @@
 %include exception.i
 
 %{
+
 #include <iostream>
 #include <algorithm>
 #include <functional>
@@ -286,8 +287,10 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 %ignore sentencepiece::SentencePieceProcessor::status;
 %ignore sentencepiece::ImmutableSentencePieceText::mutable_proto;
 %ignore sentencepiece::ImmutableSentencePieceText::pieces() const;
+%ignore sentencepiece::ImmutableSentencePieceText::ConvertToUnicodeSpans;
 %ignore sentencepiece::ImmutableNBestSentencePieceText::mutable_proto;
 %ignore sentencepiece::ImmutableNBestSentencePieceText::nbests() const;
+%ignore sentencepiece::ImmutableNBestSentencePieceText::ConvertToUnicodeSpans;
 
 %ignore sentencepiece::SentencePieceProcessor::Encode;
 %ignore sentencepiece::SentencePieceProcessor::SampleEncode;
@@ -479,6 +482,13 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
       const std::vector<std::vector<int>> &ins, int num_threads) const {
     DEFINE_DECODE_BATCH_FUNC_IMPL(DecodeIdsAsSerializedProto, int,
                                   sentencepiece::util::bytes);
+  }
+
+  std::vector<sentencepiece::ImmutableSentencePieceText>
+      _DecodeIdsAsImmutableProtoBatch(
+          const std::vector<std::vector<int>> &ins, int num_threads) const {
+    DEFINE_DECODE_BATCH_FUNC_IMPL(DecodeIdsAsImmutableProto, int,
+                                  sentencepiece::ImmutableSentencePieceText);
   }
 
   std::vector<std::string> _DecodePiecesBatch(
@@ -852,6 +862,8 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
         return self._NBestEncodeAsImmutableProto(text, nbest_size,
                                                  add_bos, add_eos, reverse, emit_unk_piece)
 
+      raise RuntimeError('unknown out_type')
+
     if type(input) is list:
       return [_encode(n) for n in input]
 
@@ -934,9 +946,20 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
       if out_type is int:
         return self._SampleEncodeAndScoreAsIds(text, num_samples, alpha, wor, include_best,
                                                add_bos, add_eos, reverse, emit_unk_piece)
-      else:
+      if out_type is str:
         return self._SampleEncodeAndScoreAsPieces(text, num_samples, alpha, wor, include_best,
                                                   add_bos, add_eos, reverse, emit_unk_piece)
+
+      if out_type == 'serialized_proto' or out_type == 'proto':
+        return self._SampleEncodeAndScoreAsSerializedProto(text, num_samples, alpha, wor, include_best,
+                                                           add_bos, add_eos, reverse, emit_unk_piece)
+
+      if out_type == 'immutable_proto':
+        return self._SampleEncodeAndScoreAsImmutableProto(text, num_samples, alpha, wor, include_best,
+                                                          add_bos, add_eos, reverse, emit_unk_piece)
+
+      raise RuntimeError('unknown output type')
+
 
     if type(input) is list:
       return [_encode(n) for n in input]
@@ -1187,7 +1210,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 }
 
 %extend sentencepiece::ImmutableSentencePieceText {
-  ImmutableSentencePieceText_ImmutableSentencePiece pieces(int index) const {
+  ImmutableSentencePieceText_ImmutableSentencePiece _pieces(int index) const {
     if (index < 0 || index >= static_cast<int>($self->pieces_size())) {
       throw sentencepiece::util::Status(
           sentencepiece::util::StatusCode::kOutOfRange,
@@ -1197,19 +1220,25 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
   }
 
 %pythoncode {
+  def pieces(self, i):
+    return self._pieces(i)
+
   def __len__(self):
     return self.pieces_size()
 
   def __getitem__(self, i):
-    return self.pieces(i)
+    return self._pieces(i)
 
   def __eq__(self, other):
     return self.SerializeAsString() == other.SerializeAsString()
+
+  def __hash__(self):
+    return hash(self.SerializeAsString())
 }
 }
 
 %extend sentencepiece::ImmutableNBestSentencePieceText {
-  ImmutableSentencePieceText nbests(int index) const {
+  ImmutableSentencePieceText _nbests(int index) const {
     if (index < 0 || index >= static_cast<int>($self->nbests_size())) {
       throw sentencepiece::util::Status(
           sentencepiece::util::StatusCode::kOutOfRange,
@@ -1219,14 +1248,20 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
   }
 
 %pythoncode {
+  def __nbests__(self, i):
+    return self._nbests(i)
+
   def __len__(self):
     return self.nbests_size()
 
   def __getitem__(self, i):
-    return self.nbests(i)
+    return self._nbests(i)
 
   def __eq__(self, other):
     return self.SerializeAsString() == other.SerializeAsString()
+
+  def __hash__(self):
+    return hash(self.SerializeAsString())
 }
 }
 

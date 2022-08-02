@@ -98,6 +98,9 @@ class ImmutableSentencePieceText(object):
     def pieces_size(self):
         return _sentencepiece.ImmutableSentencePieceText_pieces_size(self)
 
+    def pieces(self, index):
+        return _sentencepiece.ImmutableSentencePieceText_pieces(self, index)
+
     def text(self):
         return _sentencepiece.ImmutableSentencePieceText_text(self)
 
@@ -107,17 +110,23 @@ class ImmutableSentencePieceText(object):
     def SerializeAsString(self):
         return _sentencepiece.ImmutableSentencePieceText_SerializeAsString(self)
 
-    def pieces(self, index):
-        return _sentencepiece.ImmutableSentencePieceText_pieces(self, index)
+    def _pieces(self, index):
+        return _sentencepiece.ImmutableSentencePieceText__pieces(self, index)
+
+    def pieces(self, i):
+      return self._pieces(i)
 
     def __len__(self):
       return self.pieces_size()
 
     def __getitem__(self, i):
-      return self.pieces(i)
+      return self._pieces(i)
 
     def __eq__(self, other):
       return self.SerializeAsString() == other.SerializeAsString()
+
+    def __hash__(self):
+      return hash(self.SerializeAsString())        
 
 
 # Register ImmutableSentencePieceText in _sentencepiece:
@@ -134,20 +143,29 @@ class ImmutableNBestSentencePieceText(object):
     def nbests_size(self):
         return _sentencepiece.ImmutableNBestSentencePieceText_nbests_size(self)
 
+    def nbests(self, index):
+        return _sentencepiece.ImmutableNBestSentencePieceText_nbests(self, index)
+
     def SerializeAsString(self):
         return _sentencepiece.ImmutableNBestSentencePieceText_SerializeAsString(self)
 
-    def nbests(self, index):
-        return _sentencepiece.ImmutableNBestSentencePieceText_nbests(self, index)
+    def _nbests(self, index):
+        return _sentencepiece.ImmutableNBestSentencePieceText__nbests(self, index)
+
+    def __nbests__(self, i):
+      return self._nbests(i)
 
     def __len__(self):
       return self.nbests_size()
 
     def __getitem__(self, i):
-      return self.nbests(i)
+      return self._nbests(i)
 
     def __eq__(self, other):
       return self.SerializeAsString() == other.SerializeAsString()
+
+    def __hash__(self):
+      return hash(self.SerializeAsString())
 
 
 # Register ImmutableNBestSentencePieceText in _sentencepiece:
@@ -271,6 +289,9 @@ class SentencePieceProcessor(object):
 
     def _DecodeIdsAsSerializedProtoBatch(self, ins, num_threads):
         return _sentencepiece.SentencePieceProcessor__DecodeIdsAsSerializedProtoBatch(self, ins, num_threads)
+
+    def _DecodeIdsAsImmutableProtoBatch(self, ins, num_threads):
+        return _sentencepiece.SentencePieceProcessor__DecodeIdsAsImmutableProtoBatch(self, ins, num_threads)
 
     def _DecodePiecesBatch(self, ins, num_threads):
         return _sentencepiece.SentencePieceProcessor__DecodePiecesBatch(self, ins, num_threads)
@@ -539,6 +560,8 @@ class SentencePieceProcessor(object):
           return self._NBestEncodeAsImmutableProto(text, nbest_size,
                                                    add_bos, add_eos, reverse, emit_unk_piece)
 
+        raise RuntimeError('unknown out_type')
+
       if type(input) is list:
         return [_encode(n) for n in input]
 
@@ -621,9 +644,20 @@ class SentencePieceProcessor(object):
         if out_type is int:
           return self._SampleEncodeAndScoreAsIds(text, num_samples, alpha, wor, include_best,
                                                  add_bos, add_eos, reverse, emit_unk_piece)
-        else:
+        if out_type is str:
           return self._SampleEncodeAndScoreAsPieces(text, num_samples, alpha, wor, include_best,
                                                     add_bos, add_eos, reverse, emit_unk_piece)
+
+        if out_type == 'serialized_proto' or out_type == 'proto':
+          return self._SampleEncodeAndScoreAsSerializedProto(text, num_samples, alpha, wor, include_best,
+                                                             add_bos, add_eos, reverse, emit_unk_piece)
+
+        if out_type == 'immutable_proto':
+          return self._SampleEncodeAndScoreAsImmutableProto(text, num_samples, alpha, wor, include_best,
+                                                            add_bos, add_eos, reverse, emit_unk_piece)
+
+        raise RuntimeError('unknown output type')
+
 
       if type(input) is list:
         return [_encode(n) for n in input]

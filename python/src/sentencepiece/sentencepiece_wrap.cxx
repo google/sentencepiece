@@ -2811,6 +2811,7 @@ namespace swig {
 }
 
 
+
 #include <iostream>
 #include <algorithm>
 #include <functional>
@@ -3132,16 +3133,6 @@ SWIG_From_size_t  (size_t value)
 }
 
 
-  #define SWIG_From_double   PyFloat_FromDouble 
-
-
-SWIGINTERNINLINE PyObject *
-SWIG_From_float  (float value)
-{    
-  return SWIG_From_double  (value);
-}
-
-
 SWIGINTERN int
 SWIG_AsVal_double (PyObject *obj, double *val)
 {
@@ -3282,7 +3273,17 @@ SWIG_AsVal_int (PyObject * obj, int *val)
   return res;
 }
 
-SWIGINTERN sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece sentencepiece_ImmutableSentencePieceText_pieces(sentencepiece::ImmutableSentencePieceText const *self,int index){
+
+  #define SWIG_From_double   PyFloat_FromDouble 
+
+
+SWIGINTERNINLINE PyObject *
+SWIG_From_float  (float value)
+{    
+  return SWIG_From_double  (value);
+}
+
+SWIGINTERN sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece sentencepiece_ImmutableSentencePieceText__pieces(sentencepiece::ImmutableSentencePieceText const *self,int index){
     if (index < 0 || index >= static_cast<int>(self->pieces_size())) {
       throw sentencepiece::util::Status(
           sentencepiece::util::StatusCode::kOutOfRange,
@@ -3290,7 +3291,7 @@ SWIGINTERN sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece sent
     }
     return self->pieces(index);
   }
-SWIGINTERN sentencepiece::ImmutableSentencePieceText sentencepiece_ImmutableNBestSentencePieceText_nbests(sentencepiece::ImmutableNBestSentencePieceText const *self,int index){
+SWIGINTERN sentencepiece::ImmutableSentencePieceText sentencepiece_ImmutableNBestSentencePieceText__nbests(sentencepiece::ImmutableNBestSentencePieceText const *self,int index){
     if (index < 0 || index >= static_cast<int>(self->nbests_size())) {
       throw sentencepiece::util::Status(
           sentencepiece::util::StatusCode::kOutOfRange,
@@ -3589,6 +3590,10 @@ SWIGINTERN std::vector< std::string > sentencepiece_SentencePieceProcessor__Deco
 SWIGINTERN BytesArray sentencepiece_SentencePieceProcessor__DecodeIdsAsSerializedProtoBatch(sentencepiece::SentencePieceProcessor const *self,std::vector< std::vector< int > > const &ins,int num_threads){
     DEFINE_DECODE_BATCH_FUNC_IMPL(DecodeIdsAsSerializedProto, int,
                                   sentencepiece::util::bytes);
+  }
+SWIGINTERN std::vector< sentencepiece::ImmutableSentencePieceText > sentencepiece_SentencePieceProcessor__DecodeIdsAsImmutableProtoBatch(sentencepiece::SentencePieceProcessor const *self,std::vector< std::vector< int > > const &ins,int num_threads){
+    DEFINE_DECODE_BATCH_FUNC_IMPL(DecodeIdsAsImmutableProto, int,
+                                  sentencepiece::ImmutableSentencePieceText);
   }
 SWIGINTERN std::vector< std::string > sentencepiece_SentencePieceProcessor__DecodePiecesBatch(sentencepiece::SentencePieceProcessor const *self,std::vector< std::vector< absl::string_view > > const &ins,int num_threads){
     DEFINE_DECODE_BATCH_FUNC_IMPL(DecodePieces, std::string, std::string);
@@ -4070,6 +4075,44 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_pieces(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::ImmutableSentencePieceText *arg1 = (sentencepiece::ImmutableSentencePieceText *) 0 ;
+  int arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  PyObject *swig_obj[2] ;
+  sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "ImmutableSentencePieceText_pieces", 2, 2, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_pieces" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText const *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::ImmutableSentencePieceText * >(argp1);
+  ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ImmutableSentencePieceText_pieces" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = static_cast< int >(val2);
+  {
+    try {
+      result = ((sentencepiece::ImmutableSentencePieceText const *)arg1)->pieces(arg2);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  resultobj = SWIG_NewPointerObj((new sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece(static_cast< const sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece& >(result))), SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece, SWIG_POINTER_OWN |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_text(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableSentencePieceText *arg1 = (sentencepiece::ImmutableSentencePieceText *) 0 ;
@@ -4168,7 +4211,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_pieces(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText__pieces(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableSentencePieceText *arg1 = (sentencepiece::ImmutableSentencePieceText *) 0 ;
   int arg2 ;
@@ -4179,20 +4222,20 @@ SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_pieces(PyObject *SWIGUNUSE
   PyObject *swig_obj[2] ;
   sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece result;
   
-  if (!SWIG_Python_UnpackTuple(args, "ImmutableSentencePieceText_pieces", 2, 2, swig_obj)) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args, "ImmutableSentencePieceText__pieces", 2, 2, swig_obj)) SWIG_fail;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_pieces" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText__pieces" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::ImmutableSentencePieceText * >(argp1);
   ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
   if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ImmutableSentencePieceText_pieces" "', argument " "2"" of type '" "int""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ImmutableSentencePieceText__pieces" "', argument " "2"" of type '" "int""'");
   } 
   arg2 = static_cast< int >(val2);
   {
     try {
-      result = sentencepiece_ImmutableSentencePieceText_pieces((sentencepiece::ImmutableSentencePieceText const *)arg1,arg2);
+      result = sentencepiece_ImmutableSentencePieceText__pieces((sentencepiece::ImmutableSentencePieceText const *)arg1,arg2);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -4299,6 +4342,44 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_ImmutableNBestSentencePieceText_nbests(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::ImmutableNBestSentencePieceText *arg1 = (sentencepiece::ImmutableNBestSentencePieceText *) 0 ;
+  int arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  PyObject *swig_obj[2] ;
+  sentencepiece::ImmutableSentencePieceText result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "ImmutableNBestSentencePieceText_nbests", 2, 2, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableNBestSentencePieceText, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableNBestSentencePieceText_nbests" "', argument " "1"" of type '" "sentencepiece::ImmutableNBestSentencePieceText const *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::ImmutableNBestSentencePieceText * >(argp1);
+  ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ImmutableNBestSentencePieceText_nbests" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = static_cast< int >(val2);
+  {
+    try {
+      result = ((sentencepiece::ImmutableNBestSentencePieceText const *)arg1)->nbests(arg2);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  resultobj = SWIG_NewPointerObj((new sentencepiece::ImmutableSentencePieceText(static_cast< const sentencepiece::ImmutableSentencePieceText& >(result))), SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText, SWIG_POINTER_OWN |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_ImmutableNBestSentencePieceText_SerializeAsString(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableNBestSentencePieceText *arg1 = (sentencepiece::ImmutableNBestSentencePieceText *) 0 ;
@@ -4332,7 +4413,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ImmutableNBestSentencePieceText_nbests(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_ImmutableNBestSentencePieceText__nbests(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableNBestSentencePieceText *arg1 = (sentencepiece::ImmutableNBestSentencePieceText *) 0 ;
   int arg2 ;
@@ -4343,20 +4424,20 @@ SWIGINTERN PyObject *_wrap_ImmutableNBestSentencePieceText_nbests(PyObject *SWIG
   PyObject *swig_obj[2] ;
   sentencepiece::ImmutableSentencePieceText result;
   
-  if (!SWIG_Python_UnpackTuple(args, "ImmutableNBestSentencePieceText_nbests", 2, 2, swig_obj)) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args, "ImmutableNBestSentencePieceText__nbests", 2, 2, swig_obj)) SWIG_fail;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableNBestSentencePieceText, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableNBestSentencePieceText_nbests" "', argument " "1"" of type '" "sentencepiece::ImmutableNBestSentencePieceText const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableNBestSentencePieceText__nbests" "', argument " "1"" of type '" "sentencepiece::ImmutableNBestSentencePieceText const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::ImmutableNBestSentencePieceText * >(argp1);
   ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
   if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ImmutableNBestSentencePieceText_nbests" "', argument " "2"" of type '" "int""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ImmutableNBestSentencePieceText__nbests" "', argument " "2"" of type '" "int""'");
   } 
   arg2 = static_cast< int >(val2);
   {
     try {
-      result = sentencepiece_ImmutableNBestSentencePieceText_nbests((sentencepiece::ImmutableNBestSentencePieceText const *)arg1,arg2);
+      result = sentencepiece_ImmutableNBestSentencePieceText__nbests((sentencepiece::ImmutableNBestSentencePieceText const *)arg1,arg2);
       ReleaseResultObject(resultobj);
     }
     catch (const sentencepiece::util::Status &status) {
@@ -6822,6 +6903,87 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodeIdsAsImmutableProtoBatch(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
+  std::vector< std::vector< int > > *arg2 = 0 ;
+  int arg3 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val3 ;
+  int ecode3 = 0 ;
+  PyObject *swig_obj[3] ;
+  SwigValueWrapper< std::vector< sentencepiece::ImmutableSentencePieceText > > result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "SentencePieceProcessor__DecodeIdsAsImmutableProtoBatch", 3, 3, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor__DecodeIdsAsImmutableProtoBatch" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor const *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
+  {
+    std::vector<std::vector<int>> *out = nullptr;
+    if (PyList_Check(swig_obj[1])) {
+      const size_t size = PyList_Size(swig_obj[1]);
+      out = new std::vector<std::vector<int>>(size);
+      for (size_t i = 0; i < size; ++i) {
+        PyObject *o = PyList_GetItem(swig_obj[1], i);
+        if (PyList_Check(o)) {
+          const size_t size2 = PyList_Size(o);
+          (*out)[i].resize(size2);
+          for (size_t j = 0; j < size2; ++j) {
+            PyObject *o2 = PyList_GetItem(o, j);
+            if (PyInt_Check(o2)) {
+              (*out)[i][j] = static_cast<int>(PyInt_AsLong(o2));
+            } else {
+              PyErr_SetString(PyExc_TypeError, "list must contain strings");
+              SWIG_fail;
+            }
+          }
+        } else {
+          PyErr_SetString(PyExc_TypeError, "not a list");
+          SWIG_fail;
+        }
+      }
+    } else {
+      PyErr_SetString(PyExc_TypeError,"not a list");
+      SWIG_fail;
+    }
+    arg2 = out;
+  }
+  ecode3 = SWIG_AsVal_int(swig_obj[2], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "SentencePieceProcessor__DecodeIdsAsImmutableProtoBatch" "', argument " "3"" of type '" "int""'");
+  } 
+  arg3 = static_cast< int >(val3);
+  {
+    try {
+      result = sentencepiece_SentencePieceProcessor__DecodeIdsAsImmutableProtoBatch((sentencepiece::SentencePieceProcessor const *)arg1,(std::vector< std::vector< int > > const &)*arg2,arg3);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    resultobj = PyList_New((&result)->size());
+    for (size_t i = 0; i < (&result)->size(); ++i) {
+      PyObject *obj = SWIG_NewPointerObj(new sentencepiece::ImmutableSentencePieceText((&result)->at(i)), SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText, SWIG_POINTER_OWN | 0);
+      PyList_SET_ITEM(resultobj, i, obj);
+    }
+  }
+  {
+    delete arg2;
+  }
+  return resultobj;
+fail:
+  {
+    delete arg2;
+  }
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_SentencePieceProcessor__DecodePiecesBatch(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
@@ -8298,17 +8460,19 @@ static PyMethodDef SwigMethods[] = {
 	 { "new_ImmutableSentencePieceText", _wrap_new_ImmutableSentencePieceText, METH_NOARGS, NULL},
 	 { "delete_ImmutableSentencePieceText", _wrap_delete_ImmutableSentencePieceText, METH_O, NULL},
 	 { "ImmutableSentencePieceText_pieces_size", _wrap_ImmutableSentencePieceText_pieces_size, METH_O, NULL},
+	 { "ImmutableSentencePieceText_pieces", _wrap_ImmutableSentencePieceText_pieces, METH_VARARGS, NULL},
 	 { "ImmutableSentencePieceText_text", _wrap_ImmutableSentencePieceText_text, METH_O, NULL},
 	 { "ImmutableSentencePieceText_score", _wrap_ImmutableSentencePieceText_score, METH_O, NULL},
 	 { "ImmutableSentencePieceText_SerializeAsString", _wrap_ImmutableSentencePieceText_SerializeAsString, METH_O, NULL},
-	 { "ImmutableSentencePieceText_pieces", _wrap_ImmutableSentencePieceText_pieces, METH_VARARGS, NULL},
+	 { "ImmutableSentencePieceText__pieces", _wrap_ImmutableSentencePieceText__pieces, METH_VARARGS, NULL},
 	 { "ImmutableSentencePieceText_swigregister", ImmutableSentencePieceText_swigregister, METH_O, NULL},
 	 { "ImmutableSentencePieceText_swiginit", ImmutableSentencePieceText_swiginit, METH_VARARGS, NULL},
 	 { "new_ImmutableNBestSentencePieceText", _wrap_new_ImmutableNBestSentencePieceText, METH_NOARGS, NULL},
 	 { "delete_ImmutableNBestSentencePieceText", _wrap_delete_ImmutableNBestSentencePieceText, METH_O, NULL},
 	 { "ImmutableNBestSentencePieceText_nbests_size", _wrap_ImmutableNBestSentencePieceText_nbests_size, METH_O, NULL},
-	 { "ImmutableNBestSentencePieceText_SerializeAsString", _wrap_ImmutableNBestSentencePieceText_SerializeAsString, METH_O, NULL},
 	 { "ImmutableNBestSentencePieceText_nbests", _wrap_ImmutableNBestSentencePieceText_nbests, METH_VARARGS, NULL},
+	 { "ImmutableNBestSentencePieceText_SerializeAsString", _wrap_ImmutableNBestSentencePieceText_SerializeAsString, METH_O, NULL},
+	 { "ImmutableNBestSentencePieceText__nbests", _wrap_ImmutableNBestSentencePieceText__nbests, METH_VARARGS, NULL},
 	 { "ImmutableNBestSentencePieceText_swigregister", ImmutableNBestSentencePieceText_swigregister, METH_O, NULL},
 	 { "ImmutableNBestSentencePieceText_swiginit", ImmutableNBestSentencePieceText_swiginit, METH_VARARGS, NULL},
 	 { "new_SentencePieceProcessor", _wrap_new_SentencePieceProcessor, METH_NOARGS, NULL},
@@ -8350,6 +8514,7 @@ static PyMethodDef SwigMethods[] = {
 	 { "SentencePieceProcessor__DecodePiecesAsImmutableProto", _wrap_SentencePieceProcessor__DecodePiecesAsImmutableProto, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor__DecodeIdsBatch", _wrap_SentencePieceProcessor__DecodeIdsBatch, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor__DecodeIdsAsSerializedProtoBatch", _wrap_SentencePieceProcessor__DecodeIdsAsSerializedProtoBatch, METH_VARARGS, NULL},
+	 { "SentencePieceProcessor__DecodeIdsAsImmutableProtoBatch", _wrap_SentencePieceProcessor__DecodeIdsAsImmutableProtoBatch, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor__DecodePiecesBatch", _wrap_SentencePieceProcessor__DecodePiecesBatch, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor__DecodePiecesAsSerializedProtoBatch", _wrap_SentencePieceProcessor__DecodePiecesAsSerializedProtoBatch, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor__DecodePiecesAsImmutableProtoBatch", _wrap_SentencePieceProcessor__DecodePiecesAsImmutableProtoBatch, METH_VARARGS, NULL},
