@@ -126,7 +126,7 @@ class ImmutableSentencePieceText(object):
       return self.SerializeAsString() == other.SerializeAsString()
 
     def __hash__(self):
-      return hash(self.SerializeAsString())        
+      return hash(self.SerializeAsString())
 
 
 # Register ImmutableSentencePieceText in _sentencepiece:

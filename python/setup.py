@@ -96,6 +96,7 @@ class build_ext(_build_ext):
     else:
       cflags.append('-Wl,-strip-all')
       libs.append('-Wl,-strip-all')
+    cflags.append('-DSWIGPYTHON')
     print('## cflags={}'.format(' '.join(cflags)))
     print('## libs={}'.format(' '.join(libs)))
     ext.extra_compile_args = cflags
@@ -115,7 +116,7 @@ if os.name == 'nt':
         '..\\build\\root_{}\\lib\\sentencepiece_train.lib'.format(arch)
     ]
   else:
-    cflags = ['/std:c++17', '/MT', '/I..\\build\\root\\include']
+    cflags = ['/std:c++17', '/MT', '/I..\\build\\root\\include', '/DSWIGPYTHON']
     libs = [
         '..\\build\\root\\lib\\sentencepiece.lib',
         '..\\build\\root\\lib\\sentencepiece_train.lib'
