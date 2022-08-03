@@ -26,7 +26,7 @@
 namespace absl {
 using std::string_view;
 }  // namespace absl
-#endif
+#endif  // SWIG
 
 namespace sentencepiece {
 namespace util {
@@ -420,35 +420,45 @@ class SentencePieceProcessor {
   virtual util::Status Decode(const std::vector<int> &ids,
                               SentencePieceText *spt) const;
 
-#ifdef SWIGPYTHON
-#define CONVERT_TO_UNICODE_SPAN output.ConvertToUnicodeSpans();
-#define SPP_SWIG_CHECK_AND_THROW \
-  if (!status.ok()) throw status;
-#else
-#define CONVERT_TO_UNICODE_SPAN
-#define SPP_SWIG_CHECK_AND_THROW \
-  if (!status.ok()) {            \
-  }
-#endif  // SWIGPYTHON
+#ifndef SWIGPYTHON
 
 #define DEFINE_SPP_DIRECT_FUNC_IMPL(FuncName, OutType, ...) \
   OutType output;                                           \
   const auto status = FuncName(__VA_ARGS__, &output);       \
-  SPP_SWIG_CHECK_AND_THROW;                                 \
   return output;
 
 #define DEFINE_SPP_SERIALIZED_PROTO_IMPL(FuncName, OutType, ...)     \
   OutType output;                                                    \
   const auto status = FuncName(__VA_ARGS__, output.mutable_proto()); \
-  SPP_SWIG_CHECK_AND_THROW;                                          \
   return output.SerializeAsString();
 
 #define DEFINE_SPP_IMMUTABLE_PROTO_IMPL(FuncName, OutType, ...)      \
   OutType output;                                                    \
   const auto status = FuncName(__VA_ARGS__, output.mutable_proto()); \
-  CONVERT_TO_UNICODE_SPAN;                                           \
-  SPP_SWIG_CHECK_AND_THROW;                                          \
   return output;
+
+#else
+
+#define DEFINE_SPP_DIRECT_FUNC_IMPL(FuncName, OutType, ...) \
+  OutType output;                                           \
+  const auto status = FuncName(__VA_ARGS__, &output);       \
+  if (!status.ok()) throw status;                           \
+  return output;
+
+#define DEFINE_SPP_SERIALIZED_PROTO_IMPL(FuncName, OutType, ...)     \
+  OutType output;                                                    \
+  const auto status = FuncName(__VA_ARGS__, output.mutable_proto()); \
+  if (!status.ok()) throw status;                                    \
+  return output.SerializeAsString();
+
+#define DEFINE_SPP_IMMUTABLE_PROTO_IMPL(FuncName, OutType, ...)      \
+  OutType output;                                                    \
+  const auto status = FuncName(__VA_ARGS__, output.mutable_proto()); \
+  if (!status.ok()) throw status;                                    \
+  output.ConvertToUnicodeSpans();                                    \
+  return output;
+
+#endif  // SWIGPYTHON
 
   //////////////////////////////////////////////////////////////
   // Handy methods that return the result directly.
@@ -664,7 +674,6 @@ class SentencePieceProcessor {
   // Returns PAD (<pad>) id.
   virtual int pad_id() const;
 
-#ifndef SWIG
   //////////////////////////////////////////////////////////////
   // Model management.
   //
@@ -673,7 +682,6 @@ class SentencePieceProcessor {
 
   // Allows injection of a normalizer instance. `normalizer` is moved.
   void SetNormalizer(std::unique_ptr<normalizer::Normalizer> &&normalizer);
-#endif  // SWIG
 
   // Returns immutable model proto. Useful to obtain extended
   // or experimental parameters encoded in model_proto.
@@ -715,7 +723,6 @@ class SentencePieceProcessor {
 // std::random_device.
 void SetRandomGeneratorSeed(unsigned int seed);
 
-#ifndef SWIG
 // IO related functions to absorb model formats.
 namespace io {
 // Loads `model_proto` from `filename`.
@@ -730,6 +737,5 @@ util::Status LoadModelProto(absl::string_view, ModelProto *model_proto);
 // Saves `model_proto` as `filename`.
 util::Status SaveModelProto(absl::string_view, const ModelProto &model_proto);
 }  // namespace io
-#endif  // SWIG
 }  // namespace sentencepiece
 #endif  // SENTENCEPIECE_PROCESSOR_H_

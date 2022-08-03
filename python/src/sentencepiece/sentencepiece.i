@@ -326,6 +326,8 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 %ignore sentencepiece::SentencePieceProcessor::model_proto;
 %ignore sentencepiece::SentencePieceProcessor::Load;
 %ignore sentencepiece::SentencePieceProcessor::LoadOrDie;
+%ignore sentencepiece::SentencePieceProcessor::SetModel;
+%ignore sentencepiece::SentencePieceProcessor::SetNormalizer;
 %ignore sentencepiece::pretokenizer::PretokenizerForTrainingInterface;
 %ignore sentencepiece::SentenceIterator;
 %ignore sentencepiece::ConvertToUnicodeSpans;
@@ -338,6 +340,9 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 %ignore sentencepiece::SentencePieceTrainer::PieceProcecssor;
 %ignore sentencepiece::SentencePieceTrainer::SetPretokenizerForTraining;
 %ignore sentencepiece::SentencePieceTrainer::GetPretokenizerForTraining;
+
+%ignore sentencepiece::io::LoadModelProto;
+%ignore sentencepiece::io::SaveModelProto;
 
 %extend sentencepiece::SentencePieceProcessor {
   sentencepiece::util::Status LoadFromFile(absl::string_view arg) {
