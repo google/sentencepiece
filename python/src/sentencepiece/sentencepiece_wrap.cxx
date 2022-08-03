@@ -3002,6 +3002,19 @@ inline void CheckIds(const std::vector<int> &ids, int num_pieces) {
 
 inline void CheckIds(const std::vector<absl::string_view> &ids, int num_pieces) {}
 
+template <typename T>
+inline void ConvertToUnicodeSpans(T *proto) {}
+
+template <>
+inline void ConvertToUnicodeSpans(sentencepiece::ImmutableSentencePieceText *proto) {
+  proto->ConvertToUnicodeSpans();
+}
+
+template <>
+inline void ConvertToUnicodeSpans(sentencepiece::ImmutableNBestSentencePieceText *proto) {
+  proto->ConvertToUnicodeSpans();
+}
+
 class ThreadPool {
  public:
   explicit ThreadPool(size_t request_size) :
@@ -3048,6 +3061,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
                        self->FuncName(ins[i]);                          \
             RewriteIds(*self, &out, add_bos, add_eos, reverse,          \
                        emit_unk_piece);                                 \
+            ConvertToUnicodeSpans(&out);                                \
             outs[i] = std::move(out);                                   \
           }                                                             \
         });                                                             \
@@ -3064,7 +3078,9 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
       pool.Schedule([&, n]() {                                          \
           for (size_t i = n; i < ins.size(); i += num_threads) {        \
             CheckIds(ins[i], self->GetPieceSize());                     \
-            outs[i] = self->FuncName(ins[i]);                           \
+            auto out = self->FuncName(ins[i]);                          \
+            ConvertToUnicodeSpans(&out);                                \
+            outs[i] = std::move(out);                                   \
           }                                                             \
         });                                                             \
     }                                                                   \
@@ -3540,6 +3556,7 @@ SWIGINTERN sentencepiece::ImmutableSentencePieceText sentencepiece_SentencePiece
     auto proto = enable_sampling ?
                  self->SampleEncodeAsImmutableProto(text, nbest_size, alpha) :
                  self->EncodeAsImmutableProto(text);
+    proto.ConvertToUnicodeSpans();
     RewriteIds(*self, &proto, add_bos, add_eos, reverse, emit_unk_piece);
     return proto;
   }
@@ -3578,11 +3595,15 @@ SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceProcessor__Deco
   }
 SWIGINTERN sentencepiece::ImmutableSentencePieceText sentencepiece_SentencePieceProcessor__DecodeIdsAsImmutableProto(sentencepiece::SentencePieceProcessor const *self,std::vector< int > const &ids){
     CheckIds(ids, self->GetPieceSize());
-    return self->DecodeIdsAsImmutableProto(ids);
+    auto proto = self->DecodeIdsAsImmutableProto(ids);
+    proto.ConvertToUnicodeSpans();
+    return proto;
   }
 SWIGINTERN sentencepiece::ImmutableSentencePieceText sentencepiece_SentencePieceProcessor__DecodePiecesAsImmutableProto(sentencepiece::SentencePieceProcessor const *self,std::vector< absl::string_view > const &pieces){
     CheckIds(pieces, self->GetPieceSize());
-    return self->DecodePiecesAsImmutableProto(pieces);
+    auto proto= self->DecodePiecesAsImmutableProto(pieces);
+    proto.ConvertToUnicodeSpans();
+    return proto;
   }
 SWIGINTERN std::vector< std::string > sentencepiece_SentencePieceProcessor__DecodeIdsBatch(sentencepiece::SentencePieceProcessor const *self,std::vector< std::vector< int > > const &ins,int num_threads){
     DEFINE_DECODE_BATCH_FUNC_IMPL(DecodeIds, int, std::string);
@@ -3628,7 +3649,9 @@ SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceProcessor__NBes
 SWIGINTERN sentencepiece::ImmutableNBestSentencePieceText sentencepiece_SentencePieceProcessor__NBestEncodeAsImmutableProto(sentencepiece::SentencePieceProcessor const *self,absl::string_view text,int nbest_size,bool add_bos,bool add_eos,bool reverse,bool emit_unk_piece){
     RewriteIds(*self, static_cast<sentencepiece::ImmutableSentencePieceText *>(nullptr),
                add_bos, add_eos, reverse, emit_unk_piece);
-    return self->NBestEncodeAsImmutableProto(text, nbest_size);
+    auto proto = self->NBestEncodeAsImmutableProto(text, nbest_size);
+    proto.ConvertToUnicodeSpans();
+    return proto;
   }
 SWIGINTERN std::vector< std::pair< std::vector< int >,float > > sentencepiece_SentencePieceProcessor__SampleEncodeAndScoreAsIds(sentencepiece::SentencePieceProcessor const *self,absl::string_view text,int num_samples,float alpha,bool wor,bool include_best,bool add_bos,bool add_eos,bool reverse,bool emit_unk_piece){
     auto idss = self->SampleEncodeAndScoreAsIds(text, num_samples,
@@ -3655,8 +3678,10 @@ SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceProcessor__Samp
 SWIGINTERN sentencepiece::ImmutableNBestSentencePieceText sentencepiece_SentencePieceProcessor__SampleEncodeAndScoreAsImmutableProto(sentencepiece::SentencePieceProcessor const *self,absl::string_view text,int num_samples,float alpha,bool wor,bool include_best,bool add_bos,bool add_eos,bool reverse,bool emit_unk_piece){
     RewriteIds(*self, static_cast<sentencepiece::util::bytes *>(nullptr),
                add_bos, add_eos, reverse, emit_unk_piece);
-    return self->SampleEncodeAndScoreAsImmutableProto(text, num_samples,
+    auto proto = self->SampleEncodeAndScoreAsImmutableProto(text, num_samples,
                                                        alpha, wor, include_best);
+    proto.ConvertToUnicodeSpans();
+    return proto;
   }
 SWIGINTERN float sentencepiece_SentencePieceProcessor__CalculateEntropy(sentencepiece::SentencePieceProcessor *self,absl::string_view text,float alpha){
     return self->CalculateEntropy(text, alpha);

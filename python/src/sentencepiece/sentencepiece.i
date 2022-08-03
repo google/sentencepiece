@@ -193,6 +193,19 @@ inline void CheckIds(const std::vector<int> &ids, int num_pieces) {
 
 inline void CheckIds(const std::vector<absl::string_view> &ids, int num_pieces) {}
 
+template <typename T>
+inline void ConvertToUnicodeSpans(T *proto) {}
+
+template <>
+inline void ConvertToUnicodeSpans(sentencepiece::ImmutableSentencePieceText *proto) {
+  proto->ConvertToUnicodeSpans();
+}
+
+template <>
+inline void ConvertToUnicodeSpans(sentencepiece::ImmutableNBestSentencePieceText *proto) {
+  proto->ConvertToUnicodeSpans();
+}
+
 class ThreadPool {
  public:
   explicit ThreadPool(size_t request_size) :
@@ -239,6 +252,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
                        self->FuncName(ins[i]);                          \
             RewriteIds(*self, &out, add_bos, add_eos, reverse,          \
                        emit_unk_piece);                                 \
+            ConvertToUnicodeSpans(&out);                                \
             outs[i] = std::move(out);                                   \
           }                                                             \
         });                                                             \
@@ -255,7 +269,9 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
       pool.Schedule([&, n]() {                                          \
           for (size_t i = n; i < ins.size(); i += num_threads) {        \
             CheckIds(ins[i], self->GetPieceSize());                     \
-            outs[i] = self->FuncName(ins[i]);                           \
+            auto out = self->FuncName(ins[i]);                          \
+            ConvertToUnicodeSpans(&out);                                \
+            outs[i] = std::move(out);                                   \
           }                                                             \
         });                                                             \
     }                                                                   \
@@ -396,6 +412,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     auto proto = enable_sampling ?
                  $self->SampleEncodeAsImmutableProto(text, nbest_size, alpha) :
                  $self->EncodeAsImmutableProto(text);
+    proto.ConvertToUnicodeSpans();
     RewriteIds(*$self, &proto, add_bos, add_eos, reverse, emit_unk_piece);
     return proto;
   }
@@ -467,13 +484,17 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
   sentencepiece::ImmutableSentencePieceText _DecodeIdsAsImmutableProto(
       const std::vector<int> &ids) const {
     CheckIds(ids, $self->GetPieceSize());
-    return $self->DecodeIdsAsImmutableProto(ids);
+    auto proto = $self->DecodeIdsAsImmutableProto(ids);
+    proto.ConvertToUnicodeSpans();
+    return proto;
   }
 
   sentencepiece::ImmutableSentencePieceText _DecodePiecesAsImmutableProto(
       const std::vector<absl::string_view> &pieces) const {
     CheckIds(pieces, $self->GetPieceSize());
-    return $self->DecodePiecesAsImmutableProto(pieces);
+    auto proto= $self->DecodePiecesAsImmutableProto(pieces);
+    proto.ConvertToUnicodeSpans();
+    return proto;
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -557,7 +578,9 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
                                    bool emit_unk_piece) const {
     RewriteIds(*$self, static_cast<sentencepiece::ImmutableSentencePieceText *>(nullptr),
                add_bos, add_eos, reverse, emit_unk_piece);
-    return $self->NBestEncodeAsImmutableProto(text, nbest_size);
+    auto proto = $self->NBestEncodeAsImmutableProto(text, nbest_size);
+    proto.ConvertToUnicodeSpans();
+    return proto;
   }
 
 
@@ -611,8 +634,10 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
                                             bool emit_unk_piece) const {
     RewriteIds(*$self, static_cast<sentencepiece::util::bytes *>(nullptr),
                add_bos, add_eos, reverse, emit_unk_piece);
-    return $self->SampleEncodeAndScoreAsImmutableProto(text, num_samples,
+    auto proto = $self->SampleEncodeAndScoreAsImmutableProto(text, num_samples,
                                                        alpha, wor, include_best);
+    proto.ConvertToUnicodeSpans();
+    return proto;
   }
 
 

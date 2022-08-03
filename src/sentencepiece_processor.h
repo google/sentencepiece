@@ -419,46 +419,32 @@ class SentencePieceProcessor {
 
   virtual util::Status Decode(const std::vector<int> &ids,
                               SentencePieceText *spt) const;
-
-#ifndef SWIGPYTHON
-
-#define DEFINE_SPP_DIRECT_FUNC_IMPL(FuncName, OutType, ...) \
-  OutType output;                                           \
-  const auto status = FuncName(__VA_ARGS__, &output);       \
-  return output;
-
-#define DEFINE_SPP_SERIALIZED_PROTO_IMPL(FuncName, OutType, ...)     \
-  OutType output;                                                    \
-  const auto status = FuncName(__VA_ARGS__, output.mutable_proto()); \
-  return output.SerializeAsString();
-
-#define DEFINE_SPP_IMMUTABLE_PROTO_IMPL(FuncName, OutType, ...)      \
-  OutType output;                                                    \
-  const auto status = FuncName(__VA_ARGS__, output.mutable_proto()); \
-  return output;
-
+#ifdef SWIG
+#define SPP_SWIG_CHECK_AND_THROW \
+  if (!status.ok()) throw status;
 #else
+#define SPP_SWIG_CHECK_AND_THROW \
+  if (!status.ok()) {            \
+  }
+#endif  // SWIG
 
 #define DEFINE_SPP_DIRECT_FUNC_IMPL(FuncName, OutType, ...) \
   OutType output;                                           \
   const auto status = FuncName(__VA_ARGS__, &output);       \
-  if (!status.ok()) throw status;                           \
+  SPP_SWIG_CHECK_AND_THROW;				    \
   return output;
 
 #define DEFINE_SPP_SERIALIZED_PROTO_IMPL(FuncName, OutType, ...)     \
   OutType output;                                                    \
   const auto status = FuncName(__VA_ARGS__, output.mutable_proto()); \
-  if (!status.ok()) throw status;                                    \
+  SPP_SWIG_CHECK_AND_THROW;					     \
   return output.SerializeAsString();
 
 #define DEFINE_SPP_IMMUTABLE_PROTO_IMPL(FuncName, OutType, ...)      \
   OutType output;                                                    \
   const auto status = FuncName(__VA_ARGS__, output.mutable_proto()); \
-  if (!status.ok()) throw status;                                    \
-  output.ConvertToUnicodeSpans();                                    \
+  SPP_SWIG_CHECK_AND_THROW;					     \
   return output;
-
-#endif  // SWIGPYTHON
 
   //////////////////////////////////////////////////////////////
   // Handy methods that return the result directly.
