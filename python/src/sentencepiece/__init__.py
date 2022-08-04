@@ -69,20 +69,36 @@ class ImmutableSentencePieceText_ImmutableSentencePiece(object):
         _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece_swiginit(self, _sentencepiece.new_ImmutableSentencePieceText_ImmutableSentencePiece())
     __swig_destroy__ = _sentencepiece.delete_ImmutableSentencePieceText_ImmutableSentencePiece
 
-    def piece(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece_piece(self)
+    def _piece(self):
+        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__piece(self)
 
-    def surface(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece_surface(self)
+    def _surface(self):
+        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__surface(self)
 
-    def id(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece_id(self)
+    def _id(self):
+        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__id(self)
 
-    def begin(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece_begin(self)
+    def _begin(self):
+        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__begin(self)
 
-    def end(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece_end(self)
+    def _end(self):
+        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__end(self)
+
+    piece = property(_piece)
+    surface = property(_surface)
+    id = property(_id)
+    begin = property(_begin)
+    end = property(_end)
+
+    def __str__(self):
+      return ('piece: \"{}\"\n'
+              'id: {}\n'
+              'surface: \"{}\"\n'
+              'begin: {}\n'
+              'end: {}\n').format(self.piece, self.id, self.surface,
+                                  self.begin, self.end)
+    __repr__ = __str__
+
 
 # Register ImmutableSentencePieceText_ImmutableSentencePiece in _sentencepiece:
 _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
@@ -95,38 +111,59 @@ class ImmutableSentencePieceText(object):
         _sentencepiece.ImmutableSentencePieceText_swiginit(self, _sentencepiece.new_ImmutableSentencePieceText())
     __swig_destroy__ = _sentencepiece.delete_ImmutableSentencePieceText
 
-    def pieces_size(self):
-        return _sentencepiece.ImmutableSentencePieceText_pieces_size(self)
-
-    def pieces(self, index):
-        return _sentencepiece.ImmutableSentencePieceText_pieces(self, index)
-
-    def text(self):
-        return _sentencepiece.ImmutableSentencePieceText_text(self)
-
-    def score(self):
-        return _sentencepiece.ImmutableSentencePieceText_score(self)
-
-    def SerializeAsString(self):
-        return _sentencepiece.ImmutableSentencePieceText_SerializeAsString(self)
+    def _pieces_size(self):
+        return _sentencepiece.ImmutableSentencePieceText__pieces_size(self)
 
     def _pieces(self, index):
         return _sentencepiece.ImmutableSentencePieceText__pieces(self, index)
 
-    def pieces(self, i):
-      return self._pieces(i)
+    def _text(self):
+        return _sentencepiece.ImmutableSentencePieceText__text(self)
 
-    def __len__(self):
-      return self.pieces_size()
+    def _score(self):
+        return _sentencepiece.ImmutableSentencePieceText__score(self)
 
-    def __getitem__(self, i):
-      return self._pieces(i)
+    def SerializeAsString(self):
+        return _sentencepiece.ImmutableSentencePieceText_SerializeAsString(self)
+
+    text = property(_text)
+    score = property(_score)
+
+    class ImmutableSentencePieceIterator:
+      def __init__(self, proto):
+        self.proto = proto
+        self.len = self.proto._pieces_size()
+
+      def __len__(self):
+        return self.len
+
+      def __getitem__(self, index):
+        if index < 0 or index >= self.len:
+          raise IndexError('piece index is out of range')
+        return self.proto._pieces(index)
+
+      def __str__(self):
+        return '\n'.join(['pieces {{\n{}}}'.format(str(x)) for x in self])
+
+      __repr__ = __str__
+
+    @property
+    def pieces(self):
+      return ImmutableSentencePieceText.ImmutableSentencePieceIterator(self)
 
     def __eq__(self, other):
       return self.SerializeAsString() == other.SerializeAsString()
 
     def __hash__(self):
       return hash(self.SerializeAsString())
+
+    def __str__(self):
+      return ('text: \"{}\"\n'
+              'score: {}\n'
+              '{}').format(self.text, self.score,
+                           '\n'.join(['pieces {{\n{}}}'.format(str(x)) for x in self.pieces]))
+
+    __repr__ = __str__
 
 
 # Register ImmutableSentencePieceText in _sentencepiece:
@@ -140,32 +177,47 @@ class ImmutableNBestSentencePieceText(object):
         _sentencepiece.ImmutableNBestSentencePieceText_swiginit(self, _sentencepiece.new_ImmutableNBestSentencePieceText())
     __swig_destroy__ = _sentencepiece.delete_ImmutableNBestSentencePieceText
 
-    def nbests_size(self):
-        return _sentencepiece.ImmutableNBestSentencePieceText_nbests_size(self)
-
-    def nbests(self, index):
-        return _sentencepiece.ImmutableNBestSentencePieceText_nbests(self, index)
-
-    def SerializeAsString(self):
-        return _sentencepiece.ImmutableNBestSentencePieceText_SerializeAsString(self)
+    def _nbests_size(self):
+        return _sentencepiece.ImmutableNBestSentencePieceText__nbests_size(self)
 
     def _nbests(self, index):
         return _sentencepiece.ImmutableNBestSentencePieceText__nbests(self, index)
 
-    def __nbests__(self, i):
-      return self._nbests(i)
+    def SerializeAsString(self):
+        return _sentencepiece.ImmutableNBestSentencePieceText_SerializeAsString(self)
 
-    def __len__(self):
-      return self.nbests_size()
+    class ImmutableSentencePieceTextIterator:
+      def __init__(self, proto):
+        self.proto = proto
+        self.len = self.proto._nbests_size()
 
-    def __getitem__(self, i):
-      return self._nbests(i)
+      def __len__(self):
+        return self.len
+
+      def __getitem__(self, index):
+        if index < 0 or index >= self.len:
+          raise IndexError('nbests index is out of range')
+        return self.proto._nbests(index)
+
+      def __str__(self):
+        return '\n'.join(['nbests {{\n{}}}'.format(str(x)) for x in self])
+
+      __repr__ = __str__
+
+    @property
+    def nbests(self):
+      return ImmutableNBestSentencePieceText.ImmutableSentencePieceTextIterator(self)
 
     def __eq__(self, other):
       return self.SerializeAsString() == other.SerializeAsString()
 
     def __hash__(self):
       return hash(self.SerializeAsString())
+
+    def __str__(self):
+      return '\n'.join(['nbests {{\n{}}}'.format(str(x)) for x in self.nbests])
+
+    __repr__ = __str__
 
 
 # Register ImmutableNBestSentencePieceText in _sentencepiece:

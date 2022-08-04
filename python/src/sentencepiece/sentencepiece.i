@@ -1239,60 +1239,117 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 }
 }
 
-%extend sentencepiece::ImmutableSentencePieceText {
-  ImmutableSentencePieceText_ImmutableSentencePiece _pieces(int index) const {
-    if (index < 0 || index >= static_cast<int>($self->pieces_size())) {
-      throw sentencepiece::util::Status(
-          sentencepiece::util::StatusCode::kOutOfRange,
-          "piece index is out of range.");
-    }
-    return $self->pieces(index);
-  }
+%extend sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece {
+  %rename(_piece) piece;
+  %rename(_id) id;
+  %rename(_surface) surface;
+  %rename(_begin) begin;
+  %rename(_end) end;
 
-%pythoncode {
-  def pieces(self, i):
-    return self._pieces(i)
+  %pythoncode %{
+    piece = property(_piece)
+    surface = property(_surface)
+    id = property(_id)
+    begin = property(_begin)
+    end = property(_end)
 
-  def __len__(self):
-    return self.pieces_size()
-
-  def __getitem__(self, i):
-    return self._pieces(i)
-
-  def __eq__(self, other):
-    return self.SerializeAsString() == other.SerializeAsString()
-
-  def __hash__(self):
-    return hash(self.SerializeAsString())
+    def __str__(self):
+      return ('piece: \"{}\"\n'
+              'id: {}\n'
+              'surface: \"{}\"\n'
+              'begin: {}\n'
+              'end: {}\n').format(self.piece, self.id, self.surface,
+                                  self.begin, self.end)
+    __repr__ = __str__
+  %}
 }
+
+%extend sentencepiece::ImmutableSentencePieceText {
+  %rename(_text) text;
+  %rename(_score) score;
+  %rename(_pieces) pieces;
+  %rename(_pieces_size) pieces_size;
+
+  %pythoncode %{
+    text = property(_text)
+    score = property(_score)
+
+    class ImmutableSentencePieceIterator:
+      def __init__(self, proto):
+        self.proto = proto
+        self.len = self.proto._pieces_size()
+    
+      def __len__(self):
+        return self.len
+
+      def __getitem__(self, index):
+        if index < 0 or index >= self.len:
+          raise IndexError('piece index is out of range')
+        return self.proto._pieces(index)
+
+      def __str__(self):
+        return '\n'.join(['pieces {{\n{}}}'.format(str(x)) for x in self])
+
+      __repr__ = __str__
+
+    @property
+    def pieces(self):
+      return ImmutableSentencePieceText.ImmutableSentencePieceIterator(self)
+
+    def __eq__(self, other):
+      return self.SerializeAsString() == other.SerializeAsString()
+
+    def __hash__(self):
+      return hash(self.SerializeAsString())
+
+    def __str__(self):
+      return ('text: \"{}\"\n'
+              'score: {}\n'
+              '{}').format(self.text, self.score,
+                           '\n'.join(['pieces {{\n{}}}'.format(str(x)) for x in self.pieces]))
+
+    __repr__ = __str__
+  %}
 }
 
 %extend sentencepiece::ImmutableNBestSentencePieceText {
-  ImmutableSentencePieceText _nbests(int index) const {
-    if (index < 0 || index >= static_cast<int>($self->nbests_size())) {
-      throw sentencepiece::util::Status(
-          sentencepiece::util::StatusCode::kOutOfRange,
-          "nbest index is out of range.");
-    }
-    return $self->nbests(index);
-  }
+  %rename(_nbests) nbests;
+  %rename(_nbests_size) nbests_size;
 
-%pythoncode {
-  def __nbests__(self, i):
-    return self._nbests(i)
+  %pythoncode %{
+    class ImmutableSentencePieceTextIterator:
+      def __init__(self, proto):
+        self.proto = proto
+        self.len = self.proto._nbests_size()
 
-  def __len__(self):
-    return self.nbests_size()
+      def __len__(self):
+        return self.len
 
-  def __getitem__(self, i):
-    return self._nbests(i)
+      def __getitem__(self, index):
+        if index < 0 or index >= self.len:
+          raise IndexError('nbests index is out of range')
+        return self.proto._nbests(index)
 
-  def __eq__(self, other):
-    return self.SerializeAsString() == other.SerializeAsString()
+      def __str__(self):
+        return '\n'.join(['nbests {{\n{}}}'.format(str(x)) for x in self])
 
-  def __hash__(self):
-    return hash(self.SerializeAsString())
-}
+      __repr__ = __str__
+
+    @property
+    def nbests(self):
+      return ImmutableNBestSentencePieceText.ImmutableSentencePieceTextIterator(self)
+              
+    def __eq__(self, other):
+      return self.SerializeAsString() == other.SerializeAsString()
+
+    def __hash__(self):
+      return hash(self.SerializeAsString())
+
+    def __str__(self):
+      return '\n'.join(['nbests {{\n{}}}'.format(str(x)) for x in self.nbests])
+
+    __repr__ = __str__
+  %}
 }
 
 %typemap(out) std::vector<int> {

@@ -305,6 +305,12 @@ class TestSentencepieceProcessor(unittest.TestCase):
     s4 = self.sp_.DecodePiecesAsImmutableProto(['foo', 'bar'])
     s5 = self.sp_.DecodeIdsAsImmutableProto([20, 30])
 
+    print(s1)
+    print(s2)
+    print(s3)
+    print(s4)
+    print(s5)
+
     t1 = self.sp_.encode_as_immutable_proto(text)
     t2 = self.sp_.sample_encode_as_immutable_proto(text, 10, 0.2)
     t3 = self.sp_.nbest_encode_as_immutable_proto(text, 10)
@@ -339,35 +345,35 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
     v1 = self.sp_.EncodeAsIds(text)
     v2 = self.sp_.EncodeAsPieces(text)
-    self.assertEqual([x.id() for x in s1], v1)
-    self.assertEqual([x.piece() for x in s1], v2)
-    self.assertEqual(text, s1.text())
+    self.assertEqual([x.id for x in s1.pieces], v1)
+    self.assertEqual([x.piece for x in s1.pieces], v2)
+    self.assertEqual(text, s1.text)
 
-    surfaces1 = [s1.text()[x.begin():x.end()] for x in s1]
-    surfaces2 = [x.surface() for x in s1]
+    surfaces1 = [s1.text[x.begin:x.end] for x in s1.pieces]
+    surfaces2 = [x.surface for x in s1.pieces]
     self.assertEqual(surfaces1, surfaces2)
 
     ids = []
-    for i in range(s1.pieces_size()):
-      ids.append(s1.pieces(i).id())
+    for i in range(len(s1.pieces)):
+      ids.append(s1.pieces[i].id)
     self.assertEqual(ids, v1)
 
     pieces = []
-    for i in range(s1.pieces_size()):
-      pieces.append(s1.pieces(i).piece())
+    for i in range(len(s1.pieces)):
+      pieces.append(s1.pieces[i].piece)
     self.assertEqual(pieces, v2)
 
     # Japanese offset
     s1 = self.jasp_.EncodeAsImmutableProto('吾輩は猫である。Hello world. ABC 123')
-    surfaces1 = [s1.text()[x.begin():x.end()] for x in s1]
-    surfaces2 = [x.surface() for x in s1]
+    surfaces1 = [s1.text[x.begin:x.end] for x in s1.pieces]
+    surfaces2 = [x.surface for x in s1.pieces]
     self.assertEqual(surfaces1, surfaces2)
 
-    ids = [x.id() for x in s1]
+    ids = [x.id for x in s1.pieces]
     s2 = self.jasp_.DecodeIdsAsImmutableProto(ids)
     self.assertEqual(s2, s1)
 
-    pieces = [x.piece() for x in s1]
+    pieces = [x.piece for x in s1.pieces]
     s2 = self.jasp_.DecodePiecesAsImmutableProto(pieces)
     self.assertEqual(s2, s1)
 
@@ -395,29 +401,29 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual(sp.encode([text], out_type='serialized_proto'), [sprotos])
     self.assertEqual(sp.encode([text], out_type='immutable_proto'), [iprotos])
 
-    self.assertEqual(len(iprotos), len(pieces))
-    self.assertEqual(len(iprotos), len(ids))
-    self.assertEqual(iprotos.text(), text)
+    self.assertEqual(len(iprotos.pieces), len(pieces))
+    self.assertEqual(len(iprotos.pieces), len(ids))
+    self.assertEqual(iprotos.text, text)
 
-    self.assertEqual(len(iprotos2), len(pieces2))
-    self.assertEqual(len(iprotos2), len(ids2))
-    self.assertEqual(iprotos2.text(), text2)
+    self.assertEqual(len(iprotos2.pieces), len(pieces2))
+    self.assertEqual(len(iprotos2.pieces), len(ids2))
+    self.assertEqual(iprotos2.text, text2)
 
-    for i in range(len(iprotos)):
-      self.assertEqual(ids[i], iprotos.pieces(i).id())
-      self.assertEqual(pieces[i], iprotos.pieces(i).piece())
+    for i in range(len(iprotos.pieces)):
+      self.assertEqual(ids[i], iprotos.pieces[i].id)
+      self.assertEqual(pieces[i], iprotos.pieces[i].piece)
 
-    for i, piece in enumerate(iprotos):
-      self.assertEqual(ids[i], piece.id())
-      self.assertEqual(pieces[i], piece.piece())
+    for i, piece in enumerate(iprotos.pieces):
+      self.assertEqual(ids[i], piece.id)
+      self.assertEqual(pieces[i], piece.piece)
 
-    for i in range(len(iprotos2)):
-      self.assertEqual(ids2[i], iprotos2.pieces(i).id())
-      self.assertEqual(pieces2[i], iprotos2.pieces(i).piece())
+    for i in range(len(iprotos2.pieces)):
+      self.assertEqual(ids2[i], iprotos2.pieces[i].id)
+      self.assertEqual(pieces2[i], iprotos2.pieces[i].piece)
 
-    for i, piece in enumerate(iprotos2):
-      self.assertEqual(ids2[i], piece.id())
-      self.assertEqual(pieces2[i], piece.piece())
+    for i, piece in enumerate(iprotos2.pieces):
+      self.assertEqual(ids2[i], piece.id)
+      self.assertEqual(pieces2[i], piece.piece)
 
     detok_ids = self.sp_.DecodeIds(ids)
     detok_pieces = self.sp_.DecodePieces(pieces)

@@ -3299,22 +3299,6 @@ SWIG_From_float  (float value)
   return SWIG_From_double  (value);
 }
 
-SWIGINTERN sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece sentencepiece_ImmutableSentencePieceText__pieces(sentencepiece::ImmutableSentencePieceText const *self,int index){
-    if (index < 0 || index >= static_cast<int>(self->pieces_size())) {
-      throw sentencepiece::util::Status(
-          sentencepiece::util::StatusCode::kOutOfRange,
-          "piece index is out of range.");
-    }
-    return self->pieces(index);
-  }
-SWIGINTERN sentencepiece::ImmutableSentencePieceText sentencepiece_ImmutableNBestSentencePieceText__nbests(sentencepiece::ImmutableNBestSentencePieceText const *self,int index){
-    if (index < 0 || index >= static_cast<int>(self->nbests_size())) {
-      throw sentencepiece::util::Status(
-          sentencepiece::util::StatusCode::kOutOfRange,
-          "nbest index is out of range.");
-    }
-    return self->nbests(index);
-  }
 
 SWIGINTERN swig_type_info*
 SWIG_pchar_descriptor(void)
@@ -3846,7 +3830,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece_piece(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece__piece(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece *arg1 = (sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece *) 0 ;
   void *argp1 = 0 ;
@@ -3858,7 +3842,7 @@ SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece_pie
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_ImmutableSentencePiece_piece" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_ImmutableSentencePiece__piece" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece * >(argp1);
   {
@@ -3880,7 +3864,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece_surface(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece__surface(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece *arg1 = (sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece *) 0 ;
   void *argp1 = 0 ;
@@ -3892,7 +3876,7 @@ SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece_sur
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_ImmutableSentencePiece_surface" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_ImmutableSentencePiece__surface" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece * >(argp1);
   {
@@ -3914,7 +3898,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece_id(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece__id(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece *arg1 = (sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece *) 0 ;
   void *argp1 = 0 ;
@@ -3926,7 +3910,7 @@ SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece_id(
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_ImmutableSentencePiece_id" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_ImmutableSentencePiece__id" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece * >(argp1);
   {
@@ -3945,7 +3929,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece_begin(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece__begin(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece *arg1 = (sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece *) 0 ;
   void *argp1 = 0 ;
@@ -3957,7 +3941,7 @@ SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece_beg
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_ImmutableSentencePiece_begin" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_ImmutableSentencePiece__begin" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece * >(argp1);
   {
@@ -3976,7 +3960,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece_end(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece__end(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece *arg1 = (sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece *) 0 ;
   void *argp1 = 0 ;
@@ -3988,7 +3972,7 @@ SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_ImmutableSentencePiece_end
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_ImmutableSentencePiece_end" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_ImmutableSentencePiece__end" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece * >(argp1);
   {
@@ -4069,7 +4053,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_pieces_size(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText__pieces_size(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableSentencePieceText *arg1 = (sentencepiece::ImmutableSentencePieceText *) 0 ;
   void *argp1 = 0 ;
@@ -4081,7 +4065,7 @@ SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_pieces_size(PyObject *SWIG
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_pieces_size" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText__pieces_size" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::ImmutableSentencePieceText * >(argp1);
   {
@@ -4100,7 +4084,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_pieces(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText__pieces(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableSentencePieceText *arg1 = (sentencepiece::ImmutableSentencePieceText *) 0 ;
   int arg2 ;
@@ -4111,15 +4095,15 @@ SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_pieces(PyObject *SWIGUNUSE
   PyObject *swig_obj[2] ;
   sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece result;
   
-  if (!SWIG_Python_UnpackTuple(args, "ImmutableSentencePieceText_pieces", 2, 2, swig_obj)) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args, "ImmutableSentencePieceText__pieces", 2, 2, swig_obj)) SWIG_fail;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_pieces" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText__pieces" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::ImmutableSentencePieceText * >(argp1);
   ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
   if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ImmutableSentencePieceText_pieces" "', argument " "2"" of type '" "int""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ImmutableSentencePieceText__pieces" "', argument " "2"" of type '" "int""'");
   } 
   arg2 = static_cast< int >(val2);
   {
@@ -4138,7 +4122,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_text(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText__text(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableSentencePieceText *arg1 = (sentencepiece::ImmutableSentencePieceText *) 0 ;
   void *argp1 = 0 ;
@@ -4150,7 +4134,7 @@ SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_text(PyObject *SWIGUNUSEDP
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_text" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText__text" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::ImmutableSentencePieceText * >(argp1);
   {
@@ -4172,7 +4156,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_score(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText__score(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableSentencePieceText *arg1 = (sentencepiece::ImmutableSentencePieceText *) 0 ;
   void *argp1 = 0 ;
@@ -4184,7 +4168,7 @@ SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_score(PyObject *SWIGUNUSED
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText_score" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText__score" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::ImmutableSentencePieceText * >(argp1);
   {
@@ -4230,44 +4214,6 @@ SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText_SerializeAsString(PyObject
   {
     resultobj = MakePyOutputBytes(result);
   }
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_ImmutableSentencePieceText__pieces(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  sentencepiece::ImmutableSentencePieceText *arg1 = (sentencepiece::ImmutableSentencePieceText *) 0 ;
-  int arg2 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  int val2 ;
-  int ecode2 = 0 ;
-  PyObject *swig_obj[2] ;
-  sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece result;
-  
-  if (!SWIG_Python_UnpackTuple(args, "ImmutableSentencePieceText__pieces", 2, 2, swig_obj)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableSentencePieceText__pieces" "', argument " "1"" of type '" "sentencepiece::ImmutableSentencePieceText const *""'"); 
-  }
-  arg1 = reinterpret_cast< sentencepiece::ImmutableSentencePieceText * >(argp1);
-  ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ImmutableSentencePieceText__pieces" "', argument " "2"" of type '" "int""'");
-  } 
-  arg2 = static_cast< int >(val2);
-  {
-    try {
-      result = sentencepiece_ImmutableSentencePieceText__pieces((sentencepiece::ImmutableSentencePieceText const *)arg1,arg2);
-      ReleaseResultObject(resultobj);
-    }
-    catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
-    }
-  }
-  resultobj = SWIG_NewPointerObj((new sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece(static_cast< const sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece& >(result))), SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece, SWIG_POINTER_OWN |  0 );
   return resultobj;
 fail:
   return NULL;
@@ -4336,7 +4282,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ImmutableNBestSentencePieceText_nbests_size(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_ImmutableNBestSentencePieceText__nbests_size(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableNBestSentencePieceText *arg1 = (sentencepiece::ImmutableNBestSentencePieceText *) 0 ;
   void *argp1 = 0 ;
@@ -4348,7 +4294,7 @@ SWIGINTERN PyObject *_wrap_ImmutableNBestSentencePieceText_nbests_size(PyObject 
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableNBestSentencePieceText, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableNBestSentencePieceText_nbests_size" "', argument " "1"" of type '" "sentencepiece::ImmutableNBestSentencePieceText const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableNBestSentencePieceText__nbests_size" "', argument " "1"" of type '" "sentencepiece::ImmutableNBestSentencePieceText const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::ImmutableNBestSentencePieceText * >(argp1);
   {
@@ -4367,7 +4313,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ImmutableNBestSentencePieceText_nbests(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_ImmutableNBestSentencePieceText__nbests(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   sentencepiece::ImmutableNBestSentencePieceText *arg1 = (sentencepiece::ImmutableNBestSentencePieceText *) 0 ;
   int arg2 ;
@@ -4378,15 +4324,15 @@ SWIGINTERN PyObject *_wrap_ImmutableNBestSentencePieceText_nbests(PyObject *SWIG
   PyObject *swig_obj[2] ;
   sentencepiece::ImmutableSentencePieceText result;
   
-  if (!SWIG_Python_UnpackTuple(args, "ImmutableNBestSentencePieceText_nbests", 2, 2, swig_obj)) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args, "ImmutableNBestSentencePieceText__nbests", 2, 2, swig_obj)) SWIG_fail;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableNBestSentencePieceText, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableNBestSentencePieceText_nbests" "', argument " "1"" of type '" "sentencepiece::ImmutableNBestSentencePieceText const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableNBestSentencePieceText__nbests" "', argument " "1"" of type '" "sentencepiece::ImmutableNBestSentencePieceText const *""'"); 
   }
   arg1 = reinterpret_cast< sentencepiece::ImmutableNBestSentencePieceText * >(argp1);
   ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
   if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ImmutableNBestSentencePieceText_nbests" "', argument " "2"" of type '" "int""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ImmutableNBestSentencePieceText__nbests" "', argument " "2"" of type '" "int""'");
   } 
   arg2 = static_cast< int >(val2);
   {
@@ -4432,44 +4378,6 @@ SWIGINTERN PyObject *_wrap_ImmutableNBestSentencePieceText_SerializeAsString(PyO
   {
     resultobj = MakePyOutputBytes(result);
   }
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_ImmutableNBestSentencePieceText__nbests(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  sentencepiece::ImmutableNBestSentencePieceText *arg1 = (sentencepiece::ImmutableNBestSentencePieceText *) 0 ;
-  int arg2 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  int val2 ;
-  int ecode2 = 0 ;
-  PyObject *swig_obj[2] ;
-  sentencepiece::ImmutableSentencePieceText result;
-  
-  if (!SWIG_Python_UnpackTuple(args, "ImmutableNBestSentencePieceText__nbests", 2, 2, swig_obj)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__ImmutableNBestSentencePieceText, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ImmutableNBestSentencePieceText__nbests" "', argument " "1"" of type '" "sentencepiece::ImmutableNBestSentencePieceText const *""'"); 
-  }
-  arg1 = reinterpret_cast< sentencepiece::ImmutableNBestSentencePieceText * >(argp1);
-  ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ImmutableNBestSentencePieceText__nbests" "', argument " "2"" of type '" "int""'");
-  } 
-  arg2 = static_cast< int >(val2);
-  {
-    try {
-      result = sentencepiece_ImmutableNBestSentencePieceText__nbests((sentencepiece::ImmutableNBestSentencePieceText const *)arg1,arg2);
-      ReleaseResultObject(resultobj);
-    }
-    catch (const sentencepiece::util::Status &status) {
-      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
-    }
-  }
-  resultobj = SWIG_NewPointerObj((new sentencepiece::ImmutableSentencePieceText(static_cast< const sentencepiece::ImmutableSentencePieceText& >(result))), SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText, SWIG_POINTER_OWN |  0 );
   return resultobj;
 fail:
   return NULL;
@@ -8475,29 +8383,27 @@ static PyMethodDef SwigMethods[] = {
 	 { "SWIG_PyInstanceMethod_New", SWIG_PyInstanceMethod_New, METH_O, NULL},
 	 { "new_ImmutableSentencePieceText_ImmutableSentencePiece", _wrap_new_ImmutableSentencePieceText_ImmutableSentencePiece, METH_NOARGS, NULL},
 	 { "delete_ImmutableSentencePieceText_ImmutableSentencePiece", _wrap_delete_ImmutableSentencePieceText_ImmutableSentencePiece, METH_O, NULL},
-	 { "ImmutableSentencePieceText_ImmutableSentencePiece_piece", _wrap_ImmutableSentencePieceText_ImmutableSentencePiece_piece, METH_O, NULL},
-	 { "ImmutableSentencePieceText_ImmutableSentencePiece_surface", _wrap_ImmutableSentencePieceText_ImmutableSentencePiece_surface, METH_O, NULL},
-	 { "ImmutableSentencePieceText_ImmutableSentencePiece_id", _wrap_ImmutableSentencePieceText_ImmutableSentencePiece_id, METH_O, NULL},
-	 { "ImmutableSentencePieceText_ImmutableSentencePiece_begin", _wrap_ImmutableSentencePieceText_ImmutableSentencePiece_begin, METH_O, NULL},
-	 { "ImmutableSentencePieceText_ImmutableSentencePiece_end", _wrap_ImmutableSentencePieceText_ImmutableSentencePiece_end, METH_O, NULL},
+	 { "ImmutableSentencePieceText_ImmutableSentencePiece__piece", _wrap_ImmutableSentencePieceText_ImmutableSentencePiece__piece, METH_O, NULL},
+	 { "ImmutableSentencePieceText_ImmutableSentencePiece__surface", _wrap_ImmutableSentencePieceText_ImmutableSentencePiece__surface, METH_O, NULL},
+	 { "ImmutableSentencePieceText_ImmutableSentencePiece__id", _wrap_ImmutableSentencePieceText_ImmutableSentencePiece__id, METH_O, NULL},
+	 { "ImmutableSentencePieceText_ImmutableSentencePiece__begin", _wrap_ImmutableSentencePieceText_ImmutableSentencePiece__begin, METH_O, NULL},
+	 { "ImmutableSentencePieceText_ImmutableSentencePiece__end", _wrap_ImmutableSentencePieceText_ImmutableSentencePiece__end, METH_O, NULL},
 	 { "ImmutableSentencePieceText_ImmutableSentencePiece_swigregister", ImmutableSentencePieceText_ImmutableSentencePiece_swigregister, METH_O, NULL},
 	 { "ImmutableSentencePieceText_ImmutableSentencePiece_swiginit", ImmutableSentencePieceText_ImmutableSentencePiece_swiginit, METH_VARARGS, NULL},
 	 { "new_ImmutableSentencePieceText", _wrap_new_ImmutableSentencePieceText, METH_NOARGS, NULL},
 	 { "delete_ImmutableSentencePieceText", _wrap_delete_ImmutableSentencePieceText, METH_O, NULL},
-	 { "ImmutableSentencePieceText_pieces_size", _wrap_ImmutableSentencePieceText_pieces_size, METH_O, NULL},
-	 { "ImmutableSentencePieceText_pieces", _wrap_ImmutableSentencePieceText_pieces, METH_VARARGS, NULL},
-	 { "ImmutableSentencePieceText_text", _wrap_ImmutableSentencePieceText_text, METH_O, NULL},
-	 { "ImmutableSentencePieceText_score", _wrap_ImmutableSentencePieceText_score, METH_O, NULL},
-	 { "ImmutableSentencePieceText_SerializeAsString", _wrap_ImmutableSentencePieceText_SerializeAsString, METH_O, NULL},
+	 { "ImmutableSentencePieceText__pieces_size", _wrap_ImmutableSentencePieceText__pieces_size, METH_O, NULL},
 	 { "ImmutableSentencePieceText__pieces", _wrap_ImmutableSentencePieceText__pieces, METH_VARARGS, NULL},
+	 { "ImmutableSentencePieceText__text", _wrap_ImmutableSentencePieceText__text, METH_O, NULL},
+	 { "ImmutableSentencePieceText__score", _wrap_ImmutableSentencePieceText__score, METH_O, NULL},
+	 { "ImmutableSentencePieceText_SerializeAsString", _wrap_ImmutableSentencePieceText_SerializeAsString, METH_O, NULL},
 	 { "ImmutableSentencePieceText_swigregister", ImmutableSentencePieceText_swigregister, METH_O, NULL},
 	 { "ImmutableSentencePieceText_swiginit", ImmutableSentencePieceText_swiginit, METH_VARARGS, NULL},
 	 { "new_ImmutableNBestSentencePieceText", _wrap_new_ImmutableNBestSentencePieceText, METH_NOARGS, NULL},
 	 { "delete_ImmutableNBestSentencePieceText", _wrap_delete_ImmutableNBestSentencePieceText, METH_O, NULL},
-	 { "ImmutableNBestSentencePieceText_nbests_size", _wrap_ImmutableNBestSentencePieceText_nbests_size, METH_O, NULL},
-	 { "ImmutableNBestSentencePieceText_nbests", _wrap_ImmutableNBestSentencePieceText_nbests, METH_VARARGS, NULL},
-	 { "ImmutableNBestSentencePieceText_SerializeAsString", _wrap_ImmutableNBestSentencePieceText_SerializeAsString, METH_O, NULL},
+	 { "ImmutableNBestSentencePieceText__nbests_size", _wrap_ImmutableNBestSentencePieceText__nbests_size, METH_O, NULL},
 	 { "ImmutableNBestSentencePieceText__nbests", _wrap_ImmutableNBestSentencePieceText__nbests, METH_VARARGS, NULL},
+	 { "ImmutableNBestSentencePieceText_SerializeAsString", _wrap_ImmutableNBestSentencePieceText_SerializeAsString, METH_O, NULL},
 	 { "ImmutableNBestSentencePieceText_swigregister", ImmutableNBestSentencePieceText_swigregister, METH_O, NULL},
 	 { "ImmutableNBestSentencePieceText_swiginit", ImmutableNBestSentencePieceText_swiginit, METH_VARARGS, NULL},
 	 { "new_SentencePieceProcessor", _wrap_new_SentencePieceProcessor, METH_NOARGS, NULL},
