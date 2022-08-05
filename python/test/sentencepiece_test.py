@@ -395,6 +395,10 @@ class TestSentencepieceProcessor(unittest.TestCase):
       self.assertEqual(
           self.sp_.Decode([x.id for x in s3.nbests[i].pieces]), text)
 
+    # slice
+    self.assertEqual(s1.pieces[::-1], list(reversed(s1.pieces)))
+    self.assertEqual(s3.nbests[::-1], list(reversed(s3.nbests)))
+
     # Japanese offset
     s1 = self.jasp_.EncodeAsImmutableProto('吾輩は猫である。Hello world. ABC 123')
     surfaces1 = [s1.text[x.begin:x.end] for x in s1.pieces]

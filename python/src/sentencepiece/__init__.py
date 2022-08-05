@@ -145,6 +145,10 @@ class ImmutableSentencePieceText(object):
         return self.len
 
       def __getitem__(self, index):
+        if isinstance(index, slice):
+          return [self.proto._pieces(i) for i in range(self.len)][index.start:index.stop:index.step]
+        if index < 0:
+          index = index + self.len
         if index < 0 or index >= self.len:
           raise IndexError('piece index is out of range')
         return self.proto._pieces(index)
@@ -202,6 +206,10 @@ class ImmutableNBestSentencePieceText(object):
         return self.len
 
       def __getitem__(self, index):
+        if isinstance(index, slice):
+          return [self.proto._nbests(i) for i in range(self.len)][index.start:index.stop:index.step]
+        if index < 0:
+          index = index + self.len
         if index < 0 or index >= self.len:
           raise IndexError('nbests index is out of range')
         return self.proto._nbests(index)
