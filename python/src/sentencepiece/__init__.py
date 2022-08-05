@@ -97,6 +97,13 @@ class ImmutableSentencePieceText_ImmutableSentencePiece(object):
               'begin: {}\n'
               'end: {}\n').format(self.piece, self.id, self.surface,
                                   self.begin, self.end)
+
+    def __eq__(self, other):
+      return self.piece == other.piece and self.id == other.id and self.surface == other.surface and self.begin == other.begin and self.end == other.end
+
+    def __hash__(self):
+      return hash(str(self))
+
     __repr__ = __str__
 
 
@@ -395,7 +402,7 @@ class SentencePieceProcessor(object):
              enable_sampling=False,
              nbest_size=-1,
              alpha=0.1,
-             num_threads=1):
+             num_threads=-1):
       """Initialzie sentencepieceProcessor.
 
       Args:
@@ -407,15 +414,15 @@ class SentencePieceProcessor(object):
           reversing (if enabled).
         reverse: Reverses the tokenized sequence (Default = false)
         emit_unk_piece: Emits the unk literal string (Default = false)
-        nbest_size: sampling parameters for unigram. Invalid for BPE-Dropout.
+        nbest_size: sampling parameters for unigram. Invalid in BPE-Dropout.
                     nbest_size = {0,1}: No sampling is performed.
                     nbest_size > 1: samples from the nbest_size results.
                     nbest_size < 0: assuming that nbest_size is infinite and samples
                       from the all hypothesis (lattice) using
                       forward-filtering-and-backward-sampling algorithm.
         alpha: Soothing parameter for unigram sampling, and dropout probability of
-          merge operations for BPE-dropout.
-        num_threads: number of threads in batch processing.
+               merge operations for BPE-dropout.
+        num_threads: number of threads in batch processing (Default = -1, auto-detected)
       """
 
       _sentencepiece_processor_init_native(self)
@@ -450,18 +457,18 @@ class SentencePieceProcessor(object):
         out_type: output type. int or str.
         add_bos: Add <s> to the result (Default = false)
         add_eos: Add </s> to the result (Default = false) <s>/</s> is added after
-          reversing (if enabled).
+                 reversing (if enabled).
         reverse: Reverses the tokenized sequence (Default = false)
         emit_unk_piece: Emits the unk literal string (Default = false)
-        nbest_size: sampling parameters for unigram. Invalid for BPE-Dropout.
+        nbest_size: sampling parameters for unigram. Invalid in BPE-Dropout.
                     nbest_size = {0,1}: No sampling is performed.
                     nbest_size > 1: samples from the nbest_size results.
                     nbest_size < 0: assuming that nbest_size is infinite and samples
-                      from the all hypothesis (lattice) using
-                      forward-filtering-and-backward-sampling algorithm.
+                    from the all hypothesis (lattice) using
+                    forward-filtering-and-backward-sampling algorithm.
         alpha: Soothing parameter for unigram sampling, and merge probability for
                BPE-dropout (probablity 'p' in BPE-dropout paper).
-        num_threads: the number of threads used in the batch processin (Default = 1).
+        num_threads: the number of threads used in the batch processing (Default = -1).
       """
 
       if out_type is None:
@@ -722,7 +729,7 @@ class SentencePieceProcessor(object):
 
       Args:
         out_type: output type. str or 'serialized_proto' or 'immutable_proto' (Default = str)
-        num_threads: the number of threads used in the batch processin (Default = 1).
+        num_threads: the number of threads used in the batch processing (Default = -1).
       """
 
       if num_threads is None:

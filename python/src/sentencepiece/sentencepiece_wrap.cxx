@@ -3042,9 +3042,12 @@ class ThreadPool {
 
 template <typename T>
 inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
+  if (*num_threads < 0) {
+    *num_threads = std::thread::hardware_concurrency();
+  }
   *num_threads = std::max<int>(1,
                                std::min<int>({*num_threads,
-                                   static_cast<int>(ins.size()), 256}));
+                                     static_cast<int>(ins.size()), 256}));
 }
 
 #define DEFINE_ENCODE_BATCH_FUNC_IMPL(FuncName, InType, OutType)        \

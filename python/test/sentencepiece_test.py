@@ -332,6 +332,29 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual(s4, y4)
     self.assertEqual(s5, y5)
 
+    hset_piece = defaultdict(int)
+
+    # eq test
+    for i in range(len(s1.pieces)):
+      self.assertEqual(s1.pieces[i], t1.pieces[i])
+      hset_piece[s1.pieces[i]] += 1
+      hset_piece[t1.pieces[i]] += 1
+
+    self.assertEqual(len(hset_piece), len(s1.pieces))
+
+    # has test
+    hset = defaultdict(int)
+    hset[s1] += 1
+    hset[t1] += 1
+    hset[s3] += 1
+    hset[t3] += 1
+
+    self.assertEqual(len(hset), 2)
+    self.assertEqual(hset[s1], 2)
+    self.assertEqual(hset[s3], 2)
+    self.assertEqual(hset[t1], 2)
+    self.assertEqual(hset[t3], 2)
+
     x1 = self.sp_.encode_as_serialized_proto(text)
     x2 = self.sp_.sample_encode_as_serialized_proto(text, 10, 0.2)
     x3 = self.sp_.nbest_encode_as_serialized_proto(text, 10)
@@ -362,6 +385,15 @@ class TestSentencepieceProcessor(unittest.TestCase):
     for i in range(len(s1.pieces)):
       pieces.append(s1.pieces[i].piece)
     self.assertEqual(pieces, v2)
+
+    for v in s3.nbests:
+      self.assertEqual(text, v.text)
+      self.assertEqual(self.sp_.Decode([x.id for x in v.pieces]), text)
+
+    for i in range(len(s3.nbests)):
+      self.assertEqual(text, s3.nbests[i].text)
+      self.assertEqual(
+          self.sp_.Decode([x.id for x in s3.nbests[i].pieces]), text)
 
     # Japanese offset
     s1 = self.jasp_.EncodeAsImmutableProto('吾輩は猫である。Hello world. ABC 123')
