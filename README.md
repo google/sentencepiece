@@ -276,6 +276,5 @@ Then segment train/test corpus with ```--vocabulary``` option
 * [Use custom text normalization rules](doc/normalization.md)
 * [Use custom symbols](doc/special_symbols.md)
 * [Python Module](python/README.md)
-* [TensorFlow Module](tensorflow/README.md)
 * [Segmentation and training algorithms in detail]
 

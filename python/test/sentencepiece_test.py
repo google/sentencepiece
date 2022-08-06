@@ -566,7 +566,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
         for n in sp.decode(results):
           self.assertEqual(n, text)
 
-    # batch test
+      # batch test
       results = sp.nbest_encode([text, text2], nbest_size=10, out_type=out_type)
       self.assertEqual(
           results,
@@ -588,6 +588,19 @@ class TestSentencepieceProcessor(unittest.TestCase):
         self.assertEqual(len(decoded), 10)
         for n in decoded:
           self.assertEqual(n, text2)
+
+    self.assertEqual(
+        sp.nbest_encode(text, nbest_size=10, out_type=str),
+        sp.nbest_encode_as_pieces(text, nbest_size=10))
+    self.assertEqual(
+        sp.nbest_encode(text, nbest_size=10, out_type=int),
+        sp.nbest_encode_as_ids(text, nbest_size=10))
+    self.assertEqual(
+        sp.nbest_encode(text, nbest_size=10, out_type='serialized_proto'),
+        sp.nbest_encode_as_serialized_proto(text, nbest_size=10))
+    self.assertEqual(
+        sp.nbest_encode(text, nbest_size=10, out_type='immutable_proto'),
+        sp.nbest_encode_as_immutable_proto(text, nbest_size=10))
 
   def test_sample_and_score(self):
     sp = self.sp_
@@ -617,6 +630,11 @@ class TestSentencepieceProcessor(unittest.TestCase):
           self.assertEqual(sp.decode(n[0]), text)
         for n in results[1]:
           self.assertEqual(sp.decode(n[0]), text2)
+
+    sp.sample_encode_and_score_as_pieces(text, 10)
+    sp.sample_encode_and_score_as_ids(text, 10)
+    sp.sample_encode_and_score_as_immutable_proto(text, 10)
+    sp.sample_encode_and_score_as_serialized_proto(text, 10)
 
   def test_valid_range(self):
     size = self.sp_.piece_size()

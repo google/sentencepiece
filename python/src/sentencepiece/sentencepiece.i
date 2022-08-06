@@ -903,7 +903,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     return _encode(input)
 
 
-  def NBestEncodeAsPieces(self, input, nbest_size=None,  **kwargs):
+  def NBestEncodeAsPieces(self, input, nbest_size=None, **kwargs):
     return self.NBestEncode(input=input, nbest_size=nbest_size,
                             out_type=str, **kwargs)
 
@@ -999,6 +999,26 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 
     return _encode(input)
 
+
+  def SampleEncodeAndScoreAsPieces(self, input, num_samples=None, alpha=None, **kwargs):
+    return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha,
+                                     out_type=str, **kwargs)
+
+
+  def SampleEncodeAndScoreAsIds(self, input, num_samples=None, alpha=None, **kwargs):
+    return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha,
+                                     out_type=int, **kwargs)
+
+
+  def SampleEncodeAndScoreAsSerializedProto(self, input, num_samples=None, alpha=None, **kwargs):
+    return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha,
+                                     out_type='serialized_proto', **kwargs)
+        
+
+  def SampleEncodeAndScoreAsImmutableProto(self, input, num_samples=None, alpha=None, **kwargs):
+    return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha,
+                                     out_type='immutable_proto', **kwargs)
+          
 
   def Decode(self, input, out_type=str, num_threads=None):
     """Decode processed id or token sequences.
