@@ -80,7 +80,7 @@ You will want to use `ImmutableSentencePieceText` class to obtain the pieces and
 This proto also encodes a utf8-byte offset of each piece over user input or detokenized text.
 
 ```C++
-#include <sentencepiece.pb.h>
+#include <sentencepiece_processor.h>
 
 sentencepiece::ImmutableSentencePieceText spt;
 

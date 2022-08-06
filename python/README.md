@@ -9,10 +9,17 @@ For Linux (x64/i686), macOS, and Windows(win32/x64) environment, you can simply 
 % pip install sentencepiece
 ```
 
-To build and install the Python wrapper from source, please install [SentencePiece C++](https://github.com/google/sentencepiece#c-from-source) and try the following commands:
+To build and install the Python wrapper from source, try the following commands to build and install wheel package.
 ```
-% python setup.py build
-% sudo python setup.py install
+% git clone https://github.com/google/sentencepiece.git 
+% cd sentencepiece
+% mkdir build
+% cd build
+% cmake .. -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=./root
+% make install
+% cd ../python
+% python setup.py bdist_wheel
+% pip install dist/sentencepiece*.whl
 ```
 
 If you don’t have write permission to the global site-packages directory or don’t want to install into it, please try:
