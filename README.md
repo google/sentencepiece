@@ -36,7 +36,7 @@ For those unfamiliar with SentencePiece as a software/algorithm, one can read [a
 |:---|:---:|:---:|:---:|
 |Supported algorithm|BPE, unigram, char, word|BPE|BPE*|
 |OSS?|Yes|Yes|Google internal|
-|Subword regularization|[Yes](#subword-regularization)|No|No|
+|Subword regularization|[Yes](#subword-regularization-and-bpe-dropout)|No|No|
 |Python Library (pip)|[Yes](python/README.md)|No|N/A|
 |C++ Library|[Yes](doc/api.md)|No|N/A|
 |Pre-segmentation required?|[No](#whitespace-is-treated-as-a-basic-symbol)|Yes|Yes|
