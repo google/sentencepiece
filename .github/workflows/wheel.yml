@@ -10,6 +10,10 @@ on:
 
 jobs:
   build_wheels:
+    outputs:
+      digests-linux: ${{ steps.hash-linux.outputs.digests }}
+      digests-macos: ${{ steps.hash-macos.outputs.digests }}
+      digests-windows: ${{ steps.hash-windows.outputs.digests }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-11]
@@ -84,3 +88,48 @@ jobs:
           overwrite: true
           prerelease: true
           file_glob: true
+
+      - name: Generate SLSA subjects - Macos
+        id: hash-macos
+        if: runner.os == 'macOS'
+        run: echo "::set-output name=digests::$(shasum -a 256 ./python/wheelhouse/* | base64)"
+
+      - name: Generate SLSA subjects - Linux
+        id: hash-linux
+        if: runner.os == 'Linux'
+        run: echo "::set-output name=digests::$(sha256sum ./python/wheelhouse/* | base64 -w0)"
+
+      - name: Generate SLSA subjects - Windows
+        id: hash-windows
+        if: runner.os == 'Windows'
+        run: echo "::set-output name=digests::$(sha256sum ./python/wheelhouse/* | base64 -w0)"
+
+  gather-disgests:
+    needs: [build_wheels]
+    outputs:
+      digests: ${{ steps.hash.outputs.digests }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge results
+        id: hash
+        env:
+          LINUX_DIGESTS: "${{ needs.build_wheels.outputs.digests-linux }}"
+          MACOS_DIGESTS: "${{ needs.build_wheels.outputs.digests-macos }}"
+          WINDOWS_DIGESTS: "${{ needs.build_wheels.outputs.digests-windows }}"
+        run: |
+          set -euo pipefail
+          echo "$LINUX_DIGESTS" | base64 -d > checksums.txt
+          echo "$MACOS_DIGESTS" | base64 -d >> checksums.txt
+          echo "$WINDOWS_DIGESTS" | base64 -d >> checksums.txt
+          echo "::set-output name=digests::$(cat checksums.txt | base64 -w0)"
+
+  provenance:
+    needs: [build_wheels, gather-disgests]
+    permissions:
+      actions: read   # To read the workflow path.
+      id-token: write # To sign the provenance.
+      contents: write # To add assets to a release.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.0
+    with:
+      base64-subjects: "${{ needs.gather-disgests.outputs.digests }}"
+      upload-assets: true # Optional: Upload to a new release
