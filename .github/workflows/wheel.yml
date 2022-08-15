@@ -124,6 +124,7 @@ jobs:
           echo "::set-output name=digests::$(cat checksums.txt | base64 -w0)"
 
   provenance:
+    if: startsWith(github.ref, 'refs/tags/')
     needs: [build_wheels, gather-disgests]
     permissions:
       actions: read   # To read the workflow path.
