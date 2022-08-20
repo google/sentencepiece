@@ -15,6 +15,7 @@
 #include <cstring>
 
 #include "common.h"
+#include "init.h"
 #include "sentencepiece_processor.h"
 
 #ifdef _USE_EXTERNAL_ABSL
@@ -35,6 +36,7 @@ void Abort() {
     SetTestCounter(2);
   } else {
     std::cerr << "Program terminated with an unrecoverable error." << std::endl;
+    ShutdownLibrary();
     exit(-1);
   }
 }
@@ -43,6 +45,7 @@ void Exit(int code) {
   if (GetTestCounter() == 1) {
     SetTestCounter(2);
   } else {
+    ShutdownLibrary();
     exit(code);
   }
 }

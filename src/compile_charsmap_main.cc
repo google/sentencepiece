@@ -156,6 +156,7 @@ struct BinaryBlob {
 }  // namespace sentencepiece
 
 int main(int argc, char **argv) {
+  sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
 
   const std::vector<std::pair<

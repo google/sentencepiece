@@ -157,6 +157,7 @@ ABSL_FLAG(std::uint64_t, differential_privacy_clipping_threshold, 0,
           " clipping the counts for DP");
 
 int main(int argc, char *argv[]) {
+  sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
 
   sentencepiece::TrainerSpec trainer_spec;

@@ -18,6 +18,7 @@
 #include "common.h"
 #include "third_party/absl/flags/flag.h"
 #include "third_party/absl/flags/parse.h"
+#include "third_party/protobuf-lite/google/protobuf/message_lite.h"
 
 ABSL_DECLARE_FLAG(int32, minloglevel);
 
@@ -35,6 +36,20 @@ inline void ParseCommandLineFlags(const char *usage, int *argc, char ***argv,
 
   logging::SetMinLogLevel(absl::GetFlag(FLAGS_minloglevel));
 }
+
+inline void ShutdownLibrary() {
+  google::protobuf::ShutdownProtobufLibrary();
+#ifdef HAS_ABSL_CLEANUP_FLAGS
+  absl::CleanupFlags();
+#endif
+}
+
+class ScopedResourceDestructor {
+ public:
+  ScopedResourceDestructor() {}
+  ~ScopedResourceDestructor() { ShutdownLibrary(); }
+};
+
 }  // namespace sentencepiece
 
 #endif  // INIT_H_
