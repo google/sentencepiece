@@ -61,8 +61,8 @@ struct FlagFunc {
 
 namespace {
 
-using FlagMap = std::map<std::string, FlagFunc *>;
-using FlagList = std::vector<FlagFunc *>;
+using FlagMap = std::map<std::string, std::shared_ptr<FlagFunc>>;
+using FlagList = std::vector<std::shared_ptr<FlagFunc>>;
 
 FlagMap *GetFlagMap() {
   static auto *flag_map = new FlagMap;
@@ -111,7 +111,7 @@ std::string PrintHelp(const char *programname) {
   os << PACKAGE_STRING << "\n\n";
   os << "Usage: " << programname << " [options] files\n\n";
 
-  for (const auto *func : *GetFlagList()) {
+  for (auto func : *GetFlagList()) {
     os << "   --" << func->name << " (" << func->help << ")";
     os << "  type: " << func->type << " default: " << func->default_value
        << '\n';
@@ -123,7 +123,7 @@ std::string PrintHelp(const char *programname) {
 }
 }  // namespace
 
-void RegisterFlag(const std::string &name, FlagFunc *func) {
+void RegisterFlag(const std::string &name, std::shared_ptr<FlagFunc> func) {
   GetFlagList()->emplace_back(func);
   GetFlagMap()->emplace(name, func);
 }
@@ -140,7 +140,7 @@ Flag<T>::Flag(const char *name, const char *type, const char *help,
   func_->set_value = [this](const std::string &value) {
     this->set_value_as_str(value);
   };
-  RegisterFlag(name, func_.get());
+  RegisterFlag(name, func_);
 }
 
 template <typename T>
@@ -219,4 +219,14 @@ std::vector<char *> ParseCommandLine(int argc, char *argv[]) {
 
   return output_args;
 }
+
+void CleanupFlags() {
+  static bool is_shutdown = false;
+  if (!is_shutdown) {
+    delete internal::GetFlagList();
+    delete internal::GetFlagMap();
+    is_shutdown = true;
+  }
+}
+
 }  // namespace absl
