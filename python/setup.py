@@ -33,7 +33,7 @@ def long_description():
 
 
 def version():
-  with codecs.open('VERSION', 'r', 'utf-8') as f:
+  with codecs.open('VERSION.txt', 'r', 'utf-8') as f:
     version = f.read().rstrip()
     return version
 
