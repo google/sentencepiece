@@ -13,7 +13,7 @@
 # limitations under the License.!
 
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-file(STRINGS "VERSION" SPM_VERSION)
+file(STRINGS "VERSION.txt" SPM_VERSION)
 message(STATUS "VERSION: ${SPM_VERSION}")
 SET(SPM_ARTIFACT_NAME "sentencepiece" CACHE STRING "Default name of the \
             generated artifacts. Override to avoid name conflicts.")
