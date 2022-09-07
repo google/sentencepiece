@@ -218,7 +218,7 @@ if (SPM_ENABLE_SHARED)
       (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "m68k") OR
       (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "ppc") OR
       (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "sh4"))
-    list(APPEND SPM_LIBS "atomic")
+  list(APPEND SPM_LIBS "atomic")
   endif()
   set(SPM_INSTALLTARGETS sentencepiece sentencepiece_train sentencepiece-static sentencepiece_train-static)
   set_target_properties(sentencepiece sentencepiece_train PROPERTIES SOVERSION 0 VERSION 0.0.0)
@@ -284,10 +284,19 @@ endif()
 list(APPEND SPM_INSTALLTARGETS
   spm_encode spm_decode spm_normalize spm_train spm_export_vocab)
 
+if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  install(TARGETS ${SPM_INSTALLTARGETS}
+    BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+else()
 install(TARGETS ${SPM_INSTALLTARGETS}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif()
+
 install(FILES sentencepiece_trainer.h sentencepiece_processor.h
   DESTINATION ${CMAKE_INSTALL_INCDIR})
 if (NOT SPM_USE_BUILTIN_PROTOBUF)
@@ -323,4 +332,12 @@ if (SPM_COVERAGE)
     COMMAND mkdir -p lcov_html
     COMMAND genhtml -o lcov_html coverage.info)
   add_dependencies(coverage spm_test)
+endif()
+
+if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  set_xcode_property(spm_encode PRODUCT_BUNDLE_IDENTIFIER "SentencePiece" All)
+  set_xcode_property(spm_decode PRODUCT_BUNDLE_IDENTIFIER "SentencePiece" All)
+  set_xcode_property(spm_normalize PRODUCT_BUNDLE_IDENTIFIER "SentencePiece" All)
+  set_xcode_property(spm_train PRODUCT_BUNDLE_IDENTIFIER "SentencePiece" All)
+  set_xcode_property(spm_export_vocab PRODUCT_BUNDLE_IDENTIFIER "SentencePiece" All)
 endif()
