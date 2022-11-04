@@ -275,7 +275,6 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(add_numbers);
   SetTrainerSpecFromFlag(add_fullwidth_numbers);
   SetTrainerSpecFromFlag(required_chars);
-  SetTrainerSpecFromFile(required_chars);
   SetTrainerSpecFromFlag(vocabulary_output_piece_score);
   SetRepeatedTrainerSpecFromFlag(accept_language);
   SetRepeatedTrainerSpecFromFlag(control_symbols);
