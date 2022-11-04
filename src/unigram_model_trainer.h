@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 
-#include "builtin_pb/sentencepiece_model.pb.h"
+#include "sentencepiece_model.pb.h"
 #include "third_party/absl/strings/string_view.h"
 #include "trainer_interface.h"
 #include "unigram_model.h"
@@ -68,6 +68,8 @@ class Trainer : public TrainerInterface {
       : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec,
                                            denormalizer_spec) {}
 
+  TrainerModel::SentencePieces MakeSeedSentencePieces() const;
+
   util::Status Train() override;
 
  private:
@@ -78,7 +80,7 @@ class Trainer : public TrainerInterface {
   // node_int_type should be of integer type (int32 or int64),
   // determined by train_extremely_large_corpus.
   template <typename node_int_type>
-  TrainerModel::SentencePieces MakeSeedSentencePieces() const;
+  TrainerModel::SentencePieces MakeSeedSentencePiecesInternal() const;
 
   // Executes the E step of EM and returns expected count.
   // The index of return array is the vocab id.

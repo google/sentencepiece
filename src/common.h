@@ -15,10 +15,10 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
-#include <setjmp.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <iostream>
 #include <memory>
 #include <string>
@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "config.h"
-#include "flags.h"
+#include "third_party/absl/strings/string_view.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #define OS_WIN
@@ -51,19 +51,6 @@ typedef uint32_t char32;
 typedef uint32_t uint32;
 typedef uint64_t uint64;
 
-static constexpr uint8 kuint8max = ((uint8)0xFF);
-static constexpr uint16 kuint16max = ((uint16)0xFFFF);
-static constexpr uint32 kuint32max = ((uint32)0xFFFFFFFF);
-static constexpr uint64 kuint64max = ((uint64)(0xFFFFFFFFFFFFFFFF));
-static constexpr int8 kint8min = ((int8)~0x7F);
-static constexpr int8 kint8max = ((int8)0x7F);
-static constexpr int16 kint16min = ((int16)~0x7FFF);
-static constexpr int16 kint16max = ((int16)0x7FFF);
-static constexpr int32 kint32min = ((int32)~0x7FFFFFFF);
-static constexpr int32 kint32max = ((int32)0x7FFFFFFF);
-static constexpr int64 kint64min = ((int64)(~0x7FFFFFFFFFFFFFFF));
-static constexpr int64 kint64max = ((int64)(0x7FFFFFFFFFFFFFFF));
-
 static constexpr uint32 kUnicodeError = 0xFFFD;
 
 #if defined(OS_WIN) && defined(UNICODE) && defined(_UNICODE)
@@ -85,15 +72,9 @@ char (&ArraySizeHelper(const T (&array)[N]))[N];
 namespace sentencepiece {
 #ifdef OS_WIN
 namespace win32 {
-std::wstring Utf8ToWide(const std::string &input);
-std::string WideToUtf8(const std::wstring &input);
+std::wstring Utf8ToWide(const absl::string_view input);
 }  // namespace win32
 #endif
-
-namespace flags {
-int GetMinLogLevel();
-void SetMinLogLevel(int minloglevel);
-}  // namespace flags
 
 namespace error {
 
@@ -117,15 +98,6 @@ class Die {
  private:
   bool die_;
 };
-
-template <typename T>
-T &&CheckNotNull(const char *file, int line, const char *exprtext, T &&t) {
-  if (t == nullptr) {
-    std::cerr << file << "(" << line << ") " << exprtext;
-    Abort();
-  }
-  return std::forward<T>(t);
-}
 }  // namespace error
 
 namespace logging {
@@ -136,6 +108,9 @@ enum LogSeverity {
   LOG_FATAL = 3,
   LOG_SEVERITY_SIZE = 4,
 };
+
+int GetMinLogLevel();
+void SetMinLogLevel(int v);
 
 inline const char *BaseName(const char *path) {
 #ifdef OS_WIN
@@ -150,7 +125,7 @@ inline const char *BaseName(const char *path) {
 }  // namespace sentencepiece
 
 #define LOG(severity)                                                        \
-  (sentencepiece::flags::GetMinLogLevel() >                                  \
+  (::sentencepiece::logging::GetMinLogLevel() >                              \
    ::sentencepiece::logging::LOG_##severity)                                 \
       ? 0                                                                    \
       : ::sentencepiece::error::Die(                                         \
@@ -174,10 +149,6 @@ inline const char *BaseName(const char *path) {
 #define CHECK_LE(a, b) CHECK((a) <= (b))
 #define CHECK_GT(a, b) CHECK((a) > (b))
 #define CHECK_LT(a, b) CHECK((a) < (b))
-#define CHECK_NOTNULL(val)                                    \
-  ::sentencepiece::error::CheckNotNull(                       \
-      ::sentencepiece::logging::BaseName(__FILE__), __LINE__, \
-      "'" #val "' Must be non NULL", (val))
 
 #define FRIEND_TEST(a, b) friend class a##_Test_##b;
 

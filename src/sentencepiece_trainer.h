@@ -15,8 +15,8 @@
 #ifndef SENTENCEPIECE_TRAINER_H_
 #define SENTENCEPIECE_TRAINER_H_
 
-#include <map>
 #include <string>
+#include <unordered_map>
 
 #include "sentencepiece_processor.h"
 
@@ -84,9 +84,10 @@ class SentencePieceTrainer {
 
   // Trains SentencePiece model with mapin `kwargs`.
   // e.g., {{"input", "data"}, {"model_prefix, "m"}, {"vocab_size", "8192"}...}
-  static util::Status Train(const std::map<std::string, std::string> &kwargs,
-                            SentenceIterator *sentence_iterator = nullptr,
-                            std::string *serialized_model_proto = nullptr);
+  static util::Status Train(
+      const std::unordered_map<std::string, std::string> &kwargs,
+      SentenceIterator *sentence_iterator = nullptr,
+      std::string *serialized_model_proto = nullptr);
 
   // Handy function to make a normalizer spec from the pre-compiled
   // normalization name. Do not use this method in production as it crashes
@@ -96,12 +97,12 @@ class SentencePieceTrainer {
   // Populates necessary fields (precompiled_charmap) from
   // `NormalizerSpec::name` or `NormalizerSpec::normalization_rule_tsv`.
   static util::Status PopulateNormalizerSpec(NormalizerSpec *normalizer_spec,
-                                             bool is_denomalizer = false);
+                                             bool is_denormalizer = false);
 
   // Overrides `trainer_spec`, `normalizer_spec`, `denormalizer_spec` with the
-  // std::map in `kargs`.
+  // std::unordered_map in `kargs`.
   static util::Status MergeSpecsFromArgs(
-      const std::map<std::string, std::string> &kwargs,
+      const std::unordered_map<std::string, std::string> &kwargs,
       TrainerSpec *trainer_spec, NormalizerSpec *normalizer_spec,
       NormalizerSpec *denormalizer_spec);
 
@@ -128,12 +129,12 @@ class SentencePieceTrainer {
   // with comma-separated values. `field_name` must not be a nested message.
   // The body of these functions are automatically generated with
   // data/gen_spec_parser.pl
-  static util::Status SetProtoField(const std::string &name,
-                                    const std::string &value,
+  static util::Status SetProtoField(absl::string_view name,
+                                    absl::string_view value,
                                     TrainerSpec *message);
 
-  static util::Status SetProtoField(const std::string &name,
-                                    const std::string &value,
+  static util::Status SetProtoField(absl::string_view name,
+                                    absl::string_view value,
                                     NormalizerSpec *message);
 
   // Populates model type from string representation, e.g., "bpe".

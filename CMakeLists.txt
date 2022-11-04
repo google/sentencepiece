@@ -13,7 +13,7 @@
 # limitations under the License.!
 
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-file(STRINGS "VERSION" SPM_VERSION)
+file(STRINGS "VERSION.txt" SPM_VERSION)
 message(STATUS "VERSION: ${SPM_VERSION}")
 project(sentencepiece VERSION ${SPM_VERSION} LANGUAGES C CXX)
 
@@ -26,15 +26,35 @@ option(SPM_ENABLE_TCMALLOC "Enable TCMalloc if available." ON)
 option(SPM_TCMALLOC_STATIC "Link static library of TCMALLOC." OFF)
 option(SPM_NO_THREADLOCAL "Disable thread_local operator" OFF)
 option(SPM_USE_BUILTIN_PROTOBUF "Use built-in protobuf" ON)
+option(SPM_USE_EXTERNAL_ABSL "Use external abseil" OFF)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(prefix ${CMAKE_INSTALL_PREFIX})
-set(exec_prefix "\${prefix}")
-set(libdir "\${exec_prefix}/lib")
-set(includedir "\${prefix}/include")
+if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND
+     CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 10.0) OR
+   (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND
+     CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 8.0))
+  string(APPEND CMAKE_CXX_FLAGS " -fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=''")
+endif()
+
+if (UNIX)
+  include(GNUInstallDirs)
+  set(prefix ${CMAKE_INSTALL_PREFIX})
+  set(exec_prefix "\${prefix}")
+  set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
+  set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+else()
+  set(prefix ${CMAKE_INSTALL_PREFIX})
+  set(exec_prefix "\${prefix}")
+  set(libdir "\${exec_prefix}/lib")
+  set(includedir "\${prefix}/include")
+endif()
 set(GNUCXX_STD_SUPPORT_VERSION "4.3")
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+add_definitions(-D_FREEBSD)
+endif()
 
 if (SPM_USE_BUILTIN_PROTOBUF)
   set(libprotobuf_lite "")
@@ -74,17 +94,47 @@ if (NOT DEFINED CMAKE_INSTALL_INCDIR)
   set(CMAKE_INSTALL_INCDIR include)
 endif()
 
+# SPDX-License-Identifier: (MIT OR CC0-1.0)
+# Copyright 2020 Jan Tojnar
+# https://github.com/jtojnar/cmake-snips
+#
+# Modelled after Python’s os.path.join
+# https://docs.python.org/3.7/library/os.path.html#os.path.join
+# Windows not supported
+function(join_paths joined_path first_path_segment)
+    set(temp_path "${first_path_segment}")
+    foreach(current_segment IN LISTS ARGN)
+        if(NOT ("${current_segment}" STREQUAL ""))
+            if(IS_ABSOLUTE "${current_segment}")
+                set(temp_path "${current_segment}")
+            else()
+                set(temp_path "${temp_path}/${current_segment}")
+            endif()
+        endif()
+    endforeach()
+    set(${joined_path} "${temp_path}" PARENT_SCOPE)
+endfunction()
+
+join_paths(libdir_for_pc_file "\${exec_prefix}" "${CMAKE_INSTALL_LIBDIR}")
+join_paths(includedir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
+
 configure_file("${PROJECT_SOURCE_DIR}/config.h.in" "config.h")
 configure_file("${PROJECT_SOURCE_DIR}/sentencepiece.pc.in" "sentencepiece.pc" @ONLY)
 
 if (NOT MSVC)
-  install(FILES "${CMAKE_BINARY_DIR}/sentencepiece.pc" DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+  # suppress warning for C++11 features.
+#  add_definitions("-Wno-deprecated-declarations -Wno-deprecated-enum-enum-conversion")
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece.pc" DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
 
-include_directories(${CMAKE_SOURCE_DIR} ${PROJECT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 
 if (SPM_BUILD_TEST)
   enable_testing()
+endif()
+
+if (SPM_USE_EXTERNAL_ABSL)
+ add_subdirectory(third_party/abseil-cpp)
 endif()
 
 add_subdirectory(src)

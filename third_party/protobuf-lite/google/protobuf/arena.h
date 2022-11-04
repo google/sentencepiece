@@ -33,7 +33,10 @@
 #ifndef GOOGLE_PROTOBUF_ARENA_H__
 #define GOOGLE_PROTOBUF_ARENA_H__
 
+
 #include <limits>
+#include <type_traits>
+#include <utility>
 #ifdef max
 #undef max  // Visual Studio defines this macro
 #endif
@@ -48,9 +51,15 @@ using type_info = ::type_info;
 #include <typeinfo>
 #endif
 
-#include <google/protobuf/arena_impl.h>
-#include <google/protobuf/stubs/port.h>
 #include <type_traits>
+#include <google/protobuf/arena_impl.h>
+#include <google/protobuf/port.h>
+
+#include <google/protobuf/port_def.inc>
+
+#ifdef SWIG
+#error "You cannot SWIG proto headers"
+#endif
 
 namespace google {
 namespace protobuf {
@@ -58,29 +67,28 @@ namespace protobuf {
 struct ArenaOptions;  // defined below
 
 }  // namespace protobuf
+}  // namespace google
 
-namespace quality_webanswers {
-
-void TempPrivateWorkAround(::google::protobuf::ArenaOptions* arena_options);
-
-}  // namespace quality_webanswers
-
+namespace google {
 namespace protobuf {
 
-class Arena;          // defined below
-class Message;        // defined in message.h
+class Arena;    // defined below
+class Message;  // defined in message.h
 class MessageLite;
+template <typename Key, typename T>
+class Map;
 
 namespace arena_metrics {
 
-void EnableArenaMetrics(::google::protobuf::ArenaOptions* options);
+void EnableArenaMetrics(ArenaOptions* options);
 
 }  // namespace arena_metrics
 
 namespace internal {
 
-struct ArenaStringPtr;     // defined in arenastring.h
-class LazyField;           // defined in lazy_field.h
+struct ArenaStringPtr;  // defined in arenastring.h
+class LazyField;        // defined in lazy_field.h
+class EpsCopyInputStream;  // defined in parse_context.h
 
 template <typename Type>
 class GenericTypeHandler;  // defined in repeated_field.h
@@ -94,15 +102,6 @@ template <typename T>
 void arena_delete_object(void* object) {
   delete reinterpret_cast<T*>(object);
 }
-inline void arena_free(void* object, size_t size) {
-#if defined(__GXX_DELETE_WITH_SIZE__) || defined(__cpp_sized_deallocation)
-  ::operator delete(object, size);
-#else
-  (void)size;
-  ::operator delete(object);
-#endif
-}
-
 }  // namespace internal
 
 // ArenaOptions provides optional additional parameters to arena construction
@@ -143,49 +142,35 @@ struct ArenaOptions {
         max_block_size(kDefaultMaxBlockSize),
         initial_block(NULL),
         initial_block_size(0),
-        block_alloc(&::operator new),
-        block_dealloc(&internal::arena_free),
-        on_arena_init(NULL),
-        on_arena_reset(NULL),
-        on_arena_destruction(NULL),
-        on_arena_allocation(NULL) {}
+        block_alloc(kDefaultBlockAlloc),
+        block_dealloc(&internal::ArenaFree),
+        make_metrics_collector(nullptr) {}
+
+  PROTOBUF_EXPORT static void* (*const kDefaultBlockAlloc)(size_t);
 
  private:
-  // Hooks for adding external functionality such as user-specific metrics
-  // collection, specific debugging abilities, etc.
-  // Init hook may return a pointer to a cookie to be stored in the arena.
-  // reset and destruction hooks will then be called with the same cookie
-  // pointer. This allows us to save an external object per arena instance and
-  // use it on the other hooks (Note: It is just as legal for init to return
-  // NULL and not use the cookie feature).
-  // on_arena_reset and on_arena_destruction also receive the space used in
-  // the arena just before the reset.
-  void* (*on_arena_init)(Arena* arena);
-  void (*on_arena_reset)(Arena* arena, void* cookie, uint64 space_used);
-  void (*on_arena_destruction)(Arena* arena, void* cookie, uint64 space_used);
-
-  // type_info is promised to be static - its lifetime extends to
-  // match program's lifetime (It is given by typeid operator).
-  // Note: typeid(void) will be passed as allocated_type every time we
-  // intentionally want to avoid monitoring an allocation. (i.e. internal
-  // allocations for managing the arena)
-  void (*on_arena_allocation)(const std::type_info* allocated_type,
-                              uint64 alloc_size, void* cookie);
+  // If make_metrics_collector is not nullptr, it will be called at Arena init
+  // time. It may return a pointer to a collector instance that will be notified
+  // of interesting events related to the arena.
+  internal::ArenaMetricsCollector* (*make_metrics_collector)();
 
   // Constants define default starting block size and max block size for
   // arena allocator behavior -- see descriptions above.
-  static const size_t kDefaultStartBlockSize = 256;
-  static const size_t kDefaultMaxBlockSize = 8192;
+  static const size_t kDefaultStartBlockSize =
+      internal::ArenaImpl::kDefaultStartBlockSize;
+  static const size_t kDefaultMaxBlockSize =
+      internal::ArenaImpl::kDefaultMaxBlockSize;
 
-  friend void ::google::protobuf::arena_metrics::EnableArenaMetrics(ArenaOptions*);
-  friend void quality_webanswers::TempPrivateWorkAround(ArenaOptions*);
+  friend void arena_metrics::EnableArenaMetrics(ArenaOptions*);
+
   friend class Arena;
   friend class ArenaOptionsTestFriend;
+  friend class internal::ArenaImpl;
 };
 
 // Support for non-RTTI environments. (The metrics hooks API uses type
 // information.)
-#ifndef GOOGLE_PROTOBUF_NO_RTTI
+#if PROTOBUF_RTTI
 #define RTTI_TYPE_ID(type) (&typeid(type))
 #else
 #define RTTI_TYPE_ID(type) (NULL)
@@ -211,14 +196,15 @@ struct ArenaOptions {
 // any special requirements on the type T, and will invoke the object's
 // destructor when the arena is destroyed.
 //
-// The arena message allocation protocol, required by CreateMessage<T>, is as
-// follows:
+// The arena message allocation protocol, required by
+// CreateMessage<T>(Arena* arena, Args&&... args), is as follows:
 //
-// - The type T must have (at least) two constructors: a constructor with no
-//   arguments, called when a T is allocated on the heap; and a constructor with
-//   a google::protobuf::Arena* argument, called when a T is allocated on an arena. If the
-//   second constructor is called with a NULL arena pointer, it must be
-//   equivalent to invoking the first (no-argument) constructor.
+// - The type T must have (at least) two constructors: a constructor callable
+//   with `args` (without `arena`), called when a T is allocated on the heap;
+//   and a constructor callable with `Arena* arena, Args&&... args`, called when
+//   a T is allocated on an arena. If the second constructor is called with a
+//   NULL arena pointer, it must be equivalent to invoking the first
+//   (`args`-only) constructor.
 //
 // - The type T must have a particular type trait: a nested type
 //   |InternalArenaConstructable_|. This is usually a typedef to |void|. If no
@@ -231,23 +217,26 @@ struct ArenaOptions {
 //   present on the type, then its destructor is always called when the
 //   containing arena is destroyed.
 //
-// - One- and two-user-argument forms of CreateMessage<T>() also exist that
-//   forward these constructor arguments to T's constructor: for example,
-//   CreateMessage<T>(Arena*, arg1, arg2) forwards to a constructor T(Arena*,
-//   arg1, arg2).
-//
 // This protocol is implemented by all arena-enabled proto2 message classes as
-// well as RepeatedPtrField.
-//
-// Do NOT subclass Arena. This class will be marked as final when C++11 is
-// enabled.
-class LIBPROTOBUF_EXPORT Arena {
+// well as protobuf container types like RepeatedPtrField and Map. The protocol
+// is internal to protobuf and is not guaranteed to be stable. Non-proto types
+// should not rely on this protocol.
+class PROTOBUF_EXPORT PROTOBUF_ALIGNAS(8) Arena final {
  public:
-  // Arena constructor taking custom options. See ArenaOptions below for
+  // Default constructor with sensible default options, tuned for average
+  // use-cases.
+  inline Arena() : impl_() {}
+
+  // Construct an arena with default options, except for the supplied
+  // initial block. It is more efficient to use this constructor
+  // instead of passing ArenaOptions if the only configuration needed
+  // by the caller is supplying an initial block.
+  inline Arena(char* initial_block, size_t initial_block_size)
+      : impl_(initial_block, initial_block_size) {}
+
+  // Arena constructor taking custom options. See ArenaOptions above for
   // descriptions of the options available.
-  explicit Arena(const ArenaOptions& options) : impl_(options) {
-    Init(options);
-  }
+  explicit Arena(const ArenaOptions& options) : impl_(options) {}
 
   // Block overhead.  Use this as a guide for how much to over-allocate the
   // initial block if you want an allocation of size N to fit inside it.
@@ -258,27 +247,10 @@ class LIBPROTOBUF_EXPORT Arena {
   static const size_t kBlockOverhead = internal::ArenaImpl::kBlockHeaderSize +
                                        internal::ArenaImpl::kSerialArenaSize;
 
-  // Default constructor with sensible default options, tuned for average
-  // use-cases.
-  Arena() : impl_(ArenaOptions()) { Init(ArenaOptions()); }
+  inline ~Arena() {}
 
-  ~Arena() {
-    if (hooks_cookie_) {
-      CallDestructorHooks();
-    }
-  }
-
-  void Init(const ArenaOptions& options) {
-    on_arena_allocation_ = options.on_arena_allocation;
-    on_arena_reset_ = options.on_arena_reset;
-    on_arena_destruction_ = options.on_arena_destruction;
-    // Call the initialization hook
-    if (options.on_arena_init != NULL) {
-      hooks_cookie_ = options.on_arena_init(this);
-    } else {
-      hooks_cookie_ = NULL;
-    }
-  }
+  // TODO(protobuf-team): Fix callers to use constructor and delete this method.
+  void Init(const ArenaOptions&) {}
 
   // API to create proto2 message objects on the arena. If the arena passed in
   // is NULL, then a heap allocated object is returned. Type T must be a message
@@ -291,8 +263,7 @@ class LIBPROTOBUF_EXPORT Arena {
   // This function also accepts any type T that satisfies the arena message
   // allocation protocol, documented above.
   template <typename T, typename... Args>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static T* CreateMessage(
-      Arena* arena, Args&&... args) {
+  PROTOBUF_ALWAYS_INLINE static T* CreateMessage(Arena* arena, Args&&... args) {
     static_assert(
         InternalHelper<T>::is_arena_constructable::value,
         "CreateMessage can only construct types that are ArenaConstructable");
@@ -318,8 +289,7 @@ class LIBPROTOBUF_EXPORT Arena {
   // if the object were allocated on the heap (except that the underlying memory
   // is obtained from the arena).
   template <typename T, typename... Args>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static T* Create(Arena* arena,
-                                                           Args&&... args) {
+  PROTOBUF_ALWAYS_INLINE static T* Create(Arena* arena, Args&&... args) {
     return CreateNoMessage<T>(arena, is_arena_constructable<T>(),
                               std::forward<Args>(args)...);
   }
@@ -331,8 +301,8 @@ class LIBPROTOBUF_EXPORT Arena {
   // (when compiled as C++11) that T is trivially default-constructible and
   // trivially destructible.
   template <typename T>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static T* CreateArray(
-      Arena* arena, size_t num_elements) {
+  PROTOBUF_ALWAYS_INLINE static T* CreateArray(Arena* arena,
+                                               size_t num_elements) {
     static_assert(std::is_pod<T>::value,
                   "CreateArray requires a trivially constructible type");
     static_assert(std::is_trivially_destructible<T>::value,
@@ -355,32 +325,18 @@ class LIBPROTOBUF_EXPORT Arena {
   // may not include space used by other threads executing concurrently with
   // the call to this method.
   uint64 SpaceUsed() const { return impl_.SpaceUsed(); }
-  // DEPRECATED. Please use SpaceAllocated() and SpaceUsed().
-  //
-  // Combines SpaceAllocated and SpaceUsed. Returns a pair of
-  // <space_allocated, space_used>.
-  PROTOBUF_RUNTIME_DEPRECATED("Please use SpaceAllocated() and SpaceUsed()")
-  std::pair<uint64, uint64> SpaceAllocatedAndUsed() const {
-    return std::make_pair(SpaceAllocated(), SpaceUsed());
-  }
 
   // Frees all storage allocated by this arena after calling destructors
   // registered with OwnDestructor() and freeing objects registered with Own().
   // Any objects allocated on this arena are unusable after this call. It also
   // returns the total space used by the arena which is the sums of the sizes
   // of the allocated blocks. This method is not thread-safe.
-  GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE uint64 Reset() {
-    // Call the reset hook
-    if (on_arena_reset_ != NULL) {
-      on_arena_reset_(this, hooks_cookie_, impl_.SpaceAllocated());
-    }
-    return impl_.Reset();
-  }
+  uint64 Reset() { return impl_.Reset(); }
 
   // Adds |object| to a list of heap-allocated objects to be freed with |delete|
   // when the arena is destroyed or reset.
   template <typename T>
-  GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE void Own(T* object) {
+  PROTOBUF_NOINLINE void Own(T* object) {
     OwnInternal(object, std::is_convertible<T*, Message*>());
   }
 
@@ -390,7 +346,7 @@ class LIBPROTOBUF_EXPORT Arena {
   // normally only used for objects that are placement-newed into
   // arena-allocated memory.
   template <typename T>
-  GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE void OwnDestructor(T* object) {
+  PROTOBUF_NOINLINE void OwnDestructor(T* object) {
     if (object != NULL) {
       impl_.AddCleanup(object, &internal::arena_destruct_object<T>);
     }
@@ -400,19 +356,18 @@ class LIBPROTOBUF_EXPORT Arena {
   // will be manually called when the arena is destroyed or reset. This differs
   // from OwnDestructor() in that any member function may be specified, not only
   // the class destructor.
-  GOOGLE_PROTOBUF_ATTRIBUTE_NOINLINE void OwnCustomDestructor(
-      void* object, void (*destruct)(void*)) {
+  PROTOBUF_NOINLINE void OwnCustomDestructor(void* object,
+                                             void (*destruct)(void*)) {
     impl_.AddCleanup(object, destruct);
   }
 
   // Retrieves the arena associated with |value| if |value| is an arena-capable
-  // message, or NULL otherwise. This differs from value->GetArena() in that the
-  // latter is a virtual call, while this method is a templated call that
-  // resolves at compile-time.
+  // message, or NULL otherwise. If possible, the call resolves at compile time.
+  // Note that we can often devirtualize calls to `value->GetArena()` so usually
+  // calling this method is unnecessary.
   template <typename T>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static Arena* GetArena(
-      const T* value) {
-    return GetArenaInternal(value, is_arena_constructable<T>());
+  PROTOBUF_ALWAYS_INLINE static Arena* GetArena(const T* value) {
+    return GetArenaInternal(value);
   }
 
   template <typename T>
@@ -439,12 +394,25 @@ class LIBPROTOBUF_EXPORT Arena {
                                              sizeof(char)>
         is_arena_constructable;
 
+    template <typename U,
+              typename std::enable_if<
+                  std::is_same<Arena*, decltype(std::declval<const U>()
+                                                    .GetArena())>::value,
+                  int>::type = 0>
+    static char HasGetArena(decltype(&U::GetArena));
+    template <typename U>
+    static double HasGetArena(...);
+
+    typedef std::integral_constant<bool, sizeof(HasGetArena<T>(nullptr)) ==
+                                             sizeof(char)>
+        has_get_arena;
+
     template <typename... Args>
     static T* Construct(void* ptr, Args&&... args) {
       return new (ptr) T(std::forward<Args>(args)...);
     }
 
-    static Arena* GetArena(const T* p) { return p->GetArenaNoVirtual(); }
+    static Arena* GetArena(const T* p) { return p->GetArena(); }
 
     friend class Arena;
   };
@@ -468,9 +436,12 @@ class LIBPROTOBUF_EXPORT Arena {
   };
 
  private:
+  template <typename T>
+  struct has_get_arena : InternalHelper<T>::has_get_arena {};
+
   template <typename T, typename... Args>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static T* CreateMessageInternal(
-      Arena* arena, Args&&... args) {
+  PROTOBUF_ALWAYS_INLINE static T* CreateMessageInternal(Arena* arena,
+                                                         Args&&... args) {
     static_assert(
         InternalHelper<T>::is_arena_constructable::value,
         "CreateMessage can only construct types that are ArenaConstructable");
@@ -485,8 +456,7 @@ class LIBPROTOBUF_EXPORT Arena {
   // slightly different.  When the arena pointer is nullptr, it calls T()
   // instead of T(nullptr).
   template <typename T>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static T* CreateMessageInternal(
-      Arena* arena) {
+  PROTOBUF_ALWAYS_INLINE static T* CreateMessageInternal(Arena* arena) {
     static_assert(
         InternalHelper<T>::is_arena_constructable::value,
         "CreateMessage can only construct types that are ArenaConstructable");
@@ -498,8 +468,8 @@ class LIBPROTOBUF_EXPORT Arena {
   }
 
   template <typename T, typename... Args>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static T* CreateInternal(
-      Arena* arena, Args&&... args) {
+  PROTOBUF_ALWAYS_INLINE static T* CreateInternal(Arena* arena,
+                                                  Args&&... args) {
     if (arena == NULL) {
       return new T(std::forward<Args>(args)...);
     } else {
@@ -508,28 +478,31 @@ class LIBPROTOBUF_EXPORT Arena {
     }
   }
 
-  void CallDestructorHooks();
-  void OnArenaAllocation(const std::type_info* allocated_type, size_t n) const;
   inline void AllocHook(const std::type_info* allocated_type, size_t n) const {
-    if (GOOGLE_PREDICT_FALSE(hooks_cookie_ != NULL)) {
-      OnArenaAllocation(allocated_type, n);
-    }
+    impl_.RecordAlloc(allocated_type, n);
   }
 
-  // Allocate and also optionally call on_arena_allocation callback with the
-  // allocated type info when the hooks are in place in ArenaOptions and
-  // the cookie is not null.
+  // Allocate and also optionally call collector with the allocated type info
+  // when allocation recording is enabled.
   template <typename T>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE void* AllocateInternal(
-      bool skip_explicit_ownership) {
+  PROTOBUF_ALWAYS_INLINE void* AllocateInternal(bool skip_explicit_ownership) {
     const size_t n = internal::AlignUpTo8(sizeof(T));
-    AllocHook(RTTI_TYPE_ID(T), n);
     // Monitor allocation if needed.
+    impl_.RecordAlloc(RTTI_TYPE_ID(T), n);
     if (skip_explicit_ownership) {
-      return impl_.AllocateAligned(n);
+      return AllocateAlignedTo<alignof(T)>(sizeof(T));
     } else {
-      return impl_.AllocateAlignedAndAddCleanup(
-          n, &internal::arena_destruct_object<T>);
+      if (alignof(T) <= 8) {
+        return impl_.AllocateAlignedAndAddCleanup(
+            n, &internal::arena_destruct_object<T>);
+      } else {
+        auto ptr =
+            reinterpret_cast<uintptr_t>(impl_.AllocateAlignedAndAddCleanup(
+                sizeof(T) + alignof(T) - 8,
+                &internal::arena_destruct_object<T>));
+        return reinterpret_cast<void*>((ptr + alignof(T) - 8) &
+                                       (~alignof(T) + 1));
+      }
     }
   }
 
@@ -539,27 +512,29 @@ class LIBPROTOBUF_EXPORT Arena {
   // user code. These are used only internally from LazyField and Repeated
   // fields, since they are designed to work in all mode combinations.
   template <typename Msg, typename... Args>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static Msg* DoCreateMaybeMessage(
-      Arena* arena, std::true_type, Args&&... args) {
+  PROTOBUF_ALWAYS_INLINE static Msg* DoCreateMaybeMessage(Arena* arena,
+                                                          std::true_type,
+                                                          Args&&... args) {
     return CreateMessageInternal<Msg>(arena, std::forward<Args>(args)...);
   }
 
   template <typename T, typename... Args>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static T* DoCreateMaybeMessage(
-      Arena* arena, std::false_type, Args&&... args) {
+  PROTOBUF_ALWAYS_INLINE static T* DoCreateMaybeMessage(Arena* arena,
+                                                        std::false_type,
+                                                        Args&&... args) {
     return CreateInternal<T>(arena, std::forward<Args>(args)...);
   }
 
   template <typename T, typename... Args>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static T* CreateMaybeMessage(
-      Arena* arena, Args&&... args) {
+  PROTOBUF_ALWAYS_INLINE static T* CreateMaybeMessage(Arena* arena,
+                                                      Args&&... args) {
     return DoCreateMaybeMessage<T>(arena, is_arena_constructable<T>(),
                                    std::forward<Args>(args)...);
   }
 
   template <typename T, typename... Args>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static T* CreateNoMessage(
-      Arena* arena, std::true_type, Args&&... args) {
+  PROTOBUF_ALWAYS_INLINE static T* CreateNoMessage(Arena* arena, std::true_type,
+                                                   Args&&... args) {
     // User is constructing with Create() despite the fact that T supports arena
     // construction.  In this case we have to delegate to CreateInternal(), and
     // we can't use any CreateMaybeMessage() specialization that may be defined.
@@ -567,8 +542,9 @@ class LIBPROTOBUF_EXPORT Arena {
   }
 
   template <typename T, typename... Args>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static T* CreateNoMessage(
-      Arena* arena, std::false_type, Args&&... args) {
+  PROTOBUF_ALWAYS_INLINE static T* CreateNoMessage(Arena* arena,
+                                                   std::false_type,
+                                                   Args&&... args) {
     // User is constructing with Create() and the type does not support arena
     // construction.  In this case we can delegate to CreateMaybeMessage() and
     // use any specialization that may be available for that.
@@ -578,50 +554,52 @@ class LIBPROTOBUF_EXPORT Arena {
   // Just allocate the required size for the given type assuming the
   // type has a trivial constructor.
   template <typename T>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE T* CreateInternalRawArray(
-      size_t num_elements) {
+  PROTOBUF_ALWAYS_INLINE T* CreateInternalRawArray(size_t num_elements) {
     GOOGLE_CHECK_LE(num_elements, std::numeric_limits<size_t>::max() / sizeof(T))
         << "Requested size is too large to fit into size_t.";
+    // We count on compiler to realize that if sizeof(T) is a multiple of
+    // 8 AlignUpTo can be elided.
     const size_t n = internal::AlignUpTo8(sizeof(T) * num_elements);
     // Monitor allocation if needed.
-    AllocHook(RTTI_TYPE_ID(T), n);
-    return static_cast<T*>(impl_.AllocateAligned(n));
+    impl_.RecordAlloc(RTTI_TYPE_ID(T), n);
+    return static_cast<T*>(AllocateAlignedTo<alignof(T)>(n));
   }
 
   template <typename T, typename... Args>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE T* DoCreate(
-      bool skip_explicit_ownership, Args&&... args) {
+  PROTOBUF_ALWAYS_INLINE T* DoCreate(bool skip_explicit_ownership,
+                                     Args&&... args) {
     return new (AllocateInternal<T>(skip_explicit_ownership))
         T(std::forward<Args>(args)...);
   }
   template <typename T, typename... Args>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE T* DoCreateMessage(Args&&... args) {
+  PROTOBUF_ALWAYS_INLINE T* DoCreateMessage(Args&&... args) {
     return InternalHelper<T>::Construct(
         AllocateInternal<T>(InternalHelper<T>::is_destructor_skippable::value),
         this, std::forward<Args>(args)...);
   }
 
   // CreateInArenaStorage is used to implement map field. Without it,
-  // google::protobuf::Map need to call generated message's protected arena constructor,
-  // which needs to declare google::protobuf::Map as friend of generated message.
-  template <typename T>
-  static void CreateInArenaStorage(T* ptr, Arena* arena) {
+  // Map need to call generated message's protected arena constructor,
+  // which needs to declare Map as friend of generated message.
+  template <typename T, typename... Args>
+  static void CreateInArenaStorage(T* ptr, Arena* arena, Args&&... args) {
     CreateInArenaStorageInternal(ptr, arena,
-                                 typename is_arena_constructable<T>::type());
+                                 typename is_arena_constructable<T>::type(),
+                                 std::forward<Args>(args)...);
     RegisterDestructorInternal(
         ptr, arena,
         typename InternalHelper<T>::is_destructor_skippable::type());
   }
 
-  template <typename T>
+  template <typename T, typename... Args>
   static void CreateInArenaStorageInternal(T* ptr, Arena* arena,
-                                           std::true_type) {
-    InternalHelper<T>::Construct(ptr, arena);
+                                           std::true_type, Args&&... args) {
+    InternalHelper<T>::Construct(ptr, arena, std::forward<Args>(args)...);
   }
-  template <typename T>
+  template <typename T, typename... Args>
   static void CreateInArenaStorageInternal(T* ptr, Arena* /* arena */,
-                                           std::false_type) {
-    new (ptr) T();
+                                           std::false_type, Args&&... args) {
+    new (ptr) T(std::forward<Args>(args)...);
   }
 
   template <typename T>
@@ -635,19 +613,17 @@ class LIBPROTOBUF_EXPORT Arena {
 
   // These implement Own(), which registers an object for deletion (destructor
   // call and operator delete()). The second parameter has type 'true_type' if T
-  // is a subtype of ::google::protobuf::Message and 'false_type' otherwise. Collapsing
+  // is a subtype of Message and 'false_type' otherwise. Collapsing
   // all template instantiations to one for generic Message reduces code size,
   // using the virtual destructor instead.
   template <typename T>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE void OwnInternal(T* object,
-                                                           std::true_type) {
+  PROTOBUF_ALWAYS_INLINE void OwnInternal(T* object, std::true_type) {
     if (object != NULL) {
       impl_.AddCleanup(object, &internal::arena_delete_object<Message>);
     }
   }
   template <typename T>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE void OwnInternal(T* object,
-                                                           std::false_type) {
+  PROTOBUF_ALWAYS_INLINE void OwnInternal(T* object, std::false_type) {
     if (object != NULL) {
       impl_.AddCleanup(object, &internal::arena_delete_object<T>);
     }
@@ -655,40 +631,53 @@ class LIBPROTOBUF_EXPORT Arena {
 
   // Implementation for GetArena(). Only message objects with
   // InternalArenaConstructable_ tags can be associated with an arena, and such
-  // objects must implement a GetArenaNoVirtual() method.
-  template <typename T>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static Arena* GetArenaInternal(
-      const T* value, std::true_type) {
+  // objects must implement a GetArena() method.
+  template <typename T, typename std::enable_if<
+                            is_arena_constructable<T>::value, int>::type = 0>
+  PROTOBUF_ALWAYS_INLINE static Arena* GetArenaInternal(const T* value) {
     return InternalHelper<T>::GetArena(value);
   }
-
-  template <typename T>
-  GOOGLE_PROTOBUF_ATTRIBUTE_ALWAYS_INLINE static Arena* GetArenaInternal(
-      const T* /* value */, std::false_type) {
-    return NULL;
+  template <typename T,
+            typename std::enable_if<!is_arena_constructable<T>::value &&
+                                        has_get_arena<T>::value,
+                                    int>::type = 0>
+  PROTOBUF_ALWAYS_INLINE static Arena* GetArenaInternal(const T* value) {
+    return value->GetArena();
+  }
+  template <typename T,
+            typename std::enable_if<!is_arena_constructable<T>::value &&
+                                        !has_get_arena<T>::value,
+                                    int>::type = 0>
+  PROTOBUF_ALWAYS_INLINE static Arena* GetArenaInternal(const T* value) {
+    (void)value;
+    return nullptr;
   }
 
   // For friends of arena.
   void* AllocateAligned(size_t n) {
-    AllocHook(NULL, n);
-    return impl_.AllocateAligned(internal::AlignUpTo8(n));
+    return AllocateAlignedNoHook(internal::AlignUpTo8(n));
+  }
+  template<size_t Align>
+  void* AllocateAlignedTo(size_t n) {
+    static_assert(Align > 0, "Alignment must be greater than 0");
+    static_assert((Align & (Align - 1)) == 0, "Alignment must be power of two");
+    if (Align <= 8) return AllocateAligned(n);
+    // TODO(b/151247138): if the pointer would have been aligned already,
+    // this is wasting space. We should pass the alignment down.
+    uintptr_t ptr = reinterpret_cast<uintptr_t>(AllocateAligned(n + Align - 8));
+    ptr = (ptr + Align - 1) & (~Align + 1);
+    return reinterpret_cast<void*>(ptr);
   }
 
+  void* AllocateAlignedNoHook(size_t n);
+
   internal::ArenaImpl impl_;
-
-  void (*on_arena_allocation_)(const std::type_info* allocated_type,
-                               uint64 alloc_size, void* cookie);
-  void (*on_arena_reset_)(Arena* arena, void* cookie, uint64 space_used);
-  void (*on_arena_destruction_)(Arena* arena, void* cookie, uint64 space_used);
-
-  // The arena may save a cookie it receives from the external on_init hook
-  // and then use it when calling the on_reset and on_destruction hooks.
-  void* hooks_cookie_;
 
   template <typename Type>
   friend class internal::GenericTypeHandler;
   friend struct internal::ArenaStringPtr;  // For AllocateAligned.
   friend class internal::LazyField;        // For CreateMaybeMessage.
+  friend class internal::EpsCopyInputStream;  // For parser performance
   friend class MessageLite;
   template <typename Key, typename T>
   friend class Map;
@@ -698,6 +687,8 @@ class LIBPROTOBUF_EXPORT Arena {
 #undef RTTI_TYPE_ID
 
 }  // namespace protobuf
-
 }  // namespace google
+
+#include <google/protobuf/port_undef.inc>
+
 #endif  // GOOGLE_PROTOBUF_ARENA_H__

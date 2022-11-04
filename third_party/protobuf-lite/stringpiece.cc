@@ -35,6 +35,8 @@
 #include <string>
 #include <ostream>
 
+#include <google/protobuf/stubs/logging.h>
+
 namespace google {
 namespace protobuf {
 std::ostream& operator<<(std::ostream& o, StringPiece piece) {
@@ -62,11 +64,11 @@ StringPiece::StringPiece(StringPiece x,
   GOOGLE_DCHECK_GE(len, 0);
 }
 
-void StringPiece::CopyToString(string* target) const {
+void StringPiece::CopyToString(std::string* target) const {
   target->assign(ptr_, length_);
 }
 
-void StringPiece::AppendToString(string* target) const {
+void StringPiece::AppendToString(std::string* target) const {
   target->append(ptr_, length_);
 }
 
@@ -115,7 +117,7 @@ stringpiece_ssize_type StringPiece::find(char c, size_type pos) const {
   }
   const char* result = static_cast<const char*>(
       memchr(ptr_ + pos, c, length_ - pos));
-  return result != NULL ? result - ptr_ : npos;
+  return result != nullptr ? result - ptr_ : npos;
 }
 
 stringpiece_ssize_type StringPiece::rfind(StringPiece s, size_type pos) const {

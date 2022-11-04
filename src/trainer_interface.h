@@ -19,15 +19,15 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "builtin_pb/sentencepiece_model.pb.h"
 #include "common.h"
 #include "filesystem.h"
+#include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -44,7 +44,7 @@ std::vector<std::pair<K, V>> Sorted(const std::vector<std::pair<K, V>> &m) {
 }
 
 template <typename K, typename V>
-std::vector<std::pair<K, V>> Sorted(const std::unordered_map<K, V> &m) {
+std::vector<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V> &m) {
   std::vector<std::pair<K, V>> v(m.begin(), m.end());
   return Sorted(v);
 }
@@ -88,13 +88,13 @@ class TrainerInterface {
 
   virtual ~TrainerInterface();
 
-  virtual void SetSentenceIterator(SentenceIterator *sentence_iterator) {
+  // Loads sentence from `sentence_iterator` and stores the model
+  // to `output_model_proto`.
+  virtual util::Status Train(SentenceIterator *sentence_iterator,
+                             ModelProto *output_model_proto) {
     sentence_iterator_ = sentence_iterator;
-  }
-
-  virtual void SetOutputSerializedModelProto(
-      std::string *serialized_model_proto) {
-    serialized_model_proto_ = serialized_model_proto;
+    output_model_proto_ = output_model_proto;
+    return Train();
   }
 
   virtual util::Status Train() { return status(); }
@@ -107,15 +107,15 @@ class TrainerInterface {
   FRIEND_TEST(TrainerInterfaceTest, SerializeTest);
   FRIEND_TEST(TrainerInterfaceTest, CharactersTest);
 
+  // Loads all sentences from spec.input() or SentenceIterator.
+  // It loads at most input_sentence_size sentences.
+  util::Status LoadSentences();
+
  protected:
   // Returns true if |piece| is valid sentence piece.
   // The result is affected by
   // max_sentencepiece_length, split_by_whiespace, split_by_unicode_script.
   bool IsValidSentencePiece(const string_util::UnicodeText &piece) const;
-
-  // Loads all sentences from spec.input() or SentenceIterator.
-  // It loads at most input_sentence_size sentences.
-  util::Status LoadSentences();
 
   // Splits all sentencecs by whitespaces and
   // replace the |sentences_| with tokenized string.
@@ -129,7 +129,7 @@ class TrainerInterface {
 
   // Set of characters which must be included in the final vocab.
   // The value of this map stores the frequency.
-  std::unordered_map<char32, int64> required_chars_;
+  absl::flat_hash_map<char32, int64> required_chars_;
 
   // Final output pieces
   std::vector<std::pair<std::string, float>> final_pieces_;
@@ -158,7 +158,7 @@ class TrainerInterface {
   SentenceIterator *sentence_iterator_ = nullptr;
 
   // Emits model to this proto instead of file.
-  std::string *serialized_model_proto_ = nullptr;
+  ModelProto *output_model_proto_ = nullptr;
 
  private:
   // Serialize final_pieces_ to |model_proto|.

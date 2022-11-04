@@ -13,8 +13,19 @@
 // limitations under the License.!
 
 #include <cstring>
+
 #include "common.h"
+#include "init.h"
 #include "sentencepiece_processor.h"
+
+#ifdef _USE_EXTERNAL_ABSL
+// Naive workaround to define minloglevel on external absl package.
+// We want to define them in other cc file.
+#include "third_party/absl/flags/flag.h"
+#include "third_party/absl/flags/parse.h"
+ABSL_FLAG(int32, minloglevel, 0,
+          "Messages logged at a lower level than this don't actually.");
+#endif
 
 namespace sentencepiece {
 namespace error {
@@ -25,6 +36,7 @@ void Abort() {
     SetTestCounter(2);
   } else {
     std::cerr << "Program terminated with an unrecoverable error." << std::endl;
+    ShutdownLibrary();
     exit(-1);
   }
 }
@@ -33,6 +45,7 @@ void Exit(int code) {
   if (GetTestCounter() == 1) {
     SetTestCounter(2);
   } else {
+    ShutdownLibrary();
     exit(code);
   }
 }
@@ -51,15 +64,10 @@ struct Status::Rep {
   std::string error_message;
 };
 
-Status::Status(StatusCode code, const char* error_message) : rep_(new Rep) {
-  rep_->code = code;
-  rep_->error_message = error_message;
-}
-
-Status::Status(StatusCode code, const std::string& error_message)
+Status::Status(StatusCode code, absl::string_view error_message)
     : rep_(new Rep) {
   rep_->code = code;
-  rep_->error_message = error_message;
+  rep_->error_message = std::string(error_message);
 }
 
 Status::Status(const Status& s)
