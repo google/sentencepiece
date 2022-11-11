@@ -15,12 +15,14 @@
 #ifndef BPE_MODEL_TRAINER_H_
 #define BPE_MODEL_TRAINER_H_
 
+#include <cstdint>
+#include <limits>
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
-#include "builtin_pb/sentencepiece_model.pb.h"
+#include "sentencepiece_model.pb.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "trainer_interface.h"
 
 namespace sentencepiece {
@@ -44,12 +46,12 @@ class Trainer : public TrainerInterface {
     const Symbol *right;             // right symbol in bigram
     string_util::UnicodeText chars;  // all flattend chracter sequence
     bool is_unk;                     // true if this symbol is unknown.
-    uint64 fp;                       // fingerprint of this symbol.
-    uint64 freq;                     // frequency of this symbol.
+    uint64_t fp;                     // fingerprint of this symbol.
+    uint64_t freq;                   // frequency of this symbol.
 
     // Position list. Use set so that we can keep the order of occurrence.
     // See EncodePos/DecodePos.
-    std::set<uint64> positions;
+    std::set<uint64_t> positions;
 
     bool IsBigram() const { return left != nullptr && right != nullptr; }
     std::string ToString() const;
@@ -62,19 +64,19 @@ class Trainer : public TrainerInterface {
     int right;  // right symbol index
   };
 
-  // Encodes sid, left and right bigram index into uint64.
+  // Encodes sid, left and right bigram index into uint64_t.
   // Encoded value keeps the order of sid, left and right.
-  static uint64 EncodePos(int sid, int l, int r) {
+  static uint64_t EncodePos(int sid, int l, int r) {
     CHECK_GE(l, 0);
     CHECK_GE(r, 0);
-    CHECK_LE(l, kuint16max);
-    CHECK_LE(r, kuint16max);
-    const uint64 n = (static_cast<uint64>(sid) << 32 | (l << 16 | r));
+    CHECK_LE(l, std::numeric_limits<uint16_t>::max());
+    CHECK_LE(r, std::numeric_limits<uint16_t>::max());
+    const uint64_t n = (static_cast<uint64_t>(sid) << 32 | (l << 16 | r));
     return n;
   }
 
-  // Decodes sid, left and right bigram index from uint64.
-  static Position DecodePos(uint64 n) {
+  // Decodes sid, left and right bigram index from uint64_t.
+  static Position DecodePos(uint64_t n) {
     Position p;
     p.sid = n >> 32;
     p.left = (n >> 16) & 0xffff;
@@ -111,7 +113,7 @@ class Trainer : public TrainerInterface {
   void UpdateActiveSymbols();
 
   // All unique symbols. Key is a fingerprint of Symbol.
-  std::unordered_map<uint64, Symbol *> symbols_cache_;
+  absl::flat_hash_map<uint64_t, Symbol *> symbols_cache_;
 
   // Set of symbols from which we find the best symbol in each iteration.
   std::set<Symbol *> active_symbols_;

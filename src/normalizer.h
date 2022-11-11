@@ -21,8 +21,8 @@
 #include <utility>
 #include <vector>
 
-#include "builtin_pb/sentencepiece_model.pb.h"
 #include "common.h"
+#include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
@@ -122,7 +122,8 @@ class Normalizer {
   // Decodes blob into trie_blob and normalized string.
   static util::Status DecodePrecompiledCharsMap(absl::string_view blob,
                                                 absl::string_view *trie_blob,
-                                                absl::string_view *normalized);
+                                                absl::string_view *normalized,
+                                                std::string *buffer = nullptr);
 
   // Maximum size of the return value of Trie, which corresponds
   // to the maximum size of shared common prefix in the chars map.
@@ -144,6 +145,11 @@ class Normalizer {
   // Split hello world into "hello_" and "world_" instead of
   // "_hello" and "_world".
   const bool treat_whitespace_as_suffix_ = false;
+
+#ifdef IS_BIG_ENDIAN
+  // Stores the blob for TRIE encoded in big-endian.
+  std::string precompiled_charsmap_buffer_;
+#endif
 
   // Normalizer's status.
   util::Status status_;

@@ -1,0 +1,20 @@
+#!/bin/sh
+
+VERSION="$1"
+
+mkdir -p bundled
+
+BUILD_DIR=./bundled
+INSTALL_DIR=./bundled/root
+
+if [ -f ../src/CMakeLists.txt ]; then
+  SRC_DIR=..
+else
+  # Try taged version. Othewise, use head.
+  git clone https://github.com/google/sentencepiece.git -b v"${VERSION}" --depth 1 || \
+  git clone https://github.com/google/sentencepiece.git --depth 1
+  SRC_DIR=./sentencepiece
+fi
+
+cmake ${SRC_DIR} -B ${BUILD_DIR} -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
+cmake --build ${BUILD_DIR} --config Release --target install --parallel $(nproc)

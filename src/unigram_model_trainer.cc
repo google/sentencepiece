@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "unigram_model_trainer.h"
+
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
@@ -19,17 +21,16 @@
 #include <memory>
 #include <numeric>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "normalizer.h"
 #include "pretokenizer_for_training.h"
 #include "sentencepiece_trainer.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/esaxx/esa.hxx"  // Suffix array library.
 #include "unicode_script.h"
-#include "unigram_model_trainer.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -43,7 +44,7 @@ double Digamma(double x) {
   const double xx = 1.0 / x;
   const double xx2 = xx * xx;
   const double xx4 = xx2 * xx2;
-  result += log(x) + (1.0 / 24.0) * xx2 - (7.0 / 960.0) * xx4 +
+  result += std::log(x) + (1.0 / 24.0) * xx2 - (7.0 / 960.0) * xx4 +
             (31.0 / 8064.0) * xx4 * xx2 - (127.0 / 30720.0) * xx4 * xx4;
   return result;
 }
@@ -95,9 +96,15 @@ void TrainerModel::SetSentencePieces(SentencePieces &&sentencepieces) {
   CHECK(status().ok());
 }
 
+TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
+  return trainer_spec_.train_extremely_large_corpus()
+             ? MakeSeedSentencePiecesInternal<int64>()
+             : MakeSeedSentencePiecesInternal<int32>();
+}
+
 // Returns seed sentencepieces for EM training.
 template <typename node_int_type>
-TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
+TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() const {
   CHECK(!sentences_.empty());
   CHECK(!required_chars_.empty());
 
@@ -107,7 +114,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
 
   // Merges all sentences into one array with 0x0000 delimiter.
   std::vector<char32> array;
-  std::unordered_map<std::string, int64> all_chars;
+  absl::flat_hash_map<std::string, int64> all_chars;
   constexpr char32 kSentenceBoundary = 0x0000;
 
   for (const auto &w : sentences_) {
@@ -119,9 +126,14 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
         all_chars[string_util::UnicodeCharToUTF8(c)] += w.second;
       }
     }
+    array.push_back(kSentenceBoundary);  // sentence boundary marker.
   }
 
+  CHECK_LE(array.size(),
+           static_cast<size_t>(std::numeric_limits<node_int_type>::max()))
+      << "Input corpus too large, try with train_extremely_large_corpus=true";
   const node_int_type n = array.size();
+
   std::vector<node_int_type> SA(n);  // suffix array
   std::vector<node_int_type> L(n);   // left boundaries of internal node
   std::vector<node_int_type> R(n);   // right boundaries of internal node
@@ -218,7 +230,7 @@ std::vector<float> Trainer::RunEStep(const TrainerModel &model, float *obj,
         lattice.SetSentence(w);
         model.PopulateNodes(&lattice);
         const float Z = lattice.PopulateMarginal(freq, &expected[n]);
-        ntokens[n] += lattice.Viterbi().size();
+        ntokens[n] += lattice.Viterbi().first.size();
         CHECK(!std::isnan(Z))
             << "likelihood is NAN. Input sentence may be too long";
         objs[n] -= Z / all_sentence_freq;
@@ -292,17 +304,17 @@ TrainerModel::SentencePieces Trainer::PruneSentencePieces(
     const auto &w = sentencepieces[i];
     lattice.SetSentence(w.first);
     model.PopulateNodes(&lattice);
-    const auto nbests = lattice.NBest(2);
+    const auto nbests = lattice.NBest(2, false, 0.0);
     if (nbests.size() == 1) {
       // No second-best result is found. always keep this sentencepiece.
       always_keep[i] = true;
       continue;
-    } else if (nbests[0].size() >= 2) {
+    } else if (nbests[0].first.size() >= 2) {
       // Can safely remove this sentencepiece if its Viterbi path is split.
       always_keep[i] = false;
-    } else if (nbests[0].size() == 1) {
+    } else if (nbests[0].first.size() == 1) {
       always_keep[i] = true;
-      for (const auto *node : nbests[1]) {
+      for (const auto *node : nbests[1].first) {
         alternatives[i].push_back(node->id);
       }
     }
@@ -334,7 +346,7 @@ TrainerModel::SentencePieces Trainer::PruneSentencePieces(
           lattice.SetSentence(w.first);
           model.PopulateNodes(&lattice);
           vsums[n] += w.second;
-          for (const auto *node : lattice.Viterbi()) {
+          for (const auto *node : lattice.Viterbi().first) {
             if (node->id >= 0) {
               freqs[n][node->id] += w.second;
               inverteds[n][node->id].push_back(i);
@@ -421,9 +433,9 @@ TrainerModel::SentencePieces Trainer::PruneSentencePieces(
 TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
     const TrainerModel &model) const {
   const auto &sentencepieces = model.GetSentencePieces();
-  std::unordered_map<std::string, float> final_sentencepieces;
-  std::unordered_map<std::string, float> sp(sentencepieces.begin(),
-                                            sentencepieces.end());
+  absl::flat_hash_map<std::string, float> final_sentencepieces;
+  absl::flat_hash_map<std::string, float> sp(sentencepieces.begin(),
+                                             sentencepieces.end());
 
   // required_chars_ must be included in the final sentencepieces.
   float min_score_penalty = 0.0;
@@ -469,13 +481,8 @@ util::Status Trainer::Train() {
   RETURN_IF_ERROR(model.status());
   RETURN_IF_ERROR(LoadSentences());
 
-  if (trainer_spec_.train_extremely_large_corpus()) {
-    auto seed_sentencepieces = MakeSeedSentencePieces<int64>();
-    model.SetSentencePieces(std::move(seed_sentencepieces));
-  } else {
-    auto seed_sentencepieces = MakeSeedSentencePieces<int32>();
-    model.SetSentencePieces(std::move(seed_sentencepieces));
-  }
+  auto seed_sentencepieces = MakeSeedSentencePieces();
+  model.SetSentencePieces(std::move(seed_sentencepieces));
 
   if (trainer_spec_.split_by_whitespace()) {
     SplitSentencesByWhitespace();

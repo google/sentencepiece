@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include <unordered_map>
+#include "model_interface.h"
 
 #include "model_factory.h"
-#include "model_interface.h"
 #include "testharness.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -294,8 +294,8 @@ std::string RandomString(int length) {
 TEST(ModelInterfaceTest, PieceToIdStressTest) {
   for (const auto type : kModelTypes) {
     for (int i = 0; i < 100; ++i) {
-      std::unordered_map<std::string, int> expected_p2i;
-      std::unordered_map<int, std::string> expected_i2p;
+      absl::flat_hash_map<std::string, int> expected_p2i;
+      absl::flat_hash_map<int, std::string> expected_i2p;
       ModelProto model_proto = MakeBaseModelProto(type);
       for (int n = 0; n < 1000; ++n) {
         const std::string piece = RandomString(10);
@@ -413,6 +413,50 @@ TEST(ModelInterfaceTest, SplitIntoWordsSuffixTest) {
   }
 }
 
+TEST(ModelInterfaceTest, SplitIntoWordsWhiteSpaceOnly) {
+  {
+    const auto v =
+        SplitIntoWords("this" WS "is" WS "a" WS "pen" WS, true, true);
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ("this" WS, v[0]);
+    EXPECT_EQ("is" WS, v[1]);
+    EXPECT_EQ("a" WS, v[2]);
+    EXPECT_EQ("pen" WS, v[3]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS WS "a", false, true);
+    EXPECT_EQ(1, v.size());
+    EXPECT_EQ(WS WS WS "a", v[0]);
+  }
+
+  {
+    const auto v = SplitIntoWords("a" WS WS WS, true, true);
+    EXPECT_EQ(1, v.size());
+    EXPECT_EQ("a" WS WS WS, v[0]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS, true, true);
+    EXPECT_EQ(1, v.size());
+    EXPECT_EQ(WS WS, v[0]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS "a" WS, true, true);
+    EXPECT_EQ(2, v.size());
+    EXPECT_EQ(WS WS, v[0]);
+    EXPECT_EQ("a" WS, v[1]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS "a" WS, false, true);
+    EXPECT_EQ(2, v.size());
+    EXPECT_EQ(WS WS "a", v[0]);
+    EXPECT_EQ(WS, v[1]);
+  }
+}
+
 TEST(ModelInterfaceTest, ByteToPieceTest) {
   EXPECT_EQ(ByteToPiece(0), "<0x00>");
   EXPECT_EQ(ByteToPiece(1), "<0x01>");
@@ -436,22 +480,6 @@ TEST(ModelInterfaceTest, PieceToByteTest) {
   EXPECT_EQ(PieceToByte("<0xff>"), -1);
   EXPECT_EQ(PieceToByte("<0xFG>"), -1);
   EXPECT_EQ(PieceToByte("a"), -1);
-}
-
-TEST(ModelInterfaceTest, SetEncoderVersion) {
-  for (const auto type : kModelTypes) {
-    ModelProto model_proto = MakeBaseModelProto(type);
-    AddPiece(&model_proto, "a");
-    AddPiece(&model_proto, "b");
-    auto model = ModelFactory::Create(model_proto);
-
-    // Verify the default encoder version.
-    EXPECT_EQ(EncoderVersion::kOptimized, model->GetEncoderVersion());
-
-    // Set the encoder version to original and verify.
-    EXPECT_TRUE(model->SetEncoderVersion(EncoderVersion::kOriginal).ok());
-    EXPECT_EQ(EncoderVersion::kOriginal, model->GetEncoderVersion());
-  }
 }
 
 TEST(ModelInterfaceTest, VerifyOutputsEquivalent) {

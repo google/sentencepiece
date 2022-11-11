@@ -19,10 +19,8 @@ option optimize_for = LITE_RUNTIME;
 
 package sentencepiece;
 
-// BEGIN GOOGLE-INTERNAL
-// LINT.IfChange
-// END GOOGLE-INTERNAL
 // TrainerSpec encodes a various parameters for SentencePiece training.
+// Next id: 53
 message TrainerSpec {
   ///////////////////////////////////////////////////////////////////
   // General parameters
@@ -65,6 +63,16 @@ message TrainerSpec {
   // Size of self-test samples, which are encoded in the model file.
   optional int32 self_test_sample_size = 6 [default = 0];
 
+  // Whether to use DP version of sentencepiece. Use it with TSV input format
+  // (requires precomputed word tab counts to work).
+  optional bool enable_differential_privacy = 50 [default = false];
+  // Set these parameters if you need DP version of sentencepiece.
+  // std of noise to add.
+  optional float differential_privacy_noise_level = 51 [default = 0.0];
+  // Clipping threshold to apply after adding noise. All the words with
+  // frequency less than this value are dropped.
+  optional uint64 differential_privacy_clipping_threshold = 52 [default = 0];
+
   ///////////////////////////////////////////////////////////////////
   // Training parameters.
   //
@@ -77,7 +85,7 @@ message TrainerSpec {
   // Maximum size of sentences the trainer loads from `input` parameter.
   // Trainer simply loads the `input` files in sequence.
   // It is better to shuffle the input corpus randomly.
-  optional int32 input_sentence_size = 11 [default = 0];
+  optional uint64 input_sentence_size = 11 [default = 0];
   optional bool shuffle_input_sentence = 19 [default = true];
 
   // Maximum size of sentences to make seed sentence pieces.
@@ -141,6 +149,10 @@ message TrainerSpec {
   // NormalizerSpec::add_dummy_prefix will add the dummy whitespace to the end
   // of sentence.
   optional bool treat_whitespace_as_suffix = 24 [default = false];
+
+  // Allows pieces that only contain whitespaces instead of appearing only as
+  // prefix or suffix of other pieces.
+  optional bool allow_whitespace_only_pieces = 26 [default = false];
 
   // Split all digits (0-9) into separate pieces.
   optional bool split_digits = 25 [default = false];
@@ -249,11 +261,6 @@ message NormalizerSpec {
   // are open to third-party extensions.
   extensions 200 to max;
 }
-// BEGIN GOOGLE-INTERNAL
-// LINT.ThenChange(
-//  //depot/google3/third_party/sentencepiece/src/spm_train_main.cc,
-//  //depot/google3/third_party/sentencepiece/src/spec_parser.h)
-// END GOOGLE-INTERNAL
 
 // Proto to store samples for self-testing.
 message SelfTestData {
