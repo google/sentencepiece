@@ -12,7 +12,7 @@
 SentencePiece is an unsupervised text tokenizer and detokenizer mainly for
 Neural Network-based text generation systems where the vocabulary size
 is predetermined prior to the neural model training. SentencePiece implements
-**subword units** (e.g., **byte-pair-encoding (BPE)** [[Sennrich et al.](https://www.aclweb.org/anthology/P16-1162)]) and
+**subword units** (e.g., **byte-pair-encoding (BPE)** [[Sennrich et al.](https://www.aclweb.org/anthology/P16-1162)]) and 
 **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)])
 with the extension of direct training from raw sentences. SentencePiece allows us to make a purely end-to-end system that does not depend on language-specific pre/postprocessing.
 
@@ -100,7 +100,7 @@ special symbol. Tokenized sequences do not preserve the necessary information to
 * (ja) こんにちは世界。  → [こんにちは] [世界] [。] \(No space between こんにちは and 世界\)
 
 #### Subword regularization and BPE-dropout
-Subword regularization [[Kudo.](https://arxiv.org/abs/1804.10959)] and BPE-dropout [Provilkov et al](https://arxiv.org/abs/1910.13267) are simple regularization methods
+Subword regularization [[Kudo.](https://arxiv.org/abs/1804.10959)] and BPE-dropout [Provilkov et al](https://arxiv.org/abs/1910.13267) are simple regularization methods 
 that virtually augment training data with on-the-fly subword sampling, which helps to improve the accuracy as well as robustness of NMT models.
 
 To enable subword regularization, you would like to integrate SentencePiece library
@@ -111,7 +111,7 @@ To enable subword regularization, you would like to integrate SentencePiece libr
 >>> s = spm.SentencePieceProcessor(model_file='spm.model')
 >>> for n in range(5):
 ...     s.encode('New York', out_type=str, enable_sampling=True, alpha=0.1, nbest_size=-1)
-...
+... 
 ['▁', 'N', 'e', 'w', '▁York']
 ['▁', 'New', '▁York']
 ['▁', 'New', '▁Y', 'o', 'r', 'k']
@@ -259,9 +259,9 @@ You can find that the original input sentence is restored from the vocabulary id
 
 ### Redefine special meta tokens
   By default, SentencePiece uses Unknown (&lt;unk&gt;), BOS (&lt;s&gt;) and EOS (&lt;/s&gt;) tokens which have the ids of 0, 1, and 2 respectively. We can redefine this mapping in the training phase as follows.
-
+  
 ```
-% spm_train --bos_id=0 --eos_id=1 --unk_id=5 --input=... --model_prefix=... --character_coverage=...
+% spm_train --bos_id=0 --eos_id=1 --unk_id=5 --input=... --model_prefix=... --character_coverage=... 
 ```
 When setting -1 id e.g., ```bos_id=-1```, this special token is disabled. Note that the unknown id cannot be disabled.  We can define an id for padding (&lt;pad&gt;) as ```--pad_id=3```.  
 
