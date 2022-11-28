@@ -31,6 +31,7 @@ option(SPM_USE_EXTERNAL_ABSL "Use external abseil" OFF)
 # Disable shared build on windows
 if(WIN32)
   set(SPM_ENABLE_SHARED OFF)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
