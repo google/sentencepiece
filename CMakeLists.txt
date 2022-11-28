@@ -28,6 +28,10 @@ option(SPM_NO_THREADLOCAL "Disable thread_local operator" OFF)
 option(SPM_USE_BUILTIN_PROTOBUF "Use built-in protobuf" ON)
 option(SPM_USE_EXTERNAL_ABSL "Use external abseil" OFF)
 
+# Disable shared build on windows
+if(WIN32)
+  set(SPM_ENABLE_SHARED OFF)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
