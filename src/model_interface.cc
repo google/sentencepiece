@@ -130,6 +130,8 @@ void ModelInterface::InitializePieces() {
     }
   }
 
+  user_defined_symbols.insert("<unk>");
+
   matcher_ = absl::make_unique<normalizer::PrefixMatcher>(user_defined_symbols);
 }
 
