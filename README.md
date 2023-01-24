@@ -126,7 +126,7 @@ SentencePiece provides Python wrapper that supports both SentencePiece training 
 You can install Python binary package of SentencePiece with.
 
 ```
-% pip install sentencepiece
+pip install sentencepiece
 ```
 
 For more detail, see [Python module](python/README.md)
