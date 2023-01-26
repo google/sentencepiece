@@ -130,9 +130,6 @@ void ModelInterface::InitializePieces() {
     }
   }
 
-  // Allow sentencepiece to encode literate "<unk>" tokens in the raw input.
-  user_defined_symbols.insert("<unk>");
-
   matcher_ = absl::make_unique<normalizer::PrefixMatcher>(user_defined_symbols);
 }
 
