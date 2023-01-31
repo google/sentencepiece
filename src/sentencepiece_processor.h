@@ -724,4 +724,21 @@ util::Status LoadModelProto(absl::string_view, ModelProto *model_proto);
 util::Status SaveModelProto(absl::string_view, const ModelProto &model_proto);
 }  // namespace io
 }  // namespace sentencepiece
+
+//----------------------- API DllImport for use in C# -----------------------//
+
+#ifdef linux
+	#define API extern "C" 
+#else
+	#define API extern "C" __declspec(dllexport)
+#endif
+
+#define CALLING_CONV //__stdcall
+
+API sentencepiece::SentencePieceProcessor* CALLING_CONV __SP_Init(char* modelFilename, char* vocabFilename, int threshold);
+API void CALLING_CONV __SP_Finalize(sentencepiece::SentencePieceProcessor* sp);
+API char* CALLING_CONV __SP_Encode(sentencepiece::SentencePieceProcessor* sp, char* input, int len);
+API char* CALLING_CONV __SP_Decode(sentencepiece::SentencePieceProcessor* sp, char* input, int len);
+API void CALLING_CONV __SP_Free(char* result);
+
 #endif  // SENTENCEPIECE_PROCESSOR_H_
