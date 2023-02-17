@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4.5
         with:
           python-version: "3.x"
 
@@ -53,7 +53,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install setuptools wheel twine
-          python -m pip install cibuildwheel==2.6.0
+          python -m pip install cibuildwheel==2.12.0
 
       - name: Build wheels
         working-directory: ${{github.workspace}}/python
