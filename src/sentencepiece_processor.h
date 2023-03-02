@@ -724,5 +724,4 @@ util::Status LoadModelProto(absl::string_view, ModelProto *model_proto);
 util::Status SaveModelProto(absl::string_view, const ModelProto &model_proto);
 }  // namespace io
 }  // namespace sentencepiece
-
 #endif  // SENTENCEPIECE_PROCESSOR_H_
