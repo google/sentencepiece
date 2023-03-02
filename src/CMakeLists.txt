@@ -98,6 +98,7 @@ set(SPM_SRCS
   freelist.h
   filesystem.h
   init.h
+  sentencepiece_dotnet_interface.h
   sentencepiece_processor.h
   word_model.h
   model_factory.h
@@ -112,6 +113,7 @@ set(SPM_SRCS
   model_factory.cc
   model_interface.cc
   normalizer.cc
+  sentencepiece_dotnet_interface.cc
   sentencepiece_processor.cc
   unigram_model.cc
   util.cc
