@@ -109,28 +109,30 @@ if os.name == 'nt':
   if sys.maxsize > 2**32:
     arch = 'amd64'
   if os.path.exists('..\\build\\root_{}\\lib'.format(arch)):
-    cflags = ['/std:c++17', '/MT', '/I..\\build\\root_{}\\include'.format(arch)]
+    cflags = ['/std:c++17', '/I..\\build\\root_{}\\include'.format(arch)]
     libs = [
         '..\\build\\root_{}\\lib\\sentencepiece.lib'.format(arch),
-        '..\\build\\root_{}\\lib\\sentencepiece_train.lib'.format(arch)
+        '..\\build\\root_{}\\lib\\sentencepiece_train.lib'.format(arch),
     ]
   else:
-    cflags = ['/std:c++17', '/MT', '/I..\\build\\root\\include']
+    cflags = ['/std:c++17', '/I..\\build\\root\\include']
     libs = [
         '..\\build\\root\\lib\\sentencepiece.lib',
-        '..\\build\\root\\lib\\sentencepiece_train.lib'
+        '..\\build\\root\\lib\\sentencepiece_train.lib',
     ]
 
   SENTENCEPIECE_EXT = Extension(
       'sentencepiece._sentencepiece',
       sources=['src/sentencepiece/sentencepiece_wrap.cxx'],
       extra_compile_args=cflags,
-      extra_link_args=libs)
+      extra_link_args=libs,
+  )
   cmdclass = {}
 else:
   SENTENCEPIECE_EXT = Extension(
       'sentencepiece._sentencepiece',
-      sources=['src/sentencepiece/sentencepiece_wrap.cxx'])
+      sources=['src/sentencepiece/sentencepiece_wrap.cxx'],
+  )
   cmdclass = {'build_ext': build_ext}
 
 setup(
@@ -146,19 +148,23 @@ setup(
     license='Apache',
     platforms='Unix',
     py_modules=[
-        'sentencepiece/__init__', 'sentencepiece/_version',
+        'sentencepiece/__init__',
+        'sentencepiece/_version',
         'sentencepiece/sentencepiece_model_pb2',
-        'sentencepiece/sentencepiece_pb2'
+        'sentencepiece/sentencepiece_pb2',
     ],
     ext_modules=[SENTENCEPIECE_EXT],
     cmdclass=cmdclass,
     classifiers=[
-        'Development Status :: 5 - Production/Stable', 'Environment :: Console',
+        'Development Status :: 5 - Production/Stable',
+        'Environment :: Console',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: Apache Software License',
-        'Operating System :: Unix', 'Programming Language :: Python',
+        'Operating System :: Unix',
+        'Programming Language :: Python',
         'Topic :: Text Processing :: Linguistic',
-        'Topic :: Software Development :: Libraries :: Python Modules'
+        'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    test_suite='sentencepiece_test.suite')
+    test_suite='sentencepiece_test.suite',
+)
