@@ -31,7 +31,7 @@ void SetRandomGeneratorSeed(unsigned int seed) {
 
 uint32 GetRandomGeneratorSeed() {
   try {
-    return g_seed == kDefaultSeed ?: g_seed.load();
+    return g_seed == kDefaultSeed ? std::random_device{}() : g_seed.load();
   } catch (...) {
     return g_seed.load();
   }
