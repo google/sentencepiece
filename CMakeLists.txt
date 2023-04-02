@@ -32,6 +32,7 @@ option(SPM_TCMALLOC_STATIC "Link static library of TCMALLOC." OFF)
 option(SPM_NO_THREADLOCAL "Disable thread_local operator" OFF)
 option(SPM_USE_BUILTIN_PROTOBUF "Use built-in protobuf" ON)
 option(SPM_USE_EXTERNAL_ABSL "Use external abseil" OFF)
+option(SPM_ENABLE_MSVC_MT_BUILD, "Use /MT flag in MSVC build" OFF)
 
 # Disable shared build on windows
 if(WIN32)
@@ -74,6 +75,12 @@ endif()
 
 if (MSVC)
   add_definitions("/wd4267 /wd4244 /wd4305 /Zc:strictStrings /utf-8")
+  if (SPM_ENABLE_MSVC_MT_BUILD)
+    string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_DEBUG          ${CMAKE_CXX_FLAGS_DEBUG})
+    string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_MINSIZEREL     ${CMAKE_CXX_FLAGS_MINSIZEREL})
+    string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE        ${CMAKE_CXX_FLAGS_RELEASE})
+    string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_CXX_FLAGS_RELWITHDEBINFO})
+  endif()
 endif()
 
 if (APPLE)

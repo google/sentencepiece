@@ -35,9 +35,9 @@ jobs:
       - name: Build for Windows
         if: runner.os == 'Windows'
         run: |
-          cmake -A Win32 -B ${{github.workspace}}/build_win32 -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root_win32
+          cmake -A Win32 -B ${{github.workspace}}/build_win32 -DSPM_ENABLE_SHARED=OFF -DSPM_ENABLE_MSVC_MT_BUILD=ON -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root_win32
           cmake --build ${{github.workspace}}/build_win32 --config Release --target install --parallel 8
-          cmake -A x64   -B ${{github.workspace}}/build_amd64 -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root_amd64
+          cmake -A x64   -B ${{github.workspace}}/build_amd64 -DSPM_ENABLE_SHARED=OFF -DSPM_ENABLE_MSVC_MT_BUILD=ON -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root_amd64
           cmake --build ${{github.workspace}}/build_amd64 --config Release --target install --parallel 8
 
       - name: Build for Mac
