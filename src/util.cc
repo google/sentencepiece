@@ -256,6 +256,7 @@ std::wstring Utf8ToWide(absl::string_view input) {
     return L"";
   }
   std::unique_ptr<wchar_t[]> input_wide(new wchar_t[output_length + 1]);
+  std::fill(input_wide.get(), input_wide.get() + output_length + 1, L'\0');
   const int result = ::MultiByteToWideChar(CP_UTF8, 0, input.data(),
                                            static_cast<int>(input.size()),
                                            input_wide.get(), output_length + 1);
