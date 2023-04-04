@@ -68,7 +68,7 @@ jobs:
         working-directory: ${{github.workspace}}/python
         if: runner.os == 'macOS'
         run: |
-          python setup.py sdist
+          sh build_sdist.sh
           cp -f dist/*.tar.gz wheelhouse/
 
       - name: Upload artifact
