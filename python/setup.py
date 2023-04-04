@@ -78,8 +78,6 @@ class build_ext(_build_ext):
 
   def build_extension(self, ext):
     cflags, libs = get_cflags_and_libs('../build/root')
-    if len(libs) == 0:
-      cflags, libs = get_cflags_and_libs('./bundled/root')
 
     if len(libs) == 0:
       if is_sentencepiece_installed():
@@ -87,7 +85,7 @@ class build_ext(_build_ext):
         libs = run_pkg_config('libs')
       else:
         subprocess.check_call(['./build_bundled.sh', __version__])
-        cflags, libs = get_cflags_and_libs('./bundled/root')
+        cflags, libs = get_cflags_and_libs('./build/root')
 
     # Fix compile on some versions of Mac OSX
     # See: https://github.com/neulab/xnmt/issues/199
@@ -104,7 +102,7 @@ class build_ext(_build_ext):
 
 
 if os.name == 'nt':
-  # Must pre-install sentencepice into bundled directory.
+  # Must pre-install sentencepice into build directory.
   arch = 'win32'
   if sys.maxsize > 2**32:
     arch = 'amd64'
@@ -114,11 +112,42 @@ if os.name == 'nt':
         '..\\build\\root_{}\\lib\\sentencepiece.lib'.format(arch),
         '..\\build\\root_{}\\lib\\sentencepiece_train.lib'.format(arch),
     ]
-  else:
+  elif os.path.exists('..\\build\\root\\lib'):
     cflags = ['/std:c++17', '/I..\\build\\root\\include']
     libs = [
         '..\\build\\root\\lib\\sentencepiece.lib',
         '..\\build\\root\\lib\\sentencepiece_train.lib',
+    ]
+  else:
+    # build library locally with cmake and vc++.
+    cmake_arch = 'Win32'
+    if arch == 'amd64':
+      cmake_arch = 'x64'
+    subprocess.check_call([
+        'cmake',
+        'sentencepiece',
+        '-A',
+        cmake_arch,
+        '-B',
+        'build',
+        '-DSPM_ENABLE_SHARED=OFF',
+        '-DCMAKE_INSTALL_PREFIX=build\\root',
+    ])
+    subprocess.check_call([
+        'cmake',
+        '--build',
+        'build',
+        '--config',
+        'Release',
+        '--target',
+        'install',
+        '--parallel',
+        '8',
+    ])
+    cflags = ['/std:c++17', '/I.\\build\\root\\include']
+    libs = [
+        '.\\build\\root\\lib\\sentencepiece.lib',
+        '.\\build\\root\\lib\\sentencepiece_train.lib',
     ]
 
   SENTENCEPIECE_EXT = Extension(

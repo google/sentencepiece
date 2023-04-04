@@ -2,13 +2,15 @@
 
 VERSION="$1"
 
-mkdir -p bundled
+mkdir -p build
 
-BUILD_DIR=./bundled
-INSTALL_DIR=./bundled/root
+BUILD_DIR=./build
+INSTALL_DIR=./build/root
 
-if [ -f ../src/CMakeLists.txt ]; then
-  SRC_DIR=..
+if [ -f ./sentencepiece/src/CMakeLists.txt ]; then
+  SRC_DIR=./sentencepiece
+elif [ -f ../src/CMakeLists.txt ]; then
+  SRC_DIR=..  
 else
   # Try taged version. Othewise, use head.
   git clone https://github.com/google/sentencepiece.git -b v"${VERSION}" --depth 1 || \
