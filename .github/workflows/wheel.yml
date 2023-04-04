@@ -28,7 +28,7 @@ jobs:
 
       - name: Set up QEMU
         if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
         with:
           platforms: arm64
 
@@ -92,17 +92,17 @@ jobs:
       - name: Generate SLSA subjects - Macos
         id: hash-macos
         if: runner.os == 'macOS'
-        run: echo "::set-output name=digests::$(shasum -a 256 ./python/wheelhouse/* | base64)"
+        run: echo "digests=$(shasum -a 256 ./python/wheelhouse/* | base64)" >> $GITHUB_OUTPUT
 
       - name: Generate SLSA subjects - Linux
         id: hash-linux
         if: runner.os == 'Linux'
-        run: echo "::set-output name=digests::$(sha256sum ./python/wheelhouse/* | base64 -w0)"
+        run: echo "digests=$(sha256sum ./python/wheelhouse/* | base64 -w0)" >> $GITHUB_OUTPUT
 
       - name: Generate SLSA subjects - Windows
         id: hash-windows
         if: runner.os == 'Windows'
-        run: echo "::set-output name=digests::$(sha256sum ./python/wheelhouse/* | base64 -w0)"
+        run: echo "digests=$(sha256sum ./python/wheelhouse/* | base64 -w0)" >> $GITHUB_OUTPUT
 
   gather-disgests:
     needs: [build_wheels]
@@ -121,7 +121,7 @@ jobs:
           echo "$LINUX_DIGESTS" | base64 -d > checksums.txt
           echo "$MACOS_DIGESTS" | base64 -d >> checksums.txt
           echo "$WINDOWS_DIGESTS" | base64 -d >> checksums.txt
-          echo "::set-output name=digests::$(cat checksums.txt | base64 -w0)"
+          echo "digests=$(cat checksums.txt | base64 -w0)" >> $GITHUB_OUTPUT
 
   provenance:
     if: startsWith(github.ref, 'refs/tags/')
