@@ -199,13 +199,15 @@ if (SPM_ENABLE_TCMALLOC)
   endif()
 endif()
 
-if (NOT MSVC) 
-  if ((${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") OR
-      (${CMAKE_SYSTEM_PROCESSOR} MATCHES "mips") OR
-      (${CMAKE_SYSTEM_PROCESSOR} MATCHES "m68k") OR
-      (${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc") OR
-      (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch") OR
-      (${CMAKE_SYSTEM_PROCESSOR} MATCHES "sh4"))
+if ((${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") OR
+    (${CMAKE_SYSTEM_PROCESSOR} MATCHES "mips") OR
+    (${CMAKE_SYSTEM_PROCESSOR} MATCHES "m68k") OR
+    (${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc") OR
+    (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch") OR
+    (${CMAKE_SYSTEM_PROCESSOR} MATCHES "sh4"))
+  find_library(ATOMIC_LIB NAMES atomic libatomic.so libatomic.so.1)
+  if (ATOMIC_LIB)
+    message(STATUS "Found atomic: ${ATOMIC_LIB}")
     list(APPEND SPM_LIBS "atomic")
   endif()
 endif()
