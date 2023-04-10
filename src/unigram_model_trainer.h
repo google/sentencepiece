@@ -68,7 +68,7 @@ class Trainer : public TrainerInterface {
       : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec,
                                            denormalizer_spec) {}
 
-  TrainerModel::SentencePieces MakeSeedSentencePieces() const;
+  TrainerModel::SentencePieces MakeSeedSentencePieces();
 
   util::Status Train() override;
 
@@ -80,7 +80,7 @@ class Trainer : public TrainerInterface {
   // node_int_type should be of integer type (int32 or int64),
   // determined by train_extremely_large_corpus.
   template <typename node_int_type>
-  TrainerModel::SentencePieces MakeSeedSentencePiecesInternal() const;
+  TrainerModel::SentencePieces MakeSeedSentencePiecesInternal();
 
   // Executes the E step of EM and returns expected count.
   // The index of return array is the vocab id.
@@ -104,6 +104,9 @@ class Trainer : public TrainerInterface {
   // and control/user defined symbols.
   TrainerModel::SentencePieces FinalizeSentencePieces(
       const TrainerModel &model) const;
+
+  std::pair<const char32 *, const char32 *> NormalizeRange(
+      const char32 *begin, const char32 *end) const;
 
   // When the size of SentencePieces becomes less than desired_vocab_size_,
   // break the main training loop. desired_vocab_size_ = 1.1 * vocab_size_

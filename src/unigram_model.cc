@@ -461,7 +461,7 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
       } else {
         hyp->gx = lnode->score + top->gx;  // just adds node->score
         hyp->fx =
-            lnode->backtrace_score + top->gx;  // backtrace_score is h(node).
+            lnode->backtrace_score + hyp->gx;  // backtrace_score is h(node).
       }
       hyp->next = top;
       agenda.push(hyp);

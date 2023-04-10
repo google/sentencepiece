@@ -20,7 +20,7 @@ option optimize_for = LITE_RUNTIME;
 package sentencepiece;
 
 // TrainerSpec encodes a various parameters for SentencePiece training.
-// Next id: 53
+// Next id: 54
 message TrainerSpec {
   ///////////////////////////////////////////////////////////////////
   // General parameters
@@ -156,6 +156,13 @@ message TrainerSpec {
 
   // Split all digits (0-9) into separate pieces.
   optional bool split_digits = 25 [default = false];
+
+  // Defines the pre-tokenization delimiter.
+  // When specified, no pieces crossing this delimiter is not included
+  // in the vocab. Then the delimiter string is virtually ignored
+  // during the training. This field can allows constraints on the vocabulary
+  // selection. Note that this field is available on unigram mode.
+  optional string pretokenization_delimiter = 53 [ default = ""];
 
   ///////////////////////////////////////////////////////////////////
   // Vocabulary management

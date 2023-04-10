@@ -28,7 +28,10 @@
 #include "pretokenizer_for_training.h"
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/container/flat_hash_map.h"
+#include "third_party/absl/container/flat_hash_set.h"
 #include "third_party/absl/memory/memory.h"
+#include "third_party/absl/strings/str_replace.h"
+#include "third_party/absl/strings/str_split.h"
 #include "third_party/esaxx/esa.hxx"  // Suffix array library.
 #include "unicode_script.h"
 #include "util.h"
@@ -36,6 +39,9 @@
 namespace sentencepiece {
 namespace unigram {
 namespace {
+
+constexpr char32 kSentenceBoundary = 0x0000;
+constexpr char32 kWsMarker = 0x2581;
 
 double Digamma(double x) {
   double result = 0.0;
@@ -60,6 +66,63 @@ void ToLogProb(IT begin, IT end) {
     it->second = std::log(static_cast<double>(it->second)) - logsum;
   }
 }
+
+template <typename T>
+std::vector<std::pair<const T *, const T *>> SplitBySentenceBoundary(
+    const T *begin, const T *end) {
+  std::vector<std::pair<const T *, const T *>> result;
+
+  while (begin < end) {
+    const auto *p = std::find(begin, end, static_cast<T>(kSentenceBoundary));
+    if (p != end) {
+      result.emplace_back(begin, p);
+      begin = p + 1;
+    } else {
+      result.emplace_back(begin, end);
+      break;
+    }
+  }
+
+  return result;
+}
+
+template <class T>
+class BoundedPriorityQueue {
+ public:
+  explicit BoundedPriorityQueue(size_t size) : size_(size) {}
+  ~BoundedPriorityQueue() = default;
+
+  void push(const T &elem, int64 score) {
+    if (queue_.size() > 4 * size_) resize();
+    if (queue_.size() >= size_ && queue_[size_ - 1].second > score) return;
+    queue_.emplace_back(elem, score);
+  }
+
+  const std::vector<std::pair<T, int64>> &get() {
+    resize();
+    return queue_;
+  }
+
+ private:
+  void resize() {
+    std::sort(queue_.begin(), queue_.end(), [](const auto &p1, const auto &p2) {
+      return (p1.second > p2.second ||
+              (p1.second == p2.second && p1.first < p2.first));
+    });
+
+    absl::flat_hash_set<absl::string_view> dup;
+    std::vector<std::pair<T, int64>> new_queue;
+    for (auto &p : queue_) {
+      if (dup.insert(p.first).second) new_queue.emplace_back(std::move(p));
+      if (new_queue.size() == size_) break;
+    }
+    queue_ = std::move(new_queue);
+  }
+
+  size_t size_ = 0;
+  std::vector<std::pair<T, int64>> queue_;
+};
+
 }  // namespace
 
 TrainerModel::TrainerModel(const TrainerSpec &trainer_spec,
@@ -96,7 +159,7 @@ void TrainerModel::SetSentencePieces(SentencePieces &&sentencepieces) {
   CHECK(status().ok());
 }
 
-TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
+TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() {
   return trainer_spec_.train_extremely_large_corpus()
              ? MakeSeedSentencePiecesInternal<int64>()
              : MakeSeedSentencePiecesInternal<int32>();
@@ -104,7 +167,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
 
 // Returns seed sentencepieces for EM training.
 template <typename node_int_type>
-TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() const {
+TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
   CHECK(!sentences_.empty());
   CHECK(!required_chars_.empty());
 
@@ -112,14 +175,43 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() const {
   // Pretokenizer is used as a constraint of piece extractions.
   const auto *pretokenizer = SentencePieceTrainer::GetPretokenizerForTraining();
 
+  auto pretokenize_or_rewrite = [&](std::pair<std::string, int64> *w) {
+    if (pretokenizer) {
+      std::vector<char32> chars;
+      for (const auto &w : pretokenizer->PreTokenize(w->first)) {
+        for (const auto &c : string_util::UTF8ToUnicodeText(w)) {
+          chars.push_back(c);
+        }
+        chars.push_back(kSentenceBoundary);
+      }
+      return chars;
+    } else if (!trainer_spec_.pretokenization_delimiter().empty()) {
+      // When delimiter is specified, tokenize the input with the delimiter.
+      // For EM training, we assume that the delimiter doesn't exist and
+      // rewrite the original sentence.
+      std::vector<char32> chars;
+      absl::string_view delimiter = trainer_spec_.pretokenization_delimiter();
+      for (const auto &w : absl::StrSplit(w->first, delimiter)) {
+        for (const auto &c : string_util::UTF8ToUnicodeText(w)) {
+          chars.push_back(c);
+        }
+        chars.push_back(kSentenceBoundary);
+      }
+      // Removes the delimiter.
+      w->first = absl::StrReplaceAll(w->first, {{delimiter, ""}});
+      return chars;
+    }
+    return string_util::UTF8ToUnicodeText(w->first);
+  };
+
   // Merges all sentences into one array with 0x0000 delimiter.
   std::vector<char32> array;
   absl::flat_hash_map<std::string, int64> all_chars;
-  constexpr char32 kSentenceBoundary = 0x0000;
 
-  for (const auto &w : sentences_) {
-    const auto ut = string_util::UTF8ToUnicodeText(
-        pretokenizer ? pretokenizer->PreTokenize(w.first) : w.first);
+  const bool is_tsv = trainer_spec_.input_format() == "tsv";
+
+  for (auto &w : sentences_) {
+    const auto ut = pretokenize_or_rewrite(&w);
     for (const auto &c : ut) {
       array.push_back(c);
       if (c != kUNKChar && c != kSentenceBoundary) {
@@ -127,6 +219,15 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() const {
       }
     }
     array.push_back(kSentenceBoundary);  // sentence boundary marker.
+
+    // Naive workaround to over-sample the input.
+    // In TSV mode, the frequency field is not used to extract the seed piece.
+    // we can at least extract all pieces by copying the input because
+    // the occurrence gets at least larger than or equals to 2.
+    if (is_tsv) {
+      for (const auto &c : ut) array.push_back(c);
+      array.push_back(kSentenceBoundary);
+    }
   }
 
   CHECK_LE(array.size(),
@@ -147,29 +248,42 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() const {
   CHECK_EQ(0, esaxx(array.begin(), SA.begin(), L.begin(), R.begin(), D.begin(),
                     n, kAlphabetSize, node_num));
 
-  LOG(INFO) << "Extracting frequent sub strings...";
-  std::vector<std::pair<node_int_type, node_int_type>> substr_index;
+  LOG(INFO) << "Extracting frequent sub strings... node_num=" << node_num;
+
+  BoundedPriorityQueue<std::string> queue(
+      static_cast<size_t>(trainer_spec_.seed_sentencepiece_size()));
+
   for (node_int_type i = 0; i < node_num; ++i) {
     const node_int_type offset = SA[L[i]];
     const node_int_type len = D[i];
     if (len <= 1) {
       continue;
     }
-    const char32 *begin = &array[0] + offset;
-    const char32 *end = &array[0] + offset + len;
-    // Skips if a substring contains a sentence boundary.
-    if (std::find(begin, end, kSentenceBoundary) != end) {
-      continue;
-    }
-    const UnicodeText uw(begin, end);
-    if (!IsValidSentencePiece(uw)) {
-      continue;
-    }
 
-    // character-wise coverage is the default score.
-    const node_int_type freq = R[i] - L[i];
-    const node_int_type score = freq * len;
-    substr_index.emplace_back(i, score);
+    for (const auto &p :
+         SplitBySentenceBoundary(&array[offset], &array[offset + len])) {
+      if (p.first == p.second) continue;
+      const auto [begin, end] = NormalizeRange(p.first, p.second);
+
+      const UnicodeText uw(begin, end);
+      if (uw.size() <= 1 || !IsValidSentencePiece(uw)) {
+        continue;
+      }
+
+      // character-wise coverage is the default score.
+      const node_int_type freq = R[i] - L[i];
+      const node_int_type score = freq * freq;
+
+      const auto w = string_util::UnicodeTextToUTF8(uw);
+      queue.push(w, score);
+
+      const auto subpieces =
+          SplitIntoWords(w, trainer_spec_.treat_whitespace_as_suffix(),
+                         trainer_spec_.allow_whitespace_only_pieces());
+      if (subpieces.size() > 1) {
+        for (const auto &s : subpieces) queue.push(std::string(s), score);
+      }
+    }
   }
 
   // all_chars must be included in the seed sentencepieces.
@@ -178,22 +292,8 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() const {
     seed_sentencepieces.emplace_back(it);
   }
 
-  // Sort by the coverage of sub strings.
-  for (const auto &p : Sorted(substr_index)) {
-    const node_int_type offset = SA[L[p.first]];
-    const node_int_type len = D[p.first];
-    CHECK_GT(len, 0);
-    const char32 *begin = &array[offset];
-    const char32 *end = &array[offset + len];
-    const UnicodeText uw(begin, end);
-    CHECK(IsValidSentencePiece(uw));  // just in case.
-    const std::string w = string_util::UnicodeTextToUTF8(uw);
-    if (seed_sentencepieces.size() ==
-        static_cast<size_t>(trainer_spec_.seed_sentencepiece_size())) {
-      break;
-    }
-    CHECK(!port::ContainsKey(all_chars, w));
-    seed_sentencepieces.emplace_back(w, p.second);
+  for (const auto &p : queue.get()) {
+    seed_sentencepieces.emplace_back(p);
   }
 
   ToLogProb(seed_sentencepieces.begin(), seed_sentencepieces.end());
@@ -428,6 +528,22 @@ TrainerModel::SentencePieces Trainer::PruneSentencePieces(
   }
 
   return new_sentencepieces;
+}
+
+std::pair<const char32 *, const char32 *> Trainer::NormalizeRange(
+    const char32 *begin, const char32 *end) const {
+  if (trainer_spec_.treat_whitespace_as_suffix()) {
+    while ((*begin == kSentenceBoundary || *begin == kWsMarker) &&
+           begin + 1 < end)
+      ++begin;
+    while (*(end - 1) == kSentenceBoundary && begin + 1 < end) --end;
+  } else {
+    while (*begin == kSentenceBoundary && begin + 1 < end) ++begin;
+    while ((*(end - 1) == kSentenceBoundary || *(end - 1) == kWsMarker) &&
+           begin + 1 < end)
+      --end;
+  }
+  return std::make_pair(begin, end);
 }
 
 TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(

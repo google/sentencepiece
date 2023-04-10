@@ -81,7 +81,8 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
   CHECK_OR_RETURN(!trainer_spec.eos_piece().empty());
   CHECK_OR_RETURN(!trainer_spec.pad_piece().empty());
 
-  if (SentencePieceTrainer::GetPretokenizerForTraining()) {
+  if (SentencePieceTrainer::GetPretokenizerForTraining() ||
+      !trainer_spec.pretokenization_delimiter().empty()) {
     CHECK_EQ_OR_RETURN(TrainerSpec::UNIGRAM, trainer_spec.model_type())
         << "PretokenizerForTraining is only supported in UNIGRAM mode.";
   }

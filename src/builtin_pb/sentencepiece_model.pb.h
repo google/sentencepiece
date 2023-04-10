@@ -273,6 +273,7 @@ class TrainerSpec PROTOBUF_FINAL :
     kBosPieceFieldNumber = 46,
     kEosPieceFieldNumber = 47,
     kPadPieceFieldNumber = 48,
+    kPretokenizationDelimiterFieldNumber = 53,
     kSelfTestSampleSizeFieldNumber = 6,
     kMiningSentenceSizeFieldNumber = 12,
     kInputSentenceSizeFieldNumber = 11,
@@ -560,6 +561,26 @@ class TrainerSpec PROTOBUF_FINAL :
   const std::string& _internal_pad_piece() const;
   void _internal_set_pad_piece(const std::string& value);
   std::string* _internal_mutable_pad_piece();
+  public:
+
+  // optional string pretokenization_delimiter = 53 [default = ""];
+  bool has_pretokenization_delimiter() const;
+  private:
+  bool _internal_has_pretokenization_delimiter() const;
+  public:
+  void clear_pretokenization_delimiter();
+  const std::string& pretokenization_delimiter() const;
+  void set_pretokenization_delimiter(const std::string& value);
+  void set_pretokenization_delimiter(std::string&& value);
+  void set_pretokenization_delimiter(const char* value);
+  void set_pretokenization_delimiter(const char* value, size_t size);
+  std::string* mutable_pretokenization_delimiter();
+  std::string* release_pretokenization_delimiter();
+  void set_allocated_pretokenization_delimiter(std::string* pretokenization_delimiter);
+  private:
+  const std::string& _internal_pretokenization_delimiter() const;
+  void _internal_set_pretokenization_delimiter(const std::string& value);
+  std::string* _internal_mutable_pretokenization_delimiter();
   public:
 
   // optional int32 self_test_sample_size = 6 [default = 0];
@@ -1007,6 +1028,7 @@ class TrainerSpec PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr eos_piece_;
   static const ::PROTOBUF_NAMESPACE_ID::internal::LazyString _i_give_permission_to_break_this_code_default_pad_piece_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr pad_piece_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr pretokenization_delimiter_;
   ::PROTOBUF_NAMESPACE_ID::int32 self_test_sample_size_;
   ::PROTOBUF_NAMESPACE_ID::int32 mining_sentence_size_;
   ::PROTOBUF_NAMESPACE_ID::uint64 input_sentence_size_;
@@ -2240,7 +2262,7 @@ inline void TrainerSpec::set_allocated_model_prefix(std::string* model_prefix) {
 
 // optional .sentencepiece.TrainerSpec.ModelType model_type = 3 [default = UNIGRAM];
 inline bool TrainerSpec::_internal_has_model_type() const {
-  bool value = (_has_bits_[0] & 0x00400000u) != 0;
+  bool value = (_has_bits_[0] & 0x00800000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_model_type() const {
@@ -2248,7 +2270,7 @@ inline bool TrainerSpec::has_model_type() const {
 }
 inline void TrainerSpec::clear_model_type() {
   model_type_ = 1;
-  _has_bits_[0] &= ~0x00400000u;
+  _has_bits_[0] &= ~0x00800000u;
 }
 inline ::sentencepiece::TrainerSpec_ModelType TrainerSpec::_internal_model_type() const {
   return static_cast< ::sentencepiece::TrainerSpec_ModelType >(model_type_);
@@ -2259,7 +2281,7 @@ inline ::sentencepiece::TrainerSpec_ModelType TrainerSpec::model_type() const {
 }
 inline void TrainerSpec::_internal_set_model_type(::sentencepiece::TrainerSpec_ModelType value) {
   assert(::sentencepiece::TrainerSpec_ModelType_IsValid(value));
-  _has_bits_[0] |= 0x00400000u;
+  _has_bits_[0] |= 0x00800000u;
   model_type_ = value;
 }
 inline void TrainerSpec::set_model_type(::sentencepiece::TrainerSpec_ModelType value) {
@@ -2269,7 +2291,7 @@ inline void TrainerSpec::set_model_type(::sentencepiece::TrainerSpec_ModelType v
 
 // optional int32 vocab_size = 4 [default = 8000];
 inline bool TrainerSpec::_internal_has_vocab_size() const {
-  bool value = (_has_bits_[0] & 0x00800000u) != 0;
+  bool value = (_has_bits_[0] & 0x01000000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_vocab_size() const {
@@ -2277,7 +2299,7 @@ inline bool TrainerSpec::has_vocab_size() const {
 }
 inline void TrainerSpec::clear_vocab_size() {
   vocab_size_ = 8000;
-  _has_bits_[0] &= ~0x00800000u;
+  _has_bits_[0] &= ~0x01000000u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_vocab_size() const {
   return vocab_size_;
@@ -2287,7 +2309,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::vocab_size() const {
   return _internal_vocab_size();
 }
 inline void TrainerSpec::_internal_set_vocab_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[0] |= 0x00800000u;
+  _has_bits_[0] |= 0x01000000u;
   vocab_size_ = value;
 }
 inline void TrainerSpec::set_vocab_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -2371,7 +2393,7 @@ TrainerSpec::mutable_accept_language() {
 
 // optional int32 self_test_sample_size = 6 [default = 0];
 inline bool TrainerSpec::_internal_has_self_test_sample_size() const {
-  bool value = (_has_bits_[0] & 0x00000100u) != 0;
+  bool value = (_has_bits_[0] & 0x00000200u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_self_test_sample_size() const {
@@ -2379,7 +2401,7 @@ inline bool TrainerSpec::has_self_test_sample_size() const {
 }
 inline void TrainerSpec::clear_self_test_sample_size() {
   self_test_sample_size_ = 0;
-  _has_bits_[0] &= ~0x00000100u;
+  _has_bits_[0] &= ~0x00000200u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_self_test_sample_size() const {
   return self_test_sample_size_;
@@ -2389,7 +2411,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::self_test_sample_size() const
   return _internal_self_test_sample_size();
 }
 inline void TrainerSpec::_internal_set_self_test_sample_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[0] |= 0x00000100u;
+  _has_bits_[0] |= 0x00000200u;
   self_test_sample_size_ = value;
 }
 inline void TrainerSpec::set_self_test_sample_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -2399,7 +2421,7 @@ inline void TrainerSpec::set_self_test_sample_size(::PROTOBUF_NAMESPACE_ID::int3
 
 // optional bool enable_differential_privacy = 50 [default = false];
 inline bool TrainerSpec::_internal_has_enable_differential_privacy() const {
-  bool value = (_has_bits_[0] & 0x00001000u) != 0;
+  bool value = (_has_bits_[0] & 0x00002000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_enable_differential_privacy() const {
@@ -2407,7 +2429,7 @@ inline bool TrainerSpec::has_enable_differential_privacy() const {
 }
 inline void TrainerSpec::clear_enable_differential_privacy() {
   enable_differential_privacy_ = false;
-  _has_bits_[0] &= ~0x00001000u;
+  _has_bits_[0] &= ~0x00002000u;
 }
 inline bool TrainerSpec::_internal_enable_differential_privacy() const {
   return enable_differential_privacy_;
@@ -2417,7 +2439,7 @@ inline bool TrainerSpec::enable_differential_privacy() const {
   return _internal_enable_differential_privacy();
 }
 inline void TrainerSpec::_internal_set_enable_differential_privacy(bool value) {
-  _has_bits_[0] |= 0x00001000u;
+  _has_bits_[0] |= 0x00002000u;
   enable_differential_privacy_ = value;
 }
 inline void TrainerSpec::set_enable_differential_privacy(bool value) {
@@ -2427,7 +2449,7 @@ inline void TrainerSpec::set_enable_differential_privacy(bool value) {
 
 // optional float differential_privacy_noise_level = 51 [default = 0];
 inline bool TrainerSpec::_internal_has_differential_privacy_noise_level() const {
-  bool value = (_has_bits_[0] & 0x00100000u) != 0;
+  bool value = (_has_bits_[0] & 0x00200000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_differential_privacy_noise_level() const {
@@ -2435,7 +2457,7 @@ inline bool TrainerSpec::has_differential_privacy_noise_level() const {
 }
 inline void TrainerSpec::clear_differential_privacy_noise_level() {
   differential_privacy_noise_level_ = 0;
-  _has_bits_[0] &= ~0x00100000u;
+  _has_bits_[0] &= ~0x00200000u;
 }
 inline float TrainerSpec::_internal_differential_privacy_noise_level() const {
   return differential_privacy_noise_level_;
@@ -2445,7 +2467,7 @@ inline float TrainerSpec::differential_privacy_noise_level() const {
   return _internal_differential_privacy_noise_level();
 }
 inline void TrainerSpec::_internal_set_differential_privacy_noise_level(float value) {
-  _has_bits_[0] |= 0x00100000u;
+  _has_bits_[0] |= 0x00200000u;
   differential_privacy_noise_level_ = value;
 }
 inline void TrainerSpec::set_differential_privacy_noise_level(float value) {
@@ -2455,7 +2477,7 @@ inline void TrainerSpec::set_differential_privacy_noise_level(float value) {
 
 // optional uint64 differential_privacy_clipping_threshold = 52 [default = 0];
 inline bool TrainerSpec::_internal_has_differential_privacy_clipping_threshold() const {
-  bool value = (_has_bits_[0] & 0x00200000u) != 0;
+  bool value = (_has_bits_[0] & 0x00400000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_differential_privacy_clipping_threshold() const {
@@ -2463,7 +2485,7 @@ inline bool TrainerSpec::has_differential_privacy_clipping_threshold() const {
 }
 inline void TrainerSpec::clear_differential_privacy_clipping_threshold() {
   differential_privacy_clipping_threshold_ = PROTOBUF_ULONGLONG(0);
-  _has_bits_[0] &= ~0x00200000u;
+  _has_bits_[0] &= ~0x00400000u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::uint64 TrainerSpec::_internal_differential_privacy_clipping_threshold() const {
   return differential_privacy_clipping_threshold_;
@@ -2473,7 +2495,7 @@ inline ::PROTOBUF_NAMESPACE_ID::uint64 TrainerSpec::differential_privacy_clippin
   return _internal_differential_privacy_clipping_threshold();
 }
 inline void TrainerSpec::_internal_set_differential_privacy_clipping_threshold(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _has_bits_[0] |= 0x00200000u;
+  _has_bits_[0] |= 0x00400000u;
   differential_privacy_clipping_threshold_ = value;
 }
 inline void TrainerSpec::set_differential_privacy_clipping_threshold(::PROTOBUF_NAMESPACE_ID::uint64 value) {
@@ -2483,7 +2505,7 @@ inline void TrainerSpec::set_differential_privacy_clipping_threshold(::PROTOBUF_
 
 // optional float character_coverage = 10 [default = 0.9995];
 inline bool TrainerSpec::_internal_has_character_coverage() const {
-  bool value = (_has_bits_[0] & 0x01000000u) != 0;
+  bool value = (_has_bits_[0] & 0x02000000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_character_coverage() const {
@@ -2491,7 +2513,7 @@ inline bool TrainerSpec::has_character_coverage() const {
 }
 inline void TrainerSpec::clear_character_coverage() {
   character_coverage_ = 0.9995f;
-  _has_bits_[0] &= ~0x01000000u;
+  _has_bits_[0] &= ~0x02000000u;
 }
 inline float TrainerSpec::_internal_character_coverage() const {
   return character_coverage_;
@@ -2501,7 +2523,7 @@ inline float TrainerSpec::character_coverage() const {
   return _internal_character_coverage();
 }
 inline void TrainerSpec::_internal_set_character_coverage(float value) {
-  _has_bits_[0] |= 0x01000000u;
+  _has_bits_[0] |= 0x02000000u;
   character_coverage_ = value;
 }
 inline void TrainerSpec::set_character_coverage(float value) {
@@ -2511,7 +2533,7 @@ inline void TrainerSpec::set_character_coverage(float value) {
 
 // optional uint64 input_sentence_size = 11 [default = 0];
 inline bool TrainerSpec::_internal_has_input_sentence_size() const {
-  bool value = (_has_bits_[0] & 0x00000400u) != 0;
+  bool value = (_has_bits_[0] & 0x00000800u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_input_sentence_size() const {
@@ -2519,7 +2541,7 @@ inline bool TrainerSpec::has_input_sentence_size() const {
 }
 inline void TrainerSpec::clear_input_sentence_size() {
   input_sentence_size_ = PROTOBUF_ULONGLONG(0);
-  _has_bits_[0] &= ~0x00000400u;
+  _has_bits_[0] &= ~0x00000800u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::uint64 TrainerSpec::_internal_input_sentence_size() const {
   return input_sentence_size_;
@@ -2529,7 +2551,7 @@ inline ::PROTOBUF_NAMESPACE_ID::uint64 TrainerSpec::input_sentence_size() const 
   return _internal_input_sentence_size();
 }
 inline void TrainerSpec::_internal_set_input_sentence_size(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _has_bits_[0] |= 0x00000400u;
+  _has_bits_[0] |= 0x00000800u;
   input_sentence_size_ = value;
 }
 inline void TrainerSpec::set_input_sentence_size(::PROTOBUF_NAMESPACE_ID::uint64 value) {
@@ -2539,7 +2561,7 @@ inline void TrainerSpec::set_input_sentence_size(::PROTOBUF_NAMESPACE_ID::uint64
 
 // optional bool shuffle_input_sentence = 19 [default = true];
 inline bool TrainerSpec::_internal_has_shuffle_input_sentence() const {
-  bool value = (_has_bits_[0] & 0x80000000u) != 0;
+  bool value = (_has_bits_[1] & 0x00000001u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_shuffle_input_sentence() const {
@@ -2547,7 +2569,7 @@ inline bool TrainerSpec::has_shuffle_input_sentence() const {
 }
 inline void TrainerSpec::clear_shuffle_input_sentence() {
   shuffle_input_sentence_ = true;
-  _has_bits_[0] &= ~0x80000000u;
+  _has_bits_[1] &= ~0x00000001u;
 }
 inline bool TrainerSpec::_internal_shuffle_input_sentence() const {
   return shuffle_input_sentence_;
@@ -2557,7 +2579,7 @@ inline bool TrainerSpec::shuffle_input_sentence() const {
   return _internal_shuffle_input_sentence();
 }
 inline void TrainerSpec::_internal_set_shuffle_input_sentence(bool value) {
-  _has_bits_[0] |= 0x80000000u;
+  _has_bits_[1] |= 0x00000001u;
   shuffle_input_sentence_ = value;
 }
 inline void TrainerSpec::set_shuffle_input_sentence(bool value) {
@@ -2567,7 +2589,7 @@ inline void TrainerSpec::set_shuffle_input_sentence(bool value) {
 
 // optional int32 mining_sentence_size = 12 [deprecated = true];
 inline bool TrainerSpec::_internal_has_mining_sentence_size() const {
-  bool value = (_has_bits_[0] & 0x00000200u) != 0;
+  bool value = (_has_bits_[0] & 0x00000400u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_mining_sentence_size() const {
@@ -2575,7 +2597,7 @@ inline bool TrainerSpec::has_mining_sentence_size() const {
 }
 inline void TrainerSpec::clear_mining_sentence_size() {
   mining_sentence_size_ = 0;
-  _has_bits_[0] &= ~0x00000200u;
+  _has_bits_[0] &= ~0x00000400u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_mining_sentence_size() const {
   return mining_sentence_size_;
@@ -2585,7 +2607,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::mining_sentence_size() const 
   return _internal_mining_sentence_size();
 }
 inline void TrainerSpec::_internal_set_mining_sentence_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[0] |= 0x00000200u;
+  _has_bits_[0] |= 0x00000400u;
   mining_sentence_size_ = value;
 }
 inline void TrainerSpec::set_mining_sentence_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -2595,7 +2617,7 @@ inline void TrainerSpec::set_mining_sentence_size(::PROTOBUF_NAMESPACE_ID::int32
 
 // optional int32 training_sentence_size = 13 [deprecated = true];
 inline bool TrainerSpec::_internal_has_training_sentence_size() const {
-  bool value = (_has_bits_[0] & 0x00000800u) != 0;
+  bool value = (_has_bits_[0] & 0x00001000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_training_sentence_size() const {
@@ -2603,7 +2625,7 @@ inline bool TrainerSpec::has_training_sentence_size() const {
 }
 inline void TrainerSpec::clear_training_sentence_size() {
   training_sentence_size_ = 0;
-  _has_bits_[0] &= ~0x00000800u;
+  _has_bits_[0] &= ~0x00001000u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_training_sentence_size() const {
   return training_sentence_size_;
@@ -2613,7 +2635,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::training_sentence_size() cons
   return _internal_training_sentence_size();
 }
 inline void TrainerSpec::_internal_set_training_sentence_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[0] |= 0x00000800u;
+  _has_bits_[0] |= 0x00001000u;
   training_sentence_size_ = value;
 }
 inline void TrainerSpec::set_training_sentence_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -2623,7 +2645,7 @@ inline void TrainerSpec::set_training_sentence_size(::PROTOBUF_NAMESPACE_ID::int
 
 // optional int32 seed_sentencepiece_size = 14 [default = 1000000];
 inline bool TrainerSpec::_internal_has_seed_sentencepiece_size() const {
-  bool value = (_has_bits_[0] & 0x02000000u) != 0;
+  bool value = (_has_bits_[0] & 0x04000000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_seed_sentencepiece_size() const {
@@ -2631,7 +2653,7 @@ inline bool TrainerSpec::has_seed_sentencepiece_size() const {
 }
 inline void TrainerSpec::clear_seed_sentencepiece_size() {
   seed_sentencepiece_size_ = 1000000;
-  _has_bits_[0] &= ~0x02000000u;
+  _has_bits_[0] &= ~0x04000000u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_seed_sentencepiece_size() const {
   return seed_sentencepiece_size_;
@@ -2641,7 +2663,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::seed_sentencepiece_size() con
   return _internal_seed_sentencepiece_size();
 }
 inline void TrainerSpec::_internal_set_seed_sentencepiece_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[0] |= 0x02000000u;
+  _has_bits_[0] |= 0x04000000u;
   seed_sentencepiece_size_ = value;
 }
 inline void TrainerSpec::set_seed_sentencepiece_size(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -2651,7 +2673,7 @@ inline void TrainerSpec::set_seed_sentencepiece_size(::PROTOBUF_NAMESPACE_ID::in
 
 // optional float shrinking_factor = 15 [default = 0.75];
 inline bool TrainerSpec::_internal_has_shrinking_factor() const {
-  bool value = (_has_bits_[0] & 0x04000000u) != 0;
+  bool value = (_has_bits_[0] & 0x08000000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_shrinking_factor() const {
@@ -2659,7 +2681,7 @@ inline bool TrainerSpec::has_shrinking_factor() const {
 }
 inline void TrainerSpec::clear_shrinking_factor() {
   shrinking_factor_ = 0.75f;
-  _has_bits_[0] &= ~0x04000000u;
+  _has_bits_[0] &= ~0x08000000u;
 }
 inline float TrainerSpec::_internal_shrinking_factor() const {
   return shrinking_factor_;
@@ -2669,7 +2691,7 @@ inline float TrainerSpec::shrinking_factor() const {
   return _internal_shrinking_factor();
 }
 inline void TrainerSpec::_internal_set_shrinking_factor(float value) {
-  _has_bits_[0] |= 0x04000000u;
+  _has_bits_[0] |= 0x08000000u;
   shrinking_factor_ = value;
 }
 inline void TrainerSpec::set_shrinking_factor(float value) {
@@ -2679,7 +2701,7 @@ inline void TrainerSpec::set_shrinking_factor(float value) {
 
 // optional int32 max_sentence_length = 18 [default = 4192];
 inline bool TrainerSpec::_internal_has_max_sentence_length() const {
-  bool value = (_has_bits_[0] & 0x20000000u) != 0;
+  bool value = (_has_bits_[0] & 0x40000000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_max_sentence_length() const {
@@ -2687,7 +2709,7 @@ inline bool TrainerSpec::has_max_sentence_length() const {
 }
 inline void TrainerSpec::clear_max_sentence_length() {
   max_sentence_length_ = 4192;
-  _has_bits_[0] &= ~0x20000000u;
+  _has_bits_[0] &= ~0x40000000u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_max_sentence_length() const {
   return max_sentence_length_;
@@ -2697,7 +2719,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::max_sentence_length() const {
   return _internal_max_sentence_length();
 }
 inline void TrainerSpec::_internal_set_max_sentence_length(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[0] |= 0x20000000u;
+  _has_bits_[0] |= 0x40000000u;
   max_sentence_length_ = value;
 }
 inline void TrainerSpec::set_max_sentence_length(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -2707,7 +2729,7 @@ inline void TrainerSpec::set_max_sentence_length(::PROTOBUF_NAMESPACE_ID::int32 
 
 // optional int32 num_threads = 16 [default = 16];
 inline bool TrainerSpec::_internal_has_num_threads() const {
-  bool value = (_has_bits_[0] & 0x08000000u) != 0;
+  bool value = (_has_bits_[0] & 0x10000000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_num_threads() const {
@@ -2715,7 +2737,7 @@ inline bool TrainerSpec::has_num_threads() const {
 }
 inline void TrainerSpec::clear_num_threads() {
   num_threads_ = 16;
-  _has_bits_[0] &= ~0x08000000u;
+  _has_bits_[0] &= ~0x10000000u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_num_threads() const {
   return num_threads_;
@@ -2725,7 +2747,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::num_threads() const {
   return _internal_num_threads();
 }
 inline void TrainerSpec::_internal_set_num_threads(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[0] |= 0x08000000u;
+  _has_bits_[0] |= 0x10000000u;
   num_threads_ = value;
 }
 inline void TrainerSpec::set_num_threads(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -2735,7 +2757,7 @@ inline void TrainerSpec::set_num_threads(::PROTOBUF_NAMESPACE_ID::int32 value) {
 
 // optional int32 num_sub_iterations = 17 [default = 2];
 inline bool TrainerSpec::_internal_has_num_sub_iterations() const {
-  bool value = (_has_bits_[0] & 0x10000000u) != 0;
+  bool value = (_has_bits_[0] & 0x20000000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_num_sub_iterations() const {
@@ -2743,7 +2765,7 @@ inline bool TrainerSpec::has_num_sub_iterations() const {
 }
 inline void TrainerSpec::clear_num_sub_iterations() {
   num_sub_iterations_ = 2;
-  _has_bits_[0] &= ~0x10000000u;
+  _has_bits_[0] &= ~0x20000000u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_num_sub_iterations() const {
   return num_sub_iterations_;
@@ -2753,7 +2775,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::num_sub_iterations() const {
   return _internal_num_sub_iterations();
 }
 inline void TrainerSpec::_internal_set_num_sub_iterations(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[0] |= 0x10000000u;
+  _has_bits_[0] |= 0x20000000u;
   num_sub_iterations_ = value;
 }
 inline void TrainerSpec::set_num_sub_iterations(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -2763,7 +2785,7 @@ inline void TrainerSpec::set_num_sub_iterations(::PROTOBUF_NAMESPACE_ID::int32 v
 
 // optional int32 max_sentencepiece_length = 20 [default = 16];
 inline bool TrainerSpec::_internal_has_max_sentencepiece_length() const {
-  bool value = (_has_bits_[0] & 0x40000000u) != 0;
+  bool value = (_has_bits_[0] & 0x80000000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_max_sentencepiece_length() const {
@@ -2771,7 +2793,7 @@ inline bool TrainerSpec::has_max_sentencepiece_length() const {
 }
 inline void TrainerSpec::clear_max_sentencepiece_length() {
   max_sentencepiece_length_ = 16;
-  _has_bits_[0] &= ~0x40000000u;
+  _has_bits_[0] &= ~0x80000000u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_max_sentencepiece_length() const {
   return max_sentencepiece_length_;
@@ -2781,7 +2803,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::max_sentencepiece_length() co
   return _internal_max_sentencepiece_length();
 }
 inline void TrainerSpec::_internal_set_max_sentencepiece_length(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[0] |= 0x40000000u;
+  _has_bits_[0] |= 0x80000000u;
   max_sentencepiece_length_ = value;
 }
 inline void TrainerSpec::set_max_sentencepiece_length(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -2791,7 +2813,7 @@ inline void TrainerSpec::set_max_sentencepiece_length(::PROTOBUF_NAMESPACE_ID::i
 
 // optional bool split_by_unicode_script = 21 [default = true];
 inline bool TrainerSpec::_internal_has_split_by_unicode_script() const {
-  bool value = (_has_bits_[1] & 0x00000001u) != 0;
+  bool value = (_has_bits_[1] & 0x00000002u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_split_by_unicode_script() const {
@@ -2799,7 +2821,7 @@ inline bool TrainerSpec::has_split_by_unicode_script() const {
 }
 inline void TrainerSpec::clear_split_by_unicode_script() {
   split_by_unicode_script_ = true;
-  _has_bits_[1] &= ~0x00000001u;
+  _has_bits_[1] &= ~0x00000002u;
 }
 inline bool TrainerSpec::_internal_split_by_unicode_script() const {
   return split_by_unicode_script_;
@@ -2809,7 +2831,7 @@ inline bool TrainerSpec::split_by_unicode_script() const {
   return _internal_split_by_unicode_script();
 }
 inline void TrainerSpec::_internal_set_split_by_unicode_script(bool value) {
-  _has_bits_[1] |= 0x00000001u;
+  _has_bits_[1] |= 0x00000002u;
   split_by_unicode_script_ = value;
 }
 inline void TrainerSpec::set_split_by_unicode_script(bool value) {
@@ -2819,7 +2841,7 @@ inline void TrainerSpec::set_split_by_unicode_script(bool value) {
 
 // optional bool split_by_number = 23 [default = true];
 inline bool TrainerSpec::_internal_has_split_by_number() const {
-  bool value = (_has_bits_[1] & 0x00000002u) != 0;
+  bool value = (_has_bits_[1] & 0x00000004u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_split_by_number() const {
@@ -2827,7 +2849,7 @@ inline bool TrainerSpec::has_split_by_number() const {
 }
 inline void TrainerSpec::clear_split_by_number() {
   split_by_number_ = true;
-  _has_bits_[1] &= ~0x00000002u;
+  _has_bits_[1] &= ~0x00000004u;
 }
 inline bool TrainerSpec::_internal_split_by_number() const {
   return split_by_number_;
@@ -2837,7 +2859,7 @@ inline bool TrainerSpec::split_by_number() const {
   return _internal_split_by_number();
 }
 inline void TrainerSpec::_internal_set_split_by_number(bool value) {
-  _has_bits_[1] |= 0x00000002u;
+  _has_bits_[1] |= 0x00000004u;
   split_by_number_ = value;
 }
 inline void TrainerSpec::set_split_by_number(bool value) {
@@ -2847,7 +2869,7 @@ inline void TrainerSpec::set_split_by_number(bool value) {
 
 // optional bool split_by_whitespace = 22 [default = true];
 inline bool TrainerSpec::_internal_has_split_by_whitespace() const {
-  bool value = (_has_bits_[1] & 0x00000004u) != 0;
+  bool value = (_has_bits_[1] & 0x00000008u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_split_by_whitespace() const {
@@ -2855,7 +2877,7 @@ inline bool TrainerSpec::has_split_by_whitespace() const {
 }
 inline void TrainerSpec::clear_split_by_whitespace() {
   split_by_whitespace_ = true;
-  _has_bits_[1] &= ~0x00000004u;
+  _has_bits_[1] &= ~0x00000008u;
 }
 inline bool TrainerSpec::_internal_split_by_whitespace() const {
   return split_by_whitespace_;
@@ -2865,7 +2887,7 @@ inline bool TrainerSpec::split_by_whitespace() const {
   return _internal_split_by_whitespace();
 }
 inline void TrainerSpec::_internal_set_split_by_whitespace(bool value) {
-  _has_bits_[1] |= 0x00000004u;
+  _has_bits_[1] |= 0x00000008u;
   split_by_whitespace_ = value;
 }
 inline void TrainerSpec::set_split_by_whitespace(bool value) {
@@ -2875,7 +2897,7 @@ inline void TrainerSpec::set_split_by_whitespace(bool value) {
 
 // optional bool treat_whitespace_as_suffix = 24 [default = false];
 inline bool TrainerSpec::_internal_has_treat_whitespace_as_suffix() const {
-  bool value = (_has_bits_[0] & 0x00002000u) != 0;
+  bool value = (_has_bits_[0] & 0x00004000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_treat_whitespace_as_suffix() const {
@@ -2883,7 +2905,7 @@ inline bool TrainerSpec::has_treat_whitespace_as_suffix() const {
 }
 inline void TrainerSpec::clear_treat_whitespace_as_suffix() {
   treat_whitespace_as_suffix_ = false;
-  _has_bits_[0] &= ~0x00002000u;
+  _has_bits_[0] &= ~0x00004000u;
 }
 inline bool TrainerSpec::_internal_treat_whitespace_as_suffix() const {
   return treat_whitespace_as_suffix_;
@@ -2893,7 +2915,7 @@ inline bool TrainerSpec::treat_whitespace_as_suffix() const {
   return _internal_treat_whitespace_as_suffix();
 }
 inline void TrainerSpec::_internal_set_treat_whitespace_as_suffix(bool value) {
-  _has_bits_[0] |= 0x00002000u;
+  _has_bits_[0] |= 0x00004000u;
   treat_whitespace_as_suffix_ = value;
 }
 inline void TrainerSpec::set_treat_whitespace_as_suffix(bool value) {
@@ -2903,7 +2925,7 @@ inline void TrainerSpec::set_treat_whitespace_as_suffix(bool value) {
 
 // optional bool allow_whitespace_only_pieces = 26 [default = false];
 inline bool TrainerSpec::_internal_has_allow_whitespace_only_pieces() const {
-  bool value = (_has_bits_[0] & 0x00004000u) != 0;
+  bool value = (_has_bits_[0] & 0x00008000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_allow_whitespace_only_pieces() const {
@@ -2911,7 +2933,7 @@ inline bool TrainerSpec::has_allow_whitespace_only_pieces() const {
 }
 inline void TrainerSpec::clear_allow_whitespace_only_pieces() {
   allow_whitespace_only_pieces_ = false;
-  _has_bits_[0] &= ~0x00004000u;
+  _has_bits_[0] &= ~0x00008000u;
 }
 inline bool TrainerSpec::_internal_allow_whitespace_only_pieces() const {
   return allow_whitespace_only_pieces_;
@@ -2921,7 +2943,7 @@ inline bool TrainerSpec::allow_whitespace_only_pieces() const {
   return _internal_allow_whitespace_only_pieces();
 }
 inline void TrainerSpec::_internal_set_allow_whitespace_only_pieces(bool value) {
-  _has_bits_[0] |= 0x00004000u;
+  _has_bits_[0] |= 0x00008000u;
   allow_whitespace_only_pieces_ = value;
 }
 inline void TrainerSpec::set_allow_whitespace_only_pieces(bool value) {
@@ -2931,7 +2953,7 @@ inline void TrainerSpec::set_allow_whitespace_only_pieces(bool value) {
 
 // optional bool split_digits = 25 [default = false];
 inline bool TrainerSpec::_internal_has_split_digits() const {
-  bool value = (_has_bits_[0] & 0x00008000u) != 0;
+  bool value = (_has_bits_[0] & 0x00010000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_split_digits() const {
@@ -2939,7 +2961,7 @@ inline bool TrainerSpec::has_split_digits() const {
 }
 inline void TrainerSpec::clear_split_digits() {
   split_digits_ = false;
-  _has_bits_[0] &= ~0x00008000u;
+  _has_bits_[0] &= ~0x00010000u;
 }
 inline bool TrainerSpec::_internal_split_digits() const {
   return split_digits_;
@@ -2949,12 +2971,85 @@ inline bool TrainerSpec::split_digits() const {
   return _internal_split_digits();
 }
 inline void TrainerSpec::_internal_set_split_digits(bool value) {
-  _has_bits_[0] |= 0x00008000u;
+  _has_bits_[0] |= 0x00010000u;
   split_digits_ = value;
 }
 inline void TrainerSpec::set_split_digits(bool value) {
   _internal_set_split_digits(value);
   // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.split_digits)
+}
+
+// optional string pretokenization_delimiter = 53 [default = ""];
+inline bool TrainerSpec::_internal_has_pretokenization_delimiter() const {
+  bool value = (_has_bits_[0] & 0x00000100u) != 0;
+  return value;
+}
+inline bool TrainerSpec::has_pretokenization_delimiter() const {
+  return _internal_has_pretokenization_delimiter();
+}
+inline void TrainerSpec::clear_pretokenization_delimiter() {
+  pretokenization_delimiter_.ClearToEmpty();
+  _has_bits_[0] &= ~0x00000100u;
+}
+inline const std::string& TrainerSpec::pretokenization_delimiter() const {
+  // @@protoc_insertion_point(field_get:sentencepiece.TrainerSpec.pretokenization_delimiter)
+  return _internal_pretokenization_delimiter();
+}
+inline void TrainerSpec::set_pretokenization_delimiter(const std::string& value) {
+  _internal_set_pretokenization_delimiter(value);
+  // @@protoc_insertion_point(field_set:sentencepiece.TrainerSpec.pretokenization_delimiter)
+}
+inline std::string* TrainerSpec::mutable_pretokenization_delimiter() {
+  // @@protoc_insertion_point(field_mutable:sentencepiece.TrainerSpec.pretokenization_delimiter)
+  return _internal_mutable_pretokenization_delimiter();
+}
+inline const std::string& TrainerSpec::_internal_pretokenization_delimiter() const {
+  return pretokenization_delimiter_.Get();
+}
+inline void TrainerSpec::_internal_set_pretokenization_delimiter(const std::string& value) {
+  _has_bits_[0] |= 0x00000100u;
+  pretokenization_delimiter_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+}
+inline void TrainerSpec::set_pretokenization_delimiter(std::string&& value) {
+  _has_bits_[0] |= 0x00000100u;
+  pretokenization_delimiter_.Set(
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:sentencepiece.TrainerSpec.pretokenization_delimiter)
+}
+inline void TrainerSpec::set_pretokenization_delimiter(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _has_bits_[0] |= 0x00000100u;
+  pretokenization_delimiter_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:sentencepiece.TrainerSpec.pretokenization_delimiter)
+}
+inline void TrainerSpec::set_pretokenization_delimiter(const char* value,
+    size_t size) {
+  _has_bits_[0] |= 0x00000100u;
+  pretokenization_delimiter_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:sentencepiece.TrainerSpec.pretokenization_delimiter)
+}
+inline std::string* TrainerSpec::_internal_mutable_pretokenization_delimiter() {
+  _has_bits_[0] |= 0x00000100u;
+  return pretokenization_delimiter_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+}
+inline std::string* TrainerSpec::release_pretokenization_delimiter() {
+  // @@protoc_insertion_point(field_release:sentencepiece.TrainerSpec.pretokenization_delimiter)
+  if (!_internal_has_pretokenization_delimiter()) {
+    return nullptr;
+  }
+  _has_bits_[0] &= ~0x00000100u;
+  return pretokenization_delimiter_.ReleaseNonDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void TrainerSpec::set_allocated_pretokenization_delimiter(std::string* pretokenization_delimiter) {
+  if (pretokenization_delimiter != nullptr) {
+    _has_bits_[0] |= 0x00000100u;
+  } else {
+    _has_bits_[0] &= ~0x00000100u;
+  }
+  pretokenization_delimiter_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), pretokenization_delimiter,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:sentencepiece.TrainerSpec.pretokenization_delimiter)
 }
 
 // repeated string control_symbols = 30;
@@ -3180,7 +3275,7 @@ inline void TrainerSpec::set_allocated_required_chars(std::string* required_char
 
 // optional bool byte_fallback = 35 [default = false];
 inline bool TrainerSpec::_internal_has_byte_fallback() const {
-  bool value = (_has_bits_[0] & 0x00010000u) != 0;
+  bool value = (_has_bits_[0] & 0x00020000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_byte_fallback() const {
@@ -3188,7 +3283,7 @@ inline bool TrainerSpec::has_byte_fallback() const {
 }
 inline void TrainerSpec::clear_byte_fallback() {
   byte_fallback_ = false;
-  _has_bits_[0] &= ~0x00010000u;
+  _has_bits_[0] &= ~0x00020000u;
 }
 inline bool TrainerSpec::_internal_byte_fallback() const {
   return byte_fallback_;
@@ -3198,7 +3293,7 @@ inline bool TrainerSpec::byte_fallback() const {
   return _internal_byte_fallback();
 }
 inline void TrainerSpec::_internal_set_byte_fallback(bool value) {
-  _has_bits_[0] |= 0x00010000u;
+  _has_bits_[0] |= 0x00020000u;
   byte_fallback_ = value;
 }
 inline void TrainerSpec::set_byte_fallback(bool value) {
@@ -3208,7 +3303,7 @@ inline void TrainerSpec::set_byte_fallback(bool value) {
 
 // optional bool vocabulary_output_piece_score = 32 [default = true];
 inline bool TrainerSpec::_internal_has_vocabulary_output_piece_score() const {
-  bool value = (_has_bits_[1] & 0x00000008u) != 0;
+  bool value = (_has_bits_[1] & 0x00000010u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_vocabulary_output_piece_score() const {
@@ -3216,7 +3311,7 @@ inline bool TrainerSpec::has_vocabulary_output_piece_score() const {
 }
 inline void TrainerSpec::clear_vocabulary_output_piece_score() {
   vocabulary_output_piece_score_ = true;
-  _has_bits_[1] &= ~0x00000008u;
+  _has_bits_[1] &= ~0x00000010u;
 }
 inline bool TrainerSpec::_internal_vocabulary_output_piece_score() const {
   return vocabulary_output_piece_score_;
@@ -3226,7 +3321,7 @@ inline bool TrainerSpec::vocabulary_output_piece_score() const {
   return _internal_vocabulary_output_piece_score();
 }
 inline void TrainerSpec::_internal_set_vocabulary_output_piece_score(bool value) {
-  _has_bits_[1] |= 0x00000008u;
+  _has_bits_[1] |= 0x00000010u;
   vocabulary_output_piece_score_ = value;
 }
 inline void TrainerSpec::set_vocabulary_output_piece_score(bool value) {
@@ -3236,7 +3331,7 @@ inline void TrainerSpec::set_vocabulary_output_piece_score(bool value) {
 
 // optional bool hard_vocab_limit = 33 [default = true];
 inline bool TrainerSpec::_internal_has_hard_vocab_limit() const {
-  bool value = (_has_bits_[1] & 0x00000010u) != 0;
+  bool value = (_has_bits_[1] & 0x00000020u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_hard_vocab_limit() const {
@@ -3244,7 +3339,7 @@ inline bool TrainerSpec::has_hard_vocab_limit() const {
 }
 inline void TrainerSpec::clear_hard_vocab_limit() {
   hard_vocab_limit_ = true;
-  _has_bits_[1] &= ~0x00000010u;
+  _has_bits_[1] &= ~0x00000020u;
 }
 inline bool TrainerSpec::_internal_hard_vocab_limit() const {
   return hard_vocab_limit_;
@@ -3254,7 +3349,7 @@ inline bool TrainerSpec::hard_vocab_limit() const {
   return _internal_hard_vocab_limit();
 }
 inline void TrainerSpec::_internal_set_hard_vocab_limit(bool value) {
-  _has_bits_[1] |= 0x00000010u;
+  _has_bits_[1] |= 0x00000020u;
   hard_vocab_limit_ = value;
 }
 inline void TrainerSpec::set_hard_vocab_limit(bool value) {
@@ -3264,7 +3359,7 @@ inline void TrainerSpec::set_hard_vocab_limit(bool value) {
 
 // optional bool use_all_vocab = 34 [default = false];
 inline bool TrainerSpec::_internal_has_use_all_vocab() const {
-  bool value = (_has_bits_[0] & 0x00020000u) != 0;
+  bool value = (_has_bits_[0] & 0x00040000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_use_all_vocab() const {
@@ -3272,7 +3367,7 @@ inline bool TrainerSpec::has_use_all_vocab() const {
 }
 inline void TrainerSpec::clear_use_all_vocab() {
   use_all_vocab_ = false;
-  _has_bits_[0] &= ~0x00020000u;
+  _has_bits_[0] &= ~0x00040000u;
 }
 inline bool TrainerSpec::_internal_use_all_vocab() const {
   return use_all_vocab_;
@@ -3282,7 +3377,7 @@ inline bool TrainerSpec::use_all_vocab() const {
   return _internal_use_all_vocab();
 }
 inline void TrainerSpec::_internal_set_use_all_vocab(bool value) {
-  _has_bits_[0] |= 0x00020000u;
+  _has_bits_[0] |= 0x00040000u;
   use_all_vocab_ = value;
 }
 inline void TrainerSpec::set_use_all_vocab(bool value) {
@@ -3292,7 +3387,7 @@ inline void TrainerSpec::set_use_all_vocab(bool value) {
 
 // optional int32 unk_id = 40 [default = 0];
 inline bool TrainerSpec::_internal_has_unk_id() const {
-  bool value = (_has_bits_[0] & 0x00080000u) != 0;
+  bool value = (_has_bits_[0] & 0x00100000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_unk_id() const {
@@ -3300,7 +3395,7 @@ inline bool TrainerSpec::has_unk_id() const {
 }
 inline void TrainerSpec::clear_unk_id() {
   unk_id_ = 0;
-  _has_bits_[0] &= ~0x00080000u;
+  _has_bits_[0] &= ~0x00100000u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_unk_id() const {
   return unk_id_;
@@ -3310,7 +3405,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::unk_id() const {
   return _internal_unk_id();
 }
 inline void TrainerSpec::_internal_set_unk_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[0] |= 0x00080000u;
+  _has_bits_[0] |= 0x00100000u;
   unk_id_ = value;
 }
 inline void TrainerSpec::set_unk_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -3320,7 +3415,7 @@ inline void TrainerSpec::set_unk_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
 
 // optional int32 bos_id = 41 [default = 1];
 inline bool TrainerSpec::_internal_has_bos_id() const {
-  bool value = (_has_bits_[1] & 0x00000020u) != 0;
+  bool value = (_has_bits_[1] & 0x00000040u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_bos_id() const {
@@ -3328,7 +3423,7 @@ inline bool TrainerSpec::has_bos_id() const {
 }
 inline void TrainerSpec::clear_bos_id() {
   bos_id_ = 1;
-  _has_bits_[1] &= ~0x00000020u;
+  _has_bits_[1] &= ~0x00000040u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_bos_id() const {
   return bos_id_;
@@ -3338,7 +3433,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::bos_id() const {
   return _internal_bos_id();
 }
 inline void TrainerSpec::_internal_set_bos_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[1] |= 0x00000020u;
+  _has_bits_[1] |= 0x00000040u;
   bos_id_ = value;
 }
 inline void TrainerSpec::set_bos_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -3348,7 +3443,7 @@ inline void TrainerSpec::set_bos_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
 
 // optional int32 eos_id = 42 [default = 2];
 inline bool TrainerSpec::_internal_has_eos_id() const {
-  bool value = (_has_bits_[1] & 0x00000040u) != 0;
+  bool value = (_has_bits_[1] & 0x00000080u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_eos_id() const {
@@ -3356,7 +3451,7 @@ inline bool TrainerSpec::has_eos_id() const {
 }
 inline void TrainerSpec::clear_eos_id() {
   eos_id_ = 2;
-  _has_bits_[1] &= ~0x00000040u;
+  _has_bits_[1] &= ~0x00000080u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_eos_id() const {
   return eos_id_;
@@ -3366,7 +3461,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::eos_id() const {
   return _internal_eos_id();
 }
 inline void TrainerSpec::_internal_set_eos_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[1] |= 0x00000040u;
+  _has_bits_[1] |= 0x00000080u;
   eos_id_ = value;
 }
 inline void TrainerSpec::set_eos_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -3376,7 +3471,7 @@ inline void TrainerSpec::set_eos_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
 
 // optional int32 pad_id = 43 [default = -1];
 inline bool TrainerSpec::_internal_has_pad_id() const {
-  bool value = (_has_bits_[1] & 0x00000080u) != 0;
+  bool value = (_has_bits_[1] & 0x00000100u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_pad_id() const {
@@ -3384,7 +3479,7 @@ inline bool TrainerSpec::has_pad_id() const {
 }
 inline void TrainerSpec::clear_pad_id() {
   pad_id_ = -1;
-  _has_bits_[1] &= ~0x00000080u;
+  _has_bits_[1] &= ~0x00000100u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::_internal_pad_id() const {
   return pad_id_;
@@ -3394,7 +3489,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 TrainerSpec::pad_id() const {
   return _internal_pad_id();
 }
 inline void TrainerSpec::_internal_set_pad_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[1] |= 0x00000080u;
+  _has_bits_[1] |= 0x00000100u;
   pad_id_ = value;
 }
 inline void TrainerSpec::set_pad_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -3774,7 +3869,7 @@ inline void TrainerSpec::set_allocated_unk_surface(std::string* unk_surface) {
 
 // optional bool train_extremely_large_corpus = 49 [default = false];
 inline bool TrainerSpec::_internal_has_train_extremely_large_corpus() const {
-  bool value = (_has_bits_[0] & 0x00040000u) != 0;
+  bool value = (_has_bits_[0] & 0x00080000u) != 0;
   return value;
 }
 inline bool TrainerSpec::has_train_extremely_large_corpus() const {
@@ -3782,7 +3877,7 @@ inline bool TrainerSpec::has_train_extremely_large_corpus() const {
 }
 inline void TrainerSpec::clear_train_extremely_large_corpus() {
   train_extremely_large_corpus_ = false;
-  _has_bits_[0] &= ~0x00040000u;
+  _has_bits_[0] &= ~0x00080000u;
 }
 inline bool TrainerSpec::_internal_train_extremely_large_corpus() const {
   return train_extremely_large_corpus_;
@@ -3792,7 +3887,7 @@ inline bool TrainerSpec::train_extremely_large_corpus() const {
   return _internal_train_extremely_large_corpus();
 }
 inline void TrainerSpec::_internal_set_train_extremely_large_corpus(bool value) {
-  _has_bits_[0] |= 0x00040000u;
+  _has_bits_[0] |= 0x00080000u;
   train_extremely_large_corpus_ = value;
 }
 inline void TrainerSpec::set_train_extremely_large_corpus(bool value) {

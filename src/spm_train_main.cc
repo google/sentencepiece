@@ -77,6 +77,9 @@ ABSL_FLAG(bool, split_by_whitespace, kDefaultTrainerSpec.split_by_whitespace(),
           "use a white space to split sentence pieces");
 ABSL_FLAG(bool, split_digits, kDefaultTrainerSpec.split_digits(),
           "split all digits (0-9) into separate pieces");
+ABSL_FLAG(std::string, pretokenization_delimiter,
+          kDefaultTrainerSpec.pretokenization_delimiter(),
+          "specifies the delimiter of pre-tokenization");
 ABSL_FLAG(bool, treat_whitespace_as_suffix,
           kDefaultTrainerSpec.treat_whitespace_as_suffix(),
           "treat whitespace marker as suffix instead of prefix.");
@@ -227,6 +230,7 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(split_by_whitespace);
   SetTrainerSpecFromFlag(split_by_number);
   SetTrainerSpecFromFlag(split_digits);
+  SetTrainerSpecFromFlag(pretokenization_delimiter);
   SetTrainerSpecFromFlag(byte_fallback);
   SetTrainerSpecFromFlag(treat_whitespace_as_suffix);
   SetTrainerSpecFromFlag(allow_whitespace_only_pieces);
