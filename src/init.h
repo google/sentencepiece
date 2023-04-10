@@ -18,7 +18,12 @@
 #include "common.h"
 #include "third_party/absl/flags/flag.h"
 #include "third_party/absl/flags/parse.h"
+
+#ifdef _USE_EXTERNAL_PROTOBUF
+#include "google/protobuf/message_lite.h"
+#else
 #include "third_party/protobuf-lite/google/protobuf/message_lite.h"
+#endif
 
 ABSL_DECLARE_FLAG(int32, minloglevel);
 
