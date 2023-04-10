@@ -69,6 +69,20 @@ char (&ArraySizeHelper(const T (&array)[N]))[N];
 
 #define arraysize(array) (sizeof(ArraySizeHelper(array)))
 
+#if defined(_FREEBSD)
+#include <sys/endian.h>
+#endif
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_FREEBSD)
+#include <endian.h>
+#if BYTE_ORDER == __BIG_ENDIAN
+#define IS_BIG_ENDIAN
+#endif
+#endif
+
+#ifdef IS_BIG_ENDIAN
+inline uint32 Swap32(uint32 x) { return __builtin_bswap32(x); }
+#endif
+
 namespace sentencepiece {
 #ifdef OS_WIN
 namespace win32 {
