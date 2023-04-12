@@ -73,7 +73,7 @@ jobs:
 
       - name: Build wheel from sdist
         working-directory: ${{github.workspace}}/python
-        run: python -m pip wheel/sentencepiece-*.tar.gz --verbose
+        run: python -m pip wheel dist/sentencepiece-*.tar.gz --verbose
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
