@@ -64,11 +64,19 @@ jobs:
           CIBW_SKIP: "pp* *-musllinux_*"
           CIBW_BUILD_VERBOSITY: 1
 
-      - name: Build sdist
+      - name: Build sdist archive
         working-directory: ${{github.workspace}}/python
-        run: |
-          sh build_sdist.sh
-          python -m pip wheel dist/sentencepiece-*.tar.gz --verbose
+        run: sh build_sdist.sh
+
+      - name: Fetch sdist archive
+        working-directory: ${{github.workspace}}/python
+        id: sdist
+        with:
+          files: dist/*.tar.gz
+
+      - name: Build wheel from sdist
+        working-directory: ${{github.workspace}}/python
+        run: python -m pip wheel "${{ steps.sdist.outputs.paths }}" --verbose
 
       - name: Copy sdist
         working-directory: ${{github.workspace}}/python
