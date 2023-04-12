@@ -69,6 +69,7 @@ jobs:
         run: sh build_sdist.sh
 
       - name: Fetch sdist archive
+        uses: tj-actions/glob@v17
         working-directory: ${{github.workspace}}/python
         id: sdist
         with:
