@@ -70,13 +70,11 @@ jobs:
 
       - name: Fetch sdist archive
         uses: tj-actions/glob@v17
-        working-directory: ${{github.workspace}}/python
         id: sdist
         with:
-          files: dist/*.tar.gz
+          files: ./python/dist/*.tar.gz
 
       - name: Build wheel from sdist
-        working-directory: ${{github.workspace}}/python
         run: python -m pip wheel "${{ steps.sdist.outputs.paths }}" --verbose
 
       - name: Copy sdist
