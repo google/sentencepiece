@@ -66,21 +66,21 @@ jobs:
 
       - name: Build sdist
         working-directory: ${{github.workspace}}/python
-        if: runner.os == 'macOS'
         run: |
           sh build_sdist.sh
-          cp -f dist/*.tar.gz wheelhouse/
+          python -m pip wheel dist/sentencepiece-*.tar.gz --verbose
 
-      - name: Build wheel from sdist
+      - name: Copy sdist
         working-directory: ${{github.workspace}}/python
-        run: python -m pip wheel dist/sentencepiece-*.tar.gz --verbose
+        if: runner.os == 'macOS'
+        run: cp -f dist/*.tar.gz wheelhouse/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           path: |
             ./python/wheelhouse/*.whl
-            ./python/dist/*.tar.gz
+            ./python/wheelhouse/*.tar.gz
 
       - name: Upload wheel release
         if: startsWith(github.ref, 'refs/tags/')
