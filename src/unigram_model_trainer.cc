@@ -272,7 +272,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
 
       // character-wise coverage is the default score.
       const node_int_type freq = R[i] - L[i];
-      const node_int_type score = freq * freq;
+      const node_int_type score = freq * len;
 
       const auto w = string_util::UnicodeTextToUTF8(uw);
       queue.push(w, score);

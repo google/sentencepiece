@@ -121,8 +121,8 @@ TEST(UnigramTrainerTest, BasicTest) {
 
   // Check final pieces.
   EXPECT_EQ(
-      "Overly Pineapple magnanimity Available ▁an a ▁ b A t g r P O v m y p n "
-      "l d e h i",
+      "Overly Pineapple magnanimity Available ▁an ▁ a b A t g r P O v m y p n "
+      "l h d e i",
       res.sentence_pieces);
 }
 
@@ -192,11 +192,12 @@ TEST(UnigramTrainerTest, EndToEndTest) {
                   .ok());
   // TODO(taku): Temporally disable this test on Windows.
 #ifndef OS_WIN
+  LOG(INFO) << "[" << absl::StrJoin(tok, " ") << std::endl;
   EXPECT_EQ(
       WS
-      " 吾輩 《 わ が は い 》 は猫である 。 名前は まだ 無 い 。 どこ で 生れ "
-      "た か とん と 見当 《 けん とう 》 が つか ぬ 。 何でも 薄 暗 い じめ "
-      "じめ した 所で ニャーニャー 泣 い ていた 事 だけ は記憶している 。",
+      " 吾輩 《 わ が は い 》 は猫である 。 名前はまだ 無 い 。 どこ で 生 "
+      "れた か とん と 見当 《 けん とう 》 が つか ぬ 。 何でも 薄 暗 い じめ "
+      "じめ した 所で ニャーニャー 泣 い ていた 事 だけは 記憶 している 。",
       absl::StrJoin(tok, " "));
 #endif
 }
