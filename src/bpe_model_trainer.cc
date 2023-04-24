@@ -86,28 +86,16 @@ void Trainer::ComputeFreq(Symbol *symbol) const {
   if (symbol->freq > 0) {  // if freq == 0, re-computation is required.
     return;
   }
-  // Avoids double-count. ("AAA" => only count the first "AA").
-  Position prev_pos = {-1, 0};
   CHECK_EQ(0, symbol->freq);
   for (auto it = symbol->positions.begin(); it != symbol->positions.end();) {
     const Position pos = DecodePos(*it);
-    // There are two same bigrams in "AAA", [AA] [AA], and we want to
-    // remove the second one to avoid double counts.
-    // If the right symbol in the first bigram and the left symbol in the
-    // second bigram have the same position, (pos.left == prev_pos.right),
-    // duplicated bigram exisit.
-    // Also, symbols_[sid][left] and symbols_[sid]right] must store
+    // symbols_[sid][left] and symbols_[sid]right] must store
     // the same symbols in symbol->left and symbols->right.
-    if ((pos.sid == prev_pos.sid && pos.left == prev_pos.right) ||
-        symbol->left != symbols_[pos.sid][pos.left] ||
+    if (symbol->left != symbols_[pos.sid][pos.left] ||
         symbol->right != symbols_[pos.sid][pos.right]) {
       it = symbol->positions.erase(it);
-      // Initializes prev_pos.
-      // In "AAAA", the last "AA" can be counted.
-      prev_pos = {-1, 0};
     } else {
       symbol->freq += sentences_[pos.sid].second;
-      prev_pos = pos;
       ++it;
     }
   }
