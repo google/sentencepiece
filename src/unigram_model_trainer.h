@@ -105,9 +105,6 @@ class Trainer : public TrainerInterface {
   TrainerModel::SentencePieces FinalizeSentencePieces(
       const TrainerModel &model) const;
 
-  std::pair<const char32 *, const char32 *> NormalizeRange(
-      const char32 *begin, const char32 *end) const;
-
   // When the size of SentencePieces becomes less than desired_vocab_size_,
   // break the main training loop. desired_vocab_size_ = 1.1 * vocab_size_
   // for now.

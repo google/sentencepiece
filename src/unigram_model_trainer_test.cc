@@ -117,13 +117,13 @@ TEST(UnigramTrainerTest, BasicTest) {
       30);
 
   // Check seed pieces.
-  EXPECT_EQ(63, res.seed_pieces_and_probs.size());
+  EXPECT_EQ(27, res.seed_pieces_and_probs.size());
+
+  LOG(INFO) << "[" << res.sentence_pieces << "]";
 
   // Check final pieces.
-  EXPECT_EQ(
-      "Overly Pineapple magnanimity Available ▁an ▁ a b A t g r P O v m y p n "
-      "l h d e i",
-      res.sentence_pieces);
+  EXPECT_EQ("i a n y m l e apple ve O P r g t an v ▁ b A le ▁an p d h",
+            res.sentence_pieces);
 }
 
 TEST(UnigramTrainerTest, BasicDPTest) {
@@ -134,7 +134,8 @@ TEST(UnigramTrainerTest, BasicDPTest) {
          "Overly \t 6", "Available \t 5"},
         22, true /*use_dp*/, 0 /*dp_noise*/, 4 /*dp_clipping*/);
 
-    EXPECT_EQ(49, res.seed_pieces_and_probs.size());
+    // Got 16 instead of 27 seeds.
+    EXPECT_EQ(16, res.seed_pieces_and_probs.size());
 
     // And they are equiv to if the last sentence was not there.
     const auto& res_nodp = RunTrainer(
@@ -195,9 +196,9 @@ TEST(UnigramTrainerTest, EndToEndTest) {
   LOG(INFO) << "[" << absl::StrJoin(tok, " ") << std::endl;
   EXPECT_EQ(
       WS
-      " 吾輩 《 わ が は い 》 は猫である 。 名前はまだ 無 い 。 どこ で 生 "
-      "れた か とん と 見当 《 けん とう 》 が つか ぬ 。 何でも 薄 暗 い じめ "
-      "じめ した 所で ニャーニャー 泣 い ていた 事 だけは 記憶 している 。",
+      " 吾輩 《 わが はい 》 は猫である 。 名前はまだ 無 い 。 どこ で 生 れた "
+      "か とん と 見当 《 けん とう 》 が つか ぬ 。 何でも 薄 暗 い じめ じめ "
+      "した 所で ニャーニャー 泣 い ていた 事 だけは 記憶 している 。",
       absl::StrJoin(tok, " "));
 #endif
 }
