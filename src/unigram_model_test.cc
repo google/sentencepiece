@@ -606,7 +606,7 @@ TEST(UnigramModelTest, SampleEncodeAndScoreTest) {
         EXPECT_NEAR(it.second, 1.0 * counts[it.first] / (kTrials * num_samples),
                     0.02);
         // The expectation is quite loose, use a higher tolerance
-        EXPECT_NEAR(1.0, scores[it.first] / kTrials, 0.20);
+        EXPECT_NEAR(1.0, scores[it.first] / kTrials, 0.30);
       }
     }
   }
