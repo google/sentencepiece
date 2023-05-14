@@ -10,11 +10,10 @@ on:
 
 jobs:
   build:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
-        arch: [ i686 aarch64 riscv64 powerpc powerpc64 powerpc64le s390x sparc64 m68k alpha ]
-    runs-on: ${{ matrix.os }}
+        arch: [ i686, aarch64, riscv64, powerpc, powerpc64, powerpc64le, s390x, sparc64, m68k, alpha ]
 
     steps:
     - uses: actions/checkout@v3
