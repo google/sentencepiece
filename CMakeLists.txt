@@ -33,6 +33,11 @@ option(SPM_NO_THREADLOCAL "Disable thread_local operator" OFF)
 option(SPM_USE_BUILTIN_PROTOBUF "Use built-in protobuf" ON)
 option(SPM_USE_EXTERNAL_ABSL "Use external abseil" OFF)
 option(SPM_ENABLE_MSVC_MT_BUILD, "Use /MT flag in MSVC build" OFF)
+option(SPM_CROSS_SYSTEM_PROCESSOR, "Override system processor" "")
+
+if (SPM_CROSS_SYSTEM_PROCESSOR)
+ set(CMAKE_SYSTEM_PROCESSOR ${SPM_CROSS_SYSTEM_PROCESSOR})
+endif()
 
 # Disable shared build on windows
 if(WIN32)

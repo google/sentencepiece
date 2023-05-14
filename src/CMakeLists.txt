@@ -208,6 +208,7 @@ if ((${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") OR
     (${CMAKE_SYSTEM_PROCESSOR} MATCHES "mips") OR
     (${CMAKE_SYSTEM_PROCESSOR} MATCHES "m68k") OR
     (${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc") OR
+    (${CMAKE_SYSTEM_PROCESSOR} MATCHES "powerpc") OR
     (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch") OR
     (${CMAKE_SYSTEM_PROCESSOR} MATCHES "sh4"))
   find_library(ATOMIC_LIB NAMES atomic libatomic.so libatomic.so.1)
@@ -216,6 +217,7 @@ if ((${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") OR
     list(APPEND SPM_LIBS "atomic")
   endif()
 endif()
+
 
 if (SPM_ENABLE_SHARED)
   add_library(sentencepiece SHARED ${SPM_SRCS})

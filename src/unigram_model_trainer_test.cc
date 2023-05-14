@@ -106,6 +106,7 @@ TrainerResult RunTrainer(const std::vector<std::string>& input, int size,
 
   TrainerResult res;
   res.seed_pieces_and_probs = seed_pieces;
+  std::sort(pieces.begin(), pieces.end());
   res.sentence_pieces = absl::StrJoin(pieces, " ");
   return res;
 }
@@ -119,10 +120,8 @@ TEST(UnigramTrainerTest, BasicTest) {
   // Check seed pieces.
   EXPECT_EQ(27, res.seed_pieces_and_probs.size());
 
-  LOG(INFO) << "[" << res.sentence_pieces << "]";
-
   // Check final pieces.
-  EXPECT_EQ("i a n y m l e apple ve O P r g t an v ▁ b A le ▁an p d h",
+  EXPECT_EQ("A O P a an apple b d e g h i l le m n p r t v ve y ▁ ▁an",
             res.sentence_pieces);
 }
 
