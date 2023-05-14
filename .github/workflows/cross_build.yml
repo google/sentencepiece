@@ -30,7 +30,8 @@ jobs:
         make -j$(nproc)
 
     - name: Test on QEMU
-      if: matrix.arch != 'sparc64' || matrix.arch != 'm68k' || matrix.arch != 'sh4'
+      if: matrix.arch != 'sparc64' && matrix.arch != 'm68k' && matrix.arch != 'sh4'
       run: |
+        cd ${{github.workspace}}/build
         qemu_arch=`echo ${{matrix.arch}} | sed -e s/powerpc/ppc/ -e s/686/386/`
         qemu-${qemu_arch} -L /usr/${{matrix.arch}}-linux-gnu src/spm_test
