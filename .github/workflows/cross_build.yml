@@ -12,6 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         arch: [ i686, aarch64, riscv64, powerpc, powerpc64, powerpc64le, s390x, sparc64, m68k, alpha ]
 
