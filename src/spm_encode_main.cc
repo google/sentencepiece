@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
   sentencepiece::SentencePieceText spt;
   sentencepiece::NBestSentencePieceText nbest_spt;
   std::function<void(absl::string_view line)> process;
-  size_t sentences = 0;
+  std::vector<uint32_t> sentence_sizes;
   int eos = sp.eos_id();
 
   const int nbest_size = absl::GetFlag(FLAGS_nbest_size);
@@ -121,10 +121,11 @@ int main(int argc, char *argv[]) {
   } else if (absl::GetFlag(FLAGS_output_format) == "bid") {
     process = [&](absl::string_view line) {
       CHECK_OK(sp.Encode(line, &ids));
-      auto bin_size = sizeof(int) * ids.size();
-      output->Write(absl::string_view(reinterpret_cast<char *>(ids.data()), bin_size));
-      output->Write(absl::string_view(reinterpret_cast<char *>(&eos), sizeof(int)));
-      sentences++;
+      output->Write(absl::string_view(
+          reinterpret_cast<char *>(ids.data()), sizeof(int) * ids.size()));
+      output->Write(absl::string_view(
+          reinterpret_cast<char *>(&eos), sizeof(int)));
+      sentence_sizes.push_back(ids.size());
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "proto") {
     process = [&](absl::string_view line) { CHECK_OK(sp.Encode(line, &spt)); };
@@ -174,7 +175,10 @@ int main(int argc, char *argv[]) {
   }
 
   if (absl::GetFlag(FLAGS_output_format) == "bid") {
-    output->Write(absl::string_view(reinterpret_cast<char *>(&sentences), sizeof(sentences)));
+    size_t count = sentence_sizes.size();
+    output->Write(absl::string_view(reinterpret_cast<char *>(sentence_sizes.data()),
+                  sizeof(sentence_sizes[0]) * sentence_sizes.size()));
+    output->Write(absl::string_view(reinterpret_cast<char *>(&count), sizeof(count)));
   }
 
   if (absl::GetFlag(FLAGS_generate_vocabulary)) {

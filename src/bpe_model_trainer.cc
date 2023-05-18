@@ -330,11 +330,25 @@ util::Status Trainer::Train() {
   // Initializes symbols_. symbols_[sid][i] stores an unary symbol.
   symbols_.reserve(sentences_.size());
   freqs_.reserve(sentences_.size());
+  size_t overflows = 0;
+  constexpr size_t uint16_max = static_cast<size_t>(std::numeric_limits<uint16_t>::max());
   for (auto &sentence : sentences_) {
     auto &&text = string_util::UTF8ToUnicodeText(sentence.first);
+    if (symbols_.size() == symbols_.capacity()) {
+      symbols_.reserve(sentences_.size() + overflows);
+      freqs_.reserve(sentences_.size() + overflows);
+    }
     auto &symbols_sentence = symbols_.emplace_back();
-    symbols_sentence.reserve(text.size());
+    symbols_sentence.reserve(std::min(text.size(), uint16_max));
     for (const char32 c : text) {
+      if (symbols_sentence.size() == uint16_max) {
+        // this sentence is too long, must split to be able to call EncodePos
+        overflows++;
+        symbols_sentence.shrink_to_fit();
+        symbols_sentence = symbols_.emplace_back();
+        // we can overflow several times, but it doesn't hurt to overallocate
+        symbols_sentence.reserve(std::min(text.size() - uint16_max, uint16_max));
+      }
       symbols_sentence.push_back(GetCharSymbol(c));
     }
     freqs_.push_back(sentence.second);
@@ -344,11 +358,11 @@ util::Status Trainer::Train() {
   sentences_.shrink_to_fit();
   MallocExtension::instance()->ReleaseFreeMemory();
   size_t unisize = allocated_.size();
-  LOG(INFO) << "Allocated " << unisize << " chars";
+  LOG(INFO) << "Allocated " << unisize << " chars with " << overflows << " overflows";
 
   // Makes all bigram symbols.
   for (size_t sid = 0; sid < symbols_.size(); ++sid) {
-    if (sid % 10000000 == 0) {
+    if (sid % 10000000 == 0 && sid > 0) {
       LOG(INFO) << "Generated pairs from " << sid << " symbols";
     }
     for (size_t i = 1; i < symbols_[sid].size(); ++i) {

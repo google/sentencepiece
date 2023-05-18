@@ -86,11 +86,14 @@ class Trainer : public TrainerInterface {
   // Encodes sid, left and right bigram index into uint64_t.
   // Encoded value keeps the order of sid, left and right.
   static uint64_t EncodePos(int sid, int l, int r) {
+    CHECK_GE(sid, 0);
     CHECK_GE(l, 0);
     CHECK_GE(r, 0);
     CHECK_LE(l, std::numeric_limits<uint16_t>::max());
     CHECK_LE(r, std::numeric_limits<uint16_t>::max());
-    const uint64_t n = (static_cast<uint64_t>(sid) << 32 | (l << 16 | r));
+    const uint64_t n = (static_cast<uint64_t>(sid) << 32) |
+                       (static_cast<uint64_t>(l) << 16) |
+                       r;
     return n;
   }
 
