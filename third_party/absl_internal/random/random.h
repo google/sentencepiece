@@ -23,7 +23,7 @@ using sentencepiece::random::GetRandomGenerator;
 
 namespace absl {
 
-class SharedBitGen {
+class BitGen {
  public:
   std::mt19937 *engine() { return GetRandomGenerator(); }
 };

@@ -18,6 +18,20 @@ with the extension of direct training from raw sentences. SentencePiece allows u
 
 **This is not an official Google product.**
 
+## Vadim's notes
+
+Proper installation:
+
+```
+sudo apt install libgoogle-perftools-dev protobuf-compiler libprotobuf-dev
+cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo -D SPM_USE_EXTERNAL_ABSL=on -D SPM_USE_BUILTIN_PROTOBUF=off -D SPM_ENABLE_TCMALLOC=on -D SPM_ENABLE_NFKC_COMPILE=on ..
+```
+
+1. The built-in abseil's containers are aliases to stdlib.
+2. Adding new spec options requires regenerating the protobuf sources.
+3. tcmalloc is a must. The stdlib's malloc fails to return the freed memory back to the system.
+4. nfkc compilation is needed to edit the normalization rules
+
 ## Technical highlights
 - **Purely data driven**: SentencePiece trains tokenization and detokenization
   models from sentences. Pre-tokenization ([Moses tokenizer](https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/tokenizer.perl)/[MeCab](http://taku910.github.io/mecab/)/[KyTea](http://www.phontron.com/kytea/)) is not always required.

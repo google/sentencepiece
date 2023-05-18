@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+
 if (SPM_USE_EXTERNAL_ABSL)
   set(ABSL_FLAGS_SRCS "")
   set(ABSL_STRINGS_SRCS "")
   list(APPEND SPM_LIBS absl::strings)
   list(APPEND SPM_LIBS absl::flags)
   list(APPEND SPM_LIBS absl::flags_parse)
+  list(APPEND SPM_LIBS absl::random_random)
   if (MSVC)
    add_definitions("/D_USE_EXTERNAL_ABSL")
   else()

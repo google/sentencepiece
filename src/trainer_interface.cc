@@ -315,7 +315,7 @@ bool TrainerInterface::IsValidSentencePiece(
 }
 
 template <typename T>
-void AddDPNoise(const TrainerSpec &trainer_spec, absl::SharedBitGen &generator,
+void AddDPNoise(const TrainerSpec &trainer_spec, absl::BitGen &generator,
                 T *to_update) {
   if (trainer_spec.differential_privacy_noise_level() > 0) {
     float random_num = absl::Gaussian<float>(
@@ -505,7 +505,7 @@ END:
       for (int n = 0; n < num_workers; ++n) {
         pool->Schedule([&, n]() {
           // One per thread generator.
-          absl::SharedBitGen generator;
+          absl::BitGen generator;
           for (size_t i = n; i < sentences_.size(); i += num_workers) {
             AddDPNoise<int64>(trainer_spec_, generator,
                               &(sentences_[i].second));
