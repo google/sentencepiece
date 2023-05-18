@@ -18,10 +18,10 @@
 #include "init.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_trainer.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/strings/ascii.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_split.h"
+#include "absl/flags/flag.h"
+#include "absl/strings/ascii.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "util.h"
 
 using sentencepiece::NormalizerSpec;

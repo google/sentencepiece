@@ -12,7 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+if (SPM_SANITIZE)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+  add_compile_options(-fsanitize=address -ggdb -fno-omit-frame-pointer -static-libstdc++ -static-libasan)
+  add_link_options(-fsanitize=address -ggdb -fno-omit-frame-pointer -static-libstdc++ -static-libasan)
+else()
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 
 if (SPM_USE_EXTERNAL_ABSL)
   set(ABSL_FLAGS_SRCS "")
@@ -26,8 +32,10 @@ if (SPM_USE_EXTERNAL_ABSL)
   else()
    add_definitions("-D_USE_EXTERNAL_ABSL")
   endif()
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/abseil-cpp)
 else()
-  set(ABSL_FLAGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/flags/flag.cc)
+  set(ABSL_FLAGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/abseil-internal/absl/flags/flag.cc)
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/abseil-internal)
 endif()
 
 if (SPM_USE_BUILTIN_PROTOBUF)

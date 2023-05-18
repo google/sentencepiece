@@ -13,20 +13,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef ABSL_STRINGS_STRIP_H_
-#define ABSL_STRINGS_STRIP_H_
+#ifndef ABSL_STRINGS_ASCII_H_
+#define ABSL_STRINGS_ASCII_H_
+
+#include <ctype.h>
 
 #include <string>
 
-#include "third_party/absl/strings/match.h"
+#include "absl/strings/string_view.h"
 
 namespace absl {
 
-inline bool ConsumePrefix(absl::string_view *str, absl::string_view expected) {
-  if (!absl::StartsWith(*str, expected)) return false;
-  str->remove_prefix(expected.size());
-  return true;
+inline std::string AsciiStrToUpper(absl::string_view value) {
+  std::string upper_value = std::string(value);
+  std::transform(upper_value.begin(), upper_value.end(), upper_value.begin(),
+                 ::toupper);
+  return upper_value;
 }
 
+inline std::string AsciiStrToLower(absl::string_view value) {
+  std::string lower_value = std::string(value);
+  std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(),
+                 ::tolower);
+  return lower_value;
+}
 }  // namespace absl
-#endif  // ABSL_STRINGS_STRIP_H
+#endif  // ABSL_STRINGS_ASCII_H_

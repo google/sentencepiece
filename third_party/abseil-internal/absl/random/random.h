@@ -12,20 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#ifndef ABSL_CONTAINER_DISTRIBUTIONS_H_
-#define ABSL_CONTAINER_DISTRIBUTIONS_H_
+#ifndef ABSL_CONTAINER_RANDOM_H_
+#define ABSL_CONTAINER_RANDOM_H_
 
 #include <random>
 
-#include "random.h"
+#include "../../../../src/util.h"
+
+using sentencepiece::random::GetRandomGenerator;
 
 namespace absl {
 
-template <typename T>
-T Gaussian(SharedBitGen &generator, T mean, T stddev) {
-  std::normal_distribution<> dist(mean, stddev);
-  return dist(*generator.engine());
-}
+class BitGen {
+ public:
+  std::mt19937 *engine() { return GetRandomGenerator(); }
+};
+
 }  // namespace absl
 
-#endif  // ABSL_CONTAINER_DISTRIBUTIONS_H_
+#endif  // ABSL_CONTAINER_RANDOM_H_

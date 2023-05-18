@@ -13,21 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef ABSL_STRINGS_NUMBERS_H_
-#define ABSL_STRINGS_NUMBERS_H_
+#ifndef ABSL_STRINGS_MATCH_H_
+#define ABSL_STRINGS_MATCH_H_
 
-#include <sstream>
+#include <string>
 
-#include "third_party/absl/strings/string_view.h"
+#include "absl/strings/string_view.h"
 
 namespace absl {
 
-// TODO(taku): Re-implement this, as it is slow.
-template <typename T>
-inline bool SimpleAtoi(absl::string_view s, T *result) {
-  std::stringstream ss;
-  return (ss << s.data() && ss >> *result);
+inline bool StartsWith(absl::string_view text, absl::string_view prefix) {
+  return prefix.empty() ||
+         (text.size() >= prefix.size() &&
+          memcmp(text.data(), prefix.data(), prefix.size()) == 0);
+}
+
+inline bool EndsWith(absl::string_view text, absl::string_view suffix) {
+  return suffix.empty() || (text.size() >= suffix.size() &&
+                            memcmp(text.data() + (text.size() - suffix.size()),
+                                   suffix.data(), suffix.size()) == 0);
 }
 
 }  // namespace absl
-#endif  // ABSL_STRINGS_NUMBERS_H_
+#endif  // ABSL_STRINGS_MATCH_H_

@@ -14,7 +14,7 @@
 
 #ifndef UNICODE_SCRIPT_DATA_H_
 #define UNICODE_SCRIPT_DATA_H_
-#include "third_party/absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_map.h"
 namespace sentencepiece {
 namespace unicode_script {
 namespace {

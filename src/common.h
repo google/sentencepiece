@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "config.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/strings/string_view.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #define OS_WIN

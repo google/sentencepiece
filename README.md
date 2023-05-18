@@ -24,10 +24,10 @@ Proper installation:
 
 ```
 sudo apt install libgoogle-perftools-dev protobuf-compiler libprotobuf-dev
-cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo -D SPM_USE_EXTERNAL_ABSL=on -D SPM_USE_BUILTIN_PROTOBUF=off -D SPM_ENABLE_TCMALLOC=on -D SPM_ENABLE_NFKC_COMPILE=on ..
+cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo -D SPM_USE_EXTERNAL_ABSL=off -D SPM_USE_BUILTIN_PROTOBUF=off -D SPM_ENABLE_TCMALLOC=on -D SPM_ENABLE_NFKC_COMPILE=on ..
 ```
 
-1. The built-in abseil's containers are aliases to stdlib.
+1. The built-in abseil's containers are aliases to stdlib. Building with a real abseil is WIP.
 2. Adding new spec options requires regenerating the protobuf sources.
 3. tcmalloc is a must. The stdlib's malloc fails to return the freed memory back to the system.
 4. nfkc compilation is needed to edit the normalization rules

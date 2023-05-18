@@ -32,15 +32,15 @@
 #include "normalizer.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/memory/memory.h"
-#include "third_party/absl/random/distributions.h"
-#include "third_party/absl/random/random.h"
-#include "third_party/absl/strings/numbers.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_format.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_split.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/memory/memory.h"
+#include "absl/random/distributions.h"
+#include "absl/random/random.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "unicode_script.h"
 #include "util.h"
 
@@ -457,8 +457,9 @@ END:
               }
             }
             auto *s = &sentences_[i].first;
-            *s = bank_->View(meta_pieces_matcher.GlobalReplace(
-                normalizer.Normalize(*s), kUPPBoundaryStr));
+            auto aux = normalizer.Normalize(*s);
+            aux = meta_pieces_matcher.GlobalReplace(aux, kUPPBoundaryStr);
+            *s = bank_->View(aux);
           }
         });
       }

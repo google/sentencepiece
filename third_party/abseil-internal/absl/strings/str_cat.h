@@ -19,8 +19,8 @@
 #include <sstream>
 #include <string>
 
-#include "third_party/absl/strings/numbers.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/string_view.h"
 
 namespace absl {
 

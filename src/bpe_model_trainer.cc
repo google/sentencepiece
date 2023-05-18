@@ -23,10 +23,10 @@
 #include <vector>
 
 #include "pretokenizer_for_training.h"
-#include "third_party/absl/container/flat_hash_set.h"
-#include "third_party/absl/memory/memory.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_replace.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/memory/memory.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_replace.h"
 #include "util.h"
 
 namespace sentencepiece {

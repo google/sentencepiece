@@ -28,7 +28,7 @@
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "string_bank.h"
-#include "third_party/absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_map.h"
 #include "util.h"
 
 namespace sentencepiece {

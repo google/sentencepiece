@@ -23,7 +23,7 @@
 
 #include "common.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/strings/string_view.h"
 
 namespace sentencepiece {
 namespace filesystem {

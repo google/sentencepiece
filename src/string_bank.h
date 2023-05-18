@@ -3,9 +3,9 @@
 #include <string>
 
 #include "common.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/container/flat_hash_set.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/string_view.h"
 
 namespace sentencepiece {
 namespace string_util {

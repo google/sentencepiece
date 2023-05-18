@@ -14,9 +14,9 @@
 #include "pretokenizer_for_training.h"
 
 #include "testharness.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_split.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "trainer_interface.h"
 
 namespace sentencepiece {

@@ -19,10 +19,10 @@
 #include <utility>
 
 #include "filesystem.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_replace.h"
-#include "third_party/absl/strings/str_split.h"
-#include "third_party/absl/strings/strip.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_replace.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/strip.h"
 
 #ifdef ENABLE_NFKC_COMPILE
 #include <unicode/errorcode.h>

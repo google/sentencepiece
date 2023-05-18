@@ -886,7 +886,7 @@ PROTOBUF_EXPORT int EncodeAsUTF8Char(uint32 code_point, char* output);
 // ----------------------------------------------------------------------
 PROTOBUF_EXPORT int UTF8FirstLetterNumBytes(const char* src, int len);
 
-// From google3/third_party/absl/strings/escaping.h
+// From google3/absl/strings/escaping.h
 
 // ----------------------------------------------------------------------
 // CleanStringLineEndings()

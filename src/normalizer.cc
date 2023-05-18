@@ -19,11 +19,11 @@
 
 #include "common.h"
 #include "filesystem.h"
-#include "third_party/absl/memory/memory.h"
-#include "third_party/absl/strings/match.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/strings/strip.h"
+#include "absl/memory/memory.h"
+#include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
 #include "third_party/darts_clone/darts.h"
 #include "util.h"
 

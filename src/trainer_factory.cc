@@ -14,7 +14,7 @@
 
 #include "bpe_model_trainer.h"
 #include "char_model_trainer.h"
-#include "third_party/absl/memory/memory.h"
+#include "absl/memory/memory.h"
 #include "trainer_factory.h"
 #include "unigram_model_trainer.h"
 #include "word_model_trainer.h"
