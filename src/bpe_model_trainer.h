@@ -71,7 +71,9 @@ class Trainer : public TrainerInterface {
     CHECK_GE(r, 0);
     CHECK_LE(l, std::numeric_limits<uint16_t>::max());
     CHECK_LE(r, std::numeric_limits<uint16_t>::max());
-    const uint64_t n = (static_cast<uint64_t>(sid) << 32 | (l << 16 | r));
+    const uint64_t n = (static_cast<uint64_t>(sid) << 32) |
+                       (static_cast<uint64_t>(l) << 16) |
+                       r;
     return n;
   }
 
