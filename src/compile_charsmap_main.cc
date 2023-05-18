@@ -163,6 +163,7 @@ int main(int argc, char **argv) {
       std::string,
       std::function<sentencepiece::util::Status(Builder::CharsMap *)>>>
       kRuleList = {{"nfkc", Builder::BuildNFKCMap},
+                   {"nfkc_code", Builder::BuildNFKCCodeMap},
                    {"nmt_nfkc", Builder::BuildNmtNFKCMap},
                    {"nfkc_cf", Builder::BuildNFKC_CFMap},
                    {"nmt_nfkc_cf", Builder::BuildNmtNFKC_CFMap},

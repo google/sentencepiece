@@ -351,18 +351,36 @@ util::Status Builder::BuildNFKCMap(CharsMap *chars_map) {
   return util::OkStatus();
 }
 
-util::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
+util::Status Builder::BuildNFKCCodeMap(CharsMap *chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   LOG(INFO) << "Running BuildNmtNFKCMap";
 
   CharsMap nfkc_map;
   RETURN_IF_ERROR(Builder::BuildNFKCMap(&nfkc_map));
+  ApplyCommonNmtNFKCMap(&nfkc_map);
 
-  // Other code points considered as whitespace.
-  nfkc_map[{0x0009}] = {0x20};  // TAB
-  nfkc_map[{0x000A}] = {0x20};  // LINE FEED
+  nfkc_map[{0x000D}] = {};      // delete \r CARRIAGE RETURN
+  nfkc_map[{0xB2}] = {0x5E32};  // ² -> ^2
+  nfkc_map[{0xB3}] = {0x5E33};  // ³ -> ^3
+  nfkc_map[{0xB9}] = {0x5E31};  // ¹ -> ^1
+  nfkc_map.erase({0xBA});       // leave º as-is
+
+  RETURN_IF_ERROR(RemoveRedundantMap(&nfkc_map));
+
+  *chars_map = std::move(nfkc_map);
+
+#else
+  LOG(ERROR) << kCompileError;
+#endif
+
+  return util::OkStatus();
+}
+
+void Builder::ApplyCommonNmtNFKCMap(CharsMap *chars_map) {
+#ifdef ENABLE_NFKC_COMPILE
+  auto &nfkc_map = *chars_map;
+
   nfkc_map[{0x000C}] = {0x20};  // FORM FEED
-  nfkc_map[{0x000D}] = {0x20};  // CARRIAGE RETURN
   nfkc_map[{0x1680}] = {0x20};  // OGHAM SPACE MARK
   nfkc_map[{0x200B}] = {0x20};  // ZERO WIDTH SPACE
   nfkc_map[{0x200E}] = {0x20};  // LEFT-TO-RIGHT MARK
@@ -412,6 +430,24 @@ util::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
   // Do not normalize FULL_WIDTH TILDE, since FULL_WIDTH TILDE
   // and HALF_WIDTH TILDE are used differently in Japanese.
   nfkc_map.erase({0xFF5E});
+
+#else
+  LOG(ERROR) << kCompileError;
+#endif
+}
+
+util::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
+#ifdef ENABLE_NFKC_COMPILE
+  LOG(INFO) << "Running BuildNmtNFKCMap";
+
+  CharsMap nfkc_map;
+  RETURN_IF_ERROR(Builder::BuildNFKCMap(&nfkc_map));
+  ApplyCommonNmtNFKCMap(&nfkc_map);
+
+  // Other code points considered as whitespace.
+  nfkc_map[{0x0009}] = {0x20};  // TAB
+  nfkc_map[{0x000A}] = {0x20};  // LINE FEED
+  nfkc_map[{0x000D}] = {0x20};  // CARRIAGE RETURN
 
   RETURN_IF_ERROR(RemoveRedundantMap(&nfkc_map));
 
@@ -506,7 +542,7 @@ util::Status Builder::LoadCharsMap(absl::string_view filename,
 
   RETURN_IF_ERROR(input->status());
 
-  std::string line;
+  absl::string_view line;
   chars_map->clear();
   while (input->ReadLine(&line)) {
     std::vector<std::string> fields =

@@ -91,6 +91,8 @@ class Builder {
   // TODO(taku): Make NFC, NFD, and NFKD mapping if necessary.
   static util::Status BuildNFKCMap(CharsMap *chars_map);
 
+  static util::Status BuildNFKCCodeMap(CharsMap *chars_map);
+
   // Makes an NFKC-based mapping with NMT specific modifications around
   // whitespaces.
   static util::Status BuildNmtNFKCMap(CharsMap *chars_map);
@@ -125,6 +127,8 @@ class Builder {
   // When char_maps have "aa" => "bb" and "a" => "b", the first
   // rule is not necessary since the second rule can cover the first rule.
   static util::Status RemoveRedundantMap(CharsMap *chars_map);
+
+  static void ApplyCommonNmtNFKCMap(CharsMap *chars_map);
 };
 }  // namespace normalizer
 }  // namespace sentencepiece
