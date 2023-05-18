@@ -150,7 +150,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
   // Pretokenizer is used as a constraint of piece extractions.
   const auto *pretokenizer = SentencePieceTrainer::GetPretokenizerForTraining();
 
-  auto pretokenize_or_rewrite = [&](std::pair<std::string, int64> *w) {
+  auto pretokenize_or_rewrite = [&](std::pair<absl::string_view, int64> *w) {
     if (pretokenizer) {
       std::vector<char32> chars;
       for (const auto &w : pretokenizer->PreTokenize(w->first)) {
@@ -298,7 +298,7 @@ std::vector<float> Trainer::RunEStep(const TrainerModel &model, float *obj,
       expected[n].resize(model.GetPieceSize(), 0.0);
       for (size_t i = n; i < sentences_.size();
            i += trainer_spec_.num_threads()) {
-        const std::string &w = sentences_[i].first;
+        const absl::string_view &w = sentences_[i].first;
         const int64 freq = sentences_[i].second;
         lattice.SetSentence(w);
         model.PopulateNodes(&lattice);
@@ -552,7 +552,7 @@ util::Status Trainer::Train() {
   TrainerModel model(trainer_spec_, normalizer_spec_);
 
   RETURN_IF_ERROR(model.status());
-  RETURN_IF_ERROR(LoadSentences());
+  RETURN_IF_ERROR(LoadSentences(false));
 
   auto seed_sentencepieces = MakeSeedSentencePieces();
   model.SetSentencePieces(std::move(seed_sentencepieces));

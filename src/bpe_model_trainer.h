@@ -16,6 +16,7 @@
 #define BPE_MODEL_TRAINER_H_
 
 #include <cstdint>
+#include <deque>
 #include <limits>
 #include <set>
 #include <string>
@@ -44,19 +45,37 @@ class Trainer : public TrainerInterface {
   struct Symbol {
     const Symbol *left;              // left symbol in bigram
     const Symbol *right;             // right symbol in bigram
-    string_util::UnicodeText chars;  // all flattend chracter sequence
-    bool is_unk;                     // true if this symbol is unknown.
     uint64_t fp;                     // fingerprint of this symbol.
     uint64_t freq;                   // frequency of this symbol.
+    union {                          // all flattened character sequence
+      char32 chars_embed[2];
+      uint64_t chars_embed_pair;
+      char32 *chars_ext;
+    };
 
-    // Position list. Use set so that we can keep the order of occurrence.
+    // Position list. Sorted to preserve the order of occurrence.
     // See EncodePos/DecodePos.
-    std::set<uint64_t> positions;
+    std::vector<uint64_t> positions;
 
-    bool IsBigram() const { return left != nullptr && right != nullptr; }
+    uint8_t chars_size;
+
+    bool IsBigram() const noexcept { return left != nullptr && right != nullptr; }
+    bool IsUnk() const noexcept { return fp == kUNKChar; }
+    size_t CharsSize() const { return chars_size; }
+    void AppendChar(char32 c);
+    void AssignChars(const string_util::UnicodeText &text);
+    void AppendCharsToText(string_util::UnicodeText *text) const;
     std::string ToString() const;
-    Symbol() : left(nullptr), right(nullptr), is_unk(false), fp(0), freq(0) {}
+    Symbol()
+      : left(nullptr),
+        right(nullptr),
+        fp(0),
+        freq(0),
+        chars_size(0) {}
+    ~Symbol();
   };
+
+  // char (*__kaboom)[sizeof(Symbol)] = 1;
 
   struct Position {
     int sid;    // sentence id
@@ -102,7 +121,9 @@ class Trainer : public TrainerInterface {
 
   // Makes a new bigram from [symbols_[sid][left], symbols_[sid][right]] and
   // Adds it to symbols_cache_ and active_symbols_.
-  void AddNewPair(int sid, int left, int right);
+  void AddNewPair(int sid, int left, int right, bool sort);
+
+  void SortSymbolPositions();
 
   // Resets the fequency of bigram [symbols_[sid][left] symbols_[sid][right]],
   // if this bigram is not |best|.
@@ -116,13 +137,16 @@ class Trainer : public TrainerInterface {
   absl::flat_hash_map<uint64_t, Symbol *> symbols_cache_;
 
   // Set of symbols from which we find the best symbol in each iteration.
-  std::set<Symbol *> active_symbols_;
+  absl::flat_hash_set<Symbol *> active_symbols_;
 
-  // Stores symbols allocated in heap so that we can delete them at onece.
-  std::vector<Symbol *> allocated_;
+  // Stores symbols allocated in heap so that we can delete them at once.
+  std::deque<Symbol> allocated_;
 
   // Sentences. symbols_[sid][index] stores a symbol in sentence_[sid][index].
   std::vector<std::vector<Symbol *>> symbols_;
+
+  // Token frequencies.
+  std::vector<int64> freqs_;
 };
 }  // namespace bpe
 }  // namespace sentencepiece

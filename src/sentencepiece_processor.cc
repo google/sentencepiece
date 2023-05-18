@@ -339,7 +339,7 @@ util::Status SentencePieceProcessor::LoadVocabulary(absl::string_view filename,
   auto input = filesystem::NewReadableFile(filename);
   RETURN_IF_ERROR(input->status());
 
-  std::string line;
+  absl::string_view line;
   std::vector<std::string> vocab;
 
   while (input->ReadLine(&line)) {
@@ -1096,7 +1096,7 @@ util::Status LoadModelProto(absl::string_view filename,
 
   auto input = filesystem::NewReadableFile(filename, true);
   RETURN_IF_ERROR(input->status());
-  std::string serialized;
+  absl::string_view serialized;
   CHECK_OR_RETURN(input->ReadAll(&serialized));
   CHECK_OR_RETURN(
       model_proto->ParseFromArray(serialized.data(), serialized.size()));

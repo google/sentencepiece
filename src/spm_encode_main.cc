@@ -30,7 +30,7 @@
 ABSL_FLAG(std::string, model, "", "model file name");
 ABSL_FLAG(
     std::string, output_format, "piece",
-    "choose from piece, id, proto, nbest_piece, nbest_id, or nbest_proto");
+    "choose from piece, id, bid, proto, nbest_piece, nbest_id, or nbest_proto");
 ABSL_FLAG(std::string, input, "", "input filename");
 ABSL_FLAG(std::string, output, "", "output filename");
 ABSL_FLAG(std::string, extra_options, "",
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
       sentencepiece::filesystem::NewWritableFile(absl::GetFlag(FLAGS_output));
   CHECK_OK(output->status());
 
-  std::string line;
+  absl::string_view line;
   std::vector<std::string> sps;
   std::vector<int> ids;
   std::vector<std::vector<std::string>> nbest_sps;
@@ -94,6 +94,8 @@ int main(int argc, char *argv[]) {
   sentencepiece::SentencePieceText spt;
   sentencepiece::NBestSentencePieceText nbest_spt;
   std::function<void(absl::string_view line)> process;
+  size_t sentences = 0;
+  int eos = sp.eos_id();
 
   const int nbest_size = absl::GetFlag(FLAGS_nbest_size);
   const float alpha = absl::GetFlag(FLAGS_alpha);
@@ -115,6 +117,14 @@ int main(int argc, char *argv[]) {
     process = [&](absl::string_view line) {
       CHECK_OK(sp.Encode(line, &ids));
       output->WriteLine(absl::StrJoin(ids, " "));
+    };
+  } else if (absl::GetFlag(FLAGS_output_format) == "bid") {
+    process = [&](absl::string_view line) {
+      CHECK_OK(sp.Encode(line, &ids));
+      auto bin_size = sizeof(int) * ids.size();
+      output->Write(absl::string_view(reinterpret_cast<char *>(ids.data()), bin_size));
+      output->Write(absl::string_view(reinterpret_cast<char *>(&eos), sizeof(int)));
+      sentences++;
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "proto") {
     process = [&](absl::string_view line) { CHECK_OK(sp.Encode(line, &spt)); };
@@ -161,6 +171,10 @@ int main(int argc, char *argv[]) {
     while (input->ReadLine(&line)) {
       process(line);
     }
+  }
+
+  if (absl::GetFlag(FLAGS_output_format) == "bid") {
+    output->Write(absl::string_view(reinterpret_cast<char *>(&sentences), sizeof(sentences)));
   }
 
   if (absl::GetFlag(FLAGS_generate_vocabulary)) {

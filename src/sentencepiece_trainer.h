@@ -45,8 +45,9 @@ class SentenceIterator {
   // all sentences are loaded successfully.
   virtual bool done() const = 0;
   virtual void Next() = 0;
-  virtual const std::string &value() const = 0;
+  virtual const absl::string_view value() const = 0;
   virtual util::Status status() const = 0;
+  virtual void Finish() = 0;
 };
 
 class SentencePieceTrainer {

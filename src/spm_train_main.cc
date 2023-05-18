@@ -35,6 +35,7 @@ static sentencepiece::NormalizerSpec kDefaultNormalizerSpec;
 ABSL_FLAG(std::string, input, "", "comma separated list of input sentences");
 ABSL_FLAG(std::string, input_format, kDefaultTrainerSpec.input_format(),
           "Input format. Supported format is `text` or `tsv`.");
+ABSL_FLAG(int, new_line_delim, '\n', "new line delimiter character ordinal");
 ABSL_FLAG(std::string, model_prefix, "", "output model prefix");
 ABSL_FLAG(std::string, model_type, "unigram",
           "model algorithm: unigram, bpe, word or char");
@@ -111,6 +112,8 @@ ABSL_FLAG(std::string, normalization_rule_tsv, "",
           "Normalization rule TSV file. ");
 ABSL_FLAG(std::string, denormalization_rule_tsv, "",
           "Denormalization rule TSV file.");
+ABSL_FLAG(std::string, normalization_report_file, "",
+          "Write normalization report to this file");
 ABSL_FLAG(bool, add_dummy_prefix, kDefaultNormalizerSpec.add_dummy_prefix(),
           "Add dummy whitespace at the beginning of text");
 ABSL_FLAG(bool, remove_extra_whitespaces,
@@ -175,10 +178,11 @@ int main(int argc, char *argv[]) {
   }
 
   auto load_lines = [](absl::string_view filename) {
-    std::vector<std::string> lines;
-    auto input = sentencepiece::filesystem::NewReadableFile(filename);
+    std::vector<absl::string_view> lines;
+    auto input = sentencepiece::filesystem::NewReadableFile(
+        filename, absl::GetFlag(FLAGS_new_line_delim));
     CHECK_OK(input->status());
-    std::string line;
+    absl::string_view line;
     while (input->ReadLine(&line)) lines.emplace_back(line);
     return lines;
   };
@@ -207,13 +211,14 @@ int main(int argc, char *argv[]) {
 #define SetRepeatedTrainerSpecFromFile(name)                               \
   if (!absl::GetFlag(FLAGS_##name##_file).empty()) {                       \
     for (const auto &v : load_lines(absl::GetFlag(FLAGS_##name##_file))) { \
-      trainer_spec.add_##name(v);                                          \
+      trainer_spec.add_##name(std::string(v));                                          \
     }                                                                      \
   }
 
   SetRepeatedTrainerSpecFromFlag(input);
 
   SetTrainerSpecFromFlag(input_format);
+  SetTrainerSpecFromFlag(new_line_delim);
   SetTrainerSpecFromFlag(model_prefix);
   SetTrainerSpecFromFlag(vocab_size);
   SetTrainerSpecFromFlag(self_test_sample_size);
@@ -264,6 +269,7 @@ int main(int argc, char *argv[]) {
   SetNormalizerSpecFromFlag(normalization_rule_tsv);
   SetNormalizerSpecFromFlag(add_dummy_prefix);
   SetNormalizerSpecFromFlag(remove_extra_whitespaces);
+  SetNormalizerSpecFromFlag(normalization_report_file);
 
   if (!absl::GetFlag(FLAGS_denormalization_rule_tsv).empty()) {
     denormalizer_spec.set_normalization_rule_tsv(

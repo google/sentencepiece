@@ -18,8 +18,10 @@
 #include <vector>
 
 #include "common.h"
+#include "filesystem.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/match.h"
+#include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/strings/strip.h"
 #include "third_party/darts_clone/darts.h"
@@ -30,8 +32,7 @@ namespace normalizer {
 
 constexpr int Normalizer::kMaxTrieResultsSize;
 
-Normalizer::Normalizer(const NormalizerSpec &spec,
-                       const TrainerSpec &trainer_spec)
+Normalizer::Normalizer(const NormalizerSpec &spec, const TrainerSpec &trainer_spec)
     : spec_(&spec),
       treat_whitespace_as_suffix_(trainer_spec.treat_whitespace_as_suffix()),
       status_(util::OkStatus()) {
@@ -39,11 +40,38 @@ Normalizer::Normalizer(const NormalizerSpec &spec,
 }
 
 Normalizer::Normalizer(const NormalizerSpec &spec)
-    : spec_(&spec), status_(util::OkStatus()) {
+    : spec_(&spec), status_(util::OkStatus()), fixed_stats_{0} {
   Init();
 }
 
-Normalizer::~Normalizer() {}
+Normalizer::~Normalizer() {
+  if (!spec_->normalization_report_file().empty()) {
+    auto report = filesystem::NewWritableFile(spec_->normalization_report_file());
+    report->WriteLine(
+        std::string("copied_as_is\t") + string_util::SimpleItoa(fixed_stats_[kFixedNormalizationStatisticsCopiedAsIs].load()));
+    report->WriteLine(
+        std::string("heading_space_removed\t") + string_util::SimpleItoa(fixed_stats_[kFixedNormalizationStatisticsHeadingSpaceRemoved].load()));
+	report->WriteLine(
+	    std::string("trailing_space_removed\t") + string_util::SimpleItoa(fixed_stats_[kFixedNormalizationStatisticsTrailingSpaceRemoved].load()));
+	report->WriteLine(
+	    std::string("extra_space_removed\t") + string_util::SimpleItoa(fixed_stats_[kFixedNormalizationStatisticsExtraSpaceRemoved].load()));
+    report->WriteLine(
+        std::string("empty_after_removing_space\t") + string_util::SimpleItoa(fixed_stats_[kFixedNormalizationStatisticsEmptyAfterRemovingSpaces].load()));
+    report->WriteLine(
+        std::string("space_replaced_with_u2581\t") + string_util::SimpleItoa(fixed_stats_[kFixedNormalizationStatisticsSpaceReplacedWith2581].load()));
+    report->WriteLine(
+        std::string("malformed_utf8\t") + string_util::SimpleItoa(fixed_stats_[kFixedNormalizationStatisticsMalformedUTF8].load()));
+
+	std::vector<std::pair<int64, absl::string_view>> stats;
+    for (auto& p : stats_) {
+      stats.emplace_back(-p.second, p.first);
+    }
+    std::sort(stats.begin(), stats.end());
+    for (auto& p : stats) {
+      report->WriteLine(absl::StrCat(p.second, "\t", string_util::SimpleItoa(-p.first)));
+    }
+  }
+}
 
 void Normalizer::Init() {
   absl::string_view index = spec_->precompiled_charsmap();
@@ -90,6 +118,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
       if (p.first != " ") {
         break;
       }
+      fixed_stats_[kFixedNormalizationStatisticsHeadingSpaceRemoved]++;
       input.remove_prefix(p.second);
       consumed += p.second;
     }
@@ -97,6 +126,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
 
   // all chars are whitespace.
   if (input.empty()) {
+    fixed_stats_[kFixedNormalizationStatisticsEmptyAfterRemovingSpaces]++;
     return util::OkStatus();
   }
 
@@ -116,6 +146,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
       for (size_t n = 0; n < kSpaceSymbol.size(); ++n) {
         norm_to_orig->push_back(consumed);
       }
+      fixed_stats_[kFixedNormalizationStatisticsSpaceReplacedWith2581]++;
     } else {
       normalized->append(" ");
       norm_to_orig->push_back(consumed);
@@ -136,6 +167,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
     // Removes heading spaces in sentence piece,
     // if the previous sentence piece ends with whitespace.
     while (is_prev_space && absl::ConsumePrefix(&sp, " ")) {
+      fixed_stats_[kFixedNormalizationStatisticsExtraSpaceRemoved]++;
     }
 
     if (!sp.empty()) {
@@ -147,6 +179,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
           for (size_t m = 0; m < kSpaceSymbol.size(); ++m) {
             norm_to_orig->push_back(consumed);
           }
+          fixed_stats_[kFixedNormalizationStatisticsSpaceReplacedWith2581]++;
         } else {
           *normalized += data[n];
           norm_to_orig->push_back(consumed);
@@ -163,7 +196,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
     }
   }
 
-  // Ignores tailing space.
+  // Ignores trailing space.
   if (spec_->remove_extra_whitespaces()) {
     const absl::string_view space =
         spec_->escape_whitespaces() ? kSpaceSymbol : " ";
@@ -173,6 +206,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
       consumed = (*norm_to_orig)[length];
       normalized->resize(length);
       norm_to_orig->resize(length);
+      fixed_stats_[kFixedNormalizationStatisticsTrailingSpaceRemoved]++;
     }
   }
 
@@ -239,15 +273,27 @@ std::pair<absl::string_view, int> Normalizer::NormalizePrefix(
       result.second = 1;
       static const char kReplacementChar[] = "\xEF\xBF\xBD";
       result.first = absl::string_view(kReplacementChar);
+      fixed_stats_[kFixedNormalizationStatisticsMalformedUTF8]++;
     } else {
       result.second = length;
       result.first = absl::string_view(input.data(), result.second);
+      fixed_stats_[kFixedNormalizationStatisticsCopiedAsIs]++;
     }
   } else {
     result.second = longest_length;
     // No need to pass the size of normalized sentence,
     // since |normalized| is delimitered by "\0".
     result.first = absl::string_view(&normalized_[longest_value]);
+    {
+      const std::lock_guard lock(stats_lock_);
+      stats_[absl::StrCat(
+          "replaced '",
+          absl::string_view(input.data(), result.second),
+          "' -> '",
+          result.first,
+          "'"
+      )]++;
+    }
   }
 
   return result;

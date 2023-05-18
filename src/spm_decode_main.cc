@@ -59,7 +59,8 @@ int main(int argc, char *argv[]) {
       sentencepiece::filesystem::NewWritableFile(absl::GetFlag(FLAGS_output));
   CHECK_OK(output->status());
 
-  std::string detok, line;
+  std::string detok;
+  absl::string_view line;
   sentencepiece::SentencePieceText spt;
   std::function<void(const std::vector<std::string> &pieces)> process;
 

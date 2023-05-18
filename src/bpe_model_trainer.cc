@@ -14,6 +14,9 @@
 
 #include "bpe_model_trainer.h"
 
+#include <malloc.h>
+#include <gperftools/malloc_extension.h>
+
 #include <algorithm>
 #include <string>
 #include <unordered_set>
@@ -21,6 +24,7 @@
 
 #include "pretokenizer_for_training.h"
 #include "third_party/absl/container/flat_hash_set.h"
+#include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_replace.h"
 #include "util.h"
@@ -29,7 +33,78 @@ namespace sentencepiece {
 namespace bpe {
 
 std::string Trainer::Symbol::ToString() const {
-  return string_util::UnicodeTextToUTF8(chars);
+  string_util::UnicodeText ut;
+  AppendCharsToText(&ut);
+  return string_util::UnicodeTextToUTF8(ut);
+}
+
+Trainer::Symbol::~Symbol() {
+  if (chars_size > 2) {
+    delete[] chars_ext;
+  }
+}
+
+void Trainer::Symbol::AppendChar(char32 c) {
+  char32 *ext;
+  switch (chars_size++) {
+    case 0:
+      chars_embed[0] = c;
+      break;
+    case 1:
+      chars_embed[1] = c;
+      break;
+    case 2:
+      ext = new char32[3];
+      *reinterpret_cast<uint64_t *>(ext) = chars_embed_pair;
+      ext[2] = c;
+      chars_ext = ext;
+      break;
+    default:
+      ext = new char32[chars_size];
+      memcpy(ext, chars_ext, sizeof(char32) * (chars_size - 1));
+      ext[chars_size - 1] = c;
+      delete[] chars_ext;
+      chars_ext = ext;
+      break;
+  }
+}
+
+void Trainer::Symbol::AssignChars(const string_util::UnicodeText &text) {
+  if (chars_size > 2) {
+    delete[] chars_ext;
+  }
+  chars_size = text.size();
+  switch (chars_size) {
+    case 0:
+      break;
+    case 1:
+      chars_embed[0] = text[0];
+      break;
+    case 2:
+      chars_embed_pair = *reinterpret_cast<const uint64_t *>(text.data());
+      break;
+    default:
+      chars_ext = new char32[chars_size];
+      memcpy(chars_ext, text.data(), sizeof(char32) * chars_size);
+      break;
+  }
+}
+
+void Trainer::Symbol::AppendCharsToText(string_util::UnicodeText *text) const {
+  switch (chars_size) {
+    case 0:
+      break;
+    case 1:
+      text->push_back(chars_embed[0]);
+      break;
+    case 2:
+      text->push_back(chars_embed[0]);
+      text->push_back(chars_embed[1]);
+      break;
+    default:
+      text->insert(text->end(), chars_ext, chars_ext + chars_size);
+      break;
+  }
 }
 
 Trainer::Symbol *Trainer::GetCharSymbol(char32 c) {
@@ -39,19 +114,17 @@ Trainer::Symbol *Trainer::GetCharSymbol(char32 c) {
   if (it != symbols_cache_.end()) {
     return it->second;
   }
-  Symbol *s = new Symbol;
-  allocated_.push_back(s);
-  s->is_unk = (kUNKChar == c);
-  s->fp = c;
-  s->chars.push_back(c);
-  s->freq = freq;
-  port::InsertOrDie(&symbols_cache_, s->fp, s);
-  return s;
+  auto &s = allocated_.emplace_back();
+  s.fp = c;
+  s.AppendChar(c);
+  s.freq = freq;
+  port::InsertOrDie(&symbols_cache_, s.fp, &s);
+  return &s;
 }
 
 Trainer::Symbol *Trainer::GetPairSymbol(const Symbol *left,
                                         const Symbol *right) {
-  if (left == nullptr || right == nullptr || left->is_unk || right->is_unk) {
+  if (left == nullptr || right == nullptr || left->IsUnk() || right->IsUnk()) {
     return nullptr;
   }
 
@@ -61,25 +134,24 @@ Trainer::Symbol *Trainer::GetPairSymbol(const Symbol *left,
     return it->second;
   }
 
-  CHECK(!left->chars.empty());
-  CHECK(!right->chars.empty());
+  CHECK(left->CharsSize() > 0);
+  CHECK(right->CharsSize() > 0);
   string_util::UnicodeText ut;
-  for (const char32 c : left->chars) ut.push_back(c);
-  for (const char32 c : right->chars) ut.push_back(c);
+  left->AppendCharsToText(&ut);
+  right->AppendCharsToText(&ut);
 
   // Do not make an invalid piece.
   if (!IsValidSentencePiece(ut)) {
     return nullptr;
   }
 
-  Symbol *s = new Symbol;
-  allocated_.push_back(s);
-  s->fp = fp;
-  s->left = left;
-  s->right = right;
-  s->chars = ut;
-  port::InsertOrDie(&symbols_cache_, s->fp, s);
-  return s;
+  auto &s = allocated_.emplace_back();
+  s.fp = fp;
+  s.left = left;
+  s.right = right;
+  s.AssignChars(ut);
+  port::InsertOrDie(&symbols_cache_, s.fp, &s);
+  return &s;
 }
 
 void Trainer::ComputeFreq(Symbol *symbol) const {
@@ -87,17 +159,31 @@ void Trainer::ComputeFreq(Symbol *symbol) const {
     return;
   }
   CHECK_EQ(0, symbol->freq);
-  for (auto it = symbol->positions.begin(); it != symbol->positions.end();) {
-    const Position pos = DecodePos(*it);
-    // symbols_[sid][left] and symbols_[sid]right] must store
+  std::vector<uint64_t> erased;
+  for (uint64_t i = 0; i < symbol->positions.size(); i++) {
+    const Position pos = DecodePos(symbol->positions[i]);
+    // symbols_[sid][left] and symbols_[sid][right] must store
     // the same symbols in symbol->left and symbols->right.
     if (symbol->left != symbols_[pos.sid][pos.left] ||
         symbol->right != symbols_[pos.sid][pos.right]) {
-      it = symbol->positions.erase(it);
+      erased.push_back(i);
     } else {
-      symbol->freq += sentences_[pos.sid].second;
-      ++it;
+      symbol->freq += freqs_[pos.sid];
     }
+  }
+  if (!erased.empty()) {
+    size_t new_positions_size = symbol->positions.size() - erased.size();
+    std::vector<uint64_t> new_positions(new_positions_size);
+    memcpy(new_positions.data(), symbol->positions.data(), erased[0] * sizeof(uint64_t));
+    uint64_t offset = 0;
+    for (uint64_t i = 0; i < erased.size(); i++) {
+      uint64_t s = erased[i];
+      uint64_t f = i < (erased.size() - 1) ? erased[i + 1] : symbol->positions.size();
+      memcpy(new_positions.data() + s - offset++,
+             symbol->positions.data() + s + 1,
+             (f - s - 1) * sizeof(uint64_t));
+    }
+    symbol->positions = std::move(new_positions);
   }
 }
 
@@ -117,12 +203,54 @@ int Trainer::GetPrevIndex(int sid, int index) const {
   return -1;
 }
 
-void Trainer::AddNewPair(int sid, int left, int right) {
+void Trainer::AddNewPair(int sid, int left, int right, bool sort) {
   if (left == -1 || right == -1) return;
   auto *symbol = GetPairSymbol(symbols_[sid][left], symbols_[sid][right]);
   if (symbol != nullptr) {
     active_symbols_.insert(symbol);
-    symbol->positions.insert(EncodePos(sid, left, right));
+    uint64_t pos = EncodePos(sid, left, right);
+    if (sort) {
+      auto it = std::lower_bound(symbol->positions.begin(), symbol->positions.end(), pos);
+      if (it != symbol->positions.end()) {
+        if (*it == pos) {
+          return;
+        }
+        auto offset = it - symbol->positions.begin();
+        if (symbol->positions.capacity() >= symbol->positions.size() + 1) {
+          symbol->positions.emplace_back();
+          memmove(symbol->positions.data() + offset + 1,
+                  symbol->positions.data() + offset,
+                  (symbol->positions.size() - offset - 1) * sizeof(uint64_t));
+        } else {
+          std::vector<uint64_t> new_positions(symbol->positions.size() + 1);
+          memcpy(new_positions.data(), symbol->positions.data(), offset * sizeof(uint64_t));
+          memcpy(new_positions.data() + offset + 1,
+                 symbol->positions.data() + offset,
+                 (symbol->positions.size() - offset - 1) * sizeof(uint64_t));
+          symbol->positions = std::move(new_positions);
+        }
+        symbol->positions[offset] = pos;
+      } else {
+        symbol->positions.push_back(pos);
+      }
+    } else {
+      symbol->positions.push_back(pos);
+    }
+  }
+}
+
+void Trainer::SortSymbolPositions() {
+  auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
+  pool->StartWorkers();
+  for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
+	pool->Schedule([&, n]() {
+	  for (size_t i = n; i < allocated_.size();
+		   i += trainer_spec_.num_threads()) {
+		auto &symbol = allocated_[i];
+		symbol.positions.shrink_to_fit();
+        std::sort(symbol.positions.begin(), symbol.positions.end());
+      }
+    });
   }
 }
 
@@ -175,7 +303,7 @@ util::Status Trainer::Train() {
   active_symbols_.clear();
 
   // Load all sentences
-  RETURN_IF_ERROR(LoadSentences());
+  RETURN_IF_ERROR(LoadSentences(false));
 
   if (trainer_spec_.split_by_whitespace()) {
     SplitSentencesByWhitespace();
@@ -190,29 +318,51 @@ util::Status Trainer::Train() {
     LOG(INFO) << "Preprocessing with pretokenizer...";
     for (auto &w : sentences_) {
       if (pretokenizer) {
-        w.first = absl::StrJoin(pretokenizer->PreTokenize(w.first),
-                                TrainerInterface::kUPPBoundaryStr);
+        w.first = bank_->View(absl::StrJoin(pretokenizer->PreTokenize(w.first),
+                                            TrainerInterface::kUPPBoundaryStr));
       } else if (!delimiter.empty()) {
-        w.first = absl::StrReplaceAll(
-            w.first, {{delimiter, TrainerInterface::kUPPBoundaryStr}});
+        w.first = bank_->View(absl::StrReplaceAll(
+            w.first, {{delimiter, TrainerInterface::kUPPBoundaryStr}}));
       }
     }
   }
 
   // Initializes symbols_. symbols_[sid][i] stores an unary symbol.
-  symbols_.resize(sentences_.size());
-  for (size_t i = 0; i < sentences_.size(); ++i) {
-    for (const char32 c : string_util::UTF8ToUnicodeText(sentences_[i].first)) {
-      symbols_[i].push_back(GetCharSymbol(c));
+  symbols_.reserve(sentences_.size());
+  freqs_.reserve(sentences_.size());
+  for (auto &sentence : sentences_) {
+    auto &&text = string_util::UTF8ToUnicodeText(sentence.first);
+    auto &symbols_sentence = symbols_.emplace_back();
+    symbols_sentence.reserve(text.size());
+    for (const char32 c : text) {
+      symbols_sentence.push_back(GetCharSymbol(c));
     }
+    freqs_.push_back(sentence.second);
   }
+
+  sentences_.clear();
+  sentences_.shrink_to_fit();
+  MallocExtension::instance()->ReleaseFreeMemory();
+  size_t unisize = allocated_.size();
+  LOG(INFO) << "Allocated " << unisize << " chars";
 
   // Makes all bigram symbols.
   for (size_t sid = 0; sid < symbols_.size(); ++sid) {
+    if (sid % 10000000 == 0) {
+      LOG(INFO) << "Generated pairs from " << sid << " symbols";
+    }
     for (size_t i = 1; i < symbols_[sid].size(); ++i) {
-      AddNewPair(sid, i - 1, i);
+      AddNewPair(sid, i - 1, i, false);
     }
   }
+
+  LOG(INFO) << "Allocated " << allocated_.size() - unisize << " pairs";
+  malloc_stats();
+
+  LOG(INFO) << "Sorting positions...";
+  SortSymbolPositions();
+  MallocExtension::instance()->ReleaseFreeMemory();
+  malloc_stats();
 
   const int vocab_size =
       trainer_spec_.vocab_size() - meta_pieces_.size() - required_chars_.size();
@@ -221,30 +371,69 @@ util::Status Trainer::Train() {
   // We may see duplicated pieces that are extracted with different path.
   // In real segmentation phase, we can consider them as one symbol.
   // e.g., "aaa" => "aa" + "a" or "a" + "aa".
-  absl::flat_hash_set<std::string> dup;
+  absl::flat_hash_set<absl::string_view> dup;
+
+  std::mutex best_mutex;
 
   // Main loop.
   CHECK_OR_RETURN(final_pieces_.empty());
   while (final_pieces_.size() < static_cast<size_t>(vocab_size)) {
-    constexpr int kUpdateActiveSymbolsInteval = 100;
-    if (final_pieces_.size() % kUpdateActiveSymbolsInteval == 0) {
+    constexpr int kUpdateActiveSymbolsInterval = 100;
+    if (final_pieces_.size() % kUpdateActiveSymbolsInterval == 0) {
       UpdateActiveSymbols();
     }
 
     // Scanning active symbols, finds the best_symbol with highest freq.
     Symbol *best_symbol = nullptr;
-    for (auto &it : active_symbols_) {
-      Symbol *symbol = it;
-      ComputeFreq(symbol);
-      // If the frequency is the same, take shorter symbol.
-      // if the length is the same, use lexicographical comparison
-      if (best_symbol == nullptr ||
-          (symbol->freq > best_symbol->freq ||
-           (symbol->freq == best_symbol->freq &&
-            (symbol->chars.size() < best_symbol->chars.size() ||
-             (symbol->chars.size() == best_symbol->chars.size() &&
-              symbol->ToString() < best_symbol->ToString()))))) {
-        best_symbol = symbol;
+    if (active_symbols_.size() > 10000) {
+      auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
+      pool->StartWorkers();
+      for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
+        pool->Schedule([&, n]() {
+          Symbol *my_best_symbol = nullptr;
+          size_t pos = 0;
+          for (auto &it : active_symbols_) {
+            if ((n + pos++) % trainer_spec_.num_threads()) {
+              continue;
+            }
+            Symbol *symbol = it;
+            ComputeFreq(symbol);
+            // If the frequency is the same, take shorter symbol.
+            // if the length is the same, use lexicographical comparison
+            if (my_best_symbol == nullptr ||
+                (symbol->freq > my_best_symbol->freq ||
+                 (symbol->freq == my_best_symbol->freq &&
+                  (symbol->CharsSize() < my_best_symbol->CharsSize() ||
+                   (symbol->CharsSize() == my_best_symbol->CharsSize() &&
+                    symbol->ToString() < my_best_symbol->ToString()))))) {
+              my_best_symbol = symbol;
+            }
+          }
+          std::lock_guard lock(best_mutex);
+          if (best_symbol == nullptr ||
+              (my_best_symbol->freq > best_symbol->freq ||
+               (my_best_symbol->freq == best_symbol->freq &&
+                (my_best_symbol->CharsSize() < best_symbol->CharsSize() ||
+                 (my_best_symbol->CharsSize() == best_symbol->CharsSize() &&
+                  my_best_symbol->ToString() < best_symbol->ToString()))))) {
+            best_symbol = my_best_symbol;
+          }
+        });
+      }
+    } else {
+      for (auto &it : active_symbols_) {
+        Symbol *symbol = it;
+        ComputeFreq(symbol);
+        // If the frequency is the same, take shorter symbol.
+        // if the length is the same, use lexicographical comparison
+        if (best_symbol == nullptr ||
+            (symbol->freq > best_symbol->freq ||
+             (symbol->freq == best_symbol->freq &&
+              (symbol->CharsSize() < best_symbol->CharsSize() ||
+               (symbol->CharsSize() == best_symbol->CharsSize() &&
+                symbol->ToString() < best_symbol->ToString()))))) {
+          best_symbol = symbol;
+        }
       }
     }
 
@@ -253,7 +442,7 @@ util::Status Trainer::Train() {
       break;
     }
 
-    if (!dup.insert(best_symbol->ToString()).second) {
+    if (!dup.emplace(best_symbol->ToString()).second) {
       // Removes best_symbol so it is not selected again.
       symbols_cache_.erase(best_symbol->fp);
       active_symbols_.erase(best_symbol);
@@ -269,13 +458,15 @@ util::Status Trainer::Train() {
                 << " size=" << final_pieces_.size()
                 << " all=" << symbols_cache_.size()
                 << " active=" << active_symbols_.size()
-                << " piece=" << best_symbol->ToString();
+                << " piece=" << best_symbol->ToString()
+                << " (" << best_symbol->CharsSize()
+                << ", " << best_symbol->positions.size() << ")";
     }
 
     // Add new bigrams which are created after symbol replacement.
     // We do not need to scan all characters, but scan the neighbors in
     // best_symbol.
-    for (const uint64 &encoded_pos : best_symbol->positions) {
+    for (uint64_t encoded_pos : best_symbol->positions) {
       const Position pos = DecodePos(encoded_pos);
 
       if (symbols_[pos.sid][pos.left] == nullptr) {
@@ -299,8 +490,8 @@ util::Status Trainer::Train() {
       symbols_[pos.sid][pos.right] = nullptr;
 
       // Makes new symbol bigrams [prev, left] and [left, next].
-      AddNewPair(pos.sid, prev, pos.left);
-      AddNewPair(pos.sid, pos.left, next);
+      AddNewPair(pos.sid, prev, pos.left, true);
+      AddNewPair(pos.sid, pos.left, next, true);
     }
 
     // Removes best_symbol so it is not selected again.
@@ -315,7 +506,12 @@ util::Status Trainer::Train() {
                                -static_cast<float>(final_pieces_.size()));
   }
 
-  port::STLDeleteElements(&allocated_);
+  allocated_.clear();
+  allocated_.shrink_to_fit();
+  freqs_.clear();
+  freqs_.shrink_to_fit();
+
+
 
   return Save();
 }

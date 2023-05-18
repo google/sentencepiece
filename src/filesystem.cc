@@ -14,6 +14,12 @@
 
 #include <iostream>
 
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 #include "filesystem.h"
 #include "third_party/absl/memory/memory.h"
 #include "util.h"
@@ -29,40 +35,80 @@ namespace filesystem {
 
 class PosixReadableFile : public ReadableFile {
  public:
-  PosixReadableFile(absl::string_view filename, bool is_binary = false)
-      : is_(filename.empty()
-                ? &std::cin
-                : new std::ifstream(WPATH(filename.data()),
-                                    is_binary ? std::ios::binary | std::ios::in
-                                              : std::ios::in)) {
-    if (!*is_)
-      status_ = util::StatusBuilder(util::StatusCode::kNotFound, GTL_LOC)
-                << "\"" << filename.data() << "\": " << util::StrError(errno);
+  PosixReadableFile(absl::string_view filename, bool is_binary = false, char delim = '\n')
+      : delim_(delim), mem_(nullptr) {
+    if (!filename.empty()) {
+      int fd = open(filename.data(), O_RDONLY);
+      if (fd < 0) {
+        SetErrorStatus(util::StatusCode::kNotFound, filename);
+        return;
+      }
+      struct stat st;
+      if (fstat(fd, &st) < 0) {
+        SetErrorStatus(util::StatusCode::kInternal, filename);
+        return;
+      }
+      file_size_ = st.st_size;
+      mem_ = reinterpret_cast<char *>(mmap(
+          NULL, file_size_, PROT_READ, MAP_SHARED, fd, 0));
+      if (mem_ == MAP_FAILED) {
+        SetErrorStatus(util::StatusCode::kInternal, filename);
+        close(fd);
+        return;
+      }
+      close(fd);
+      head_ = mem_;
+    }
   }
 
   ~PosixReadableFile() {
-    if (is_ != &std::cin) delete is_;
+    if (mem_ != nullptr) {
+      munmap(mem_, file_size_);
+    }
   }
 
   util::Status status() const { return status_; }
-
-  bool ReadLine(std::string *line) {
-    return static_cast<bool>(std::getline(*is_, *line));
+  
+  bool ReadLine(absl::string_view *line) {
+    if (mem_ == nullptr) {
+      return static_cast<bool>(std::getline(std::cin, lines_.emplace_back(), delim_));
+    }
+    size_t size_left = file_size_ - (head_ - mem_);
+    if (size_left == 0) {
+      return false;
+    }
+    auto ptr = reinterpret_cast<char *>(memchr(head_, delim_, size_left));
+    if (ptr == nullptr) {
+      *line = absl::string_view(head_, size_left);
+      head_ = mem_ + file_size_;
+    } else {
+      *line = absl::string_view(head_, ptr - head_);
+      head_ = ptr + 1;
+    }
+    return true;
   }
 
-  bool ReadAll(std::string *line) {
-    if (is_ == &std::cin) {
+  bool ReadAll(absl::string_view *line) {
+    if (mem_ == nullptr) {
       LOG(ERROR) << "ReadAll is not supported for stdin.";
       return false;
     }
-    line->assign(std::istreambuf_iterator<char>(*is_),
-                 std::istreambuf_iterator<char>());
+    *line = absl::string_view(mem_, file_size_);
     return true;
   }
 
  private:
+  char delim_;
   util::Status status_;
-  std::istream *is_;
+  char *mem_;
+  char *head_;
+  size_t file_size_;
+  std::vector<std::string> lines_;
+
+  void SetErrorStatus(util::StatusCode status, absl::string_view filename) {
+    status_ = util::StatusBuilder(status, GTL_LOC)
+              << "\"" << filename.data() << "\": " << util::StrError(errno);
+  }
 };
 
 class PosixWritableFile : public WritableFile {
@@ -101,8 +147,9 @@ using DefaultReadableFile = PosixReadableFile;
 using DefaultWritableFile = PosixWritableFile;
 
 std::unique_ptr<ReadableFile> NewReadableFile(absl::string_view filename,
-                                              bool is_binary) {
-  return absl::make_unique<DefaultReadableFile>(filename, is_binary);
+                                              bool is_binary,
+                                              char delim) {
+  return absl::make_unique<DefaultReadableFile>(filename, is_binary, delim);
 }
 
 std::unique_ptr<WritableFile> NewWritableFile(absl::string_view filename,

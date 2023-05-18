@@ -30,7 +30,7 @@ util::Status Trainer::Train() {
   CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());
   CHECK_EQ_OR_RETURN(TrainerSpec::WORD, trainer_spec_.model_type());
 
-  RETURN_IF_ERROR(LoadSentences());
+  RETURN_IF_ERROR(LoadSentences(true));
 
   absl::flat_hash_map<std::string, uint64> freq;
   for (const auto &it : sentences_) {

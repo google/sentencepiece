@@ -27,7 +27,7 @@ util::Status Trainer::Train() {
   CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());
   CHECK_EQ_OR_RETURN(TrainerSpec::CHAR, trainer_spec_.model_type());
 
-  RETURN_IF_ERROR(LoadSentences());
+  RETURN_IF_ERROR(LoadSentences(false));
 
   const int vocab_size = trainer_spec_.vocab_size() - meta_pieces_.size();
   CHECK_GE_OR_RETURN(vocab_size, 0);

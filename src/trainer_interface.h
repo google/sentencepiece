@@ -27,6 +27,7 @@
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
+#include "string_bank.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "util.h"
 
@@ -51,13 +52,15 @@ std::vector<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V> &m) {
 
 class MultiFileSentenceIterator : public SentenceIterator {
  public:
-  explicit MultiFileSentenceIterator(const std::vector<std::string> &files);
+  explicit MultiFileSentenceIterator(
+      const std::vector<std::string> &files, char delim);
   ~MultiFileSentenceIterator() {}
 
   bool done() const override;
   void Next() override;
-  const std::string &value() const override { return value_; }
+  const absl::string_view value() const override { return value_; }
   util::Status status() const override;
+  void Finish() override;
 
  private:
   void TryRead();
@@ -65,14 +68,15 @@ class MultiFileSentenceIterator : public SentenceIterator {
   bool read_done_ = false;
   size_t file_index_ = 0;
   std::vector<std::string> files_;
-  std::string value_;
+  absl::string_view value_;
   std::unique_ptr<filesystem::ReadableFile> fp_;
+  char delim_;
 };
 
 // Base trainer class
 class TrainerInterface {
  public:
-  using Sentence = std::pair<std::string, int64>;
+  using Sentence = std::pair<absl::string_view, int64>;
   using Sentences = std::vector<Sentence>;
 
   static const char32 kWSChar;
@@ -109,7 +113,7 @@ class TrainerInterface {
 
   // Loads all sentences from spec.input() or SentenceIterator.
   // It loads at most input_sentence_size sentences.
-  util::Status LoadSentences();
+  util::Status LoadSentences(bool ignore_sentences_with_unknown_char);
 
  protected:
   // Returns true if |piece| is valid sentence piece.
@@ -160,6 +164,10 @@ class TrainerInterface {
   // Emits model to this proto instead of file.
   ModelProto *output_model_proto_ = nullptr;
 
+  // Memory storage for strings. We don't materialize the same string twice.
+  std::unique_ptr<string_util::StringBank> bank_;
+  std::unique_ptr<char[]> tokens_;
+
  private:
   // Serialize final_pieces_ to |model_proto|.
   util::Status Serialize(ModelProto *model_proto) const;
@@ -177,7 +185,7 @@ class TrainerInterface {
   util::Status InitMetaPieces();
 
   // Randomly sampled raw sentences for self-testing.
-  std::vector<std::string> self_test_samples_;
+  std::vector<absl::string_view> self_test_samples_;
 };
 }  // namespace sentencepiece
 #endif  // TRAINER_INTERFACE_H_

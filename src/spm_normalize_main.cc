@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
       rest_args.push_back("");  // empty means that read from stdin.
     }
 
-    std::string line;
+    absl::string_view line;
     for (const auto &filename : rest_args) {
       auto input = sentencepiece::filesystem::NewReadableFile(filename);
       CHECK_OK(input->status());

@@ -14,7 +14,11 @@
 
 #include "trainer_interface.h"
 
+#include <malloc.h>
+#include <gperftools/malloc_extension.h>
+
 #include <algorithm>
+#include <chrono>
 #include <cstdlib>
 #include <memory>
 #include <set>
@@ -40,12 +44,14 @@
 #include "unicode_script.h"
 #include "util.h"
 
+using namespace std::chrono_literals;
+
 namespace sentencepiece {
 
-const char32 TrainerInterface::kWSChar = L'\u2581';
+const char32 TrainerInterface::kWSChar = L'\u2581';  // ▁
 const char TrainerInterface::kWSStr[] = "\xe2\x96\x81";
 
-const char32 TrainerInterface::kUNKChar = L'\u2585';
+const char32 TrainerInterface::kUNKChar = L'\u2585';  // ▅
 const char TrainerInterface::kUNKStr[] = "\xe2\x96\x85";
 
 const char32 TrainerInterface::kUPPBoundaryChar = L'\u0009';
@@ -129,7 +135,7 @@ class SentenceSelector {
     }
   }
 
-  bool Add(const std::pair<std::string, int64> &sentence) {
+  bool Add(const std::pair<absl::string_view, int64> &sentence) {
     if (spec_->input_sentence_size() == 0) {
       sentences_->emplace_back(sentence);
     } else {
@@ -160,8 +166,9 @@ class SentenceSelector {
 }  // namespace
 
 MultiFileSentenceIterator::MultiFileSentenceIterator(
-    const std::vector<std::string> &files)
-    : files_(files) {
+    const std::vector<std::string> &files,
+    char delim)
+    : files_(files), delim_(delim) {
   Next();
 }
 
@@ -179,7 +186,7 @@ void MultiFileSentenceIterator::Next() {
 
   if (!read_done_ && file_index_ < files_.size()) {
     const auto &filename = files_[file_index_++];
-    fp_ = filesystem::NewReadableFile(filename);
+    fp_ = filesystem::NewReadableFile(filename, delim_ == 0, delim_);
     LOG(INFO) << "Loading corpus: " << filename;
     if (fp_->status() != util::OkStatus()) {
       file_index_ = files_.size();
@@ -195,12 +202,17 @@ void MultiFileSentenceIterator::TryRead() {
   read_done_ = fp_ && fp_->ReadLine(&value_);
 }
 
+void MultiFileSentenceIterator::Finish() {
+  fp_.reset();
+}
+
 TrainerInterface::TrainerInterface(const TrainerSpec &trainer_spec,
                                    const NormalizerSpec &normalizer_spec,
                                    const NormalizerSpec &denormalizer_spec)
     : trainer_spec_(trainer_spec),
       normalizer_spec_(normalizer_spec),
-      denormalizer_spec_(denormalizer_spec) {
+      denormalizer_spec_(denormalizer_spec),
+      bank_(std::make_unique<string_util::StringBank>()) {
   status_ = VerifySpec(trainer_spec_);
   if (status_.ok()) status_ = InitMetaPieces();
 }
@@ -318,7 +330,7 @@ void AddDPNoise(const TrainerSpec &trainer_spec, absl::SharedBitGen &generator,
   }
 }
 
-util::Status TrainerInterface::LoadSentences() {
+util::Status TrainerInterface::LoadSentences(bool ignore_sentences_with_unknown_char) {
   RETURN_IF_ERROR(status());
   CHECK_OR_RETURN(sentences_.empty());
   CHECK_OR_RETURN(required_chars_.empty());
@@ -341,7 +353,7 @@ util::Status TrainerInterface::LoadSentences() {
   const bool is_tsv = trainer_spec_.input_format() == "tsv";
 
   SentenceSelector selector(&sentences_, trainer_spec_);
-  random::ReservoirSampler<std::string> test_sentence_sampler(
+  random::ReservoirSampler<absl::string_view> test_sentence_sampler(
       &self_test_samples_, trainer_spec_.self_test_sample_size());
 
   int too_long_lines = 0;
@@ -352,13 +364,14 @@ util::Status TrainerInterface::LoadSentences() {
                  "MultiFileSentenceIterator.";
     sentence_iterator_impl =
         absl::make_unique<MultiFileSentenceIterator>(std::vector<std::string>(
-            trainer_spec_.input().begin(), trainer_spec_.input().end()));
+            trainer_spec_.input().begin(), trainer_spec_.input().end()),
+            trainer_spec_.new_line_delim());
     sentence_iterator_ = sentence_iterator_impl.get();
   }
 
   for (; !sentence_iterator_->done(); sentence_iterator_->Next()) {
     int64 freq = 1;
-    std::string sentence = sentence_iterator_->value();
+    absl::string_view sentence = sentence_iterator_->value();
 
     if (is_tsv) {
       const std::vector<std::string> v = absl::StrSplit(sentence, '\t');
@@ -385,7 +398,7 @@ util::Status TrainerInterface::LoadSentences() {
       continue;
     }
 
-    if (sentence.find(kUNKStr) != std::string::npos) {
+    if (ignore_sentences_with_unknown_char && sentence.find(kUNKStr) != std::string::npos) {
       LOG(INFO) << "Reserved chars are found. Skipped: " << sentence;
       continue;
     }
@@ -427,20 +440,32 @@ END:
 
     LOG(INFO) << "Normalizing sentences...";
     CHECK_OR_RETURN(!sentences_.empty());
+
     {
       auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
       pool->StartWorkers();
+      auto last_update = std::chrono::system_clock::now();
       for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
         pool->Schedule([&, n]() {
           for (size_t i = n; i < sentences_.size();
                i += trainer_spec_.num_threads()) {
+            if (n == 0) {
+              const auto now = std::chrono::system_clock::now();
+              if ((now - last_update) > 10s) {
+                LOG(INFO) << (i * 100) / sentences_.size() << "%";
+                last_update = now;
+              }
+            }
             auto *s = &sentences_[i].first;
-            *s = meta_pieces_matcher.GlobalReplace(normalizer.Normalize(*s),
-                                                   kUPPBoundaryStr);
+            *s = bank_->View(meta_pieces_matcher.GlobalReplace(
+                normalizer.Normalize(*s), kUPPBoundaryStr));
           }
         });
       }
     }
+
+    LOG(INFO) << "Piece cache hits: " << bank_->hits();
+    sentence_iterator_->Finish();
 
     for (size_t i = 0; i < sentences_.size(); ++i) {
       auto *s = &sentences_[i].first;
@@ -501,40 +526,79 @@ END:
               << " fraction of sentences removed.";
   }
 
+  LOG(INFO) << "Current sentences count: " << sentences_.size();
+
   // Count character frequencies.
   int64 all_chars_count = 0;
   // A map from a character to {is_required_char, character count}.
   absl::flat_hash_map<char32, std::pair<bool, int64>> chars_count;
+  std::atomic<size_t> nulls = 0;
   for (const char32 c :
        string_util::UTF8ToUnicodeText(trainer_spec_.required_chars())) {
     CHECK_OR_RETURN(string_util::IsValidCodepoint(c));
     if (c == 0x0000) {
-      LOG(INFO) << "Found null character. The required_chars field must be "
-                   "encoded in utf-8.";
+      nulls++;
       continue;
     }
     chars_count[c].first = true;  // is_required_character.
   }
-  for (const auto &w : sentences_) {
-    for (const char32 c : string_util::UTF8ToUnicodeText(w.first)) {
-      if (!string_util::IsValidCodepoint(c)) continue;
-      if (c == 0x0000) {
-        LOG(INFO)
-            << "Found null character. The corpus must be encoded in utf-8.";
-        continue;
-      }
-      if (c == 0x0020) {
-        // UTF8ToUnicodeText returns a white space if the text
-        // contains an interchange-invalid character.
-        CHECK_OR_RETURN(w.first.find(" ") == std::string::npos)
-            << "space must not be included in normalized string.";
-        continue;
-      }
-      chars_count[c].second += w.second;
-      all_chars_count += w.second;
+   if (nulls.load()) {
+    LOG(INFO) << "Found " << nulls.load() << " null characters. The required_chars field must be "
+                 "encoded in utf-8.";
+  }
+  nulls = 0;
+  std::atomic<int64> spaces_included = 0;
+  {
+    LOG(INFO) << "Counting characters...";
+    std::mutex stats_mutex;
+    auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
+    pool->StartWorkers();
+    auto last_update = std::chrono::system_clock::now();
+    for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
+      pool->Schedule([&, n]() {
+        int64 my_all_chars_count = 0;
+        absl::flat_hash_map<char32, std::pair<bool, int64>> my_chars_count;
+        for (size_t i = n; i < sentences_.size();
+             i += trainer_spec_.num_threads()) {
+          auto &w = sentences_[i];
+          if (n == 0) {
+            const auto now = std::chrono::system_clock::now();
+            if ((now - last_update) > 10s) {
+              LOG(INFO) << (i * 100) / sentences_.size() << "%";
+              last_update = now;
+            }
+          }
+          for (const char32 c : string_util::UTF8ToUnicodeText(w.first)) {
+            if (!string_util::IsValidCodepoint(c)) continue;
+            if (c == 0x0000) {
+              nulls++;
+              continue;
+            }
+            if (c == 0x0020) {
+              spaces_included++;
+              continue;
+            }
+            my_all_chars_count += w.second;
+            my_chars_count[c].second += w.second;
+          }
+        }
+        std::lock_guard lock(stats_mutex);
+        all_chars_count += my_all_chars_count;
+        for (auto &it : my_chars_count) {
+          chars_count[it.first].second += it.second.second;
+        }
+      });
     }
   }
-  LOG(INFO) << "all chars count=" << all_chars_count;
+  if (nulls.load()) {
+    LOG(INFO) << "Found " << nulls.load() << " null characters. "
+                 "The corpus must be encoded in utf-8.";
+  }
+  // UTF8ToUnicodeText returns a white space if the text
+  // contains an interchange-invalid character.
+  CHECK_OR_RETURN(spaces_included.load() == 0)
+      << "space must not be included in normalized string.";
+  LOG(INFO) << "All chars count=" << all_chars_count;
 
   // Determines required_chars which must be included in the vocabulary.
   int64 accumulated_chars_count = 0;
@@ -563,16 +627,35 @@ END:
 
   // Replaces rare characters (characters not included in required_chars_)
   // with kUNKChar.
-  for (auto &w : sentences_) {
-    string_util::UnicodeText uw2;
-    for (const char32 c : string_util::UTF8ToUnicodeText(w.first)) {
-      if (port::ContainsKey(required_chars_, c)) {
-        uw2.push_back(c);
-      } else {
-        uw2.push_back(kUNKChar);
-      }
+  {
+    LOG(INFO) << "Replacing rare characters...";
+    auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
+    pool->StartWorkers();
+    auto last_update = std::chrono::system_clock::now();
+    for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
+      pool->Schedule([&, n]() {
+        for (size_t i = n; i < sentences_.size();
+             i += trainer_spec_.num_threads()) {
+          if (n == 0) {
+            const auto now = std::chrono::system_clock::now();
+            if ((now - last_update) > 10s) {
+              LOG(INFO) << (i * 100) / sentences_.size() << "%";
+              last_update = now;
+            }
+          }
+          auto &w = sentences_[i];
+          string_util::UnicodeText uw2;
+          for (const char32 c : string_util::UTF8ToUnicodeText(w.first)) {
+            if (port::ContainsKey(required_chars_, c)) {
+              uw2.push_back(c);
+            } else {
+              uw2.push_back(kUNKChar);
+            }
+          }
+          w.first = bank_->View(string_util::UnicodeTextToUTF8(uw2));
+        }
+      });
     }
-    w.first = string_util::UnicodeTextToUTF8(uw2);
   }
 
   // +3 for meta pieces.
@@ -596,16 +679,80 @@ END:
 void TrainerInterface::SplitSentencesByWhitespace() {
   LOG(INFO) << "Tokenizing input sentences with whitespace: "
             << sentences_.size();
-  absl::flat_hash_map<std::string, int64> tokens;
-  for (const auto &s : sentences_) {
-    for (const auto &w :
-         SplitIntoWords(s.first, trainer_spec_.treat_whitespace_as_suffix(),
-                        trainer_spec_.allow_whitespace_only_pieces())) {
-      tokens[std::string(w)] += s.second;
+  {
+    absl::flat_hash_map<absl::string_view, int64> tokens;
+    {
+      auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
+      pool->StartWorkers();
+      std::mutex tokens_mutex;
+      int joined_threads = 0;
+      auto last_update = std::chrono::system_clock::now();
+      for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
+        pool->Schedule([&, n]() {
+          absl::flat_hash_map<absl::string_view, int64> my_tokens;
+          for (size_t i = n; i < sentences_.size();
+              i += trainer_spec_.num_threads()) {
+            if (n == 0) {
+              const auto now = std::chrono::system_clock::now();
+              if ((now - last_update) > 10s) {
+                LOG(INFO) << (i * 100) / sentences_.size() << "%";
+                last_update = now;
+              }
+            }
+            auto &s = sentences_[i];
+            for (const auto &w :
+              SplitIntoWords(s.first, trainer_spec_.treat_whitespace_as_suffix(),
+                             trainer_spec_.allow_whitespace_only_pieces())) {
+              my_tokens[w] += s.second;
+            }
+          }
+          std::lock_guard lock(tokens_mutex);
+          for (auto &tf : my_tokens) {
+            tokens[tf.first] += tf.second;
+          }
+          LOG(INFO) << ++joined_threads << " / " << trainer_spec_.num_threads();
+        });
+      }
     }
+    LOG(INFO) << "Sorting by frequency...";
+    sentences_.clear();
+    sentences_.shrink_to_fit();
+    sentences_ = Sorted(tokens);
   }
-  sentences_ = Sorted(tokens);
   LOG(INFO) << "Done! " << sentences_.size();
+  LOG(INFO) << "Optimizing memory...";
+  {
+    size_t old_size = bank_->TotalSize();
+    std::vector<int64> freqs;
+    std::vector<uint32> sizes;
+    freqs.reserve(sentences_.size());
+    sizes.reserve(sentences_.size());
+    uint64_t pos = 0;
+    for (auto &sentence : sentences_) {
+      auto size = sentence.first.size();
+      freqs.push_back(sentence.second);
+      sizes.push_back(size);
+      pos += size;
+    }
+    tokens_ = std::make_unique<char[]>(pos);
+    pos = 0;
+    for (auto &sentence : sentences_) {
+      auto size = sentence.first.size();
+      memcpy(tokens_.get() + pos, sentence.first.data(), size);
+      pos += size;
+    }
+    bank_.reset();
+    pos = 0;
+    for (int64 i = 0; i < sizes.size(); i++) {
+      auto size = sizes[i];
+      sentences_[i] = std::make_pair(absl::string_view(tokens_.get() + pos, size), freqs[i]);
+      pos += size;
+    }
+    LOG(INFO) << "Compacted " << old_size << " -> " << pos;
+  }
+
+  MallocExtension::instance()->ReleaseFreeMemory();
+  malloc_stats();
 }
 
 util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
@@ -674,7 +821,7 @@ util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
       std::vector<std::string> sps;
       RETURN_IF_ERROR(sp.Encode(input, &sps));
       auto *sample = model_proto->mutable_self_test_data()->add_samples();
-      sample->set_input(input);
+      sample->set_input(std::string(input));
       sample->set_expected(absl::StrJoin(sps, " "));
     }
   }

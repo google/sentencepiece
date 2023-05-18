@@ -40,6 +40,9 @@ message TrainerSpec {
   // "tsv":  sentence <tab> freq
   optional string input_format = 7;
 
+  // Line delimiter character.
+  optional int32 new_line_delim = 54 [default = 10];
+
   // Output model file prefix.
   // <model_prefix>.model and <model_prefix>.vocab are generated.
   optional string model_prefix = 2;
@@ -263,6 +266,9 @@ message NormalizerSpec {
   // This field is only used in SentencePieceTrainer::Train() method, which
   // compiles the rule into the binary rule stored in `precompiled_charsmap`.
   optional string normalization_rule_tsv = 6;
+
+  // Output normalization report to this file.
+  optional string normalization_report_file = 7;
 
   // Customized extensions: the range of field numbers
   // are open to third-party extensions.

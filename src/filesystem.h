@@ -30,12 +30,15 @@ namespace filesystem {
 class ReadableFile {
  public:
   ReadableFile() {}
-  explicit ReadableFile(absl::string_view filename, bool is_binary = false) {}
+  explicit ReadableFile(
+      absl::string_view filename,
+      bool is_binary = false,
+      char delim = '\n') {}
   virtual ~ReadableFile() {}
 
   virtual util::Status status() const = 0;
-  virtual bool ReadLine(std::string *line) = 0;
-  virtual bool ReadAll(std::string *line) = 0;
+  virtual bool ReadLine(absl::string_view *line) = 0;
+  virtual bool ReadAll(absl::string_view *line) = 0;
 };
 
 class WritableFile {
@@ -50,7 +53,8 @@ class WritableFile {
 };
 
 std::unique_ptr<ReadableFile> NewReadableFile(absl::string_view filename,
-                                              bool is_binary = false);
+                                              bool is_binary = false,
+                                              char delim = '\n');
 std::unique_ptr<WritableFile> NewWritableFile(absl::string_view filename,
                                               bool is_binary = false);
 

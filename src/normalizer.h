@@ -153,6 +153,23 @@ class Normalizer {
 
   // Normalizer's status.
   util::Status status_;
+
+  // Accumulated statistics of the normalized text.
+  mutable std::unordered_map<std::string, int64> stats_;
+  mutable std::mutex stats_lock_;
+
+  enum FixedNormalizationStatistic {
+    kFixedNormalizationStatisticsCopiedAsIs,
+    kFixedNormalizationStatisticsHeadingSpaceRemoved,
+    kFixedNormalizationStatisticsEmptyAfterRemovingSpaces,
+    kFixedNormalizationStatisticsSpaceReplacedWith2581,
+    kFixedNormalizationStatisticsExtraSpaceRemoved,
+    kFixedNormalizationStatisticsTrailingSpaceRemoved,
+    kFixedNormalizationStatisticsMalformedUTF8,
+    kFixedNormalizationStatisticCount,
+  };
+
+  mutable std::array<std::atomic<int64>, kFixedNormalizationStatisticCount> fixed_stats_;
 };
 }  // namespace normalizer
 }  // namespace sentencepiece
