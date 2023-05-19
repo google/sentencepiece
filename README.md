@@ -23,8 +23,8 @@ with the extension of direct training from raw sentences. SentencePiece allows u
 Proper installation:
 
 ```
-sudo apt install libgoogle-perftools-dev protobuf-compiler libprotobuf-dev
-cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo -D SPM_USE_EXTERNAL_ABSL=off -D SPM_USE_BUILTIN_PROTOBUF=off -D SPM_ENABLE_TCMALLOC=on -D SPM_ENABLE_NFKC_COMPILE=on ..
+sudo apt install libgoogle-perftools-dev
+cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo -D SPM_USE_EXTERNAL_ABSL=off -D SPM_ENABLE_TCMALLOC=on -D SPM_ENABLE_NFKC_COMPILE=on ..
 ```
 
 1. The built-in abseil's containers are aliases to stdlib. Building with a real abseil is WIP.
