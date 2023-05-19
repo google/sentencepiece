@@ -15,7 +15,9 @@
 #include "trainer_interface.h"
 
 #include <malloc.h>
+#ifdef TCMALLOC
 #include <gperftools/malloc_extension.h>
+#endif
 
 #include <algorithm>
 #include <chrono>
@@ -752,7 +754,9 @@ void TrainerInterface::SplitSentencesByWhitespace() {
     LOG(INFO) << "Compacted " << old_size << " -> " << pos;
   }
 
+  #ifdef TCMALLOC
   MallocExtension::instance()->ReleaseFreeMemory();
+  #endif
   malloc_stats();
 }
 

@@ -15,7 +15,9 @@
 #include "bpe_model_trainer.h"
 
 #include <malloc.h>
+#ifdef TCMALLOC
 #include <gperftools/malloc_extension.h>
+#endif
 
 #include <algorithm>
 #include <string>
@@ -356,7 +358,9 @@ util::Status Trainer::Train() {
 
   sentences_.clear();
   sentences_.shrink_to_fit();
+  #ifdef TCMALLOC
   MallocExtension::instance()->ReleaseFreeMemory();
+  #endif
   size_t unisize = allocated_.size();
   LOG(INFO) << "Allocated " << unisize << " chars with " << overflows << " overflows";
 
@@ -375,7 +379,9 @@ util::Status Trainer::Train() {
 
   LOG(INFO) << "Sorting positions...";
   SortSymbolPositions();
+  #ifdef TCMALLOC
   MallocExtension::instance()->ReleaseFreeMemory();
+  #endif
   malloc_stats();
 
   const int vocab_size =
