@@ -100,7 +100,9 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
     CopyValue();
   }
 
-  const std::string &value() const override {
+  void Finish() override {}
+
+  const absl::string_view value() const override {
     return value_;
   }
 
