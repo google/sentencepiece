@@ -75,7 +75,7 @@ endif()
 if (SPM_USE_BUILTIN_PROTOBUF)
   set(libprotobuf_lite "")
 else()
-  set(libprotobuf_lite "-lprotobuf-lite")
+  set(libprotobuf_lite "protobuf-lite")
 endif()
 
 if (MSVC)
