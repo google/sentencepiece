@@ -79,7 +79,7 @@ TrainerResult RunTrainer(const std::vector<std::string>& input, int size,
 
   {
     Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    EXPECT_OK(trainer.LoadSentences());
+    EXPECT_OK(trainer.LoadSentences(true));
     TrainerModel::SentencePieces res = trainer.MakeSeedSentencePieces();
 
     for (const auto& piece : res) {

@@ -37,7 +37,7 @@ TEST(UtilTest, FilesystemTest) {
   {
     auto input = filesystem::NewReadableFile(
         util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "test_file"));
-    std::string line;
+    absl::string_view line;
     for (size_t i = 0; i < kData.size(); ++i) {
       EXPECT_TRUE(input->ReadLine(&line));
       EXPECT_EQ(kData[i], line);

@@ -332,6 +332,8 @@ file(TO_NATIVE_PATH "${PROJECT_SOURCE_DIR}/data" data_dir)
 if (SPM_BUILD_TEST OR SPM_COVERAGE)
   enable_testing()
   add_executable(spm_test test_main.cc ${SPM_TEST_SRCS})
+  set_property(TARGET spm_test PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
+  set_target_properties(spm_train spm_encode spm_decode spm_normalize spm_export_vocab compile_charsmap PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
 
   if (SPM_COVERAGE)
     target_link_libraries(spm_test sentencepiece sentencepiece_train "-lgcov")

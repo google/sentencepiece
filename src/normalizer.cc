@@ -35,6 +35,7 @@ constexpr int Normalizer::kMaxTrieResultsSize;
 Normalizer::Normalizer(const NormalizerSpec &spec, const TrainerSpec &trainer_spec)
     : spec_(&spec),
       treat_whitespace_as_suffix_(trainer_spec.treat_whitespace_as_suffix()),
+      verbatim_control_char_(trainer_spec.verbatim_control_char()),
       status_(util::OkStatus()) {
   Init();
 }
@@ -110,6 +111,10 @@ util::Status Normalizer::Normalize(absl::string_view input,
   RETURN_IF_ERROR(status());
 
   int consumed = 0;
+  bool verbatim = static_cast<uint8_t>(input[0]) == verbatim_control_char_;
+  if (verbatim) {
+    input.remove_prefix(1);
+  }
 
   // Ignores heading space.
   if (spec_->remove_extra_whitespaces()) {
@@ -131,9 +136,12 @@ util::Status Normalizer::Normalize(absl::string_view input,
   }
 
   // Reserves the output buffer to avoid re-allocations.
-  const size_t kReservedSize = input.size() * 3;
+  const size_t kReservedSize = input.size() * 3 + verbatim;
   normalized->reserve(kReservedSize);
   norm_to_orig->reserve(kReservedSize);
+  if (verbatim) {
+    normalized->push_back(verbatim_control_char_);
+  }
 
   // Replaces white space with U+2581 (LOWER ONE EIGHT BLOCK)
   // if escape_whitespaces() is set (default = true).
@@ -159,7 +167,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
   // "_world" as one symbol.
   if (!treat_whitespace_as_suffix_ && spec_->add_dummy_prefix()) add_ws();
 
-  bool is_prev_space = spec_->remove_extra_whitespaces();
+  bool is_prev_space = spec_->remove_extra_whitespaces() && !verbatim;
   while (!input.empty()) {
     auto p = NormalizePrefix(input);
     absl::string_view sp = p.first;
@@ -191,13 +199,13 @@ util::Status Normalizer::Normalize(absl::string_view input,
 
     consumed += p.second;
     input.remove_prefix(p.second);
-    if (!spec_->remove_extra_whitespaces()) {
+    if (!spec_->remove_extra_whitespaces() || verbatim) {
       is_prev_space = false;
     }
   }
 
   // Ignores trailing space.
-  if (spec_->remove_extra_whitespaces()) {
+  if (spec_->remove_extra_whitespaces() && !verbatim) {
     const absl::string_view space =
         spec_->escape_whitespaces() ? kSpaceSymbol : " ";
     while (absl::EndsWith(*normalized, space)) {

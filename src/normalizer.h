@@ -65,7 +65,7 @@ class Normalizer {
   // Instantiates Normalizer with |spec|.
   // |spec| should not be deleted until Normalizer is destroyed.
   explicit Normalizer(const NormalizerSpec &spec);
-  Normalizer(const NormalizerSpec &spec, const TrainerSpec &trainer_Spec);
+  Normalizer(const NormalizerSpec &spec, const TrainerSpec &trainer_spec);
   virtual ~Normalizer();
 
   virtual void SetPrefixMatcher(const PrefixMatcher *matcher) {
@@ -145,6 +145,9 @@ class Normalizer {
   // Split hello world into "hello_" and "world_" instead of
   // "_hello" and "_world".
   const bool treat_whitespace_as_suffix_ = false;
+
+  // Disable whitespace collapsing in sentences marked with this.
+  const int verbatim_control_char_ = -1;
 
 #ifdef IS_BIG_ENDIAN
   // Stores the blob for TRIE encoded in big-endian.

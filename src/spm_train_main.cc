@@ -81,6 +81,8 @@ ABSL_FLAG(bool, split_digits, kDefaultTrainerSpec.split_digits(),
 ABSL_FLAG(std::string, pretokenization_delimiter,
           kDefaultTrainerSpec.pretokenization_delimiter(),
           "specifies the delimiter of pre-tokenization");
+ABSL_FLAG(int, verbatim_control_char, -1, "control character to process the "
+          "following sentence without whitespace normalization");
 ABSL_FLAG(bool, treat_whitespace_as_suffix,
           kDefaultTrainerSpec.treat_whitespace_as_suffix(),
           "treat whitespace marker as suffix instead of prefix.");
@@ -236,6 +238,7 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(split_by_number);
   SetTrainerSpecFromFlag(split_digits);
   SetTrainerSpecFromFlag(pretokenization_delimiter);
+  SetTrainerSpecFromFlag(verbatim_control_char);
   SetTrainerSpecFromFlag(byte_fallback);
   SetTrainerSpecFromFlag(treat_whitespace_as_suffix);
   SetTrainerSpecFromFlag(allow_whitespace_only_pieces);

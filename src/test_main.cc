@@ -22,6 +22,7 @@ ABSL_FLAG(std::string, test_srcdir, "../data", "Data directory.");
 #endif
 
 ABSL_FLAG(std::string, test_tmpdir, "test_tmp", "Temporary directory.");
+ABSL_FLAG(std::string, test_filter, "test_filter", "Base.Name test selector.");
 
 int main(int argc, char **argv) {
   sentencepiece::ScopedResourceDestructor cleaner;

@@ -16,6 +16,7 @@
 #define TRAINER_INTERFACE_H_
 
 #include <algorithm>
+#include <execution>
 #include <map>
 #include <memory>
 #include <string>
@@ -36,7 +37,7 @@ namespace sentencepiece {
 template <typename K, typename V>
 std::vector<std::pair<K, V>> Sorted(const std::vector<std::pair<K, V>> &m) {
   std::vector<std::pair<K, V>> v = m;
-  std::sort(v.begin(), v.end(),
+  std::sort(std::execution::par_unseq, v.begin(), v.end(),
             [](const std::pair<K, V> &p1, const std::pair<K, V> &p2) {
               return (p1.second > p2.second ||
                       (p1.second == p2.second && p1.first < p2.first));
@@ -53,7 +54,7 @@ std::vector<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V> &m) {
 class MultiFileSentenceIterator : public SentenceIterator {
  public:
   explicit MultiFileSentenceIterator(
-      const std::vector<std::string> &files, char delim);
+      const std::vector<std::string> &files, char delim = '\n');
   ~MultiFileSentenceIterator() {}
 
   bool done() const override;

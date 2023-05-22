@@ -436,5 +436,19 @@ TEST(NormalizerTest, PrefixMatcherWithEmptyTest) {
   EXPECT_EQ("abc", matcher.GlobalReplace("abc", ""));
 }
 
+TEST(NormalizerTest, NormalizeCodeVerbatimTest) {
+  auto spec = SentencePieceTrainer::GetNormalizerSpec("nfkc_code");
+  TrainerSpec trainer_spec;
+  trainer_spec.set_verbatim_control_char('X');
+  const Normalizer normalizer(spec, trainer_spec);
+
+  // No whitespace collapse
+  EXPECT_EQ("X▁import▁numpy▁as▁np\n\n\ndef▁main():\n▁▁▁▁"
+      "if▁True:\n▁▁▁▁▁▁▁▁print(np.__version__)\n",
+      normalizer.Normalize(
+          "X   import numpy as np\n\n\ndef main():\n    "
+          "if True:\n        print(np.__version__)\n"));
+}
+
 }  // namespace normalizer
 }  // namespace sentencepiece

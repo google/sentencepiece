@@ -66,7 +66,21 @@ int RunAllTests() {
     return 0;
   }
 
+  std::string filter_base, filter_name;
+  {
+    auto filter = absl::GetFlag(FLAGS_test_filter);
+    auto dot_pos = filter.find('.');
+    if (dot_pos != filter.npos) {
+      filter_base = filter.substr(0, dot_pos);
+      filter_name = filter.substr(dot_pos + 1);
+    } else {
+      filter_base = filter;
+    }
+  }
+
   for (const Test &t : *(tests)) {
+    if (!filter_base.empty() && t.base != filter_base) continue;
+    if (!filter_name.empty() && t.name != filter_name) continue;
     std::cerr << "[ RUN      ] " << t.base << "." << t.name << std::endl;
     (*t.func)();
     std::cerr << "[       OK ] " << t.base << "." << t.name << std::endl;

@@ -443,6 +443,7 @@ END:
     LOG(INFO) << "Normalizing sentences...";
     CHECK_OR_RETURN(!sentences_.empty());
 
+    std::atomic<int64_t> verbatim_count = 0;
     {
       auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
       pool->StartWorkers();
@@ -460,6 +461,10 @@ END:
             }
             auto *s = &sentences_[i].first;
             auto aux = normalizer.Normalize(*s);
+            if (!aux.empty() && static_cast<uint8_t>(aux[0]) ==
+                                trainer_spec_.verbatim_control_char()) {
+              verbatim_count++;
+            }
             aux = meta_pieces_matcher.GlobalReplace(aux, kUPPBoundaryStr);
             *s = bank_->View(aux);
           }
@@ -468,6 +473,7 @@ END:
     }
 
     LOG(INFO) << "Piece cache hits: " << bank_->hits();
+    LOG(INFO) << "Processed " << verbatim_count.load() << " verbatim sentences";
     sentence_iterator_->Finish();
 
     for (size_t i = 0; i < sentences_.size(); ++i) {
@@ -703,9 +709,13 @@ void TrainerInterface::SplitSentencesByWhitespace() {
               }
             }
             auto &s = sentences_[i];
+            bool verbatim = s.first[0] == trainer_spec_.verbatim_control_char();
+            if (verbatim) {
+              s.first.remove_prefix(1);
+            }
             for (const auto &w :
               SplitIntoWords(s.first, trainer_spec_.treat_whitespace_as_suffix(),
-                             trainer_spec_.allow_whitespace_only_pieces())) {
+                             trainer_spec_.allow_whitespace_only_pieces() || verbatim)) {
               my_tokens[w] += s.second;
             }
           }

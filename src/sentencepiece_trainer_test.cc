@@ -103,16 +103,17 @@ TEST(SentencePieceTrainerTest, TrainFromArgsTest) {
 TEST(SentencePieceTrainerTest, TrainFromIterator) {
   class VectorIterator : public SentenceIterator {
    public:
-    explicit VectorIterator(std::vector<std::string> &&vec)
+    explicit VectorIterator(std::vector<absl::string_view> &&vec)
         : vec_(std::move(vec)) {}
 
     bool done() const override { return idx_ == vec_.size(); }
     void Next() override { ++idx_; }
-    const std::string &value() const override { return vec_[idx_]; }
+    const absl::string_view value() const override { return vec_[idx_]; }
     util::Status status() const override { return util::OkStatus(); }
+    void Finish() override {}
 
    private:
-    std::vector<std::string> vec_;
+    std::vector<absl::string_view> vec_;
     size_t idx_ = 0;
   };
 
@@ -121,11 +122,11 @@ TEST(SentencePieceTrainerTest, TrainFromIterator) {
   const std::string model =
       util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "m");
 
-  std::vector<std::string> sentences;
+  std::vector<absl::string_view> sentences;
   {
     auto fs = filesystem::NewReadableFile(input);
     CHECK_OK(fs->status());
-    std::string line;
+    absl::string_view line;
     while (fs->ReadLine(&line)) sentences.emplace_back(line);
   }
 

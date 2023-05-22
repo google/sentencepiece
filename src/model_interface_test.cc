@@ -426,8 +426,9 @@ TEST(ModelInterfaceTest, SplitIntoWordsWhiteSpaceOnly) {
 
   {
     const auto v = SplitIntoWords(WS WS WS "a", false, true);
-    EXPECT_EQ(1, v.size());
-    EXPECT_EQ(WS WS WS "a", v[0]);
+    EXPECT_EQ(2, v.size());
+    EXPECT_EQ(WS WS, v[0]);
+    EXPECT_EQ(WS "a", v[1]);
   }
 
   {
@@ -451,9 +452,26 @@ TEST(ModelInterfaceTest, SplitIntoWordsWhiteSpaceOnly) {
 
   {
     const auto v = SplitIntoWords(WS WS "a" WS, false, true);
+    EXPECT_EQ(3, v.size());
+    EXPECT_EQ(WS, v[0]);
+    EXPECT_EQ(WS "a", v[1]);
+    EXPECT_EQ(WS, v[2]);
+  }
+
+  {
+    const auto v = SplitIntoWords("a" WS, false, true);
     EXPECT_EQ(2, v.size());
-    EXPECT_EQ(WS WS "a", v[0]);
+    EXPECT_EQ("a", v[0]);
     EXPECT_EQ(WS, v[1]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS "def" WS "main():\n" WS WS WS WS "print()\n", false, true);
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ(WS "def", v[0]);
+    EXPECT_EQ(WS "main():\n", v[1]);
+    EXPECT_EQ(WS WS WS, v[2]);
+    EXPECT_EQ(WS "print()\n", v[3]);
   }
 }
 

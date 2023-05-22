@@ -167,6 +167,11 @@ message TrainerSpec {
   // selection. Note that this field is available on unigram mode.
   optional string pretokenization_delimiter = 53 [ default = ""];
 
+  // Control character to process the following sentence verbatim:
+  // - no whitespace collapsing: --remove_extra_whitespaces=false
+  // - whitespace-only pieces are possible: --allow_whitespace_only_pieces=true
+  optional int32 verbatim_control_char = 55 [default = -1];
+
   ///////////////////////////////////////////////////////////////////
   // Vocabulary management
   //

@@ -520,7 +520,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   using E = absl::flat_hash_map<char32, int64>;
   {
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    EXPECT_OK(trainer.LoadSentences());
+    EXPECT_OK(trainer.LoadSentences(false));
     // Because --character_coverage=0.98, "a" and "あ" are chosen, but "b" is
     // dropped.
     EXPECT_EQ(trainer.required_chars_,
@@ -529,7 +529,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   {
     trainer_spec.set_required_chars("漢字");
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    EXPECT_OK(trainer.LoadSentences());
+    EXPECT_OK(trainer.LoadSentences(false));
     // 漢 and 字 do not occur in the line, but they are added.
     EXPECT_EQ(trainer.required_chars_, E({{ToChar32("a"), 50},
                                           {ToChar32("あ"), 49},
@@ -539,7 +539,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   {
     trainer_spec.set_required_chars("aあ");
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    EXPECT_OK(trainer.LoadSentences());
+    EXPECT_OK(trainer.LoadSentences(false));
     // Adding characters that frequently occur do not change the result.
     EXPECT_EQ(trainer.required_chars_,
               E({{ToChar32("a"), 50}, {ToChar32("あ"), 49}}));
@@ -547,7 +547,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   {
     trainer_spec.set_required_chars("b");
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    EXPECT_OK(trainer.LoadSentences());
+    EXPECT_OK(trainer.LoadSentences(false));
     // "b" is added with the correct frequency.
     EXPECT_EQ(
         trainer.required_chars_,

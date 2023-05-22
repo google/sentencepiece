@@ -179,7 +179,14 @@ std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
         in_ws_sequence = true;
       }
 
-      if (in_ws_sequence && !is_ws) in_ws_sequence = false;
+      if (in_ws_sequence && !is_ws) {
+        // backtrack the whitespace sequence back and split
+        if (result.back().size() > kSpaceSymbol.size()) {
+          result.back().remove_suffix(kSpaceSymbol.size());
+          result.emplace_back(begin - kSpaceSymbol.size(), kSpaceSymbol.size());
+        }
+        in_ws_sequence = false;
+      }
 
       result.back() =
           absl::string_view(result.back().data(), result.back().size() + mblen);

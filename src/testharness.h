@@ -27,6 +27,7 @@
 
 ABSL_DECLARE_FLAG(std::string, test_tmpdir);
 ABSL_DECLARE_FLAG(std::string, test_srcdir);
+ABSL_DECLARE_FLAG(std::string, test_filter);
 
 namespace sentencepiece {
 namespace test {
