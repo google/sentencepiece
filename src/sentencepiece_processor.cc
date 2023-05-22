@@ -637,6 +637,9 @@ util::Status SentencePieceProcessor::Encode(absl::string_view input,
   std::string normalized;
   std::vector<size_t> norm_to_orig;
   RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+  if (model_proto_->trainer_spec().verbatim_control_char() >= 0) {
+    normalized = normalized.substr(1);
+  }
 
   const auto result = model_->Encode(normalized);
   RETURN_IF_ERROR(

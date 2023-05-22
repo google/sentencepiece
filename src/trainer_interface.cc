@@ -435,21 +435,23 @@ END:
     const normalizer::Normalizer normalizer(normalizer_spec_, trainer_spec_);
     std::set<absl::string_view> meta_pieces_set;
     for (const auto &it : meta_pieces_) {
-      LOG(INFO) << "Adding meta_piece: " << it.second.first;
       meta_pieces_set.insert(it.second.first);
     }
+    std::vector<absl::string_view> meta_pieces_vec(meta_pieces_set.begin(), meta_pieces_set.end());
+    LOG(INFO) << "Added meta_piece-s: " << absl::StrJoin(meta_pieces_vec, ", ");
     const normalizer::PrefixMatcher meta_pieces_matcher(meta_pieces_set);
 
     LOG(INFO) << "Normalizing sentences...";
     CHECK_OR_RETURN(!sentences_.empty());
 
     std::atomic<int64_t> verbatim_count = 0;
+    int verbatim_control_char = trainer_spec_.verbatim_control_char();
     {
       auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
-      pool->StartWorkers();
       auto last_update = std::chrono::system_clock::now();
       for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
-        pool->Schedule([&, n]() {
+        pool->Schedule([this, &normalizer, &meta_pieces_matcher, &last_update,
+                        &verbatim_count, verbatim_control_char, n] {
           for (size_t i = n; i < sentences_.size();
                i += trainer_spec_.num_threads()) {
             if (n == 0) {
@@ -461,8 +463,8 @@ END:
             }
             auto *s = &sentences_[i].first;
             auto aux = normalizer.Normalize(*s);
-            if (!aux.empty() && static_cast<uint8_t>(aux[0]) ==
-                                trainer_spec_.verbatim_control_char()) {
+            if (!aux.empty()
+                && static_cast<uint8_t>(aux[0]) == verbatim_control_char) {
               verbatim_count++;
             }
             aux = meta_pieces_matcher.GlobalReplace(aux, kUPPBoundaryStr);
@@ -510,7 +512,6 @@ END:
 
     {
       auto pool = absl::make_unique<ThreadPool>(num_workers);
-      pool->StartWorkers();
       for (int n = 0; n < num_workers; ++n) {
         pool->Schedule([&, n]() {
           // One per thread generator.
@@ -561,7 +562,6 @@ END:
     LOG(INFO) << "Counting characters...";
     std::mutex stats_mutex;
     auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
-    pool->StartWorkers();
     auto last_update = std::chrono::system_clock::now();
     for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
       pool->Schedule([&, n]() {
@@ -639,7 +639,6 @@ END:
   {
     LOG(INFO) << "Replacing rare characters...";
     auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
-    pool->StartWorkers();
     auto last_update = std::chrono::system_clock::now();
     for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
       pool->Schedule([&, n]() {
@@ -692,7 +691,6 @@ void TrainerInterface::SplitSentencesByWhitespace() {
     absl::flat_hash_map<absl::string_view, int64> tokens;
     {
       auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
-      pool->StartWorkers();
       std::mutex tokens_mutex;
       int joined_threads = 0;
       auto last_update = std::chrono::system_clock::now();

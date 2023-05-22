@@ -94,6 +94,7 @@ class build_ext(_build_ext):
     else:
       cflags.append('-Wl,-strip-all')
       libs.append('-Wl,-strip-all')
+    libs.append("-ltbb")
     print('## cflags={}'.format(' '.join(cflags)))
     print('## libs={}'.format(' '.join(libs)))
     ext.extra_compile_args = cflags
@@ -131,6 +132,8 @@ if os.name == 'nt':
         '-B',
         'build',
         '-DSPM_ENABLE_SHARED=OFF',
+        '-DSPM_ENABLE_TCMALLOC=OFF',
+        '-DSPM_ONLY_LIB=on',
         '-DCMAKE_INSTALL_PREFIX=build\\root',
     ])
     subprocess.check_call([

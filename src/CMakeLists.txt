@@ -14,8 +14,8 @@
 
 if (SPM_SANITIZE)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
-  add_compile_options(-fsanitize=address -ggdb -fno-omit-frame-pointer -static-libstdc++ -static-libasan)
-  add_link_options(-fsanitize=address -ggdb -fno-omit-frame-pointer -static-libstdc++ -static-libasan)
+  add_compile_options(-fsanitize=${SPM_SANITIZE} -ggdb -fno-omit-frame-pointer -static-libstdc++ -static-libasan)
+  add_link_options(-fsanitize=${SPM_SANITIZE} -ggdb -fno-omit-frame-pointer -static-libstdc++ -static-libasan)
 else()
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
@@ -191,7 +191,7 @@ set(SPM_TEST_SRCS
 
 find_package(Threads REQUIRED)
 
-list(APPEND SPM_LIBS ${PROTOBUF_LITE_LIBRARY} Threads::Threads)
+list(APPEND SPM_LIBS ${PROTOBUF_LITE_LIBRARY} Threads::Threads tbb)
 
 if (SPM_ENABLE_NFKC_COMPILE)
   find_package(ICU 4.4 COMPONENTS i18n data uc REQUIRED)
@@ -305,8 +305,10 @@ if (SPM_ENABLE_NFKC_COMPILE)
   target_link_libraries(compile_charsmap sentencepiece sentencepiece_train)
 endif()
 
+if (NOT SPM_ONLY_LIB)
 list(APPEND SPM_INSTALLTARGETS
   spm_encode spm_decode spm_normalize spm_train spm_export_vocab)
+endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
   install(TARGETS ${SPM_INSTALLTARGETS}
@@ -329,11 +331,17 @@ endif()
 
 file(TO_NATIVE_PATH "${PROJECT_SOURCE_DIR}/data" data_dir)
 
+if (SPM_BUILD_TEST OR SPM_COVERAGE OR SPM_ONLY_LIB)
+set_target_properties(spm_train spm_encode spm_decode spm_normalize spm_export_vocab PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+if (SPM_ENABLE_NFKC_COMPILE)
+set_target_properties(compile_charsmap PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+endif()
+endif()
+
 if (SPM_BUILD_TEST OR SPM_COVERAGE)
   enable_testing()
   add_executable(spm_test test_main.cc ${SPM_TEST_SRCS})
   set_property(TARGET spm_test PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
-  set_target_properties(spm_train spm_encode spm_decode spm_normalize spm_export_vocab compile_charsmap PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
 
   if (SPM_COVERAGE)
     target_link_libraries(spm_test sentencepiece sentencepiece_train "-lgcov")

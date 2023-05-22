@@ -66,11 +66,14 @@ class Trainer : public TrainerInterface {
     void AssignChars(const string_util::UnicodeText &text);
     void AppendCharsToText(string_util::UnicodeText *text) const;
     std::string ToString() const;
-    Symbol()
-      : left(nullptr),
-        right(nullptr),
-        fp(0),
-        freq(0),
+    Symbol(const Symbol *left_ = nullptr,
+           const Symbol *right_ = nullptr,
+           uint64_t fp_ = 0,
+           uint64_t freq_ = 0)
+      : left(left_),
+        right(right_),
+        fp(fp_),
+        freq(freq_),
         chars_size(0) {}
     ~Symbol();
   };
@@ -128,13 +131,13 @@ class Trainer : public TrainerInterface {
 
   void SortSymbolPositions();
 
-  // Resets the fequency of bigram [symbols_[sid][left] symbols_[sid][right]],
+  // Resets the frequency of bigram [symbols_[sid][left] symbols_[sid][right]],
   // if this bigram is not |best|.
   void ResetFreq(int sid, int left, int right, const Symbol *best);
 
   // Updates |active_symbols_| by copying the top 5% frequent symbols in
   // symbols_cache_.
-  void UpdateActiveSymbols();
+  void UpdateActiveSymbols(ThreadPool *pool);
 
   // All unique symbols. Key is a fingerprint of Symbol.
   absl::flat_hash_map<uint64_t, Symbol *> symbols_cache_;

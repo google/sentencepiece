@@ -31,6 +31,7 @@
 #include "common.h"
 #include "sentencepiece_processor.h"
 #include "absl/strings/string_view.h"
+#include "third_party/bs_thread_pool.h"
 
 #ifdef SPM_NO_THREADLOCAL
 #include <pthread.h>
@@ -413,20 +414,7 @@ void STLDeleteElements(std::vector<T *> *vec) {
 }
 }  // namespace port
 
-class ThreadPool {
- public:
-  ThreadPool(int32 n) {}
-  virtual ~ThreadPool() {
-    for (auto &task : tasks_) {
-      task.join();
-    }
-  }
+using ThreadPool = bs::ThreadPool;
 
-  void Schedule(std::function<void()> closure) { tasks_.emplace_back(closure); }
-  void StartWorkers() {}
-
- private:
-  std::vector<std::thread> tasks_;
-};
 }  // namespace sentencepiece
 #endif  // UTIL_H_

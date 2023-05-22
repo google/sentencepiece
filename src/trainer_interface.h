@@ -46,9 +46,19 @@ std::vector<std::pair<K, V>> Sorted(const std::vector<std::pair<K, V>> &m) {
 }
 
 template <typename K, typename V>
+std::vector<std::pair<K, V>> &&Sorted(std::vector<std::pair<K, V>> &&v) {
+  std::sort(std::execution::par_unseq, v.begin(), v.end(),
+            [](const std::pair<K, V> &p1, const std::pair<K, V> &p2) {
+              return (p1.second > p2.second ||
+                      (p1.second == p2.second && p1.first < p2.first));
+            });
+  return std::move(v);
+}
+
+template <typename K, typename V>
 std::vector<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V> &m) {
   std::vector<std::pair<K, V>> v(m.begin(), m.end());
-  return Sorted(v);
+  return Sorted(std::move(v));
 }
 
 class MultiFileSentenceIterator : public SentenceIterator {

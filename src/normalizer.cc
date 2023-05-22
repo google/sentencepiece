@@ -47,6 +47,7 @@ Normalizer::Normalizer(const NormalizerSpec &spec)
 
 Normalizer::~Normalizer() {
   if (!spec_->normalization_report_file().empty()) {
+    LOG(INFO) << "Writing normalization report to " << spec_->normalization_report_file();
     auto report = filesystem::NewWritableFile(spec_->normalization_report_file());
     report->WriteLine(
         std::string("copied_as_is\t") + string_util::SimpleItoa(fixed_stats_[kFixedNormalizationStatisticsCopiedAsIs].load()));
@@ -223,7 +224,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
 
   norm_to_orig->push_back(consumed);
 
-  CHECK_EQ_OR_RETURN(norm_to_orig->size(), normalized->size() + 1);
+  CHECK_EQ_OR_RETURN(norm_to_orig->size(), normalized->size() + 1 - verbatim);
 
   return util::OkStatus();
 }
