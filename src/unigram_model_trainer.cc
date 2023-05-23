@@ -252,7 +252,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
 
   // all_chars must be included in the seed sentencepieces.
   TrainerModel::SentencePieces seed_sentencepieces;
-  for (const auto &it : Sorted(all_chars)) {
+  for (const auto &it : Sorted(all_chars, trainer_spec_.num_threads())) {
     seed_sentencepieces.emplace_back(it);
   }
 
@@ -491,7 +491,7 @@ TrainerModel::SentencePieces Trainer::PruneSentencePieces(
 
   // Keeps trainer_spec_.shrinking_factor * sentencepieces.size() pieces.
   // shrinking_factor is 0.75 by default.
-  for (const auto &w : Sorted(candidates)) {
+  for (const auto &w : Sorted(candidates, trainer_spec_.num_threads())) {
     if (new_sentencepieces.size() == static_cast<size_t>(pruned_size)) {
       break;
     }
@@ -511,7 +511,7 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
   // required_chars_ must be included in the final sentencepieces.
   float min_score_penalty = 0.0;
   constexpr float kMinScorePenaltyDelta = 0.0001;
-  for (const auto &w : Sorted(required_chars_)) {
+  for (const auto &w : Sorted(required_chars_, trainer_spec_.num_threads())) {
     const std::string s = string_util::UnicodeCharToUTF8(w.first);
     if (port::ContainsKey(sp, s)) {
       final_sentencepieces[s] = sp[s];
@@ -528,7 +528,7 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
   CHECK_GT(vocab_size_size, 0);
 
   // Then keeps sentencepieces with higher scores.
-  for (const auto &w : Sorted(sentencepieces)) {
+  for (const auto &w : Sorted(sentencepieces, trainer_spec_.num_threads())) {
     if (port::ContainsKey(final_sentencepieces, w.first)) {
       continue;
     }
@@ -538,7 +538,7 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
     final_sentencepieces[w.first] = w.second;
   }
 
-  return Sorted(final_sentencepieces);
+  return Sorted(final_sentencepieces, trainer_spec_.num_threads());
 }
 
 util::Status Trainer::Train() {

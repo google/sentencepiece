@@ -50,7 +50,7 @@ util::Status Trainer::Train() {
   const auto logsum = std::log(static_cast<float>(sum));
 
   CHECK_OR_RETURN(final_pieces_.empty());
-  for (const auto &it : Sorted(freq)) {
+  for (const auto &it : Sorted(freq, trainer_spec_.num_threads())) {
     if (it.first.find(kUNKStr) != std::string::npos) {
       continue;
     }

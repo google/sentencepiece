@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (absl::GetFlag(FLAGS_generate_vocabulary)) {
-    for (const auto &it : sentencepiece::Sorted(vocab)) {
+    for (const auto &it : sentencepiece::Sorted(vocab, 4)) {
       output->WriteLine(it.first + "\t" +
                         sentencepiece::string_util::SimpleItoa(it.second));
     }

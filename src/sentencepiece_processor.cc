@@ -238,8 +238,10 @@ util::Status SentencePieceProcessor::Load(
     std::unique_ptr<ModelProto> model_proto) {
   model_proto_ = std::move(model_proto);
   model_ = ModelFactory::Create(*model_proto_);
+  auto normalizer_spec = model_proto_->normalizer_spec();
+  normalizer_spec.set_normalization_report_file("");
   normalizer_ = absl::make_unique<normalizer::Normalizer>(
-      model_proto_->normalizer_spec(), model_proto_->trainer_spec());
+      normalizer_spec, model_proto_->trainer_spec());
   if (model_proto_->has_denormalizer_spec() &&
       !model_proto_->denormalizer_spec().precompiled_charsmap().empty()) {
     denormalizer_ = absl::make_unique<normalizer::Normalizer>(

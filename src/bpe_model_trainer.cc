@@ -286,37 +286,13 @@ void Trainer::UpdateActiveSymbols(ThreadPool *pool) {
                                   symbols_cache_.size() * kTopFrequentRatio),
                     symbols.size());
 
-  std::partial_sort(std::execution::par_unseq,
-                    symbols.begin(), symbols.begin() + size, symbols.end(),
+  std::partial_sort(symbols.begin(), symbols.begin() + size, symbols.end(),
                     [](Symbol *s1, Symbol *s2) { return s1->freq > s2->freq; });
   LOG(INFO) << "Updating active symbols. max_freq=" << symbols[0]->freq
             << " min_freq=" << symbols[size - 1]->freq;
 
   active_symbols_.clear();
   active_symbols_.insert(symbols.begin(), symbols.begin() + size);
-}
-
-std::vector<int> SplitPositions(const std::vector<uint64_t> &positions, int threads) {
-  int step = positions.size() / threads, size = positions.size();
-  std::vector<int> result;
-  result.reserve(threads + 1);
-  result.push_back(0);
-  if (positions.size() > 100) {
-    for (int start = step; start < size; start += step) {
-      uint64_t sid = positions[start] >> 32;
-      int next = start + step;
-      if (next < size && sid == (positions[next] >> 32)) {
-        continue;
-      }
-      int i;
-      for (i = start + 1; (i < size) && sid == (positions[i] >> 32); i++) {}
-      result.push_back(i);
-    }
-  }
-  if (result.back() < size) {
-    result.push_back(size);
-  }
-  return result;
 }
 
 util::Status Trainer::Train() {
@@ -532,7 +508,7 @@ util::Status Trainer::Train() {
   }  // end of main loop
 
   // Adds required_chars_
-  for (const auto &w : Sorted(required_chars_)) {
+  for (const auto &w : Sorted(required_chars_, trainer_spec_.num_threads())) {
     const Symbol *symbol = GetCharSymbol(w.first);
     final_pieces_.emplace_back(symbol->ToString(),
                                -static_cast<float>(final_pieces_.size()));

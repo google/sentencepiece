@@ -617,7 +617,7 @@ END:
   // Sorted() sorts the chars_count values in the decsending order of pair<>.
   // I.e. characters are sorted in the order of required characters and then
   // frequent characters.
-  for (const auto &w : Sorted(chars_count)) {
+  for (const auto &w : Sorted(chars_count, trainer_spec_.num_threads())) {
     const float coverage = 1.0 * accumulated_chars_count / all_chars_count;
     if (!trainer_spec_.use_all_vocab() &&
         coverage >= trainer_spec_.character_coverage()) {
@@ -731,7 +731,7 @@ void TrainerInterface::SplitSentencesByWhitespace() {
     LOG(INFO) << "Sorting by frequency...";
     sentences_.clear();
     sentences_.shrink_to_fit();
-    sentences_ = Sorted(tokens);
+    sentences_ = Sorted(tokens, trainer_spec_.num_threads());
   }
   LOG(INFO) << "Done! " << sentences_.size();
   LOG(INFO) << "Optimizing memory...";

@@ -40,7 +40,7 @@ util::Status Trainer::Train() {
   const auto logsum = std::log(static_cast<float>(sum));
 
   CHECK_OR_RETURN(final_pieces_.empty());
-  for (const auto &it : Sorted(required_chars_)) {
+  for (const auto &it : Sorted(required_chars_, trainer_spec_.num_threads())) {
     if (!trainer_spec_.use_all_vocab() &&
         final_pieces_.size() == static_cast<size_t>(vocab_size)) {
       break;

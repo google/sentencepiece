@@ -16,7 +16,6 @@
 #define TRAINER_INTERFACE_H_
 
 #include <algorithm>
-#include <execution>
 #include <map>
 #include <memory>
 #include <string>
@@ -30,35 +29,40 @@
 #include "sentencepiece_trainer.h"
 #include "string_bank.h"
 #include "absl/container/flat_hash_map.h"
+#include <boost/sort/block_indirect_sort/block_indirect_sort.hpp>
 #include "util.h"
 
 namespace sentencepiece {
 
 template <typename K, typename V>
-std::vector<std::pair<K, V>> Sorted(const std::vector<std::pair<K, V>> &m) {
+std::vector<std::pair<K, V>> Sorted(const std::vector<std::pair<K, V>> &m, int nthread) {
   std::vector<std::pair<K, V>> v = m;
-  std::sort(std::execution::par_unseq, v.begin(), v.end(),
-            [](const std::pair<K, V> &p1, const std::pair<K, V> &p2) {
-              return (p1.second > p2.second ||
-                      (p1.second == p2.second && p1.first < p2.first));
-            });
+  boost::sort::block_indirect_sort(
+      v.begin(), v.end(),
+      [](const std::pair<K, V> &p1, const std::pair<K, V> &p2) {
+        return (p1.second > p2.second ||
+               (p1.second == p2.second && p1.first < p2.first));
+      },
+      nthread);
   return v;
 }
 
 template <typename K, typename V>
-std::vector<std::pair<K, V>> &&Sorted(std::vector<std::pair<K, V>> &&v) {
-  std::sort(std::execution::par_unseq, v.begin(), v.end(),
-            [](const std::pair<K, V> &p1, const std::pair<K, V> &p2) {
-              return (p1.second > p2.second ||
-                      (p1.second == p2.second && p1.first < p2.first));
-            });
+std::vector<std::pair<K, V>> &&Sorted(std::vector<std::pair<K, V>> &&v, int nthread) {
+  boost::sort::block_indirect_sort(
+      v.begin(), v.end(),
+      [](const std::pair<K, V> &p1, const std::pair<K, V> &p2) {
+        return (p1.second > p2.second ||
+               (p1.second == p2.second && p1.first < p2.first));
+      },
+      nthread);
   return std::move(v);
 }
 
 template <typename K, typename V>
-std::vector<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V> &m) {
+std::vector<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V> &m, int nthread) {
   std::vector<std::pair<K, V>> v(m.begin(), m.end());
-  return Sorted(std::move(v));
+  return Sorted(std::move(v), nthread);
 }
 
 class MultiFileSentenceIterator : public SentenceIterator {
