@@ -39,15 +39,15 @@ int main(int argc, char *argv[]) {
   CHECK_OK(output->status());
 
   if (absl::GetFlag(FLAGS_output_format) == "vocab") {
-    for (const auto &piece : sp.model_proto().pieces()) {
+    for (const auto &piece : sp.model_proto()->pieces()) {
       std::ostringstream os;
       os << piece.piece() << "\t" << piece.score();
       output->WriteLine(os.str());
     }
   } else if (absl::GetFlag(FLAGS_output_format) == "syms") {
-    for (int i = 0; i < sp.model_proto().pieces_size(); i++) {
+    for (int i = 0; i < sp.model_proto()->pieces_size(); i++) {
       std::ostringstream os;
-      os << sp.model_proto().pieces(i).piece() << "\t" << i;
+      os << sp.model_proto()->pieces(i).piece() << "\t" << i;
       output->WriteLine(os.str());
     }
   } else {

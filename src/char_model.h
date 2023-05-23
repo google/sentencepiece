@@ -24,7 +24,7 @@ namespace character {
 // Tokenize text into character sequence
 class Model : public ModelInterface {
  public:
-  explicit Model(const ModelProto &model_proto);
+  explicit Model(std::unique_ptr<const ModelProto> model_proto);
   ~Model() override;
 
   EncodeResult Encode(absl::string_view normalized) const override;

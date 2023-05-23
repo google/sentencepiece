@@ -68,6 +68,8 @@ class Normalizer {
   Normalizer(const NormalizerSpec &spec, const TrainerSpec &trainer_spec);
   virtual ~Normalizer();
 
+  const NormalizerSpec *spec() const { return spec_; }
+
   virtual void SetPrefixMatcher(const PrefixMatcher *matcher) {
     matcher_ = matcher;
   }

@@ -62,7 +62,7 @@ class ModelInterface {
   absl::string_view pad_piece() const;
 
   // `model_proto` should not be deleted until ModelInterface is destroyed.
-  explicit ModelInterface(const ModelProto &model_proto);
+  explicit ModelInterface(std::unique_ptr<const ModelProto> model_proto);
   ModelInterface() {}
 
   virtual ~ModelInterface();
@@ -228,7 +228,7 @@ class ModelInterface {
     return (model_proto_->pieces(id).type() == ModelProto::SentencePiece::BYTE);
   }
 
-  const ModelProto *model_proto_ = nullptr;
+  std::unique_ptr<const ModelProto> model_proto_;
 
   // PrefixMatcher for user defined symbols.
   std::unique_ptr<normalizer::PrefixMatcher> matcher_;

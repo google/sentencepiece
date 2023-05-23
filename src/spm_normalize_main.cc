@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     ModelProto model_proto;
     SentencePieceProcessor sp;
     CHECK_OK(sp.Load(absl::GetFlag(FLAGS_model)));
-    spec = sp.model_proto().normalizer_spec();
+    spec = sp.model_proto()->normalizer_spec();
   } else if (!absl::GetFlag(FLAGS_normalization_rule_tsv).empty()) {
     spec.set_normalization_rule_tsv(
         absl::GetFlag(FLAGS_normalization_rule_tsv));

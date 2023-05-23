@@ -671,7 +671,8 @@ class SentencePieceProcessor {
 
   // Returns immutable model proto. Useful to obtain extended
   // or experimental parameters encoded in model_proto.
-  const ModelProto &model_proto() const;
+  const ModelProto *model_proto() const;
+  ModelProto *model_proto();
 
   // returns immutable model proto as std::string.
   // Useful to save the state of this instance via Python's pickle object.
@@ -695,9 +696,6 @@ class SentencePieceProcessor {
   std::unique_ptr<ModelInterface> model_;
   std::unique_ptr<normalizer::Normalizer> normalizer_;
   std::unique_ptr<normalizer::Normalizer> denormalizer_;
-
-  // Underlying model protocol buffer. The same lifetime as model_.
-  std::unique_ptr<ModelProto> model_proto_;
 
   std::vector<ExtraOption> encode_extra_options_;
   std::vector<ExtraOption> decode_extra_options_;

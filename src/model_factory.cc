@@ -23,21 +23,21 @@ namespace sentencepiece {
 
 // Instantiate Model instance from |model_proto|
 std::unique_ptr<ModelInterface> ModelFactory::Create(
-    const ModelProto& model_proto) {
-  const auto& trainer_spec = model_proto.trainer_spec();
+    std::unique_ptr<const ModelProto> model_proto) {
+  const auto& trainer_spec = model_proto->trainer_spec();
 
   switch (trainer_spec.model_type()) {
     case TrainerSpec::UNIGRAM:
-      return absl::make_unique<unigram::Model>(model_proto);
+      return absl::make_unique<unigram::Model>(std::move(model_proto));
       break;
     case TrainerSpec::BPE:
-      return absl::make_unique<bpe::Model>(model_proto);
+      return absl::make_unique<bpe::Model>(std::move(model_proto));
       break;
     case TrainerSpec::WORD:
-      return absl::make_unique<word::Model>(model_proto);
+      return absl::make_unique<word::Model>(std::move(model_proto));
       break;
     case TrainerSpec::CHAR:
-      return absl::make_unique<character::Model>(model_proto);
+      return absl::make_unique<character::Model>(std::move(model_proto));
       break;
     default:
       LOG(ERROR) << "Unknown model_type: " << trainer_spec.model_type();
@@ -45,6 +45,6 @@ std::unique_ptr<ModelInterface> ModelFactory::Create(
       break;
   }
 
-  return absl::make_unique<unigram::Model>(model_proto);
+  return absl::make_unique<unigram::Model>(std::move(model_proto));
 }
 }  // namespace sentencepiece

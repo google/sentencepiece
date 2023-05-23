@@ -650,9 +650,8 @@ void Model::BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces) {
     status_ = util::InternalError("no entry is found in the trie.");
 }
 
-Model::Model(const ModelProto &model_proto) {
-  model_proto_ = &model_proto;
-
+Model::Model(std::unique_ptr<const ModelProto> model_proto)
+    : ModelInterface(std::move(model_proto)) {
   InitializePieces();
 
   min_score_ = FLT_MAX;

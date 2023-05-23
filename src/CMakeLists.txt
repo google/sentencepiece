@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
-if (SPM_SANITIZE OR SPM_PROFILE)
+if (SPM_SANITIZE OR SPM_PROFILE OR SPM_DISABLE_LTO)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
   if (SPM_SANITIZE)
     add_compile_options(-fsanitize=${SPM_SANITIZE} -ggdb -fno-omit-frame-pointer -static-libstdc++ -static-libasan)

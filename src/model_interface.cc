@@ -22,8 +22,8 @@
 
 namespace sentencepiece {
 
-ModelInterface::ModelInterface(const ModelProto &model_proto)
-    : model_proto_(&model_proto), status_(util::OkStatus()) {}
+ModelInterface::ModelInterface(std::unique_ptr<const ModelProto> model_proto)
+    : model_proto_(std::move(model_proto)), status_(util::OkStatus()) {}
 ModelInterface::~ModelInterface() {}
 
 #define RETURN_PIECE(name, default_value)                                \

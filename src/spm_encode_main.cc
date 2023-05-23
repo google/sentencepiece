@@ -26,6 +26,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "trainer_interface.h"
+#include "util.h"
 
 ABSL_FLAG(std::string, model, "", "model file name");
 ABSL_FLAG(
@@ -39,6 +40,10 @@ ABSL_FLAG(int32, nbest_size, 10, "NBest size");
 ABSL_FLAG(double, alpha, 0.5, "Smoothing parameter for sampling mode.");
 ABSL_FLAG(uint32, random_seed, static_cast<uint32>(-1),
           "Seed value for random generator.");
+ABSL_FLAG(int, num_threads, 4,
+          "Number of CPU threads to use for the encoding procedure.");
+ABSL_FLAG(int, new_line_delim, '\n', "Sentence delimiter char.");
+
 
 // Piece restriction with vocabulary file.
 // https://github.com/rsennrich/subword-nmt#best-practice-advice-for-byte-pair-encoding-in-nmt
@@ -84,24 +89,23 @@ int main(int argc, char *argv[]) {
   auto output =
       sentencepiece::filesystem::NewWritableFile(absl::GetFlag(FLAGS_output));
   CHECK_OK(output->status());
-
-  absl::string_view line;
-  std::vector<std::string> sps;
-  std::vector<int> ids;
-  std::vector<std::vector<std::string>> nbest_sps;
-  std::vector<std::vector<int>> nbest_ids;
   absl::flat_hash_map<std::string, int> vocab;
   sentencepiece::SentencePieceText spt;
   sentencepiece::NBestSentencePieceText nbest_spt;
   std::function<void(absl::string_view line)> process;
   std::vector<uint32_t> sentence_sizes;
   int eos = sp.eos_id();
+  int num_threads = absl::GetFlag(FLAGS_num_threads);
+  sentencepiece::ThreadPool pool(num_threads);
+  std::mutex sync;
+  constexpr int thread_chunk_size = 1000;
 
   const int nbest_size = absl::GetFlag(FLAGS_nbest_size);
   const float alpha = absl::GetFlag(FLAGS_alpha);
 
   if (absl::GetFlag(FLAGS_generate_vocabulary)) {
     process = [&](absl::string_view line) {
+      sentencepiece::SentencePieceText spt;
       CHECK_OK(sp.Encode(line, &spt));
       for (const auto &piece : spt.pieces()) {
         if (!sp.IsUnknown(piece.id()) && !sp.IsControl(piece.id()))
@@ -110,17 +114,23 @@ int main(int argc, char *argv[]) {
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "piece") {
     process = [&](absl::string_view line) {
+      std::vector<std::string> sps;
       CHECK_OK(sp.Encode(line, &sps));
+      std::lock_guard lock(sync);
       output->WriteLine(absl::StrJoin(sps, " "));
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "id") {
     process = [&](absl::string_view line) {
+      std::vector<int> ids;
       CHECK_OK(sp.Encode(line, &ids));
+      std::lock_guard lock(sync);
       output->WriteLine(absl::StrJoin(ids, " "));
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "bid") {
     process = [&](absl::string_view line) {
+      std::vector<int> ids;
       CHECK_OK(sp.Encode(line, &ids));
+      std::lock_guard lock(sync);
       output->Write(absl::string_view(
           reinterpret_cast<char *>(ids.data()), sizeof(int) * ids.size()));
       output->Write(absl::string_view(
@@ -131,12 +141,16 @@ int main(int argc, char *argv[]) {
     process = [&](absl::string_view line) { CHECK_OK(sp.Encode(line, &spt)); };
   } else if (absl::GetFlag(FLAGS_output_format) == "sample_piece") {
     process = [&](absl::string_view line) {
+      std::vector<std::string> sps;
       CHECK_OK(sp.SampleEncode(line, nbest_size, alpha, &sps));
+      std::lock_guard lock(sync);
       output->WriteLine(absl::StrJoin(sps, " "));
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "sample_id") {
     process = [&](absl::string_view line) {
+      std::vector<int> ids;
       CHECK_OK(sp.SampleEncode(line, nbest_size, alpha, &ids));
+      std::lock_guard lock(sync);
       output->WriteLine(absl::StrJoin(ids, " "));
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "sample_proto") {
@@ -145,14 +159,18 @@ int main(int argc, char *argv[]) {
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "nbest_piece") {
     process = [&](absl::string_view line) {
+      std::vector<std::vector<std::string>> nbest_sps;
       CHECK_OK(sp.NBestEncode(line, nbest_size, &nbest_sps));
+      std::lock_guard lock(sync);
       for (const auto &result : nbest_sps) {
         output->WriteLine(absl::StrJoin(result, " "));
       }
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "nbest_id") {
     process = [&](absl::string_view line) {
+      std::vector<std::vector<int>> nbest_ids;
       CHECK_OK(sp.NBestEncode(line, nbest_size, &nbest_ids));
+      std::lock_guard lock(sync);
       for (const auto &result : nbest_ids) {
         output->WriteLine(absl::StrJoin(result, " "));
       }
@@ -167,11 +185,24 @@ int main(int argc, char *argv[]) {
   }
 
   for (const auto &filename : rest_args) {
-    auto input = sentencepiece::filesystem::NewReadableFile(filename);
+    auto input = sentencepiece::filesystem::NewReadableFile(
+        filename, absl::GetFlag(FLAGS_new_line_delim));
     CHECK_OK(input->status());
+    std::vector<absl::string_view> chunk;
+    chunk.reserve(thread_chunk_size);
+    absl::string_view line;
     while (input->ReadLine(&line)) {
-      process(line);
+      chunk.emplace_back(line);
+      if (chunk.size() == thread_chunk_size) {
+        pool.Schedule([&process, chunk]() {
+          for (auto &line : chunk) {
+            process(line);
+          }
+        });
+        chunk.clear();
+      }
     }
+    pool.Wait();
   }
 
   if (absl::GetFlag(FLAGS_output_format) == "bid") {
@@ -182,7 +213,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (absl::GetFlag(FLAGS_generate_vocabulary)) {
-    for (const auto &it : sentencepiece::Sorted(vocab, 4)) {
+    for (const auto &it : sentencepiece::Sorted(vocab, num_threads)) {
       output->WriteLine(it.first + "\t" +
                         sentencepiece::string_util::SimpleItoa(it.second));
     }

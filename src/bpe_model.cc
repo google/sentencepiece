@@ -28,8 +28,8 @@
 namespace sentencepiece {
 namespace bpe {
 
-Model::Model(const ModelProto &model_proto) {
-  model_proto_ = &model_proto;
+Model::Model(std::unique_ptr<const ModelProto> model_proto)
+    : ModelInterface(std::move(model_proto)) {
   InitializePieces();
 }
 

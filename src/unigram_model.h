@@ -126,7 +126,7 @@ class Lattice {
 
 class Model : public ModelInterface {
  public:
-  explicit Model(const ModelProto &model_proto);
+  explicit Model(std::unique_ptr<const ModelProto> model_proto);
   Model() {}
   ~Model() override;
 

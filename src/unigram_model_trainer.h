@@ -36,7 +36,7 @@ class TrainerModel : public Model {
   using SentencePieces = std::vector<std::pair<std::string, float>>;
 
   TrainerModel() {}
-  TrainerModel(const ModelProto &model_proto) = delete;
+  TrainerModel(std::unique_ptr<const ModelProto> model_proto) = delete;
   TrainerModel(const TrainerSpec &trainer_spec,
                const NormalizerSpec &normalizaiton_spec);
   ~TrainerModel() override;
@@ -57,7 +57,6 @@ class TrainerModel : public Model {
   SentencePieces sentencepieces_;
   TrainerSpec trainer_spec_;
   NormalizerSpec normalizer_spec_;
-  ModelProto model_proto_data_;
 };
 
 class Trainer : public TrainerInterface {

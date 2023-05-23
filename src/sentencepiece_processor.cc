@@ -236,16 +236,14 @@ util::Status SentencePieceProcessor::LoadFromSerializedProto(
 
 util::Status SentencePieceProcessor::Load(
     std::unique_ptr<ModelProto> model_proto) {
-  model_proto_ = std::move(model_proto);
-  model_ = ModelFactory::Create(*model_proto_);
-  auto normalizer_spec = model_proto_->normalizer_spec();
-  normalizer_spec.set_normalization_report_file("");
+  model_proto->mutable_normalizer_spec()->set_normalization_report_file("");
+  model_ = ModelFactory::Create(std::move(model_proto));
   normalizer_ = absl::make_unique<normalizer::Normalizer>(
-      normalizer_spec, model_proto_->trainer_spec());
-  if (model_proto_->has_denormalizer_spec() &&
-      !model_proto_->denormalizer_spec().precompiled_charsmap().empty()) {
+      this->model_proto()->normalizer_spec(), this->model_proto()->trainer_spec());
+  if (this->model_proto()->has_denormalizer_spec() &&
+      !this->model_proto()->denormalizer_spec().precompiled_charsmap().empty()) {
     denormalizer_ = absl::make_unique<normalizer::Normalizer>(
-        model_proto_->denormalizer_spec());
+        this->model_proto()->denormalizer_spec());
   }
 
   // Escapes user-defined-symbols in normalizer.
@@ -255,7 +253,7 @@ util::Status SentencePieceProcessor::Load(
 
   // Running self-testing.
   std::vector<std::string> errors, sps;
-  for (const auto &s : model_proto_->self_test_data().samples()) {
+  for (const auto &s : this->model_proto()->self_test_data().samples()) {
     RETURN_IF_ERROR(Encode(s.input(), &sps));
     const std::string result = absl::StrJoin(sps, " ");
     if (!model_->VerifyOutputsEquivalent(s.expected(), result)) {
@@ -266,7 +264,7 @@ util::Status SentencePieceProcessor::Load(
 
   if (!errors.empty()) {
     LOG(INFO) << errors.size() << "/"
-              << model_proto_->self_test_data().samples_size()
+              << this->model_proto()->self_test_data().samples_size()
               << " samples did not pass the test.";
     for (const auto &e : errors) {
       LOG(INFO) << e;
@@ -300,15 +298,15 @@ util::Status SentencePieceProcessor::SetVocabulary(
   RETURN_IF_ERROR(status());
 
   // TODO(taku): supports vocabulary constraint in BPE model.
-  const auto type = model_proto_->trainer_spec().model_type();
+  const auto type = model_proto()->trainer_spec().model_type();
   CHECK_OR_RETURN(type == TrainerSpec::UNIGRAM || type == TrainerSpec::BPE)
       << "Vocabulary constraint is only enabled in subword units.";
 
   const std::set<absl::string_view> vocab(valid_vocab.begin(),
                                           valid_vocab.end());
 
-  for (int i = 0; i < model_proto_->pieces_size(); ++i) {
-    auto *piece = model_proto_->mutable_pieces(i);
+  for (int i = 0; i < model_proto()->pieces_size(); ++i) {
+    auto *piece = model_proto()->mutable_pieces(i);
     if (piece->type() == ModelProto::SentencePiece::CONTROL ||
         piece->type() == ModelProto::SentencePiece::UNKNOWN ||
         piece->type() == ModelProto::SentencePiece::USER_DEFINED) {
@@ -328,7 +326,7 @@ util::Status SentencePieceProcessor::SetVocabulary(
 
 util::Status SentencePieceProcessor::ResetVocabulary() {
   RETURN_IF_ERROR(status());
-  for (auto &piece : *(model_proto_->mutable_pieces())) {
+  for (auto &piece : *(model_proto()->mutable_pieces())) {
     if (piece.type() == ModelProto::SentencePiece::UNUSED)
       piece.set_type(ModelProto::SentencePiece::NORMAL);
   }
@@ -639,7 +637,7 @@ util::Status SentencePieceProcessor::Encode(absl::string_view input,
   std::string normalized;
   std::vector<size_t> norm_to_orig;
   RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
-  if (model_proto_->trainer_spec().verbatim_control_char() >= 0) {
+  if (model_proto()->trainer_spec().verbatim_control_char() >= 0) {
     normalized = normalized.substr(1);
   }
 
@@ -762,8 +760,8 @@ util::Status SentencePieceProcessor::Decode(
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
   const char *unk_surface = kDefaultUnknownSymbol;
-  if (model_proto_ && model_proto_->trainer_spec().has_unk_surface())
-    unk_surface = model_proto_->trainer_spec().unk_surface().c_str();
+  if (model_proto() && model_proto()->trainer_spec().has_unk_surface())
+    unk_surface = model_proto()->trainer_spec().unk_surface().c_str();
 
   // Returns decoded piece and a boolean indicating if the function has consumed
   // a bos whitespace token (a piece starting with a kSpaceSymbol). This is used
@@ -784,16 +782,15 @@ util::Status SentencePieceProcessor::Decode(
 
     bool has_bos_ws = false;  // whether the token starts with a kSpaceSymbol
     if (is_bos_ws &&
-        (!model_proto_ ||
-         (model_proto_ &&
-          (model_proto_->normalizer_spec().add_dummy_prefix() ||
-           model_proto_->normalizer_spec().remove_extra_whitespaces())))) {
+        (!model_proto() ||
+         ((model_proto()->normalizer_spec().add_dummy_prefix() ||
+           model_proto()->normalizer_spec().remove_extra_whitespaces())))) {
       // Consume if the current position is bos and
       // piece starts with kSpaceSymbol.
       has_bos_ws = absl::ConsumePrefix(&piece, kSpaceSymbol);
 
-      if (model_proto_ &&
-          model_proto_->normalizer_spec().remove_extra_whitespaces()) {
+      if (model_proto() &&
+          model_proto()->normalizer_spec().remove_extra_whitespaces()) {
         // if we are removing extra whitespace, we remove all leading whitespace
         has_bos_ws = false;
       }
@@ -1078,12 +1075,16 @@ void SentencePieceProcessor::SetNormalizer(
   normalizer_ = std::move(normalizer);
 }
 
-const ModelProto &SentencePieceProcessor::model_proto() const {
-  return *model_proto_;
+ModelProto *SentencePieceProcessor::model_proto() {
+  return model_? const_cast<ModelProto *>(&model_->model_proto()) : nullptr;
+}
+
+const ModelProto *SentencePieceProcessor::model_proto() const {
+  return model_? &model_->model_proto() : nullptr;
 }
 
 std::string SentencePieceProcessor::serialized_model_proto() const {
-  return model_proto_ ? model_proto_->SerializeAsString() : "";
+  return model_proto() ? model_proto()->SerializeAsString() : "";
 }
 
 // Set seed value of random generator.

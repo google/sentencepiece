@@ -115,8 +115,7 @@ void TrainerModel::SetSentencePieces(SentencePieces &&sentencepieces) {
   CHECK(!sentencepieces_.empty());
 
   min_score_ = FLT_MAX;
-  model_proto_data_.Clear();
-  model_proto_ = &model_proto_data_;
+  auto mp = std::make_unique<ModelProto>();
   std::vector<std::pair<absl::string_view, int>> pieces;
 
   for (size_t i = 0; i < sentencepieces_.size(); ++i) {
@@ -125,10 +124,12 @@ void TrainerModel::SetSentencePieces(SentencePieces &&sentencepieces) {
     CHECK(!std::isnan(score));
     pieces.emplace_back(w, i);
     min_score_ = std::min(min_score_, score);
-    auto *piece = model_proto_data_.add_pieces();
+    auto *piece = mp->add_pieces();
     piece->set_piece(w.data(), w.size());
     piece->set_score(score);
   }
+
+  model_proto_ = std::move(mp);
 
   BuildTrie(&pieces);
   CHECK(status().ok());
