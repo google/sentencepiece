@@ -230,6 +230,10 @@ bool TrainerInterface::IsValidSentencePiece(
     return false;
   }
 
+  bool allow_whitespace_only_pieces =
+      trainer_spec_.allow_whitespace_only_pieces() ||
+      trainer_spec_.verbatim_control_char() >= 0;
+
   constexpr unicode_script::ScriptType kAnyType =
       static_cast<unicode_script::ScriptType>(-1);
 
@@ -267,8 +271,7 @@ bool TrainerInterface::IsValidSentencePiece(
       // whitespace is treated as a prefix/infix of symbol or
       // independent symbol, unless allow_whitespace_only_pieces() is true,
       // in which case whitespace only pieces can occur.
-      if (!trainer_spec_.allow_whitespace_only_pieces() ||
-          !all_whitespace_piece) {
+      if (!allow_whitespace_only_pieces || !all_whitespace_piece) {
         if (trainer_spec_.treat_whitespace_as_suffix()) {
           if ((trainer_spec_.split_by_whitespace() &&
                pos < sentencepiece.size() - 1) ||

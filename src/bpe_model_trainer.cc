@@ -497,17 +497,6 @@ util::Status Trainer::Train() {
     // Add new bigrams which are created after symbol replacement.
     // We do not need to scan all characters, but scan the neighbors in
     // best_symbol.
-//    auto position_bounds = SplitPositions(best_symbol->positions, pool->get_thread_count());
-
-//    std::vector<std::string> ps;
-//    for (int p : position_bounds) { ps.push_back(std::to_string(p)); }
-//    LOG(INFO) << "positions " << best_symbol->positions.size() << ": " << absl::StrJoin(ps, ", ");
-
-//    Position bad_position {-1};
-//    for (int i = 0; i < position_bounds.size() - 1; i++) {
-//      pool->Schedule([this, &bad_position, &position_bounds, &best_symbol, &sync](int i) {
-//        for (int j = position_bounds[i]; j < position_bounds[i + 1]; j++) {
-//          const Position pos = DecodePos(best_symbol->positions[j]);
       for (uint64_t encoded_pos : best_symbol->positions) {
           const Position pos = DecodePos(encoded_pos);
 
@@ -536,8 +525,6 @@ util::Status Trainer::Train() {
           AddNewPair(pos.sid, prev, pos.left, true);
           AddNewPair(pos.sid, pos.left, next, true);
         }
-//    pool->Wait();
-//    CHECK_OR_RETURN(bad_position.sid < 0);
 
     // Removes best_symbol so it is not selected again.
     symbols_cache_.erase(best_symbol->fp);

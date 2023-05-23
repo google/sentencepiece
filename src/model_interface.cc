@@ -140,7 +140,7 @@ std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
   const char *end = text.data() + text.size();
 
   // Space symbol (U+2581)
-  const absl::string_view kSpaceSymbol = "\xe2\x96\x81";
+  const char kSpaceSymbol[3] {'\xe2', '\x96', '\x81'};
   bool in_ws_sequence = false;
 
   std::vector<absl::string_view> result;
@@ -149,7 +149,7 @@ std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
     while (begin < end) {
       const int mblen =
           std::min<int>(string_util::OneCharLen(begin), end - begin);
-      const bool is_ws = absl::string_view(begin, mblen) == kSpaceSymbol;
+      const bool is_ws = memcmp(begin, kSpaceSymbol, std::min<int>(mblen, sizeof(kSpaceSymbol))) == 0;
 
       if (is_ws) {  // keep track of sequences consecutive ws tokens.
         in_ws_sequence = true;
@@ -167,30 +167,34 @@ std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
         result.emplace_back(begin, 0);
     }
   } else {
+    const char *anchor = begin;
+    in_ws_sequence = true;
     while (begin < end) {
       const int mblen =
           std::min<int>(string_util::OneCharLen(begin), end - begin);
-      bool is_ws = absl::string_view(begin, mblen) == kSpaceSymbol;
+      bool is_ws = memcmp(begin, kSpaceSymbol, std::min<int>(mblen, sizeof(kSpaceSymbol))) == 0;
 
       // if is whitespace (and not in sequence if allow_ws_only_pieces is True)
-      if (begin == text.data() ||
-          (is_ws && (!in_ws_sequence || !allow_ws_only_pieces))) {
-        result.emplace_back(begin, 0);  // add empty string piece.
+      if (is_ws && (!in_ws_sequence || (!allow_ws_only_pieces && begin > anchor))) {
+        result.emplace_back(anchor, begin - anchor);
+        anchor = begin;
         in_ws_sequence = true;
       }
 
       if (in_ws_sequence && !is_ws) {
         // backtrack the whitespace sequence back and split
-        if (result.back().size() > kSpaceSymbol.size()) {
-          result.back().remove_suffix(kSpaceSymbol.size());
-          result.emplace_back(begin - kSpaceSymbol.size(), kSpaceSymbol.size());
+        int ws_len = (begin - anchor) - sizeof(kSpaceSymbol);
+        if (ws_len > 0) {
+          result.emplace_back(anchor, ws_len);
+          anchor = begin - sizeof(kSpaceSymbol);
         }
         in_ws_sequence = false;
       }
 
-      result.back() =
-          absl::string_view(result.back().data(), result.back().size() + mblen);
       begin += mblen;
+    }
+    if ((begin - anchor) > 0) {
+      result.emplace_back(anchor, begin - anchor);
     }
   }
 

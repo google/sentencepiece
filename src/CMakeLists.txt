@@ -12,10 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
-if (SPM_SANITIZE)
+if (SPM_SANITIZE OR SPM_PROFILE)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
-  add_compile_options(-fsanitize=${SPM_SANITIZE} -ggdb -fno-omit-frame-pointer -static-libstdc++ -static-libasan)
-  add_link_options(-fsanitize=${SPM_SANITIZE} -ggdb -fno-omit-frame-pointer -static-libstdc++ -static-libasan)
+  if (SPM_SANITIZE)
+    add_compile_options(-fsanitize=${SPM_SANITIZE} -ggdb -fno-omit-frame-pointer -static-libstdc++ -static-libasan)
+    add_link_options(-fsanitize=${SPM_SANITIZE} -ggdb -fno-omit-frame-pointer -static-libstdc++ -static-libasan)
+  endif()
+  if (SPM_PROFILE)
+    add_compile_options(-pg -fprofile-arcs)
+    add_link_options(-pg -fprofile-arcs)
+    set(SPM_ENABLE_SHARED OFF)
+  endif()
 else()
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
