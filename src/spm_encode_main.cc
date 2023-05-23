@@ -38,7 +38,7 @@ ABSL_FLAG(std::string, extra_options, "",
           "':' separated encoder extra options, e.g., \"reverse:bos:eos\"");
 ABSL_FLAG(int32, nbest_size, 10, "NBest size");
 ABSL_FLAG(double, alpha, 0.5, "Smoothing parameter for sampling mode.");
-ABSL_FLAG(uint32, random_seed, static_cast<uint32>(-1),
+ABSL_FLAG(uint32, random_seed, ~0u,
           "Seed value for random generator.");
 ABSL_FLAG(int, num_threads, 4,
           "Number of CPU threads to use for the encoding procedure.");
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
     rest_args.push_back(absl::GetFlag(FLAGS_input));
   }
 
-  if (absl::GetFlag(FLAGS_random_seed) != -1) {
+  if (absl::GetFlag(FLAGS_random_seed) != ~0u) {
     sentencepiece::SetRandomGeneratorSeed(absl::GetFlag(FLAGS_random_seed));
   }
 
@@ -94,7 +94,8 @@ int main(int argc, char *argv[]) {
   sentencepiece::NBestSentencePieceText nbest_spt;
   std::function<void(absl::string_view line)> process;
   std::vector<uint32_t> sentence_sizes;
-  int eos = sp.eos_id();
+  int eos = sp.eos_id(), bos = sp.bos_id();
+  char verbatim_control_char = sp.model_proto()->trainer_spec().verbatim_control_char();
   int num_threads = absl::GetFlag(FLAGS_num_threads);
   sentencepiece::ThreadPool pool(num_threads);
   std::mutex sync;
@@ -131,6 +132,9 @@ int main(int argc, char *argv[]) {
       std::vector<int> ids;
       CHECK_OK(sp.Encode(line, &ids));
       std::lock_guard lock(sync);
+      if (!line.empty() && line[0] == verbatim_control_char) {
+        ids.insert(ids.begin(), bos);
+      }
       output->Write(absl::string_view(
           reinterpret_cast<char *>(ids.data()), sizeof(int) * ids.size()));
       output->Write(absl::string_view(
@@ -184,6 +188,7 @@ int main(int argc, char *argv[]) {
                << absl::GetFlag(FLAGS_output_format);
   }
 
+  std::atomic<int64_t> processed = 0;
   for (const auto &filename : rest_args) {
     auto input = sentencepiece::filesystem::NewReadableFile(
         filename, absl::GetFlag(FLAGS_new_line_delim));
@@ -194,15 +199,20 @@ int main(int argc, char *argv[]) {
     while (input->ReadLine(&line)) {
       chunk.emplace_back(line);
       if (chunk.size() == thread_chunk_size) {
-        pool.Schedule([&process, chunk]() {
+        pool.Schedule([&process, &processed, chunk]() {
           for (auto &line : chunk) {
             process(line);
+          }
+          int64_t prev = processed.fetch_add(chunk.size()) + chunk.size();
+          if ((prev / thread_chunk_size) % 100 == 0) {
+            LOG(INFO) << "Encoded " << prev << " sentences";
           }
         });
         chunk.clear();
       }
     }
     pool.Wait();
+    LOG(INFO) << "Encoded " << processed.load() << " sentences";
   }
 
   if (absl::GetFlag(FLAGS_output_format) == "bid") {
