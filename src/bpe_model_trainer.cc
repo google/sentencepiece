@@ -241,11 +241,11 @@ void Trainer::AddNewPair(int sid, int left, int right, bool sort) {
 void Trainer::SortSymbolPositions() {
   auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
   for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
-	pool->Schedule([&, n]() {
-	  for (size_t i = n; i < allocated_.size();
-		   i += trainer_spec_.num_threads()) {
-		auto &symbol = allocated_[i];
-		symbol.positions.shrink_to_fit();
+    pool->Schedule([&, n]() {
+      for (size_t i = n; i < allocated_.size();
+        i += trainer_spec_.num_threads()) {
+        auto &symbol = allocated_[i];
+        symbol.positions.shrink_to_fit();
         std::sort(symbol.positions.begin(), symbol.positions.end());
       }
     });
@@ -295,6 +295,67 @@ void Trainer::UpdateActiveSymbols(ThreadPool *pool) {
   active_symbols_.insert(symbols.begin(), symbols.begin() + size);
 }
 
+util::Status Trainer::LoadSentencesFromCache(filesystem::ReadableFile *cache_file) {
+  LOG(INFO) << "Loading cached sentences from "
+            << trainer_spec_.cache_sentence_frequencies_file();
+  std::string freq(sizeof(Sentence::second_type), 0),
+              size(sizeof(size_t), 0),
+              rcp(sizeof(char32) + sizeof(int64), 0);
+  absl::string_view token;
+  size_t required_chars_size;
+  cache_file->ReadBuffer(&size);
+  required_chars_size = *reinterpret_cast<size_t *>(size.data());
+  for (size_t i = 0; i < required_chars_size; i++) {
+    cache_file->ReadBuffer(&rcp);
+    required_chars_[*reinterpret_cast<char32 *>(rcp.data())] =
+        *reinterpret_cast<int64 *>(rcp.data() + 4);
+  }
+  while (cache_file->ReadLine(&token) && cache_file->ReadBuffer(&freq)) {
+    sentences_.emplace_back(
+        token,
+        *reinterpret_cast<const Sentence::second_type *>(freq.data())
+    );
+  }
+  LOG(INFO) << "Loaded " << sentences_.size() << " cached sentences";
+  return cache_file->status();
+}
+
+util::Status Trainer::StoreSentencesToCache() {
+  auto writer = filesystem::NewWritableFile(
+      trainer_spec_.cache_sentence_frequencies_file(), true);
+  if (writer->status() == util::OkStatus()) {
+    LOG(INFO) << "Storing " << sentences_.size() << " sentences to cache "
+              << trainer_spec_.cache_sentence_frequencies_file();
+    std::unique_ptr<char[]> buffer;
+    size_t allocated = required_chars_.size();
+    writer->Write(absl::string_view(
+        reinterpret_cast<char *>(&allocated), sizeof(allocated)));
+    for (auto &c : required_chars_) {
+      char buf[4 + sizeof(Sentence::second_type)];
+      *reinterpret_cast<char32 *>(buf) = c.first;
+      *reinterpret_cast<Sentence::second_type *>(buf + 4) = c.second;
+      writer->Write(absl::string_view(buf, sizeof(buf)));
+    }
+    allocated = 0;
+    for (auto &s : sentences_) {
+      size_t size = s.first.size() + 1 + sizeof(Sentence::second_type);
+      if (allocated < size) {
+        buffer = std::make_unique<char[]>(size);
+        allocated = size;
+      }
+      memcpy(buffer.get(), s.first.data(), s.first.size());
+      buffer[s.first.size()] = 0;
+      memcpy(buffer.get() + s.first.size() + 1,
+             &s.second,
+             sizeof(Sentence::second_type));
+      writer->Write(absl::string_view(buffer.get(), size));
+    }
+    return util::OkStatus();
+  } else {
+    return writer->status();
+  }
+}
+
 util::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
@@ -305,12 +366,28 @@ util::Status Trainer::Train() {
   allocated_.clear();
   symbols_cache_.clear();
   active_symbols_.clear();
+  std::unique_ptr<filesystem::ReadableFile> cache_file;
 
-  // Load all sentences
-  RETURN_IF_ERROR(LoadSentences(false));
+  if (!trainer_spec_.cache_sentence_frequencies_file().empty()) {
+    cache_file = filesystem::NewReadableFile(
+        trainer_spec_.cache_sentence_frequencies_file(), true, 0);
+    if (cache_file->status() == util::OkStatus()) {
+      RETURN_IF_ERROR(LoadSentencesFromCache(cache_file.get()));
+    }
+  }
 
-  if (trainer_spec_.split_by_whitespace()) {
-    SplitSentencesByWhitespace();
+  if (sentences_.empty()) {
+    // Load all sentences
+    RETURN_IF_ERROR(LoadSentences(false));
+
+    if (trainer_spec_.split_by_whitespace()) {
+      SplitSentencesByWhitespace();
+    }
+
+    if (!trainer_spec_.cache_sentence_frequencies_file().empty()) {
+      RETURN_IF_ERROR(StoreSentencesToCache());
+      return util::OkStatus();
+    }
   }
 
   // Pretokenizer applied only in training time.
@@ -331,6 +408,7 @@ util::Status Trainer::Train() {
     }
   }
 
+  LOG(INFO) << "Initializing symbols...";
   // Initializes symbols_. symbols_[sid][i] stores an unary symbol.
   symbols_.reserve(sentences_.size());
   freqs_.reserve(sentences_.size());
@@ -358,6 +436,7 @@ util::Status Trainer::Train() {
     freqs_.push_back(sentence.second);
   }
 
+  cache_file.reset();
   sentences_.clear();
   sentences_.shrink_to_fit();
   #ifdef TCMALLOC
@@ -400,6 +479,7 @@ util::Status Trainer::Train() {
 
   // Main loop.
   CHECK_OR_RETURN(final_pieces_.empty());
+  LOG(INFO) << "Will do " << vocab_size << " iterations";
   while (final_pieces_.size() < static_cast<size_t>(vocab_size)) {
     constexpr int kUpdateActiveSymbolsInterval = 100;
     if (final_pieces_.size() % kUpdateActiveSymbolsInterval == 0) {
@@ -473,34 +553,34 @@ util::Status Trainer::Train() {
     // Add new bigrams which are created after symbol replacement.
     // We do not need to scan all characters, but scan the neighbors in
     // best_symbol.
-      for (uint64_t encoded_pos : best_symbol->positions) {
-          const Position pos = DecodePos(encoded_pos);
+    for (uint64_t encoded_pos : best_symbol->positions) {
+      const Position pos = DecodePos(encoded_pos);
 
-          if (symbols_[pos.sid][pos.left] == nullptr) {
-            // left index might be NULL (set in the previous iteration)
-            // when left_symbol == right_symbol.
-            continue;
-          }
+      if (symbols_[pos.sid][pos.left] == nullptr) {
+        // left index might be NULL (set in the previous iteration)
+        // when left_symbol == right_symbol.
+        continue;
+      }
 
-          CHECK_OR_RETURN(symbols_[pos.sid][pos.right]);
+      CHECK_OR_RETURN(symbols_[pos.sid][pos.right]);
 
-          // We have three bigrams [prev, left], [left, right], [right, next],
-          // which are affected with this symbol replacement.
-          const int next = GetNextIndex(pos.sid, pos.right);
-          const int prev = GetPrevIndex(pos.sid, pos.left);
+      // We have three bigrams [prev, left], [left, right], [right, next],
+      // which are affected with this symbol replacement.
+      const int next = GetNextIndex(pos.sid, pos.right);
+      const int prev = GetPrevIndex(pos.sid, pos.left);
 
-          // Resets the frequencies of bigrams [prev, left] and [right, next].
-          ResetFreq(pos.sid, prev, pos.left, best_symbol);
-          ResetFreq(pos.sid, pos.right, next, best_symbol);
+      // Resets the frequencies of bigrams [prev, left] and [right, next].
+      ResetFreq(pos.sid, prev, pos.left, best_symbol);
+      ResetFreq(pos.sid, pos.right, next, best_symbol);
 
-          // Merges two symbols.
-          symbols_[pos.sid][pos.left] = best_symbol;
-          symbols_[pos.sid][pos.right] = nullptr;
+      // Merges two symbols.
+      symbols_[pos.sid][pos.left] = best_symbol;
+      symbols_[pos.sid][pos.right] = nullptr;
 
-          // Makes new symbol bigrams [prev, left] and [left, next].
-          AddNewPair(pos.sid, prev, pos.left, true);
-          AddNewPair(pos.sid, pos.left, next, true);
-        }
+      // Makes new symbol bigrams [prev, left] and [left, next].
+      AddNewPair(pos.sid, prev, pos.left, true);
+      AddNewPair(pos.sid, pos.left, next, true);
+    }
 
     // Removes best_symbol so it is not selected again.
     symbols_cache_.erase(best_symbol->fp);

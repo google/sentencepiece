@@ -37,6 +37,7 @@ class ReadableFile {
   virtual ~ReadableFile() {}
 
   virtual util::Status status() const = 0;
+  virtual bool ReadBuffer(std::string *buffer) = 0;
   virtual bool ReadLine(absl::string_view *line) = 0;
   virtual bool ReadAll(absl::string_view *line) = 0;
 };

@@ -240,6 +240,10 @@ message TrainerSpec {
   // is increased memory usage.
   optional bool train_extremely_large_corpus = 49 [default = false];
 
+  // Load sentence frequencies from that file. Store sentence frequencies
+  // if that file doesn't exist and exit (only supported for BPE).
+  optional string cache_sentence_frequencies_file = 56;
+
   // Customized extensions: the range of field numbers
   // are open to third-party extensions.
   extensions 200 to max;

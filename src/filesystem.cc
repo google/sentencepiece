@@ -68,6 +68,20 @@ class PosixReadableFile : public ReadableFile {
   }
 
   util::Status status() const { return status_; }
+
+  bool ReadBuffer(std::string *buffer) {
+     if (mem_ == nullptr) {
+       std::cin.read(buffer->data(), buffer->size());
+       return !std::cin.fail();
+     }
+     size_t size_left = file_size_ - (head_ - mem_);
+     if (size_left < buffer->size()) {
+       return false;
+     }
+     memcpy(buffer->data(), head_, buffer->size());
+     head_ += buffer->size();
+     return true;
+  }
   
   bool ReadLine(absl::string_view *line) {
     if (mem_ == nullptr) {

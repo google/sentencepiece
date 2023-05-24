@@ -189,9 +189,10 @@ int main(int argc, char *argv[]) {
   }
 
   std::atomic<int64_t> processed = 0;
+  char delim = absl::GetFlag(FLAGS_new_line_delim);
   for (const auto &filename : rest_args) {
     auto input = sentencepiece::filesystem::NewReadableFile(
-        filename, absl::GetFlag(FLAGS_new_line_delim));
+        filename, delim != '\n', delim);
     CHECK_OK(input->status());
     std::vector<absl::string_view> chunk;
     chunk.reserve(thread_chunk_size);

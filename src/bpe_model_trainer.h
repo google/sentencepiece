@@ -139,6 +139,9 @@ class Trainer : public TrainerInterface {
   // symbols_cache_.
   void UpdateActiveSymbols(ThreadPool *pool);
 
+  util::Status LoadSentencesFromCache(filesystem::ReadableFile *cache_file);
+  util::Status StoreSentencesToCache();
+
   // All unique symbols. Key is a fingerprint of Symbol.
   absl::flat_hash_map<uint64_t, Symbol *> symbols_cache_;
 

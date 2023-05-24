@@ -149,6 +149,9 @@ ABSL_FLAG(std::string, unk_surface, kDefaultTrainerSpec.unk_surface(),
 ABSL_FLAG(bool, train_extremely_large_corpus,
           kDefaultTrainerSpec.train_extremely_large_corpus(),
           "Increase bit depth for unigram tokenization.");
+ABSL_FLAG(std::string, cache_sentence_frequencies_file, "",
+          "Load sentence frequencies from the cache. "
+          "Store to the cache and exit if the file doesn't exist.");
 ABSL_FLAG(uint32, random_seed, static_cast<uint32>(-1),
           "Seed value for random generator.");
 
@@ -260,6 +263,7 @@ int main(int argc, char *argv[]) {
   SetRepeatedTrainerSpecFromFlag(control_symbols);
   SetRepeatedTrainerSpecFromFlag(user_defined_symbols);
   SetTrainerSpecFromFlag(train_extremely_large_corpus);
+  SetTrainerSpecFromFlag(cache_sentence_frequencies_file);
   // DP related.
   SetTrainerSpecFromFlag(enable_differential_privacy);
   SetTrainerSpecFromFlag(differential_privacy_noise_level);
