@@ -72,10 +72,15 @@ class PosixReadableFile : public ReadableFile {
   bool ReadBuffer(std::string *buffer) {
      if (mem_ == nullptr) {
        std::cin.read(buffer->data(), buffer->size());
-       return !std::cin.fail();
+       if (std::cin.fail()) {
+         SetErrorStatus(util::StatusCode::kOutOfRange, "stdin");
+         return false;
+       }
+       return true;
      }
      size_t size_left = file_size_ - (head_ - mem_);
      if (size_left < buffer->size()) {
+       SetErrorStatus(util::StatusCode::kOutOfRange, "N/A");
        return false;
      }
      memcpy(buffer->data(), head_, buffer->size());
@@ -147,7 +152,13 @@ class PosixWritableFile : public WritableFile {
 
   bool Write(absl::string_view text) {
     os_->write(text.data(), text.size());
-    return os_->good();
+    if (!os_->good()) {
+      status_ =
+          util::StatusBuilder(util::StatusCode::kDataLoss, GTL_LOC)
+          << util::StrError(errno);
+      return false;
+    }
+    return true;
   }
 
   bool WriteLine(absl::string_view text) { return Write(text) && Write("\n"); }

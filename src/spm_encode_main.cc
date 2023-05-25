@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 
   if (absl::GetFlag(FLAGS_input).empty()) {
     for (int i = 1; i < argc; ++i) {
-      rest_args.push_back(std::string(argv[i]));
+      rest_args.emplace_back(argv[i]);
     }
   } else {
     rest_args.push_back(absl::GetFlag(FLAGS_input));

@@ -306,7 +306,9 @@ util::Status Trainer::LoadSentencesFromCache(filesystem::ReadableFile *cache_fil
   cache_file->ReadBuffer(&size);
   required_chars_size = *reinterpret_cast<size_t *>(size.data());
   for (size_t i = 0; i < required_chars_size; i++) {
-    cache_file->ReadBuffer(&rcp);
+    if (!cache_file->ReadBuffer(&rcp)) {
+      return cache_file->status();;
+    }
     required_chars_[*reinterpret_cast<char32 *>(rcp.data())] =
         *reinterpret_cast<int64 *>(rcp.data() + 4);
   }
@@ -334,7 +336,9 @@ util::Status Trainer::StoreSentencesToCache() {
       char buf[4 + sizeof(Sentence::second_type)];
       *reinterpret_cast<char32 *>(buf) = c.first;
       *reinterpret_cast<Sentence::second_type *>(buf + 4) = c.second;
-      writer->Write(absl::string_view(buf, sizeof(buf)));
+      if (!writer->Write(absl::string_view(buf, sizeof(buf)))) {
+        return writer->status();
+      }
     }
     allocated = 0;
     for (auto &s : sentences_) {
@@ -348,7 +352,9 @@ util::Status Trainer::StoreSentencesToCache() {
       memcpy(buffer.get() + s.first.size() + 1,
              &s.second,
              sizeof(Sentence::second_type));
-      writer->Write(absl::string_view(buffer.get(), size));
+      if (!writer->Write(absl::string_view(buffer.get(), size))) {
+        return writer->status();
+      }
     }
     return util::OkStatus();
   } else {
