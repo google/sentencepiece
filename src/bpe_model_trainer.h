@@ -114,7 +114,8 @@ class Trainer : public TrainerInterface {
   uint32_t GetCharSymbol(char32 c, bool require_cache);
 
   // Gets symbol pair from left/right symbols. The return value is cached.
-  uint32_t GetPairSymbol(uint32_t left, uint32_t right);
+  uint32_t GetPairSymbol(uint32_t left, uint32_t right,
+                         bool require_cache = false);
 
   uint32_t GeneratePairSymbol(
       uint32_t left, uint32_t right,

@@ -125,7 +125,7 @@ uint32_t Trainer::GetCharSymbol(char32 c, bool require_cache) {
   return index;
 }
 
-uint32_t Trainer::GetPairSymbol(uint32_t left, uint32_t right) {
+uint32_t Trainer::GetPairSymbol(uint32_t left, uint32_t right, bool require_cache) {
   if (left == ~0u || right == ~0u) {
     return ~0u;
   }
@@ -152,6 +152,7 @@ uint32_t Trainer::GetPairSymbol(uint32_t left, uint32_t right) {
     return ~0u;
   }
 
+  CHECK(!require_cache);
   return GeneratePairSymbol(left, right, fp, ut);
 }
 
@@ -275,7 +276,7 @@ void Trainer::SortSymbolPositions() {
 
 void Trainer::ResetFreq(uint32_t sid, uint32_t left, uint32_t right, uint32_t best) {
   if (left == ~0u || right == ~0u) return;
-  auto symbol = GetPairSymbol(symbols_[sid][left], symbols_[sid][right]);
+  auto symbol = GetPairSymbol(symbols_[sid][left], symbols_[sid][right], true);
   if (symbol != ~0u && symbol != best) {
     allocated_[symbol].freq = 0;
   }
