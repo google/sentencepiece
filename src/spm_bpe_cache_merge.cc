@@ -235,27 +235,32 @@ struct CachedSentences {
   }
 
   void Sort() {
-    std::vector<std::pair<absl::string_view, int64>> v;
+    std::vector<char *> v;
+    v.reserve(sentences.size());
     auto it = sentences.head();
     size_t prefix_len = (it != nullptr)? (strlen(it) + 1 + sizeof(int64)) : 0;
     for (; it != nullptr;
          it = *reinterpret_cast<char **>(it + prefix_len),
          prefix_len = (it != nullptr)? (strlen(it) + 1 + sizeof(int64)) : 0) {
-      auto it_len = prefix_len - sizeof(int64);
-      v.emplace_back(absl::string_view(it, it_len - 1),
-                     *reinterpret_cast<int64 *>(it + it_len));
+      v.emplace_back(it);
     }
     boost::sort::block_indirect_sort(
       v.begin(), v.end(),
-      [](const auto &p1, const auto &p2) {
-        return (p1.second > p2.second ||
-               (p1.second == p2.second && p1.first < p2.first));
+      [](const char *p1, const char *p2) {
+        int64 f1 = *reinterpret_cast<const int64 *>(p1 + strlen(p1) + 1);
+        int64 f2 = *reinterpret_cast<const int64 *>(p2 + strlen(p2) + 1);
+        return (f1 > f2 ||
+               (f1 == f2 && strcmp(p1, p2) < 0));
       },
       std::thread::hardware_concurrency());
     auto new_sentences = SingleLinkedStringsWithFreq();
     char *head = nullptr;
-    for (auto &s : v) {
-      head = new_sentences.insert_after(s.first, s.second, head);
+    for (const char *p : v) {
+      size_t p_len = strlen(p);
+      head = new_sentences.insert_after(
+          absl::string_view(p, p_len),
+          *reinterpret_cast<const int64 *>(p + p_len + 1),
+          head);
     }
     sentences = std::move(new_sentences);
   }
