@@ -152,11 +152,18 @@ uint32_t Trainer::GetPairSymbol(uint32_t left, uint32_t right) {
     return ~0u;
   }
 
+  return GeneratePairSymbol(left, right, fp, ut);
+}
+
+uint32_t Trainer::GeneratePairSymbol(
+    uint32_t left, uint32_t right,
+    uint64 fp,
+    const string_util::UnicodeText &ut) {
   uint32_t index = allocated_.size();
   CHECK_LT(index, ~0u);
   auto &s = allocated_.emplace_back(left, right, fp);
   s.AssignChars(ut);
-  port::InsertOrDie(&symbols_cache_, s.fp, index);
+  port::InsertOrDie(&symbols_cache_, fp, index);
   return index;
 }
 
@@ -485,21 +492,108 @@ util::Status Trainer::Train() {
             << overflows.load() << " overflows";
 
   // Makes all bigram symbols.
-  for (size_t sid = 0; sid < symbols_.size(); ++sid) {
-    if (sid % 10000000 == 0 && sid > 0) {
-      LOG(INFO) << "Generated pairs from " << sid << " symbols";
-    }
-    auto &sentence = symbols_[sid];
-    for (size_t i = 1; i < sentence.size(); ++i) {
-      uint32_t left = i - 1, right = i;
-      auto symbol = GetPairSymbol(sentence[left], sentence[right]);
-      if (symbol != ~0u) {
-        allocated_[symbol].positions.push_back(EncodePos(sid, left, right));
+  {
+    std::unique_ptr<std::pair<uint64, uint64>[]> block;
+    uint64 block_allocated = 0;
+    for (uint32_t bi = 0; bi < symbols_.size(); bi += max_chunk_size) {
+      auto chunk_size = std::min(
+          max_chunk_size, static_cast<ssize_t>(symbols_.size()) - bi);
+      uint64 total_size = 0;
+      for (uint32_t sid = bi; sid < bi + chunk_size; sid++) {
+        total_size += symbols_[sid].size() - 1;
       }
+      if (block_allocated < total_size) {
+        block = std::make_unique<std::pair<uint64, uint64>[]>(total_size);
+        block_allocated = total_size;
+      }
+      std::atomic<uint64> global_pos = 0;
+      pool->Loop(bi, bi + chunk_size,
+      [this, &global_pos, &block](const uint32_t beg, const uint32_t end) {
+        for (uint32_t sid = beg; sid < end; sid++) {
+          auto &sentence = symbols_[sid];
+          auto *prev = &allocated_[sentence[0]];
+          for (uint32_t i = 1; i < sentence.size(); ++i) {
+            auto *next = &allocated_[sentence[i]];
+            if (prev->IsUnk() || next->IsUnk()) {
+              prev = next;
+              continue;
+            }
+
+            // Do not make an invalid piece.
+            string_util::UnicodeText ut;
+            prev->AppendCharsToText(&ut);
+            next->AppendCharsToText(&ut);
+            if (!IsValidSentencePiece(ut)) {
+              prev = next;
+              continue;
+            }
+
+            uint64 pos = global_pos++;
+            block[pos].first = port::FingerprintCat(prev->fp, next->fp);
+            block[pos].second = EncodePos(sid, i - 1, i);
+            prev = next;
+          }
+        }
+      });
+      pool->Wait();
+      uint64 block_size = global_pos.load();
+      boost::sort::block_indirect_sort(
+          block.get(), block.get() + block_size,
+          trainer_spec_.num_threads());
+      uint64 step = block_size / trainer_spec_.num_threads();
+      uint64 prev_bound = 0;
+      for (int i = 0; i < trainer_spec_.num_threads(); i++) {
+        uint64 bound;
+        if (i < trainer_spec_.num_threads() - 1) {
+          bound = step * (i + 1);
+          uint64 fp = block[bound].first;
+          for (; bound < block_size && block[bound].first == fp; bound++) {}
+        } else {
+          if (prev_bound == block_size) {
+            break;
+          }
+          bound = block_size;
+        }
+        pool->Schedule([this, prev_bound, bound, &block, &sync]() {
+          uint64 prev_fp = 0;
+          Symbol *symbol = nullptr;
+          for (uint64 p = prev_bound; p < bound; p++) {
+            auto &item = block[p];
+            uint64 fp = item.first, encoded_pos = item.second;
+            if (fp != prev_fp) {
+              auto pos = DecodePos(encoded_pos);
+              auto &sentence = symbols_[pos.sid];
+              auto left = sentence[pos.left];
+              auto right = sentence[pos.right];
+              string_util::UnicodeText ut;
+              allocated_[left].AppendCharsToText(&ut);
+              allocated_[right].AppendCharsToText(&ut);
+              {
+                std::lock_guard lock(sync);
+                auto it = symbols_cache_.find(fp);
+                if (it != symbols_cache_.end()) {
+                  symbol = &allocated_[it->second];
+                } else {
+                  symbol = &allocated_[GeneratePairSymbol(left, right, fp, ut)];
+                }
+              }
+              prev_fp = fp;
+            }
+            symbol->positions.push_back(encoded_pos);
+          }
+        });
+        prev_bound = bound;
+      }
+      pool->Wait();
+      LOG(INFO) << "Generated pairs from " << (bi + chunk_size)
+                << " symbols, allocated " << allocated_.size();
     }
   }
 
   LOG(INFO) << "Allocated " << allocated_.size() - unisize << " pairs";
+  #ifdef TCMALLOC
+  MallocExtension::instance()->ReleaseFreeMemory();
+  #endif
   malloc_stats();
 
   LOG(INFO) << "Sorting positions...";

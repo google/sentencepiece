@@ -116,6 +116,11 @@ class Trainer : public TrainerInterface {
   // Gets symbol pair from left/right symbols. The return value is cached.
   uint32_t GetPairSymbol(uint32_t left, uint32_t right);
 
+  uint32_t GeneratePairSymbol(
+      uint32_t left, uint32_t right,
+      uint64 fp,
+      const string_util::UnicodeText &ut);
+
   // Computes the frequency of |symbol| and update symbol->freq field.
   void ComputeFreq(Symbol *symbol) const;
 
