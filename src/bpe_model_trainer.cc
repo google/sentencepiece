@@ -167,23 +167,25 @@ uint32_t Trainer::GeneratePairSymbol(
   return index;
 }
 
-void Trainer::ComputeFreq(Symbol *symbol) const {
-  if (symbol->freq > 0) {  // if freq == 0, re-computation is required.
-    return;
+uint64 Trainer::ComputeFreq(Symbol *symbol) const {
+  uint64 freq = symbol->freq;
+  if (freq > 0) {  // if freq == 0, re-computation is required.
+    return freq;
   }
-  CHECK_EQ(0, symbol->freq);
   std::vector<uint64_t> erased;
+  uint32_t left = symbol->left, right = symbol->right;
   for (uint64_t i = 0; i < symbol->positions.size(); i++) {
     const Position pos = DecodePos(symbol->positions[i]);
     // symbols_[sid][left] and symbols_[sid][right] must store
     // the same symbols in symbol->left and symbols->right.
-    if (symbol->left != symbols_[pos.sid][pos.left] ||
-        symbol->right != symbols_[pos.sid][pos.right]) {
+    if (left != symbols_[pos.sid][pos.left] ||
+        right != symbols_[pos.sid][pos.right]) {
       erased.push_back(i);
     } else {
-      symbol->freq += freqs_[pos.sid];
+      freq += freqs_[pos.sid];
     }
   }
+  symbol->freq = freq;
   if (!erased.empty()) {
     size_t new_positions_size = symbol->positions.size() - erased.size();
     std::vector<uint64_t> new_positions(new_positions_size);
@@ -198,6 +200,7 @@ void Trainer::ComputeFreq(Symbol *symbol) const {
     }
     symbol->positions = std::move(new_positions);
   }
+  return freq;
 }
 
 uint32_t Trainer::GetNextIndex(uint32_t sid, uint32_t index) const {
@@ -279,17 +282,25 @@ void Trainer::ResetFreq(uint32_t sid, uint32_t left, uint32_t right, uint32_t be
 }
 
 void Trainer::UpdateActiveSymbols(ThreadPool *pool) {
-  std::vector<uint32_t> symbols;
-  symbols.reserve(symbols_cache_.size());
+  auto symbols = std::unique_ptr<uint32_t[]>(new uint32_t[symbols_cache_.size()]);
+  uint32_t symbols_size = 0;
   for (auto &it : symbols_cache_) {
     if (allocated_[it.second].IsBigram()) {
-      symbols.push_back(it.second);
+      symbols[symbols_size++] = it.second;
     }
   }
-  pool->Loop(0, symbols.size(),
-  [this, &symbols](const uint32_t beg, const uint32_t end) {
+  uint64 max_freq = 0;
+  std::mutex sync;
+  pool->Loop(0, symbols_size,
+  [this, &symbols, &max_freq, &sync](const uint32_t beg, const uint32_t end) {
     for (uint32_t i = beg; i < end; i++) {
-      ComputeFreq(&allocated_[symbols[i]]);
+      auto freq = ComputeFreq(&allocated_[symbols[i]]);
+      if (max_freq < freq) {
+        std::lock_guard lock(sync);
+        if (max_freq < freq) {
+          max_freq = freq;
+        }
+      }
     }
   });
   pool->Wait();
@@ -302,17 +313,19 @@ void Trainer::UpdateActiveSymbols(ThreadPool *pool) {
   const uint32_t size = std::min<uint32_t>(
       std::max<int>(kMinActiveSymbolsSize,
                     symbols_cache_.size() * kTopFrequentRatio),
-      symbols.size());
+      symbols_size);
 
-  std::partial_sort(symbols.begin(), symbols.begin() + size, symbols.end(),
-                    [this](uint32_t s1, uint32_t s2) {
-                      return allocated_[s1].freq > allocated_[s2].freq;
-                    });
-  LOG(INFO) << "Updating active symbols. max_freq=" << allocated_[symbols[0]].freq
+  std::nth_element(symbols.get(),
+                   symbols.get() + size - 1,
+                   symbols.get() + symbols_size,
+                   [this](uint32_t s1, uint32_t s2) {
+                     return allocated_[s1].freq > allocated_[s2].freq;
+                   });
+  LOG(INFO) << "Updating active symbols. max_freq=" << max_freq
             << " min_freq=" << allocated_[symbols[size - 1]].freq;
 
   active_symbols_.clear();
-  active_symbols_.insert(symbols.begin(), symbols.begin() + size);
+  active_symbols_.insert(symbols.get(), symbols.get() + size);
 }
 
 util::Status Trainer::LoadSentencesFromCache(filesystem::ReadableFile *cache_file) {
@@ -367,7 +380,7 @@ util::Status Trainer::StoreSentencesToCache() {
     for (auto &s : sentences_) {
       size_t size = s.first.size() + 1 + sizeof(Sentence::second_type);
       if (allocated < size) {
-        buffer = std::make_unique<char[]>(size);
+        buffer = std::unique_ptr<char[]>(new char[size]);
         allocated = size;
       }
       memcpy(buffer.get(), s.first.data(), s.first.size());
@@ -503,7 +516,8 @@ util::Status Trainer::Train() {
         total_size += symbols_[sid].size() - 1;
       }
       if (block_allocated < total_size) {
-        block = std::make_unique<std::pair<uint64, uint64>[]>(total_size);
+        block = std::unique_ptr<std::pair<uint64, uint64>[]>(
+            new std::pair<uint64, uint64>[total_size]);
         block_allocated = total_size;
       }
       std::atomic<uint64> global_pos = 0;
@@ -689,7 +703,8 @@ util::Status Trainer::Train() {
     final_pieces_.emplace_back(best_symbol_ref.ToString(),
                                -static_cast<float>(final_pieces_.size()));
 
-    if (final_pieces_.size() % 20 == 0) {
+    if (final_pieces_.size() % 20 == 0 ||
+        (symbols_.size() > 100000000 && final_pieces_.size() < 1000)) {
       LOG(INFO) << "Added: freq=" << best_symbol_ref.freq
                 << " size=" << final_pieces_.size()
                 << " all=" << symbols_cache_.size()

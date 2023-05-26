@@ -122,7 +122,7 @@ class Trainer : public TrainerInterface {
       const string_util::UnicodeText &ut);
 
   // Computes the frequency of |symbol| and update symbol->freq field.
-  void ComputeFreq(Symbol *symbol) const;
+  uint64 ComputeFreq(Symbol *symbol) const;
 
   // Returns the valid index before symbols_[sid][index].
   uint32_t GetNextIndex(uint32_t sid, uint32_t index) const;
