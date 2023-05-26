@@ -111,7 +111,7 @@ class Trainer : public TrainerInterface {
 
   // Gets unary (character) symbol from the char code |c|.
   // The return value is cached.
-  Symbol *GetCharSymbol(char32 c);
+  Symbol *GetCharSymbol(char32 c, bool require_cache);
 
   // Gets symbol pair from left/right symbols. The return value is cached.
   Symbol *GetPairSymbol(const Symbol *left, const Symbol *right);

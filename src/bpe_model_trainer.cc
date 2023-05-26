@@ -109,13 +109,14 @@ void Trainer::Symbol::AppendCharsToText(string_util::UnicodeText *text) const {
   }
 }
 
-Trainer::Symbol *Trainer::GetCharSymbol(char32 c) {
+Trainer::Symbol *Trainer::GetCharSymbol(char32 c, bool require_cache) {
   const uint64 freq = port::FindWithDefault(required_chars_, c, 1);
   CHECK_GT(freq, 0);
   const auto it = symbols_cache_.find(c);
   if (it != symbols_cache_.end()) {
     return it->second;
   }
+  CHECK(!require_cache);
   auto &s = allocated_.emplace_back(nullptr, nullptr, c, freq);
   s.AppendChar(c);
   port::InsertOrDie(&symbols_cache_, s.fp, &s);
@@ -313,13 +314,13 @@ util::Status Trainer::LoadSentencesFromCache(filesystem::ReadableFile *cache_fil
         *reinterpret_cast<int64 *>(rcp.data() + 4);
   }
   while (cache_file->ReadLine(&token) && cache_file->ReadBuffer(&freq)) {
-    if (sentences_.size() % 10000000 == 0) {
-      LOG(INFO) << "Loaded " << sentences_.size() << " sentences";
-    }
     sentences_.emplace_back(
         token,
         *reinterpret_cast<const Sentence::second_type *>(freq.data())
     );
+    if (sentences_.size() % 10000000 == 0) {
+      LOG(INFO) << "Loaded " << sentences_.size() << " sentences";
+    }
   }
   LOG(INFO) << "Loaded " << sentences_.size() << " cached sentences";
   return cache_file->status();
@@ -418,10 +419,14 @@ util::Status Trainer::Train() {
   }
 
   LOG(INFO) << "Initializing symbols...";
+  for (auto &p : required_chars_) {
+    GetCharSymbol(p.first, false);
+  }
+  GetCharSymbol(kUNKChar, false);
   auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
   std::mutex sync;
   // Initializes symbols_. symbols_[sid][i] stores an unary symbol.
-  ssize_t total = sentences_.size(), max_chunk_size = 60000000;
+  ssize_t max_chunk_size = 60000000;
   std::atomic<int64> overflows = 0;
   symbols_.resize(sentences_.size());
   freqs_.resize(sentences_.size());
@@ -442,18 +447,13 @@ util::Status Trainer::Train() {
             overflows++;
             break;
           }
-          Symbol *symbol;
-          {
-            std::lock_guard lock(sync);
-            symbol = GetCharSymbol(c);
-          }
-          symbols_sentence.push_back(symbol);
+          symbols_sentence.push_back(GetCharSymbol(c, true));
         }
       }
     });
     pool->Wait();
-    LOG(INFO) << "Extracted " << symbols_.size() << " / "
-              << total << " symbols";
+    LOG(INFO) << "Extracted " << (symbols_.size() - i + chunk_size) << " / "
+              << symbols_.size() << " symbols";
     sentences_.resize(i - chunk_size);
     sentences_.shrink_to_fit();
     #ifdef TCMALLOC
@@ -612,7 +612,7 @@ util::Status Trainer::Train() {
 
   // Adds required_chars_
   for (const auto &w : Sorted(required_chars_, trainer_spec_.num_threads())) {
-    const Symbol *symbol = GetCharSymbol(w.first);
+    const Symbol *symbol = GetCharSymbol(w.first, false);
     final_pieces_.emplace_back(symbol->ToString(),
                                -static_cast<float>(final_pieces_.size()));
   }
