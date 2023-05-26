@@ -313,6 +313,9 @@ util::Status Trainer::LoadSentencesFromCache(filesystem::ReadableFile *cache_fil
         *reinterpret_cast<int64 *>(rcp.data() + 4);
   }
   while (cache_file->ReadLine(&token) && cache_file->ReadBuffer(&freq)) {
+    if (sentences_.size() % 10000000 == 0) {
+      LOG(INFO) << "Loaded " << sentences_.size() << " sentences";
+    }
     sentences_.emplace_back(
         token,
         *reinterpret_cast<const Sentence::second_type *>(freq.data())
@@ -415,46 +418,58 @@ util::Status Trainer::Train() {
   }
 
   LOG(INFO) << "Initializing symbols...";
+  auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
+  std::mutex sync;
   // Initializes symbols_. symbols_[sid][i] stores an unary symbol.
-  freqs_.reserve(sentences_.size());
-  size_t overflows = 0;
+  ssize_t total = sentences_.size(), max_chunk_size = 60000000;
+  std::atomic<int64> overflows = 0;
+  symbols_.resize(sentences_.size());
+  freqs_.resize(sentences_.size());
   constexpr size_t uint16_max = static_cast<size_t>(std::numeric_limits<uint16_t>::max());
-  for (ssize_t i = sentences_.size(); i >= 0; i++) {
-    auto &sentence = sentences_[i];
-    auto &&text = string_util::UTF8ToUnicodeText(sentence.first);
-    if (freqs_.size() == freqs_.capacity()) {
-      freqs_.reserve(sentences_.size() + overflows);
-    }
-    if (i % 20000000 == 0) {
-      LOG(INFO) << "Extracted " << symbols_.size() << " / "
-                << (sentences_.size() + overflows) << " symbols";
-      sentences_.resize(i + 1);
-      sentences_.shrink_to_fit();
-    }
-    auto &symbols_sentence = symbols_.emplace_back();
-    symbols_sentence.reserve(std::min(text.size(), uint16_max));
-    for (const char32 c : text) {
-      if (symbols_sentence.size() == uint16_max) {
-        // this sentence is too long, must split to be able to call EncodePos
-        overflows++;
-        symbols_sentence.shrink_to_fit();
-        symbols_sentence = symbols_.emplace_back();
-        // we can overflow several times, but it doesn't hurt to overallocate
-        symbols_sentence.reserve(std::min(text.size() - uint16_max, uint16_max));
+  for (ssize_t i = sentences_.size(); i >= 0; i -= max_chunk_size) {
+    auto chunk_size = std::min(i, max_chunk_size);
+    pool->Loop(i - chunk_size, i,
+    [this, &overflows, &sync, uint16_max](const ssize_t beg, const ssize_t end) {
+      for (ssize_t j = beg; j < end; j++) {
+        auto &sentence = sentences_[j];
+        auto &&text = string_util::UTF8ToUnicodeText(sentence.first);
+        auto &symbols_sentence = symbols_[j];
+        freqs_[j] = sentence.second;
+        symbols_sentence.reserve(std::min(text.size(), uint16_max));
+        for (const char32 c : text) {
+          if (symbols_sentence.size() == uint16_max) {
+            // this sentence is too long, must split to be able to call EncodePos
+            overflows++;
+            break;
+          }
+          Symbol *symbol;
+          {
+            std::lock_guard lock(sync);
+            symbol = GetCharSymbol(c);
+          }
+          symbols_sentence.push_back(symbol);
+        }
       }
-      symbols_sentence.push_back(GetCharSymbol(c));
-    }
-    freqs_.push_back(sentence.second);
+    });
+    pool->Wait();
+    LOG(INFO) << "Extracted " << symbols_.size() << " / "
+              << total << " symbols";
+    sentences_.resize(i - chunk_size);
+    sentences_.shrink_to_fit();
+    #ifdef TCMALLOC
+    MallocExtension::instance()->ReleaseFreeMemory();
+    #endif
   }
 
   cache_file.reset();
-  sentences_.clear();
-  sentences_.shrink_to_fit();
   #ifdef TCMALLOC
   MallocExtension::instance()->ReleaseFreeMemory();
   #endif
+  malloc_stats();
+
   size_t unisize = allocated_.size();
-  LOG(INFO) << "Allocated " << unisize << " chars with " << overflows << " overflows";
+  LOG(INFO) << "Allocated " << unisize << " chars with "
+            << overflows.load() << " overflows";
 
   // Makes all bigram symbols.
   for (size_t sid = 0; sid < symbols_.size(); ++sid) {
@@ -484,9 +499,6 @@ util::Status Trainer::Train() {
   // In real segmentation phase, we can consider them as one symbol.
   // e.g., "aaa" => "aa" + "a" or "a" + "aa".
   absl::flat_hash_set<absl::string_view> dup;
-
-  auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
-  std::mutex sync;
 
   // Main loop.
   CHECK_OR_RETURN(final_pieces_.empty());
