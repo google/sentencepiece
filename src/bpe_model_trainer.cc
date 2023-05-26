@@ -109,7 +109,7 @@ void Trainer::Symbol::AppendCharsToText(string_util::UnicodeText *text) const {
   }
 }
 
-Trainer::Symbol *Trainer::GetCharSymbol(char32 c, bool require_cache) {
+uint32_t Trainer::GetCharSymbol(char32 c, bool require_cache) {
   const uint64 freq = port::FindWithDefault(required_chars_, c, 1);
   CHECK_GT(freq, 0);
   const auto it = symbols_cache_.find(c);
@@ -117,39 +117,47 @@ Trainer::Symbol *Trainer::GetCharSymbol(char32 c, bool require_cache) {
     return it->second;
   }
   CHECK(!require_cache);
-  auto &s = allocated_.emplace_back(nullptr, nullptr, c, freq);
+  uint32_t index = allocated_.size();
+  CHECK_LT(index, ~0u);
+  auto &s = allocated_.emplace_back(~0u, ~0u, c, freq);
   s.AppendChar(c);
-  port::InsertOrDie(&symbols_cache_, s.fp, &s);
-  return &s;
+  port::InsertOrDie(&symbols_cache_, s.fp, index);
+  return index;
 }
 
-Trainer::Symbol *Trainer::GetPairSymbol(const Symbol *left,
-                                        const Symbol *right) {
-  if (left == nullptr || right == nullptr || left->IsUnk() || right->IsUnk()) {
-    return nullptr;
+uint32_t Trainer::GetPairSymbol(uint32_t left, uint32_t right) {
+  if (left == ~0u || right == ~0u) {
+    return ~0u;
+  }
+  auto &left_symbol = allocated_[left];
+  auto &right_symbol = allocated_[right];
+  if (left_symbol.IsUnk() || right_symbol.IsUnk()) {
+    return ~0u;
   }
 
-  const uint64 fp = port::FingerprintCat(left->fp, right->fp);
+  const uint64 fp = port::FingerprintCat(left_symbol.fp, right_symbol.fp);
   const auto it = symbols_cache_.find(fp);
   if (it != symbols_cache_.end()) {
     return it->second;
   }
 
-  CHECK(left->CharsSize() > 0);
-  CHECK(right->CharsSize() > 0);
+  CHECK(left_symbol.CharsSize() > 0);
+  CHECK(right_symbol.CharsSize() > 0);
   string_util::UnicodeText ut;
-  left->AppendCharsToText(&ut);
-  right->AppendCharsToText(&ut);
+  left_symbol.AppendCharsToText(&ut);
+  right_symbol.AppendCharsToText(&ut);
 
   // Do not make an invalid piece.
   if (!IsValidSentencePiece(ut)) {
-    return nullptr;
+    return ~0u;
   }
 
+  uint32_t index = allocated_.size();
+  CHECK_LT(index, ~0u);
   auto &s = allocated_.emplace_back(left, right, fp);
   s.AssignChars(ut);
-  port::InsertOrDie(&symbols_cache_, s.fp, &s);
-  return &s;
+  port::InsertOrDie(&symbols_cache_, s.fp, index);
+  return index;
 }
 
 void Trainer::ComputeFreq(Symbol *symbol) const {
@@ -185,57 +193,59 @@ void Trainer::ComputeFreq(Symbol *symbol) const {
   }
 }
 
-int Trainer::GetNextIndex(int sid, int index) const {
+uint32_t Trainer::GetNextIndex(uint32_t sid, uint32_t index) const {
   auto &sentence = symbols_[sid];
-  for (size_t i = index + 1; i < sentence.size(); ++i) {
-    if (sentence[i] == nullptr) continue;
+  for (uint32_t i = index + 1; i < sentence.size(); ++i) {
+    if (sentence[i] == ~0u) continue;
     return i;
   }
-  return -1;
+  return ~0u;
 }
 
-int Trainer::GetPrevIndex(int sid, int index) const {
+uint32_t Trainer::GetPrevIndex(uint32_t sid, uint32_t index) const {
   auto &sentence = symbols_[sid];
-  for (int i = index - 1; i >= 0; --i) {
-    if (sentence[i] == nullptr) continue;
+  for (int64 i = static_cast<int64>(index) - 1; i >= 0; --i) {
+    if (sentence[i] == ~0u) continue;
     return i;
   }
-  return -1;
+  return ~0u;
 }
 
-void Trainer::AddNewPair(int sid, int left, int right, bool sort) {
-  if (left == -1 || right == -1) return;
-  auto *symbol = GetPairSymbol(symbols_[sid][left], symbols_[sid][right]);
-  if (symbol != nullptr) {
-    active_symbols_.insert(symbol);
-    uint64_t pos = EncodePos(sid, left, right);
-    if (sort) {
-      auto it = std::lower_bound(symbol->positions.begin(), symbol->positions.end(), pos);
-      if (it != symbol->positions.end()) {
-        if (*it == pos) {
-          return;
-        }
-        auto offset = it - symbol->positions.begin();
-        if (symbol->positions.capacity() >= symbol->positions.size() + 1) {
-          symbol->positions.emplace_back();
-          memmove(symbol->positions.data() + offset + 1,
-                  symbol->positions.data() + offset,
-                  (symbol->positions.size() - offset - 1) * sizeof(uint64_t));
-        } else {
-          std::vector<uint64_t> new_positions(symbol->positions.size() + 1);
-          memcpy(new_positions.data(), symbol->positions.data(), offset * sizeof(uint64_t));
-          memcpy(new_positions.data() + offset + 1,
-                 symbol->positions.data() + offset,
-                 (symbol->positions.size() - offset - 1) * sizeof(uint64_t));
-          symbol->positions = std::move(new_positions);
-        }
-        symbol->positions[offset] = pos;
-      } else {
-        symbol->positions.push_back(pos);
-      }
-    } else {
-      symbol->positions.push_back(pos);
+void Trainer::AddNewPair(uint32_t sid, uint32_t left, uint32_t right) {
+  if (left == ~0u || right == ~0u) return;
+  auto symbol = GetPairSymbol(symbols_[sid][left], symbols_[sid][right]);
+  if (symbol == ~0u) {
+    return;
+  }
+  active_symbols_.insert(symbol);
+  uint64_t pos = EncodePos(sid, left, right);
+  auto &symbol_ref = allocated_[symbol];
+  auto it = std::lower_bound(symbol_ref.positions.begin(),
+                             symbol_ref.positions.end(),
+                             pos);
+  if (it != symbol_ref.positions.end()) {
+    if (*it == pos) {
+      return;
     }
+    auto offset = it - symbol_ref.positions.begin();
+    if (symbol_ref.positions.capacity() >= symbol_ref.positions.size() + 1) {
+      symbol_ref.positions.emplace_back();
+      memmove(symbol_ref.positions.data() + offset + 1,
+              symbol_ref.positions.data() + offset,
+              (symbol_ref.positions.size() - offset - 1) * sizeof(uint64_t));
+    } else {
+      std::vector<uint64_t> new_positions(symbol_ref.positions.size() + 1);
+      memcpy(new_positions.data(),
+             symbol_ref.positions.data(),
+             offset * sizeof(uint64_t));
+      memcpy(new_positions.data() + offset + 1,
+             symbol_ref.positions.data() + offset,
+             (symbol_ref.positions.size() - offset - 1) * sizeof(uint64_t));
+      symbol_ref.positions = std::move(new_positions);
+    }
+    symbol_ref.positions[offset] = pos;
+  } else {
+    symbol_ref.positions.push_back(pos);
   }
 }
 
@@ -253,44 +263,46 @@ void Trainer::SortSymbolPositions() {
   }
 }
 
-void Trainer::ResetFreq(int sid, int left, int right, const Symbol *best) {
-  if (left == -1 || right == -1) return;
-  auto *symbol = GetPairSymbol(symbols_[sid][left], symbols_[sid][right]);
-  if (symbol != nullptr && symbol != best) {
-    symbol->freq = 0;
+void Trainer::ResetFreq(uint32_t sid, uint32_t left, uint32_t right, uint32_t best) {
+  if (left == ~0u || right == ~0u) return;
+  auto symbol = GetPairSymbol(symbols_[sid][left], symbols_[sid][right]);
+  if (symbol != ~0u && symbol != best) {
+    allocated_[symbol].freq = 0;
   }
 }
 
 void Trainer::UpdateActiveSymbols(ThreadPool *pool) {
-  std::vector<Symbol *> symbols;
+  std::vector<uint32_t> symbols;
   symbols.reserve(symbols_cache_.size());
   for (auto &it : symbols_cache_) {
-    Symbol *symbol = it.second;
-    if (symbol->IsBigram()) {
-      symbols.push_back(symbol);
+    if (allocated_[it.second].IsBigram()) {
+      symbols.push_back(it.second);
     }
   }
-   pool->Loop(0, symbols.size(), [this, &symbols](const int beg, const int end) {
-     for (int i = beg; i < end; i++) {
-       ComputeFreq(symbols[i]);
-     }
-   });
-   pool->Wait();
+  pool->Loop(0, symbols.size(),
+  [this, &symbols](const uint32_t beg, const uint32_t end) {
+    for (uint32_t i = beg; i < end; i++) {
+      ComputeFreq(&allocated_[symbols[i]]);
+    }
+  });
+  pool->Wait();
 
   // At least kMinActiveSymbolsSize symbols must be in |active_symbols_|.
   constexpr int kMinActiveSymbolsSize = 1000;
 
   // Keeps top 5% frequent symbols.
   constexpr float kTopFrequentRatio = 0.05;
-  const int size =
-      std::min<int>(std::max<int>(kMinActiveSymbolsSize,
-                                  symbols_cache_.size() * kTopFrequentRatio),
-                    symbols.size());
+  const uint32_t size = std::min<uint32_t>(
+      std::max<int>(kMinActiveSymbolsSize,
+                    symbols_cache_.size() * kTopFrequentRatio),
+      symbols.size());
 
   std::partial_sort(symbols.begin(), symbols.begin() + size, symbols.end(),
-                    [](Symbol *s1, Symbol *s2) { return s1->freq > s2->freq; });
-  LOG(INFO) << "Updating active symbols. max_freq=" << symbols[0]->freq
-            << " min_freq=" << symbols[size - 1]->freq;
+                    [this](uint32_t s1, uint32_t s2) {
+                      return allocated_[s1].freq > allocated_[s2].freq;
+                    });
+  LOG(INFO) << "Updating active symbols. max_freq=" << allocated_[symbols[0]].freq
+            << " min_freq=" << allocated_[symbols[size - 1]].freq;
 
   active_symbols_.clear();
   active_symbols_.insert(symbols.begin(), symbols.begin() + size);
@@ -430,6 +442,7 @@ util::Status Trainer::Train() {
   std::atomic<int64> overflows = 0;
   symbols_.resize(sentences_.size());
   freqs_.resize(sentences_.size());
+  LOG(INFO) << "Extracting single chars...";
   constexpr size_t uint16_max = static_cast<size_t>(std::numeric_limits<uint16_t>::max());
   for (ssize_t i = sentences_.size(); i >= 0; i -= max_chunk_size) {
     auto chunk_size = std::min(i, max_chunk_size);
@@ -452,7 +465,7 @@ util::Status Trainer::Train() {
       }
     });
     pool->Wait();
-    LOG(INFO) << "Extracted " << (symbols_.size() - i + chunk_size) << " / "
+    LOG(INFO) << "Materialized " << (symbols_.size() - i + chunk_size) << " / "
               << symbols_.size() << " symbols";
     sentences_.resize(i - chunk_size);
     sentences_.shrink_to_fit();
@@ -467,7 +480,7 @@ util::Status Trainer::Train() {
   #endif
   malloc_stats();
 
-  size_t unisize = allocated_.size();
+  uint32_t unisize = allocated_.size();
   LOG(INFO) << "Allocated " << unisize << " chars with "
             << overflows.load() << " overflows";
 
@@ -476,8 +489,13 @@ util::Status Trainer::Train() {
     if (sid % 10000000 == 0 && sid > 0) {
       LOG(INFO) << "Generated pairs from " << sid << " symbols";
     }
-    for (size_t i = 1; i < symbols_[sid].size(); ++i) {
-      AddNewPair(sid, i - 1, i, false);
+    auto &sentence = symbols_[sid];
+    for (size_t i = 1; i < sentence.size(); ++i) {
+      uint32_t left = i - 1, right = i;
+      auto symbol = GetPairSymbol(sentence[left], sentence[right]);
+      if (symbol != ~0u) {
+        allocated_[symbol].positions.push_back(EncodePos(sid, left, right));
+      }
     }
   }
 
@@ -490,6 +508,10 @@ util::Status Trainer::Train() {
   MallocExtension::instance()->ReleaseFreeMemory();
   #endif
   malloc_stats();
+
+  for (uint32_t i = unisize; i < allocated_.size(); i++) {
+    active_symbols_.insert(i);
+  }
 
   const int vocab_size =
       trainer_spec_.vocab_size() - meta_pieces_.size() - required_chars_.size();
@@ -510,36 +532,45 @@ util::Status Trainer::Train() {
     }
 
     // Scanning active symbols, finds the best_symbol with highest freq.
-    Symbol *best_symbol = nullptr;
+    uint32_t best_symbol = ~0u;
     {
       for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
         pool->Schedule([&, n]() {
-          Symbol *my_best_symbol = nullptr;
+          uint32_t my_best_symbol = ~0u;
           size_t pos = 0;
           for (auto &it : active_symbols_) {
             if ((n + pos++) % trainer_spec_.num_threads()) {
               continue;
             }
-            Symbol *symbol = it;
-            ComputeFreq(symbol);
+            auto &symbol = allocated_[it];
+            ComputeFreq(&symbol);
             // If the frequency is the same, take shorter symbol.
             // if the length is the same, use lexicographical comparison
-            if (my_best_symbol == nullptr ||
-                (symbol->freq > my_best_symbol->freq ||
-                 (symbol->freq == my_best_symbol->freq &&
-                  (symbol->CharsSize() < my_best_symbol->CharsSize() ||
-                   (symbol->CharsSize() == my_best_symbol->CharsSize() &&
-                    symbol->ToString() < my_best_symbol->ToString()))))) {
-              my_best_symbol = symbol;
+            bool update = my_best_symbol == ~0u;
+            if (!update) {
+              auto &my_best_symbol_ref = allocated_[my_best_symbol];
+              update = (symbol.freq > my_best_symbol_ref.freq ||
+                 (symbol.freq == my_best_symbol_ref.freq &&
+                  (symbol.CharsSize() < my_best_symbol_ref.CharsSize() ||
+                   (symbol.CharsSize() == my_best_symbol_ref.CharsSize() &&
+                    symbol.ToString() < my_best_symbol_ref.ToString()))));
+            }
+            if (update) {
+              my_best_symbol = it;
             }
           }
           std::lock_guard lock(sync);
-          if (best_symbol == nullptr ||
-              (my_best_symbol->freq > best_symbol->freq ||
-               (my_best_symbol->freq == best_symbol->freq &&
-                (my_best_symbol->CharsSize() < best_symbol->CharsSize() ||
-                 (my_best_symbol->CharsSize() == best_symbol->CharsSize() &&
-                  my_best_symbol->ToString() < best_symbol->ToString()))))) {
+          bool update = best_symbol == ~0u;
+          if (!update) {
+            auto &best_symbol_ref = allocated_[best_symbol];
+            auto &my_best_symbol_ref = allocated_[my_best_symbol];
+            update = (my_best_symbol_ref.freq > best_symbol_ref.freq ||
+               (my_best_symbol_ref.freq == best_symbol_ref.freq &&
+                (my_best_symbol_ref.CharsSize() < best_symbol_ref.CharsSize() ||
+                 (my_best_symbol_ref.CharsSize() == best_symbol_ref.CharsSize() &&
+                  my_best_symbol_ref.ToString() < best_symbol_ref.ToString()))));
+          }
+          if (update) {
             best_symbol = my_best_symbol;
           }
         });
@@ -547,50 +578,51 @@ util::Status Trainer::Train() {
       pool->Wait();
     }
 
-    if (best_symbol == nullptr) {
+    if (best_symbol == ~0u) {
       LOG(WARNING) << "No valid symbol found";
       break;
     }
+    auto &best_symbol_ref = allocated_[best_symbol];
 
-    if (!dup.emplace(best_symbol->ToString()).second) {
+    if (!dup.emplace(best_symbol_ref.ToString()).second) {
       // Removes best_symbol so it is not selected again.
-      symbols_cache_.erase(best_symbol->fp);
+      symbols_cache_.erase(best_symbol_ref.fp);
       active_symbols_.erase(best_symbol);
       continue;
     }
 
     // Stores the best_symbol in the final output.
-    final_pieces_.emplace_back(best_symbol->ToString(),
+    final_pieces_.emplace_back(best_symbol_ref.ToString(),
                                -static_cast<float>(final_pieces_.size()));
 
     if (final_pieces_.size() % 20 == 0) {
-      LOG(INFO) << "Added: freq=" << best_symbol->freq
+      LOG(INFO) << "Added: freq=" << best_symbol_ref.freq
                 << " size=" << final_pieces_.size()
                 << " all=" << symbols_cache_.size()
                 << " active=" << active_symbols_.size()
-                << " piece=" << best_symbol->ToString()
-                << " (" << best_symbol->CharsSize()
-                << ", " << best_symbol->positions.size() << ")";
+                << " piece=" << best_symbol_ref.ToString()
+                << " (" << best_symbol_ref.CharsSize()
+                << ", " << best_symbol_ref.positions.size() << ")";
     }
 
     // Add new bigrams which are created after symbol replacement.
     // We do not need to scan all characters, but scan the neighbors in
     // best_symbol.
-    for (uint64_t encoded_pos : best_symbol->positions) {
+    for (uint64_t encoded_pos : best_symbol_ref.positions) {
       const Position pos = DecodePos(encoded_pos);
 
-      if (symbols_[pos.sid][pos.left] == nullptr) {
+      if (symbols_[pos.sid][pos.left] == ~0u) {
         // left index might be NULL (set in the previous iteration)
         // when left_symbol == right_symbol.
         continue;
       }
 
-      CHECK_OR_RETURN(symbols_[pos.sid][pos.right]);
+      CHECK_OR_RETURN(symbols_[pos.sid][pos.right] != ~0u);
 
       // We have three bigrams [prev, left], [left, right], [right, next],
       // which are affected with this symbol replacement.
-      const int next = GetNextIndex(pos.sid, pos.right);
-      const int prev = GetPrevIndex(pos.sid, pos.left);
+      const uint32_t next = GetNextIndex(pos.sid, pos.right);
+      const uint32_t prev = GetPrevIndex(pos.sid, pos.left);
 
       // Resets the frequencies of bigrams [prev, left] and [right, next].
       ResetFreq(pos.sid, prev, pos.left, best_symbol);
@@ -598,22 +630,22 @@ util::Status Trainer::Train() {
 
       // Merges two symbols.
       symbols_[pos.sid][pos.left] = best_symbol;
-      symbols_[pos.sid][pos.right] = nullptr;
+      symbols_[pos.sid][pos.right] = ~0u;
 
       // Makes new symbol bigrams [prev, left] and [left, next].
-      AddNewPair(pos.sid, prev, pos.left, true);
-      AddNewPair(pos.sid, pos.left, next, true);
+      AddNewPair(pos.sid, prev, pos.left);
+      AddNewPair(pos.sid, pos.left, next);
     }
 
     // Removes best_symbol so it is not selected again.
-    symbols_cache_.erase(best_symbol->fp);
+    symbols_cache_.erase(best_symbol_ref.fp);
     active_symbols_.erase(best_symbol);
   }  // end of main loop
 
   // Adds required_chars_
   for (const auto &w : Sorted(required_chars_, trainer_spec_.num_threads())) {
-    const Symbol *symbol = GetCharSymbol(w.first, false);
-    final_pieces_.emplace_back(symbol->ToString(),
+    const Symbol &symbol = allocated_[GetCharSymbol(w.first, false)];
+    final_pieces_.emplace_back(symbol.ToString(),
                                -static_cast<float>(final_pieces_.size()));
   }
 

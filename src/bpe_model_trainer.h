@@ -43,9 +43,9 @@ class Trainer : public TrainerInterface {
  private:
   // Symbol represents a character or symbol bigram.
   struct Symbol {
-    const Symbol *left;              // left symbol in bigram
-    const Symbol *right;             // right symbol in bigram
-    uint64_t fp;                     // fingerprint of this symbol.
+    uint32_t left;                   // left symbol in bigram
+    uint32_t right;                  // right symbol in bigram
+    uint64_t fp;                     // fingerprof this symbol.
     uint64_t freq;                   // frequency of this symbol.
     union {                          // all flattened character sequence
       char32 chars_embed[2];
@@ -59,15 +59,15 @@ class Trainer : public TrainerInterface {
 
     uint8_t chars_size;
 
-    bool IsBigram() const noexcept { return left != nullptr && right != nullptr; }
+    bool IsBigram() const noexcept { return left != ~0u && right != ~0u; }
     bool IsUnk() const noexcept { return fp == kUNKChar; }
     size_t CharsSize() const { return chars_size; }
     void AppendChar(char32 c);
     void AssignChars(const string_util::UnicodeText &text);
     void AppendCharsToText(string_util::UnicodeText *text) const;
     std::string ToString() const;
-    Symbol(const Symbol *left_ = nullptr,
-           const Symbol *right_ = nullptr,
+    Symbol(uint32_t left_ = ~0u,
+           uint32_t right_ = ~0u,
            uint64_t fp_ = 0,
            uint64_t freq_ = 0)
       : left(left_),
@@ -78,20 +78,20 @@ class Trainer : public TrainerInterface {
     ~Symbol();
   };
 
-  // char (*__kaboom)[sizeof(Symbol)] = 1;
+  // char (*__sizeof)[sizeof(Symbol)] = 1;
 
   struct Position {
-    int sid;    // sentence id
-    int left;   // left symbol index
-    int right;  // right symbol index
+    uint32_t sid;    // sentence id
+    uint32_t left;   // left symbol index
+    uint32_t right;  // right symbol index
   };
 
   // Encodes sid, left and right bigram index into uint64_t.
   // Encoded value keeps the order of sid, left and right.
-  static uint64_t EncodePos(int sid, int l, int r) {
-    CHECK_GE(sid, 0);
-    CHECK_GE(l, 0);
-    CHECK_GE(r, 0);
+  static uint64_t EncodePos(uint32_t sid, uint32_t l, uint32_t r) {
+    CHECK(sid != ~0u);
+    CHECK(l != ~0u);
+    CHECK(r != ~0u);
     CHECK_LE(l, std::numeric_limits<uint16_t>::max());
     CHECK_LE(r, std::numeric_limits<uint16_t>::max());
     const uint64_t n = (static_cast<uint64_t>(sid) << 32) |
@@ -111,29 +111,29 @@ class Trainer : public TrainerInterface {
 
   // Gets unary (character) symbol from the char code |c|.
   // The return value is cached.
-  Symbol *GetCharSymbol(char32 c, bool require_cache);
+  uint32_t GetCharSymbol(char32 c, bool require_cache);
 
   // Gets symbol pair from left/right symbols. The return value is cached.
-  Symbol *GetPairSymbol(const Symbol *left, const Symbol *right);
+  uint32_t GetPairSymbol(uint32_t left, uint32_t right);
 
   // Computes the frequency of |symbol| and update symbol->freq field.
   void ComputeFreq(Symbol *symbol) const;
 
   // Returns the valid index before symbols_[sid][index].
-  int GetNextIndex(int sid, int index) const;
+  uint32_t GetNextIndex(uint32_t sid, uint32_t index) const;
 
   // Returns the valid index after symbols_[sid][index].
-  int GetPrevIndex(int sid, int index) const;
+  uint32_t GetPrevIndex(uint32_t sid, uint32_t index) const;
 
   // Makes a new bigram from [symbols_[sid][left], symbols_[sid][right]] and
   // Adds it to symbols_cache_ and active_symbols_.
-  void AddNewPair(int sid, int left, int right, bool sort);
+  void AddNewPair(uint32_t sid, uint32_t left, uint32_t right);
 
   void SortSymbolPositions();
 
   // Resets the frequency of bigram [symbols_[sid][left] symbols_[sid][right]],
   // if this bigram is not |best|.
-  void ResetFreq(int sid, int left, int right, const Symbol *best);
+  void ResetFreq(uint32_t sid, uint32_t left, uint32_t right, uint32_t best);
 
   // Updates |active_symbols_| by copying the top 5% frequent symbols in
   // symbols_cache_.
@@ -143,16 +143,16 @@ class Trainer : public TrainerInterface {
   util::Status StoreSentencesToCache();
 
   // All unique symbols. Key is a fingerprint of Symbol.
-  absl::flat_hash_map<uint64_t, Symbol *> symbols_cache_;
+  absl::flat_hash_map<uint64_t, uint32_t> symbols_cache_;
 
   // Set of symbols from which we find the best symbol in each iteration.
-  absl::flat_hash_set<Symbol *> active_symbols_;
+  absl::flat_hash_set<uint32_t> active_symbols_;
 
   // Stores symbols allocated in heap so that we can delete them at once.
   std::deque<Symbol> allocated_;
 
   // Sentences. symbols_[sid][index] stores a symbol in sentence_[sid][index].
-  std::deque<std::vector<Symbol *>> symbols_;
+  std::deque<std::vector<uint32_t>> symbols_;
 
   // Token frequencies.
   std::vector<int64> freqs_;
