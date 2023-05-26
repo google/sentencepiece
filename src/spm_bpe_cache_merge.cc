@@ -220,10 +220,10 @@ struct CachedSentences {
     LOG(INFO) << "Wrote " << required_chars.size() << " required chars";
     size_t written_count = 0;
     auto it = sentences.head();
-    size_t prefix_len = it != nullptr? (strlen(it) + 1 + sizeof(int64)) : 0;
+    size_t prefix_len = (it != nullptr)? (strlen(it) + 1 + sizeof(int64)) : 0;
     for (; it != nullptr;
          it = *reinterpret_cast<char **>(it + prefix_len),
-         prefix_len = it != nullptr? (strlen(it) + 1 + sizeof(int64)) : 0) {
+         prefix_len = (it != nullptr)? (strlen(it) + 1 + sizeof(int64)) : 0) {
       if (!writer->Write(absl::string_view(it, prefix_len))) {
         return writer->status();
       }
@@ -237,13 +237,13 @@ struct CachedSentences {
   void Sort() {
     std::vector<std::pair<absl::string_view, int64>> v;
     auto it = sentences.head();
-    size_t prefix_len = it != nullptr? (strlen(it) + 1 + sizeof(int64)) : 0;
+    size_t prefix_len = (it != nullptr)? (strlen(it) + 1 + sizeof(int64)) : 0;
     for (; it != nullptr;
          it = *reinterpret_cast<char **>(it + prefix_len),
-         prefix_len = it != nullptr? (strlen(it) + 1 + sizeof(int64)) : 0) {
+         prefix_len = (it != nullptr)? (strlen(it) + 1 + sizeof(int64)) : 0) {
       auto it_len = prefix_len - sizeof(int64);
-      v.emplace_back(absl::string_view(it, it_len),
-                     *reinterpret_cast<int64 *>(it_len));
+      v.emplace_back(absl::string_view(it, it_len - 1),
+                     *reinterpret_cast<int64 *>(it + it_len));
     }
     boost::sort::block_indirect_sort(
       v.begin(), v.end(),
@@ -252,11 +252,12 @@ struct CachedSentences {
                (p1.second == p2.second && p1.first < p2.first));
       },
       std::thread::hardware_concurrency());
-    sentences.clear();
+    auto new_sentences = SingleLinkedStringsWithFreq();
     char *head = nullptr;
     for (auto &s : v) {
-      head = sentences.insert_after(s.first, s.second, head);
+      head = new_sentences.insert_after(s.first, s.second, head);
     }
+    sentences = std::move(new_sentences);
   }
 
   size_t allocated() const noexcept { return sentences.allocated(); }

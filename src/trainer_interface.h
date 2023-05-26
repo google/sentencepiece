@@ -16,6 +16,7 @@
 #define TRAINER_INTERFACE_H_
 
 #include <algorithm>
+#include <deque>
 #include <map>
 #include <memory>
 #include <string>
@@ -35,8 +36,8 @@
 namespace sentencepiece {
 
 template <typename K, typename V>
-std::vector<std::pair<K, V>> Sorted(const std::vector<std::pair<K, V>> &m, int nthread) {
-  std::vector<std::pair<K, V>> v = m;
+std::deque<std::pair<K, V>> Sorted(const std::deque<std::pair<K, V>> &m, int nthread) {
+  std::deque<std::pair<K, V>> v = m;
   boost::sort::block_indirect_sort(
       v.begin(), v.end(),
       [](const std::pair<K, V> &p1, const std::pair<K, V> &p2) {
@@ -48,7 +49,7 @@ std::vector<std::pair<K, V>> Sorted(const std::vector<std::pair<K, V>> &m, int n
 }
 
 template <typename K, typename V>
-std::vector<std::pair<K, V>> &&Sorted(std::vector<std::pair<K, V>> &&v, int nthread) {
+std::deque<std::pair<K, V>> &&Sorted(std::deque<std::pair<K, V>> &&v, int nthread) {
   boost::sort::block_indirect_sort(
       v.begin(), v.end(),
       [](const std::pair<K, V> &p1, const std::pair<K, V> &p2) {
@@ -60,8 +61,8 @@ std::vector<std::pair<K, V>> &&Sorted(std::vector<std::pair<K, V>> &&v, int nthr
 }
 
 template <typename K, typename V>
-std::vector<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V> &m, int nthread) {
-  std::vector<std::pair<K, V>> v(m.begin(), m.end());
+std::deque<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V> &m, int nthread) {
+  std::deque<std::pair<K, V>> v(m.begin(), m.end());
   return Sorted(std::move(v), nthread);
 }
 
@@ -92,7 +93,7 @@ class MultiFileSentenceIterator : public SentenceIterator {
 class TrainerInterface {
  public:
   using Sentence = std::pair<absl::string_view, int64>;
-  using Sentences = std::vector<Sentence>;
+  using Sentences = std::deque<Sentence>;
 
   static const char32 kWSChar;
   static const char32 kUNKChar;
@@ -151,7 +152,7 @@ class TrainerInterface {
   absl::flat_hash_map<char32, int64> required_chars_;
 
   // Final output pieces
-  std::vector<std::pair<std::string, float>> final_pieces_;
+  std::deque<std::pair<std::string, float>> final_pieces_;
 
   // All sentences.
   Sentences sentences_;

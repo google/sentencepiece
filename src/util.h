@@ -289,12 +289,12 @@ namespace random {
 
 std::mt19937 *GetRandomGenerator();
 
-template <typename T>
+template <typename T, template<class> typename C>
 class ReservoirSampler {
  public:
-  explicit ReservoirSampler(std::vector<T> *sampled, uint64 size)
+  explicit ReservoirSampler(C<T> *sampled, uint64 size)
       : sampled_(sampled), size_(size), engine_(GetRandomGeneratorSeed()) {}
-  explicit ReservoirSampler(std::vector<T> *sampled, uint64 size, uint64 seed)
+  explicit ReservoirSampler(C<T> *sampled, uint64 size, uint64 seed)
       : sampled_(sampled), size_(size), engine_(seed) {}
   virtual ~ReservoirSampler() {}
 
@@ -314,7 +314,7 @@ class ReservoirSampler {
   uint64 total_size() const { return total_; }
 
  private:
-  std::vector<T> *sampled_ = nullptr;
+  C<T> *sampled_ = nullptr;
   uint64 size_ = 0;
   uint64 total_ = 0;
   std::mt19937 engine_;

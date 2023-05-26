@@ -33,7 +33,7 @@ using string_util::UnicodeText;
 
 class TrainerModel : public Model {
  public:
-  using SentencePieces = std::vector<std::pair<std::string, float>>;
+  using SentencePieces = std::deque<std::pair<std::string, float>>;
 
   TrainerModel() {}
   TrainerModel(std::unique_ptr<const ModelProto> model_proto) = delete;

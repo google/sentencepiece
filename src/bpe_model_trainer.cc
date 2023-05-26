@@ -416,15 +416,20 @@ util::Status Trainer::Train() {
 
   LOG(INFO) << "Initializing symbols...";
   // Initializes symbols_. symbols_[sid][i] stores an unary symbol.
-  symbols_.reserve(sentences_.size());
   freqs_.reserve(sentences_.size());
   size_t overflows = 0;
   constexpr size_t uint16_max = static_cast<size_t>(std::numeric_limits<uint16_t>::max());
-  for (auto &sentence : sentences_) {
+  for (ssize_t i = sentences_.size(); i >= 0; i++) {
+    auto &sentence = sentences_[i];
     auto &&text = string_util::UTF8ToUnicodeText(sentence.first);
-    if (symbols_.size() == symbols_.capacity()) {
-      symbols_.reserve(sentences_.size() + overflows);
+    if (freqs_.size() == freqs_.capacity()) {
       freqs_.reserve(sentences_.size() + overflows);
+    }
+    if (i % 20000000 == 0) {
+      LOG(INFO) << "Extracted " << symbols_.size() << " / "
+                << (sentences_.size() + overflows) << " symbols";
+      sentences_.resize(i + 1);
+      sentences_.shrink_to_fit();
     }
     auto &symbols_sentence = symbols_.emplace_back();
     symbols_sentence.reserve(std::min(text.size(), uint16_max));

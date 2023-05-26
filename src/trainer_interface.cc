@@ -105,7 +105,7 @@ bool is_unicode_decimal_number(char32 c) {
 
 class SentenceSelector {
  public:
-  using Sampler = random::ReservoirSampler<TrainerInterface::Sentence>;
+  using Sampler = random::ReservoirSampler<TrainerInterface::Sentence, std::deque>;
 
   static constexpr int64 kTooBigSentencesSize = 1000000;
 
@@ -358,7 +358,7 @@ util::Status TrainerInterface::LoadSentences(bool ignore_sentences_with_unknown_
   const bool is_tsv = trainer_spec_.input_format() == "tsv";
 
   SentenceSelector selector(&sentences_, trainer_spec_);
-  random::ReservoirSampler<absl::string_view> test_sentence_sampler(
+  random::ReservoirSampler<absl::string_view, std::vector> test_sentence_sampler(
       &self_test_samples_, trainer_spec_.self_test_sample_size());
 
   int too_long_lines = 0;

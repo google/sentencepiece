@@ -152,7 +152,7 @@ class Trainer : public TrainerInterface {
   std::deque<Symbol> allocated_;
 
   // Sentences. symbols_[sid][index] stores a symbol in sentence_[sid][index].
-  std::vector<std::vector<Symbol *>> symbols_;
+  std::deque<std::vector<Symbol *>> symbols_;
 
   // Token frequencies.
   std::vector<int64> freqs_;

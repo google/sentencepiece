@@ -441,7 +441,7 @@ TrainerModel::SentencePieces Trainer::PruneSentencePieces(
 
   const float sum = std::accumulate(freq.begin(), freq.end(), 0.0);
   const float logsum = std::log(static_cast<double>(sum));
-  std::vector<std::pair<int, float>> candidates;
+  std::deque<std::pair<int, float>> candidates;
   TrainerModel::SentencePieces new_sentencepieces;
 
   // Finally, computes how likely the LM likelihood is reduced if
