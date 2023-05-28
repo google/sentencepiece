@@ -46,7 +46,7 @@ class Trainer : public TrainerInterface {
     uint32_t left;                   // left symbol in bigram
     uint32_t right;                  // right symbol in bigram
     uint64_t fp;                     // fingerprof this symbol.
-    uint64_t freq;                   // frequency of this symbol.
+    std::atomic<uint64_t> freq;      // frequency of this symbol.
     union {                          // all flattened character sequence
       char32 chars_embed[2];
       uint64_t chars_embed_pair;
@@ -58,6 +58,7 @@ class Trainer : public TrainerInterface {
     std::vector<uint64_t> positions;
 
     uint8_t chars_size;
+    std::mutex sync;
 
     bool IsBigram() const noexcept { return left != ~0u && right != ~0u; }
     bool IsUnk() const noexcept { return fp == kUNKChar; }
@@ -106,6 +107,7 @@ class Trainer : public TrainerInterface {
     p.sid = n >> 32;
     p.left = (n >> 16) & 0xffff;
     p.right = n & 0xffff;
+    CHECK(p.left != p.right);
     return p;
   }
 
@@ -114,10 +116,13 @@ class Trainer : public TrainerInterface {
   uint32_t GetCharSymbol(char32 c, bool require_cache);
 
   // Gets symbol pair from left/right symbols. The return value is cached.
-  uint32_t GetPairSymbol(uint32_t left, uint32_t right,
-                         bool require_cache = false);
+  bool GetCachedPairSymbol(
+      const absl::flat_hash_map<uint64, uint32_t> &symbols_cache,
+      uint32_t left, uint32_t right,
+      uint32_t *symbol, uint64 *fp,
+      string_util::UnicodeText *ut);
 
-  uint32_t GeneratePairSymbol(
+  uint32_t GetPairSymbol(
       uint32_t left, uint32_t right,
       uint64 fp,
       const string_util::UnicodeText &ut);
@@ -126,20 +131,22 @@ class Trainer : public TrainerInterface {
   uint64 ComputeFreq(Symbol *symbol) const;
 
   // Returns the valid index before symbols_[sid][index].
-  uint32_t GetNextIndex(uint32_t sid, uint32_t index) const;
+  uint32_t GetNextIndex(uint32_t index, std::vector<uint32_t> *sentence) const;
 
   // Returns the valid index after symbols_[sid][index].
-  uint32_t GetPrevIndex(uint32_t sid, uint32_t index) const;
+  uint32_t GetPrevIndex(uint32_t index, std::vector<uint32_t> *sentence) const;
 
   // Makes a new bigram from [symbols_[sid][left], symbols_[sid][right]] and
   // Adds it to symbols_cache_ and active_symbols_.
-  void AddNewPair(uint32_t sid, uint32_t left, uint32_t right);
+  uint32_t AddNewPair(uint32_t symbol, uint32_t sid, uint32_t left, uint32_t right);
 
   void SortSymbolPositions();
 
-  // Resets the frequency of bigram [symbols_[sid][left] symbols_[sid][right]],
+  // Resets the frequency of bigram [sentence[left] sentence[right]],
   // if this bigram is not |best|.
-  void ResetFreq(uint32_t sid, uint32_t left, uint32_t right, uint32_t best);
+  bool ResetFreq(const absl::flat_hash_map<uint64, uint32_t> &symbols_cache,
+                 const std::vector<uint32_t> &sentence,
+                 uint32_t left, uint32_t right, uint32_t best);
 
   // Updates |active_symbols_| by copying the top 5% frequent symbols in
   // symbols_cache_.
