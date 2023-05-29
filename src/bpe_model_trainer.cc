@@ -799,9 +799,10 @@ util::Status Trainer::Train() {
             string_util::UnicodeText ut;
             if (!GetCachedPairSymbol(local_symbols_cache, symbol_prev, best_symbol,
                                      &left_pair_symbol, &fp, &ut)) {
-              ut.clear();
-              if (!GetCachedPairSymbol(ro_symbols_cache, symbol_prev, best_symbol,
-                                       &left_pair_symbol, &fp, &ut)) {
+              const auto it = ro_symbols_cache.find(fp);
+              if (it != ro_symbols_cache.end()) {
+                left_pair_symbol = it->second;
+              } else {
                 {
                   std::lock_guard lock(sync);
                   left_pair_symbol = GetPairSymbol(symbol_prev, best_symbol, fp, ut);
@@ -819,9 +820,10 @@ util::Status Trainer::Train() {
             string_util::UnicodeText ut;
             if (!GetCachedPairSymbol(local_symbols_cache, best_symbol, symbol_next,
                                      &right_pair_symbol, &fp, &ut)) {
-              ut.clear();
-              if (!GetCachedPairSymbol(ro_symbols_cache, best_symbol, symbol_next,
-                                       &right_pair_symbol, &fp, &ut)) {
+              const auto it = ro_symbols_cache.find(fp);
+              if (it != ro_symbols_cache.end()) {
+                right_pair_symbol = it->second;
+              } else {
                 {
                   std::lock_guard lock(sync);
                   right_pair_symbol = GetPairSymbol(best_symbol, symbol_next, fp, ut);
@@ -845,6 +847,9 @@ util::Status Trainer::Train() {
       prev_bound = bound;
     }
     pool->Wait();
+
+    // Keep the shadow cache up to date.
+    // This is much faster than copying symbols_cache_ on each iteration.
     for (auto &local_symbols_cache : local_symbols_cache_per_thread) {
       ro_symbols_cache.merge(local_symbols_cache);
     }
