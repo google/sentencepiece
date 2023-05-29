@@ -253,7 +253,7 @@ void Trainer::SortSymbolPositions(ThreadPool *pool, uint32_t begin) {
       positions.shrink_to_fit();
       std::sort(positions.begin(), positions.end());
     }
-  });
+  }, pool->get_thread_count() * 4);  // unbalanced workload
   pool->Wait();
 }
 
@@ -292,7 +292,7 @@ void Trainer::UpdateActiveSymbols(ThreadPool *pool) {
       while (prev_freq < freq &&
              !max_freq.compare_exchange_weak(prev_freq, freq)) {}
     }
-  });
+  }, pool->get_thread_count() * 4);  // unbalanced workload
   pool->Wait();
 
   // At least kMinActiveSymbolsSize symbols must be in |active_symbols_|.
