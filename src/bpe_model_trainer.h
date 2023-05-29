@@ -140,7 +140,7 @@ class Trainer : public TrainerInterface {
   // Adds it to symbols_cache_ and active_symbols_.
   uint32_t AddNewPair(uint32_t symbol, uint32_t sid, uint32_t left, uint32_t right);
 
-  void SortSymbolPositions();
+  void SortSymbolPositions(ThreadPool *pool, uint32_t begin);
 
   // Resets the frequency of bigram [sentence[left] sentence[right]],
   // if this bigram is not |best|.

@@ -241,46 +241,20 @@ uint32_t Trainer::AddNewPair(uint32_t symbol, uint32_t sid, uint32_t left, uint3
   uint64_t pos = EncodePos(sid, left, right);
   auto &symbol_ref = allocated_[symbol];
   std::lock_guard lock(symbol_ref.sync);
-  auto it = std::lower_bound(symbol_ref.positions.begin(),
-                             symbol_ref.positions.end(),
-                             pos);
-  if (it != symbol_ref.positions.end()) {
-    CHECK(*it != pos);
-    auto offset = it - symbol_ref.positions.begin();
-    if (symbol_ref.positions.capacity() >= symbol_ref.positions.size() + 1) {
-      symbol_ref.positions.emplace_back();
-      memmove(symbol_ref.positions.data() + offset + 1,
-              symbol_ref.positions.data() + offset,
-              (symbol_ref.positions.size() - offset - 1) * sizeof(uint64_t));
-    } else {
-      std::vector<uint64_t> new_positions(symbol_ref.positions.size() + 1);
-      memcpy(new_positions.data(),
-             symbol_ref.positions.data(),
-             offset * sizeof(uint64_t));
-      memcpy(new_positions.data() + offset + 1,
-             symbol_ref.positions.data() + offset,
-             (symbol_ref.positions.size() - offset) * sizeof(uint64_t));
-      symbol_ref.positions = std::move(new_positions);
-    }
-    symbol_ref.positions[offset] = pos;
-  } else {
-    symbol_ref.positions.push_back(pos);
-  }
+  symbol_ref.positions.push_back(pos);
   return symbol;
 }
 
-void Trainer::SortSymbolPositions() {
-  auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
-  for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
-    pool->Schedule([&, n]() {
-      for (size_t i = n; i < allocated_.size();
-        i += trainer_spec_.num_threads()) {
-        auto &symbol = allocated_[i];
-        symbol.positions.shrink_to_fit();
-        std::sort(symbol.positions.begin(), symbol.positions.end());
-      }
-    });
-  }
+void Trainer::SortSymbolPositions(ThreadPool *pool, uint32_t begin) {
+  pool->Loop(begin, allocated_.size(),
+  [this](const size_t beg, const size_t end) {
+    for (size_t i = beg; i < end; i++) {
+      auto &positions = allocated_[i].positions;
+      positions.shrink_to_fit();
+      std::sort(positions.begin(), positions.end());
+    }
+  });
+  pool->Wait();
 }
 
 bool Trainer::ResetFreq(
@@ -622,7 +596,7 @@ util::Status Trainer::Train() {
   malloc_stats();
 
   LOG(INFO) << "Sorting positions...";
-  SortSymbolPositions();
+  SortSymbolPositions(pool.get(), 0);
   #ifdef TCMALLOC
   MallocExtension::instance()->ReleaseFreeMemory();
   #endif
@@ -641,12 +615,9 @@ util::Status Trainer::Train() {
   // e.g., "aaa" => "aa" + "a" or "a" + "aa".
   absl::flat_hash_set<absl::string_view> dup;
 
-  std::vector<absl::flat_hash_set<uint32>> local_active_symbols_per_thread(
-      trainer_spec_.num_threads());
   std::vector<absl::flat_hash_map<uint64, uint32>> local_symbols_cache_per_thread(
       trainer_spec_.num_threads());
   auto ro_symbols_cache = symbols_cache_;
-  std::mutex active_symbols_sync;
 
   // Main loop.
   CHECK_OR_RETURN(final_pieces_.empty());
@@ -735,6 +706,7 @@ util::Status Trainer::Train() {
     // Add new bigrams which are created after symbol replacement.
     // We do not need to scan all characters, but scan the neighbors in
     // best_symbol.
+    uint32_t prev_allocated_size = allocated_.size();
     size_t step = best_symbol_ref.positions.size() / trainer_spec_.num_threads();
     size_t prev_bound = 0;
     for (int bi = 0; bi < trainer_spec_.num_threads(); bi++) {
@@ -754,12 +726,9 @@ util::Status Trainer::Train() {
       }
       pool->Schedule(
       [this, bi, prev_bound, bound, best_symbol, &best_symbol_ref,
-       &sync, &local_active_symbols_per_thread, &local_symbols_cache_per_thread,
-       &active_symbols_sync, &ro_symbols_cache]() {
+       &sync, &local_symbols_cache_per_thread, &ro_symbols_cache]() {
         auto &local_symbols_cache = local_symbols_cache_per_thread[bi];
         local_symbols_cache.clear();
-        auto &local_active_symbols = local_active_symbols_per_thread[bi];
-        local_active_symbols.clear();
 
         for (uint32_t i = prev_bound; i < bound; i++) {
           const Position pos = DecodePos(best_symbol_ref.positions[i]);
@@ -799,19 +768,11 @@ util::Status Trainer::Train() {
             string_util::UnicodeText ut;
             if (!GetCachedPairSymbol(local_symbols_cache, symbol_prev, best_symbol,
                                      &left_pair_symbol, &fp, &ut)) {
-              const auto it = ro_symbols_cache.find(fp);
-              if (it != ro_symbols_cache.end()) {
-                left_pair_symbol = it->second;
-              } else {
-                {
-                  std::lock_guard lock(sync);
-                  left_pair_symbol = GetPairSymbol(symbol_prev, best_symbol, fp, ut);
-                }
-                local_symbols_cache.emplace(fp, left_pair_symbol);
+              {
+                std::lock_guard lock(sync);
+                left_pair_symbol = GetPairSymbol(symbol_prev, best_symbol, fp, ut);
               }
-            }
-            if (left_pair_symbol != ~0u) {
-              local_active_symbols.insert(left_pair_symbol);
+              local_symbols_cache.emplace(fp, left_pair_symbol);
             }
           }
           if (next != ~0u) {
@@ -820,39 +781,30 @@ util::Status Trainer::Train() {
             string_util::UnicodeText ut;
             if (!GetCachedPairSymbol(local_symbols_cache, best_symbol, symbol_next,
                                      &right_pair_symbol, &fp, &ut)) {
-              const auto it = ro_symbols_cache.find(fp);
-              if (it != ro_symbols_cache.end()) {
-                right_pair_symbol = it->second;
-              } else {
-                {
-                  std::lock_guard lock(sync);
-                  right_pair_symbol = GetPairSymbol(best_symbol, symbol_next, fp, ut);
-                }
-                local_symbols_cache.emplace(fp, right_pair_symbol);
+              {
+                std::lock_guard lock(sync);
+                right_pair_symbol = GetPairSymbol(best_symbol, symbol_next, fp, ut);
               }
-            }
-            if (right_pair_symbol != ~0u) {
-              local_active_symbols.insert(right_pair_symbol);
+              local_symbols_cache.emplace(fp, right_pair_symbol);
             }
           }
           AddNewPair(left_pair_symbol, pos.sid, prev, pos.left);
           AddNewPair(right_pair_symbol, pos.sid, pos.left, next);
-        }
-
-        {
-          std::lock_guard lock(active_symbols_sync);
-          active_symbols_.merge(local_active_symbols);
         }
       });
       prev_bound = bound;
     }
     pool->Wait();
 
-    // Keep the shadow cache up to date.
-    // This is much faster than copying symbols_cache_ on each iteration.
-    for (auto &local_symbols_cache : local_symbols_cache_per_thread) {
-      ro_symbols_cache.merge(local_symbols_cache);
+    // Add the new symbols to the active set.
+    // Keep the shadow symbols cache up to date.
+    for (uint32_t i = prev_allocated_size; i < allocated_.size(); i++) {
+      active_symbols_.insert(i);
+      ro_symbols_cache[allocated_[i].fp] = i;
     }
+
+    // Recover the sorted order.
+    SortSymbolPositions(pool.get(), prev_allocated_size);
 
     // Removes best_symbol so it is not selected again.
     symbols_cache_.erase(best_symbol_ref.fp);
