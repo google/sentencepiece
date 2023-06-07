@@ -12,11 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 #include "pretokenizer_for_training.h"
-
 #include "testharness.h"
 #include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_split.h"
 #include "trainer_interface.h"
 
 namespace sentencepiece {
@@ -67,11 +64,9 @@ TEST(PretokenizerForTrainingTest, BaseTest) {
 
     mock.SetOutput(spt);
 
-    const auto expected =
-        absl::StrCat("I", TrainerInterface::kWSStr, "love",
-                     TrainerInterface::kWSStr, "sentence||||piece");
-    EXPECT_EQ(expected,
-              absl::StrJoin(mock.PreTokenize("I love sentencepiece"), "||||"));
+    EXPECT_EQ(absl::StrCat("I", TrainerInterface::kWSStr, "love",
+                           TrainerInterface::kWSStr, "sentence\tpiece"),
+              mock.PreTokenize("I love sentencepiece"));
   }
 
   {
@@ -99,9 +94,7 @@ TEST(PretokenizerForTrainingTest, BaseTest) {
 
     mock.SetOutput(spt);
 
-    const auto expected = "これ||||は||||ペン||||です";
-    EXPECT_EQ(expected,
-              absl::StrJoin(mock.PreTokenize("これはペンです"), "||||"));
+    EXPECT_EQ("これ\tは\tペン\tです", mock.PreTokenize("これはペンです"));
   }
 }
 

@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "bpe_model.h"
-
 #include <functional>
 #include <memory>
 #include <queue>
@@ -21,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "bpe_model.h"
 #include "freelist.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "util.h"
@@ -72,7 +71,8 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
   // Reverse merge rules.
   // key: merged symbol, value: pair of original symbols.
   absl::flat_hash_map<absl::string_view,
-                      std::pair<absl::string_view, absl::string_view>>
+                      std::pair<absl::string_view, absl::string_view>,
+                      string_util::string_view_hash>
       rev_merge;
 
   // Pre-allocates SymbolPair for efficiency.

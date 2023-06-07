@@ -1,4 +1,3 @@
 recursive-include test *.py *.model botchan.txt
 recursive-include src *.i
-recursive-include sentencepiece *
 include *.md VERSION.* build_bundled.sh

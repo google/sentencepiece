@@ -61,183 +61,8 @@ class _SwigNonDynamicMeta(type):
     __setattr__ = _swig_setattr_nondynamic_class_variable(type.__setattr__)
 
 
-class ImmutableSentencePieceText_ImmutableSentencePiece(object):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
-    __repr__ = _swig_repr
-
-    def __init__(self):
-        _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece_swiginit(self, _sentencepiece.new_ImmutableSentencePieceText_ImmutableSentencePiece())
-    __swig_destroy__ = _sentencepiece.delete_ImmutableSentencePieceText_ImmutableSentencePiece
-
-    def _piece(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__piece(self)
-
-    def _surface(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__surface(self)
-
-    def _id(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__id(self)
-
-    def _begin(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__begin(self)
-
-    def _end(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__end(self)
-
-    piece = property(_piece)
-    surface = property(_surface)
-    id = property(_id)
-    begin = property(_begin)
-    end = property(_end)
-
-    def __str__(self):
-      return ('piece: \"{}\"\n'
-              'id: {}\n'
-              'surface: \"{}\"\n'
-              'begin: {}\n'
-              'end: {}\n').format(self.piece, self.id, self.surface,
-                                  self.begin, self.end)
-
-    def __eq__(self, other):
-      return self.piece == other.piece and self.id == other.id and self.surface == other.surface and self.begin == other.begin and self.end == other.end
-
-    def __hash__(self):
-      return hash(str(self))
-
-    __repr__ = __str__
-
-
-# Register ImmutableSentencePieceText_ImmutableSentencePiece in _sentencepiece:
-_sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
-
-class ImmutableSentencePieceText(object):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
-    __repr__ = _swig_repr
-
-    def __init__(self):
-        _sentencepiece.ImmutableSentencePieceText_swiginit(self, _sentencepiece.new_ImmutableSentencePieceText())
-    __swig_destroy__ = _sentencepiece.delete_ImmutableSentencePieceText
-
-    def _pieces_size(self):
-        return _sentencepiece.ImmutableSentencePieceText__pieces_size(self)
-
-    def _pieces(self, index):
-        return _sentencepiece.ImmutableSentencePieceText__pieces(self, index)
-
-    def _text(self):
-        return _sentencepiece.ImmutableSentencePieceText__text(self)
-
-    def _score(self):
-        return _sentencepiece.ImmutableSentencePieceText__score(self)
-
-    def SerializeAsString(self):
-        return _sentencepiece.ImmutableSentencePieceText_SerializeAsString(self)
-
-    text = property(_text)
-    score = property(_score)
-
-    class ImmutableSentencePieceIterator:
-      def __init__(self, proto):
-        self.proto = proto
-        self.len = self.proto._pieces_size()
-
-      def __len__(self):
-        return self.len
-
-      def __getitem__(self, index):
-        if isinstance(index, slice):
-          return [self.proto._pieces(i) for i in range(self.len)][index.start:index.stop:index.step]
-        if index < 0:
-          index = index + self.len
-        if index < 0 or index >= self.len:
-          raise IndexError('piece index is out of range')
-        return self.proto._pieces(index)
-
-      def __str__(self):
-        return '\n'.join(['pieces {{\n{}}}'.format(str(x)) for x in self])
-
-      __repr__ = __str__
-
-    @property
-    def pieces(self):
-      return ImmutableSentencePieceText.ImmutableSentencePieceIterator(self)
-
-    def __eq__(self, other):
-      return self.SerializeAsString() == other.SerializeAsString()
-
-    def __hash__(self):
-      return hash(self.SerializeAsString())
-
-    def __str__(self):
-      return ('text: \"{}\"\n'
-              'score: {}\n'
-              '{}').format(self.text, self.score,
-                           '\n'.join(['pieces {{\n{}}}'.format(str(x)) for x in self.pieces]))
-
-    __repr__ = __str__
-
-
-# Register ImmutableSentencePieceText in _sentencepiece:
-_sentencepiece.ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
-
-class ImmutableNBestSentencePieceText(object):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
-    __repr__ = _swig_repr
-
-    def __init__(self):
-        _sentencepiece.ImmutableNBestSentencePieceText_swiginit(self, _sentencepiece.new_ImmutableNBestSentencePieceText())
-    __swig_destroy__ = _sentencepiece.delete_ImmutableNBestSentencePieceText
-
-    def _nbests_size(self):
-        return _sentencepiece.ImmutableNBestSentencePieceText__nbests_size(self)
-
-    def _nbests(self, index):
-        return _sentencepiece.ImmutableNBestSentencePieceText__nbests(self, index)
-
-    def SerializeAsString(self):
-        return _sentencepiece.ImmutableNBestSentencePieceText_SerializeAsString(self)
-
-    class ImmutableSentencePieceTextIterator:
-      def __init__(self, proto):
-        self.proto = proto
-        self.len = self.proto._nbests_size()
-
-      def __len__(self):
-        return self.len
-
-      def __getitem__(self, index):
-        if isinstance(index, slice):
-          return [self.proto._nbests(i) for i in range(self.len)][index.start:index.stop:index.step]
-        if index < 0:
-          index = index + self.len
-        if index < 0 or index >= self.len:
-          raise IndexError('nbests index is out of range')
-        return self.proto._nbests(index)
-
-      def __str__(self):
-        return '\n'.join(['nbests {{\n{}}}'.format(str(x)) for x in self])
-
-      __repr__ = __str__
-
-    @property
-    def nbests(self):
-      return ImmutableNBestSentencePieceText.ImmutableSentencePieceTextIterator(self)
-
-    def __eq__(self, other):
-      return self.SerializeAsString() == other.SerializeAsString()
-
-    def __hash__(self):
-      return hash(self.SerializeAsString())
-
-    def __str__(self):
-      return '\n'.join(['nbests {{\n{}}}'.format(str(x)) for x in self.nbests])
-
-    __repr__ = __str__
-
-
-# Register ImmutableNBestSentencePieceText in _sentencepiece:
-_sentencepiece.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
-
+EncoderVersion_kOptimized = _sentencepiece.EncoderVersion_kOptimized
+EncoderVersion_kOriginal = _sentencepiece.EncoderVersion_kOriginal
 class SentencePieceProcessor(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
@@ -264,8 +89,44 @@ class SentencePieceProcessor(object):
     def LoadVocabulary(self, filename, threshold):
         return _sentencepiece.SentencePieceProcessor_LoadVocabulary(self, filename, threshold)
 
-    def CalculateEntropy(self, *args):
-        return _sentencepiece.SentencePieceProcessor_CalculateEntropy(self, *args)
+    def SetEncoderVersion(self, encoder_version):
+        return _sentencepiece.SentencePieceProcessor_SetEncoderVersion(self, encoder_version)
+
+    def GetEncoderVersion(self):
+        return _sentencepiece.SentencePieceProcessor_GetEncoderVersion(self)
+
+    def EncodeAsPieces(self, input):
+        return _sentencepiece.SentencePieceProcessor_EncodeAsPieces(self, input)
+
+    def EncodeAsIds(self, input):
+        return _sentencepiece.SentencePieceProcessor_EncodeAsIds(self, input)
+
+    def NBestEncodeAsPieces(self, input, nbest_size):
+        return _sentencepiece.SentencePieceProcessor_NBestEncodeAsPieces(self, input, nbest_size)
+
+    def NBestEncodeAsIds(self, input, nbest_size):
+        return _sentencepiece.SentencePieceProcessor_NBestEncodeAsIds(self, input, nbest_size)
+
+    def SampleEncodeAsPieces(self, input, nbest_size, alpha):
+        return _sentencepiece.SentencePieceProcessor_SampleEncodeAsPieces(self, input, nbest_size, alpha)
+
+    def SampleEncodeAsIds(self, input, nbest_size, alpha):
+        return _sentencepiece.SentencePieceProcessor_SampleEncodeAsIds(self, input, nbest_size, alpha)
+
+    def DecodePieces(self, pieces):
+        return _sentencepiece.SentencePieceProcessor_DecodePieces(self, pieces)
+
+    def EncodeAsSerializedProto(self, input):
+        return _sentencepiece.SentencePieceProcessor_EncodeAsSerializedProto(self, input)
+
+    def SampleEncodeAsSerializedProto(self, input, nbest_size, alpha):
+        return _sentencepiece.SentencePieceProcessor_SampleEncodeAsSerializedProto(self, input, nbest_size, alpha)
+
+    def NBestEncodeAsSerializedProto(self, input, nbest_size):
+        return _sentencepiece.SentencePieceProcessor_NBestEncodeAsSerializedProto(self, input, nbest_size)
+
+    def DecodePiecesAsSerializedProto(self, pieces):
+        return _sentencepiece.SentencePieceProcessor_DecodePiecesAsSerializedProto(self, pieces)
 
     def GetPieceSize(self):
         return _sentencepiece.SentencePieceProcessor_GetPieceSize(self)
@@ -309,95 +170,11 @@ class SentencePieceProcessor(object):
     def LoadFromFile(self, arg):
         return _sentencepiece.SentencePieceProcessor_LoadFromFile(self, arg)
 
-    def _EncodeAsIds(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsIds(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
+    def DecodeIdsWithCheck(self, ids):
+        return _sentencepiece.SentencePieceProcessor_DecodeIdsWithCheck(self, ids)
 
-    def _EncodeAsPieces(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsPieces(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _EncodeAsSerializedProto(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsSerializedProto(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _EncodeAsImmutableProto(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsImmutableProto(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _EncodeAsIdsBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsIdsBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _EncodeAsPiecesBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsPiecesBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _EncodeAsSerializedProtoBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsSerializedProtoBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _EncodeAsImmutableProtoBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsImmutableProtoBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _DecodeIds(self, ids):
-        return _sentencepiece.SentencePieceProcessor__DecodeIds(self, ids)
-
-    def _DecodePieces(self, pieces):
-        return _sentencepiece.SentencePieceProcessor__DecodePieces(self, pieces)
-
-    def _DecodeIdsAsSerializedProto(self, ids):
-        return _sentencepiece.SentencePieceProcessor__DecodeIdsAsSerializedProto(self, ids)
-
-    def _DecodePiecesAsSerializedProto(self, pieces):
-        return _sentencepiece.SentencePieceProcessor__DecodePiecesAsSerializedProto(self, pieces)
-
-    def _DecodeIdsAsImmutableProto(self, ids):
-        return _sentencepiece.SentencePieceProcessor__DecodeIdsAsImmutableProto(self, ids)
-
-    def _DecodePiecesAsImmutableProto(self, pieces):
-        return _sentencepiece.SentencePieceProcessor__DecodePiecesAsImmutableProto(self, pieces)
-
-    def _DecodeIdsBatch(self, ins, num_threads):
-        return _sentencepiece.SentencePieceProcessor__DecodeIdsBatch(self, ins, num_threads)
-
-    def _DecodeIdsAsSerializedProtoBatch(self, ins, num_threads):
-        return _sentencepiece.SentencePieceProcessor__DecodeIdsAsSerializedProtoBatch(self, ins, num_threads)
-
-    def _DecodeIdsAsImmutableProtoBatch(self, ins, num_threads):
-        return _sentencepiece.SentencePieceProcessor__DecodeIdsAsImmutableProtoBatch(self, ins, num_threads)
-
-    def _DecodePiecesBatch(self, ins, num_threads):
-        return _sentencepiece.SentencePieceProcessor__DecodePiecesBatch(self, ins, num_threads)
-
-    def _DecodePiecesAsSerializedProtoBatch(self, ins, num_threads):
-        return _sentencepiece.SentencePieceProcessor__DecodePiecesAsSerializedProtoBatch(self, ins, num_threads)
-
-    def _DecodePiecesAsImmutableProtoBatch(self, ins, num_threads):
-        return _sentencepiece.SentencePieceProcessor__DecodePiecesAsImmutableProtoBatch(self, ins, num_threads)
-
-    def _NBestEncodeAsIds(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__NBestEncodeAsIds(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _NBestEncodeAsPieces(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__NBestEncodeAsPieces(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _NBestEncodeAsSerializedProto(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__NBestEncodeAsSerializedProto(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _NBestEncodeAsImmutableProto(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__NBestEncodeAsImmutableProto(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _SampleEncodeAndScoreAsIds(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__SampleEncodeAndScoreAsIds(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _SampleEncodeAndScoreAsPieces(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__SampleEncodeAndScoreAsPieces(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _SampleEncodeAndScoreAsSerializedProto(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__SampleEncodeAndScoreAsSerializedProto(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _SampleEncodeAndScoreAsImmutableProto(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__SampleEncodeAndScoreAsImmutableProto(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
-
-    def _CalculateEntropy(self, text, alpha):
-        return _sentencepiece.SentencePieceProcessor__CalculateEntropy(self, text, alpha)
-
-    def _CalculateEntropyBatch(self, ins, alpha, num_threads):
-        return _sentencepiece.SentencePieceProcessor__CalculateEntropyBatch(self, ins, alpha, num_threads)
+    def DecodeIdsAsSerializedProtoWithCheck(self, ids):
+        return _sentencepiece.SentencePieceProcessor_DecodeIdsAsSerializedProtoWithCheck(self, ids)
 
     def Init(self,
              model_file=None,
@@ -406,11 +183,9 @@ class SentencePieceProcessor(object):
              add_bos=False,
              add_eos=False,
              reverse=False,
-             emit_unk_piece=False,
              enable_sampling=False,
              nbest_size=-1,
-             alpha=0.1,
-             num_threads=-1):
+             alpha=0.1):
       """Initialzie sentencepieceProcessor.
 
       Args:
@@ -421,16 +196,14 @@ class SentencePieceProcessor(object):
         add_eos: Add </s> to the result (Default = false) <s>/</s> is added after
           reversing (if enabled).
         reverse: Reverses the tokenized sequence (Default = false)
-        emit_unk_piece: Emits the unk literal string (Default = false)
-        nbest_size: sampling parameters for unigram. Invalid in BPE-Dropout.
+        nbest_size: sampling parameters for unigram. Invalid for BPE-Dropout.
                     nbest_size = {0,1}: No sampling is performed.
                     nbest_size > 1: samples from the nbest_size results.
                     nbest_size < 0: assuming that nbest_size is infinite and samples
                       from the all hypothesis (lattice) using
                       forward-filtering-and-backward-sampling algorithm.
         alpha: Soothing parameter for unigram sampling, and dropout probability of
-               merge operations for BPE-dropout.
-        num_threads: number of threads in batch processing (Default = -1, auto-detected)
+          merge operations for BPE-dropout.
       """
 
       _sentencepiece_processor_init_native(self)
@@ -438,11 +211,9 @@ class SentencePieceProcessor(object):
       self._add_bos = add_bos
       self._add_eos = add_eos
       self._reverse = reverse
-      self._emit_unk_piece = emit_unk_piece
       self._enable_sampling = enable_sampling
       self._nbest_size = nbest_size
       self._alpha = alpha
-      self._num_threads = num_threads
       if model_file or model_proto:
         self.Load(model_file=model_file, model_proto=model_proto)
 
@@ -453,11 +224,9 @@ class SentencePieceProcessor(object):
                add_bos=None,
                add_eos=None,
                reverse=None,
-               emit_unk_piece=None,
                enable_sampling=None,
                nbest_size=None,
-               alpha=None,
-               num_threads=None):
+               alpha=None):
       """Encode text input to segmented ids or tokens.
 
         Args:
@@ -465,18 +234,16 @@ class SentencePieceProcessor(object):
         out_type: output type. int or str.
         add_bos: Add <s> to the result (Default = false)
         add_eos: Add </s> to the result (Default = false) <s>/</s> is added after
-                 reversing (if enabled).
+          reversing (if enabled).
         reverse: Reverses the tokenized sequence (Default = false)
-        emit_unk_piece: Emits the unk literal string (Default = false)
-        nbest_size: sampling parameters for unigram. Invalid in BPE-Dropout.
+        nbest_size: sampling parameters for unigram. Invalid for BPE-Dropout.
                     nbest_size = {0,1}: No sampling is performed.
                     nbest_size > 1: samples from the nbest_size results.
                     nbest_size < 0: assuming that nbest_size is infinite and samples
-                    from the all hypothesis (lattice) using
-                    forward-filtering-and-backward-sampling algorithm.
+                      from the all hypothesis (lattice) using
+                      forward-filtering-and-backward-sampling algorithm.
         alpha: Soothing parameter for unigram sampling, and merge probability for
                BPE-dropout (probablity 'p' in BPE-dropout paper).
-        num_threads: the number of threads used in the batch processing (Default = -1).
       """
 
       if out_type is None:
@@ -487,16 +254,12 @@ class SentencePieceProcessor(object):
         add_eos = self._add_eos
       if reverse is None:
         reverse = self._reverse
-      if emit_unk_piece is None:
-        emit_unk_piece = self._emit_unk_piece
       if enable_sampling is None:
         enable_sampling = self._enable_sampling
       if nbest_size is None:
         nbest_size = self._nbest_size
       if alpha is None:
         alpha = self._alpha
-      if num_threads is None:
-        num_threads = self._num_threads
 
       if enable_sampling == True and (nbest_size is None or nbest_size == 0 or
                                       nbest_size == 1 or alpha is None):
@@ -507,127 +270,33 @@ class SentencePieceProcessor(object):
             'instead of nbest segmentations.'
         )
 
-      if num_threads is None or type(num_threads) is not int:
-        raise RuntimeError('num_threads must be int')
-
-      if type(input) is list:
-        if out_type is int:
-          return self._EncodeAsIdsBatch(input, num_threads, enable_sampling, nbest_size,
-                                        alpha, add_bos, add_eos, reverse, emit_unk_piece)
-        if out_type is str:
-          return self._EncodeAsPiecesBatch(input, num_threads, enable_sampling, nbest_size,
-                                           alpha, add_bos, add_eos, reverse, emit_unk_piece)
-        if out_type == 'serialized_proto' or out_type == 'proto':
-          return self._EncodeAsSerializedProtoBatch(input, num_threads, enable_sampling, nbest_size,
-                                                    alpha, add_bos, add_eos, reverse, emit_unk_piece)
-        if out_type == 'immutable_proto':
-          return self._EncodeAsImmutableProtoBatch(input, num_threads, enable_sampling, nbest_size,
-                                                   alpha, add_bos, add_eos, reverse, emit_unk_piece)
-
-      if out_type is int:
-        return self._EncodeAsIds(input, enable_sampling, nbest_size,
-                                 alpha, add_bos, add_eos, reverse, emit_unk_piece)
-      if out_type is str:
-        return self._EncodeAsPieces(input, enable_sampling, nbest_size,
-                                    alpha, add_bos, add_eos, reverse, emit_unk_piece)
-      if out_type == 'serialized_proto' or out_type == 'proto':
-        return self._EncodeAsSerializedProto(input, enable_sampling, nbest_size,
-                                             alpha, add_bos, add_eos, reverse, emit_unk_piece)
-      if out_type == 'immutable_proto':
-        return self._EncodeAsImmutableProto(input, enable_sampling, nbest_size,
-                                            alpha, add_bos, add_eos, reverse, emit_unk_piece)
-
-      raise RuntimeError('unknown out_type={}'.format(out_type))
-      return None
-
-
-    def EncodeAsPieces(self, input, **kwargs):
-      return self.Encode(input=input, out_type=str, **kwargs)
-
-
-    def EncodeAsIds(self, input, **kwargs):
-      return self.Encode(input=input, out_type=int, **kwargs)
-
-
-    def EncodeAsSerializedProto(self, input, **kwargs):
-      return self.Encode(input=input, out_type='serialized_proto', **kwargs)
-
-
-    def EncodeAsImmutableProto(self, input, **kwargs):
-      return self.Encode(input=input, out_type='immutable_proto', **kwargs)
-
-
-    def SampleEncodeAsPieces(self, input, nbest_size=None, alpha=None, **kwargs):
-      return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
-                         out_type=str, enable_sampling=True, **kwargs)
-
-
-    def SampleEncodeAsIds(self, input, nbest_size=None, alpha=None,**kwargs):
-      return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
-                         out_type=int, enable_sampling=True, **kwargs)
-
-
-    def SampleEncodeAsSerializedProto(self, input, nbest_size=None, alpha=None, **kwargs):
-      return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
-                         out_type='serialized_proto', enable_sampling=True, **kwargs)
-
-
-    def SampleEncodeAsImmutableProto(self, input, nbest_size=None, alpha=None, **kwargs):
-      return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
-                         out_type='immutable_proto', enable_sampling=True, **kwargs)
-
-
-    def NBestEncode(self,
-                    input,
-                    out_type=None,
-                    add_bos=None,
-                    add_eos=None,
-                    reverse=None,
-                    emit_unk_piece=None,
-                    nbest_size=None):
-      """NBestEncode text input to segmented ids or tokens.
-
-        Args:
-        input: input string. accepsts list of string.
-        out_type: output type. int or str.
-        add_bos: Add <s> to the result (Default = false)
-        add_eos: Add </s> to the result (Default = false) <s>/</s> is added after reversing (if enabled).
-        reverse: Reverses the tokenized sequence (Default = false)
-        emit_unk_piece: Emits the unk literal string (Default = false)
-        nbest_size: nbest size
-      """
-
-      if out_type is None:
-        out_type = self._out_type
-      if add_bos is None:
-        add_bos = self._add_bos
-      if add_eos is None:
-        add_eos = self._add_eos
-      if reverse is None:
-        reverse = self._reverse
-      if emit_unk_piece is None:
-        emit_unk_piece = self._emit_unk_piece
-      if nbest_size is None:
-        nbest_size = self._nbest_size
-
-      if nbest_size <= 0:
-        nbest_size=1
-
       def _encode(text):
         if out_type is int:
-          return self._NBestEncodeAsIds(text, nbest_size,
-                                        add_bos, add_eos, reverse, emit_unk_piece)
-        if out_type is str:
-          return self._NBestEncodeAsPieces(text, nbest_size,
-                                           add_bos, add_eos, reverse, emit_unk_piece)
-        if out_type == 'serialized_proto' or out_type == 'proto':
-          return self._NBestEncodeAsSerializedProto(text, nbest_size,
-                                                    add_bos, add_eos, reverse, emit_unk_piece)
-        if out_type == 'immutable_proto':
-          return self._NBestEncodeAsImmutableProto(text, nbest_size,
-                                                   add_bos, add_eos, reverse, emit_unk_piece)
+          if enable_sampling:
+            result = self.SampleEncodeAsIds(text, nbest_size, alpha)
+          else:
+            result = self.EncodeAsIds(text)
+        else:
+          if enable_sampling:
+            result = self.SampleEncodeAsPieces(text, nbest_size, alpha)
+          else:
+            result = self.EncodeAsPieces(text)
 
-        raise RuntimeError('unknown out_type')
+        if reverse:
+          result.reverse()
+        if add_bos:
+          if out_type is int:
+            result = [self.bos_id()] + result
+          else:
+            result = [self.IdToPiece(self.bos_id())] + result
+
+        if add_eos:
+          if out_type is int:
+            result = result + [self.eos_id()]
+          else:
+            result = result + [self.IdToPiece(self.eos_id())]
+
+        return result
 
       if type(input) is list:
         return [_encode(n) for n in input]
@@ -635,234 +304,27 @@ class SentencePieceProcessor(object):
       return _encode(input)
 
 
-    def NBestEncodeAsPieces(self, input, nbest_size=None, **kwargs):
-      return self.NBestEncode(input=input, nbest_size=nbest_size,
-                              out_type=str, **kwargs)
-
-
-    def NBestEncodeAsIds(self, input, nbest_size=None, **kwargs):
-      return self.NBestEncode(input=input, nbest_size=nbest_size,
-                              out_type=int, **kwargs)
-
-
-    def NBestEncodeAsSerializedProto(self, input, nbest_size=None, **kwargs):
-      return self.NBestEncode(input=input, nbest_size=nbest_size,
-                              out_type='serialized_proto', **kwargs)
-
-
-    def NBestEncodeAsImmutableProto(self, input, nbest_size=None, **kwargs):
-      return self.NBestEncode(input=input, nbest_size=nbest_size,
-                              out_type='immutable_proto', **kwargs)
-
-
-    def SampleEncodeAndScore(self,
-                             input,
-                             out_type=None,
-                             add_bos=None,
-                             add_eos=None,
-                             reverse=None,
-                             emit_unk_piece=None,
-                             num_samples=None,
-                             alpha=None,
-                             wor=None,
-                             include_best=None):
-      """SampleEncodeAndScore text input to segmented ids or tokens.
-
-        Args:
-        input: input string. accepsts list of string.
-        out_type: output type. int or str or 'serialized_proto' or 'immutable_proto'
-        add_bos: Add <s> to the result (Default = false)
-        add_eos: Add </s> to the result (Default = false) <s>/</s> is added after reversing (if enabled).
-        reverse: Reverses the tokenized sequence (Default = false)
-        emit_unk_piece: Emits the unk literal string (Default = false)
-        num_samples: How many samples to return (Default = 1)
-        alpha: inverse temperature for sampling
-        wor: whether to sample without replacement (Default = false)
-        include_best: whether to include the best tokenization, requires wor=True (Default = false)
-      """
-
-      if out_type is None:
-        out_type = self._out_type
-      if add_bos is None:
-        add_bos = self._add_bos
-      if add_eos is None:
-        add_eos = self._add_eos
-      if reverse is None:
-        reverse = self._reverse
-      if emit_unk_piece is None:
-        emit_unk_piece = self._emit_unk_piece
-      if num_samples is None:
-        num_samples = 1
-      if alpha is None:
-        alpha = 1.
-      if wor is None:
-        wor = False
-      if include_best is None:
-        include_best = False
-
-      if num_samples <= 0:
-        raise RuntimeError('num_examples must be positive')
-
-      if include_best and not wor:
-        raise RuntimeError('When include_best is True, We must specify "wor = True".')
-
-
-      def _encode(text):
-        if out_type is int:
-          return self._SampleEncodeAndScoreAsIds(text, num_samples, alpha, wor, include_best,
-                                                 add_bos, add_eos, reverse, emit_unk_piece)
-        if out_type is str:
-          return self._SampleEncodeAndScoreAsPieces(text, num_samples, alpha, wor, include_best,
-                                                    add_bos, add_eos, reverse, emit_unk_piece)
-
-        if out_type == 'serialized_proto' or out_type == 'proto':
-          return self._SampleEncodeAndScoreAsSerializedProto(text, num_samples, alpha, wor, include_best,
-                                                             add_bos, add_eos, reverse, emit_unk_piece)
-
-        if out_type == 'immutable_proto':
-          return self._SampleEncodeAndScoreAsImmutableProto(text, num_samples, alpha, wor, include_best,
-                                                            add_bos, add_eos, reverse, emit_unk_piece)
-
-        raise RuntimeError('unknown output type')
-
-
-      if type(input) is list:
-        return [_encode(n) for n in input]
-
-      return _encode(input)
-
-
-    def SampleEncodeAndScoreAsPieces(self, input, num_samples=None, alpha=None, **kwargs):
-      return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha,
-                                       out_type=str, **kwargs)
-
-
-    def SampleEncodeAndScoreAsIds(self, input, num_samples=None, alpha=None, **kwargs):
-      return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha,
-                                       out_type=int, **kwargs)
-
-
-    def SampleEncodeAndScoreAsSerializedProto(self, input, num_samples=None, alpha=None, **kwargs):
-      return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha,
-                                       out_type='serialized_proto', **kwargs)
-
-
-    def SampleEncodeAndScoreAsImmutableProto(self, input, num_samples=None, alpha=None, **kwargs):
-      return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha,
-                                       out_type='immutable_proto', **kwargs)
-
-
-    def Decode(self, input, out_type=str, num_threads=None):
-      """Decode processed id or token sequences.
-
-      Args:
-        out_type: output type. str or 'serialized_proto' or 'immutable_proto' (Default = str)
-        num_threads: the number of threads used in the batch processing (Default = -1).
-      """
-
-      if num_threads is None:
-        num_threads = self._num_threads
-
-      if num_threads is None or type(num_threads) is not int:
-        raise RuntimeError('num_threads must be int')
+    def Decode(self, input):
+      """Decode processed id or token sequences."""
 
       if not input:
-        return ''
+        return self.DecodeIds([])
+      elif type(input) is int:
+        return self.DecodeIdsWithCheck([input])
+      elif type(input) is str:
+        return self.DecodePieces([input])
 
-      if out_type is str:
-        if type(input) is int:
-          return self._DecodeIds([input])
-        if type(input) is str:
-          return self._DecodePieces([input])
+      def _decode(input):
+        if not input:
+          return self.DecodeIds([])
+        if type(input[0]) is int:
+          return self.DecodeIdsWithCheck(input)
+        return self.DecodePieces(input)
 
-        if type(input) is list:
-          if len(input) == 0 or type(input[0]) is int:
-            return self._DecodeIds(input)
-          if type(input[0]) is str:
-            return self._DecodePieces(input)
+      if type(input[0]) is list:
+        return [_decode(n) for n in input]
 
-          if type(input[0]) is list:
-            if len(input[0]) == 0 or type(input[0][0]) is int:
-             return self._DecodeIdsBatch(input, num_threads)
-            if type(input[0][0]) is str:
-             return self._DecodePiecesBatch(input, num_threads)
-
-      if out_type == 'serialized_proto':
-        if type(input) is int:
-          return self._DecodeIdsAsSerializedProto([input])
-        if type(input) is str:
-          return self._DecodePiecesAsSerializedProto([input])
-
-        if type(input) is list:
-          if len(input) == 0 or type(input[0]) is int:
-            return self._DecodeIdsAsSerializedProto(input)
-          if type(input[0]) is str:
-            return self._DecodePiecesAsSerializedProto(input)
-
-          if type(input[0]) is list:
-            if len(input[0]) == 0 or type(input[0][0]) is int:
-             return self._DecodeIdsAsSerializedProtoBatch(input, num_threads)
-            if type(input[0][0]) is str:
-             return self._DecodePiecesAsSerializedProtoBatch(input, num_threads)
-
-
-      if out_type == 'immutable_proto':
-        if type(input) is int:
-          return self._DecodeIdsAsImmutableProto([input])
-        if type(input) is str:
-          return self._DecodePiecesAsImmutableProto([input])
-
-        if type(input) is list:
-          if len(input) == 0 or type(input[0]) is int:
-            return self._DecodeIdsAsImmutableProto(input)
-          if type(input[0]) is str:
-            return self._DecodePiecesAsImmutableProto(input)
-
-          if type(input[0]) is list:
-            if len(input[0]) == 0 or type(input[0][0]) is int:
-             return self._DecodeIdsAsImmutableProtoBatch(input, num_threads)
-            if type(input[0][0]) is str:
-             return self._DecodePiecesAsImmutableProtoBatch(input, num_threads)
-
-
-      raise RuntimeError('unknown output or input type')
-      return None
-
-
-    def DecodePieces(self, input, out_type=str, **kwargs):
-      return self.Decode(input=input, out_type=out_type, **kwargs)
-
-
-    def DecodeIds(self, input, out_type=str, **kwargs):
-      return self.Decode(input=input, out_type=out_type, **kwargs)
-
-
-    def DecodePiecesAsSerializedProto(self, input, out_type='serialized_proto', **kwargs):
-      return self.Decode(input=input, out_type=out_type, **kwargs)
-
-
-    def DecodeIdsAsSerializedProto(self, input, out_type='serialized_proto', **kwargs):
-      return self.Decode(input=input, out_type=out_type, **kwargs)
-
-
-    def DecodePiecesAsImmutableProto(self, input, out_type='immutable_proto', **kwargs):
-      return self.Decode(input=input, out_type=out_type, **kwargs)
-
-
-    def DecodeIdsAsImmutableProto(self, input, out_type='immutable_proto', **kwargs):
-      return self.Decode(input=input, out_type=out_type, **kwargs)
-
-
-    def CalculateEntropy(self, input, alpha, num_threads=None):
-      """Calculate sentence entropy"""
-      if type(input) is list:
-        if num_threads is None:
-          num_threads = self._num_threads
-        if num_threads is None or type(num_threads) is not int:
-          raise RuntimeError('num_threads must be int')
-        return self._CalculateEntropyBatch(input, alpha, num_threads)
-
-      return self._CalculateEntropy(input, alpha)
+      return _decode(input)
 
 
     def piece_size(self):
@@ -939,7 +401,7 @@ class SentencePieceTrainer(object):
         return _sentencepiece.SentencePieceTrainer__TrainFromMap4(args, iter)
 
     @staticmethod
-    def _Train(arg=None, **kwargs):
+    def Train(arg=None, **kwargs):
       """Train Sentencepiece model. Accept both kwargs and legacy string arg."""
       if arg is not None and type(arg) is str:
         return SentencePieceTrainer._TrainFromString(arg)
@@ -983,11 +445,6 @@ class SentencePieceTrainer(object):
 
       return None
 
-    @staticmethod
-    def Train(arg=None, logstream=None, **kwargs):
-      with _LogStream(ostream=logstream):
-        SentencePieceTrainer._Train(arg=arg, **kwargs)
-
 
 # Register SentencePieceTrainer in _sentencepiece:
 _sentencepiece.SentencePieceTrainer_swigregister(SentencePieceTrainer)
@@ -1012,7 +469,6 @@ def SentencePieceTrainer__TrainFromMap4(args, iter):
 import re
 import csv
 import sys
-import os
 from io import StringIO
 from io import BytesIO
 
@@ -1052,6 +508,8 @@ setattr(SentencePieceProcessor, '__init__', SentencePieceProcessor.Init)
 
 SentencePieceProcessor.Tokenize = SentencePieceProcessor.Encode
 SentencePieceProcessor.Detokenize = SentencePieceProcessor.Decode
+SentencePieceProcessor.DecodeIds = SentencePieceProcessor.DecodeIdsWithCheck
+SentencePieceProcessor.DecodeIdsAsSerializedProto = SentencePieceProcessor.DecodeIdsAsSerializedProtoWithCheck
 
 for m in [
     'PieceToId', 'IdToPiece', 'GetScore', 'IsUnknown', 'IsControl', 'IsUnused',
@@ -1062,26 +520,6 @@ for m in [
 _add_snake_case(SentencePieceProcessor)
 _add_snake_case(SentencePieceTrainer)
 set_random_generator_seed = SetRandomGeneratorSeed
-
-from ._version import __version__
-
-class _LogStream(object):
-  def __init__(self, ostream=None):
-    self.ostream = ostream
-    if self.ostream is not None:
-      self.orig_stream_fileno = sys.stderr.fileno()
-
-  def __enter__(self):
-    if self.ostream is not None:
-      self.orig_stream_dup = os.dup(self.orig_stream_fileno)
-      os.dup2(self.ostream.fileno(), self.orig_stream_fileno)
-
-  def __exit__(self, type, value, traceback):
-    if self.ostream is not None:
-      os.close(self.orig_stream_fileno)
-      os.dup2(self.orig_stream_dup, self.orig_stream_fileno)
-      os.close(self.orig_stream_dup)
-      self.ostream.close()
 
 
 

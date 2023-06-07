@@ -1,0 +1,98 @@
+language: cpp
+matrix:
+  include:
+    - os: linux
+      env: IMAGE=ubuntu:latest COMMAND=build_linux_gcc_coverall_ubuntu RELEASE_FILES="$TRAVIS_BUILD_DIR/build/*.xz"
+      services: docker
+    - os: linux
+      env: IMAGE=ubuntu:focal COMMAND=build_linux_gcc_ubuntu
+      services: docker      
+    - os: linux
+      env: IMAGE=ubuntu:bionic COMMAND=build_linux_gcc_ubuntu
+      services: docker
+    - os: linux
+      env: IMAGE=ubuntu:xenial COMMAND=build_linux_gcc_ubuntu
+      services: docker
+    - os: linux
+      env: IMAGE=ubuntu:trusty COMMAND=build_linux_gcc_ubuntu
+      services: docker
+    - os: linux
+      env: IMAGE=debian:stable COMMAND=build_linux_gcc_debian
+      services: docker
+    - os: linux
+      env: IMAGE=fedora:latest COMMAND=build_linux_gcc_fedora
+      services: docker
+    - os: linux
+      env: IMAGE=ubuntu:latest COMMAND=build_linux_clang_ubuntu
+      services: docker
+    - os: linux
+      arch: arm64
+      env: IMAGE=arm64v8/ubuntu:latest COMMAND=build_linux_gcc_ubuntu
+      services: docker
+    - os: linux
+      arch: ppc64le
+      env: IMAGE=ppc64le/ubuntu:latest COMMAND=build_linux_gcc_ubuntu
+      services: docker
+    - os: linux
+      arch: s390x
+      env: IMAGE=s390x/ubuntu:latest COMMAND=build_linux_gcc_ubuntu
+      services: docker
+    - os: linux
+      env: IMAGE=x86_64 COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
+      script:
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
+        - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
+      services: docker
+    - os: linux
+      env: IMAGE=i686 COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
+      script:
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
+        - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
+      services: docker
+    - os: linux
+      arch: arm64
+      env: IMAGE=aarch64 COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
+      script:
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
+        - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
+      services: docker
+    - os: linux
+      arch: ppc64le
+      env: IMAGE=ppc64le COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
+      script:
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
+        - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
+      services: docker
+    - os: linux
+      arch: s390x
+      env: IMAGE=s390x COMMAND=make_py_wheel_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/*manylinux*.whl"
+      script:
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel.sh ${IMAGE}
+        - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
+      services: docker
+    - os: osx
+      osx_image: xcode9.4
+      env: IMAGE=native COMMAND=build_osx
+    - os: osx
+      osx_image: xcode9.4
+      env: IMAGE=native COMMAND=make_py_wheel_mac_py RELEASE_FILES="$TRAVIS_BUILD_DIR/python/dist/delocated_wheel/*.whl"
+      script:
+        - $TRAVIS_BUILD_DIR/python/make_py_wheel_mac.sh
+        - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
+script:
+  - $TRAVIS_BUILD_DIR/test.sh ${IMAGE} ${COMMAND}
+  - if [[ "$RELEASE_FILES" != "" ]]; then ls -l $RELEASE_FILES          ; fi
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: WnrgfoRVSoi+E2YwFDgpQlxldfYQycN8DmMqbJab6uP0FWTmPptS9nmXWVGsXJS1u+sTsx/E+lM5xggl31u88hUJYsEUg+xPszSf+eiLfmdoEY+qYj2Vsuh7cT7P1tBScVMUiEQsoCcg9gZbHFHkSYJ74gyQxQhqJ52UmCJ1aNcp3nbtzgjBGvtsi2WBUdG1jSW0qwRj9gcq9eOWA4zkeHj9QKWhBtRD7fhpUiUDWVqaDSMu1E10QLNjkZ//qwbrWXb4MBzCa1ISla/ZoKv4TMQQrzYEwqxmbX2bxk1lMkJD3sKt3Wq/qNWDYaPKk9gz/cU9nAKwzSlJzus5c9pac6U/mh0IU8JhEGlkzFb1Ng3cHLdYT0hk0jAW15Ptcijqt+UGs0Arb1pdKvQV2e5bLEBrujCNGF8NFdsE23WDofEM/VKXuMNWW/j6b+VLESf05rz5p07IBMczLfW/Qs8mY5cqR9WaqPbYxMZlgwxtD+MiKERHlq1qVdK25M1UuB0wH/EbstVuEX2iNZRvffT9A+NglriLR74vNiCnfRlzGx4U4/Z79r2mwFrJTGupgq9N/jvKMs92qrT200VRtIto3JLEd3cnlM/9Gpv39SsYKA0seHKBpyFz/pGfXkOStv+14hzmEmXIFwG1QRTeFsZIUzmvvfMuhaG8Jjhdwpfvr68=
+  file_glob: true
+  file: "${RELEASE_FILES}"
+  on:
+    branch: master
+    tags: true
+    condition: $RELEASE_FILES != ""
+env:
+  global:
+    secure: J52dK8uM1haWOP5Ktz01VETiYdpyOKtnGZXcZjxEXI7RV+44/MpkSSpKFrIex1jHDodn01Tv+/otmxotaz1HOPv4DgT2gg8FbHlpvnc6+B1/dEaeCDvnd33odmARoOszP0MNFTZdlvg6zGeJwPDYFfITn1jiFBtjazu19VIbQE4D1CSKkWsMXeyH1WjTb0LEtxhYwUcFgNqDb6trArx8xlvZNrh2/j5nPgAzvmuT0JuzwcRz9swwZftKcMjaK5JooSBTydtAzgVpVMZf1q+pF0nR9VlYIY34qQLsWirBjWHGRKdkgAEEN4vEMD1BKbhkIn7TjEpWLrH3BZuJY8uXAfnxvT8KXns2fhA1EDjlP/5n2y1jXAjqCZX8o1dC2fn6qxpL1Qg1WE0n9mhOZLMpbzCpJjBumjQPPUsviggRUs4awSYv3JrYuavvXQZ9rFM634O7CLIDVmbqssVyIYMhgIqLFAWgDxTyAxt+67vUy5ONsAenMOJ6bO36pYZHWH53isCRblUD5nq6Dj6WrW9P7lQhAdhvZ+Hyt+zyVCCblDY9lAv1KetU4i9sDSNYUkQtFTPVBw8LE4JmEctuM7iC6YqeneffPzzDLsGZ70m66VT1L4MYg5h2fGbtRuQ1nPz0+k2CNibN7NegaY35d7gUosnJJF04AeOUcea4+rgQkVM=
