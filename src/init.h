@@ -19,12 +19,6 @@
 #include "third_party/absl/flags/flag.h"
 #include "third_party/absl/flags/parse.h"
 
-#ifdef _USE_EXTERNAL_PROTOBUF
-#include "google/protobuf/message_lite.h"
-#else
-#include "third_party/protobuf-lite/google/protobuf/message_lite.h"
-#endif
-
 ABSL_DECLARE_FLAG(int32, minloglevel);
 
 namespace sentencepiece {
@@ -41,20 +35,6 @@ inline void ParseCommandLineFlags(const char *usage, int *argc, char ***argv,
 
   logging::SetMinLogLevel(absl::GetFlag(FLAGS_minloglevel));
 }
-
-inline void ShutdownLibrary() {
-  google::protobuf::ShutdownProtobufLibrary();
-#ifdef HAS_ABSL_CLEANUP_FLAGS
-  absl::CleanupFlags();
-#endif
-}
-
-class ScopedResourceDestructor {
- public:
-  ScopedResourceDestructor() {}
-  ~ScopedResourceDestructor() { ShutdownLibrary(); }
-};
-
 }  // namespace sentencepiece
 
 #endif  // INIT_H_

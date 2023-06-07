@@ -53,8 +53,8 @@ class ModelProto;
 // Given a normalized string, returns a sequence of sentence pieces with ids.
 class ModelInterface {
  public:
-  using PieceToIdMap = absl::flat_hash_map<absl::string_view, int>;
-  //                                           string_util::string_view_hash>;
+  using PieceToIdMap = absl::flat_hash_map<absl::string_view, int,
+                                           string_util::string_view_hash>;
 
   absl::string_view unk_piece() const;
   absl::string_view bos_piece() const;
@@ -77,6 +77,19 @@ class ModelInterface {
     return matcher_.get();
   }
 
+  // Sets the encoder version. Currently only unigram has an optimized encoder.
+  // The optimized version is always used by default if there is one, so
+  // normally users do not need to call this function. This function is provided
+  // just in case that a user want to manually choose which encoder version to
+  // use.
+  virtual util::Status SetEncoderVersion(EncoderVersion encoder_version) {
+    encoder_version_ = encoder_version;
+    return util::OkStatus();
+  }
+
+  // Returns the current encoder version in use.
+  virtual EncoderVersion GetEncoderVersion() const { return encoder_version_; }
+
   // Given a normalized string, returns a sequence of sentence pieces with ids.
   // The concatenation of pieces must be the same as `normalized`.
   virtual EncodeResult Encode(absl::string_view normalized) const = 0;
@@ -94,12 +107,12 @@ class ModelInterface {
     return EncodeResult();
   }
 
-  // Sample `samples` many tokenisations from the segmentation lattice
+  // Sample `samples` many tokenizations from the segmentation lattice
   // If `wor` is true, the samples are taken without replacement, and the scores
   // are the inclusion probabilities of the elements in the sample; otherwise
   // the samples are taken with replacement and the scores are the log-probs of
   // sample elements
-  // If `include_best` is true, the best tokenisation is always included in the
+  // If `include_best` is true, the best tokenization is always included in the
   // sample, and the remaining elements are sampled excluding the best.
   virtual NBestEncodeResult SampleEncodeAndScore(absl::string_view normalized,
                                                  float alpha, int samples,
@@ -110,9 +123,10 @@ class ModelInterface {
   }
 
   // Calculates the entropy of the segmentation lattice with inverse temperature
-  // `alpha`. Uses a novel dynamic program to calculate the entropy.
+  // `theta`.
+  // Uses a novel dynamic program to calculate the entropy.
   virtual float CalculateEntropy(absl::string_view normalized,
-                                 float alpha) const {
+                                 float theta) const {
     LOG(ERROR) << "Not implemented.";
     return 0.0;
   }
@@ -241,6 +255,10 @@ class ModelInterface {
 
   // unknown id.
   int unk_id_ = 0;
+
+  // The encoder version. Currently it is only effective for unigram model but
+  // ignored by other models.
+  EncoderVersion encoder_version_ = EncoderVersion::kOptimized;
 
   // status.
   util::Status status_;

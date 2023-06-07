@@ -77,9 +77,6 @@ ABSL_FLAG(bool, split_by_whitespace, kDefaultTrainerSpec.split_by_whitespace(),
           "use a white space to split sentence pieces");
 ABSL_FLAG(bool, split_digits, kDefaultTrainerSpec.split_digits(),
           "split all digits (0-9) into separate pieces");
-ABSL_FLAG(std::string, pretokenization_delimiter,
-          kDefaultTrainerSpec.pretokenization_delimiter(),
-          "specifies the delimiter of pre-tokenization");
 ABSL_FLAG(bool, treat_whitespace_as_suffix,
           kDefaultTrainerSpec.treat_whitespace_as_suffix(),
           "treat whitespace marker as suffix instead of prefix.");
@@ -147,20 +144,7 @@ ABSL_FLAG(bool, train_extremely_large_corpus,
 ABSL_FLAG(uint32, random_seed, static_cast<uint32>(-1),
           "Seed value for random generator.");
 
-// DP related.
-ABSL_FLAG(bool, enable_differential_privacy, false,
-          "Whether to add DP while training. Currently supported only by "
-          "UNIGRAM model.");
-
-ABSL_FLAG(float, differential_privacy_noise_level, 0.0f,
-          "Amount of noise to add for"
-          " DP");
-ABSL_FLAG(std::uint64_t, differential_privacy_clipping_threshold, 0,
-          "Threshold for"
-          " clipping the counts for DP");
-
 int main(int argc, char *argv[]) {
-  sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
 
   sentencepiece::TrainerSpec trainer_spec;
@@ -230,7 +214,6 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(split_by_whitespace);
   SetTrainerSpecFromFlag(split_by_number);
   SetTrainerSpecFromFlag(split_digits);
-  SetTrainerSpecFromFlag(pretokenization_delimiter);
   SetTrainerSpecFromFlag(byte_fallback);
   SetTrainerSpecFromFlag(treat_whitespace_as_suffix);
   SetTrainerSpecFromFlag(allow_whitespace_only_pieces);
@@ -252,10 +235,6 @@ int main(int argc, char *argv[]) {
   SetRepeatedTrainerSpecFromFlag(control_symbols);
   SetRepeatedTrainerSpecFromFlag(user_defined_symbols);
   SetTrainerSpecFromFlag(train_extremely_large_corpus);
-  // DP related.
-  SetTrainerSpecFromFlag(enable_differential_privacy);
-  SetTrainerSpecFromFlag(differential_privacy_noise_level);
-  SetTrainerSpecFromFlag(differential_privacy_clipping_threshold);
 
   SetRepeatedTrainerSpecFromFile(control_symbols);
   SetRepeatedTrainerSpecFromFile(user_defined_symbols);

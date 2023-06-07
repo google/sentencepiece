@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "model_interface.h"
-
 #include "model_factory.h"
+#include "model_interface.h"
 #include "testharness.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "util.h"
@@ -480,6 +479,22 @@ TEST(ModelInterfaceTest, PieceToByteTest) {
   EXPECT_EQ(PieceToByte("<0xff>"), -1);
   EXPECT_EQ(PieceToByte("<0xFG>"), -1);
   EXPECT_EQ(PieceToByte("a"), -1);
+}
+
+TEST(ModelInterfaceTest, SetEncoderVersion) {
+  for (const auto type : kModelTypes) {
+    ModelProto model_proto = MakeBaseModelProto(type);
+    AddPiece(&model_proto, "a");
+    AddPiece(&model_proto, "b");
+    auto model = ModelFactory::Create(model_proto);
+
+    // Verify the default encoder version.
+    EXPECT_EQ(EncoderVersion::kOptimized, model->GetEncoderVersion());
+
+    // Set the encoder version to original and verify.
+    EXPECT_TRUE(model->SetEncoderVersion(EncoderVersion::kOriginal).ok());
+    EXPECT_EQ(EncoderVersion::kOriginal, model->GetEncoderVersion());
+  }
 }
 
 TEST(ModelInterfaceTest, VerifyOutputsEquivalent) {

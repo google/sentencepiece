@@ -1,20 +1,19 @@
 # SentencePiece
 
-test
-
-[![Build C++](https://github.com/google/sentencepiece/actions/workflows/cmake.yml/badge.svg)](https://github.com/google/sentencepiece/actions/workflows/cmake.yml)
-[![Build Wheels](https://github.com/google/sentencepiece/actions/workflows/wheel.yml/badge.svg)](https://github.com/google/sentencepiece/actions/workflows/wheel.yml)
+[![Build Status](https://travis-ci.org/google/sentencepiece.svg?branch=master)](https://travis-ci.org/google/sentencepiece)
+[![Build status](https://ci.appveyor.com/api/projects/status/vxoub3qx4fwpysyq?svg=true)](https://ci.appveyor.com/project/taku910/sentencepiece)
+[![Coverage Status](https://coveralls.io/repos/github/google/sentencepiece/badge.svg?branch=master)](https://coveralls.io/github/google/sentencepiece?branch=master)
 [![GitHub Issues](https://img.shields.io/github/issues/google/sentencepiece.svg)](https://github.com/google/sentencepiece/issues)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/5851945fc54947fc9e964f78c3b6bdfa)](https://app.codacy.com/app/taku910/sentencepiece?utm_source=github.com&utm_medium=referral&utm_content=google/sentencepiece&utm_campaign=Badge_Grade_Dashboard)
 [![PyPI version](https://badge.fury.io/py/sentencepiece.svg)](https://badge.fury.io/py/sentencepiece)
 [![PyPi downloads](https://img.shields.io/pypi/dm/sentencepiece?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/sentencepiece/)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-brightgreen.svg)](https://opensource.org/licenses/Apache-2.0)
-[![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 
 SentencePiece is an unsupervised text tokenizer and detokenizer mainly for
 Neural Network-based text generation systems where the vocabulary size
 is predetermined prior to the neural model training. SentencePiece implements
-**subword units** (e.g., **byte-pair-encoding (BPE)** [[Sennrich et al.](https://www.aclweb.org/anthology/P16-1162)]) and
+**subword units** (e.g., **byte-pair-encoding (BPE)** [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]) and
 **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)])
 with the extension of direct training from raw sentences. SentencePiece allows us to make a purely end-to-end system that does not depend on language-specific pre/postprocessing.
 
@@ -24,7 +23,7 @@ with the extension of direct training from raw sentences. SentencePiece allows u
 - **Purely data driven**: SentencePiece trains tokenization and detokenization
   models from sentences. Pre-tokenization ([Moses tokenizer](https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/tokenizer.perl)/[MeCab](http://taku910.github.io/mecab/)/[KyTea](http://www.phontron.com/kytea/)) is not always required.
 - **Language independent**: SentencePiece treats the sentences just as sequences of Unicode characters. There is no language-dependent logic.
-- **Multiple subword algorithms**: **BPE**  [[Sennrich et al.](https://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)] are supported.
+- **Multiple subword algorithms**: **BPE**  [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)] and **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)] are supported.
 - **Subword regularization**: SentencePiece implements subword sampling for [subword regularization](https://arxiv.org/abs/1804.10959) and [BPE-dropout](https://arxiv.org/abs/1910.13267) which help to improve the robustness and accuracy of NMT models.
 - **Fast and lightweight**: Segmentation speed is around 50k sentences/sec, and memory footprint is around 6MB.
 - **Self-contained**: The same tokenization/detokenization is obtained as long as the same model file is used.
@@ -39,7 +38,7 @@ For those unfamiliar with SentencePiece as a software/algorithm, one can read [a
 |:---|:---:|:---:|:---:|
 |Supported algorithm|BPE, unigram, char, word|BPE|BPE*|
 |OSS?|Yes|Yes|Google internal|
-|Subword regularization|[Yes](#subword-regularization-and-bpe-dropout)|No|No|
+|Subword regularization|[Yes](#subword-regularization)|No|No|
 |Python Library (pip)|[Yes](python/README.md)|No|N/A|
 |C++ Library|[Yes](doc/api.md)|No|N/A|
 |Pre-segmentation required?|[No](#whitespace-is-treated-as-a-basic-symbol)|Yes|Yes|
@@ -128,7 +127,7 @@ SentencePiece provides Python wrapper that supports both SentencePiece training 
 You can install Python binary package of SentencePiece with.
 
 ```
-pip install sentencepiece
+% pip install sentencepiece
 ```
 
 For more detail, see [Python module](python/README.md)
@@ -169,19 +168,6 @@ You can download and install sentencepiece using the [vcpkg](https://github.com/
     ./vcpkg install sentencepiece
 
 The sentencepiece port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
-
-### Download and install SentencePiece from signed released wheels
-
-You can download the wheel from the [GitHub releases page](https://github.com/google/sentencepiece/releases/latest).
-We generate [SLSA3 signatures](slsa.dev) using the OpenSSF's [slsa-framework/slsa-github-generator](https://github.com/slsa-framework/slsa-github-generator) during the release process. To verify a release binary:
-1. Install the verification tool from [slsa-framework/slsa-verifier#installation](https://github.com/slsa-framework/slsa-verifier#installation).
-2. Download the provenance file `attestation.intoto.jsonl` from the [GitHub releases page](https://github.com/google/sentencepiece/releases/latest).
-3. Run the verifier:
-```shell
-slsa-verifier -artifact-path <the-wheel> -provenance attestation.intoto.jsonl -source github.com/google/sentencepiece -tag <the-tag>
-```
-
-pip install wheel_file.whl
 
 ## Usage instructions
 ### Train SentencePiece Model
@@ -260,7 +246,7 @@ You can find that the original input sentence is restored from the vocabulary id
 ```
 % spm_train --bos_id=0 --eos_id=1 --unk_id=5 --input=... --model_prefix=... --character_coverage=...
 ```
-When setting -1 id e.g., ```bos_id=-1```, this special token is disabled. Note that the unknown id cannot be disabled.  We can define an id for padding (&lt;pad&gt;) as ```--pad_id=3```.  
+When setting -1 id e.g., ```bos_id=-1```, this special token is disabled. Note that the unknow id cannot be disabled.  We can define an id for padding (&lt;pad&gt;) as ```--pad_id=3```.  
 
 If you want to assign another special tokens, please see [Use custom symbols](doc/special_symbols.md).
 
@@ -292,5 +278,6 @@ Then segment train/test corpus with ```--vocabulary``` option
 * [Use custom text normalization rules](doc/normalization.md)
 * [Use custom symbols](doc/special_symbols.md)
 * [Python Module](python/README.md)
+* [TensorFlow Module](tensorflow/README.md)
 * [Segmentation and training algorithms in detail]
 

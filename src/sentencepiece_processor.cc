@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "sentencepiece_processor.h"
-
 #include <map>
 #include <set>
 #include <utility>
@@ -24,6 +22,7 @@
 #include "model_interface.h"
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
+#include "sentencepiece_processor.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -48,164 +47,7 @@ const char kDefaultUnknownSymbol[] = " \xE2\x81\x87 ";
 
 // REPLACEMENT CHARACTER (U+FFFD) in UTF-8.
 const char kReplacementCharacter[] = "\xef\xbf\xbd";
-
-std::vector<absl::string_view> ToPieceArray(const std::vector<std::string> &v) {
-  std::vector<absl::string_view> out(v.size());
-  for (int i = 0; i < v.size(); ++i) out[i] = v[i];
-  return out;
-}
-
-void ConvertToUnicodeSpansInternal(SentencePieceText *spt) {
-  if (spt == nullptr || spt->text().empty()) return;
-
-  std::vector<int> utf8_to_unicode(spt->text().size() + 1, 0);
-  absl::string_view str = spt->text();
-  size_t prev = 0;
-  int ulen = 0;
-  while (!str.empty()) {
-    const size_t mblen = std::max<int>(1, string_util::OneCharLen(str.data()));
-    for (int i = prev; i < prev + mblen; ++i) {
-      utf8_to_unicode[i] = ulen;
-    }
-    ++ulen;
-    prev += mblen;
-    str.remove_prefix(mblen);
-  }
-  utf8_to_unicode[prev] = ulen;
-
-  auto clip = [&](int s) {
-    return std::min<int>(std::max<int>(0, s), utf8_to_unicode.size() - 1);
-  };
-
-  for (auto &piece : *(spt->mutable_pieces())) {
-    piece.set_begin(utf8_to_unicode[clip(piece.begin())]);
-    piece.set_end(utf8_to_unicode[clip(piece.end())]);
-  }
-}
-
 }  // namespace
-
-ImmutableSentencePieceText::ImmutableSentencePieceText()
-    : spt_(&SentencePieceText::default_instance()) {}
-
-ImmutableSentencePieceText::ImmutableSentencePieceText(
-    const SentencePieceText &spt)
-    : spt_(&spt) {}
-
-ImmutableSentencePieceText::~ImmutableSentencePieceText() {}
-
-ImmutableSentencePieceText_ImmutableSentencePiece::
-    ImmutableSentencePieceText_ImmutableSentencePiece()
-    : sp_(&SentencePieceText_SentencePiece::default_instance()) {}
-
-ImmutableSentencePieceText_ImmutableSentencePiece::
-    ImmutableSentencePieceText_ImmutableSentencePiece(
-        const SentencePieceText_SentencePiece &sp)
-    : sp_(&sp) {}
-
-const std::string &ImmutableSentencePieceText_ImmutableSentencePiece::piece()
-    const {
-  return sp_->piece();
-}
-
-const std::string &ImmutableSentencePieceText_ImmutableSentencePiece::surface()
-    const {
-  return sp_->surface();
-}
-
-uint32_t ImmutableSentencePieceText_ImmutableSentencePiece::id() const {
-  return sp_->id();
-}
-
-uint32_t ImmutableSentencePieceText_ImmutableSentencePiece::begin() const {
-  return sp_->begin();
-}
-
-uint32_t ImmutableSentencePieceText_ImmutableSentencePiece::end() const {
-  return sp_->end();
-}
-
-std::vector<ImmutableSentencePieceText_ImmutableSentencePiece>
-ImmutableSentencePieceText::pieces() const {
-  std::vector<ImmutableSentencePieceText_ImmutableSentencePiece> pieces(
-      spt_->pieces_size());
-  for (int i = 0; i < spt_->pieces_size(); ++i)
-    pieces[i] =
-        ImmutableSentencePieceText_ImmutableSentencePiece(spt_->pieces(i));
-  return pieces;
-}
-
-size_t ImmutableSentencePieceText::pieces_size() const {
-  return spt_->pieces_size();
-}
-
-ImmutableSentencePieceText_ImmutableSentencePiece
-ImmutableSentencePieceText::pieces(int index) const {
-  return ImmutableSentencePieceText_ImmutableSentencePiece(spt_->pieces(index));
-}
-
-const std::string &ImmutableSentencePieceText::text() const {
-  return spt_->text();
-}
-
-float ImmutableSentencePieceText::score() const {
-  return spt_ ? spt_->score() : 0.0;
-}
-
-SentencePieceText *ImmutableSentencePieceText::mutable_proto() {
-  if (rep_ == nullptr) {
-    rep_ = std::make_shared<SentencePieceText>();
-    spt_ = rep_.get();
-  }
-  return rep_.get();
-}
-
-void ImmutableSentencePieceText::ConvertToUnicodeSpans() {
-  ConvertToUnicodeSpansInternal(mutable_proto());
-}
-
-util::bytes ImmutableSentencePieceText::SerializeAsString() const {
-  return spt_->SerializeAsString();
-}
-
-ImmutableNBestSentencePieceText::ImmutableNBestSentencePieceText() {}
-ImmutableNBestSentencePieceText::~ImmutableNBestSentencePieceText() {}
-
-size_t ImmutableNBestSentencePieceText::nbests_size() const {
-  return rep_ ? rep_->nbests_size() : 0;
-}
-
-ImmutableSentencePieceText ImmutableNBestSentencePieceText::nbests(
-    int index) const {
-  return ImmutableSentencePieceText(rep_->nbests(index));
-}
-
-std::vector<ImmutableSentencePieceText>
-ImmutableNBestSentencePieceText::nbests() const {
-  if (rep_ == nullptr) return {};
-  std::vector<ImmutableSentencePieceText> nbests(rep_->nbests_size());
-  for (int i = 0; i < rep_->nbests_size(); ++i)
-    nbests[i] = ImmutableSentencePieceText(rep_->nbests(i));
-  return nbests;
-}
-
-NBestSentencePieceText *ImmutableNBestSentencePieceText::mutable_proto() {
-  if (rep_ == nullptr) {
-    rep_ = std::make_shared<NBestSentencePieceText>();
-  }
-  return rep_.get();
-}
-
-void ImmutableNBestSentencePieceText::ConvertToUnicodeSpans() {
-  if (!mutable_proto()) return;
-  for (auto &spt : *(mutable_proto()->mutable_nbests())) {
-    ConvertToUnicodeSpansInternal(&spt);
-  }
-}
-
-util::bytes ImmutableNBestSentencePieceText::SerializeAsString() const {
-  return rep_ ? rep_->SerializeAsString() : "";
-}
 
 SentencePieceProcessor::SentencePieceProcessor() {}
 SentencePieceProcessor::~SentencePieceProcessor() {}
@@ -275,6 +117,15 @@ util::Status SentencePieceProcessor::Load(
   return util::OkStatus();
 }
 
+util::Status SentencePieceProcessor::SetEncoderVersion(
+    EncoderVersion encoder_version) {
+  return model_->SetEncoderVersion(encoder_version);
+}
+
+EncoderVersion SentencePieceProcessor::GetEncoderVersion() const {
+  return model_->GetEncoderVersion();
+}
+
 util::Status SentencePieceProcessor::SetEncodeExtraOptions(
     absl::string_view extra_options) {
   return ParseExtraOptions(extra_options, &encode_extra_options_);
@@ -294,7 +145,7 @@ util::Status SentencePieceProcessor::status() const {
 }
 
 util::Status SentencePieceProcessor::SetVocabulary(
-    const std::vector<absl::string_view> &valid_vocab) {
+    const std::vector<std::string> &valid_vocab) {
   RETURN_IF_ERROR(status());
 
   // TODO(taku): supports vocabulary constraint in BPE model.
@@ -302,8 +153,7 @@ util::Status SentencePieceProcessor::SetVocabulary(
   CHECK_OR_RETURN(type == TrainerSpec::UNIGRAM || type == TrainerSpec::BPE)
       << "Vocabulary constraint is only enabled in subword units.";
 
-  const std::set<absl::string_view> vocab(valid_vocab.begin(),
-                                          valid_vocab.end());
+  const std::set<std::string> vocab(valid_vocab.begin(), valid_vocab.end());
 
   for (int i = 0; i < model_proto_->pieces_size(); ++i) {
     auto *piece = model_proto_->mutable_pieces(i);
@@ -356,7 +206,7 @@ util::Status SentencePieceProcessor::LoadVocabulary(absl::string_view filename,
     }
   }
 
-  return SetVocabulary(ToPieceArray(vocab));
+  return SetVocabulary(vocab);
 }
 
 #define CHECK_OR_RETURN_STATUS_STL(container)               \
@@ -399,12 +249,6 @@ util::Status SentencePieceProcessor::Encode(absl::string_view input,
 
 util::Status SentencePieceProcessor::Decode(
     const std::vector<std::string> &pieces, std::string *detokenized) const {
-  return Decode(ToPieceArray(pieces), detokenized);
-}
-
-util::Status SentencePieceProcessor::Decode(
-    const std::vector<absl::string_view> &pieces,
-    std::string *detokenized) const {
   CHECK_OR_RETURN_STATUS_STL(detokenized);
 
   SentencePieceText spt;
@@ -484,56 +328,6 @@ util::Status SentencePieceProcessor::SampleEncode(absl::string_view input,
   RETURN_IF_ERROR(SampleEncode(input, nbest_size, alpha, &spt));
   for (const auto &sp : spt.pieces()) {
     ids->emplace_back(sp.id());
-  }
-
-  return util::OkStatus();
-}
-
-util::Status SentencePieceProcessor::SampleEncodeAndScore(
-    absl::string_view input, int num_samples, float alpha, bool wor,
-    bool include_best,
-    std::vector<std::pair<std::vector<std::string>, float>> *pieces) const {
-  CHECK_OR_RETURN_STATUS_STL(pieces);
-
-  NBestSentencePieceText spt;
-  RETURN_IF_ERROR(
-      SampleEncodeAndScore(input, num_samples, alpha, wor, include_best, &spt));
-
-  pieces->clear();
-  pieces->reserve(spt.nbests_size());
-
-  for (const auto &nbest : spt.nbests()) {
-    std::vector<std::string> result;
-    result.reserve(nbest.pieces_size());
-    for (const auto &sp : nbest.pieces()) {
-      result.emplace_back(sp.piece());
-    }
-    pieces->emplace_back(result, nbest.score());
-  }
-
-  return util::OkStatus();
-}
-
-util::Status SentencePieceProcessor::SampleEncodeAndScore(
-    absl::string_view input, int num_samples, float alpha, bool wor,
-    bool include_best,
-    std::vector<std::pair<std::vector<int>, float>> *ids) const {
-  CHECK_OR_RETURN_STATUS_STL(ids);
-
-  NBestSentencePieceText spt;
-  RETURN_IF_ERROR(
-      SampleEncodeAndScore(input, num_samples, alpha, wor, include_best, &spt));
-
-  ids->clear();
-  ids->reserve(spt.nbests_size());
-
-  for (const auto &nbest : spt.nbests()) {
-    std::vector<int> result;
-    result.reserve(nbest.pieces_size());
-    for (const auto &sp : nbest.pieces()) {
-      result.emplace_back(sp.id());
-    }
-    ids->emplace_back(result, nbest.score());
   }
 
   return util::OkStatus();
@@ -710,7 +504,7 @@ util::Status SentencePieceProcessor::SampleEncode(
 }
 
 util::Status SentencePieceProcessor::SampleEncodeAndScore(
-    absl::string_view input, int samples, float alpha, bool wor,
+    absl::string_view input, int samples, float theta, bool wor,
     bool include_best, NBestSentencePieceText *samples_spt) const {
   CHECK_OR_RETURN(model_->IsSampleEncodeAndScoreAvailable())
       << "SampleEncodeAndScore is not available for the current model.";
@@ -718,7 +512,7 @@ util::Status SentencePieceProcessor::SampleEncodeAndScore(
   std::vector<size_t> norm_to_orig;
   RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
-  const auto results = model_->SampleEncodeAndScore(normalized, alpha, samples,
+  const auto results = model_->SampleEncodeAndScore(normalized, theta, samples,
                                                     wor, include_best);
   CHECK_OR_RETURN(!results.empty())
       << "SampleEncodeAndScore returns empty result.";
@@ -734,7 +528,7 @@ util::Status SentencePieceProcessor::SampleEncodeAndScore(
 }
 
 util::Status SentencePieceProcessor::CalculateEntropy(absl::string_view input,
-                                                      float alpha,
+                                                      float theta,
                                                       float *entropy) const {
   CHECK_OR_RETURN(model_->IsCalculateEntropyAvailable())
       << "CalculateEntropy is not available for the current model.";
@@ -742,42 +536,30 @@ util::Status SentencePieceProcessor::CalculateEntropy(absl::string_view input,
   std::vector<size_t> norm_to_orig;
   RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
-  *entropy = model_->CalculateEntropy(normalized, alpha);
+  *entropy = model_->CalculateEntropy(normalized, theta);
   return util::OkStatus();
 }
 
 util::Status SentencePieceProcessor::Decode(
     const std::vector<std::string> &pieces, SentencePieceText *spt) const {
-  return Decode(ToPieceArray(pieces), spt);
-}
-
-util::Status SentencePieceProcessor::Decode(
-    const std::vector<absl::string_view> &pieces,
-    SentencePieceText *spt) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
   const char *unk_surface = kDefaultUnknownSymbol;
   if (model_proto_ && model_proto_->trainer_spec().has_unk_surface())
     unk_surface = model_proto_->trainer_spec().unk_surface().c_str();
 
-  // Returns decoded piece and a boolean indicating if the function has consumed
-  // a bos whitespace token (a piece starting with a kSpaceSymbol). This is used
-  // to strip only the first whitespace token from the decoded sequence for
-  // add_dummy_prefix.
-  auto DecodeSentencePiece =
-      [&](absl::string_view piece, int id,
-          bool is_bos_ws) -> std::pair<std::string, bool> {
-    if (IsControl(id)) {                 // <s>, </s>
-      return std::make_pair("", false);  // invisible symbol.
+  auto DecodeSentencePiece = [&](absl::string_view piece, int id,
+                                 bool is_bos_ws) -> std::string {
+    if (IsControl(id)) {  // <s>, </s>
+      return "";          // invisible symbol.
     } else if (IsUnknown(id)) {
       if (IdToPiece(id) == piece) {  // <unk>
-        return std::make_pair(unk_surface, false);
+        return unk_surface;
       } else {  // return piece when piece is not <unk>.
-        return std::make_pair(std::string(piece), false);
+        return std::string(piece);
       }
     }
 
-    bool has_bos_ws = false;  // whether the token starts with a kSpaceSymbol
     if (is_bos_ws &&
         (!model_proto_ ||
          (model_proto_ &&
@@ -785,22 +567,15 @@ util::Status SentencePieceProcessor::Decode(
            model_proto_->normalizer_spec().remove_extra_whitespaces())))) {
       // Consume if the current position is bos and
       // piece starts with kSpaceSymbol.
-      has_bos_ws = absl::ConsumePrefix(&piece, kSpaceSymbol);
-
-      if (model_proto_ &&
-          model_proto_->normalizer_spec().remove_extra_whitespaces()) {
-        // if we are removing extra whitespace, we remove all leading whitespace
-        has_bos_ws = false;
-      }
+      absl::ConsumePrefix(&piece, kSpaceSymbol);
     }
 
-    return std::make_pair(absl::StrReplaceAll(piece, {{kSpaceSymbol, " "}}),
-                          has_bos_ws);
+    return absl::StrReplaceAll(piece, {{kSpaceSymbol, " "}});
   };
 
-  for (absl::string_view w : pieces) {
+  for (const std::string &w : pieces) {
     auto *sp = spt->add_pieces();
-    sp->mutable_piece()->assign(w.data(), w.size());
+    sp->set_piece(w);
     sp->set_id(PieceToId(w));
   }
 
@@ -869,23 +644,12 @@ util::Status SentencePieceProcessor::Decode(
   };
 
   int byte_start = 0;
-  bool is_bos_ws = true;  // whether we expect a bos ws token to consume.
-  bool bos_ws_seen = false;
-  std::string decoded;
-
   for (int i = 0; i < spt->pieces_size(); ++i) {
     const auto &sp = spt->pieces(i);
     if (!IsByte(sp.id())) {
       RETURN_IF_ERROR(ProcessBytePieces(byte_start, i));
-
-      // if we have seen a bos_ws token or any non-empty token
-      if (bos_ws_seen || !text->empty()) is_bos_ws = false;
-
       byte_start = i + 1;
-      std::tie(decoded, bos_ws_seen) =
-          DecodeSentencePiece(sp.piece(), sp.id(), is_bos_ws);
-
-      SetSurface(i, decoded);
+      SetSurface(i, DecodeSentencePiece(sp.piece(), sp.id(), text->empty()));
     }
   }
   RETURN_IF_ERROR(ProcessBytePieces(byte_start, spt->pieces_size()));
@@ -910,6 +674,41 @@ util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
     pieces.emplace_back(IdToPiece(id));
   }
   return Decode(pieces, spt);
+}
+
+std::string SentencePieceProcessor::EncodeAsSerializedProto(
+    absl::string_view input) const {
+  SentencePieceText spt;
+  if (!Encode(input, &spt).ok()) return "";
+  return spt.SerializeAsString();
+}
+
+std::string SentencePieceProcessor::SampleEncodeAsSerializedProto(
+    absl::string_view input, int nbest_size, float alpha) const {
+  SentencePieceText spt;
+  if (!SampleEncode(input, nbest_size, alpha, &spt).ok()) return "";
+  return spt.SerializeAsString();
+}
+
+std::string SentencePieceProcessor::NBestEncodeAsSerializedProto(
+    absl::string_view input, int nbest_size) const {
+  NBestSentencePieceText spt;
+  if (!NBestEncode(input, nbest_size, &spt).ok()) return "";
+  return spt.SerializeAsString();
+}
+
+std::string SentencePieceProcessor::DecodePiecesAsSerializedProto(
+    const std::vector<std::string> &pieces) const {
+  SentencePieceText spt;
+  if (!Decode(pieces, &spt).ok()) return "";
+  return spt.SerializeAsString();
+}
+
+std::string SentencePieceProcessor::DecodeIdsAsSerializedProto(
+    const std::vector<int> &ids) const {
+  SentencePieceText spt;
+  if (!Decode(ids, &spt).ok()) return "";
+  return spt.SerializeAsString();
 }
 
 #define CHECK_STATUS_OR_RETURN_DEFAULT(value)                                \
@@ -1010,15 +809,6 @@ util::Status SentencePieceProcessor::ApplyExtraOptions(
         piece->set_piece(model_->bos_piece().data(),
                          model_->bos_piece().size());
       } break;
-      case UNK_PIECE: {
-        for (int i = 0; i < spt->pieces_size(); ++i) {
-          auto *piece = spt->mutable_pieces(i);
-          if (IsUnknown(piece->id())) {
-            piece->set_piece(model_->unk_piece().data(),
-                             model_->unk_piece().size());
-          }
-        }
-      } break;
       default:
         return util::InternalError("unknown extra_option type.");
     }
@@ -1041,9 +831,7 @@ util::Status SentencePieceProcessor::ParseExtraOptions(
   static std::map<absl::string_view, SentencePieceProcessor::ExtraOption>
       extra_option_map = {{"bos", SentencePieceProcessor::BOS},
                           {"eos", SentencePieceProcessor::EOS},
-                          {"reverse", SentencePieceProcessor::REVERSE},
-                          {"unk", SentencePieceProcessor::UNK_PIECE},
-                          {"unk_piece", SentencePieceProcessor::UNK_PIECE}};
+                          {"reverse", SentencePieceProcessor::REVERSE}};
   for (const auto &s : absl::StrSplit(extra_option, ":")) {
     const auto it = extra_option_map.find(s);
     CHECK_OR_RETURN(it != extra_option_map.end())
@@ -1088,6 +876,7 @@ std::string SentencePieceProcessor::serialized_model_proto() const {
 void SetRandomGeneratorSeed(unsigned int seed);
 
 namespace io {
+
 util::Status LoadModelProto(absl::string_view filename,
                             ModelProto *model_proto) {
   if (filename.empty()) {
