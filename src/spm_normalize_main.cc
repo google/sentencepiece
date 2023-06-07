@@ -46,7 +46,6 @@ using sentencepiece::normalizer::Builder;
 using sentencepiece::normalizer::Normalizer;
 
 int main(int argc, char *argv[]) {
-  sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
   std::vector<std::string> rest_args;
 

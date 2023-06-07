@@ -19,7 +19,7 @@
 
 namespace sentencepiece {
 namespace unicode_script {
-enum ScriptType : int32_t {
+enum ScriptType {
   U_Adlam,
   U_Ahom,
   U_Anatolian_Hieroglyphs,

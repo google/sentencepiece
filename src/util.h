@@ -36,6 +36,13 @@
 #include <pthread.h>
 #endif
 
+#if !defined(__APPLE__) && !defined(_WIN32)
+#include <endian.h>
+#if BYTE_ORDER == __BIG_ENDIAN
+#define IS_BIG_ENDIAN
+#endif
+#endif
+
 namespace sentencepiece {
 template <typename T>
 std::ostream &operator<<(std::ostream &out, const std::vector<T> &v) {
@@ -49,6 +56,17 @@ uint32 GetRandomGeneratorSeed();
 
 // String utilities
 namespace string_util {
+
+struct string_view_hash {
+  // DJB hash function.
+  inline size_t operator()(const absl::string_view &sp) const {
+    size_t hash = 5381;
+    for (size_t i = 0; i < sp.size(); ++i) {
+      hash = ((hash << 5) + hash) + sp[i];
+    }
+    return hash;
+  }
+};
 
 template <typename Target>
 inline bool lexical_cast(absl::string_view arg, Target *result) {
@@ -84,6 +102,7 @@ inline bool lexical_cast(absl::string_view arg, std::string *result) {
 
 template <typename T>
 inline bool DecodePOD(absl::string_view str, T *result) {
+  CHECK_NOTNULL(result);
   if (sizeof(*result) != str.size()) {
     return false;
   }
@@ -400,6 +419,10 @@ class StatusBuilder {
 #define CHECK_LE_OR_RETURN(a, b) CHECK_OR_RETURN((a) <= (b))
 #define CHECK_GT_OR_RETURN(a, b) CHECK_OR_RETURN((a) > (b))
 #define CHECK_LT_OR_RETURN(a, b) CHECK_OR_RETURN((a) < (b))
+
+#ifdef IS_BIG_ENDIAN
+inline uint32 Swap32(uint32 x) { return __builtin_bswap32(x); }
+#endif
 
 }  // namespace util
 

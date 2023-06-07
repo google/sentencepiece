@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "sentencepiece_processor.h"
-
 #include <utility>
 
 #include "builder.h"
@@ -22,6 +20,7 @@
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
+#include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
 #include "third_party/absl/container/flat_hash_map.h"
@@ -552,9 +551,10 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
     int GetPieceSize() const override { return 7; }
 
     int PieceToId(absl::string_view piece) const override {
-      static absl::flat_hash_map<absl::string_view, int> kMap = {
-          {"<unk>", 0}, {"<s>", 1}, {"</s>", 2},    {WS "ABC", 3},
-          {WS "DE", 4}, {"F", 5},   {"G" WS "H", 6}};
+      static absl::flat_hash_map<absl::string_view, int,
+                                 string_util::string_view_hash>
+          kMap = {{"<unk>", 0}, {"<s>", 1}, {"</s>", 2},    {WS "ABC", 3},
+                  {WS "DE", 4}, {"F", 5},   {"G" WS "H", 6}};
       return port::FindWithDefault(kMap, piece, 0);
     }
 
@@ -706,86 +706,6 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
     EXPECT_TRUE(sp.Decode(input, &spt).ok());
     EXPECT_EQ(" ABC DEFG HI", spt.text());
     EXPECT_EQ(8, spt.pieces_size());
-  }
-}
-
-TEST(SentencepieceProcessorTest, DummyPrefixDecodeTest) {
-  class DecodeMockModel : public ModelInterface {
-   public:
-    EncodeResult Encode(absl::string_view normalized) const override {
-      return {};
-    }
-
-    int GetPieceSize() const override { return 7; }
-
-    int PieceToId(absl::string_view piece) const override {
-      static absl::flat_hash_map<absl::string_view, int> kMap = {
-          {"<unk>", 0}, {"<s>", 1}, {"</s>", 2},     {WS "ABC", 3},
-          {WS "DE", 4}, {"F", 5},   {"G" WS "H", 6}, {WS, 7}};
-      return port::FindWithDefault(kMap, piece, 0);
-    }
-
-    const std::string &IdToPiece(int id) const override {
-      static std::vector<std::string> kMap = {
-          "<unk>", "<s>", "</s>", WS "ABC", WS "DE", "F", "G" WS "H", WS};
-      return kMap[id];
-    }
-
-    bool IsUnknown(int id) const override { return (id == 0); }
-
-    bool IsControl(int id) const override { return (id == 1 || id == 2); }
-
-    bool IsByte(int id) const override { return false; }
-
-    float GetScore(int id) const override { return 0.0; }
-  };
-
-  // start the sequence with a whitespace token
-  const std::vector<std::string> input = {
-      "<s>", WS, WS "ABC", "<unk>", WS "DE", "F", "G" WS "H", "I", "</s>"};
-
-  {
-    SentencePieceProcessor sp;
-    auto proto = absl::make_unique<ModelProto>();
-    proto->mutable_trainer_spec()->set_unk_surface("");
-    proto->mutable_normalizer_spec()->set_add_dummy_prefix(true);
-    proto->mutable_normalizer_spec()->set_remove_extra_whitespaces(false);
-    sp.Load(std::move(proto)).IgnoreError();
-
-    auto mock = absl::make_unique<DecodeMockModel>();
-    sp.SetModel(std::move(mock));
-
-    const auto normalization_spec = MakeDefaultNormalizerSpec();
-    sp.SetNormalizer(
-        absl::make_unique<normalizer::Normalizer>(normalization_spec));
-
-    SentencePieceText spt;
-
-    EXPECT_TRUE(sp.Decode(input, &spt).ok());
-    EXPECT_EQ(" ABC DEFG HI", spt.text());
-    EXPECT_EQ(9, spt.pieces_size());
-  }
-
-  {
-    SentencePieceProcessor sp;
-    auto proto = absl::make_unique<ModelProto>();
-    proto->mutable_trainer_spec()->set_unk_surface("");
-    proto->mutable_normalizer_spec()->set_add_dummy_prefix(true);
-    proto->mutable_normalizer_spec()->set_remove_extra_whitespaces(true);
-    sp.Load(std::move(proto)).IgnoreError();
-
-    auto mock = absl::make_unique<DecodeMockModel>();
-    sp.SetModel(std::move(mock));
-
-    const auto normalization_spec = MakeDefaultNormalizerSpec();
-    sp.SetNormalizer(
-        absl::make_unique<normalizer::Normalizer>(normalization_spec));
-
-    SentencePieceText spt;
-
-    EXPECT_TRUE(sp.Decode(input, &spt).ok());
-    EXPECT_EQ("ABC DEFG HI", spt.text());
-    EXPECT_EQ(9, spt.pieces_size());
   }
 }
 
@@ -1056,6 +976,18 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
   EXPECT_EQ(1, sp.bos_id());
   EXPECT_EQ(2, sp.eos_id());
   EXPECT_EQ(-1, sp.pad_id());
+
+  {
+    // Verify the default encoder version.
+    EXPECT_EQ(EncoderVersion::kOptimized, sp.GetEncoderVersion());
+
+    // Set the encoder version to original and verify.
+    EXPECT_TRUE(sp.SetEncoderVersion(EncoderVersion::kOriginal).ok());
+    EXPECT_EQ(EncoderVersion::kOriginal, sp.GetEncoderVersion());
+
+    // Set back to the default encoder version.
+    EXPECT_TRUE(sp.SetEncoderVersion(EncoderVersion::kOptimized).ok());
+  }
 
   {
     std::vector<std::string> sps;
@@ -1561,153 +1493,4 @@ TEST(SentencePieceProcessorTest, VocabularyTest) {
   EXPECT_FALSE(sp.IsUnused(6));
   EXPECT_FALSE(sp.IsUnused(7));
 }
-
-TEST(SentencePieceProcessorTest, ImmutableSentencePieceTextTest) {
-  ImmutableSentencePieceText spt;
-  EXPECT_TRUE(spt.text().empty());
-  EXPECT_EQ(spt.score(), 0.0);
-  EXPECT_TRUE(spt.SerializeAsString().empty());
-
-  auto *v = spt.mutable_proto();
-
-  v->set_text("hello world");
-  v->set_score(1.0);
-  for (int i = 0; i < 10; ++i) {
-    auto *p = v->add_pieces();
-    p->set_surface(absl::StrCat("surface_", i));
-    p->set_piece(absl::StrCat("surface_", i));
-    p->set_id(i);
-    p->set_begin(i + 10);
-    p->set_end(i + 20);
-  }
-
-  EXPECT_EQ(v->pieces_size(), spt.pieces_size());
-  for (int i = 0; i < spt.pieces_size(); ++i) {
-    EXPECT_EQ(v->pieces(i).surface(), spt.pieces(i).surface());
-    EXPECT_EQ(v->pieces(i).piece(), spt.pieces(i).piece());
-    EXPECT_EQ(v->pieces(i).id(), spt.pieces(i).id());
-    EXPECT_EQ(v->pieces(i).begin(), spt.pieces(i).begin());
-    EXPECT_EQ(v->pieces(i).end(), spt.pieces(i).end());
-  }
-
-  auto check_proto = [&v](const ImmutableSentencePieceText &s) {
-    int n = 0;
-    for (auto &p : s.pieces()) {
-      EXPECT_EQ(v->pieces(n).surface(), p.surface());
-      EXPECT_EQ(v->pieces(n).piece(), p.piece());
-      EXPECT_EQ(v->pieces(n).id(), p.id());
-      EXPECT_EQ(v->pieces(n).begin(), p.begin());
-      EXPECT_EQ(v->pieces(n).end(), p.end());
-      ++n;
-    }
-    EXPECT_EQ(v->text(), s.text());
-    EXPECT_EQ(v->score(), s.score());
-    EXPECT_EQ(v->SerializeAsString(), s.SerializeAsString());
-  };
-
-  // test copy.
-  const auto spt2 = spt;
-  check_proto(spt2);
-
-  // test assign.
-  const ImmutableSentencePieceText spt3(spt);
-  check_proto(spt3);
-
-  // default piece.
-  const ImmutableSentencePieceText_ImmutableSentencePiece piece;
-  EXPECT_TRUE(piece.surface().empty());
-  EXPECT_TRUE(piece.piece().empty());
-  EXPECT_EQ(piece.begin(), 0);
-  EXPECT_EQ(piece.end(), 0);
-  EXPECT_EQ(piece.id(), 0);
-}
-
-TEST(SentencePieceProcessorTest, ImmutableNBestSentencePieceTextTest) {
-  ImmutableNBestSentencePieceText spt;
-  EXPECT_EQ(spt.nbests_size(), 0);
-  EXPECT_TRUE(spt.SerializeAsString().empty());
-
-  auto *v = spt.mutable_proto();
-
-  for (int i = 0; i < 10; ++i) {
-    auto *p = v->add_nbests();
-    p->set_text(absl::StrCat("text_", i));
-    p->set_score(2.0 * i);
-  }
-
-  auto check_proto = [&v](const ImmutableNBestSentencePieceText &s) {
-    EXPECT_EQ(v->nbests_size(), s.nbests_size());
-    for (int i = 0; i < v->nbests_size(); ++i) {
-      EXPECT_EQ(v->nbests(i).text(), s.nbests(i).text());
-      EXPECT_EQ(v->nbests(i).score(), s.nbests(i).score());
-    }
-    EXPECT_EQ(v->SerializeAsString(), s.SerializeAsString());
-  };
-
-  check_proto(spt);
-
-  // test copy.
-  const auto spt2 = spt;
-  check_proto(spt2);
-
-  // test assign.
-  const ImmutableNBestSentencePieceText spt3(spt);
-  check_proto(spt3);
-}
-
-TEST(SentencePieceProcessorTest, ConvertToUnicodeSpansTest) {
-  auto make_spt = [&](const std::vector<std::string> &tokens) {
-    ImmutableSentencePieceText ispt;
-    auto *spt = ispt.mutable_proto();
-    int prev = 0;
-    std::string text;
-    for (const auto &tok : tokens) {
-      auto *piece = spt->add_pieces();
-      piece->set_surface(tok);
-      piece->set_piece(tok);
-      piece->set_begin(prev);
-      piece->set_end(prev + tok.size());
-      prev += tok.size();
-      text += tok;
-    }
-    spt->set_text(text);
-    ispt.ConvertToUnicodeSpans();
-    return ispt;
-  };
-
-  {
-    const auto spt = make_spt({"hello", "_world", "."});
-    EXPECT_EQ(spt.pieces_size(), 3);
-    EXPECT_EQ(spt.pieces(0).begin(), 0);
-    EXPECT_EQ(spt.pieces(0).end(), 5);
-    EXPECT_EQ(spt.pieces(1).begin(), 5);
-    EXPECT_EQ(spt.pieces(1).end(), 11);
-    EXPECT_EQ(spt.pieces(2).begin(), 11);
-    EXPECT_EQ(spt.pieces(2).end(), 12);
-  }
-
-  {
-    const auto spt = make_spt({"これは", "test", "です"});
-    EXPECT_EQ(spt.pieces_size(), 3);
-    EXPECT_EQ(spt.pieces(0).begin(), 0);
-    EXPECT_EQ(spt.pieces(0).end(), 3);
-    EXPECT_EQ(spt.pieces(1).begin(), 3);
-    EXPECT_EQ(spt.pieces(1).end(), 7);
-
-    EXPECT_EQ(spt.pieces(2).begin(), 7);
-    EXPECT_EQ(spt.pieces(2).end(), 9);
-  }
-
-  {
-    const auto spt = make_spt({"いABは", "にほCD", "へと"});
-    EXPECT_EQ(spt.pieces_size(), 3);
-    EXPECT_EQ(spt.pieces(0).begin(), 0);
-    EXPECT_EQ(spt.pieces(0).end(), 4);
-    EXPECT_EQ(spt.pieces(1).begin(), 4);
-    EXPECT_EQ(spt.pieces(1).end(), 8);
-    EXPECT_EQ(spt.pieces(2).begin(), 8);
-    EXPECT_EQ(spt.pieces(2).end(), 10);
-  }
-}
-
 }  // namespace sentencepiece

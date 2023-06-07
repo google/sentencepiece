@@ -156,7 +156,6 @@ struct BinaryBlob {
 }  // namespace sentencepiece
 
 int main(int argc, char **argv) {
-  sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
 
   const std::vector<std::pair<
@@ -165,8 +164,7 @@ int main(int argc, char **argv) {
       kRuleList = {{"nfkc", Builder::BuildNFKCMap},
                    {"nmt_nfkc", Builder::BuildNmtNFKCMap},
                    {"nfkc_cf", Builder::BuildNFKC_CFMap},
-                   {"nmt_nfkc_cf", Builder::BuildNmtNFKC_CFMap},
-                   {"nfkd", Builder::BuildNFKDMap}};
+                   {"nmt_nfkc_cf", Builder::BuildNmtNFKC_CFMap}};
 
   std::vector<std::pair<std::string, std::string>> data;
   for (const auto &p : kRuleList) {
@@ -176,14 +174,10 @@ int main(int argc, char **argv) {
     // Write Header.
     std::string index;
     CHECK_OK(Builder::CompileCharsMap(normalized_map, &index));
+    data.emplace_back(p.first, index);
 
     // Write TSV file.
     CHECK_OK(Builder::SaveCharsMap(p.first + ".tsv", normalized_map));
-
-    // Do not make NFKD map as it is optionally created.
-    if (p.first.find("nfkd") != std::string::npos) continue;
-
-    data.emplace_back(p.first, index);
   }
 
   if (absl::GetFlag(FLAGS_output_precompiled_header)) {

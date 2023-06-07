@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "trainer_interface.h"
-
 #include <utility>
 
 #include "filesystem.h"
 #include "testharness.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_format.h"
+#include "trainer_interface.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -73,16 +72,12 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_FALSE(IsValid("F1"));
   EXPECT_FALSE(IsValid("1F"));
   EXPECT_FALSE(IsValid("1A2"));
-  EXPECT_TRUE(IsValid("$10"));      // $ and 1 are both "common" script.
+  EXPECT_TRUE(IsValid("$10"));  // $ and 1 are both "common" script.
   EXPECT_FALSE(IsValid("$ABC"));
   EXPECT_FALSE(IsValid("ab\tbc"));  // "\t" is UPP boundary.
   EXPECT_FALSE(IsValid("ab cd"));
   EXPECT_FALSE(IsValid("\0\0"));
   EXPECT_FALSE(IsValid("\0"));
-  EXPECT_TRUE(IsValid("proteïni"));  // Combining Diaeresis should inherit
-                                     // script from base character.
-  EXPECT_TRUE(IsValid("ثَبَّتَ"));  // Arabic Fatha and Shadda should inherit script
-                                // from base character.
 
   trainer_spec.set_split_by_whitespace(false);
   EXPECT_TRUE(IsValid(WS));
@@ -113,26 +108,6 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_TRUE(IsValid("F1"));
   EXPECT_TRUE(IsValid("$10"));
   EXPECT_TRUE(IsValid("$ABC"));
-
-  trainer_spec.set_split_by_unicode_script(true);
-  trainer_spec.set_split_by_number(true);
-  EXPECT_FALSE(IsValid("F1"));
-  EXPECT_TRUE(IsValid("$10"));
-
-  trainer_spec.set_split_by_unicode_script(true);
-  trainer_spec.set_split_by_number(false);
-  EXPECT_TRUE(IsValid("F1"));
-  EXPECT_TRUE(IsValid("$10"));
-
-  trainer_spec.set_split_by_unicode_script(false);
-  trainer_spec.set_split_by_number(true);
-  EXPECT_TRUE(IsValid("F1"));
-  EXPECT_TRUE(IsValid("$10"));
-
-  trainer_spec.set_split_by_unicode_script(false);
-  trainer_spec.set_split_by_number(false);
-  EXPECT_TRUE(IsValid("F1"));
-  EXPECT_TRUE(IsValid("$10"));
 
   trainer_spec.set_max_sentencepiece_length(4);
   EXPECT_TRUE(IsValid("1234"));

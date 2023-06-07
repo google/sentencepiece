@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "unigram_model_trainer.h"
-
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
@@ -29,17 +27,14 @@
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/memory/memory.h"
-#include "third_party/absl/strings/str_replace.h"
-#include "third_party/absl/strings/str_split.h"
 #include "third_party/esaxx/esa.hxx"  // Suffix array library.
 #include "unicode_script.h"
+#include "unigram_model_trainer.h"
 #include "util.h"
 
 namespace sentencepiece {
 namespace unigram {
 namespace {
-
-constexpr char32 kSentenceBoundary = 0x0000;
 
 double Digamma(double x) {
   double result = 0.0;
@@ -64,40 +59,6 @@ void ToLogProb(IT begin, IT end) {
     it->second = std::log(static_cast<double>(it->second)) - logsum;
   }
 }
-
-template <class T>
-class BoundedPriorityQueue {
- public:
-  explicit BoundedPriorityQueue(size_t size) : size_(size) {}
-  ~BoundedPriorityQueue() = default;
-
-  void push(T elem, int64 score) {
-    if (queue_.size() > 4 * size_) resize();
-    if (sorted && queue_.size() >= size_ && queue_[size_ - 1].second > score)
-      return;
-    queue_.emplace_back(elem, score);
-  }
-
-  const std::vector<std::pair<T, int64>> &get() {
-    resize();
-    return queue_;
-  }
-
- private:
-  void resize() {
-    std::sort(queue_.begin(), queue_.end(), [](const auto &p1, const auto &p2) {
-      return (p1.second > p2.second ||
-              (p1.second == p2.second && p1.first < p2.first));
-    });
-    sorted = true;
-    if (queue_.size() > size_) queue_.resize(size_);
-  }
-
-  bool sorted = false;
-  size_t size_ = 0;
-  std::vector<std::pair<T, int64>> queue_;
-};
-
 }  // namespace
 
 TrainerModel::TrainerModel(const TrainerSpec &trainer_spec,
@@ -134,15 +95,9 @@ void TrainerModel::SetSentencePieces(SentencePieces &&sentencepieces) {
   CHECK(status().ok());
 }
 
-TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() {
-  return trainer_spec_.train_extremely_large_corpus()
-             ? MakeSeedSentencePiecesInternal<int64>()
-             : MakeSeedSentencePiecesInternal<int32>();
-}
-
 // Returns seed sentencepieces for EM training.
 template <typename node_int_type>
-TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
+TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() const {
   CHECK(!sentences_.empty());
   CHECK(!required_chars_.empty());
 
@@ -150,43 +105,14 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
   // Pretokenizer is used as a constraint of piece extractions.
   const auto *pretokenizer = SentencePieceTrainer::GetPretokenizerForTraining();
 
-  auto pretokenize_or_rewrite = [&](std::pair<std::string, int64> *w) {
-    if (pretokenizer) {
-      std::vector<char32> chars;
-      for (const auto &w : pretokenizer->PreTokenize(w->first)) {
-        for (const auto &c : string_util::UTF8ToUnicodeText(w)) {
-          chars.push_back(c);
-        }
-        chars.push_back(kSentenceBoundary);
-      }
-      return chars;
-    } else if (!trainer_spec_.pretokenization_delimiter().empty()) {
-      // When delimiter is specified, tokenize the input with the delimiter.
-      // For EM training, we assume that the delimiter doesn't exist and
-      // rewrite the original sentence.
-      std::vector<char32> chars;
-      absl::string_view delimiter = trainer_spec_.pretokenization_delimiter();
-      for (const auto &w : absl::StrSplit(w->first, delimiter)) {
-        for (const auto &c : string_util::UTF8ToUnicodeText(w)) {
-          chars.push_back(c);
-        }
-        chars.push_back(kSentenceBoundary);
-      }
-      // Removes the delimiter.
-      w->first = absl::StrReplaceAll(w->first, {{delimiter, ""}});
-      return chars;
-    }
-    return string_util::UTF8ToUnicodeText(w->first);
-  };
-
   // Merges all sentences into one array with 0x0000 delimiter.
   std::vector<char32> array;
   absl::flat_hash_map<std::string, int64> all_chars;
+  constexpr char32 kSentenceBoundary = 0x0000;
 
-  const bool is_tsv = trainer_spec_.input_format() == "tsv";
-
-  for (auto &w : sentences_) {
-    const auto ut = pretokenize_or_rewrite(&w);
+  for (const auto &w : sentences_) {
+    const auto ut = string_util::UTF8ToUnicodeText(
+        pretokenizer ? pretokenizer->PreTokenize(w.first) : w.first);
     for (const auto &c : ut) {
       array.push_back(c);
       if (c != kUNKChar && c != kSentenceBoundary) {
@@ -194,15 +120,6 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
       }
     }
     array.push_back(kSentenceBoundary);  // sentence boundary marker.
-
-    // Naive workaround to over-sample the input.
-    // In TSV mode, the frequency field is not used to extract the seed piece.
-    // we can at least extract all pieces by copying the input because
-    // the occurrence gets at least larger than or equals to 2.
-    if (is_tsv) {
-      for (const auto &c : ut) array.push_back(c);
-      array.push_back(kSentenceBoundary);
-    }
   }
 
   CHECK_LE(array.size(),
@@ -223,18 +140,16 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
   CHECK_EQ(0, esaxx(array.begin(), SA.begin(), L.begin(), R.begin(), D.begin(),
                     n, kAlphabetSize, node_num));
 
-  LOG(INFO) << "Extracting frequent sub strings... node_num=" << node_num;
-  BoundedPriorityQueue<node_int_type> queue(
-      static_cast<size_t>(trainer_spec_.seed_sentencepiece_size()));
-
+  LOG(INFO) << "Extracting frequent sub strings...";
+  std::vector<std::pair<node_int_type, node_int_type>> substr_index;
   for (node_int_type i = 0; i < node_num; ++i) {
     const node_int_type offset = SA[L[i]];
     const node_int_type len = D[i];
     if (len <= 1) {
       continue;
     }
-    const char32 *begin = &array[offset];
-    const char32 *end = &array[offset + len];
+    const char32 *begin = &array[0] + offset;
+    const char32 *end = &array[0] + offset + len;
     // Skips if a substring contains a sentence boundary.
     if (std::find(begin, end, kSentenceBoundary) != end) {
       continue;
@@ -247,7 +162,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
     // character-wise coverage is the default score.
     const node_int_type freq = R[i] - L[i];
     const node_int_type score = freq * len;
-    queue.push(i, score);
+    substr_index.emplace_back(i, score);
   }
 
   // all_chars must be included in the seed sentencepieces.
@@ -256,15 +171,20 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
     seed_sentencepieces.emplace_back(it);
   }
 
-  for (const auto &p : queue.get()) {
+  // Sort by the coverage of sub strings.
+  for (const auto &p : Sorted(substr_index)) {
     const node_int_type offset = SA[L[p.first]];
     const node_int_type len = D[p.first];
     CHECK_GT(len, 0);
     const char32 *begin = &array[offset];
     const char32 *end = &array[offset + len];
     const UnicodeText uw(begin, end);
-    const std::string w = string_util::UnicodeTextToUTF8(uw);
     CHECK(IsValidSentencePiece(uw));  // just in case.
+    const std::string w = string_util::UnicodeTextToUTF8(uw);
+    if (seed_sentencepieces.size() ==
+        static_cast<size_t>(trainer_spec_.seed_sentencepiece_size())) {
+      break;
+    }
     CHECK(!port::ContainsKey(all_chars, w));
     seed_sentencepieces.emplace_back(w, p.second);
   }
@@ -469,10 +389,10 @@ TrainerModel::SentencePieces Trainer::PruneSentencePieces(
 
       // After removing the sentencepiece[i], its frequency freq[i] is
       // re-assigned to alternatives.
-      // new_sum = current_sum - freq[i] + freq[i] * alternatives[i].size()
-      //         = current_sum + freq[i] * (alternatives[i] - 1)
+      // new_sum = current_sum - freq[i] + freq[i] * alternatives.size()
+      //         = current_sum + freq[i] (alternatives - 1)
       const float logsum_alt = std::log(
-          static_cast<double>(sum + freq[i] * (alternatives[i].size() - 1)));
+          static_cast<double>(sum + freq[i] * (alternatives.size() - 1)));
 
       // The frequencies of altenatives are increased by freq[i].
       float logprob_alt = 0.0;
@@ -554,8 +474,13 @@ util::Status Trainer::Train() {
   RETURN_IF_ERROR(model.status());
   RETURN_IF_ERROR(LoadSentences());
 
-  auto seed_sentencepieces = MakeSeedSentencePieces();
-  model.SetSentencePieces(std::move(seed_sentencepieces));
+  if (trainer_spec_.train_extremely_large_corpus()) {
+    auto seed_sentencepieces = MakeSeedSentencePieces<int64>();
+    model.SetSentencePieces(std::move(seed_sentencepieces));
+  } else {
+    auto seed_sentencepieces = MakeSeedSentencePieces<int32>();
+    model.SetSentencePieces(std::move(seed_sentencepieces));
+  }
 
   if (trainer_spec_.split_by_whitespace()) {
     SplitSentencesByWhitespace();
