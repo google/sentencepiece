@@ -106,7 +106,12 @@
 // And.. they are moved back to stdext in MSVC 2013 (haven't checked 2012). That
 // said, use unordered_map for MSVC 2010 and beyond is our safest bet.
 #elif defined(_MSC_VER)
-# if _MSC_VER >= 1600  // Since Visual Studio 2010
+# if _MSC_VER >= 1900
+# ifndef _LIBCPP_STD_VER // Visual Studio 2022 doesn't export this for some reason. We have AT LEAST C++11 support
+#  define _LIBCPP_STD_VER 11
+# endif
+#  define GOOGLE_PROTOBUF_HAS_CXX11_HASH
+# elif _MSC_VER >= 1600  // Since Visual Studio 2010
 #  define GOOGLE_PROTOBUF_HAS_CXX11_HASH
 #  define GOOGLE_PROTOBUF_HASH_COMPARE std::hash_compare
 # elif _MSC_VER >= 1500  // Since Visual Studio 2008
