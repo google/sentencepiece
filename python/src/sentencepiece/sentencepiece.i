@@ -3,6 +3,7 @@
 
 %{
 
+#include <atomic>
 #include <iostream>
 #include <algorithm>
 #include <functional>
@@ -246,9 +247,11 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
   InitNumThreads(ins, &num_threads);                                    \
   {                                                                     \
     ThreadPool pool(ins.size());                                        \
+    std::atomic<size_t> index = 0;                                      \
     for (int n = 0;  n < num_threads; ++n) {                            \
-      pool.Schedule([&, n]() {                                          \
-          for (size_t i = n; i < ins.size(); i += num_threads) {        \
+      pool.Schedule([&]() {                                             \
+          size_t i = 0;                                                 \
+          while ((i = std::atomic_fetch_add(&index, 1)) < outs.size()) { \
             auto out = enable_sampling ?                                \
                        self->Sample##FuncName(ins[i],                   \
                                               nbest_size, alpha) :      \
@@ -267,10 +270,12 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
   std::vector<OutType> outs(ins.size());                                \
   InitNumThreads(ins, &num_threads);                                    \
   {                                                                     \
+    std::atomic<size_t> index = 0;                                      \
     ThreadPool pool(ins.size());                                        \
     for (int n = 0;  n < num_threads; ++n) {                            \
-      pool.Schedule([&, n]() {                                          \
-          for (size_t i = n; i < ins.size(); i += num_threads) {        \
+      pool.Schedule([&]() {                                             \
+          size_t i = 0;                                                 \
+          while ((i = std::atomic_fetch_add(&index, 1)) < outs.size()) { \
             CheckIds(ins[i], self->GetPieceSize());                     \
             auto out = self->FuncName(ins[i]);                          \
             ConvertToUnicodeSpans(&out);                                \
@@ -655,12 +660,14 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     InitNumThreads(ins, &num_threads);
     {
       ThreadPool pool(ins.size());
+      std::atomic<size_t> index = 0;
       for (int n = 0;  n < num_threads; ++n) {
-        pool.Schedule([&, n]() {
-            for (size_t i = n; i < ins.size(); i += num_threads) {
-              outs[i] = self->CalculateEntropy(ins[i], alpha);
-          }
-        });
+        pool.Schedule([&]() {
+           size_t i = 0;
+           while ((i = std::atomic_fetch_add(&index, 1)) < outs.size()) {
+             outs[i] = self->CalculateEntropy(ins[i], alpha);
+           }
+         });
       }
     }
     return outs;
