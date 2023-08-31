@@ -246,6 +246,8 @@ util::Status SentencePieceProcessor::Load(
         model_proto_->denormalizer_spec());
   }
 
+  add_dummy_prefix_ = model_proto_->normalizer_spec().add_dummy_prefix();
+
   // Escapes user-defined-symbols in normalizer.
   normalizer_->SetPrefixMatcher(model_->prefix_matcher());
 
@@ -357,6 +359,18 @@ util::Status SentencePieceProcessor::LoadVocabulary(absl::string_view filename,
   }
 
   return SetVocabulary(ToPieceArray(vocab));
+}
+
+util::Status SentencePieceProcessor::SetAddDummyPrefix(bool add_dummy_prefix)
+{
+  CHECK_OR_RETURN(normalizer_) << "normalizer is not initialized.";
+  add_dummy_prefix_ = add_dummy_prefix;
+  return util::OkStatus();
+}
+
+bool SentencePieceProcessor::GetAddDummyPrefix()
+{
+  return add_dummy_prefix_;
 }
 
 #define CHECK_OR_RETURN_STATUS_STL(container)               \
@@ -636,7 +650,8 @@ util::Status SentencePieceProcessor::Encode(absl::string_view input,
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig,
+                                         add_dummy_prefix_));
 
   const auto result = model_->Encode(normalized);
   RETURN_IF_ERROR(
@@ -652,7 +667,8 @@ util::Status SentencePieceProcessor::NBestEncode(
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig,
+                                         add_dummy_prefix_));
 
   CHECK_OR_RETURN(model_->IsNBestEncodeAvailable())
       << "NBestEncode is not available for the current model.";
@@ -679,7 +695,8 @@ util::Status SentencePieceProcessor::SampleEncode(
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig,
+                                         add_dummy_prefix_));
 
   if (!model_->IsNBestEncodeAvailable() || nbest_size < 0) {
     CHECK_OR_RETURN(model_->IsSampleEncodeAvailable())
@@ -716,7 +733,8 @@ util::Status SentencePieceProcessor::SampleEncodeAndScore(
       << "SampleEncodeAndScore is not available for the current model.";
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig,
+                                         add_dummy_prefix_));
 
   const auto results = model_->SampleEncodeAndScore(normalized, alpha, samples,
                                                     wor, include_best);
@@ -740,7 +758,8 @@ util::Status SentencePieceProcessor::CalculateEntropy(absl::string_view input,
       << "CalculateEntropy is not available for the current model.";
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig,
+                                         add_dummy_prefix_));
 
   *entropy = model_->CalculateEntropy(normalized, alpha);
   return util::OkStatus();
@@ -781,7 +800,7 @@ util::Status SentencePieceProcessor::Decode(
     if (is_bos_ws &&
         (!model_proto_ ||
          (model_proto_ &&
-          (model_proto_->normalizer_spec().add_dummy_prefix() ||
+          (add_dummy_prefix_ ||
            model_proto_->normalizer_spec().remove_extra_whitespaces())))) {
       // Consume if the current position is bos and
       // piece starts with kSpaceSymbol.

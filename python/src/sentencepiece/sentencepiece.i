@@ -251,7 +251,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     for (int n = 0;  n < num_threads; ++n) {                            \
       pool.Schedule([&]() {                                             \
           size_t i = 0;                                                 \
-          while ((i = std::atomic_fetch_add(&index, 1)) < outs.size()) { \
+          while ((i = std::atomic_fetch_add(&index, size_t{1})) < outs.size()) { \
             auto out = enable_sampling ?                                \
                        self->Sample##FuncName(ins[i],                   \
                                               nbest_size, alpha) :      \
@@ -275,7 +275,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     for (int n = 0;  n < num_threads; ++n) {                            \
       pool.Schedule([&]() {                                             \
           size_t i = 0;                                                 \
-          while ((i = std::atomic_fetch_add(&index, 1)) < outs.size()) { \
+          while ((i = std::atomic_fetch_add(&index, size_t{1})) < outs.size()) { \
             CheckIds(ins[i], self->GetPieceSize());                     \
             auto out = self->FuncName(ins[i]);                          \
             ConvertToUnicodeSpans(&out);                                \
@@ -664,7 +664,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
       for (int n = 0;  n < num_threads; ++n) {
         pool.Schedule([&]() {
            size_t i = 0;
-           while ((i = std::atomic_fetch_add(&index, 1)) < outs.size()) {
+           while ((i = std::atomic_fetch_add(&index, size_t{1})) < outs.size()) {
              outs[i] = self->CalculateEntropy(ins[i], alpha);
            }
          });
@@ -832,6 +832,14 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     return self.Encode(input=input, out_type='immutable_proto', **kwargs)
 
 
+  def EncodeNoDummyPrefix(self, input, **kwargs):
+    old_add_dummy_prefix = self.GetAddDummyPrefix()
+    self.SetAddDummyPrefix(False)
+    out = self.Encode(input=input, **kwargs)
+    self.SetAddDummyPrefix(old_add_dummy_prefix)
+    return out
+
+
   def SampleEncodeAsPieces(self, input, nbest_size=None, alpha=None, **kwargs):
     return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
                        out_type=str, enable_sampling=True, **kwargs)
@@ -981,7 +989,6 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     if include_best and not wor:
       raise RuntimeError('When include_best is True, We must specify "wor = True".')
 
-
     def _encode(text):
       if out_type is int:
         return self._SampleEncodeAndScoreAsIds(text, num_samples, alpha, wor, include_best,
@@ -1126,6 +1133,14 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 
   def DecodeIdsAsImmutableProto(self, input, out_type='immutable_proto', **kwargs):
     return self.Decode(input=input, out_type=out_type, **kwargs)
+
+
+  def DecodeNoDummyPrefix(self, input, **kwargs):
+    old_add_dummy_prefix = self.GetAddDummyPrefix()
+    self.SetAddDummyPrefix(False)
+    out = self.Decode(input=input, **kwargs)
+    self.SetAddDummyPrefix(old_add_dummy_prefix)
+    return out
 
 
   def CalculateEntropy(self, input, alpha, num_threads=None):

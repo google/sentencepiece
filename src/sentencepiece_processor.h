@@ -288,6 +288,16 @@ class SentencePieceProcessor {
                                       int threshold);
 
   //////////////////////////////////////////////////////////////
+  // Dummy prefix behavior
+  //
+  // Overrides the default behavior of the model with respect to
+  // the addition of dummy whitespace prefixes.
+  virtual util::Status SetAddDummyPrefix(bool add_dummy_whitespace);
+
+  // Returns whether the model adds dummy whitespace prefixes.
+  virtual bool GetAddDummyPrefix();
+
+  //////////////////////////////////////////////////////////////
   // Simple Encode and Decode API.
   //
   // Given a UTF8 input, encodes it into a sequence of sentence pieces.
@@ -701,6 +711,8 @@ class SentencePieceProcessor {
 
   std::vector<ExtraOption> encode_extra_options_;
   std::vector<ExtraOption> decode_extra_options_;
+
+  bool add_dummy_prefix_ = true;
 };
 
 // Set seed value of random generator.

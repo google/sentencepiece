@@ -82,12 +82,13 @@ class Normalizer {
   // This function can do the following normalizations:
   // - Character normalization.
   //   (NFKC / full-width to half-width conversion etc).
-  // - Adds a prefix space.
+  // - Adds a prefix space (controlled by |add_dummy_prefix|).
   // - Replaces a space with a meta symbol.
   // - Removing heading, tailing and other redundant spaces.
   virtual util::Status Normalize(absl::string_view input,
                                  std::string *normalized,
-                                 std::vector<size_t> *norm_to_orig) const;
+                                 std::vector<size_t> *norm_to_orig,
+                                 bool add_dummy_prefix) const;
 
   // Returns a normalized string without alignments.
   // This function is used in sentencepiece training.
