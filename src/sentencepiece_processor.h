@@ -294,7 +294,8 @@ class SentencePieceProcessor {
   // the addition of dummy whitespace prefixes.
   virtual util::Status SetAddDummyPrefix(bool add_dummy_whitespace);
 
-  // Returns whether the model adds dummy whitespace prefixes.
+  // Returns whether the processor adds dummy whitespace prefixes
+  // during encoding (and strips them during decoding).
   virtual bool GetAddDummyPrefix();
 
   //////////////////////////////////////////////////////////////
