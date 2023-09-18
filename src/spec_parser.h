@@ -25,10 +25,10 @@
 
 namespace sentencepiece {
 
-#define PARSE_STRING(param_name)      \
-  if (name == #param_name) {          \
-    message->set_##param_name(value); \
-    return util::OkStatus();          \
+#define PARSE_STRING(param_name)                   \
+  if (name == #param_name) {                       \
+    message->set_##param_name(std::string(value)); \
+    return util::OkStatus();                       \
   }
 
 #define PARSE_REPEATED_STRING(param_name)                       \
@@ -48,6 +48,16 @@ namespace sentencepiece {
 #define PARSE_INT32(param_name)                                               \
   if (name == #param_name) {                                                  \
     int32 v;                                                                  \
+    if (!string_util::lexical_cast(value, &v))                                \
+      return util::StatusBuilder(util::StatusCode::kInvalidArgument, GTL_LOC) \
+             << "cannot parse \"" << value << "\" as int.";                   \
+    message->set_##param_name(v);                                             \
+    return util::OkStatus();                                                  \
+  }
+
+#define PARSE_UINT64(param_name)                                              \
+  if (name == #param_name) {                                                  \
+    uint64 v;                                                                 \
     if (!string_util::lexical_cast(value, &v))                                \
       return util::StatusBuilder(util::StatusCode::kInvalidArgument, GTL_LOC) \
              << "cannot parse \"" << value << "\" as int.";                   \
@@ -134,7 +144,9 @@ inline std::string PrintProto(const TrainerSpec &message,
   PRINT_PARAM(split_by_number);
   PRINT_PARAM(split_by_whitespace);
   PRINT_PARAM(split_digits);
+  PRINT_PARAM(pretokenization_delimiter);
   PRINT_PARAM(treat_whitespace_as_suffix);
+  PRINT_PARAM(allow_whitespace_only_pieces);
   PRINT_REPEATED_STRING(control_symbols);
   PRINT_REPEATED_STRING(user_defined_symbols);
   PRINT_PARAM(required_chars);
@@ -152,6 +164,9 @@ inline std::string PrintProto(const TrainerSpec &message,
   PRINT_PARAM(eos_piece);
   PRINT_PARAM(pad_piece);
   PRINT_PARAM(unk_surface);
+  PRINT_PARAM(enable_differential_privacy);
+  PRINT_PARAM(differential_privacy_noise_level);
+  PRINT_PARAM(differential_privacy_clipping_threshold);
 
   os << "}\n";
 
@@ -177,8 +192,8 @@ inline std::string PrintProto(const NormalizerSpec &message,
   return os.str();
 }
 
-util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
-                                                 const std::string &value,
+util::Status SentencePieceTrainer::SetProtoField(absl::string_view name,
+                                                 absl::string_view value,
                                                  TrainerSpec *message) {
   CHECK_OR_RETURN(message);
 
@@ -198,7 +213,7 @@ util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
   PARSE_REPEATED_STRING(accept_language);
   PARSE_INT32(self_test_sample_size);
   PARSE_DOUBLE(character_coverage);
-  PARSE_INT32(input_sentence_size);
+  PARSE_UINT64(input_sentence_size);
   PARSE_BOOL(shuffle_input_sentence);
   PARSE_INT32(seed_sentencepiece_size);
   PARSE_DOUBLE(shrinking_factor);
@@ -210,7 +225,9 @@ util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
   PARSE_BOOL(split_by_number);
   PARSE_BOOL(split_by_whitespace);
   PARSE_BOOL(split_digits);
+  PARSE_STRING(pretokenization_delimiter);
   PARSE_BOOL(treat_whitespace_as_suffix);
+  PARSE_BOOL(allow_whitespace_only_pieces);
   PARSE_REPEATED_STRING(control_symbols);
   PARSE_REPEATED_STRING(user_defined_symbols);
   PARSE_STRING(required_chars);
@@ -228,13 +245,16 @@ util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
   PARSE_STRING(eos_piece);
   PARSE_STRING(pad_piece);
   PARSE_STRING(unk_surface);
+  PARSE_BOOL(enable_differential_privacy);
+  PARSE_DOUBLE(differential_privacy_noise_level);
+  PARSE_UINT64(differential_privacy_clipping_threshold);
 
   return util::StatusBuilder(util::StatusCode::kNotFound, GTL_LOC)
          << "unknown field name \"" << name << "\" in TrainerSpec.";
 }
 
-util::Status SentencePieceTrainer::SetProtoField(const std::string &name,
-                                                 const std::string &value,
+util::Status SentencePieceTrainer::SetProtoField(absl::string_view name,
+                                                 absl::string_view value,
                                                  NormalizerSpec *message) {
   CHECK_OR_RETURN(message);
 

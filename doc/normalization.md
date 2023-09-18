@@ -34,7 +34,7 @@ You can use custom normalization rule by preparing a TSV file formatted as follo
 ```
 In this sample, UCS4 sequence [41 302 300] (hex) is converted into [1EA6] (hex). When there are ambiguities in the conversions, the longest rule is used.
 Note that the tab is used as a delimiter for source and target sequence and space is used as a delimiter for UCS4 characters. We can make the target sequence empty to remove some specific characters from the text.
-See [data/nfkc.tsv](data/nfkc.tsv) as an example. Once a TSV file is prepared, you can specify it with `--normalization_rule_tsv` flag.
+See [data/nfkc.tsv](../data/nfkc.tsv) as an example. Once a TSV file is prepared, you can specify it with `--normalization_rule_tsv` flag.
 ```
 % spm_train --normalization_rule_tsv=<rule tsv file> --input=<input> --model_prefix=<model file> --vocab_size=8000                                                                                                                                                                             
 ```
@@ -45,6 +45,6 @@ See [data/nfkc.tsv](data/nfkc.tsv) as an example. Once a TSV file is prepared, y
 ## Command line tool to perform normalization
 ```
 % spm_normalize --model=<model_file> file1 file2.. 
-% spm_normalize --normalizatoin_rule_tsv=custom.tsv file1 file2..
+% spm_normalize --normalization_rule_tsv=custom.tsv file1 file2..
 ```
 The first command line uses the normalization rule embedded in the model file. The second command line uses the normalization rule in TSV file and is useful to make normalization rule interactively.

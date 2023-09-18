@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "init.h"
+#ifndef ABSL_CONTAINER_DISTRIBUTIONS_H_
+#define ABSL_CONTAINER_DISTRIBUTIONS_H_
 
-#include "third_party/absl/flags/flag.h"
+#include <random>
 
-namespace sentencepiece {
+#include "random.h"
 
-void ParseCommandLineFlags(const char *usage, int *argc, char ***argv,
-                           bool remove_arg) {
-  const auto unused_args = absl::ParseCommandLine(*argc, *argv);
+namespace absl {
 
-  if (remove_arg) {
-    char **argv_val = *argv;
-    *argv = argv_val = argv_val + *argc - unused_args.size();
-    std::copy(unused_args.begin(), unused_args.end(), argv_val);
-    *argc = static_cast<int>(unused_args.size());
-  }
+template <typename T>
+T Gaussian(SharedBitGen &generator, T mean, T stddev) {
+  std::normal_distribution<> dist(mean, stddev);
+  return dist(*generator.engine());
 }
-}  // namespace sentencepiece
+}  // namespace absl
+
+#endif  // ABSL_CONTAINER_DISTRIBUTIONS_H_

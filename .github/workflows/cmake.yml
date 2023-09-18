@@ -1,0 +1,77 @@
+name: CI for general build
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, ubuntu-20.04, windows-latest, macOS-11 ]
+        arch: [ x64 ]
+        include:
+          - os: windows-latest
+            arch: x86
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+        architecture: ${{matrix.arch}}
+
+    - name: Config for Windows
+      if: runner.os == 'Windows'
+      run: |
+        if ("${{matrix.arch}}" -eq "x64") {
+          $msbuildPlatform = "x64"
+        } else {
+          $msbuildPlatform = "Win32"
+        }
+        cmake -A $msbuildPlatform -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
+
+    - name: Config for Unix
+      if: runner.os != 'Windows'
+      run: cmake -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: ctest -C Release --output-on-failure
+
+    - name: Package
+      working-directory: ${{github.workspace}}/build
+      run: cpack
+
+    - name: Build Python wrapper
+      working-directory: ${{github.workspace}}/python
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel twine
+        python setup.py test
+        python setup.py bdist_wheel
+
+    - name: Upload artifcacts
+      uses: actions/upload-artifact@v3
+      with:
+        path: ./build/*.7z
+
+    - name: Upload Release Assets
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ./build/*.7z
+        tag: ${{ github.ref }}
+        overwrite: true
+        prerelease: true
+        file_glob: true
+        body: "This is my release text"

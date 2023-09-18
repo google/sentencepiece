@@ -28,16 +28,17 @@
 #include "trainer_interface.h"
 
 ABSL_FLAG(std::string, model, "", "model file name");
-ABSL_FLAG(std::string, output_format, "piece",
-          "choose from piece, id, proto, nbest_piece, nbest_id, nbest_proto, "
-          "sample_piece, sample_id or sample_proto.");
+ABSL_FLAG(
+    std::string, output_format, "piece",
+    "choose from piece, id, proto, nbest_piece, nbest_id, or nbest_proto");
 ABSL_FLAG(std::string, input, "", "input filename");
 ABSL_FLAG(std::string, output, "", "output filename");
 ABSL_FLAG(std::string, extra_options, "",
           "':' separated encoder extra options, e.g., \"reverse:bos:eos\"");
 ABSL_FLAG(int32, nbest_size, 10, "NBest size");
 ABSL_FLAG(double, alpha, 0.5, "Smoothing parameter for sampling mode.");
-ABSL_FLAG(int32, random_seed, -1, "Seed value for random generator.");
+ABSL_FLAG(uint32, random_seed, static_cast<uint32>(-1),
+          "Seed value for random generator.");
 
 // Piece restriction with vocabulary file.
 // https://github.com/rsennrich/subword-nmt#best-practice-advice-for-byte-pair-encoding-in-nmt
@@ -50,6 +51,7 @@ ABSL_FLAG(bool, generate_vocabulary, false,
           "Generates vocabulary file instead of segmentation");
 
 int main(int argc, char *argv[]) {
+  sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
   std::vector<std::string> rest_args;
 
@@ -61,8 +63,9 @@ int main(int argc, char *argv[]) {
     rest_args.push_back(absl::GetFlag(FLAGS_input));
   }
 
-  if (absl::GetFlag(FLAGS_random_seed) != -1)
+  if (absl::GetFlag(FLAGS_random_seed) != -1) {
     sentencepiece::SetRandomGeneratorSeed(absl::GetFlag(FLAGS_random_seed));
+  }
 
   if (rest_args.empty())
     rest_args.push_back("");  // empty means that reading from stdin.
@@ -90,13 +93,13 @@ int main(int argc, char *argv[]) {
   absl::flat_hash_map<std::string, int> vocab;
   sentencepiece::SentencePieceText spt;
   sentencepiece::NBestSentencePieceText nbest_spt;
-  std::function<void(const std::string &line)> process;
+  std::function<void(absl::string_view line)> process;
 
   const int nbest_size = absl::GetFlag(FLAGS_nbest_size);
   const float alpha = absl::GetFlag(FLAGS_alpha);
 
   if (absl::GetFlag(FLAGS_generate_vocabulary)) {
-    process = [&](const std::string &line) {
+    process = [&](absl::string_view line) {
       CHECK_OK(sp.Encode(line, &spt));
       for (const auto &piece : spt.pieces()) {
         if (!sp.IsUnknown(piece.id()) && !sp.IsControl(piece.id()))
@@ -104,47 +107,47 @@ int main(int argc, char *argv[]) {
       }
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "piece") {
-    process = [&](const std::string &line) {
+    process = [&](absl::string_view line) {
       CHECK_OK(sp.Encode(line, &sps));
       output->WriteLine(absl::StrJoin(sps, " "));
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "id") {
-    process = [&](const std::string &line) {
+    process = [&](absl::string_view line) {
       CHECK_OK(sp.Encode(line, &ids));
       output->WriteLine(absl::StrJoin(ids, " "));
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "proto") {
-    process = [&](const std::string &line) { CHECK_OK(sp.Encode(line, &spt)); };
+    process = [&](absl::string_view line) { CHECK_OK(sp.Encode(line, &spt)); };
   } else if (absl::GetFlag(FLAGS_output_format) == "sample_piece") {
-    process = [&](const std::string &line) {
+    process = [&](absl::string_view line) {
       CHECK_OK(sp.SampleEncode(line, nbest_size, alpha, &sps));
       output->WriteLine(absl::StrJoin(sps, " "));
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "sample_id") {
-    process = [&](const std::string &line) {
+    process = [&](absl::string_view line) {
       CHECK_OK(sp.SampleEncode(line, nbest_size, alpha, &ids));
       output->WriteLine(absl::StrJoin(ids, " "));
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "sample_proto") {
-    process = [&](const std::string &line) {
+    process = [&](absl::string_view line) {
       CHECK_OK(sp.SampleEncode(line, nbest_size, alpha, &spt));
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "nbest_piece") {
-    process = [&](const std::string &line) {
+    process = [&](absl::string_view line) {
       CHECK_OK(sp.NBestEncode(line, nbest_size, &nbest_sps));
       for (const auto &result : nbest_sps) {
         output->WriteLine(absl::StrJoin(result, " "));
       }
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "nbest_id") {
-    process = [&](const std::string &line) {
+    process = [&](absl::string_view line) {
       CHECK_OK(sp.NBestEncode(line, nbest_size, &nbest_ids));
       for (const auto &result : nbest_ids) {
         output->WriteLine(absl::StrJoin(result, " "));
       }
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "nbest_proto") {
-    process = [&](const std::string &line) {
+    process = [&](absl::string_view line) {
       CHECK_OK(sp.NBestEncode(line, nbest_size, &nbest_spt));
     };
   } else {

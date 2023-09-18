@@ -48,9 +48,7 @@ Normalizer::~Normalizer() {}
 
 void Normalizer::Init() {
   absl::string_view index = spec_->precompiled_charsmap();
-  if (index.empty()) {
-    LOG(INFO) << "precompiled_charsmap is empty. use identity normalization.";
-  } else {
+  if (!index.empty()) {
     absl::string_view trie_blob, normalized;
 #ifdef IS_BIG_ENDIAN
     status_ = DecodePrecompiledCharsMap(index, &trie_blob, &normalized,
@@ -279,13 +277,13 @@ std::string Normalizer::EncodePrecompiledCharsMap(
   std::string blob;
   blob.append(string_util::EncodePOD<uint32>(trie_blob.size()));
   blob.append(trie_blob.data(), trie_blob.size());
-  blob.append(normalized.data(), normalized.size());
 
 #ifdef IS_BIG_ENDIAN
   uint32 *data = reinterpret_cast<uint32 *>(const_cast<char *>(blob.data()));
-  for (int i = 0; i <= trie_blob.size() / 4; ++i)
-    data[i] = util::Swap32(data[i]);
+  for (int i = 0; i < blob.size() / 4; ++i) data[i] = util::Swap32(data[i]);
 #endif
+
+  blob.append(normalized.data(), normalized.size());
 
   return blob;
 }
@@ -295,7 +293,6 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
     absl::string_view blob, absl::string_view *trie_blob,
     absl::string_view *normalized, std::string *buffer) {
   uint32 trie_blob_size = 0;
-
   if (blob.size() <= sizeof(trie_blob_size) ||
       !string_util::DecodePOD<uint32>(
           absl::string_view(blob.data(), sizeof(trie_blob_size)),
@@ -307,15 +304,17 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
   trie_blob_size = util::Swap32(trie_blob_size);
 #endif
 
-  if (trie_blob_size >= blob.size())
+  if (trie_blob_size >= blob.size()) {
     return util::InternalError("Trie data size exceeds the input blob size.");
+  }
 
   blob.remove_prefix(sizeof(trie_blob_size));
 
 #ifdef IS_BIG_ENDIAN
+  CHECK_OR_RETURN(buffer);
   buffer->assign(blob.data(), trie_blob_size);
   uint32 *data = reinterpret_cast<uint32 *>(const_cast<char *>(buffer->data()));
-  for (int i = 0; i < trie_blob_size / 4; ++i) data[i] = util::Swap32(data[i]);
+  for (int i = 0; i < buffer->size() / 4; ++i) data[i] = util::Swap32(data[i]);
   *trie_blob = absl::string_view(buffer->data(), trie_blob_size);
 #else
   *trie_blob = absl::string_view(blob.data(), trie_blob_size);

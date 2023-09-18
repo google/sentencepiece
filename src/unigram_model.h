@@ -82,16 +82,27 @@ class Lattice {
   // After calling this method, The caller must set Node::score and Node::id.
   Node *Insert(int pos, int length);
 
+  using LatticePathWithScore = std::pair<std::vector<Node *>, float>;
+
   // Returns Viterbi path. All nodes must be populated in advance.
-  std::vector<Node *> Viterbi();
+  LatticePathWithScore Viterbi();
+
+  // Runs forwards/backwards algorithm, returns vector with normalised
+  // transition probs.
+  std::vector<float> ForwardAlgorithm(float theta) const;
+  std::vector<float> BackwardAlgorithm(float theta) const;
 
   // Returns n-best results.
-  std::vector<std::vector<Node *>> NBest(size_t nbest_size);
+  std::vector<LatticePathWithScore> NBest(size_t nbest_size, bool sample,
+                                          float theta);
 
   // Samples one path from the lattice according to the
   // generation probability (Product of piece probabilities).
   // `theta` is a smoothing parameter.
   std::vector<Node *> Sample(float theta);
+
+  // Calculates the entropy of the lattice.
+  float CalculateEntropy(float theta) const;
 
   // Populates marginal probability of every node in this lattice.
   // |freq| is the frequency of the sentence.
@@ -127,7 +138,18 @@ class Model : public ModelInterface {
   EncodeResult SampleEncode(absl::string_view normalized,
                             float theta) const override;
 
+  NBestEncodeResult SampleEncodeAndScore(absl::string_view normalized,
+                                         float theta, int samples, bool wor,
+                                         bool include_best) const override;
+
+  float CalculateEntropy(absl::string_view normalized,
+                         float theta) const override;
+
   bool IsSampleEncodeAvailable() const override { return true; }
+
+  bool IsSampleEncodeAndScoreAvailable() const override { return true; }
+
+  bool IsCalculateEntropyAvailable() const override { return true; }
 
   bool IsNBestEncodeAvailable() const override { return true; }
 
@@ -151,6 +173,18 @@ class Model : public ModelInterface {
   bool VerifyOutputsEquivalent(absl::string_view expected,
                                absl::string_view actual) const override;
 
+  enum EncoderVersion {
+    kOptimized,  // The optimized encoder.
+    kOriginal    // The original encoder.
+  };
+
+  void SetEncoderVersion(EncoderVersion encoder_version) {
+    encoder_version_ = encoder_version;
+  }
+
+  // Returns the current encoder version in use.
+  EncoderVersion GetEncoderVersion() const { return encoder_version_; }
+
  protected:
   // Builds a Trie index.
   void BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces);
@@ -173,6 +207,9 @@ class Model : public ModelInterface {
   // Maximum size of the return value of Trie, which corresponds
   // to the maximum size of shared common prefix in the sentence pieces.
   int trie_results_size_;
+
+  // encoder version.
+  EncoderVersion encoder_version_ = kOptimized;
 };
 
 }  // namespace unigram

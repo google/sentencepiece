@@ -18,6 +18,10 @@ message(STATUS "VERSION: ${SPM_VERSION}")
 SET(SPM_ARTIFACT_NAME "sentencepiece" CACHE STRING "Default name of the \
             generated artifacts. Override to avoid name conflicts.")
 
+if(POLICY CMP0091)
+  cmake_policy(SET CMP0091 NEW)
+endif()
+
 project(${SPM_ARTIFACT_NAME} VERSION ${SPM_VERSION} LANGUAGES C CXX)
 
 option(SPM_ENABLE_NFKC_COMPILE "Enables NFKC compile" OFF)
@@ -29,9 +33,28 @@ option(SPM_ENABLE_TCMALLOC "Enable TCMalloc if available." ON)
 option(SPM_TCMALLOC_STATIC "Link static library of TCMALLOC." OFF)
 option(SPM_NO_THREADLOCAL "Disable thread_local operator" OFF)
 option(SPM_USE_BUILTIN_PROTOBUF "Use built-in protobuf" ON)
+option(SPM_USE_EXTERNAL_ABSL "Use external abseil" OFF)
+option(SPM_ENABLE_MSVC_MT_BUILD, "Use /MT flag in MSVC build" OFF)
+option(SPM_CROSS_SYSTEM_PROCESSOR, "Override system processor" "")
 
-set(CMAKE_CXX_STANDARD 11)
+if (SPM_CROSS_SYSTEM_PROCESSOR)
+ set(CMAKE_SYSTEM_PROCESSOR ${SPM_CROSS_SYSTEM_PROCESSOR})
+endif()
+
+# Disable shared build on windows
+if(WIN32)
+  set(SPM_ENABLE_SHARED OFF)
+endif()
+
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND
+     CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 10.0) OR
+   (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND
+     CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 8.0))
+  string(APPEND CMAKE_CXX_FLAGS " -fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=''")
+endif()
 
 if (UNIX)
   include(GNUInstallDirs)
@@ -47,18 +70,24 @@ else()
 endif()
 set(GNUCXX_STD_SUPPORT_VERSION "4.3")
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+add_definitions(-D_FREEBSD)
+endif()
+
 if (SPM_USE_BUILTIN_PROTOBUF)
   set(libprotobuf_lite "")
 else()
-  set(libprotobuf_lite "-lprotobuf-lite")
+  set(libprotobuf_lite "protobuf-lite")
 endif()
 
 if (MSVC)
-  string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_DEBUG          ${CMAKE_CXX_FLAGS_DEBUG})
-  string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_MINSIZEREL     ${CMAKE_CXX_FLAGS_MINSIZEREL})
-  string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE        ${CMAKE_CXX_FLAGS_RELEASE})
-  string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_CXX_FLAGS_RELWITHDEBINFO})
   add_definitions("/wd4267 /wd4244 /wd4305 /Zc:strictStrings /utf-8")
+  if (SPM_ENABLE_MSVC_MT_BUILD)
+    string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_DEBUG          ${CMAKE_CXX_FLAGS_DEBUG})
+    string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_MINSIZEREL     ${CMAKE_CXX_FLAGS_MINSIZEREL})
+    string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE        ${CMAKE_CXX_FLAGS_RELEASE})
+    string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_CXX_FLAGS_RELWITHDEBINFO})
+  endif()
 endif()
 
 if (APPLE)
@@ -85,10 +114,36 @@ if (NOT DEFINED CMAKE_INSTALL_INCDIR)
   set(CMAKE_INSTALL_INCDIR include)
 endif()
 
+# SPDX-License-Identifier: (MIT OR CC0-1.0)
+# Copyright 2020 Jan Tojnar
+# https://github.com/jtojnar/cmake-snips
+#
+# Modelled after Python’s os.path.join
+# https://docs.python.org/3.7/library/os.path.html#os.path.join
+# Windows not supported
+function(join_paths joined_path first_path_segment)
+    set(temp_path "${first_path_segment}")
+    foreach(current_segment IN LISTS ARGN)
+        if(NOT ("${current_segment}" STREQUAL ""))
+            if(IS_ABSOLUTE "${current_segment}")
+                set(temp_path "${current_segment}")
+            else()
+                set(temp_path "${temp_path}/${current_segment}")
+            endif()
+        endif()
+    endforeach()
+    set(${joined_path} "${temp_path}" PARENT_SCOPE)
+endfunction()
+
+join_paths(libdir_for_pc_file "\${exec_prefix}" "${CMAKE_INSTALL_LIBDIR}")
+join_paths(includedir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
+
 configure_file("${PROJECT_SOURCE_DIR}/config.h.in" "config.h")
 configure_file("${PROJECT_SOURCE_DIR}/sentencepiece.pc.in" "sentencepiece.pc" @ONLY)
 
 if (NOT MSVC)
+  # suppress warning for C++11 features.
+#  add_definitions("-Wno-deprecated-declarations -Wno-deprecated-enum-enum-conversion")
   install(FILES "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece.pc" DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
 
@@ -96,6 +151,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 
 if (SPM_BUILD_TEST)
   enable_testing()
+endif()
+
+if (SPM_USE_EXTERNAL_ABSL)
+ add_subdirectory(third_party/abseil-cpp)
 endif()
 
 add_subdirectory(src)

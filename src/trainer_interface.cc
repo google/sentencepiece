@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "trainer_interface.h"
+
+#include <algorithm>
 #include <cstdlib>
 #include <memory>
 #include <set>
@@ -27,12 +30,13 @@
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/memory/memory.h"
+#include "third_party/absl/random/distributions.h"
+#include "third_party/absl/random/random.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_format.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_split.h"
-#include "trainer_interface.h"
 #include "unicode_script.h"
 #include "util.h"
 
@@ -63,7 +67,7 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
   CHECK_RANGE(trainer_spec.character_coverage(), 0.98, 1.0);
   CHECK_RANGE(trainer_spec.max_sentencepiece_length(), 1, 512);
   CHECK_RANGE(trainer_spec.num_sub_iterations(), 1, 10);
-  CHECK_RANGE(trainer_spec.num_threads(), 1, 128);
+  CHECK_RANGE(trainer_spec.num_threads(), 1, 1024);
   CHECK_RANGE(trainer_spec.self_test_sample_size(), 0, 1000);
   CHECK_RANGE(trainer_spec.shrinking_factor(), 0.5, 0.95);
   CHECK_RANGE(trainer_spec.max_sentence_length(), 10, 1073741824);
@@ -77,12 +81,18 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
   CHECK_OR_RETURN(!trainer_spec.eos_piece().empty());
   CHECK_OR_RETURN(!trainer_spec.pad_piece().empty());
 
-  if (SentencePieceTrainer::GetPretokenizerForTraining()) {
-    CHECK_EQ_OR_RETURN(TrainerSpec::UNIGRAM, trainer_spec.model_type())
-        << "PretokenizerForTraining is only supported in UNIGRAM mode.";
+  if (SentencePieceTrainer::GetPretokenizerForTraining() ||
+      !trainer_spec.pretokenization_delimiter().empty()) {
+    CHECK_OR_RETURN(trainer_spec.model_type() == TrainerSpec::UNIGRAM ||
+                    trainer_spec.model_type() == TrainerSpec::BPE)
+        << "PretokenizerForTraining is only supported in UNIGRAM or BPE mode.";
   }
 
   return util::OkStatus();
+}
+
+bool is_unicode_decimal_number(char32 c) {
+  return (c >= 0x30 && c <= 0x39) || (c >= 0xff10 && c <= 0xff19);
 }
 
 class SentenceSelector {
@@ -120,16 +130,14 @@ class SentenceSelector {
   }
 
   bool Add(const std::pair<std::string, int64> &sentence) {
-    if (spec_->input_sentence_size() <= 0) {
+    if (spec_->input_sentence_size() == 0) {
       sentences_->emplace_back(sentence);
     } else {
       if (spec_->shuffle_input_sentence()) {
         sampler_->Add(sentence);
       } else {
         sentences_->emplace_back(sentence);
-        if (sentences_->size() >=
-            static_cast<size_t>(spec_->input_sentence_size()))
-          return false;
+        if (sentences_->size() >= spec_->input_sentence_size()) return false;
       }
     }
 
@@ -211,9 +219,10 @@ bool TrainerInterface::IsValidSentencePiece(
   constexpr unicode_script::ScriptType kAnyType =
       static_cast<unicode_script::ScriptType>(-1);
 
-  auto is_number = [](char32 c) { return (c >= 0x30 && c <= 0x39); };
-
   unicode_script::ScriptType prev_script = kAnyType;
+  bool all_whitespace_piece =
+      std::all_of(sentencepiece.begin(), sentencepiece.end(),
+                  [](char32 c) { return c == kWSChar; });
 
   for (size_t pos = 0; pos < sentencepiece.size(); ++pos) {
     const char32 c = sentencepiece[pos];
@@ -223,7 +232,6 @@ bool TrainerInterface::IsValidSentencePiece(
     if (c == 0x0000) {  // NULL is not allowed for Darts (TRIE).
       return false;
     }
-    // kUPPBoundaryChar is included when split_by_upp_for_training is true.
     if (c == kUPPBoundaryChar) {
       return false;
     }
@@ -236,25 +244,30 @@ bool TrainerInterface::IsValidSentencePiece(
     }
 
     if (c == kWSChar) {
-      // Only allows whitespace to appear as a prefix of piece.
+      // Only allows whitespace to appear as a prefix of piece unless
+      // allow_whitespace_only_pieces is True.
       // When split_by_whitespace is false, we allow whitespaces to
       // appear in the middle, "foo_bar", but do not allow them
       // to appear as suffix, "foo_bar_".
       // Regardless of the setting of split_by_whitespace,
       // whitespace is treated as a prefix/infix of symbol or
-      // independent symbol.
-      if (trainer_spec_.treat_whitespace_as_suffix()) {
-        if ((trainer_spec_.split_by_whitespace() &&
-             pos < sentencepiece.size() - 1) ||
-            (!trainer_spec_.split_by_whitespace() &&
-             pos < sentencepiece.size() - 1 && pos == 0)) {
-          return false;
-        }
-      } else {
-        if ((trainer_spec_.split_by_whitespace() && pos > 0) ||
-            (!trainer_spec_.split_by_whitespace() && pos > 0 &&
-             pos == sentencepiece.size() - 1)) {
-          return false;
+      // independent symbol, unless allow_whitespace_only_pieces() is true,
+      // in which case whitespace only pieces can occur.
+      if (!trainer_spec_.allow_whitespace_only_pieces() ||
+          !all_whitespace_piece) {
+        if (trainer_spec_.treat_whitespace_as_suffix()) {
+          if ((trainer_spec_.split_by_whitespace() &&
+               pos < sentencepiece.size() - 1) ||
+              (!trainer_spec_.split_by_whitespace() &&
+               pos < sentencepiece.size() - 1 && pos == 0)) {
+            return false;
+          }
+        } else {
+          if ((trainer_spec_.split_by_whitespace() && pos > 0) ||
+              (!trainer_spec_.split_by_whitespace() && pos > 0 &&
+               pos == sentencepiece.size() - 1)) {
+            return false;
+          }
         }
       }
     } else {
@@ -264,13 +277,15 @@ bool TrainerInterface::IsValidSentencePiece(
       if (s == unicode_script::U_Hiragana || s == unicode_script::U_Katakana ||
           c == 0x30FC) {  // long vowel sound (Katakana) should be Katakana
         s = unicode_script::U_Han;
+      } else if (s == unicode_script::U_Inherited) {
+        s = prev_script;
       }
 
-      if (!trainer_spec_.split_by_number() && is_number(c)) {
+      if (!trainer_spec_.split_by_number() && is_unicode_decimal_number(c)) {
         s = kAnyType;
       }
 
-      if (trainer_spec_.split_digits() && is_number(c)) {
+      if (trainer_spec_.split_digits() && is_unicode_decimal_number(c)) {
         if (sentencepiece.size() > 1) return false;
       }
 
@@ -285,6 +300,22 @@ bool TrainerInterface::IsValidSentencePiece(
     }
   }
   return true;
+}
+
+template <typename T>
+void AddDPNoise(const TrainerSpec &trainer_spec, absl::SharedBitGen &generator,
+                T *to_update) {
+  if (trainer_spec.differential_privacy_noise_level() > 0) {
+    float random_num = absl::Gaussian<float>(
+        generator, 0, trainer_spec.differential_privacy_noise_level());
+
+    *to_update =
+        std::round(std::max(0.f, random_num + static_cast<float>(*to_update)));
+  }
+  // Clip anything below the clipping threshold to 0.
+  if (*to_update < trainer_spec.differential_privacy_clipping_threshold()) {
+    *to_update = 0;
+  }
 }
 
 util::Status TrainerInterface::LoadSentences() {
@@ -378,6 +409,7 @@ END:
     LOG(INFO) << "Sampled " << sentences_.size() << " sentences from "
               << selector.total_size() << " sentences.";
   }
+
   if (too_long_lines > 0)
     LOG(INFO) << "Skipped " << too_long_lines << " too long sentences.";
   if (self_test_samples_.size() > 0)
@@ -419,6 +451,54 @@ END:
         sentences_.resize(sentences_.size() - 1);
       }
     }
+  }
+
+  // If DP is required, add the noise/clip the input.
+  if (trainer_spec_.enable_differential_privacy()) {
+    if (trainer_spec_.input_format() != "tsv") {
+      LOG(ERROR)
+          << "Dp version will not work correctly with text input format.";
+    }
+    if (trainer_spec_.differential_privacy_noise_level() <= 0) {
+      LOG(WARNING) << "Private version with <=0 noise level will give "
+                      "infinity epsilon guarantees.";
+    }
+    if (trainer_spec_.differential_privacy_clipping_threshold() <= 0) {
+      LOG(WARNING) << "Private version with <=0 clipping threshold will give "
+                      "infinity epsilon guarantees.";
+    }
+
+    // Add noise to all the sentences via threadpool.
+
+    // This line is mainly for tests with small num of sentences.
+    const auto num_workers =
+        std::min<uint64>(trainer_spec_.num_threads(), sentences_.size() - 1);
+
+    {
+      auto pool = absl::make_unique<ThreadPool>(num_workers);
+      pool->StartWorkers();
+      for (int n = 0; n < num_workers; ++n) {
+        pool->Schedule([&, n]() {
+          // One per thread generator.
+          absl::SharedBitGen generator;
+          for (size_t i = n; i < sentences_.size(); i += num_workers) {
+            AddDPNoise<int64>(trainer_spec_, generator,
+                              &(sentences_[i].second));
+          }
+        });
+      }
+    }
+
+    // Remove zero freq elements.
+    const auto before_size = sentences_.size();
+    auto it = std::remove_if(sentences_.begin(), sentences_.end(),
+                             [](const Sentence &s) { return s.second <= 0; });
+    const auto new_size = std::distance(sentences_.begin(), it);
+    const int num_erased = before_size - new_size;
+    sentences_.erase(it, sentences_.end());
+
+    LOG(INFO) << "DP noise resulted in " << 1.0 * num_erased / before_size
+              << " fraction of sentences removed.";
   }
 
   // Count character frequencies.
@@ -519,7 +599,8 @@ void TrainerInterface::SplitSentencesByWhitespace() {
   absl::flat_hash_map<std::string, int64> tokens;
   for (const auto &s : sentences_) {
     for (const auto &w :
-         SplitIntoWords(s.first, trainer_spec_.treat_whitespace_as_suffix())) {
+         SplitIntoWords(s.first, trainer_spec_.treat_whitespace_as_suffix(),
+                        trainer_spec_.allow_whitespace_only_pieces())) {
       tokens[std::string(w)] += s.second;
     }
   }
@@ -604,6 +685,7 @@ util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
 util::Status TrainerInterface::SaveModel(absl::string_view filename) const {
   LOG(INFO) << "Saving model: " << filename;
   ModelProto model_proto;
+
   RETURN_IF_ERROR(Serialize(&model_proto));
 
   auto output = filesystem::NewWritableFile(filename.data(), true);
@@ -618,6 +700,14 @@ util::Status TrainerInterface::SaveVocab(absl::string_view filename) const {
   RETURN_IF_ERROR(Serialize(&model_proto));
   auto output = filesystem::NewWritableFile(filename);
   RETURN_IF_ERROR(output->status());
+
+  for (const auto &piece : model_proto.pieces()) {
+    if (piece.piece().find_first_of(" \t\r\n") != std::string::npos) {
+      LOG(WARNING) << "The piece [" << piece.piece()
+                   << "] contains escaped characters that break the format of "
+                   << filename;
+    }
+  }
 
   if (trainer_spec_.vocabulary_output_piece_score()) {
     for (const auto &piece : model_proto.pieces()) {
@@ -671,19 +761,19 @@ util::Status TrainerInterface::InitMetaPieces() {
   std::set<std::string> dup;
 
   int id = 0;
-  auto insert_meta_symbol = [&id, &dup, this](
-                                const std::string &w,
-                                ModelProto::SentencePiece::Type type) -> bool {
+  auto insert_meta_symbol =
+      [&id, &dup, this](const std::string &w,
+                        ModelProto::SentencePiece::Type type) -> util::Status {
     if (!dup.insert(w).second) {
-      LOG(ERROR) << w << " is already defined.";
-      return false;
+      return util::InternalError(absl::StrCat(
+          w, " is already defined. duplicated symbols are not allowed."));
     }
 
     if (w == trainer_spec_.unk_piece()) {
-      LOG(ERROR) << trainer_spec_.unk_piece()
-                 << " must not be defined with --control_symbols and "
-                    "--user_defined_symbols.";
-      return false;
+      return util::InternalError(
+          absl::StrCat(trainer_spec_.unk_piece(),
+                       " must not be defined with --control_symbols and "
+                       "--user_defined_symbols."));
     }
 
     if (w == trainer_spec_.bos_piece() && trainer_spec_.bos_id() >= 0) {
@@ -696,21 +786,22 @@ util::Status TrainerInterface::InitMetaPieces() {
       while (meta_pieces_.find(id) != meta_pieces_.end()) ++id;
       meta_pieces_[id] = std::make_pair(w, type);
     }
-    return true;
+
+    return util::OkStatus();
   };
 
   for (const auto &w : trainer_spec_.control_symbols()) {
-    CHECK_OR_RETURN(insert_meta_symbol(w, ModelProto::SentencePiece::CONTROL));
+    RETURN_IF_ERROR(insert_meta_symbol(w, ModelProto::SentencePiece::CONTROL));
   }
 
   for (const auto &w : trainer_spec_.user_defined_symbols()) {
-    CHECK_OR_RETURN(
+    RETURN_IF_ERROR(
         insert_meta_symbol(w, ModelProto::SentencePiece::USER_DEFINED));
   }
 
   if (trainer_spec_.byte_fallback()) {
     for (int i = 0; i < 256; ++i) {
-      CHECK_OR_RETURN(
+      RETURN_IF_ERROR(
           insert_meta_symbol(ByteToPiece(i), ModelProto::SentencePiece::BYTE));
     }
   }

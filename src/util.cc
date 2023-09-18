@@ -14,21 +14,33 @@
 
 #include "util.h"
 
+#include <atomic>
 #include <iostream>
 
 namespace sentencepiece {
+
 namespace {
 constexpr unsigned int kDefaultSeed = static_cast<unsigned int>(-1);
-static unsigned int g_seed = kDefaultSeed;
+static std::atomic<unsigned int> g_seed = kDefaultSeed;
+static std::atomic<int> g_minloglevel = 0;
 }  // namespace
 
 void SetRandomGeneratorSeed(unsigned int seed) {
-  if (seed != kDefaultSeed) g_seed = seed;
+  if (seed != kDefaultSeed) g_seed.store(seed);
 }
 
 uint32 GetRandomGeneratorSeed() {
-  return g_seed == kDefaultSeed ? std::random_device{}() : g_seed;
+  try {
+    return g_seed == kDefaultSeed ? std::random_device{}() : g_seed.load();
+  } catch (...) {
+    return g_seed.load();
+  }
 }
+
+namespace logging {
+int GetMinLogLevel() { return g_minloglevel.load(); }
+void SetMinLogLevel(int v) { g_minloglevel.store(v); }
+}  // namespace logging
 
 namespace string_util {
 
@@ -210,7 +222,6 @@ std::vector<std::string> StrSplitAsCSV(absl::string_view text) {
 
   std::vector<std::string> result;
   for (; str < eos; ++str) {
-    while (*str == ' ' || *str == '\t') ++str;
     if (*str == '"') {
       start = ++str;
       end = start;
@@ -237,37 +248,21 @@ std::vector<std::string> StrSplitAsCSV(absl::string_view text) {
 
 #ifdef OS_WIN
 namespace win32 {
-std::wstring Utf8ToWide(const std::string &input) {
-  int output_length =
-      ::MultiByteToWideChar(CP_UTF8, 0, input.c_str(), -1, nullptr, 0);
+std::wstring Utf8ToWide(absl::string_view input) {
+  int output_length = ::MultiByteToWideChar(
+      CP_UTF8, 0, input.data(), static_cast<int>(input.size()), nullptr, 0);
   output_length = output_length <= 0 ? 0 : output_length - 1;
   if (output_length == 0) {
     return L"";
   }
   std::unique_ptr<wchar_t[]> input_wide(new wchar_t[output_length + 1]);
-  const int result = ::MultiByteToWideChar(CP_UTF8, 0, input.c_str(), -1,
+  std::fill(input_wide.get(), input_wide.get() + output_length + 1, L'\0');
+  const int result = ::MultiByteToWideChar(CP_UTF8, 0, input.data(),
+                                           static_cast<int>(input.size()),
                                            input_wide.get(), output_length + 1);
   std::wstring output;
   if (result > 0) {
     output.assign(input_wide.get());
-  }
-  return output;
-}
-
-std::string WideToUtf8(const std::wstring &input) {
-  const int output_length = ::WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1,
-                                                  nullptr, 0, nullptr, nullptr);
-  if (output_length == 0) {
-    return "";
-  }
-
-  std::unique_ptr<char[]> input_encoded(new char[output_length + 1]);
-  const int result =
-      ::WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, input_encoded.get(),
-                            output_length + 1, nullptr, nullptr);
-  std::string output;
-  if (result > 0) {
-    output.assign(input_encoded.get());
   }
   return output;
 }

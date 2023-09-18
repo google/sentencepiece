@@ -24,7 +24,8 @@ namespace absl {
 namespace internal {
 struct FlagFunc;
 
-void RegisterFlag(const std::string &name, FlagFunc *func);
+void RegisterFlag(const std::string &name, std::shared_ptr<FlagFunc> func);
+
 }  // namespace internal
 
 template <typename T>
@@ -39,7 +40,7 @@ class Flag {
 
  private:
   T value_;
-  std::unique_ptr<internal::FlagFunc> func_;
+  std::shared_ptr<internal::FlagFunc> func_;
 };
 
 template <typename T>
@@ -53,7 +54,10 @@ void SetFlag(Flag<T> *flag, const V &v) {
   flag->set_value(value);
 }
 
-std::vector<char *> ParseCommandLine(int argc, char *argv[]);
+#define HAS_ABSL_CLEANUP_FLAGS
+
+void CleanupFlags();
+
 }  // namespace absl
 
 #define ABSL_FLAG(Type, name, defautl_value, help) \

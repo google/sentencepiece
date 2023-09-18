@@ -19,8 +19,8 @@
 
 ABSL_FLAG(int32, int32_f, 10, "int32_flags");
 ABSL_FLAG(bool, bool_f, false, "bool_flags");
-ABSL_FLAG(int64, int64_f, 20, "int64_flags");
-ABSL_FLAG(uint64, uint64_f, 30, "uint64_flags");
+ABSL_FLAG(int64, int64_f, 9223372036854775807LL, "int64_flags");
+ABSL_FLAG(uint64, uint64_f, 18446744073709551615ULL, "uint64_flags");
 ABSL_FLAG(double, double_f, 40.0, "double_flags");
 ABSL_FLAG(std::string, string_f, "str", "string_flags");
 
@@ -33,8 +33,8 @@ namespace absl {
 TEST(FlagsTest, DefaultValueTest) {
   EXPECT_EQ(10, absl::GetFlag(FLAGS_int32_f));
   EXPECT_EQ(false, absl::GetFlag(FLAGS_bool_f));
-  EXPECT_EQ(20, absl::GetFlag(FLAGS_int64_f));
-  EXPECT_EQ(30, absl::GetFlag(FLAGS_uint64_f));
+  EXPECT_EQ(9223372036854775807LL, absl::GetFlag(FLAGS_int64_f));
+  EXPECT_EQ(18446744073709551615ULL, absl::GetFlag(FLAGS_uint64_f));
   EXPECT_EQ(40.0, absl::GetFlag(FLAGS_double_f));
   EXPECT_EQ("str", absl::GetFlag(FLAGS_string_f));
 }
@@ -86,6 +86,8 @@ TEST(FlagsTest, ParseCommandLineFlagsTest3) {
   EXPECT_EQ(800, absl::GetFlag(FLAGS_int32_f));
   EXPECT_EQ(1, argc);
 }
+
+#ifndef _USE_EXTERNAL_ABSL
 
 TEST(FlagsTest, ParseCommandLineFlagsHelpTest) {
   const char *kFlags[] = {"program", "--help"};
@@ -141,4 +143,5 @@ TEST(FlagsTest, ParseCommandLineFlagsEmptyIntArgs) {
   char **argv = const_cast<char **>(kFlags);
   EXPECT_DEATH(ParseCommandLineFlags(kFlags[0], &argc, &argv), );
 }
+#endif  // _USE_EXTERNAL_ABSL
 }  // namespace absl

@@ -51,7 +51,7 @@ class Builder {
                                         CharsMap *chars_map);
 
   // Returns a pre-compiled binary index with `name`.
-  static util::Status GetPrecompiledCharsMap(const std::string &name,
+  static util::Status GetPrecompiledCharsMap(absl::string_view name,
                                              std::string *output);
 
   // Makes a normalization mapping based on NFKC.
@@ -103,6 +103,9 @@ class Builder {
 
   // Makes NMT NFKC with Unicode case folding.
   static util::Status BuildNmtNFKC_CFMap(CharsMap *chars_map);
+
+  // Given NFKC maps, convert them to NFKD.
+  static util::Status BuildNFKDMap(CharsMap *chars_map);
 
   static util::Status BuildUncaserMap(CharsMap *chars_map);
   static util::Status BuildRecaserMap(CharsMap *chars_map);

@@ -11,9 +11,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.!
+#include "pretokenizer_for_training.h"
+
 #include <string>
 
-#include "pretokenizer_for_training.h"
 #include "third_party/absl/strings/str_replace.h"
 
 namespace sentencepiece {
@@ -24,10 +25,9 @@ namespace {
 // defined them explicitly to avoid the dependency to trainier_interface.
 // Currently, we have no separated build rules.
 const char kWSStr[] = "\xe2\x96\x81";
-const char kUPPBoundaryStr[] = "\t";
 }  // namespace
 
-std::string PretokenizerForTrainingInterface::PreTokenize(
+std::vector<std::string> PretokenizerForTrainingInterface::PreTokenize(
     absl::string_view text) const {
   return Postprocess(Tokenize(Preprocess(text)));
 }
@@ -40,14 +40,17 @@ std::string PretokenizerForTrainingInterface::Preprocess(
 }
 
 // static
-std::string PretokenizerForTrainingInterface::Postprocess(
+std::vector<std::string> PretokenizerForTrainingInterface::Postprocess(
     const SentencePieceText &spt) {
   // Inserts kUPPBoundaryStr before/after of token boundaries.
+  std::vector<std::string> result;
   std::string output;
+
   int prev = 0;
   for (const auto &piece : spt.pieces()) {
     if (prev == piece.begin() && piece.begin() != 0) {
-      output += kUPPBoundaryStr;
+      result.push_back(output);
+      output.clear();
     } else {
       output.append(piece.begin() - prev, ' ');
     }
@@ -55,8 +58,11 @@ std::string PretokenizerForTrainingInterface::Postprocess(
     prev = piece.end();
   }
 
-  // Restores kWSStr.
-  return absl::StrReplaceAll(output, {{" ", kWSStr}});
+  if (!output.empty()) result.push_back(output);
+
+  for (auto &w : result) w = absl::StrReplaceAll(w, {{" ", kWSStr}});
+
+  return result;
 }
 
 }  // namespace pretokenizer

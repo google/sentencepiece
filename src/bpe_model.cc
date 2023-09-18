@@ -72,8 +72,7 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
   // Reverse merge rules.
   // key: merged symbol, value: pair of original symbols.
   absl::flat_hash_map<absl::string_view,
-                      std::pair<absl::string_view, absl::string_view>,
-                      string_util::string_view_hash>
+                      std::pair<absl::string_view, absl::string_view>>
       rev_merge;
 
   // Pre-allocates SymbolPair for efficiency.

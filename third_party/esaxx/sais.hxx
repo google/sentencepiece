@@ -179,7 +179,7 @@ typedef typename std::iterator_traits<string_type>::value_type char_type;
      sort all the S-substrings */
   if(fs < (maxthreads * k)) {
     index_type *C, *B;
-    if((C = new index_type[maxthreads * k]) == 0) { return -2; }
+    C = new index_type[maxthreads * k];
     B = (1 < maxthreads) ? C + k : C;
     getCounts(T, C, n, k); getBuckets(C, B, k, true); /* find ends of buckets */
 #ifdef _OPENMP
@@ -271,7 +271,7 @@ typedef typename std::iterator_traits<string_type>::value_type char_type;
   /* stage 3: induce the result for the original problem */
   if(fs < (maxthreads * k)) {
     index_type *B, *C;
-    if((C = new index_type[maxthreads * k]) == 0) { return -2; }
+    C = new index_type[maxthreads * k];
     B = (1 < maxthreads) ? C + k : C;
     /* put all left-most S characters into their buckets */
     getCounts(T, C, n, k); getBuckets(C, B, k, true); /* find ends of buckets */

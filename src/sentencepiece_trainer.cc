@@ -31,8 +31,6 @@
 #include "trainer_factory.h"
 #include "util.h"
 
-ABSL_DECLARE_FLAG(int, minloglevel);
-
 namespace sentencepiece {
 namespace {
 static constexpr char kDefaultNormalizerName[] = "nmt_nfkc";
@@ -112,7 +110,7 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
   for (auto arg : absl::StrSplit(args, " ")) {
     absl::ConsumePrefix(&arg, "--");
     std::string key, value;
-    const auto pos = arg.find("=");
+    const auto pos = arg.find('=');
     if (pos == absl::string_view::npos) {
       key = std::string(arg);
     } else {
@@ -151,7 +149,7 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
     } else if (key == "minloglevel") {
       int v = 0;
       CHECK_OR_RETURN(absl::SimpleAtoi(value, &v));
-      absl::SetFlag(&FLAGS_minloglevel, v);
+      logging::SetMinLogLevel(v);
       continue;
     } else if(key == "encode_unicode_case") {
       bool encode_unicode_case;

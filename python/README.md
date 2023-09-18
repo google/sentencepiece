@@ -9,10 +9,17 @@ For Linux (x64/i686), macOS, and Windows(win32/x64) environment, you can simply 
 % pip install sentencepiece
 ```
 
-To build and install the Python wrapper from source, please install [SentencePiece C++](https://github.com/google/sentencepiece#c-from-source) and try the following commands:
+To build and install the Python wrapper from source, try the following commands to build and install wheel package.
 ```
-% python setup.py build
-% sudo python setup.py install
+% git clone https://github.com/google/sentencepiece.git 
+% cd sentencepiece
+% mkdir build
+% cd build
+% cmake .. -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=./root
+% make install
+% cd ../python
+% python setup.py bdist_wheel
+% pip install dist/sentencepiece*.whl
 ```
 
 If you don’t have write permission to the global site-packages directory or don’t want to install into it, please try:
@@ -22,21 +29,50 @@ If you don’t have write permission to the global site-packages directory or do
 
 ## Usage
 
-See [this google colab page](https://github.com/google/sentencepiece/blob/master/python/sentencepiece_python_module_example.ipynb) to run sentencepiece interactively. (Note: this sample is written in old interface.)
+See [this google colab page](https://github.com/google/sentencepiece/blob/master/python/sentencepiece_python_module_example.ipynb) to run sentencepiece interactively.
 
 ### Segmentation
 ```
 % python
 >>> import sentencepiece as spm
 >>> sp = spm.SentencePieceProcessor(model_file='test/test_model.model')
+
 >>> sp.encode('This is a test')
 [284, 47, 11, 4, 15, 400]
+
 >>> sp.encode(['This is a test', 'Hello world'], out_type=int)
 [[284, 47, 11, 4, 15, 400], [151, 88, 21, 887]]
+
+>>> sp.encode_as_ids(['This is a test', 'Hello world'])
+[[284, 47, 11, 4, 15, 400], [151, 88, 21, 887]]
+
 >>> sp.encode('This is a test', out_type=str)
 ['▁This', '▁is', '▁a', '▁', 't', 'est']
+
 >>> sp.encode(['This is a test', 'Hello world'], out_type=str)
 [['▁This', '▁is', '▁a', '▁', 't', 'est'], ['▁He', 'll', 'o', '▁world']]
+
+>>> sp.encode_as_pieces(['This is a test', 'Hello world'])
+[['▁This', '▁is', '▁a', '▁', 't', 'est'], ['▁He', 'll', 'o', '▁world']]
+
+>>> proto = sp.encode('This is a test', out_type='immutable_proto')
+>>> for n in proto.pieces:
+...     print('piece="{}" surface="{}" id={} begin={} end={}'.format(n.piece, n.surface, n.id, n.begin, n.end))
+... 
+piece="▁This" surface="This" id=284 begin=0 end=4
+piece="▁is" surface=" is" id=47 begin=4 end=7
+piece="▁a" surface=" a" id=11 begin=7 end=9
+piece="▁" surface=" " id=4 begin=9 end=10
+piece="t" surface="t" id=15 begin=10 end=11
+piece="est" surface="est" id=400 begin=11 end=14
+
+>>> [[x.id for x in proto.pieces], [x.piece for x in proto.pieces], [x.begin for x in proto.pieces], [x.end for x in proto.pieces]]
+[[284, 47, 11, 4, 15, 400], ['▁This', '▁is', '▁a', '▁', 't', 'est'], [0, 4, 7, 9, 10, 11], [4, 7, 9, 10, 11, 14]]
+
+>>> proto2 = sp.encode_as_immutable_proto('This is a test')
+>>> proto2 == proto
+True
+
 >>> for _ in range(10):
 ...     sp.encode('This is a test', out_type=str, enable_sampling=True, alpha=0.1, nbest_size=-1)
 ... 
@@ -50,26 +86,55 @@ See [this google colab page](https://github.com/google/sentencepiece/blob/master
 ['▁', 'T', 'h', 'is', '▁', 'is', '▁', 'a', '▁', 'te', 'st']
 ['▁', 'This', '▁', 'i', 's', '▁a', '▁', 't', 'e', 'st']
 ['▁This', '▁', 'is', '▁a', '▁', 't', 'est']
+
+>> sp.nbest_encode('This is a test', nbest_size=5, out_type=str)
+[['▁This', '▁is', '▁a', '▁', 't', 'est'], 
+['▁This', '▁is', '▁a', '▁', 'te', 'st'], 
+['▁This', '▁is', '▁a', '▁', 'te', 's', 't'],
+['▁This', '▁is', '▁a', '▁', 't', 'e', 'st'],
+['▁This', '▁is', '▁a', '▁', 't', 'es', 't']]
+
+>>> sp.sample_encode_and_score('This is a test', num_samples=5, alpha=0.1, out_type=str, wor=True)
+[(['▁This', '▁', 'i', 's', '▁a', '▁', 'te', 's', 't'], -3.043105125427246),
+(['▁This', '▁', 'i', 's', '▁a', '▁', 'te', 'st'], -2.8475849628448486),
+(['▁', 'This', '▁is', '▁', 'a', '▁', 'te', 'st'], -3.043248176574707),
+(['▁', 'This', '▁is', '▁a', '▁', 't', 'e', 'st'], -2.87727689743042),
+(['▁', 'This', '▁', 'i', 's', '▁', 'a', '▁', 't', 'est'], -3.6284031867980957)]
+
 >>> sp.decode([284, 47, 11, 4, 15, 400])
 'This is a test'
+
 >>> sp.decode([[284, 47, 11, 4, 15, 400], [151, 88, 21, 887]])
 ['This is a test', 'Hello world']
+
+>>> proto = sp.decode([284, 47, 11, 4, 15, 400], out_type='immutable_proto') 
+>>> proto.text
+'This is a test'
+
 >>> sp.decode(['▁', 'This', '▁', 'is', '▁a', '▁', 't', 'e', 'st'])
 'This is a test'
+
 >>> sp.decode([['▁This', '▁is', '▁a', '▁', 't', 'est'], ['▁He', 'll', 'o', '▁world']])
 ['This is a test', 'Hello world']
+
 >>> sp.get_piece_size()
 1000
+
 >>> sp.id_to_piece(2)
 '</s>'
+
 >>> sp.id_to_piece([2, 3, 4])
 ['</s>', '\r', '▁']
+
 >>> sp.piece_to_id('<s>')
 1
+
 >>> sp.piece_to_id(['</s>', '\r', '▁'])
 [2, 3, 4]
+
 >>> len(sp)
 1000
+
 >>> sp['</s>']
 2
 ```
@@ -115,99 +180,4 @@ with urllib.request.urlopen(
 # Directly load the model from serialized model.
 sp = spm.SentencePieceProcessor(model_proto=model.getvalue())
 print(sp.encode('this is test'))
-```
-
-
-### Segmentation (old interface)
-```
-% python
->>> import sentencepiece as spm
->>> sp = spm.SentencePieceProcessor()
->>> sp.Load("test/test_model.model")
-True
->>> sp.EncodeAsPieces("This is a test")
-['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'est']
->>> sp.EncodeAsIds("This is a test")
-[284, 47, 11, 4, 15, 400]
->>> sp.DecodePieces(['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'est'])
-'This is a test'
->>> sp.NBestEncodeAsPieces("This is a test", 5)
-[['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'est'], ['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 'te', 'st'], ['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 'te', 's', 't'], ['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'e', 'st'], ['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'es', 't']]
->>> for x in range(10):
-...     sp.SampleEncodeAsPieces("This is a test", -1, 0.1)
-...
-['\xe2\x96\x81', 'T', 'h', 'i', 's', '\xe2\x96\x81', 'is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'e', 's', 't']
-['\xe2\x96\x81T', 'h', 'is', '\xe2\x96\x81is', '\xe2\x96\x81', 'a', '\xe2\x96\x81', 't', 'est']
-['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81', 'a', '\xe2\x96\x81', 't', 'e', 'st']
-['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'e', 'st']
-['\xe2\x96\x81This', '\xe2\x96\x81is', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'e', 's', 't']
-['\xe2\x96\x81T', 'h', 'is', '\xe2\x96\x81', 'i', 's', '\xe2\x96\x81a', '\xe2\x96\x81', 'te', 's', 't']
-['\xe2\x96\x81This', '\xe2\x96\x81', 'is', '\xe2\x96\x81a', '\xe2\x96\x81', 'te', 's', 't']
-['\xe2\x96\x81This', '\xe2\x96\x81', 'i', 's', '\xe2\x96\x81a', '\xe2\x96\x81', 't', 'e', 'st']
-['\xe2\x96\x81This', '\xe2\x96\x81', 'is', '\xe2\x96\x81', 'a', '\xe2\x96\x81', 't', 'e', 'st']
-['\xe2\x96\x81This', '\xe2\x96\x81', 'i', 's', '\xe2\x96\x81', 'a', '\xe2\x96\x81', 'te', 's', 't']
->>> sp.DecodeIds([284, 47, 11, 4, 15, 400])
-'This is a test'
->>> sp.GetPieceSize()
-1000
->>> sp.IdToPiece(2)
-'</s>'
->>> sp.PieceToId('</s>')
-2
->>> len(sp)
-1000
->>> sp['</s>']
-2
-```
-
-### Model Training (old interface)
-Training is performed by passing parameters of [spm_train](https://github.com/google/sentencepiece#train-sentencepiece-model) to  SentencePieceTrainer.Train() function.
-
-```
->>> import sentencepiece as spm
->>> spm.SentencePieceTrainer.Train('--input=test/botchan.txt --model_prefix=m --vocab_size=1000')
-unigram_model_trainer.cc(494) LOG(INFO) Starts training with : 
-input: "test/botchan.txt"
-model_prefix: "m"
-model_type: UNIGRAM
-..snip..
-unigram_model_trainer.cc(529) LOG(INFO) EM sub_iter=0 size=1239 obj=10.4055 num_tokens=36256 num_tokens/piece=29.2623
-unigram_model_trainer.cc(529) LOG(INFO) EM sub_iter=1 size=1239 obj=10.3187 num_tokens=36256 num_tokens/piece=29.2623
-unigram_model_trainer.cc(529) LOG(INFO) EM sub_iter=0 size=1100 obj=10.5285 num_tokens=37633 num_tokens/piece=34.2118
-unigram_model_trainer.cc(529) LOG(INFO) EM sub_iter=1 size=1100 obj=10.4973 num_tokens=37630 num_tokens/piece=34.2091
-trainer_interface.cc(284) LOG(INFO) Saving model: m.model
-trainer_interface.cc(293) LOG(INFO) Saving vocabs: m.vocab
->>>
-```
-
-## Python2/3 String/Unicode compatibility
-Sentencepiece python wrapper accepts both Unicode string and legacy byte string.
-The output string type is determined by the input string type.
-The output type of IdToPiece/DecodeIds methods is *str*, but note that it is a legacy byte string in Python2 and Unicode string in Python3 respectively.
-
-* Python2:
-```
->>> sp.EncodeAsPieces('吾輩は猫である')
-['\xe2\x96\x81', '\xe5\x90\xbe', '\xe8\xbc\xa9', '\xe3\x81\xaf', '\xe7\x8c\xab', '\xe3\x81\xa7\xe3\x81\x82\xe3\x82\x8b']
->>> sp.EncodeAsPieces(u'吾輩は猫である')
-[u'\u2581', u'\u543e', u'\u8f29', u'\u306f', u'\u732b', u'\u3067\u3042\u308b']
->>> sp.EncodeAsPieces(u'吾輩は猫である'.encode('utf-8'))
-['\xe2\x96\x81', '\xe5\x90\xbe', '\xe8\xbc\xa9', '\xe3\x81\xaf', '\xe7\x8c\xab', '\xe3\x81\xa7\xe3\x81\x82\xe3\x82\x8b']
->>> sp.IdToPiece(10)
-'\xe3\x81\xab'
->>> type(sp.IdToPiece(10))
-<type 'str'>
-```
-
-* Python3:
-```
->>> sp.EncodeAsPieces('吾輩は猫である')
-['▁', '吾', '輩', 'は', '猫', 'である']
->>> sp.EncodeAsPieces('吾輩は猫である'.encode('utf-8'))
-[b'\xe2\x96\x81', b'\xe5\x90\xbe', b'\xe8\xbc\xa9', b'\xe3\x81\xaf', b'\xe7\x8c\xab', b'\xe3\x81\xa7\xe3\x81\x82\xe3\x82\x8b']
->>>
->>> sp.IdToPiece(10)
-'に'
->>> type(sp.IdToPiece(10))
-<class 'str'>
 ```
