@@ -897,9 +897,8 @@ util::Status SentencePieceProcessor::Decode(
       if (bos_ws_seen || !text->empty()) is_bos_ws = false;
 
       byte_start = i + 1;
-      SetSurface(i, DecodeSentencePiece(sp.piece(), sp.id(), text->empty()));
       bool is_eos_ws = i == spt->pieces_size() - 1;
-
+      
       std::tie(decoded, bos_ws_seen) =
           DecodeSentencePiece(sp.piece(), sp.id(), is_bos_ws, is_eos_ws);
 
