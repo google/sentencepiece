@@ -32,6 +32,16 @@ cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo -D SPM_USE_EXTERNAL_ABSL=off -D SPM_ENA
 3. tcmalloc is a must. The stdlib's malloc fails to return the freed memory back to the system.
 4. nfkc compilation is needed to edit the normalization rules
 
+If you want to install the library and you're not using installing the python package globally, you may need to set the package configuration path:
+
+```
+make install
+ldconfig 
+cd ../python
+PKG_CONFIG_PATH=../build python -m pip install -ve .
+```
+
+
 ## Technical highlights
 - **Purely data driven**: SentencePiece trains tokenization and detokenization
   models from sentences. Pre-tokenization ([Moses tokenizer](https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/tokenizer.perl)/[MeCab](http://taku910.github.io/mecab/)/[KyTea](http://www.phontron.com/kytea/)) is not always required.
