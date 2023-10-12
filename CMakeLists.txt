@@ -159,6 +159,8 @@ elseif (SPM_ABSL_PROVIDER STREQUAL "module")
   add_subdirectory(third_party/abseil-cpp)
 elseif (SPM_ABSL_PROVIDER STREQUAL "package")
   find_package(absl REQUIRED)
+  get_target_property(ABSL_INCLUDE_DIRS absl::base INCLUDE_DIRECTORIES)
+  include_directories(${ABSL_INCLUDE_DIRS})
 endif()
 
 add_subdirectory(src)
