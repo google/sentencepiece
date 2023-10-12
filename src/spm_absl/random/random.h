@@ -17,11 +17,11 @@
 
 #include <random>
 
-#include "../../../src/util.h"
+#include "util.h"
 
 using sentencepiece::random::GetRandomGenerator;
 
-namespace absl {
+namespace spm_absl {
 
 class SharedBitGen {
  public:

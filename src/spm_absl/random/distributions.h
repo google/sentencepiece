@@ -17,9 +17,9 @@
 
 #include <random>
 
-#include "random.h"
+#include "spm_absl/random/random.h"
 
-namespace absl {
+namespace spm_absl {
 
 template <typename T>
 T Gaussian(SharedBitGen &generator, T mean, T stddev) {
