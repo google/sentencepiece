@@ -17,7 +17,7 @@
 
 #include <random>
 
-#include "spm_absl/random/random.h"
+#include "random.h"
 
 namespace spm_absl {
 
