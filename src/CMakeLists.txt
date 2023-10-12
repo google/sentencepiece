@@ -24,7 +24,7 @@ if (SPM_ABSL_PROVIDER STREQUAL "module" OR SPM_ABSL_PROVIDER STREQUAL "package")
    add_definitions("-D_USE_EXTERNAL_ABSL")
   endif()
   else if (SPM_ABSL_PROVIDER STREQUAL "internal")
-  set(ABSL_FLAGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/flags/flag.cc)
+  set(ABSL_FLAGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/absl/flags/flag.cc)
 endif()
 
 if (SPM_PROTOBUF_PROVIDER STREQUAL "internal")

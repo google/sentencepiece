@@ -154,7 +154,7 @@ if (SPM_BUILD_TEST)
 endif()
 
 if (SPM_ABSL_PROVIDER STREQUAL "internal")
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party)
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
 else if (SPM_ABSL_PROVIDER STREQUAL "module")
   add_subdirectory(third_party/abseil-cpp)
 else if (SPM_ABSL_PROVIDER STREQUAL "package")
