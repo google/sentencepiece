@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "sentencepiece_model.pb.h"
-#include "third_party/absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_map.h"
 #include "trainer_interface.h"
 
 namespace sentencepiece {

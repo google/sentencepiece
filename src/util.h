@@ -30,7 +30,7 @@
 
 #include "common.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/strings/string_view.h"
 
 #ifdef SPM_NO_THREADLOCAL
 #include <pthread.h>

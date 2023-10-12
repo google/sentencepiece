@@ -15,7 +15,7 @@
 #include <iostream>
 
 #include "filesystem.h"
-#include "third_party/absl/memory/memory.h"
+#include "absl/memory/memory.h"
 #include "util.h"
 
 #if defined(OS_WIN) && defined(UNICODE) && defined(_UNICODE)

@@ -14,7 +14,7 @@
 
 #include <unordered_map>
 
-#include "third_party/absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_map.h"
 #include "unicode_script.h"
 #include "unicode_script_map.h"
 #include "util.h"

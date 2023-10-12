@@ -19,8 +19,8 @@
 #include <vector>
 
 #include "sentencepiece_processor.h"
-#include "third_party/absl/strings/ascii.h"
-#include "third_party/absl/strings/str_split.h"
+#include "absl/strings/ascii.h"
+#include "absl/strings/str_split.h"
 #include "util.h"
 
 namespace sentencepiece {

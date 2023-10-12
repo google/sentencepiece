@@ -24,7 +24,7 @@
 #include "common.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
 
 namespace sentencepiece {
