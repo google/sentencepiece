@@ -155,9 +155,9 @@ endif()
 
 if (SPM_ABSL_PROVIDER STREQUAL "internal")
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
-else if (SPM_ABSL_PROVIDER STREQUAL "module")
+elseif (SPM_ABSL_PROVIDER STREQUAL "module")
   add_subdirectory(third_party/abseil-cpp)
-else if (SPM_ABSL_PROVIDER STREQUAL "package")
+elseif (SPM_ABSL_PROVIDER STREQUAL "package")
   find_package(absl REQUIRED)
 endif()
 
