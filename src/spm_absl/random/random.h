@@ -17,7 +17,7 @@
 
 #include <random>
 
-#include "util.h"
+#include "../../util.h"
 
 using sentencepiece::random::GetRandomGenerator;
 
