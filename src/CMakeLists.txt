@@ -15,6 +15,7 @@
 if (SPM_ABSL_PROVIDER STREQUAL "module" OR SPM_ABSL_PROVIDER STREQUAL "package")
   set(ABSL_FLAGS_SRCS "")
   set(ABSL_STRINGS_SRCS "")
+  list(APPEND SPM_LIBS absl::log_internal_check_op)
   list(APPEND SPM_LIBS absl::strings)
   list(APPEND SPM_LIBS absl::flags)
   list(APPEND SPM_LIBS absl::flags_parse)
