@@ -25,7 +25,7 @@
 #include "third_party/protobuf-lite/google/protobuf/message_lite.h"
 #endif
 
-ABSL_DECLARE_FLAG(int32, minloglevel);
+ABSL_DECLARE_FLAG(int32, spm_minloglevel);
 
 namespace sentencepiece {
 inline void ParseCommandLineFlags(const char *usage, int *argc, char ***argv,
@@ -39,7 +39,7 @@ inline void ParseCommandLineFlags(const char *usage, int *argc, char ***argv,
     *argc = static_cast<int>(unused_args.size());
   }
 
-  logging::SetMinLogLevel(absl::GetFlag(FLAGS_minloglevel));
+  logging::SetMinLogLevel(absl::GetFlag(FLAGS_spm_minloglevel));
 }
 
 inline void ShutdownLibrary() {
