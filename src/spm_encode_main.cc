@@ -189,8 +189,26 @@ int main(int argc, char *argv[]) {
   }
 
   std::atomic<int64_t> processed = 0;
+
+  auto processChunk = [&pool, &process, &processed](std::vector<absl::string_view>& chunk) {
+    pool.Schedule([&process, &processed, chunk](){
+      for (auto &line : chunk) {
+        process(line);
+      }
+      int64_t prev = processed.fetch_add(chunk.size()) + chunk.size();
+      if ((prev / thread_chunk_size) % 100 == 0) {
+        LOG(INFO) << "Encoded " << prev << " sentences";
+      }
+    });
+    chunk.clear();
+  };
+
   char delim = absl::GetFlag(FLAGS_new_line_delim);
   for (const auto &filename : rest_args) {
+    if (filename.empty()) {
+      LOG(FATAL) << "Pipe input is not supported. Please use --input to specify the names of the input files";
+      continue;
+    }
     auto input = sentencepiece::filesystem::NewReadableFile(
         filename, delim != '\n', delim);
     CHECK_OK(input->status());
@@ -200,17 +218,11 @@ int main(int argc, char *argv[]) {
     while (input->ReadLine(&line)) {
       chunk.emplace_back(line);
       if (chunk.size() == thread_chunk_size) {
-        pool.Schedule([&process, &processed, chunk]() {
-          for (auto &line : chunk) {
-            process(line);
-          }
-          int64_t prev = processed.fetch_add(chunk.size()) + chunk.size();
-          if ((prev / thread_chunk_size) % 100 == 0) {
-            LOG(INFO) << "Encoded " << prev << " sentences";
-          }
-        });
-        chunk.clear();
+        processChunk(chunk);
       }
+    }
+    if (chunk.size() > 0) {
+      processChunk(chunk);
     }
     pool.Wait();
     LOG(INFO) << "Encoded " << processed.load() << " sentences";
