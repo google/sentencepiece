@@ -96,8 +96,6 @@ int main(int argc, char *argv[]) {
   std::function<void(absl::string_view line)> process = nullptr;
   std::function<void(absl::string_view line, std::vector<int>& ids)> process_ex = nullptr;
   std::vector<uint32_t> sentence_sizes;
-  int eos = sp.eos_id(), bos = sp.bos_id();
-  char verbatim_control_char = sp.model_proto()->trainer_spec().verbatim_control_char();
   int num_threads = absl::GetFlag(FLAGS_num_threads);
   sentencepiece::ThreadPool pool(num_threads);
   std::recursive_mutex sync;
