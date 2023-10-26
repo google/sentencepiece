@@ -85,6 +85,8 @@ class MultiFileSentenceIterator : public SentenceIterator {
   size_t file_index_ = 0;
   std::vector<std::string> files_;
   absl::string_view value_;
+  bool in_text_ = true;
+  absl::string_view cache_value_;
   std::unique_ptr<filesystem::ReadableFile> fp_;
   char delim_;
 };

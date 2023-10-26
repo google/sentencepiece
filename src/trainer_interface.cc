@@ -201,7 +201,46 @@ void MultiFileSentenceIterator::Next() {
 }
 
 void MultiFileSentenceIterator::TryRead() {
-  read_done_ = fp_ && fp_->ReadLine(&value_);
+  bool value_set = false;
+  if (cache_value_.empty()) {
+    read_done_ = fp_ && fp_->ReadLine(&cache_value_);
+    if (!read_done_ || cache_value_.empty()) {
+      value_set = true;
+    }
+    if (!value_set && *cache_value_.data() == '\x03') {
+      auto head = cache_value_.data();
+      auto tail = reinterpret_cast<const char *>(memchr(head, '\x04', cache_value_.length()));
+      assert((void("Code meta block did not end with 0x04"), tail != nullptr));
+      value_ = absl::string_view(head + 1, tail - head - 1);
+      cache_value_ = cache_value_.substr(tail - head + 1);
+      value_set = true;
+    }
+  }
+  if (!value_set && in_text_) {
+    auto ptr = reinterpret_cast<const char *>(memchr(cache_value_.data(), '\x01', cache_value_.size()));
+    if (ptr == nullptr) {
+      value_ = cache_value_;
+      cache_value_ = absl::string_view();
+      value_set = true;
+    } else {
+      auto offset = ptr - cache_value_.data();
+      if (offset > 0) {
+        value_ = cache_value_.substr(0, offset);
+        cache_value_ = cache_value_.substr(offset);
+        value_set = true;
+      }
+      in_text_ = false;
+    }
+  }
+  if (!value_set && !in_text_) {
+    auto ptr = reinterpret_cast<const char *>(memchr(cache_value_.data(), '\x02', cache_value_.size()));
+    assert((void("Code block does not end with 0x02"), ptr != nullptr));
+    auto offset = ptr - cache_value_.data();
+    value_ = cache_value_.substr(0, offset);
+    cache_value_ = cache_value_.substr(offset + 1);
+    value_set = true;
+    in_text_ = true;
+  }
 }
 
 void MultiFileSentenceIterator::Finish() {
