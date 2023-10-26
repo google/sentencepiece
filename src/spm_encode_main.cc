@@ -244,7 +244,7 @@ int main(int argc, char *argv[]) {
     auto tail = reinterpret_cast<const char *>(memchr(head, '\x04', line.length()));
     assert((void("Code meta block did not end with 0x04"), tail != nullptr));
     ids.push_back(ps_code_meta_start);
-    process_ex(absl::string_view(head + 1, tail - head), ids);
+    process_ex(absl::string_view(head + 1, tail - head - 1), ids);
     ids.push_back(ps_code_meta_end);
     return tail + 1;
   };
