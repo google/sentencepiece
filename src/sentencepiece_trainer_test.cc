@@ -31,17 +31,17 @@ static constexpr char kIdsDenormTsv[] = "ids_denorm.tsv";
 void CheckVocab(absl::string_view filename, int expected_vocab_size) {
   SentencePieceProcessor sp;
   ASSERT_TRUE(sp.Load(filename.data()).ok());
-  EXPECT_EQ(expected_vocab_size, sp.model_proto().trainer_spec().vocab_size());
-  EXPECT_EQ(sp.model_proto().pieces_size(),
-            sp.model_proto().trainer_spec().vocab_size());
+  EXPECT_EQ(expected_vocab_size, sp.model_proto()->trainer_spec().vocab_size());
+  EXPECT_EQ(sp.model_proto()->pieces_size(),
+            sp.model_proto()->trainer_spec().vocab_size());
 }
 
 void CheckNormalizer(absl::string_view filename, bool expected_has_normalizer,
                      bool expected_has_denormalizer) {
   SentencePieceProcessor sp;
   ASSERT_TRUE(sp.Load(filename.data()).ok());
-  const auto &normalizer_spec = sp.model_proto().normalizer_spec();
-  const auto &denormalizer_spec = sp.model_proto().denormalizer_spec();
+  const auto &normalizer_spec = sp.model_proto()->normalizer_spec();
+  const auto &denormalizer_spec = sp.model_proto()->denormalizer_spec();
   EXPECT_EQ(!normalizer_spec.precompiled_charsmap().empty(),
             expected_has_normalizer);
   EXPECT_EQ(!denormalizer_spec.precompiled_charsmap().empty(),

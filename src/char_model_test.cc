@@ -49,8 +49,8 @@ void AddPiece(ModelProto *model_proto, const std::string &piece,
 }
 
 TEST(ModelTest, EncodeTest) {
-  ModelProto model_proto = MakeBaseModelProto();
 
+  auto model_proto = MakeBaseModelProto();
   AddPiece(&model_proto, WS, 0.0);
   AddPiece(&model_proto, "a", 0.1);
   AddPiece(&model_proto, "b", 0.2);
@@ -60,7 +60,8 @@ TEST(ModelTest, EncodeTest) {
   model_proto.mutable_pieces(8)->set_type(
       ModelProto::SentencePiece::USER_DEFINED);
 
-  const Model model(model_proto);
+  auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+  const Model model(std::move(mp));
 
   EncodeResult result;
 
@@ -108,7 +109,8 @@ TEST(ModelTest, EncodeTest) {
 
 TEST(CharModelTest, NotSupportedTest) {
   ModelProto model_proto = MakeBaseModelProto();
-  const Model model(model_proto);
+  auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+  const Model model(std::move(mp));
   EXPECT_EQ(NBestEncodeResult(), model.NBestEncode("test", 10));
   EXPECT_EQ(EncodeResult(), model.SampleEncode("test", 0.1));
 }

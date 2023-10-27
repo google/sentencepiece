@@ -416,7 +416,7 @@ TEST(UtilTest, JoinPathTest) {
 
 TEST(UtilTest, ReservoirSamplerTest) {
   std::vector<int> sampled;
-  random::ReservoirSampler<int> sampler(&sampled, 100);
+  random::ReservoirSampler<int, std::vector> sampler(&sampled, uint64(100));
   for (int i = 0; i < 10000; ++i) {
     sampler.Add(i);
   }

@@ -96,11 +96,11 @@ TrainerResult RunTrainer(const std::vector<std::string>& input, int size,
     SentencePieceProcessor processor;
     EXPECT_TRUE(processor.Load(model_prefix + ".model").ok());
 
-    const auto& model = processor.model_proto();
+    const auto model = processor.model_proto();
 
     // remove <unk>, <s>, </s>
-    for (int i = 3; i < model.pieces_size(); ++i) {
-      pieces.emplace_back(model.pieces(i).piece());
+    for (int i = 3; i < model->pieces_size(); ++i) {
+      pieces.emplace_back(model->pieces(i).piece());
     }
   }
 

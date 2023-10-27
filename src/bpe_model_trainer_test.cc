@@ -67,12 +67,12 @@ std::string RunTrainer(
   SentencePieceProcessor processor;
   EXPECT_TRUE(processor.Load(model_prefix + ".model").ok());
 
-  const auto &model = processor.model_proto();
+  const auto model = processor.model_proto();
   std::vector<std::string> pieces;
 
   // remove <unk>, <s>, </s>
-  for (int i = 3; i < model.pieces_size(); ++i) {
-    pieces.emplace_back(model.pieces(i).piece());
+  for (int i = 3; i < model->pieces_size(); ++i) {
+    pieces.emplace_back(model->pieces(i).piece());
   }
 
   return absl::StrJoin(pieces, " ");

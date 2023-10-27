@@ -36,23 +36,27 @@ TEST(ModelFactoryTest, BasicTest) {
   sp4->set_score(1.0);
 
   {
+    std::unique_ptr<const ModelProto> mp(new ModelProto(model_proto));
     model_proto.mutable_trainer_spec()->set_model_type(TrainerSpec::UNIGRAM);
-    auto m = ModelFactory::Create(model_proto);
+    auto m = ModelFactory::Create(std::move(mp));
   }
 
   {
+    std::unique_ptr<const ModelProto> mp(new ModelProto(model_proto));
     model_proto.mutable_trainer_spec()->set_model_type(TrainerSpec::BPE);
-    auto m = ModelFactory::Create(model_proto);
+    auto m = ModelFactory::Create(std::move(mp));
   }
 
   {
+    std::unique_ptr<const ModelProto> mp(new ModelProto(model_proto));
     model_proto.mutable_trainer_spec()->set_model_type(TrainerSpec::WORD);
-    auto m = ModelFactory::Create(model_proto);
+    auto m = ModelFactory::Create(std::move(mp));
   }
 
   {
+    std::unique_ptr<const ModelProto> mp(new ModelProto(model_proto));
     model_proto.mutable_trainer_spec()->set_model_type(TrainerSpec::CHAR);
-    auto m = ModelFactory::Create(model_proto);
+    auto m = ModelFactory::Create(std::move(mp));
   }
 }
 }  // namespace sentencepiece

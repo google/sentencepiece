@@ -511,7 +511,9 @@ TEST(UnigramModelTest, SetUnigramModelTest) {
   AddPiece(&model_proto, "c");
   AddPiece(&model_proto, "d");
 
-  const Model model(model_proto);
+  auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+  const Model model(std::move(mp));
+
   EXPECT_EQ(model_proto.SerializeAsString(),
             model.model_proto().SerializeAsString());
 }
@@ -526,7 +528,9 @@ TEST(UnigramModelTest, SampleEncodeAndScoreTest) {
   AddPiece(&model_proto, "BC", 0.5);   // 7
   AddPiece(&model_proto, "ABC", 1.0);  // 8
 
-  Model model(model_proto);
+  auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+  const Model model(std::move(mp));
+
 
   Lattice lattice;
   lattice.SetSentence("ABC");
@@ -620,7 +624,9 @@ TEST_P(UnigramModelTest, PieceToIdTest) {
   AddPiece(&model_proto, "c", 0.3);
   AddPiece(&model_proto, "d", 0.4);
 
-  Model model(model_proto);
+  auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+  const Model model(std::move(mp));
+
   model.SetEncoderVersion(encoder_version_);
 
   EXPECT_EQ(model_proto.SerializeAsString(),
@@ -678,7 +684,10 @@ TEST_P(UnigramModelTest, PieceToIdTest) {
 TEST_P(UnigramModelTest, PopulateNodesAllUnknownsTest) {
   ModelProto model_proto = MakeBaseModelProto();
   AddPiece(&model_proto, "x");
-  Model model(model_proto);
+
+  auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+  const Model model(std::move(mp));
+
   model.SetEncoderVersion(encoder_version_);
 
   Lattice lattice;
@@ -702,7 +711,10 @@ TEST_P(UnigramModelTest, PopulateNodesTest) {
   AddPiece(&model_proto, "ab", 0.3);  // 5
   AddPiece(&model_proto, "bc", 0.4);  // 6
 
-  Model model(model_proto);
+
+  auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+  const Model model(std::move(mp));
+
   model.SetEncoderVersion(encoder_version_);
 
   Lattice lattice;
@@ -737,7 +749,10 @@ TEST_P(UnigramModelTest, PopulateNodesWithUnusedTest) {
   model_proto.mutable_pieces(5)->set_type(ModelProto::SentencePiece::UNUSED);
   model_proto.mutable_pieces(6)->set_type(ModelProto::SentencePiece::UNUSED);
 
-  Model model(model_proto);
+
+  auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+  const Model model(std::move(mp));
+
   model.SetEncoderVersion(encoder_version_);
 
   Lattice lattice;
@@ -762,7 +777,9 @@ TEST_P(UnigramModelTest, ModelNBestTest) {
   AddPiece(&model_proto, "bc", 5.0);    // 7
   AddPiece(&model_proto, "abc", 10.0);  // 8
 
-  Model model(model_proto);
+  auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+  const Model model(std::move(mp));
+
   model.SetEncoderVersion(encoder_version_);
 
   auto nbest = model.NBestEncode("", 10);
@@ -801,7 +818,9 @@ TEST_P(UnigramModelTest, EncodeTest) {
   model_proto.mutable_pieces(12)->set_type(  // r
       ModelProto::SentencePiece::USER_DEFINED);
 
-  Model model(model_proto);
+  auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+  const Model model(std::move(mp));
+
   model.SetEncoderVersion(encoder_version_);
 
   EncodeResult result;
@@ -884,7 +903,10 @@ TEST_P(UnigramModelTest, EncodeWithUnusedTest) {
 
   // No unused.
   {
-    Model model(model_proto);
+
+    auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+    const Model model(std::move(mp));
+
     model.SetEncoderVersion(encoder_version_);
     const auto result = model.Encode("abcd");
     EXPECT_EQ(1, result.size());
@@ -893,7 +915,10 @@ TEST_P(UnigramModelTest, EncodeWithUnusedTest) {
 
   {
     model_proto.mutable_pieces(3)->set_type(ModelProto::SentencePiece::UNUSED);
-    Model model(model_proto);
+
+    auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+    const Model model(std::move(mp));
+
     model.SetEncoderVersion(encoder_version_);
     const auto result = model.Encode("abcd");
     EXPECT_EQ(2, result.size());
@@ -904,7 +929,10 @@ TEST_P(UnigramModelTest, EncodeWithUnusedTest) {
   {
     model_proto.mutable_pieces(3)->set_type(ModelProto::SentencePiece::UNUSED);
     model_proto.mutable_pieces(5)->set_type(ModelProto::SentencePiece::UNUSED);
-    Model model(model_proto);
+
+    auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+    const Model model(std::move(mp));
+
     model.SetEncoderVersion(encoder_version_);
     const auto result = model.Encode("abcd");
     EXPECT_EQ(2, result.size());
@@ -918,7 +946,10 @@ TEST_P(UnigramModelTest, EncodeWithUnusedTest) {
     model_proto.mutable_pieces(3)->set_type(ModelProto::SentencePiece::UNUSED);
     model_proto.mutable_pieces(4)->set_type(ModelProto::SentencePiece::UNUSED);
     model_proto.mutable_pieces(5)->set_type(ModelProto::SentencePiece::NORMAL);
-    Model model(model_proto);
+
+    auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+    const Model model(std::move(mp));
+
     model.SetEncoderVersion(encoder_version_);
     const auto result = model.Encode("abcd");
     EXPECT_EQ(2, result.size());
@@ -938,7 +969,10 @@ TEST_P(UnigramModelTest, VerifyOutputsEquivalent) {
   AddPiece(&model_proto, "b", 1.9);      // 8
   AddPiece(&model_proto, "c", 2.0);      // 9
   AddPiece(&model_proto, "d", 1.0);      // 10
-  Model model(model_proto);
+
+  auto mp = std::unique_ptr<const ModelProto>(new ModelProto(model_proto));
+  const Model model(std::move(mp));
+
   model.SetEncoderVersion(encoder_version_);
   // Equivalent outputs.
   EXPECT_TRUE(model.VerifyOutputsEquivalent("", ""));
