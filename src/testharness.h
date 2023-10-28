@@ -198,7 +198,7 @@ std::vector<T> ValuesIn(const std::vector<T> &v) {
     }                                                               \
     ParamType param_;                                               \
     void SetParam(const ParamType &param) { param_ = param; }       \
-    const ParamType GetParam() { return param_; }                   \
+    ParamType GetParam() const { return param_; }                   \
     void _Run();                                                    \
     static void _RunIt() {                                          \
       TCONCAT(base, _Test_p_, name) t;                              \

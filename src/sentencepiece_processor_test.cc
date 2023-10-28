@@ -969,7 +969,7 @@ TEST(SentencePieceProcessorTest, LoadSerializedProtoTest) {
   EXPECT_FALSE(sp.LoadFromSerializedProto("__NOT_A_PROTO__").ok());
   EXPECT_TRUE(sp.LoadFromSerializedProto(model_proto.SerializeAsString()).ok());
   EXPECT_EQ(model_proto.SerializeAsString(),
-            sp.model_proto().SerializeAsString());
+            sp.model_proto()->SerializeAsString());
 }
 
 TEST(SentencePieceProcessorTest, EndToEndTest) {
@@ -1004,7 +1004,7 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
       sp.Load(util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "model")).ok());
 
   EXPECT_EQ(model_proto.SerializeAsString(),
-            sp.model_proto().SerializeAsString());
+            sp.model_proto()->SerializeAsString());
 
   EXPECT_EQ(8, sp.GetPieceSize());
   EXPECT_EQ(0, sp.PieceToId("<unk>"));
@@ -1273,7 +1273,7 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
 
   auto RunTest = [&model_proto](const SentencePieceProcessor &sp) {
     EXPECT_EQ(model_proto.SerializeAsString(),
-              sp.model_proto().SerializeAsString());
+              sp.model_proto()->SerializeAsString());
 
     EXPECT_EQ(8, sp.GetPieceSize());
     EXPECT_EQ(0, sp.PieceToId("<unk>"));
@@ -1351,7 +1351,7 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
     const ModelProto *moved_ptr = moved.get();
     *moved = model_proto;
     EXPECT_TRUE(sp.Load(std::move(moved)).ok());
-    EXPECT_EQ(moved_ptr, &sp.model_proto());
+    EXPECT_EQ(moved_ptr, sp.model_proto());
     RunTest(sp);
   }
 

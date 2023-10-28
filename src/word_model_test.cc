@@ -60,7 +60,8 @@ TEST(WordModelTest, EncodeTest) {
   AddPiece(&model_proto, WS "c", 0.3);
   AddPiece(&model_proto, WS "d", 0.4);
 
-  const Model model(model_proto);
+  const Model model(std::make_unique<const ModelProto>(model_proto));
+
 
   EncodeResult result;
 
@@ -82,7 +83,9 @@ TEST(WordModelTest, EncodeTest) {
 
 TEST(WordModelTest, NotSupportedTest) {
   ModelProto model_proto = MakeBaseModelProto();
-  const Model model(model_proto);
+
+  const Model model(std::make_unique<const ModelProto>(model_proto));
+
   EXPECT_EQ(NBestEncodeResult(), model.NBestEncode("test", 10));
   EXPECT_EQ(EncodeResult(), model.SampleEncode("test", 0.1));
 }

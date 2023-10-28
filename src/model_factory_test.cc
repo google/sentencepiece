@@ -37,22 +37,22 @@ TEST(ModelFactoryTest, BasicTest) {
 
   {
     model_proto.mutable_trainer_spec()->set_model_type(TrainerSpec::UNIGRAM);
-    auto m = ModelFactory::Create(model_proto);
+    auto m = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
   }
 
   {
     model_proto.mutable_trainer_spec()->set_model_type(TrainerSpec::BPE);
-    auto m = ModelFactory::Create(model_proto);
+    auto m = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
   }
 
   {
     model_proto.mutable_trainer_spec()->set_model_type(TrainerSpec::WORD);
-    auto m = ModelFactory::Create(model_proto);
+    auto m = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
   }
 
   {
     model_proto.mutable_trainer_spec()->set_model_type(TrainerSpec::CHAR);
-    auto m = ModelFactory::Create(model_proto);
+    auto m = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
   }
 }
 }  // namespace sentencepiece

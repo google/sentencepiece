@@ -72,7 +72,9 @@ TEST(ModelInterfaceTest, GetDefaultPieceTest) {
   {
     ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
     AddPiece(&model_proto, "a");
-    auto model = ModelFactory::Create(model_proto);
+
+    auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
+
     EXPECT_EQ("<unk>", model->unk_piece());
     EXPECT_EQ("<s>", model->bos_piece());
     EXPECT_EQ("</s>", model->eos_piece());
@@ -86,7 +88,9 @@ TEST(ModelInterfaceTest, GetDefaultPieceTest) {
     model_proto.mutable_trainer_spec()->clear_bos_piece();
     model_proto.mutable_trainer_spec()->clear_eos_piece();
     model_proto.mutable_trainer_spec()->clear_pad_piece();
-    auto model = ModelFactory::Create(model_proto);
+
+    auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
+
     EXPECT_EQ("<unk>", model->unk_piece());
     EXPECT_EQ("<s>", model->bos_piece());
     EXPECT_EQ("</s>", model->eos_piece());
@@ -100,7 +104,9 @@ TEST(ModelInterfaceTest, GetDefaultPieceTest) {
     model_proto.mutable_trainer_spec()->set_bos_piece("BOS");
     model_proto.mutable_trainer_spec()->set_eos_piece("EOS");
     model_proto.mutable_trainer_spec()->set_pad_piece("PAD");
-    auto model = ModelFactory::Create(model_proto);
+
+    auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
+
     EXPECT_EQ("UNK", model->unk_piece());
     EXPECT_EQ("BOS", model->bos_piece());
     EXPECT_EQ("EOS", model->eos_piece());
@@ -116,7 +122,8 @@ TEST(ModelInterfaceTest, SetModelInterfaceTest) {
     AddPiece(&model_proto, "c");
     AddPiece(&model_proto, "d");
 
-    auto model = ModelFactory::Create(model_proto);
+    auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
+
     EXPECT_EQ(model_proto.SerializeAsString(),
               model->model_proto().SerializeAsString());
   }
@@ -135,7 +142,7 @@ TEST(ModelInterfaceTest, PieceToIdTest) {
     model_proto.mutable_pieces(7)->set_type(
         ModelProto::SentencePiece::USER_DEFINED);
 
-    auto model = ModelFactory::Create(model_proto);
+    auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
 
     EXPECT_EQ(model_proto.SerializeAsString(),
               model->model_proto().SerializeAsString());
@@ -212,7 +219,9 @@ TEST(ModelInterfaceTest, InvalidModelTest) {
   {
     ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
     AddPiece(&model_proto, "");
-    auto model = ModelFactory::Create(model_proto);
+
+    auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
+
     EXPECT_FALSE(model->status().ok());
   }
 
@@ -221,7 +230,9 @@ TEST(ModelInterfaceTest, InvalidModelTest) {
     ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
     AddPiece(&model_proto, "a");
     AddPiece(&model_proto, "a");
-    auto model = ModelFactory::Create(model_proto);
+
+    auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
+
     EXPECT_FALSE(model->status().ok());
   }
 
@@ -229,7 +240,9 @@ TEST(ModelInterfaceTest, InvalidModelTest) {
   {
     ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
     model_proto.mutable_pieces(1)->set_type(ModelProto::SentencePiece::UNKNOWN);
-    auto model = ModelFactory::Create(model_proto);
+
+    auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
+
     EXPECT_FALSE(model->status().ok());
   }
 
@@ -237,7 +250,9 @@ TEST(ModelInterfaceTest, InvalidModelTest) {
   {
     ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
     model_proto.mutable_pieces(0)->set_type(ModelProto::SentencePiece::CONTROL);
-    auto model = ModelFactory::Create(model_proto);
+
+    auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
+
     EXPECT_FALSE(model->status().ok());
   }
 }
@@ -249,7 +264,9 @@ TEST(ModelInterfaceTest, ByteFallbackModelTest) {
       AddBytePiece(&model_proto, i);
     }
     AddPiece(&model_proto, "a");
-    auto model = ModelFactory::Create(model_proto);
+
+    auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
+
     EXPECT_TRUE(model->status().ok());
   }
 
@@ -260,7 +277,9 @@ TEST(ModelInterfaceTest, ByteFallbackModelTest) {
       AddBytePiece(&model_proto, i);
     }
     AddPiece(&model_proto, "a");
-    auto model = ModelFactory::Create(model_proto);
+
+    auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
+
     EXPECT_FALSE(model->status().ok());
   }
 
@@ -271,7 +290,9 @@ TEST(ModelInterfaceTest, ByteFallbackModelTest) {
       AddBytePiece(&model_proto, i);
     }
     AddPiece(&model_proto, "a");
-    auto model = ModelFactory::Create(model_proto);
+
+    auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
+
     EXPECT_FALSE(model->status().ok());
   }
 }
@@ -307,7 +328,8 @@ TEST(ModelInterfaceTest, PieceToIdStressTest) {
         AddPiece(&model_proto, piece);
       }
 
-      auto model = ModelFactory::Create(model_proto);
+      auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
+
       for (const auto &it : expected_p2i) {
         EXPECT_EQ(it.second, model->PieceToId(it.first));
       }
@@ -505,7 +527,8 @@ TEST(ModelInterfaceTest, VerifyOutputsEquivalent) {
     ModelProto model_proto = MakeBaseModelProto(type);
     AddPiece(&model_proto, "a", 1.0);
     AddPiece(&model_proto, "b", 2.0);
-    auto model = ModelFactory::Create(model_proto);
+
+    auto model = ModelFactory::Create(std::make_unique<const ModelProto>(model_proto));
 
     // Equivalent outputs.
     EXPECT_TRUE(model->VerifyOutputsEquivalent("", ""));

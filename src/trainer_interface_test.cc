@@ -456,7 +456,10 @@ TEST(TrainerInterfaceTest, SerializeTest) {
   {
     trainer_spec.set_vocab_size(10);
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    trainer.final_pieces_ = final_pieces;
+
+    trainer.final_pieces_.resize(final_pieces.size());
+    copy(final_pieces.begin(), final_pieces.end(), trainer.final_pieces_.begin());
+
     ModelProto model_proto;
     EXPECT_FALSE(trainer.Serialize(&model_proto).ok());
   }
@@ -465,7 +468,10 @@ TEST(TrainerInterfaceTest, SerializeTest) {
     trainer_spec.set_vocab_size(10);
     trainer_spec.set_hard_vocab_limit(false);
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    trainer.final_pieces_ = final_pieces;
+
+    trainer.final_pieces_.resize(final_pieces.size());
+    copy(final_pieces.begin(), final_pieces.end(), trainer.final_pieces_.begin());
+
     ModelProto model_proto;
     EXPECT_TRUE(trainer.Serialize(&model_proto).ok());
     EXPECT_EQ(6, model_proto.trainer_spec().vocab_size());
@@ -480,7 +486,10 @@ TEST(TrainerInterfaceTest, SerializeTest) {
     trainer_spec.set_model_type(TrainerSpec::CHAR);
     trainer_spec.set_hard_vocab_limit(true);
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    trainer.final_pieces_ = final_pieces;
+
+    trainer.final_pieces_.resize(final_pieces.size());
+    copy(final_pieces.begin(), final_pieces.end(), trainer.final_pieces_.begin());
+
     ModelProto model_proto;
     EXPECT_TRUE(trainer.Serialize(&model_proto).ok());
     EXPECT_EQ(6, model_proto.trainer_spec().vocab_size());
