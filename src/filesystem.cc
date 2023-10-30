@@ -30,14 +30,16 @@
 #define WPATH(path) (path)
 #endif
 
+#define STDIN_BLOCK_SIZE (1 << 20)
+
 namespace sentencepiece {
 namespace filesystem {
 
 class PosixReadableFile : public ReadableFile {
  public:
   PosixReadableFile(absl::string_view filename, bool is_binary = false, char delim = '\n')
-      : delim_(delim), mem_(nullptr) {
-    if (!filename.empty()) {
+      : delim_(delim), mem_(nullptr), head_(nullptr), stdin_(filename.empty()) {
+    if (!stdin_) {
       int fd = open(filename.data(), O_RDONLY);
       if (fd < 0) {
         SetErrorStatus(util::StatusCode::kNotFound, filename);
@@ -58,19 +60,27 @@ class PosixReadableFile : public ReadableFile {
       }
       close(fd);
       head_ = mem_;
+    } else {
+      mem_ = new char[STDIN_BLOCK_SIZE];
+      head_ = mem_;
+      file_size_ = 0;
     }
   }
 
   ~PosixReadableFile() {
     if (mem_ != nullptr) {
-      munmap(mem_, file_size_);
+      if (stdin_) {
+        delete[] mem_;
+      } else {
+        munmap(mem_, file_size_);
+      }
     }
   }
 
   util::Status status() const { return status_; }
 
   bool ReadBuffer(std::string *buffer) {
-     if (mem_ == nullptr) {
+     if (mem_ == nullptr && stdin_) {
        std::cin.read(buffer->data(), buffer->size());
        if (std::cin.fail()) {
          SetErrorStatus(util::StatusCode::kOutOfRange, "stdin");
@@ -89,12 +99,25 @@ class PosixReadableFile : public ReadableFile {
   }
   
   bool ReadLine(absl::string_view *line) {
-    if (mem_ == nullptr) {
-      return static_cast<bool>(std::getline(std::cin, lines_.emplace_back(), delim_));
-    }
     size_t size_left = file_size_ - (head_ - mem_);
     if (size_left == 0) {
-      return false;
+      if (stdin_) {
+        auto bytes_read = read(STDIN_FILENO, mem_, STDIN_BLOCK_SIZE);
+        if (bytes_read == -1) {
+          // Error happened when reading from stdin
+          SetErrorStatus(util::StatusCode::kUnavailable, strerror(errno));
+          return false;
+        }
+        if (bytes_read == 0) {
+          // EOF reached on stdin
+          return false;
+        }
+        head_ = mem_;
+        file_size_ = bytes_read;
+        size_left = file_size_;
+      } else {
+        return false;
+      }
     }
     auto ptr = reinterpret_cast<char *>(memchr(head_, delim_, size_left));
     if (ptr == nullptr) {
@@ -122,7 +145,7 @@ class PosixReadableFile : public ReadableFile {
   char *mem_;
   char *head_;
   size_t file_size_;
-  std::vector<std::string> lines_;
+  bool stdin_;
 
   void SetErrorStatus(util::StatusCode status, absl::string_view filename) {
     status_ = util::StatusBuilder(status, GTL_LOC)
