@@ -2,11 +2,21 @@
 #define MIXED_TEXT_CODE_HANDLER_H_
 
 #include <cassert>
+#include <optional>
 #include "common.h"
 
 namespace sentencepiece {
 
 class MixedTextCodeIterator {
+
+public:
+  enum class BlockType {
+    Text,
+    Code,
+    CodeHeader
+  };
+
+protected:
   const absl::string_view cache_value_;
   bool in_text_;
   const char* head_;
@@ -18,13 +28,13 @@ class MixedTextCodeIterator {
 
   bool HasCodeHeader() const;
 
-  bool ReadCodeHeader(absl::string_view* line);
+  std::optional<BlockType> ReadCodeHeader(absl::string_view* line);
 
-  bool ReadTextBlock(absl::string_view* line);
+  std::optional<BlockType> ReadTextBlock(absl::string_view* line);
 
-  bool ReadCodeBlock(absl::string_view* line);
+  std::optional<BlockType> ReadCodeBlock(absl::string_view* line);
 
-  bool TryReadNext(absl::string_view* line);
+  std::optional<BlockType> TryReadNext(absl::string_view* line);
 
 public:
   MixedTextCodeIterator(absl::string_view cache_value,
@@ -34,7 +44,7 @@ public:
     int32 code_meta_block_end
   );
 
-  bool Next(absl::string_view* line);
+  std::optional<BlockType> Next(absl::string_view* line);
 
   bool HasNext() const;
 };

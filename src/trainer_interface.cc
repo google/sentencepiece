@@ -224,7 +224,7 @@ void MultiFileSentenceIterator::TryRead() {
     }
   }
   if (read_done_) {
-    bool hasReadBlock = blocks_iterator_->Next(&value_);
+    bool hasReadBlock = blocks_iterator_->Next(&value_).has_value();
     if (!blocks_iterator_->HasNext()) {
       // The line is depleted. Now reset iterator
       // so that the next call to TryRead will read another line.

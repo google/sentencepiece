@@ -296,7 +296,7 @@ class SentencePieceProcessor {
 
   // Given a UTF8 input, encodes it into a sequence of ids.
   virtual util::Status Encode(absl::string_view input,
-                              std::vector<int> *ids) const;
+                              std::vector<int> *ids, bool clear=true) const;
 
   // Given a sequence of pieces, decodes it into a detokenized output.
   virtual util::Status Decode(const std::vector<std::string> &pieces,

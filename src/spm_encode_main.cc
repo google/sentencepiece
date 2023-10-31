@@ -28,6 +28,7 @@
 #include "absl/strings/str_join.h"
 #include "trainer_interface.h"
 #include "util.h"
+#include "mixed_text_code_handler.h"
 
 ABSL_FLAG(std::string, model, "", "model file name");
 ABSL_FLAG(
@@ -55,6 +56,24 @@ ABSL_FLAG(int32, vocabulary_threshold, 0,
           "Words with frequency < threshold will be treated as OOV");
 ABSL_FLAG(bool, generate_vocabulary, false,
           "Generates vocabulary file instead of segmentation");
+
+// Blocks delimiters.
+ABSL_FLAG(int, verbatim_control_char, -2, "Control character to process the "
+          "following sentence without whitespace normalization."
+          "-1 to disable, -2 to use the value from the model");
+ABSL_FLAG(int, code_block_end, -2,
+          "Control character at the end of each code block."
+          "-1 to disable, -2 to use the value from the model");
+ABSL_FLAG(int, code_meta_block_begin, -2,
+          "Control character at the beginning of each code meta block."
+          "-1 to disable, -2 to use the value from the model");
+ABSL_FLAG(int, code_meta_block_end, -2,
+          "Control character at the end of each code meta block."
+          "-1 to disable, -2 to use the value from the model");
+
+#define ReadBlockDelimiter(name)\
+  int32 name = absl::GetFlag(FLAGS_##name);\
+  if (name == -2) name = sp.model_proto()->trainer_spec().name();
 
 int main(int argc, char *argv[]) {
   sentencepiece::ScopedResourceDestructor cleaner;
@@ -96,6 +115,10 @@ int main(int argc, char *argv[]) {
   std::function<void(absl::string_view line)> process = nullptr;
   std::function<void(absl::string_view line, std::vector<int>& ids)> process_ex = nullptr;
   std::vector<uint32_t> sentence_sizes;
+  ReadBlockDelimiter(verbatim_control_char);
+  ReadBlockDelimiter(code_block_end);
+  ReadBlockDelimiter(code_meta_block_begin);
+  ReadBlockDelimiter(code_meta_block_end);
   int num_threads = absl::GetFlag(FLAGS_num_threads);
   sentencepiece::ThreadPool pool(num_threads);
   std::recursive_mutex sync;
@@ -131,9 +154,7 @@ int main(int argc, char *argv[]) {
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "bid") {
     process_ex = [&](absl::string_view line, std::vector<int>& ids) {
-      std::vector<int> _ids;
-      CHECK_OK(sp.Encode(line, &_ids));
-      ids.insert(ids.end(), _ids.begin(), _ids.end());
+      CHECK_OK(sp.Encode(line, &ids, false));
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "proto") {
     process = [&](absl::string_view line) { CHECK_OK(sp.Encode(line, &spt)); };
@@ -239,54 +260,41 @@ int main(int argc, char *argv[]) {
    *   [0x03, bytes(“File path : x . cpp \n”), 0x04,
    *    0x01, bytes(<file content tokens>), 0x02, 0x00]
   */
-  auto poolside_process_code_file_header = [&](absl::string_view line, std::vector<int>& ids) {
-    auto head = line.data();
-    auto tail = reinterpret_cast<const char *>(memchr(head, '\x04', line.length()));
-    assert((void("Code meta block did not end with 0x04"), tail != nullptr));
-    ids.push_back(ps_code_meta_start);
-    process_ex(absl::string_view(head + 1, tail - head - 1), ids);
-    ids.push_back(ps_code_meta_end);
-    return tail + 1;
-  };
-
   auto poolside_process = [&](absl::string_view line) {
-    auto head = line.data();
+    sentencepiece::MixedTextCodeIterator blocks_iterator(line,
+      verbatim_control_char,
+      code_block_end,
+      code_meta_block_begin,
+      code_meta_block_end);
+    
     std::vector<int> ids;
-    if (*head == '\x03') {
-      head = poolside_process_code_file_header(line, ids);
-    }
-    auto end = head + line.length();
-    auto tail = head;
-    do {
-      bool hasVerbatim = *head == '\x01';
-      for (tail = hasVerbatim ? head + 1 : head; tail != end; tail++) {
-        if (*tail == '\x01' || *tail == '\x02') {
-          break;
-        }
-      }
-      assert((void("Code block did not end with 0x02"), !hasVerbatim || (tail != end && *tail == '\x02')));
-      assert((void("Text block did not end with 0x01 or 0x00"), hasVerbatim || tail == end || *tail == '\x01'));
-      if (tail == end) {
-        // Last regular text block
-        process_ex(absl::string_view(head, line.length() - (head - line.data())), ids);
+    absl::string_view block;
+    while (blocks_iterator.HasNext()) {
+      auto r = blocks_iterator.Next(&block);
+      if (!r.has_value()) {
+        // Line ends with an emtpy document.
         break;
-      } else if (*tail == '\x01') {
-        // A regular text block
-        process_ex(absl::string_view(head, tail - head), ids);
-        // keep 0x01 to the next loop
-      } else { // *tail == '\x02'
-        // A code block
-        ids.push_back(ps_code_start);
-        process_ex(absl::string_view(head, tail - head), ids);
-        // write 0x02
-        ids.push_back(ps_code_end);
-        // skip 0x02
-        tail += 1;
       }
-      head = tail;
-    } while (tail != end);
+      switch(*r) {
+        case sentencepiece::MixedTextCodeIterator::BlockType::Text:
+          process_ex(block, ids);
+          break;
+        case sentencepiece::MixedTextCodeIterator::BlockType::Code:
+          ids.push_back(ps_code_start);
+          process_ex(block, ids);
+          ids.push_back(ps_code_end);
+          break;
+        case sentencepiece::MixedTextCodeIterator::BlockType::CodeHeader:
+          ids.push_back(ps_code_meta_start);
+          process_ex(block, ids);
+          ids.push_back(ps_code_meta_end);
+          break;
+        default:
+          LOG(FATAL) << "Unrecognized BlockType met during encoding.";
+      }
+    }
+    ids.push_back(ps_doc_end);
     {
-      ids.push_back(ps_doc_end);
       std::lock_guard lock(sync);
       output->Write(absl::string_view(
             reinterpret_cast<const char *>(ids.data()), sizeof(int) * ids.size()));

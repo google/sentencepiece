@@ -359,10 +359,16 @@ util::Status SentencePieceProcessor::LoadVocabulary(absl::string_view filename,
   return SetVocabulary(ToPieceArray(vocab));
 }
 
-#define CHECK_OR_RETURN_STATUS_STL(container)               \
+#define CHECK_OR_RETURN_STATUS_STL_NO_CLEAR(container)               \
   RETURN_IF_ERROR(status());                                \
-  CHECK_OR_RETURN(container) << "output container is null"; \
-  container->clear();
+  CHECK_OR_RETURN(container) << "output container is null";
+
+#define CHECK_OR_RETURN_STATUS_STL2(container, do_clear)               \
+  CHECK_OR_RETURN_STATUS_STL_NO_CLEAR(container) \
+  if (do_clear) container->clear();
+
+#define CHECK_OR_RETURN_STATUS_STL(container)               \
+  CHECK_OR_RETURN_STATUS_STL2(container, true);
 
 #define CHECK_OR_RETURN_STATUS_PROTO(proto)         \
   RETURN_IF_ERROR(status());                        \
@@ -385,8 +391,8 @@ util::Status SentencePieceProcessor::Encode(
 }
 
 util::Status SentencePieceProcessor::Encode(absl::string_view input,
-                                            std::vector<int> *ids) const {
-  CHECK_OR_RETURN_STATUS_STL(ids);
+                                            std::vector<int> *ids, bool clear) const {
+  CHECK_OR_RETURN_STATUS_STL2(ids, clear);
 
   SentencePieceText spt;
   RETURN_IF_ERROR(Encode(input, &spt));

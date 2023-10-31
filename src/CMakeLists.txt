@@ -132,6 +132,7 @@ set(SPM_SRCS
   model_interface.h
   testharness.h
   unigram_model.h
+  mixed_text_code_handler.h
   bpe_model.cc
   char_model.cc
   error.cc
@@ -143,6 +144,7 @@ set(SPM_SRCS
   unigram_model.cc
   util.cc
   word_model.cc
+  mixed_text_code_handler.cc
   ${ABSL_STRINGS_SRCS}
   ${ABSL_FLAGS_SRCS})
 
@@ -161,7 +163,6 @@ set(SPM_TRAIN_SRCS
   bpe_model_trainer.h
   sentencepiece_trainer.h
   pretokenizer_for_training.h
-  mixed_text_code_handler.h
   builder.cc
   unicode_script.cc
   trainer_factory.cc
@@ -171,8 +172,7 @@ set(SPM_TRAIN_SRCS
   char_model_trainer.cc
   bpe_model_trainer.cc
   sentencepiece_trainer.cc
-  pretokenizer_for_training.cc
-  mixed_text_code_handler.cc)
+  pretokenizer_for_training.cc)
 
 set(SPM_TEST_SRCS
   ${SPM_PROTO_HDRS}
