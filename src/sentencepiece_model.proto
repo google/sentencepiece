@@ -244,6 +244,15 @@ message TrainerSpec {
   // if that file doesn't exist and exit (only supported for BPE).
   optional string cache_sentence_frequencies_file = 56;
 
+  // Control character at the end of each code block.
+  optional int32 code_block_end = 57 [default = -1];
+
+  // Control character at the beginning of each code meta block.
+  optional int32 code_meta_block_begin = 58 [default = -1];
+
+  // Control character at the end of each code meta block.
+  optional int32 code_meta_block_end = 59 [default = -1];
+
   // Customized extensions: the range of field numbers
   // are open to third-party extensions.
   extensions 200 to max;

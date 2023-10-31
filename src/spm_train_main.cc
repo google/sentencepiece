@@ -167,6 +167,14 @@ ABSL_FLAG(std::uint64_t, differential_privacy_clipping_threshold, 0,
           "Threshold for"
           " clipping the counts for DP");
 
+// Blocks delimiters.
+ABSL_FLAG(int, code_block_end, -1,
+          "Control character at the end of each code block.");
+ABSL_FLAG(int, code_meta_block_begin, -1,
+          "Control character at the beginning of each code meta block.");
+ABSL_FLAG(int, code_meta_block_end, -1,
+          "Control character at the end of each code meta block.");
+
 int main(int argc, char *argv[]) {
   sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
@@ -268,6 +276,10 @@ int main(int argc, char *argv[]) {
   SetTrainerSpecFromFlag(enable_differential_privacy);
   SetTrainerSpecFromFlag(differential_privacy_noise_level);
   SetTrainerSpecFromFlag(differential_privacy_clipping_threshold);
+  // Blocks delimiters.
+  SetTrainerSpecFromFlag(code_block_end);
+  SetTrainerSpecFromFlag(code_meta_block_begin);
+  SetTrainerSpecFromFlag(code_meta_block_end);
 
   SetRepeatedTrainerSpecFromFile(control_symbols);
   SetRepeatedTrainerSpecFromFile(user_defined_symbols);

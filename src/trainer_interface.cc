@@ -169,8 +169,17 @@ class SentenceSelector {
 
 MultiFileSentenceIterator::MultiFileSentenceIterator(
     const std::vector<std::string> &files,
-    char delim)
-    : files_(files), delim_(delim) {
+    char delim,
+    int32 verbatim_control_char,
+    int32 code_block_end,
+    int32 code_meta_block_begin,
+    int32 code_meta_block_end
+  )
+    : files_(files), delim_(delim),
+    verbatim_control_char_(verbatim_control_char),
+    code_block_end_(code_block_end),
+    code_meta_block_begin_(code_meta_block_begin),
+    code_meta_block_end_(code_meta_block_end) {
   Next();
 }
 
@@ -201,45 +210,30 @@ void MultiFileSentenceIterator::Next() {
 }
 
 void MultiFileSentenceIterator::TryRead() {
-  bool value_set = false;
-  if (cache_value_.empty()) {
-    read_done_ = fp_ && fp_->ReadLine(&cache_value_);
-    if (!read_done_ || cache_value_.empty()) {
-      value_set = true;
-    }
-    if (!value_set && *cache_value_.data() == '\x03') {
-      auto head = cache_value_.data();
-      auto tail = reinterpret_cast<const char *>(memchr(head, '\x04', cache_value_.length()));
-      assert((void("Code meta block did not end with 0x04"), tail != nullptr));
-      value_ = absl::string_view(head + 1, tail - head - 1);
-      cache_value_ = cache_value_.substr(tail - head + 1);
-      value_set = true;
+  if (blocks_iterator_ == nullptr) {
+    absl::string_view line;
+    read_done_ = fp_ && fp_->ReadLine(&line);
+    if (read_done_) {
+      blocks_iterator_ = std::make_unique<MixedTextCodeIterator>(
+        line,
+        verbatim_control_char_,
+        code_block_end_,
+        code_meta_block_begin_,
+        code_meta_block_end_
+      );
     }
   }
-  if (!value_set && in_text_) {
-    auto ptr = reinterpret_cast<const char *>(memchr(cache_value_.data(), '\x01', cache_value_.size()));
-    if (ptr == nullptr) {
-      value_ = cache_value_;
-      cache_value_ = absl::string_view();
-      value_set = true;
-    } else {
-      auto offset = ptr - cache_value_.data();
-      if (offset > 0) {
-        value_ = cache_value_.substr(0, offset);
-        cache_value_ = cache_value_.substr(offset);
-        value_set = true;
-      }
-      in_text_ = false;
+  if (read_done_) {
+    bool hasReadBlock = blocks_iterator_->Next(&value_);
+    if (!blocks_iterator_->HasNext()) {
+      // The line is depleted. Now reset iterator
+      // so that the next call to TryRead will read another line.
+      blocks_iterator_ = nullptr;
     }
-  }
-  if (!value_set && !in_text_) {
-    auto ptr = reinterpret_cast<const char *>(memchr(cache_value_.data(), '\x02', cache_value_.size()));
-    assert((void("Code block does not end with 0x02"), ptr != nullptr));
-    auto offset = ptr - cache_value_.data();
-    value_ = cache_value_.substr(0, offset);
-    cache_value_ = cache_value_.substr(offset + 1);
-    value_set = true;
-    in_text_ = true;
+    if (!hasReadBlock) {
+      // The last block is empty. Continue to the next line.
+      TryRead();
+    }
   }
 }
 
@@ -409,7 +403,11 @@ util::Status TrainerInterface::LoadSentences(bool ignore_sentences_with_unknown_
     sentence_iterator_impl =
         absl::make_unique<MultiFileSentenceIterator>(std::vector<std::string>(
             trainer_spec_.input().begin(), trainer_spec_.input().end()),
-            trainer_spec_.new_line_delim());
+            trainer_spec_.new_line_delim(),
+            trainer_spec_.verbatim_control_char(),
+            trainer_spec_.code_block_end(),
+            trainer_spec_.code_meta_block_begin(),
+            trainer_spec_.code_meta_block_end());
     sentence_iterator_ = sentence_iterator_impl.get();
   }
 

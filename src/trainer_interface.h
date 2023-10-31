@@ -32,6 +32,7 @@
 #include "absl/container/flat_hash_map.h"
 #include <boost/sort/block_indirect_sort/block_indirect_sort.hpp>
 #include "util.h"
+#include "mixed_text_code_handler.h"
 
 namespace sentencepiece {
 
@@ -69,7 +70,12 @@ std::deque<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V> &m, int nthre
 class MultiFileSentenceIterator : public SentenceIterator {
  public:
   explicit MultiFileSentenceIterator(
-      const std::vector<std::string> &files, char delim = '\n');
+      const std::vector<std::string> &files, char delim = '\n',
+      int32 verbatim_control_char = -1,
+      int32 code_block_end = -1,
+      int32 code_meta_block_begin = -1,
+      int32 code_meta_block_end =-1
+  );
   ~MultiFileSentenceIterator() {}
 
   bool done() const override;
@@ -85,10 +91,13 @@ class MultiFileSentenceIterator : public SentenceIterator {
   size_t file_index_ = 0;
   std::vector<std::string> files_;
   absl::string_view value_;
-  bool in_text_ = true;
-  absl::string_view cache_value_;
   std::unique_ptr<filesystem::ReadableFile> fp_;
   char delim_;
+  const int32 verbatim_control_char_;
+  const int32 code_block_end_;
+  const int32 code_meta_block_begin_;
+  const int32 code_meta_block_end_;
+  std::unique_ptr<MixedTextCodeIterator> blocks_iterator_ = nullptr;
 };
 
 // Base trainer class
