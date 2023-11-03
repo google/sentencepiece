@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
   ReadBlockDelimiter(code_meta_block_end);
   int num_threads = absl::GetFlag(FLAGS_num_threads);
   sentencepiece::ThreadPool pool(num_threads);
-  std::recursive_mutex sync;
+  std::mutex sync;
   constexpr int thread_chunk_size = 1000;
 
   const int nbest_size = absl::GetFlag(FLAGS_nbest_size);
@@ -298,8 +298,8 @@ int main(int argc, char *argv[]) {
       std::lock_guard lock(sync);
       output->Write(absl::string_view(
             reinterpret_cast<const char *>(ids.data()), sizeof(int) * ids.size()));
+      sentence_sizes.push_back(ids.size());
     }
-    sentence_sizes.push_back(ids.size());
   };
 
   auto _process = isBid ? poolside_process : process;
