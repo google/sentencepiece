@@ -304,10 +304,15 @@ int main(int argc, char *argv[]) {
 
   auto _process = isBid ? poolside_process : process;
 
-  auto processChunk = [&pool, &_process, &processed](std::vector<absl::string_view>& chunk) {
+  auto processChunk = [&pool, &_process, &processed](std::vector<sentencepiece::filesystem::ps_string>& chunk) {
     pool.Schedule([&_process, &processed, chunk](){
       for (auto &line : chunk) {
-        _process(line);
+        if (auto sv = std::get_if<absl::string_view>(&line); sv != nullptr) {
+           _process(*sv);
+        } else {
+          auto& data = std::get<std::string>(line);
+          _process(data);
+        }
       }
       int64_t prev = processed.fetch_add(chunk.size()) + chunk.size();
       if ((prev / thread_chunk_size) % 100 == 0) {
@@ -321,10 +326,10 @@ int main(int argc, char *argv[]) {
     auto input = sentencepiece::filesystem::NewReadableFile(
         filename, delim != '\n', delim);
     CHECK_OK(input->status());
-    std::vector<absl::string_view> chunk;
+    std::vector<sentencepiece::filesystem::ps_string> chunk;
     chunk.reserve(thread_chunk_size);
-    absl::string_view line;
-    while (input->ReadLine(&line)) {
+    sentencepiece::filesystem::ps_string line;
+    while (input->ReadLineStdin(&line)) {
       chunk.emplace_back(line);
       if (chunk.size() == thread_chunk_size) {
         processChunk(chunk);

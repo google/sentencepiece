@@ -130,6 +130,31 @@ class PosixReadableFile : public ReadableFile {
     return true;
   }
 
+  bool ReadLineStdin(ps_string *line) {
+    if (stdin_) {
+      std::string tmp;
+      auto worked = static_cast<bool>(std::getline(std::cin, tmp, delim_));
+      if (worked) {
+        *line = tmp;
+      }
+      return worked;
+    }
+    size_t size_left = file_size_ - (head_ - mem_);
+    if (size_left == 0) {
+      return false;
+    }
+    auto ptr = reinterpret_cast<char *>(memchr(head_, delim_, size_left));
+    if (ptr == nullptr) {
+      *line = absl::string_view(head_, size_left);
+      head_ = mem_ + file_size_;
+    } else {
+      *line = absl::string_view(head_, ptr - head_);
+      head_ = ptr + 1;
+    }
+    return true;
+  }
+
+
   bool ReadAll(absl::string_view *line) {
     if (mem_ == nullptr) {
       LOG(ERROR) << "ReadAll is not supported for stdin.";
