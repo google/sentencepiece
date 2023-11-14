@@ -29,7 +29,7 @@
 namespace sentencepiece {
 namespace filesystem {
 
-typedef std::variant<absl::string_view, std::string> ps_string;
+typedef std::variant<absl::string_view, std::shared_ptr<std::string>> ps_string;
 class ReadableFile {
  public:
   ReadableFile() {}

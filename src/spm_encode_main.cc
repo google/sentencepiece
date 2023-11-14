@@ -76,6 +76,7 @@ ABSL_FLAG(int, code_meta_block_end, -2,
   if (name == -2) name = sp.model_proto()->trainer_spec().name();
 
 int main(int argc, char *argv[]) {
+  std::atomic<unsigned> counter;
   sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
   std::vector<std::string> rest_args;
@@ -304,20 +305,24 @@ int main(int argc, char *argv[]) {
 
   auto _process = isBid ? poolside_process : process;
 
-  auto processChunk = [&pool, &_process, &processed](std::vector<sentencepiece::filesystem::ps_string>& chunk) {
-    pool.Schedule([&_process, &processed, chunk](){
+  auto processChunk = [&pool, &_process, &processed, &counter](std::vector<sentencepiece::filesystem::ps_string>& chunk) {
+    pool.Schedule([&_process, &processed, chunk, &counter](){
+      size_t size = 0;
       for (auto &line : chunk) {
         if (auto sv = std::get_if<absl::string_view>(&line); sv != nullptr) {
+            size += sv->length();
            _process(*sv);
         } else {
-          auto& data = std::get<std::string>(line);
-          _process(data);
+          auto& data = std::get<std::shared_ptr<std::string>>(line);
+          size += data->length();
+          _process(*data);
         }
       }
       int64_t prev = processed.fetch_add(chunk.size()) + chunk.size();
       if ((prev / thread_chunk_size) % 100 == 0) {
         LOG(INFO) << "Encoded " << prev << " sentences";
       }
+      counter -= size;
     });
     chunk.clear();
   };
@@ -331,8 +336,20 @@ int main(int argc, char *argv[]) {
     sentencepiece::filesystem::ps_string line;
     while (input->ReadLineStdin(&line)) {
       chunk.emplace_back(line);
+      if (auto sv = std::get_if<absl::string_view>(&line); sv != nullptr) {
+        counter += sv->length();
+      } else {
+        auto& data = std::get<std::shared_ptr<std::string>>(line);
+        counter += data->length();
+      }
       if (chunk.size() == thread_chunk_size) {
         processChunk(chunk);
+        auto diff = counter - 2147483648;
+        if (diff > 0) {
+          // Slow down a bit, if more than 2GiB worth of chunks are waiting to be processed.
+          LOG(INFO) << "Too much memory usage, waiting for " << diff / (500 * num_threads) << " ms";
+          std::this_thread::sleep_for(std::chrono::milliseconds(diff / (500 * num_threads)));
+        }
       }
     }
     if (chunk.size() > 0) {

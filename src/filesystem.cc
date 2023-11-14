@@ -132,8 +132,8 @@ class PosixReadableFile : public ReadableFile {
 
   bool ReadLineStdin(ps_string *line) {
     if (stdin_) {
-      std::string tmp;
-      auto worked = static_cast<bool>(std::getline(std::cin, tmp, delim_));
+      std::shared_ptr<std::string> tmp = std::make_shared<std::string>();
+      auto worked = static_cast<bool>(std::getline(std::cin, *tmp, delim_));
       if (worked) {
         *line = tmp;
       }
