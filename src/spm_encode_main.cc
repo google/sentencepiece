@@ -76,7 +76,7 @@ ABSL_FLAG(int, code_meta_block_end, -2,
   if (name == -2) name = sp.model_proto()->trainer_spec().name();
 
 int main(int argc, char *argv[]) {
-  std::atomic<unsigned> counter;
+  std::atomic<uint64_t> counter {0};
   sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
   std::vector<std::string> rest_args;
@@ -344,10 +344,9 @@ int main(int argc, char *argv[]) {
       }
       if (chunk.size() == thread_chunk_size) {
         processChunk(chunk);
-        auto diff = counter - 2147483648;
-        if (diff > 0) {
+        int64_t diff = counter - 2147483648;
+        if (diff > 0 && filename.empty()) {
           // Slow down a bit, if more than 2GiB worth of chunks are waiting to be processed.
-          LOG(INFO) << "Too much memory usage, waiting for " << diff / (500 * num_threads) << " ms";
           std::this_thread::sleep_for(std::chrono::milliseconds(diff / (500 * num_threads)));
         }
       }
