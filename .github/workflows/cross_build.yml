@@ -17,7 +17,7 @@ jobs:
         arch: [ i686, arm, aarch64, riscv64, powerpc, powerpc64, powerpc64le, s390x, sparc64, m68k, sh4, alpha ]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
     - name: Install cross tools
       run: |
