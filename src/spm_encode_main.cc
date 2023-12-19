@@ -213,6 +213,11 @@ int main(int argc, char *argv[]) {
       }
     }
     pool.Wait();
+    if (!chunk.empty()) {
+      for (auto &line : chunk) {
+        process(line);
+      }
+    }
     LOG(INFO) << "Encoded " << processed.load() << " sentences";
   }
 
