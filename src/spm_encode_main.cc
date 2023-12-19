@@ -76,7 +76,7 @@ ABSL_FLAG(int, code_meta_block_end, -2,
   if (name == -2) name = sp.model_proto()->trainer_spec().name();
 
 int main(int argc, char *argv[]) {
-  std::atomic<uint64_t> counter {0};
+  std::atomic<int64_t> pending_size {0};
   sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
   std::vector<std::string> rest_args;
@@ -123,6 +123,7 @@ int main(int argc, char *argv[]) {
   sentencepiece::ThreadPool pool(num_threads);
   std::mutex sync;
   constexpr int thread_chunk_size = 1000;
+  constexpr int64_t pending_limit = 1 << 31;
 
   const int nbest_size = absl::GetFlag(FLAGS_nbest_size);
   const float alpha = absl::GetFlag(FLAGS_alpha);
@@ -294,14 +295,14 @@ int main(int argc, char *argv[]) {
                << absl::GetFlag(FLAGS_output_format);
   }
 
-  std::atomic<int64_t> processed = 0;
-  auto process_chunk = [&pool, &process, &processed, &counter](
+  std::atomic<int64_t> processed {0};
+  auto process_chunk = [&pool, &process, &processed, &pending_size](
       std::vector<sentencepiece::filesystem::ps_string>& chunk) {
-    pool.Schedule([&process, &processed, chunk, &counter](){
+    pool.Schedule([&process, &processed, chunk, &pending_size](){
       size_t size = 0;
       for (auto &line : chunk) {
         if (auto sv = std::get_if<absl::string_view>(&line); sv != nullptr) {
-            size += sv->length();
+          size += sv->length();
           process(*sv);
         } else {
           auto& data = std::get<std::shared_ptr<std::string>>(line);
@@ -313,7 +314,7 @@ int main(int argc, char *argv[]) {
       if ((prev / thread_chunk_size) % 100 == 0) {
         LOG(INFO) << "Encoded " << prev << " sentences";
       }
-      counter -= size;
+      pending_size -= size;
     });
     chunk.clear();
   };
@@ -328,17 +329,18 @@ int main(int argc, char *argv[]) {
     while (input->ReadLineStdin(&line)) {
       chunk.emplace_back(line);
       if (auto sv = std::get_if<absl::string_view>(&line); sv != nullptr) {
-        counter += sv->length();
+        pending_size += sv->length();
       } else {
         auto& data = std::get<std::shared_ptr<std::string>>(line);
-        counter += data->length();
+        pending_size += data->length();
       }
       if (chunk.size() == thread_chunk_size) {
         process_chunk(chunk);
-        int64_t diff = counter - 2147483648;
-        if (diff > 0 && filename.empty()) {
-          // Slow down a bit, if more than 2GiB worth of chunks are waiting to be processed.
-          std::this_thread::sleep_for(std::chrono::milliseconds(diff / (500 * num_threads)));
+        if (pending_size.load() >= pending_limit) {
+          // busy loop to one half of the queue size
+          while (pending_size.load() > pending_limit / 2) {
+            usleep(0);  // actually works instead of pthread_yield()
+          }
         }
       }
     }
