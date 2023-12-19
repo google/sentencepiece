@@ -193,7 +193,10 @@ class PosixWritableFile : public WritableFile {
   }
 
   ~PosixWritableFile() {
-    if (os_ != &std::cout) delete os_;
+    os_->flush();
+    if (os_ != &std::cout) {
+      delete os_;
+    }
   }
 
   util::Status status() const { return status_; }
