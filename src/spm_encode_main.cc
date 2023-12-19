@@ -247,7 +247,7 @@ int main(int argc, char *argv[]) {
     auto ps_code_end = sp.PieceToId("<0x02>");
     auto ps_code_meta_start = sp.PieceToId("<0x03>");
     auto ps_code_meta_end = sp.PieceToId("<0x04>");
-    auto ps_doc_end = sp.PieceToId("<0x00>");
+    auto ps_doc_end = sp.eos_id();
 
     process = [&](absl::string_view line) {
       sentencepiece::MixedTextCodeIterator blocks_iterator(line,
@@ -287,7 +287,7 @@ int main(int argc, char *argv[]) {
         std::lock_guard lock(sync);
         output->Write(absl::string_view(
             reinterpret_cast<const char *>(ids.data()), sizeof(uint32_t) * ids.size()));
-        sentence_sizes.push_back(ids.size());
+        sentence_sizes.push_back(ids.size() - 1); // do not count the trailing eos
       }
     };
   } else {
