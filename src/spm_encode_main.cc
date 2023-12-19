@@ -295,18 +295,18 @@ int main(int argc, char *argv[]) {
   }
 
   std::atomic<int64_t> processed = 0;
-  auto processChunk = [&pool, &_process, &processed, &counter](
+  auto process_chunk = [&pool, &process, &processed, &counter](
       std::vector<sentencepiece::filesystem::ps_string>& chunk) {
-    pool.Schedule([&_process, &processed, chunk, &counter](){
+    pool.Schedule([&process, &processed, chunk, &counter](){
       size_t size = 0;
       for (auto &line : chunk) {
         if (auto sv = std::get_if<absl::string_view>(&line); sv != nullptr) {
             size += sv->length();
-           _process(*sv);
+          process(*sv);
         } else {
           auto& data = std::get<std::shared_ptr<std::string>>(line);
           size += data->length();
-          _process(*data);
+          process(*data);
         }
       }
       int64_t prev = processed.fetch_add(chunk.size()) + chunk.size();
@@ -334,7 +334,7 @@ int main(int argc, char *argv[]) {
         counter += data->length();
       }
       if (chunk.size() == thread_chunk_size) {
-        processChunk(chunk);
+        process_chunk(chunk);
         int64_t diff = counter - 2147483648;
         if (diff > 0 && filename.empty()) {
           // Slow down a bit, if more than 2GiB worth of chunks are waiting to be processed.
@@ -343,7 +343,7 @@ int main(int argc, char *argv[]) {
       }
     }
     if (chunk.size() > 0) {
-      processChunk(chunk);
+      process_chunk(chunk);
     }
     pool.Wait();
     LOG(INFO) << "Encoded " << processed.load() << " sentences";
