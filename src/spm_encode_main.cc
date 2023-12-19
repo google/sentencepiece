@@ -33,7 +33,7 @@
 ABSL_FLAG(std::string, model, "", "model file name");
 ABSL_FLAG(
     std::string, output_format, "piece",
-    "choose from piece, id, bid, proto, nbest_piece, nbest_id, or nbest_proto");
+    "choose from piece, id, poolside, proto, nbest_piece, nbest_id, or nbest_proto");
 ABSL_FLAG(std::string, input, "", "input filename");
 ABSL_FLAG(std::string, output, "", "output filename");
 ABSL_FLAG(std::string, extra_options, "",
@@ -114,7 +114,6 @@ int main(int argc, char *argv[]) {
   sentencepiece::SentencePieceText spt;
   sentencepiece::NBestSentencePieceText nbest_spt;
   std::function<void(absl::string_view line)> process = nullptr;
-  std::function<void(absl::string_view line, std::vector<int>& ids)> process_ex = nullptr;
   std::vector<uint32_t> sentence_sizes;
   ReadBlockDelimiter(verbatim_control_char);
   ReadBlockDelimiter(code_block_end);
@@ -129,6 +128,7 @@ int main(int argc, char *argv[]) {
   const float alpha = absl::GetFlag(FLAGS_alpha);
 
   char delim = absl::GetFlag(FLAGS_new_line_delim);
+
   if (absl::GetFlag(FLAGS_generate_vocabulary)) {
     process = [&](absl::string_view line) {
       sentencepiece::SentencePieceText spt;
@@ -152,10 +152,6 @@ int main(int argc, char *argv[]) {
       CHECK_OK(sp.Encode(line, &ids));
       std::lock_guard lock(sync);
       output->WriteLine(absl::StrJoin(ids, " "));
-    };
-  } else if (absl::GetFlag(FLAGS_output_format) == "bid") {
-    process_ex = [&](absl::string_view line, std::vector<int>& ids) {
-      CHECK_OK(sp.Encode(line, &ids, false));
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "proto") {
     process = [&](absl::string_view line) { CHECK_OK(sp.Encode(line, &spt)); };
@@ -199,113 +195,108 @@ int main(int argc, char *argv[]) {
     process = [&](absl::string_view line) {
       CHECK_OK(sp.NBestEncode(line, nbest_size, &nbest_spt));
     };
+  } else if (absl::GetFlag(FLAGS_output_format) == "poolside") {
+      /**
+       * poolside_process will split the document into text and code blocks.
+       *
+       * Documents with code blocks
+       *
+       * Preprocess: Separate blocks by 0x01 and 0x02.
+       *   From:
+       *   [bytes(<some text>), 0x01, bytes(<some code>), 0x02, bytes(<some text>), 0x00]
+       *   To:
+       *   [bytes(<some text>),
+       *    0x01, bytes(<some code>),
+       *    bytes(<some text>)]
+       *
+       *   Please note that a single document containing both NL and PL should be splitted
+       *   into multiple documents containing a single type of text (NL or PL) only.
+       *   This is due to the fact that 0x01 is only checked at the beginning of a document.
+       *
+       * Post-process: Join blocks with 0x02, append 0x00.
+       *   From:
+       *   [bytes(<some text tokens>),
+       *    0x01, bytes(<some code tokens>),
+       *    bytes(<some text tokens>)]
+       *   To:
+       *   [bytes(<some text tokens>),
+       *    0x01, bytes(<some code tokens>), 0x02,
+       *    bytes(<some text tokens>), 0x00]
+       *
+       *
+       * Singular code file with metadata
+       *
+       * Preprocess: Separate blocks by 0x01 and 0x02. Remove 0x03, 0x04.
+       *   From:
+       *   [0x03, bytes(“File path: x.cpp\n”), 0x04, 0x01, bytes(<file content>), 0x02, 0x00]
+       *   To:
+       *   [bytes(“File path: x.cpp\n”),
+       *    0x01, bytes(<file content>)]
+       *
+       * Post process: Add 0x03, 0x04, and append the 0x00.
+       *   From:
+       *   [bytes(“File path : x . cpp \n”),
+       *    0x01, bytes(<file content tokens>)]
+       *   To:
+       *   [0x03, bytes(“File path : x . cpp \n”), 0x04,
+       *    0x01, bytes(<file content tokens>), 0x02, 0x00]
+      */
+
+    auto ps_code_start = sp.PieceToId("<0x01>");
+    auto ps_code_end = sp.PieceToId("<0x02>");
+    auto ps_code_meta_start = sp.PieceToId("<0x03>");
+    auto ps_code_meta_end = sp.PieceToId("<0x04>");
+    auto ps_doc_end = sp.PieceToId("<0x00>");
+
+    process = [&](absl::string_view line) {
+      sentencepiece::MixedTextCodeIterator blocks_iterator(line,
+        verbatim_control_char,
+        code_block_end,
+        code_meta_block_begin,
+        code_meta_block_end);
+
+      std::vector<int> ids;
+      absl::string_view block;
+      while (blocks_iterator.HasNext()) {
+        auto r = blocks_iterator.Next(&block);
+        if (!r.has_value()) {
+          // Line ends with an emtpy document.
+          break;
+        }
+        switch(*r) {
+          case sentencepiece::MixedTextCodeIterator::BlockType::Text:
+            CHECK_OK(sp.Encode(block, &ids, false));
+            break;
+          case sentencepiece::MixedTextCodeIterator::BlockType::Code:
+            ids.push_back(ps_code_start);
+            CHECK_OK(sp.Encode(block, &ids, false));
+            ids.push_back(ps_code_end);
+            break;
+          case sentencepiece::MixedTextCodeIterator::BlockType::CodeHeader:
+            ids.push_back(ps_code_meta_start);
+            CHECK_OK(sp.Encode(block, &ids, false));
+            ids.push_back(ps_code_meta_end);
+            break;
+          default:
+            LOG(FATAL) << "Unrecognized BlockType met during encoding.";
+        }
+      }
+      ids.push_back(ps_doc_end);
+      {
+        std::lock_guard lock(sync);
+        output->Write(absl::string_view(
+            reinterpret_cast<const char *>(ids.data()), sizeof(uint32_t) * ids.size()));
+        sentence_sizes.push_back(ids.size());
+      }
+    };
   } else {
     LOG(FATAL) << "Unknown output format: "
                << absl::GetFlag(FLAGS_output_format);
   }
 
   std::atomic<int64_t> processed = 0;
-
-  const bool isBid = absl::GetFlag(FLAGS_output_format) == "bid";
-  int ps_code_start, ps_code_end, ps_code_meta_start, ps_code_meta_end, ps_doc_end;
-  if (isBid) {
-    ps_code_start = sp.PieceToId("<0x01>");
-    ps_code_end = sp.PieceToId("<0x02>");
-    ps_code_meta_start = sp.PieceToId("<0x03>");
-    ps_code_meta_end = sp.PieceToId("<0x04>");
-    ps_doc_end = sp.PieceToId("<0x00>");
-  }
-
-  /**
-   * poolside_process will split the document into text and code blocks.
-   * 
-   * Documents with code blocks
-   * 
-   * Preprocess: Separate blocks by 0x01 and 0x02.
-   *   From:
-   *   [bytes(<some text>), 0x01, bytes(<some code>), 0x02, bytes(<some text>), 0x00]
-   *   To:
-   *   [bytes(<some text>),
-   *    0x01, bytes(<some code>),
-   *    bytes(<some text>)]
-   * 
-   *   Please note that a single document containing both NL and PL should be splitted
-   *   into multiple documents containing a single type of text (NL or PL) only.
-   *   This is due to the fact that 0x01 is only checked at the beginning of a document.
-   * 
-   * Post-process: Join blocks with 0x02, append 0x00.
-   *   From:
-   *   [bytes(<some text tokens>),
-   *    0x01, bytes(<some code tokens>),
-   *    bytes(<some text tokens>)]
-   *   To:
-   *   [bytes(<some text tokens>),
-   *    0x01, bytes(<some code tokens>), 0x02,
-   *    bytes(<some text tokens>), 0x00]
-   * 
-   * 
-   * Singular code file with metadata
-   * 
-   * Preprocess: Separate blocks by 0x01 and 0x02. Remove 0x03, 0x04.
-   *   From:
-   *   [0x03, bytes(“File path: x.cpp\n”), 0x04, 0x01, bytes(<file content>), 0x02, 0x00]
-   *   To:
-   *   [bytes(“File path: x.cpp\n”),
-   *    0x01, bytes(<file content>)]
-   * 
-   * Post process: Add 0x03, 0x04, and append the 0x00.
-   *   From:
-   *   [bytes(“File path : x . cpp \n”),
-   *    0x01, bytes(<file content tokens>)]
-   *   To:
-   *   [0x03, bytes(“File path : x . cpp \n”), 0x04,
-   *    0x01, bytes(<file content tokens>), 0x02, 0x00]
-  */
-  auto poolside_process = [&](absl::string_view line) {
-    sentencepiece::MixedTextCodeIterator blocks_iterator(line,
-      verbatim_control_char,
-      code_block_end,
-      code_meta_block_begin,
-      code_meta_block_end);
-    
-    std::vector<int> ids;
-    absl::string_view block;
-    while (blocks_iterator.HasNext()) {
-      auto r = blocks_iterator.Next(&block);
-      if (!r.has_value()) {
-        // Line ends with an emtpy document.
-        break;
-      }
-      switch(*r) {
-        case sentencepiece::MixedTextCodeIterator::BlockType::Text:
-          process_ex(block, ids);
-          break;
-        case sentencepiece::MixedTextCodeIterator::BlockType::Code:
-          ids.push_back(ps_code_start);
-          process_ex(block, ids);
-          ids.push_back(ps_code_end);
-          break;
-        case sentencepiece::MixedTextCodeIterator::BlockType::CodeHeader:
-          ids.push_back(ps_code_meta_start);
-          process_ex(block, ids);
-          ids.push_back(ps_code_meta_end);
-          break;
-        default:
-          LOG(FATAL) << "Unrecognized BlockType met during encoding.";
-      }
-    }
-    ids.push_back(ps_doc_end);
-    {
-      std::lock_guard lock(sync);
-      output->Write(absl::string_view(
-            reinterpret_cast<const char *>(ids.data()), sizeof(int) * ids.size()));
-      sentence_sizes.push_back(ids.size());
-    }
-  };
-
-  auto _process = isBid ? poolside_process : process;
-
-  auto processChunk = [&pool, &_process, &processed, &counter](std::vector<sentencepiece::filesystem::ps_string>& chunk) {
+  auto processChunk = [&pool, &_process, &processed, &counter](
+      std::vector<sentencepiece::filesystem::ps_string>& chunk) {
     pool.Schedule([&_process, &processed, chunk, &counter](){
       size_t size = 0;
       for (auto &line : chunk) {
@@ -358,7 +349,7 @@ int main(int argc, char *argv[]) {
     LOG(INFO) << "Encoded " << processed.load() << " sentences";
   }
 
-  if (absl::GetFlag(FLAGS_output_format) == "bid") {
+  if (absl::GetFlag(FLAGS_output_format) == "poolside") {
     size_t count = sentence_sizes.size();
     output->Write(absl::string_view(reinterpret_cast<char *>(sentence_sizes.data()),
                   sizeof(sentence_sizes[0]) * sentence_sizes.size()));
