@@ -337,6 +337,7 @@ int main(int argc, char *argv[]) {
       if (chunk.size() == thread_chunk_size) {
         process_chunk(chunk);
         if (pending_size.load() >= pending_limit) {
+          LOG(INFO) << "Throttled input at " << pending_size.load() << " pending bytes";
           // busy loop to one half of the queue size
           while (pending_size.load() > pending_limit / 2) {
             usleep(0);  // actually works instead of pthread_yield()

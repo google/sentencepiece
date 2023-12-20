@@ -10,6 +10,7 @@ std::optional<MixedTextCodeIterator::BlockType> MixedTextCodeIterator::ReadCodeH
   assert(*head_ == code_meta_block_begin_);
   if (*head_ != code_meta_block_begin_) {
     LOG(ERROR) << "Head is not code_meta_block_begin_";
+    return std::nullopt;
   }
   assert(code_meta_block_end_ >= 0);
   auto ptr = reinterpret_cast<const char *>(memchr(head_, code_meta_block_end_, tail_ - head_));
@@ -46,11 +47,13 @@ std::optional<MixedTextCodeIterator::BlockType> MixedTextCodeIterator::ReadCodeB
   assert(*head_ == verbatim_control_char_);
   if (*head_ != verbatim_control_char_) {
     LOG(ERROR) << "Head is not verbatim_control_char_";
+    return std::nullopt;
   }
   auto ptr = reinterpret_cast<const char *>(memchr(head_, code_block_end_, tail_ - head_));
   assert((void("Code block does not end with code block end character"), ptr != nullptr));
   if (ptr == nullptr) {
     LOG(ERROR) << "Code block does not end with code block end character";
+    return std::nullopt;
   }
   *line = absl::string_view(head_, ptr - head_);
   head_ = ptr + 1;
