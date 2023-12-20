@@ -243,10 +243,10 @@ int main(int argc, char *argv[]) {
        *    0x01, bytes(<file content tokens>), 0x02, 0x00]
       */
 
-    auto ps_code_start = sp.PieceToId("<0x01>");
-    auto ps_code_end = sp.PieceToId("<0x02>");
-    auto ps_code_meta_start = sp.PieceToId("<0x03>");
-    auto ps_code_meta_end = sp.PieceToId("<0x04>");
+    auto ps_code_start = sp.bos_id();
+    auto ps_code_end = sp.PieceToId("<0x00>");
+    auto ps_code_meta_start = sp.PieceToId("<0x01>");
+    auto ps_code_meta_end = sp.PieceToId("<0x02>");
     auto ps_doc_end = sp.eos_id();
 
     process = [&](absl::string_view line) {
