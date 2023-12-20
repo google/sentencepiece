@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
   sentencepiece::ThreadPool pool(num_threads);
   std::mutex sync;
   constexpr int thread_chunk_size = 1000;
-  constexpr int64_t pending_limit = 1 << 31;
+  constexpr int64_t pending_limit = 1ll << 31;
 
   const int nbest_size = absl::GetFlag(FLAGS_nbest_size);
   const float alpha = absl::GetFlag(FLAGS_alpha);
