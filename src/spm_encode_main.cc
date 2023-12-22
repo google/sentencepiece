@@ -71,9 +71,7 @@ ABSL_FLAG(int, code_meta_block_end, 0x04,
           "Control character at the end of each code meta block."
           "-1 to disable");
 
-#define ReadBlockDelimiter(name)\
-  int32 name = absl::GetFlag(FLAGS_##name);\
-  if (name == -2) name = sp.model_proto()->trainer_spec().name();
+#define ReadBlockDelimiter(name) int32 name = absl::GetFlag(FLAGS_##name)
 
 int main(int argc, char *argv[]) {
   std::atomic<int64_t> pending_size {0};
