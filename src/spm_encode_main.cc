@@ -214,15 +214,15 @@ int main(int argc, char *argv[]) {
        *   into multiple documents containing a single type of text (NL or PL) only.
        *   This is due to the fact that 0x01 is only checked at the beginning of a document.
        *
-       * Post-process: Join blocks with 0x02, append 0x00.
+       * Post-process: Join blocks with <BOS>, append <EOS>.
        *   From:
        *   [bytes(<some text tokens>),
        *    0x01, bytes(<some code tokens>),
        *    bytes(<some text tokens>)]
        *   To:
        *   [bytes(<some text tokens>),
-       *    0x01, bytes(<some code tokens>), 0x02,
-       *    bytes(<some text tokens>), 0x00]
+       *    <BOS>, bytes(<some code tokens>), <0x00>,
+       *    bytes(<some text tokens>), <EOS>]
        *
        *
        * Singular code file with metadata
@@ -234,13 +234,13 @@ int main(int argc, char *argv[]) {
        *   [bytes(“File path: x.cpp\n”),
        *    0x01, bytes(<file content>)]
        *
-       * Post process: Add 0x03, 0x04, and append the 0x00.
+       * Post process: Add <0x01>, <0x02>, and append the <EOS>.
        *   From:
        *   [bytes(“File path : x . cpp \n”),
        *    0x01, bytes(<file content tokens>)]
        *   To:
-       *   [0x03, bytes(“File path : x . cpp \n”), 0x04,
-       *    0x01, bytes(<file content tokens>), 0x02, 0x00]
+       *   [<0x01>, bytes(“File path : x . cpp \n”), <0x02>,
+       *    <BOS>, bytes(<file content tokens>), <0x00>, <EOS>]
       */
 
     auto ps_code_start = sp.bos_id();
@@ -252,9 +252,9 @@ int main(int argc, char *argv[]) {
     process = [&](absl::string_view line) {
       sentencepiece::MixedTextCodeIterator blocks_iterator(line,
         verbatim_control_char,
-        code_block_end,
-        code_meta_block_begin,
-        code_meta_block_end);
+        sp.PieceToId("<0x02>"),
+        sp.PieceToId("<0x03>"),
+        sp.PieceToId("<0x04>"));
 
       std::vector<int> ids;
       absl::string_view block;
