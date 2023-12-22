@@ -58,18 +58,18 @@ ABSL_FLAG(bool, generate_vocabulary, false,
           "Generates vocabulary file instead of segmentation");
 
 // Blocks delimiters.
-ABSL_FLAG(int, verbatim_control_char, -2, "Control character to process the "
+ABSL_FLAG(int, verbatim_control_char, 0x01, "Control character to process the "
           "following sentence without whitespace normalization."
-          "-1 to disable, -2 to use the value from the model");
-ABSL_FLAG(int, code_block_end, -2,
+          "-1 to disable");
+ABSL_FLAG(int, code_block_end, 0x02,
           "Control character at the end of each code block."
-          "-1 to disable, -2 to use the value from the model");
-ABSL_FLAG(int, code_meta_block_begin, -2,
+          "-1 to disable");
+ABSL_FLAG(int, code_meta_block_begin, 0x03,
           "Control character at the beginning of each code meta block."
-          "-1 to disable, -2 to use the value from the model");
-ABSL_FLAG(int, code_meta_block_end, -2,
+          "-1 to disable");
+ABSL_FLAG(int, code_meta_block_end, 0x04,
           "Control character at the end of each code meta block."
-          "-1 to disable, -2 to use the value from the model");
+          "-1 to disable");
 
 #define ReadBlockDelimiter(name)\
   int32 name = absl::GetFlag(FLAGS_##name);\
@@ -244,6 +244,7 @@ int main(int argc, char *argv[]) {
       */
 
     auto ps_code_start = sp.bos_id();
+    // note: the following is *not* the same as numbers 0x00, 0x01, 0x02
     auto ps_code_end = sp.PieceToId("<0x00>");
     auto ps_code_meta_start = sp.PieceToId("<0x01>");
     auto ps_code_meta_end = sp.PieceToId("<0x02>");
@@ -252,9 +253,9 @@ int main(int argc, char *argv[]) {
     process = [&](absl::string_view line) {
       sentencepiece::MixedTextCodeIterator blocks_iterator(line,
         verbatim_control_char,
-        sp.PieceToId("<0x02>"),
-        sp.PieceToId("<0x03>"),
-        sp.PieceToId("<0x04>"));
+        code_block_end,
+        code_meta_block_begin,
+        code_meta_block_end);
 
       std::vector<int> ids;
       absl::string_view block;
