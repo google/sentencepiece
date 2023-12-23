@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "sentencepiece_trainer.h"
+
 #include <string>
 #include <vector>
 
@@ -20,7 +22,6 @@
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
-#include "sentencepiece_trainer.h"
 #include "spec_parser.h"
 #include "third_party/absl/flags/flag.h"
 #include "third_party/absl/strings/numbers.h"
@@ -195,6 +196,40 @@ util::Status SentencePieceTrainer::Train(
                                      &denormalizer_spec));
   return Train(trainer_spec, normalizer_spec, denormalizer_spec,
                sentence_iterator, serialized_model_proto);
+}
+
+namespace {
+class VectorSentenceIterator : public SentenceIterator {
+ public:
+  explicit VectorSentenceIterator(const std::vector<std::string> &values)
+      : iter_(values.begin()), end_(values.end()) {}
+  virtual ~VectorSentenceIterator() {}
+  virtual bool done() const { return iter_ == end_; }
+  void Next() override { ++iter_; }
+  const std::string &value() const override { return *iter_; }
+  util::Status status() const override { return util::OkStatus(); }
+
+ private:
+  std::vector<std::string>::const_iterator iter_;
+  std::vector<std::string>::const_iterator end_;
+};
+}  // namespace
+
+// static
+util::Status SentencePieceTrainer::Train(
+    absl::string_view args, const std::vector<std::string> &sentences,
+    std::string *serialized_model_proto) {
+  VectorSentenceIterator iter(sentences);
+  return Train(args, &iter, serialized_model_proto);
+}
+
+// static
+util::Status SentencePieceTrainer::Train(
+    const std::unordered_map<std::string, std::string> &kwargs,
+    const std::vector<std::string> &sentences,
+    std::string *serialized_model_proto) {
+  VectorSentenceIterator iter(sentences);
+  return Train(kwargs, &iter, serialized_model_proto);
 }
 
 // static

@@ -16,6 +16,7 @@
 
 #include <atomic>
 #include <iostream>
+#include <memory>
 
 namespace sentencepiece {
 
@@ -187,8 +188,18 @@ std::mt19937 *GetRandomGenerator() {
 }
 #else
 std::mt19937 *GetRandomGenerator() {
-  thread_local static std::mt19937 mt(GetRandomGeneratorSeed());
-  return &mt;
+  // Thread-locals occupy stack space in every thread ever created by the
+  // program, even if that thread never uses the thread-local variable.
+  //
+  // https://maskray.me/blog/2021-02-14-all-about-thread-local-storage
+  //
+  // sizeof(std::mt19937) is several kilobytes, so it is safer to put that on
+  // the heap, leaving only a pointer to it in thread-local storage.  This must
+  // be a unique_ptr, not a raw pointer, so that the generator is not leaked on
+  // thread exit.
+  thread_local static auto mt =
+      std::make_unique<std::mt19937>(GetRandomGeneratorSeed());
+  return mt.get();
 }
 #endif
 }  // namespace random
@@ -244,28 +255,40 @@ std::vector<std::string> StrSplitAsCSV(absl::string_view text) {
 
   return result;
 }
-}  // namespace util
 
 #ifdef OS_WIN
-namespace win32 {
 std::wstring Utf8ToWide(absl::string_view input) {
-  int output_length = ::MultiByteToWideChar(
+  const int output_length = ::MultiByteToWideChar(
       CP_UTF8, 0, input.data(), static_cast<int>(input.size()), nullptr, 0);
-  output_length = output_length <= 0 ? 0 : output_length - 1;
   if (output_length == 0) {
     return L"";
   }
-  std::unique_ptr<wchar_t[]> input_wide(new wchar_t[output_length + 1]);
-  std::fill(input_wide.get(), input_wide.get() + output_length + 1, L'\0');
+  std::wstring output(output_length, 0);
   const int result = ::MultiByteToWideChar(CP_UTF8, 0, input.data(),
                                            static_cast<int>(input.size()),
-                                           input_wide.get(), output_length + 1);
-  std::wstring output;
-  if (result > 0) {
-    output.assign(input_wide.get());
-  }
-  return output;
+                                           output.data(), output.size());
+  return result == output_length ? output : L"";
 }
-}  // namespace win32
 #endif
+}  // namespace util
+
+namespace log_domain {
+double LogSum(const std::vector<double> &xs) {
+  if (xs.empty()) {
+    return -1.0 * std::numeric_limits<double>::max();
+  }
+  double sum = xs.front();
+
+  auto log_add = [](double xa, double xb) {
+    if (xa > xb) {
+      std::swap(xa, xb);
+    }
+    return xb + std::log1p(std::exp(xa - xb));
+  };
+  for (int i = 1; i < xs.size(); ++i) {
+    sum = log_add(sum, xs[i]);
+  }
+  return sum;
+}
+}  // namespace log_domain
 }  // namespace sentencepiece

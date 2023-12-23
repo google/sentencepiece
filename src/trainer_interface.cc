@@ -575,7 +575,6 @@ END:
     w.first = string_util::UnicodeTextToUTF8(uw2);
   }
 
-  // +3 for meta pieces.
   if (trainer_spec_.model_type() != TrainerSpec::WORD &&
       trainer_spec_.model_type() != TrainerSpec::CHAR) {
     CHECK_LE_OR_RETURN(

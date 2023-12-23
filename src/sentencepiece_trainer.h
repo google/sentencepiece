@@ -89,6 +89,17 @@ class SentencePieceTrainer {
       SentenceIterator *sentence_iterator = nullptr,
       std::string *serialized_model_proto = nullptr);
 
+  // The same as above, but passes the list of sentences.
+  static util::Status Train(absl::string_view args,
+                            const std::vector<std::string> &sentences,
+                            std::string *serialized_model_proto = nullptr);
+
+  // The same as above, but passes the list of sentences.
+  static util::Status Train(
+      const std::unordered_map<std::string, std::string> &kwargs,
+      const std::vector<std::string> &sentences,
+      std::string *serialized_model_proto = nullptr);
+
   // Handy function to make a normalizer spec from the pre-compiled
   // normalization name. Do not use this method in production as it crashes
   // When `name` is invalid. Useful for unittesting.

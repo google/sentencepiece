@@ -315,8 +315,11 @@ PrefixMatcher::PrefixMatcher(const std::set<absl::string_view> &dic) {
   key.reserve(dic.size());
   for (const auto &it : dic) key.push_back(it.data());
   trie_ = absl::make_unique<Darts::DoubleArray>();
-  CHECK_EQ(0, trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
-                           nullptr));
+  if (trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
+                   nullptr) != 0) {
+    LOG(ERROR) << "Failed to build the TRIE for PrefixMatcher";
+    trie_.reset();
+  }
 }
 
 int PrefixMatcher::PrefixMatch(absl::string_view w, bool *found) const {

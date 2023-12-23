@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "sentencepiece_trainer.h"
+
 #include "filesystem.h"
 #include "sentencepiece_model.pb.h"
-#include "sentencepiece_trainer.h"
 #include "testharness.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "util.h"
@@ -128,6 +129,19 @@ TEST(SentencePieceTrainerTest, TrainFromIterator) {
     std::string line;
     while (fs->ReadLine(&line)) sentences.emplace_back(line);
   }
+
+  ASSERT_TRUE(SentencePieceTrainer::Train(
+                  absl::StrCat("--model_prefix=", model, " --vocab_size=1000"),
+                  sentences)
+                  .ok());
+  CheckVocab(model + ".model", 1000);
+  CheckNormalizer(model + ".model", true, false);
+
+  ASSERT_TRUE(SentencePieceTrainer::Train(
+                  {{"model_prefix", model}, {"vocab_size", "1000"}}, sentences)
+                  .ok());
+  CheckVocab(model + ".model", 1000);
+  CheckNormalizer(model + ".model", true, false);
 
   VectorIterator it(std::move(sentences));
   ASSERT_TRUE(

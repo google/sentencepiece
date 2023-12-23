@@ -14,9 +14,15 @@
 
 #include "sentencepiece_processor.h"
 
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <iterator>
 #include <map>
+#include <memory>
 #include <set>
 #include <utility>
+#include <vector>
 
 #include "common.h"
 #include "filesystem.h"
@@ -409,7 +415,7 @@ util::Status SentencePieceProcessor::Decode(
 
   SentencePieceText spt;
   RETURN_IF_ERROR(Decode(pieces, &spt));
-  *detokenized = std::move(spt.text());
+  *detokenized = std::move(*spt.mutable_text());
 
   return util::OkStatus();
 }
@@ -420,7 +426,7 @@ util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
 
   SentencePieceText spt;
   RETURN_IF_ERROR(Decode(ids, &spt));
-  *detokenized = std::move(spt.text());
+  *detokenized = std::move(*spt.mutable_text());
 
   return util::OkStatus();
 }
@@ -623,9 +629,9 @@ util::Status SentencePieceProcessor::PopulateSentencePieceText(
   CHECK_EQ_OR_RETURN(consumed, normalized.size())
       << "all normalized characters are not consumed.";
 
-  RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, spt));
-
   spt->set_text(input.data(), input.size());
+
+  RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, spt));
 
   return util::OkStatus();
 }  // namespace sentencepiece
@@ -695,10 +701,17 @@ util::Status SentencePieceProcessor::SampleEncode(
     const auto nbests = model_->NBestEncode(normalized, nbest_size);
     CHECK_OR_RETURN(!nbests.empty()) << "NBestEncode returns empty result.";
 
-    std::vector<float> probs(nbests.size(), 0.0);
-    for (size_t i = 0; i < nbests.size(); ++i) {
-      probs[i] = std::exp(alpha * nbests[i].second);
-    }
+    std::vector<double> log_probs;
+    log_probs.reserve(nbests.size());
+    std::transform(nbests.begin(), nbests.end(), std::back_inserter(log_probs),
+                   [alpha](const auto &nbest) { return alpha * nbest.second; });
+
+    const double Z = log_domain::LogSum(log_probs);
+    std::vector<double> probs;
+    probs.reserve(log_probs.size());
+    std::transform(
+        log_probs.begin(), log_probs.end(), std::back_inserter(probs),
+        [Z](const auto &log_prob) { return std::exp(log_prob - Z); });
 
     auto *mt = random::GetRandomGenerator();
     std::discrete_distribution<int> dist(probs.begin(), probs.end());
@@ -998,6 +1011,8 @@ util::Status SentencePieceProcessor::ApplyExtraOptions(
         piece->set_id(PieceToId(absl::string_view(model_->eos_piece().data())));
         piece->set_piece(model_->eos_piece().data(),
                          model_->eos_piece().size());
+        piece->set_begin(spt->text().size());
+        piece->set_end(spt->text().size());
       } break;
       case BOS: {
         auto *array = spt->mutable_pieces();
@@ -1009,6 +1024,8 @@ util::Status SentencePieceProcessor::ApplyExtraOptions(
         piece->set_id(PieceToId(absl::string_view(model_->bos_piece().data())));
         piece->set_piece(model_->bos_piece().data(),
                          model_->bos_piece().size());
+        piece->set_begin(0);
+        piece->set_end(0);
       } break;
       case UNK_PIECE: {
         for (int i = 0; i < spt->pieces_size(); ++i) {
@@ -1097,9 +1114,13 @@ util::Status LoadModelProto(absl::string_view filename,
   auto input = filesystem::NewReadableFile(filename, true);
   RETURN_IF_ERROR(input->status());
   std::string serialized;
-  CHECK_OR_RETURN(input->ReadAll(&serialized));
-  CHECK_OR_RETURN(
-      model_proto->ParseFromArray(serialized.data(), serialized.size()));
+  if (!input->ReadAll(&serialized)) {
+    return util::InternalError(absl::StrCat("could not read ", filename));
+  }
+  if (!model_proto->ParseFromArray(serialized.data(), serialized.size())) {
+    return util::InternalError(
+        absl::StrCat("could not parse ModelProto from ", filename));
+  }
 
   return util::OkStatus();
 }

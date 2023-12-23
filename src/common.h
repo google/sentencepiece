@@ -53,12 +53,6 @@ typedef uint64_t uint64;
 
 static constexpr uint32 kUnicodeError = 0xFFFD;
 
-#if defined(OS_WIN) && defined(UNICODE) && defined(_UNICODE)
-#define WPATH(path) (::sentencepiece::win32::Utf8ToWide(path).c_str())
-#else
-#define WPATH(path) (path)
-#endif
-
 template <typename T, size_t N>
 char (&ArraySizeHelper(T (&array)[N]))[N];
 

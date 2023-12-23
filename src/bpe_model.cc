@@ -194,9 +194,9 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
 
   EncodeResult output;
   for (int index = 0; index != -1; index = symbols[index].next) {
-    CHECK_GE(index, 0);
-    CHECK_LT(index, static_cast<int>(symbols.size()));
-    resegment(symbols[index].piece, &output);
+    if (index >= 0 && index < static_cast<int>(symbols.size())) {
+      resegment(symbols[index].piece, &output);
+    }
   }
 
   return output;
