@@ -75,7 +75,9 @@ char (&ArraySizeHelper(const T (&array)[N]))[N];
 
 namespace sentencepiece {
 namespace util {
+#ifndef OS_WIN
 inline uint32 Swap32(uint32 x) { return __builtin_bswap32(x); }
+#endif  // OS_WIN
 }  // namespace util
 
 namespace error {
