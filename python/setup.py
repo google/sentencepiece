@@ -14,14 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
-from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext as _build_ext
-from setuptools.command.build_py import build_py as _build_py
 import codecs
+import os
 import string
 import subprocess
 import sys
-import os
+from setuptools import Extension, setup
+from setuptools.command.build_ext import build_ext as _build_ext
+from setuptools.command.build_py import build_py as _build_py
 
 sys.path.append(os.path.join('.', 'test'))
 
@@ -94,6 +94,8 @@ class build_ext(_build_ext):
     else:
       cflags.append('-Wl,-strip-all')
       libs.append('-Wl,-strip-all')
+    if sys.platform == 'linux':
+      libs.append('-Wl,-Bsymbolic')
     print('## cflags={}'.format(' '.join(cflags)))
     print('## libs={}'.format(' '.join(libs)))
     ext.extra_compile_args = cflags

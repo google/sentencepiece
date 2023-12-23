@@ -43,6 +43,8 @@ int GetMinLogLevel() { return g_minloglevel.load(); }
 void SetMinLogLevel(int v) { g_minloglevel.store(v); }
 }  // namespace logging
 
+void SetMinLogLevel(int v) { logging::SetMinLogLevel(v); }
+
 namespace string_util {
 
 // mblen sotres the number of bytes consumed after decoding.

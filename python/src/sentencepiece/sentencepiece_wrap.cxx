@@ -8429,6 +8429,36 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_SetMinLogLevel(PyObject *self, PyObject *args) {
+  PyObject *resultobj = 0;
+  int arg1 ;
+  int val1 ;
+  int ecode1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  ecode1 = SWIG_AsVal_int(swig_obj[0], &val1);
+  if (!SWIG_IsOK(ecode1)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "SetMinLogLevel" "', argument " "1"" of type '" "int""'");
+  } 
+  arg1 = static_cast< int >(val1);
+  {
+    try {
+      sentencepiece::SetMinLogLevel(arg1);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_SentencePieceTrainer__TrainFromString(PyObject *self, PyObject *args) {
   PyObject *resultobj = 0;
   absl::string_view arg1 ;
@@ -8800,6 +8830,7 @@ static PyMethodDef SwigMethods[] = {
 	 { "SentencePieceProcessor_swigregister", SentencePieceProcessor_swigregister, METH_O, NULL},
 	 { "SentencePieceProcessor_swiginit", SentencePieceProcessor_swiginit, METH_VARARGS, NULL},
 	 { "SetRandomGeneratorSeed", _wrap_SetRandomGeneratorSeed, METH_O, NULL},
+	 { "SetMinLogLevel", _wrap_SetMinLogLevel, METH_O, NULL},
 	 { "SentencePieceTrainer__TrainFromString", _wrap_SentencePieceTrainer__TrainFromString, METH_O, NULL},
 	 { "SentencePieceTrainer__TrainFromMap", _wrap_SentencePieceTrainer__TrainFromMap, METH_O, NULL},
 	 { "SentencePieceTrainer__TrainFromMap2", _wrap_SentencePieceTrainer__TrainFromMap2, METH_VARARGS, NULL},

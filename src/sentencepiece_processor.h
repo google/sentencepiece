@@ -431,19 +431,19 @@ class SentencePieceProcessor {
 #define DEFINE_SPP_DIRECT_FUNC_IMPL(FuncName, OutType, ...) \
   OutType output;                                           \
   const auto status = FuncName(__VA_ARGS__, &output);       \
-  SPP_SWIG_CHECK_AND_THROW;				    \
+  SPP_SWIG_CHECK_AND_THROW;                                 \
   return output;
 
 #define DEFINE_SPP_SERIALIZED_PROTO_IMPL(FuncName, OutType, ...)     \
   OutType output;                                                    \
   const auto status = FuncName(__VA_ARGS__, output.mutable_proto()); \
-  SPP_SWIG_CHECK_AND_THROW;					     \
+  SPP_SWIG_CHECK_AND_THROW;                                          \
   return output.SerializeAsString();
 
 #define DEFINE_SPP_IMMUTABLE_PROTO_IMPL(FuncName, OutType, ...)      \
   OutType output;                                                    \
   const auto status = FuncName(__VA_ARGS__, output.mutable_proto()); \
-  SPP_SWIG_CHECK_AND_THROW;					     \
+  SPP_SWIG_CHECK_AND_THROW;                                          \
   return output;
 
   //////////////////////////////////////////////////////////////
@@ -708,6 +708,10 @@ class SentencePieceProcessor {
 // as this seed is reserved for initializing from
 // std::random_device.
 void SetRandomGeneratorSeed(unsigned int seed);
+
+// Set the global log level. The default loglevel is 0.
+// The log is emitted only when min_log_level >= output_log_level.
+void SetMinLogLevel(int v);
 
 // IO related functions to absorb model formats.
 namespace io {

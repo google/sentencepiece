@@ -74,17 +74,9 @@ char (&ArraySizeHelper(const T (&array)[N]))[N];
 #endif
 
 namespace sentencepiece {
-#ifdef OS_WIN
-namespace win32 {
-std::wstring Utf8ToWide(const absl::string_view input);
-}  // namespace win32
-#endif
-
-#ifdef IS_BIG_ENDIAN
 namespace util {
 inline uint32 Swap32(uint32 x) { return __builtin_bswap32(x); }
 }  // namespace util
-#endif
 
 namespace error {
 
