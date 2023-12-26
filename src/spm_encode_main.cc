@@ -122,6 +122,7 @@ int main(int argc, char *argv[]) {
   std::mutex sync;
   constexpr int thread_chunk_size = 1000;
   constexpr int64_t pending_limit = 1ll << 31;
+  std::unordered_map<std::string, long> errors;
 
   const int nbest_size = absl::GetFlag(FLAGS_nbest_size);
   const float alpha = absl::GetFlag(FLAGS_alpha);
@@ -248,7 +249,22 @@ int main(int argc, char *argv[]) {
     auto ps_code_meta_end = sp.PieceToId("<0x02>");
     auto ps_doc_end = sp.eos_id();
 
-    process = [&](absl::string_view line) {
+    process = [
+        verbatim_control_char,
+        code_block_end,
+        code_meta_block_begin,
+        code_meta_block_end,
+        ps_code_start,
+        ps_code_end,
+        ps_code_meta_start,
+        ps_code_meta_end,
+        ps_doc_end,
+        &errors,
+        &sync,
+        &sp,
+        &sentence_sizes,
+        &output
+    ](absl::string_view line) {
       sentencepiece::MixedTextCodeIterator blocks_iterator(line,
         verbatim_control_char,
         code_block_end,
@@ -280,6 +296,11 @@ int main(int argc, char *argv[]) {
           default:
             LOG(FATAL) << "Unrecognized BlockType met during encoding.";
         }
+      }
+      if (blocks_iterator.Error() != nullptr) {
+        std::lock_guard lock(sync);
+        errors[blocks_iterator.Error()]++;
+        return;
       }
       ids.push_back(ps_doc_end);
       {
@@ -349,6 +370,12 @@ int main(int argc, char *argv[]) {
     }
     pool.Wait();
     LOG(INFO) << "Encoded " << processed.load() << " sentences";
+    if (errors.size()) {
+      LOG(WARNING) << "Errors:";
+      for (auto &it : errors) {
+        LOG(WARNING) << it.second << "\t" << it.first;
+      }
+    }
   }
 
   if (absl::GetFlag(FLAGS_output_format) == "poolside") {

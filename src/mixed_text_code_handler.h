@@ -19,8 +19,9 @@ public:
 protected:
   const absl::string_view cache_value_;
   bool in_text_;
-  const char* head_;
-  const char* tail_;
+  const char *head_;
+  const char *tail_;
+  const char *error_;
   const int32 verbatim_control_char_;
   const int32 code_block_end_;
   const int32 code_meta_block_begin_;
@@ -28,13 +29,13 @@ protected:
 
   bool HasCodeHeader() const;
 
-  std::optional<BlockType> ReadCodeHeader(absl::string_view* line);
+  std::optional<BlockType> ReadCodeHeader(absl::string_view *line);
 
-  std::optional<BlockType> ReadTextBlock(absl::string_view* line);
+  std::optional<BlockType> ReadTextBlock(absl::string_view *line);
 
-  std::optional<BlockType> ReadCodeBlock(absl::string_view* line);
+  std::optional<BlockType> ReadCodeBlock(absl::string_view *line);
 
-  std::optional<BlockType> TryReadNext(absl::string_view* line);
+  std::optional<BlockType> TryReadNext(absl::string_view *line);
 
 public:
   MixedTextCodeIterator(absl::string_view cache_value,
@@ -44,9 +45,10 @@ public:
     int32 code_meta_block_end
   );
 
-  std::optional<BlockType> Next(absl::string_view* line);
+  std::optional<BlockType> Next(absl::string_view *line);
 
   bool HasNext() const;
+  const char *Error() const noexcept { return error_; }
 };
 
 }  // namespace sentencepiece

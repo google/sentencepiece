@@ -7,20 +7,23 @@ bool MixedTextCodeIterator::HasCodeHeader() const {
 }
 
 std::optional<MixedTextCodeIterator::BlockType> MixedTextCodeIterator::ReadCodeHeader(absl::string_view* line) {
-  assert(*head_ == code_meta_block_begin_);
   if (*head_ != code_meta_block_begin_) {
-    LOG(ERROR) << "Head is not code_meta_block_begin_";
+    error_ = "Head is not code_meta_block_begin_";
     head_ = tail_;
     return std::nullopt;
   }
-  assert(code_meta_block_end_ >= 0);
+  if (code_meta_block_end_ < 0) {
+    error_ = "Code meta block ends before it starts";
+    head_ = tail_;
+    return std::nullopt;
+  }
   auto ptr = reinterpret_cast<const char *>(memchr(head_, code_meta_block_end_, tail_ - head_));
-  assert((void("Code meta block did not end with code meta block end character"), ptr != nullptr));
   if (ptr != nullptr) {
     *line = absl::string_view(head_ + 1, ptr - head_ - 1);
     head_ = ptr + 1;
     return BlockType::CodeHeader;
   } else {
+    error_ = "Code meta block did not end with code meta block end character";
     head_ = tail_;
     return std::nullopt;
   }
@@ -45,16 +48,14 @@ std::optional<MixedTextCodeIterator::BlockType> MixedTextCodeIterator::ReadTextB
 }
 
 std::optional<MixedTextCodeIterator::BlockType> MixedTextCodeIterator::ReadCodeBlock(absl::string_view* line) {
-  assert(*head_ == verbatim_control_char_);
   if (*head_ != verbatim_control_char_) {
-    LOG(ERROR) << "Head is not verbatim_control_char_";
+    error_ = "Head is not verbatim_control_char_";
     head_ = tail_;
     return std::nullopt;
   }
   auto ptr = reinterpret_cast<const char *>(memchr(head_, code_block_end_, tail_ - head_));
-  assert((void("Code block does not end with code block end character"), ptr != nullptr));
   if (ptr == nullptr) {
-    LOG(ERROR) << "Code block does not end with code block end character";
+    error_ = "Code block does not end with code block end character";
     head_ = tail_;
     return std::nullopt;
   }
@@ -87,6 +88,7 @@ MixedTextCodeIterator::MixedTextCodeIterator(absl::string_view cache_value,
   in_text_(true),
   head_(cache_value_.data()),
   tail_(cache_value_.data() + cache_value.size()),
+  error_(nullptr),
   verbatim_control_char_(verbatim_control_char),
   code_block_end_(code_block_end),
   code_meta_block_begin_(code_meta_block_begin),
