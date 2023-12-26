@@ -74,7 +74,6 @@ ABSL_FLAG(int, code_meta_block_end, 0x04,
 #define ReadBlockDelimiter(name) int32 name = absl::GetFlag(FLAGS_##name)
 
 int main(int argc, char *argv[]) {
-  std::atomic<int64_t> pending_size {0};
   sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
   std::vector<std::string> rest_args;
@@ -122,6 +121,8 @@ int main(int argc, char *argv[]) {
   std::mutex sync;
   constexpr int thread_chunk_size = 1000;
   constexpr int64_t pending_limit = 1ll << 31;
+  std::atomic<int64_t> pending_size {0};
+  std::atomic<int64_t> total_errors {0};
   std::unordered_map<std::string, long> errors;
 
   const int nbest_size = absl::GetFlag(FLAGS_nbest_size);
@@ -260,6 +261,7 @@ int main(int argc, char *argv[]) {
         ps_code_meta_end,
         ps_doc_end,
         &errors,
+        &total_errors,
         &sync,
         &sp,
         &sentence_sizes,
@@ -298,6 +300,7 @@ int main(int argc, char *argv[]) {
         }
       }
       if (blocks_iterator.Error() != nullptr) {
+        total_errors++;
         std::lock_guard lock(sync);
         errors[blocks_iterator.Error()]++;
         return;
@@ -316,9 +319,9 @@ int main(int argc, char *argv[]) {
   }
 
   std::atomic<int64_t> processed {0};
-  auto process_chunk = [&pool, &process, &processed, &pending_size](
+  auto process_chunk = [&pool, &process, &processed, &pending_size, &total_errors](
       std::vector<sentencepiece::filesystem::ps_string>& chunk) {
-    pool.Schedule([&process, &processed, chunk, &pending_size](){
+    pool.Schedule([&process, &processed, chunk, &pending_size, &total_errors](){
       size_t size = 0;
       for (auto &line : chunk) {
         if (auto sv = std::get_if<absl::string_view>(&line); sv != nullptr) {
@@ -332,7 +335,7 @@ int main(int argc, char *argv[]) {
       }
       int64_t prev = processed.fetch_add(chunk.size()) + chunk.size();
       if ((prev / thread_chunk_size) % 100 == 0) {
-        LOG(INFO) << "Encoded " << prev << " sentences";
+        LOG(INFO) << "Encoded " << prev << " sentences; errors: " << total_errors.load();
       }
       pending_size -= size;
     });
@@ -371,7 +374,7 @@ int main(int argc, char *argv[]) {
     pool.Wait();
     LOG(INFO) << "Encoded " << processed.load() << " sentences";
     if (errors.size()) {
-      LOG(WARNING) << "Errors:";
+      LOG(WARNING) << "Errors: " << total_errors.load();
       for (auto &it : errors) {
         LOG(WARNING) << it.second << "\t" << it.first;
       }
