@@ -13,3 +13,11 @@ updates:
       github-actions:
         patterns:
           - "*"
+  - package-ecosystem: "pip"
+    directory: "/.github/workflows/requirements"
+    schedule:
+      interval: "monthly"
+    groups:
+      build-time-deps:
+        patterns:
+          - "*"
