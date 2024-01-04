@@ -615,6 +615,21 @@ class SentencePieceProcessor {
 #undef DEFINE_SPP_IMMUTABLE_PROTO_IMPL
 
   //////////////////////////////////////////////////////////////
+  // Normalization methods.
+
+  // Normalize `input`.
+  virtual util::Status Normalize(absl::string_view input,
+                                 std::string *normalized) const;
+
+  // Normalize `input`. Stores the utf8-byte offset from
+  // the normalized string to the original input.
+  virtual util::Status Normalize(absl::string_view input,
+                                 std::string *normalized,
+                                 std::vector<size_t> *norm_to_orig) const;
+
+  virtual std::string Normalize(absl::string_view input) const;
+
+  //////////////////////////////////////////////////////////////
   // Vocabulary management methods.
   //
   // Returns the size of sentence pieces, which is the same as

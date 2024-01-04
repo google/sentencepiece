@@ -387,6 +387,12 @@ class SentencePieceProcessor(object):
     def _SampleEncodeAndScoreAsImmutableProto(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece):
         return _sentencepiece.SentencePieceProcessor__SampleEncodeAndScoreAsImmutableProto(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
 
+    def _Normalize(self, text):
+        return _sentencepiece.SentencePieceProcessor__Normalize(self, text)
+
+    def _NormalizeWithOffsets(self, text):
+        return _sentencepiece.SentencePieceProcessor__NormalizeWithOffsets(self, text)
+
     def _CalculateEntropy(self, text, alpha):
         return _sentencepiece.SentencePieceProcessor__CalculateEntropy(self, text, alpha)
 
@@ -857,6 +863,17 @@ class SentencePieceProcessor(object):
         return self._CalculateEntropyBatch(input, alpha, num_threads)
 
       return self._CalculateEntropy(input, alpha)
+
+
+    def Normalize(self, input, with_offsets=None):
+      def _normalize(text):
+        if with_offsets:
+          return self._NormalizeWithOffsets(text)
+        return self._Normalize(text)
+
+      if type(input) is list:
+        return [_normalize(x) for x in input]
+      return _normalize(input)
 
 
     def piece_size(self):

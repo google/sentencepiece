@@ -760,6 +760,36 @@ class TestSentencepieceProcessor(unittest.TestCase):
     spm.set_random_generator_seed(1)
     spm.set_min_log_level(3)
 
+  def test_normalize(self):
+    sp = spm.SentencePieceProcessor(
+        model_file=os.path.join('test', 'test_model.model')
+    )
+
+    self.assertEqual('▁KADOKAWAABC', sp.normalize('ＫＡＤＯＫＡＷＡABC'))
+    self.assertEqual('▁KADOKAWAABC', sp.Normalize('ＫＡＤＯＫＡＷＡABC'))
+
+    x = sp.Normalize('ＫＡＤＯＫＡＷＡABC', with_offsets=True)
+    self.assertEqual('▁KADOKAWAABC', x[0])
+    self.assertEqual(
+        [0, 0, 0, 0, 3, 6, 9, 12, 15, 18, 21, 24, 25, 26, 27], x[1]
+    )
+
+    self.assertEqual(
+        ['▁KADOKAWAABC', '▁平成'], sp.normalize(['ＫＡＤＯＫＡＷＡABC', '㍻'])
+    )
+    self.assertEqual(
+        ['▁KADOKAWAABC', '▁平成'], sp.Normalize(['ＫＡＤＯＫＡＷＡABC', '㍻'])
+    )
+
+    x = sp.Normalize(['ＫＡＤＯＫＡＷＡABC', '㍻'], with_offsets=True)
+    self.assertEqual(len(x), 2)
+    self.assertEqual('▁KADOKAWAABC', x[0][0])
+    self.assertEqual(
+        [0, 0, 0, 0, 3, 6, 9, 12, 15, 18, 21, 24, 25, 26, 27], x[0][1]
+    )
+    self.assertEqual('▁平成', x[1][0])
+    self.assertEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 3], x[1][1])
+
 
 def suite():
   suite = unittest.TestSuite()

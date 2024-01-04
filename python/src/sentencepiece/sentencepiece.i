@@ -347,6 +347,9 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 %ignore sentencepiece::SentencePieceProcessor::DecodePiecesAsImmutableProto;
 %ignore sentencepiece::SentencePieceProcessor::DecodeIdsAsImmutableProto;
 
+%ignore sentencepiece::SentencePieceProcessor::Normalize;
+%ignore sentencepiece::SentencePieceProcessor::NormalizeWithOffsets;
+
 %ignore sentencepiece::SentencePieceProcessor::model_proto;
 %ignore sentencepiece::SentencePieceProcessor::Load;
 %ignore sentencepiece::SentencePieceProcessor::LoadOrDie;
@@ -648,6 +651,16 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     return proto;
   }
 
+  // Normalize
+  std::string _Normalize(absl::string_view text) {
+    return $self->Normalize(text);
+  }
+
+  std::pair<std::string, std::vector<size_t>> _NormalizeWithOffsets(absl::string_view text) {
+    std::pair<std::string, std::vector<size_t>> result;
+    $self->Normalize(text, &result.first, &result.second).IgnoreError();
+    return result;
+  }
 
   // Calculate Entropy
   float _CalculateEntropy(absl::string_view text, float alpha)  {
@@ -1020,12 +1033,12 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
   def SampleEncodeAndScoreAsSerializedProto(self, input, num_samples=None, alpha=None, **kwargs):
     return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha,
                                      out_type='serialized_proto', **kwargs)
-        
+
 
   def SampleEncodeAndScoreAsImmutableProto(self, input, num_samples=None, alpha=None, **kwargs):
     return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha,
                                      out_type='immutable_proto', **kwargs)
-          
+
 
   def Decode(self, input, out_type=str, num_threads=None):
     """Decode processed id or token sequences.
@@ -1138,6 +1151,17 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
       return self._CalculateEntropyBatch(input, alpha, num_threads)
 
     return self._CalculateEntropy(input, alpha)
+
+
+  def Normalize(self, input, with_offsets=None):
+    def _normalize(text):
+      if with_offsets:
+        return self._NormalizeWithOffsets(text)
+      return self._Normalize(text)
+
+    if type(input) is list:
+      return [_normalize(x) for x in input]
+    return _normalize(input)
 
 
   def piece_size(self):
@@ -1315,7 +1339,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
       def __init__(self, proto):
         self.proto = proto
         self.len = self.proto._pieces_size()
-    
+
       def __len__(self):
         return self.len
 
@@ -1383,7 +1407,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     @property
     def nbests(self):
       return ImmutableNBestSentencePieceText.ImmutableSentencePieceTextIterator(self)
-              
+
     def __eq__(self, other):
       return self.SerializeAsString() == other.SerializeAsString()
 
@@ -1652,6 +1676,15 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     PyObject *obj = SWIG_NewPointerObj(new sentencepiece::ImmutableSentencePieceText($1.at(i)), SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText, SWIG_POINTER_OWN | 0);
     PyList_SET_ITEM($result, i, obj);
   }
+}
+
+%typemap(out) std::pair<std::string, std::vector<size_t>> {
+  PyObject *input_type = resultobj;
+  PyObject *obj = PyList_New($1.second.size());
+  for (size_t i = 0; i < $1.second.size(); ++i) {
+    PyList_SET_ITEM(obj, i, PyInt_FromLong(static_cast<long>($1.second[i])));
+  }
+  $result = PyTuple_Pack(2, MakePyOutputString($1.first, input_type), obj);
 }
 
 %typemap(in) sentencepiece::SentenceIterator * {

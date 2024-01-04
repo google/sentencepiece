@@ -931,6 +931,26 @@ util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
     return value;                                                            \
   }
 
+util::Status SentencePieceProcessor::Normalize(absl::string_view input,
+                                               std::string *normalized) const {
+  std::vector<size_t> norm_to_orig;
+  CHECK_OR_RETURN(normalizer_);
+  return normalizer_->Normalize(input, normalized, &norm_to_orig);
+}
+
+util::Status SentencePieceProcessor::Normalize(
+    absl::string_view input, std::string *normalized,
+    std::vector<size_t> *norm_to_orig) const {
+  CHECK_OR_RETURN(normalizer_);
+  return normalizer_->Normalize(input, normalized, norm_to_orig);
+}
+
+std::string SentencePieceProcessor::Normalize(absl::string_view input) const {
+  std::string normalized;
+  Normalize(input, &normalized).IgnoreError();
+  return normalized;
+}
+
 int SentencePieceProcessor::GetPieceSize() const {
   CHECK_STATUS_OR_RETURN_DEFAULT(0);
   return model_->GetPieceSize();
