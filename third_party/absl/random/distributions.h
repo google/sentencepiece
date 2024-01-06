@@ -21,8 +21,8 @@
 
 namespace absl {
 
-template <typename T>
-T Gaussian(SharedBitGen &generator, T mean, T stddev) {
+template <typename T, typename G>
+T Gaussian(G &generator, T mean, T stddev) {
   std::normal_distribution<> dist(mean, stddev);
   return dist(*generator.engine());
 }

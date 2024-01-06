@@ -15,19 +15,4 @@
 #ifndef ABSL_CONTAINER_RANDOM_H_
 #define ABSL_CONTAINER_RANDOM_H_
 
-#include <random>
-
-#include "../../../src/util.h"
-
-using sentencepiece::random::GetRandomGenerator;
-
-namespace absl {
-
-class SharedBitGen {
- public:
-  std::mt19937 *engine() { return GetRandomGenerator(); }
-};
-
-}  // namespace absl
-
 #endif  // ABSL_CONTAINER_RANDOM_H_
