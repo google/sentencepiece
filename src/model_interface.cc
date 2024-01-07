@@ -17,7 +17,6 @@
 #include <algorithm>
 
 #include "sentencepiece_model.pb.h"
-#include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/str_format.h"
 #include "util.h"
 
@@ -148,7 +147,7 @@ void ModelInterface::InitializePieces() {
     }
   }
 
-  matcher_ = absl::make_unique<normalizer::PrefixMatcher>(user_defined_symbols);
+  matcher_ = std::make_unique<normalizer::PrefixMatcher>(user_defined_symbols);
 }
 
 std::vector<absl::string_view> SplitIntoWords(absl::string_view text,

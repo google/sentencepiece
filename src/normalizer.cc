@@ -18,7 +18,6 @@
 #include <vector>
 
 #include "common.h"
-#include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/match.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/strings/strip.h"
@@ -58,7 +57,7 @@ void Normalizer::Init() {
     if (!status_.ok()) return;
 
     // Reads the body of double array.
-    trie_ = absl::make_unique<Darts::DoubleArray>();
+    trie_ = std::make_unique<Darts::DoubleArray>();
 
     // The second arg of set_array is not the size of blob,
     // but the number of double array units.
@@ -314,7 +313,7 @@ PrefixMatcher::PrefixMatcher(const std::set<absl::string_view> &dic) {
   std::vector<const char *> key;
   key.reserve(dic.size());
   for (const auto &it : dic) key.push_back(it.data());
-  trie_ = absl::make_unique<Darts::DoubleArray>();
+  trie_ = std::make_unique<Darts::DoubleArray>();
   if (trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
                    nullptr) != 0) {
     LOG(ERROR) << "Failed to build the TRIE for PrefixMatcher";

@@ -25,7 +25,6 @@
 #include <vector>
 
 #include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/str_split.h"
 #include "third_party/absl/strings/string_view.h"
 #include "util.h"
@@ -626,7 +625,7 @@ void Model::BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces) {
     value[i] = (*pieces)[i].second;      // vocab_id
   }
 
-  trie_ = absl::make_unique<Darts::DoubleArray>();
+  trie_ = std::make_unique<Darts::DoubleArray>();
   if (trie_->build(key.size(), const_cast<char **>(&key[0]), nullptr,
                    &value[0]) != 0) {
     status_ = util::InternalError("cannot build double-array.");

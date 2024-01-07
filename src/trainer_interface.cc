@@ -29,9 +29,6 @@
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/memory/memory.h"
-#include "third_party/absl/random/distributions.h"
-#include "third_party/absl/random/random.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_format.h"
@@ -107,7 +104,7 @@ class SentenceSelector {
     if (spec_->input_sentence_size() > 0) {
       if (spec_->shuffle_input_sentence()) {
         constexpr size_t kSeed = 12345678;
-        sampler_ = absl::make_unique<Sampler>(
+        sampler_ = std::make_unique<Sampler>(
             sentences, spec_->input_sentence_size(), kSeed);
       } else {
         LOG(INFO)
@@ -303,12 +300,12 @@ bool TrainerInterface::IsValidSentencePiece(
 }
 
 template <typename T>
-void AddDPNoise(const TrainerSpec &trainer_spec,
-                random::SharedBitGen &generator, T *to_update) {
+void AddDPNoise(const TrainerSpec &trainer_spec, std::mt19937 *generator,
+                T *to_update) {
   if (trainer_spec.differential_privacy_noise_level() > 0) {
-    float random_num = absl::Gaussian<float>(
-        generator, 0, trainer_spec.differential_privacy_noise_level());
-
+    std::normal_distribution<float> dist(
+        0.0f, trainer_spec.differential_privacy_noise_level());
+    const float random_num = dist(*generator);
     *to_update =
         std::round(std::max(0.f, random_num + static_cast<float>(*to_update)));
   }
@@ -351,7 +348,7 @@ util::Status TrainerInterface::LoadSentences() {
     LOG(INFO) << "SentenceIterator is not specified. Using "
                  "MultiFileSentenceIterator.";
     sentence_iterator_impl =
-        absl::make_unique<MultiFileSentenceIterator>(std::vector<std::string>(
+        std::make_unique<MultiFileSentenceIterator>(std::vector<std::string>(
             trainer_spec_.input().begin(), trainer_spec_.input().end()));
     sentence_iterator_ = sentence_iterator_impl.get();
   }
@@ -428,7 +425,7 @@ END:
     LOG(INFO) << "Normalizing sentences...";
     CHECK_OR_RETURN(!sentences_.empty());
     {
-      auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
+      auto pool = std::make_unique<ThreadPool>(trainer_spec_.num_threads());
       pool->StartWorkers();
       for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
         pool->Schedule([&, n]() {
@@ -475,12 +472,12 @@ END:
         std::min<uint64>(trainer_spec_.num_threads(), sentences_.size() - 1);
 
     {
-      auto pool = absl::make_unique<ThreadPool>(num_workers);
+      auto pool = std::make_unique<ThreadPool>(num_workers);
       pool->StartWorkers();
       for (int n = 0; n < num_workers; ++n) {
         pool->Schedule([&, n]() {
           // One per thread generator.
-          random::SharedBitGen generator;
+          auto *generator = random::GetRandomGenerator();
           for (size_t i = n; i < sentences_.size(); i += num_workers) {
             AddDPNoise<int64>(trainer_spec_, generator,
                               &(sentences_[i].second));

@@ -30,7 +30,6 @@
 #include "model_interface.h"
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
-#include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_join.h"
@@ -217,7 +216,7 @@ SentencePieceProcessor::SentencePieceProcessor() {}
 SentencePieceProcessor::~SentencePieceProcessor() {}
 
 util::Status SentencePieceProcessor::Load(absl::string_view filename) {
-  auto model_proto = absl::make_unique<ModelProto>();
+  auto model_proto = std::make_unique<ModelProto>();
   RETURN_IF_ERROR(io::LoadModelProto(filename, model_proto.get()));
   return Load(std::move(model_proto));
 }
@@ -227,14 +226,14 @@ void SentencePieceProcessor::LoadOrDie(absl::string_view filename) {
 }
 
 util::Status SentencePieceProcessor::Load(const ModelProto &model_proto) {
-  auto model_proto_copy = absl::make_unique<ModelProto>();
+  auto model_proto_copy = std::make_unique<ModelProto>();
   *model_proto_copy = model_proto;
   return Load(std::move(model_proto_copy));
 }
 
 util::Status SentencePieceProcessor::LoadFromSerializedProto(
     absl::string_view serialized) {
-  auto model_proto = absl::make_unique<ModelProto>();
+  auto model_proto = std::make_unique<ModelProto>();
   CHECK_OR_RETURN(
       model_proto->ParseFromArray(serialized.data(), serialized.size()));
   return Load(std::move(model_proto));
@@ -244,11 +243,11 @@ util::Status SentencePieceProcessor::Load(
     std::unique_ptr<ModelProto> model_proto) {
   model_proto_ = std::move(model_proto);
   model_ = ModelFactory::Create(*model_proto_);
-  normalizer_ = absl::make_unique<normalizer::Normalizer>(
+  normalizer_ = std::make_unique<normalizer::Normalizer>(
       model_proto_->normalizer_spec(), model_proto_->trainer_spec());
   if (model_proto_->has_denormalizer_spec() &&
       !model_proto_->denormalizer_spec().precompiled_charsmap().empty()) {
-    denormalizer_ = absl::make_unique<normalizer::Normalizer>(
+    denormalizer_ = std::make_unique<normalizer::Normalizer>(
         model_proto_->denormalizer_spec());
   }
 

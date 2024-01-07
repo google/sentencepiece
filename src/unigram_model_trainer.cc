@@ -28,7 +28,6 @@
 #include "pretokenizer_for_training.h"
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/str_replace.h"
 #include "third_party/absl/strings/str_split.h"
 #include "third_party/esaxx/esa.hxx"  // Suffix array library.
@@ -283,7 +282,7 @@ std::vector<float> Trainer::RunEStep(const TrainerModel &model, float *obj,
   std::vector<float> objs(trainer_spec_.num_threads(), 0.0);
   std::vector<int64> ntokens(trainer_spec_.num_threads(), 0.0);
 
-  auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
+  auto pool = std::make_unique<ThreadPool>(trainer_spec_.num_threads());
   pool->StartWorkers();
 
   int64 all_sentence_freq = 0;
@@ -405,7 +404,7 @@ TrainerModel::SentencePieces Trainer::PruneSentencePieces(
     std::vector<std::vector<std::vector<int>>> inverteds(
         trainer_spec_.num_threads());
 
-    auto pool = absl::make_unique<ThreadPool>(trainer_spec_.num_threads());
+    auto pool = std::make_unique<ThreadPool>(trainer_spec_.num_threads());
     pool->StartWorkers();
     for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
       freqs[n].resize(sentencepieces.size(), 0.0);

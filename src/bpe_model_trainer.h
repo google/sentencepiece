@@ -17,11 +17,11 @@
 
 #include <cstdint>
 #include <limits>
-#include <set>
 #include <string>
 #include <vector>
 
 #include "sentencepiece_model.pb.h"
+#include "third_party/absl/container/btree_set.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "trainer_interface.h"
 
@@ -51,7 +51,7 @@ class Trainer : public TrainerInterface {
 
     // Position list. Use set so that we can keep the order of occurrence.
     // See EncodePos/DecodePos.
-    std::set<uint64_t> positions;
+    absl::btree_set<uint64_t> positions;
 
     bool IsBigram() const { return left != nullptr && right != nullptr; }
     std::string ToString() const;
@@ -72,8 +72,7 @@ class Trainer : public TrainerInterface {
     CHECK_LE(l, std::numeric_limits<uint16_t>::max());
     CHECK_LE(r, std::numeric_limits<uint16_t>::max());
     const uint64_t n = (static_cast<uint64_t>(sid) << 32) |
-                       (static_cast<uint64_t>(l) << 16) |
-                       r;
+                       (static_cast<uint64_t>(l) << 16) | r;
     return n;
   }
 
@@ -118,7 +117,7 @@ class Trainer : public TrainerInterface {
   absl::flat_hash_map<uint64_t, Symbol *> symbols_cache_;
 
   // Set of symbols from which we find the best symbol in each iteration.
-  std::set<Symbol *> active_symbols_;
+  absl::btree_set<Symbol *> active_symbols_;
 
   // Stores symbols allocated in heap so that we can delete them at onece.
   std::vector<Symbol *> allocated_;

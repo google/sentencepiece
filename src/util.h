@@ -288,11 +288,6 @@ namespace random {
 
 std::mt19937 *GetRandomGenerator();
 
-class SharedBitGen {
- public:
-  std::mt19937 *engine() { return GetRandomGenerator(); }
-};
-
 template <typename T>
 class ReservoirSampler {
  public:

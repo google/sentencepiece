@@ -18,7 +18,6 @@
 #include <iostream>
 #include <memory>
 
-#include "third_party/absl/memory/memory.h"
 #include "util.h"
 
 #if defined(OS_WIN) && defined(UNICODE) && defined(_UNICODE)
@@ -105,12 +104,12 @@ using DefaultWritableFile = PosixWritableFile;
 
 std::unique_ptr<ReadableFile> NewReadableFile(absl::string_view filename,
                                               bool is_binary) {
-  return absl::make_unique<DefaultReadableFile>(filename, is_binary);
+  return std::make_unique<DefaultReadableFile>(filename, is_binary);
 }
 
 std::unique_ptr<WritableFile> NewWritableFile(absl::string_view filename,
                                               bool is_binary) {
-  return absl::make_unique<DefaultWritableFile>(filename, is_binary);
+  return std::make_unique<DefaultWritableFile>(filename, is_binary);
 }
 
 }  // namespace filesystem

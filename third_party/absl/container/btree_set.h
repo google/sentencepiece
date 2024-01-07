@@ -12,20 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#ifndef ABSL_CONTAINER_DISTRIBUTIONS_H_
-#define ABSL_CONTAINER_DISTRIBUTIONS_H_
+#ifndef ABSL_CONTAINER_BTREE_SET_
+#define ABSL_CONTAINER_BTREE_SET_
 
-#include <random>
-
-#include "random.h"
+#include <set>
 
 namespace absl {
 
-template <typename T, typename G>
-T Gaussian(G &generator, T mean, T stddev) {
-  std::normal_distribution<> dist(mean, stddev);
-  return dist(*generator.engine());
-}
-}  // namespace absl
+template <typename T, typename Compare = std::less<T>,
+          typename Allocator = std::allocator<T>>
+using btree_set = std::set<T, Compare, Allocator>;
 
-#endif  // ABSL_CONTAINER_DISTRIBUTIONS_H_
+}
+
+#endif  // ABSL_CONTAINER_BTREE_SET_

@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include "trainer_factory.h"
+
 #include "bpe_model_trainer.h"
 #include "char_model_trainer.h"
-#include "third_party/absl/memory/memory.h"
-#include "trainer_factory.h"
 #include "unigram_model_trainer.h"
 #include "word_model_trainer.h"
 
@@ -27,27 +27,27 @@ std::unique_ptr<TrainerInterface> TrainerFactory::Create(
     const NormalizerSpec &denormalizer_spec) {
   switch (trainer_spec.model_type()) {
     case TrainerSpec::UNIGRAM:
-      return absl::make_unique<unigram::Trainer>(trainer_spec, normalizer_spec,
-                                                 denormalizer_spec);
+      return std::make_unique<unigram::Trainer>(trainer_spec, normalizer_spec,
+                                                denormalizer_spec);
       break;
     case TrainerSpec::BPE:
-      return absl::make_unique<bpe::Trainer>(trainer_spec, normalizer_spec,
-                                             denormalizer_spec);
+      return std::make_unique<bpe::Trainer>(trainer_spec, normalizer_spec,
+                                            denormalizer_spec);
       break;
     case TrainerSpec::WORD:
-      return absl::make_unique<word::Trainer>(trainer_spec, normalizer_spec,
-                                              denormalizer_spec);
+      return std::make_unique<word::Trainer>(trainer_spec, normalizer_spec,
+                                             denormalizer_spec);
       break;
     case TrainerSpec::CHAR:
-      return absl::make_unique<character::Trainer>(
-          trainer_spec, normalizer_spec, denormalizer_spec);
+      return std::make_unique<character::Trainer>(trainer_spec, normalizer_spec,
+                                                  denormalizer_spec);
       break;
     default:
       LOG(FATAL) << "Unknown model_type: " << trainer_spec.model_type();
       break;
   }
 
-  return absl::make_unique<unigram::Trainer>(trainer_spec, normalizer_spec,
-                                             denormalizer_spec);
+  return std::make_unique<unigram::Trainer>(trainer_spec, normalizer_spec,
+                                            denormalizer_spec);
 }
 }  // namespace sentencepiece
