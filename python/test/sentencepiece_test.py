@@ -790,6 +790,64 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual('▁平成', x[1][0])
     self.assertEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 3], x[1][1])
 
+  def test_normalizer(self):
+    sp = spm.SentencePieceNormalizer(
+        model_file=os.path.join('test', 'test_model.model')
+    )
+
+    self.assertEqual('KADOKAWAABC', sp.normalize('ＫＡＤＯＫＡＷＡABC'))
+    self.assertEqual('KADOKAWAABC', sp.Normalize('ＫＡＤＯＫＡＷＡABC'))
+
+    x = sp.Normalize('ＫＡＤＯＫＡＷＡABC', with_offsets=True)
+    self.assertEqual('KADOKAWAABC', x[0])
+    self.assertEqual([0, 3, 6, 9, 12, 15, 18, 21, 24, 25, 26, 27], x[1])
+
+    self.assertEqual(
+        ['KADOKAWAABC', '平成'], sp.normalize(['ＫＡＤＯＫＡＷＡABC', '㍻'])
+    )
+    self.assertEqual(
+        ['KADOKAWAABC', '平成'], sp.Normalize(['ＫＡＤＯＫＡＷＡABC', '㍻'])
+    )
+
+    x = sp.Normalize(['ＫＡＤＯＫＡＷＡABC', '㍻'], with_offsets=True)
+    self.assertEqual(len(x), 2)
+    self.assertEqual('KADOKAWAABC', x[0][0])
+    self.assertEqual([0, 3, 6, 9, 12, 15, 18, 21, 24, 25, 26, 27], x[0][1])
+
+    self.assertEqual('平成', x[1][0])
+    self.assertEqual([0, 0, 0, 0, 0, 0, 3], x[1][1])
+
+    sp = spm.SentencePieceNormalizer(
+        model_file=os.path.join('test', 'test_model.model'),
+        add_dummy_prefix=True,
+        escape_whitespaces=True,
+        remove_extra_whitespaces=False,
+    )
+    self.assertEqual('▁hello▁▁world', sp.normalize('hello  world'))
+
+    sp = spm.SentencePieceNormalizer(
+        model_file=os.path.join('test', 'test_model.model'),
+        add_dummy_prefix=True,
+        escape_whitespaces=True,
+        remove_extra_whitespaces=True,
+    )
+    self.assertEqual('▁hello▁world', sp.normalize('  hello  world  '))
+
+    sp = spm.SentencePieceNormalizer(
+        model_file=os.path.join('test', 'test_model.model'),
+        add_dummy_prefix=False,
+        escape_whitespaces=False,
+        remove_extra_whitespaces=True,
+    )
+    self.assertEqual('hello world', sp.normalize('  hello  world  '))
+
+  def test_normalizer_rule(self):
+    sp = spm.SentencePieceNormalizer(rule_name='identity')
+    self.assertEqual('ＡＢＣ', sp.Normalize('ＡＢＣ'))
+
+    sp = spm.SentencePieceNormalizer(rule_name='nfkc_cf')
+    self.assertEqual('abc', sp.Normalize('ＡＢＣ'))
+
 
 def suite():
   suite = unittest.TestSuite()

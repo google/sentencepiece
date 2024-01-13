@@ -364,5 +364,94 @@ TEST(SentencePieceTrainerTest, PopulateModelTypeFromStringTest) {
       SentencePieceTrainer::PopulateModelTypeFromString("", &spec).ok());
 }
 
+TEST(SentencePieceTrainerTest, NormalizationTest) {
+  const auto model_prefix =
+      util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "m");
+  const auto model_file = absl::StrCat(model_prefix, ".model");
+
+  TrainerSpec trainer_spec;
+  trainer_spec.add_input(
+      util::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kTestData));
+  trainer_spec.set_model_prefix(model_prefix);
+  trainer_spec.set_vocab_size(1000);
+  ASSERT_TRUE(SentencePieceTrainer::Train(trainer_spec).ok());
+
+  {
+    SentencePieceProcessor sp;
+    EXPECT_OK(sp.Load(model_file));
+    EXPECT_EQ(sp.Normalize("ＫＡＤＯＫＡＷＡ   ABC "), "▁KADOKAWA▁ABC");
+
+    std::string normalized;
+    std::vector<size_t> offsets;
+
+    EXPECT_OK(sp.Normalize("ＫＡＤＯＫＡＷＡ   ABC ", &normalized, &offsets));
+    EXPECT_EQ(normalized, "▁KADOKAWA▁ABC");
+    EXPECT_EQ(offsets, std::vector<size_t>({0, 0, 0, 0, 3, 6, 9, 12, 15, 18, 21,
+                                            24, 24, 24, 27, 28, 29, 30}));
+  }
+
+  {
+    SentencePieceNormalizer sp;
+    EXPECT_OK(sp.Load(model_file));
+    EXPECT_EQ(sp.Normalize("ＫＡＤＯＫＡＷＡ   ABC "), "▁KADOKAWA▁ABC");
+
+    std::string normalized;
+    std::vector<size_t> offsets;
+
+    EXPECT_OK(sp.Normalize("ＫＡＤＯＫＡＷＡ   ABC ", &normalized, &offsets));
+    EXPECT_EQ(normalized, "▁KADOKAWA▁ABC");
+    EXPECT_EQ(offsets, std::vector<size_t>({0, 0, 0, 0, 3, 6, 9, 12, 15, 18, 21,
+                                            24, 24, 24, 27, 28, 29, 30}));
+  }
+
+  auto set_normalization_only = [](SentencePieceNormalizer *normalizer) {
+    SentencePieceTrainer::SetProtoField("add_dummy_prefix", "false",
+                                        normalizer->mutable_normalizer_spec());
+    SentencePieceTrainer::SetProtoField("escape_whitespaces", "false",
+                                        normalizer->mutable_normalizer_spec());
+    SentencePieceTrainer::SetProtoField("remove_extra_whitespaces", "false",
+                                        normalizer->mutable_normalizer_spec());
+  };
+
+  {
+    SentencePieceNormalizer sp;
+    EXPECT_OK(sp.Load(model_file));
+    set_normalization_only(&sp);
+    EXPECT_EQ(sp.Normalize("ＫＡＤＯＫＡＷＡ   ABC "), "KADOKAWA   ABC ");
+  }
+
+  {
+    SentencePieceNormalizer sp;
+    EXPECT_OK(sp.LoadFromRuleTSV(
+        util::JoinPath(absl::GetFlag(FLAGS_test_srcdir), "nfkc_cf.tsv")));
+    set_normalization_only(&sp);
+    EXPECT_EQ(sp.Normalize("ABCD"), "abcd");
+  }
+
+  {
+    SentencePieceNormalizer sp;
+    EXPECT_FALSE(sp.LoadFromRuleTSV("__unknown__").ok());
+  }
+
+  {
+    SentencePieceNormalizer sp;
+    EXPECT_OK(sp.LoadFromRuleName("nfkc_cf"));
+    set_normalization_only(&sp);
+    EXPECT_EQ(sp.Normalize("ABCD"), "abcd");
+  }
+
+  {
+    SentencePieceNormalizer sp;
+    EXPECT_OK(sp.LoadFromRuleName("identity"));
+    set_normalization_only(&sp);
+    EXPECT_EQ(sp.Normalize("ＡＢＣＤ"), "ＡＢＣＤ");
+  }
+
+  {
+    SentencePieceNormalizer sp;
+    EXPECT_FALSE(sp.LoadFromRuleName("__unknown__").ok());
+  }
+}
+
 }  // namespace
 }  // namespace sentencepiece

@@ -2987,16 +2987,17 @@ SWIG_Python_NonDynamicSetAttr(PyObject *obj, PyObject *name, PyObject *value) {
 #define SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText swig_types[3]
 #define SWIGTYPE_p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece swig_types[4]
 #define SWIGTYPE_p_sentencepiece__SentenceIterator swig_types[5]
-#define SWIGTYPE_p_sentencepiece__SentencePieceProcessor swig_types[6]
-#define SWIGTYPE_p_sentencepiece__SentencePieceTrainer swig_types[7]
-#define SWIGTYPE_p_std__string swig_types[8]
-#define SWIGTYPE_p_std__unordered_mapT_std__string_std__string_t swig_types[9]
-#define SWIGTYPE_p_std__vectorT_absl__string_view_t swig_types[10]
-#define SWIGTYPE_p_std__vectorT_int_t swig_types[11]
-#define SWIGTYPE_p_std__vectorT_std__vectorT_absl__string_view_t_t swig_types[12]
-#define SWIGTYPE_p_std__vectorT_std__vectorT_int_t_t swig_types[13]
-static swig_type_info *swig_types[15];
-static swig_module_info swig_module = {swig_types, 14, 0, 0, 0, 0};
+#define SWIGTYPE_p_sentencepiece__SentencePieceNormalizer swig_types[6]
+#define SWIGTYPE_p_sentencepiece__SentencePieceProcessor swig_types[7]
+#define SWIGTYPE_p_sentencepiece__SentencePieceTrainer swig_types[8]
+#define SWIGTYPE_p_std__string swig_types[9]
+#define SWIGTYPE_p_std__unordered_mapT_std__string_std__string_t swig_types[10]
+#define SWIGTYPE_p_std__vectorT_absl__string_view_t swig_types[11]
+#define SWIGTYPE_p_std__vectorT_int_t swig_types[12]
+#define SWIGTYPE_p_std__vectorT_std__vectorT_absl__string_view_t_t swig_types[13]
+#define SWIGTYPE_p_std__vectorT_std__vectorT_int_t_t swig_types[14]
+static swig_type_info *swig_types[16];
+static swig_module_info swig_module = {swig_types, 15, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -4122,6 +4123,27 @@ SWIGINTERN sentencepiece::util::bytes sentencepiece_SentencePieceTrainer__TrainF
     const auto _status = sentencepiece::SentencePieceTrainer::Train(args, iter, &model_proto);
     if (!_status.ok()) throw _status;
     return model_proto;
+  }
+SWIGINTERN sentencepiece::util::Status sentencepiece_SentencePieceNormalizer_LoadFromFile(sentencepiece::SentencePieceNormalizer *self,absl::string_view arg){
+    return self->Load(arg);
+  }
+SWIGINTERN std::string sentencepiece_SentencePieceNormalizer__Normalize(sentencepiece::SentencePieceNormalizer *self,absl::string_view text){
+    std::string result;
+    const auto _status = self->Normalize(text, &result);
+    if (!_status.ok()) throw _status;
+    return result;
+  }
+SWIGINTERN std::pair< std::string,std::vector< size_t > > sentencepiece_SentencePieceNormalizer__NormalizeWithOffsets(sentencepiece::SentencePieceNormalizer *self,absl::string_view text){
+    std::pair<std::string, std::vector<size_t>> result;
+    const auto _status = self->Normalize(text, &result.first, &result.second);
+    if (!_status.ok()) throw _status;
+    return result;
+  }
+SWIGINTERN void sentencepiece_SentencePieceNormalizer__SetProtoField(sentencepiece::SentencePieceNormalizer *self,absl::string_view name,bool value){
+    sentencepiece::SentencePieceTrainer::SetProtoField(
+        name,
+        value ? "1" : "0",
+        self->mutable_normalizer_spec()).IgnoreError();
   }
 #ifdef __cplusplus
 extern "C" {
@@ -8846,6 +8868,419 @@ SWIGINTERN PyObject *SentencePieceTrainer_swigregister(PyObject *SWIGUNUSEDPARM(
   return SWIG_Py_Void();
 }
 
+SWIGINTERN PyObject *_wrap_new_SentencePieceNormalizer(PyObject *self, PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceNormalizer *result = 0 ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "new_SentencePieceNormalizer", 0, 0, 0)) SWIG_fail;
+  {
+    try {
+      result = (sentencepiece::SentencePieceNormalizer *)new sentencepiece::SentencePieceNormalizer();
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_sentencepiece__SentencePieceNormalizer, SWIG_POINTER_NEW |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_delete_SentencePieceNormalizer(PyObject *self, PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceNormalizer *arg1 = (sentencepiece::SentencePieceNormalizer *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceNormalizer, SWIG_POINTER_DISOWN |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_SentencePieceNormalizer" "', argument " "1"" of type '" "sentencepiece::SentencePieceNormalizer *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceNormalizer * >(argp1);
+  {
+    try {
+      delete arg1;
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceNormalizer_LoadFromSerializedProto(PyObject *self, PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceNormalizer *arg1 = (sentencepiece::SentencePieceNormalizer *) 0 ;
+  absl::string_view arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[2] ;
+  sentencepiece::util::Status result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "SentencePieceNormalizer_LoadFromSerializedProto", 2, 2, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceNormalizer, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceNormalizer_LoadFromSerializedProto" "', argument " "1"" of type '" "sentencepiece::SentencePieceNormalizer *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceNormalizer * >(argp1);
+  {
+    const PyInputString ustring(swig_obj[1]);
+    if (!ustring.IsAvalable()) {
+      PyErr_SetString(PyExc_TypeError, "not a string");
+      SWIG_fail;
+    }
+    resultobj = ustring.input_type();
+    arg2 = ustring.str();
+  }
+  {
+    try {
+      result = (arg1)->LoadFromSerializedProto(arg2);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    if (!(&result)->ok()) {
+      SWIG_exception(ToSwigError((&result)->code()), (&result)->ToString().c_str());
+    }
+    resultobj = SWIG_From_bool((&result)->ok());
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceNormalizer_LoadFromRuleTSV(PyObject *self, PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceNormalizer *arg1 = (sentencepiece::SentencePieceNormalizer *) 0 ;
+  absl::string_view arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[2] ;
+  sentencepiece::util::Status result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "SentencePieceNormalizer_LoadFromRuleTSV", 2, 2, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceNormalizer, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceNormalizer_LoadFromRuleTSV" "', argument " "1"" of type '" "sentencepiece::SentencePieceNormalizer *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceNormalizer * >(argp1);
+  {
+    const PyInputString ustring(swig_obj[1]);
+    if (!ustring.IsAvalable()) {
+      PyErr_SetString(PyExc_TypeError, "not a string");
+      SWIG_fail;
+    }
+    resultobj = ustring.input_type();
+    arg2 = ustring.str();
+  }
+  {
+    try {
+      result = (arg1)->LoadFromRuleTSV(arg2);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    if (!(&result)->ok()) {
+      SWIG_exception(ToSwigError((&result)->code()), (&result)->ToString().c_str());
+    }
+    resultobj = SWIG_From_bool((&result)->ok());
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceNormalizer_LoadFromRuleName(PyObject *self, PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceNormalizer *arg1 = (sentencepiece::SentencePieceNormalizer *) 0 ;
+  absl::string_view arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[2] ;
+  sentencepiece::util::Status result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "SentencePieceNormalizer_LoadFromRuleName", 2, 2, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceNormalizer, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceNormalizer_LoadFromRuleName" "', argument " "1"" of type '" "sentencepiece::SentencePieceNormalizer *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceNormalizer * >(argp1);
+  {
+    const PyInputString ustring(swig_obj[1]);
+    if (!ustring.IsAvalable()) {
+      PyErr_SetString(PyExc_TypeError, "not a string");
+      SWIG_fail;
+    }
+    resultobj = ustring.input_type();
+    arg2 = ustring.str();
+  }
+  {
+    try {
+      result = (arg1)->LoadFromRuleName(arg2);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    if (!(&result)->ok()) {
+      SWIG_exception(ToSwigError((&result)->code()), (&result)->ToString().c_str());
+    }
+    resultobj = SWIG_From_bool((&result)->ok());
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceNormalizer_serialized_model_proto(PyObject *self, PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceNormalizer *arg1 = (sentencepiece::SentencePieceNormalizer *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  std::string result;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceNormalizer, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceNormalizer_serialized_model_proto" "', argument " "1"" of type '" "sentencepiece::SentencePieceNormalizer const *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceNormalizer * >(argp1);
+  {
+    try {
+      result = ((sentencepiece::SentencePieceNormalizer const *)arg1)->serialized_model_proto();
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    PyObject *input_type = resultobj;
+    resultobj = MakePyOutputString(result, input_type);
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceNormalizer_LoadFromFile(PyObject *self, PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceNormalizer *arg1 = (sentencepiece::SentencePieceNormalizer *) 0 ;
+  absl::string_view arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[2] ;
+  sentencepiece::util::Status result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "SentencePieceNormalizer_LoadFromFile", 2, 2, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceNormalizer, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceNormalizer_LoadFromFile" "', argument " "1"" of type '" "sentencepiece::SentencePieceNormalizer *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceNormalizer * >(argp1);
+  {
+    const PyInputString ustring(swig_obj[1]);
+    if (!ustring.IsAvalable()) {
+      PyErr_SetString(PyExc_TypeError, "not a string");
+      SWIG_fail;
+    }
+    resultobj = ustring.input_type();
+    arg2 = ustring.str();
+  }
+  {
+    try {
+      result = sentencepiece_SentencePieceNormalizer_LoadFromFile(arg1,SWIG_STD_MOVE(arg2));
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    if (!(&result)->ok()) {
+      SWIG_exception(ToSwigError((&result)->code()), (&result)->ToString().c_str());
+    }
+    resultobj = SWIG_From_bool((&result)->ok());
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceNormalizer__Normalize(PyObject *self, PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceNormalizer *arg1 = (sentencepiece::SentencePieceNormalizer *) 0 ;
+  absl::string_view arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[2] ;
+  std::string result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "SentencePieceNormalizer__Normalize", 2, 2, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceNormalizer, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceNormalizer__Normalize" "', argument " "1"" of type '" "sentencepiece::SentencePieceNormalizer *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceNormalizer * >(argp1);
+  {
+    const PyInputString ustring(swig_obj[1]);
+    if (!ustring.IsAvalable()) {
+      PyErr_SetString(PyExc_TypeError, "not a string");
+      SWIG_fail;
+    }
+    resultobj = ustring.input_type();
+    arg2 = ustring.str();
+  }
+  {
+    try {
+      result = sentencepiece_SentencePieceNormalizer__Normalize(arg1,SWIG_STD_MOVE(arg2));
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    PyObject *input_type = resultobj;
+    resultobj = MakePyOutputString(result, input_type);
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceNormalizer__NormalizeWithOffsets(PyObject *self, PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceNormalizer *arg1 = (sentencepiece::SentencePieceNormalizer *) 0 ;
+  absl::string_view arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[2] ;
+  std::pair< std::string,std::vector< size_t > > result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "SentencePieceNormalizer__NormalizeWithOffsets", 2, 2, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceNormalizer, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceNormalizer__NormalizeWithOffsets" "', argument " "1"" of type '" "sentencepiece::SentencePieceNormalizer *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceNormalizer * >(argp1);
+  {
+    const PyInputString ustring(swig_obj[1]);
+    if (!ustring.IsAvalable()) {
+      PyErr_SetString(PyExc_TypeError, "not a string");
+      SWIG_fail;
+    }
+    resultobj = ustring.input_type();
+    arg2 = ustring.str();
+  }
+  {
+    try {
+      result = sentencepiece_SentencePieceNormalizer__NormalizeWithOffsets(arg1,SWIG_STD_MOVE(arg2));
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    PyObject *input_type = resultobj;
+    PyObject *obj = PyList_New((&result)->second.size());
+    for (size_t i = 0; i < (&result)->second.size(); ++i) {
+      PyList_SET_ITEM(obj, i, PyInt_FromLong(static_cast<long>((&result)->second[i])));
+    }
+    resultobj = PyTuple_Pack(2, MakePyOutputString((&result)->first, input_type), obj);
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_SentencePieceNormalizer__SetProtoField(PyObject *self, PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceNormalizer *arg1 = (sentencepiece::SentencePieceNormalizer *) 0 ;
+  absl::string_view arg2 ;
+  bool arg3 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  bool val3 ;
+  int ecode3 = 0 ;
+  PyObject *swig_obj[3] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "SentencePieceNormalizer__SetProtoField", 3, 3, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceNormalizer, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceNormalizer__SetProtoField" "', argument " "1"" of type '" "sentencepiece::SentencePieceNormalizer *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceNormalizer * >(argp1);
+  {
+    const PyInputString ustring(swig_obj[1]);
+    if (!ustring.IsAvalable()) {
+      PyErr_SetString(PyExc_TypeError, "not a string");
+      SWIG_fail;
+    }
+    resultobj = ustring.input_type();
+    arg2 = ustring.str();
+  }
+  ecode3 = SWIG_AsVal_bool(swig_obj[2], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "SentencePieceNormalizer__SetProtoField" "', argument " "3"" of type '" "bool""'");
+  } 
+  arg3 = static_cast< bool >(val3);
+  {
+    try {
+      sentencepiece_SentencePieceNormalizer__SetProtoField(arg1,SWIG_STD_MOVE(arg2),arg3);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *SentencePieceNormalizer_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *obj;
+  if (!SWIG_Python_UnpackTuple(args, "swigregister", 1, 1, &obj)) return NULL;
+  SWIG_TypeNewClientData(SWIGTYPE_p_sentencepiece__SentencePieceNormalizer, SWIG_NewClientData(obj));
+  return SWIG_Py_Void();
+}
+
+SWIGINTERN PyObject *SentencePieceNormalizer_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  return SWIG_Python_InitShadowInstance(args);
+}
+
 static PyMethodDef SwigMethods[] = {
 	 { "new_ImmutableSentencePieceText_ImmutableSentencePiece", _wrap_new_ImmutableSentencePieceText_ImmutableSentencePiece, METH_NOARGS, NULL},
 	 { "delete_ImmutableSentencePieceText_ImmutableSentencePiece", _wrap_delete_ImmutableSentencePieceText_ImmutableSentencePiece, METH_O, NULL},
@@ -8937,6 +9372,18 @@ static PyMethodDef SwigMethods[] = {
 	 { "SentencePieceTrainer__TrainFromMap3", _wrap_SentencePieceTrainer__TrainFromMap3, METH_O, NULL},
 	 { "SentencePieceTrainer__TrainFromMap4", _wrap_SentencePieceTrainer__TrainFromMap4, METH_VARARGS, NULL},
 	 { "SentencePieceTrainer_swigregister", SentencePieceTrainer_swigregister, METH_O, NULL},
+	 { "new_SentencePieceNormalizer", _wrap_new_SentencePieceNormalizer, METH_NOARGS, NULL},
+	 { "delete_SentencePieceNormalizer", _wrap_delete_SentencePieceNormalizer, METH_O, NULL},
+	 { "SentencePieceNormalizer_LoadFromSerializedProto", _wrap_SentencePieceNormalizer_LoadFromSerializedProto, METH_VARARGS, NULL},
+	 { "SentencePieceNormalizer_LoadFromRuleTSV", _wrap_SentencePieceNormalizer_LoadFromRuleTSV, METH_VARARGS, NULL},
+	 { "SentencePieceNormalizer_LoadFromRuleName", _wrap_SentencePieceNormalizer_LoadFromRuleName, METH_VARARGS, NULL},
+	 { "SentencePieceNormalizer_serialized_model_proto", _wrap_SentencePieceNormalizer_serialized_model_proto, METH_O, NULL},
+	 { "SentencePieceNormalizer_LoadFromFile", _wrap_SentencePieceNormalizer_LoadFromFile, METH_VARARGS, NULL},
+	 { "SentencePieceNormalizer__Normalize", _wrap_SentencePieceNormalizer__Normalize, METH_VARARGS, NULL},
+	 { "SentencePieceNormalizer__NormalizeWithOffsets", _wrap_SentencePieceNormalizer__NormalizeWithOffsets, METH_VARARGS, NULL},
+	 { "SentencePieceNormalizer__SetProtoField", _wrap_SentencePieceNormalizer__SetProtoField, METH_VARARGS, NULL},
+	 { "SentencePieceNormalizer_swigregister", SentencePieceNormalizer_swigregister, METH_O, NULL},
+	 { "SentencePieceNormalizer_swiginit", SentencePieceNormalizer_swiginit, METH_VARARGS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 
@@ -8949,6 +9396,7 @@ static swig_type_info _swigt__p_sentencepiece__ImmutableNBestSentencePieceText =
 static swig_type_info _swigt__p_sentencepiece__ImmutableSentencePieceText = {"_p_sentencepiece__ImmutableSentencePieceText", "sentencepiece::ImmutableSentencePieceText *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece = {"_p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece", "sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_sentencepiece__SentenceIterator = {"_p_sentencepiece__SentenceIterator", "sentencepiece::SentenceIterator *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_sentencepiece__SentencePieceNormalizer = {"_p_sentencepiece__SentencePieceNormalizer", "sentencepiece::SentencePieceNormalizer *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_sentencepiece__SentencePieceProcessor = {"_p_sentencepiece__SentencePieceProcessor", "sentencepiece::SentencePieceProcessor *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_sentencepiece__SentencePieceTrainer = {"_p_sentencepiece__SentencePieceTrainer", "sentencepiece::SentencePieceTrainer *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__string = {"_p_std__string", "sentencepiece::util::bytes *|std::string *", 0, 0, (void*)0, 0};
@@ -8965,6 +9413,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_sentencepiece__ImmutableSentencePieceText,
   &_swigt__p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece,
   &_swigt__p_sentencepiece__SentenceIterator,
+  &_swigt__p_sentencepiece__SentencePieceNormalizer,
   &_swigt__p_sentencepiece__SentencePieceProcessor,
   &_swigt__p_sentencepiece__SentencePieceTrainer,
   &_swigt__p_std__string,
@@ -8981,6 +9430,7 @@ static swig_cast_info _swigc__p_sentencepiece__ImmutableNBestSentencePieceText[]
 static swig_cast_info _swigc__p_sentencepiece__ImmutableSentencePieceText[] = {  {&_swigt__p_sentencepiece__ImmutableSentencePieceText, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece[] = {  {&_swigt__p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_sentencepiece__SentenceIterator[] = {  {&_swigt__p_sentencepiece__SentenceIterator, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_sentencepiece__SentencePieceNormalizer[] = {  {&_swigt__p_sentencepiece__SentencePieceNormalizer, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_sentencepiece__SentencePieceProcessor[] = {  {&_swigt__p_sentencepiece__SentencePieceProcessor, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_sentencepiece__SentencePieceTrainer[] = {  {&_swigt__p_sentencepiece__SentencePieceTrainer, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__string[] = {  {&_swigt__p_std__string, 0, 0, 0},{0, 0, 0, 0}};
@@ -8997,6 +9447,7 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_sentencepiece__ImmutableSentencePieceText,
   _swigc__p_sentencepiece__ImmutableSentencePieceText_ImmutableSentencePiece,
   _swigc__p_sentencepiece__SentenceIterator,
+  _swigc__p_sentencepiece__SentencePieceNormalizer,
   _swigc__p_sentencepiece__SentencePieceProcessor,
   _swigc__p_sentencepiece__SentencePieceTrainer,
   _swigc__p_std__string,

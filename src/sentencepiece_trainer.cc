@@ -295,4 +295,75 @@ SentencePieceTrainer::GetPretokenizerForTraining() {
   return g_pretokenizer;
 }
 
+SentencePieceNormalizer::SentencePieceNormalizer() {}
+SentencePieceNormalizer::~SentencePieceNormalizer() {}
+
+util::Status SentencePieceNormalizer::Load(
+    std::unique_ptr<ModelProto> model_proto) {
+  model_proto_ = std::move(model_proto);
+  normalizer_ =
+      std::make_unique<normalizer::Normalizer>(model_proto_->normalizer_spec());
+  CHECK_OR_RETURN(normalizer_);
+  return normalizer_->status();
+}
+
+util::Status SentencePieceNormalizer::Load(absl::string_view filename) {
+  auto model_proto = std::make_unique<ModelProto>();
+  RETURN_IF_ERROR(io::LoadModelProto(filename, model_proto.get()));
+  return Load(std::move(model_proto));
+}
+
+util::Status SentencePieceNormalizer::LoadFromSerializedProto(
+    absl::string_view serialized) {
+  auto model_proto = std::make_unique<ModelProto>();
+  CHECK_OR_RETURN(
+      model_proto->ParseFromArray(serialized.data(), serialized.size()));
+  return Load(std::move(model_proto));
+}
+
+util::Status SentencePieceNormalizer::LoadFromRuleTSV(
+    absl::string_view filename) {
+  auto model_proto = std::make_unique<ModelProto>();
+  auto *spec = model_proto->mutable_normalizer_spec();
+  spec->set_normalization_rule_tsv(std::string(filename));
+  RETURN_IF_ERROR(SentencePieceTrainer::PopulateNormalizerSpec(spec));
+  return Load(std::move(model_proto));
+}
+
+util::Status SentencePieceNormalizer::LoadFromRuleName(absl::string_view name) {
+  auto model_proto = std::make_unique<ModelProto>();
+  auto *spec = model_proto->mutable_normalizer_spec();
+  spec->set_name(std::string(name));
+  RETURN_IF_ERROR(SentencePieceTrainer::PopulateNormalizerSpec(spec));
+  return Load(std::move(model_proto));
+}
+
+util::Status SentencePieceNormalizer::Normalize(absl::string_view input,
+                                                std::string *normalized) const {
+  CHECK_OR_RETURN(normalizer_);
+  std::vector<size_t> norm_to_orig;
+  return normalizer_->Normalize(input, normalized, &norm_to_orig);
+}
+
+util::Status SentencePieceNormalizer::Normalize(
+    absl::string_view input, std::string *normalized,
+    std::vector<size_t> *norm_to_orig) const {
+  CHECK_OR_RETURN(normalizer_);
+  return normalizer_->Normalize(input, normalized, norm_to_orig);
+}
+
+std::string SentencePieceNormalizer::Normalize(absl::string_view input) const {
+  std::string normalized;
+  Normalize(input, &normalized).IgnoreError();
+  return normalized;
+}
+
+NormalizerSpec *SentencePieceNormalizer::mutable_normalizer_spec() const {
+  return model_proto_ ? model_proto_->mutable_normalizer_spec() : nullptr;
+}
+
+std::string SentencePieceNormalizer::serialized_model_proto() const {
+  return model_proto_ ? model_proto_->SerializeAsString() : "";
+}
+
 }  // namespace sentencepiece

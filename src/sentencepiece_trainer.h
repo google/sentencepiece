@@ -17,6 +17,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "sentencepiece_processor.h"
 
@@ -24,10 +25,15 @@ namespace sentencepiece {
 
 class TrainerSpec;
 class NormalizerSpec;
+class ModelProto;
 
 namespace pretokenizer {
 class PretokenizerForTrainingInterface;
 }  // namespace pretokenizer
+
+namespace normalizer {
+class Normalizer;
+}  // namespace normalizer
 
 // Iterator over the training sentences.
 // Training sentences are loaded sequentially as follows:
@@ -156,6 +162,39 @@ class SentencePieceTrainer {
  private:
   SentencePieceTrainer() {}
   ~SentencePieceTrainer() {}
+};
+
+class SentencePieceNormalizer {
+ public:
+  SentencePieceNormalizer();
+  virtual ~SentencePieceNormalizer();
+
+  virtual util::Status Load(std::unique_ptr<ModelProto> model_proto);
+
+  virtual util::Status Load(absl::string_view filename);
+
+  virtual util::Status LoadFromSerializedProto(absl::string_view serialized);
+
+  virtual util::Status LoadFromRuleTSV(absl::string_view filename);
+
+  virtual util::Status LoadFromRuleName(absl::string_view name);
+
+  virtual util::Status Normalize(absl::string_view input,
+                                 std::string *normalized) const;
+
+  virtual util::Status Normalize(absl::string_view input,
+                                 std::string *normalized,
+                                 std::vector<size_t> *norm_to_orig) const;
+
+  virtual std::string Normalize(absl::string_view input) const;
+
+  virtual NormalizerSpec *mutable_normalizer_spec() const;
+
+  virtual std::string serialized_model_proto() const;
+
+ private:
+  std::unique_ptr<normalizer::Normalizer> normalizer_;
+  std::unique_ptr<ModelProto> model_proto_;
 };
 
 }  // namespace sentencepiece
