@@ -45,6 +45,8 @@ jobs:
     - name: Config for Unix
       if: runner.os != 'Windows'
       run: cmake -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
+      env:
+        CMAKE_OSX_ARCHITECTURES: arm64;x86_64
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
