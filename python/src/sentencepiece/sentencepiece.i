@@ -351,6 +351,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 %ignore sentencepiece::SentencePieceProcessor::NormalizeWithOffsets;
 
 %ignore sentencepiece::SentencePieceProcessor::model_proto;
+%ignore sentencepiece::SentencePieceProcessor::mutable_normalizer_spec;
 %ignore sentencepiece::SentencePieceProcessor::Load;
 %ignore sentencepiece::SentencePieceProcessor::LoadOrDie;
 %ignore sentencepiece::SentencePieceProcessor::SetModel;
@@ -688,6 +689,19 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
       }
     }
     return outs;
+  }
+
+  // override normalizer_spec
+  sentencepiece::util::Status _OverrideNormalizerSpec(
+      const std::unordered_map<std::string, std::string> &args) {
+    sentencepiece::util::Status status;
+    for (const auto &[key, value] : args) {
+      status = sentencepiece::SentencePieceTrainer::SetProtoField(
+          key, value,
+          $self->mutable_normalizer_spec());
+      if (!status.ok()) return status;
+    }
+    return status;
   }
 
 %pythoncode {
@@ -1166,6 +1180,12 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     if type(input) is list:
       return [_normalize(x) for x in input]
     return _normalize(input)
+
+  def OverrideNormalizerSpec(self, **kwargs):
+    new_kwargs = {}
+    for key, value in kwargs.items():
+      new_kwargs[key] = str(value)
+    return self._OverrideNormalizerSpec(new_kwargs)
 
 
   def piece_size(self):

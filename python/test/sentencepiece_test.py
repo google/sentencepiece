@@ -848,6 +848,23 @@ class TestSentencepieceProcessor(unittest.TestCase):
     sp = spm.SentencePieceNormalizer(rule_name='nfkc_cf')
     self.assertEqual('abc', sp.Normalize('ＡＢＣ'))
 
+  def test_override_normalize_spec(self):
+    sp = spm.SentencePieceProcessor(
+        model_file=os.path.join('test', 'test_model.model')
+    )
+
+    self.assertEqual(
+        sp.EncodeAsPieces(' hello  world '), ['▁he', 'll', 'o', '▁world']
+    )
+
+    sp.override_normalizer_spec(add_dummy_prefix=False)
+    sp.override_normalizer_spec(remove_extra_whitespaces=False)
+    sp.override_normalizer_spec(escape_whitespaces=False)
+    self.assertEqual(
+        sp.EncodeAsPieces(' hello  world '),
+        [' ', 'he', 'll', 'o', '  ', 'w', 'or', 'l', 'd', ' '],
+    )
+
 
 def suite():
   suite = unittest.TestSuite()

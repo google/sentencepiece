@@ -4033,6 +4033,16 @@ SWIGINTERN std::vector< float > sentencepiece_SentencePieceProcessor__CalculateE
     }
     return outs;
   }
+SWIGINTERN sentencepiece::util::Status sentencepiece_SentencePieceProcessor__OverrideNormalizerSpec(sentencepiece::SentencePieceProcessor *self,std::unordered_map< std::string,std::string > const &args){
+    sentencepiece::util::Status status;
+    for (const auto &[key, value] : args) {
+      status = sentencepiece::SentencePieceTrainer::SetProtoField(
+          key, value,
+          self->mutable_normalizer_spec());
+      if (!status.ok()) return status;
+    }
+    return status;
+  }
 
 SWIGINTERN int
 SWIG_AsVal_unsigned_SS_long (PyObject *obj, unsigned long *val) 
@@ -8508,6 +8518,72 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_SentencePieceProcessor__OverrideNormalizerSpec(PyObject *self, PyObject *args) {
+  PyObject *resultobj = 0;
+  sentencepiece::SentencePieceProcessor *arg1 = (sentencepiece::SentencePieceProcessor *) 0 ;
+  std::unordered_map< std::string,std::string > *arg2 = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[2] ;
+  sentencepiece::util::Status result;
+  
+  if (!SWIG_Python_UnpackTuple(args, "SentencePieceProcessor__OverrideNormalizerSpec", 2, 2, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_sentencepiece__SentencePieceProcessor, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "SentencePieceProcessor__OverrideNormalizerSpec" "', argument " "1"" of type '" "sentencepiece::SentencePieceProcessor *""'"); 
+  }
+  arg1 = reinterpret_cast< sentencepiece::SentencePieceProcessor * >(argp1);
+  {
+    std::unordered_map<std::string, std::string> *out = nullptr;
+    if (PyDict_Check(swig_obj[1])) {
+      PyObject *key, *value;
+      Py_ssize_t pos = 0;
+      out = new std::unordered_map<std::string, std::string>;
+      while (PyDict_Next(swig_obj[1], &pos, &key, &value)) {
+        const PyInputString key_ustring(key);
+        const PyInputString value_ustring(value);
+        if (key_ustring.IsAvalable() && value_ustring.IsAvalable()) {
+          out->emplace(std::string(key_ustring.data(), key_ustring.size()),
+            std::string(value_ustring.data(), value_ustring.size()));
+        } else {
+          PyErr_SetString(PyExc_TypeError, "map must contain strings.");
+          SWIG_fail;
+        }
+        resultobj = key_ustring.input_type();
+      }
+    } else {
+      PyErr_SetString(PyExc_TypeError, "not a dictionary");
+      SWIG_fail;
+    }
+    arg2 = out;
+  }
+  {
+    try {
+      result = sentencepiece_SentencePieceProcessor__OverrideNormalizerSpec(arg1,(std::unordered_map< std::string,std::string > const &)*arg2);
+      ReleaseResultObject(resultobj);
+    }
+    catch (const sentencepiece::util::Status &status) {
+      SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
+    }
+  }
+  {
+    if (!(&result)->ok()) {
+      SWIG_exception(ToSwigError((&result)->code()), (&result)->ToString().c_str());
+    }
+    resultobj = SWIG_From_bool((&result)->ok());
+  }
+  {
+    delete arg2;
+  }
+  return resultobj;
+fail:
+  {
+    delete arg2;
+  }
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *SentencePieceProcessor_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!SWIG_Python_UnpackTuple(args, "swigregister", 1, 1, &obj)) return NULL;
@@ -9362,6 +9438,7 @@ static PyMethodDef SwigMethods[] = {
 	 { "SentencePieceProcessor__NormalizeWithOffsets", _wrap_SentencePieceProcessor__NormalizeWithOffsets, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor__CalculateEntropy", _wrap_SentencePieceProcessor__CalculateEntropy, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor__CalculateEntropyBatch", _wrap_SentencePieceProcessor__CalculateEntropyBatch, METH_VARARGS, NULL},
+	 { "SentencePieceProcessor__OverrideNormalizerSpec", _wrap_SentencePieceProcessor__OverrideNormalizerSpec, METH_VARARGS, NULL},
 	 { "SentencePieceProcessor_swigregister", SentencePieceProcessor_swigregister, METH_O, NULL},
 	 { "SentencePieceProcessor_swiginit", SentencePieceProcessor_swiginit, METH_VARARGS, NULL},
 	 { "SetRandomGeneratorSeed", _wrap_SetRandomGeneratorSeed, METH_O, NULL},

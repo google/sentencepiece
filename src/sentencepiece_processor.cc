@@ -1117,6 +1117,10 @@ std::string SentencePieceProcessor::serialized_model_proto() const {
   return model_proto_ ? model_proto_->SerializeAsString() : "";
 }
 
+NormalizerSpec *SentencePieceProcessor::mutable_normalizer_spec() const {
+  return model_proto_ ? model_proto_->mutable_normalizer_spec() : nullptr;
+}
+
 // Set seed value of random generator.
 // Do not set static_cast<unique_int>(-1),
 // as this seed is reserved for initializing from

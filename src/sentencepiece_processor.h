@@ -134,6 +134,7 @@ class NBestSentencePieceText;
 class ModelInterface;
 class SentencePieceText;
 class ModelProto;
+class NormalizerSpec;
 
 namespace normalizer {
 class Normalizer;
@@ -691,6 +692,11 @@ class SentencePieceProcessor {
   // returns immutable model proto as std::string.
   // Useful to save the state of this instance via Python's pickle object.
   util::bytes serialized_model_proto() const;
+
+  // Returns mutable normalizer_spec.
+  // Updating the intenral normalization during the encoding/decoding are not
+  // recommended and may result in unexpected behavior. Use at your own risk.
+  NormalizerSpec *mutable_normalizer_spec() const;
 
  private:
   enum ExtraOption { REVERSE, BOS, EOS, UNK_PIECE };

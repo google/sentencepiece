@@ -399,6 +399,9 @@ class SentencePieceProcessor(object):
     def _CalculateEntropyBatch(self, ins, alpha, num_threads):
         return _sentencepiece.SentencePieceProcessor__CalculateEntropyBatch(self, ins, alpha, num_threads)
 
+    def _OverrideNormalizerSpec(self, args):
+        return _sentencepiece.SentencePieceProcessor__OverrideNormalizerSpec(self, args)
+
     def Init(self,
              model_file=None,
              model_proto=None,
@@ -874,6 +877,12 @@ class SentencePieceProcessor(object):
       if type(input) is list:
         return [_normalize(x) for x in input]
       return _normalize(input)
+
+    def OverrideNormalizerSpec(self, **kwargs):
+      new_kwargs = {}
+      for key, value in kwargs.items():
+        new_kwargs[key] = str(value)
+      return self._OverrideNormalizerSpec(new_kwargs)
 
 
     def piece_size(self):
