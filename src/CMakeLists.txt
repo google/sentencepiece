@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
-if (SPM_USE_EXTERNAL_ABSL)
+if (SPM_ABSL_PROVIDER STREQUAL "module" OR SPM_ABSL_PROVIDER STREQUAL "package")
   set(ABSL_FLAGS_SRCS "")
   set(ABSL_STRINGS_SRCS "")
   list(APPEND SPM_LIBS absl::strings)
@@ -23,11 +23,11 @@ if (SPM_USE_EXTERNAL_ABSL)
   else()
    add_definitions("-D_USE_EXTERNAL_ABSL")
   endif()
-else()
+elseif (SPM_ABSL_PROVIDER STREQUAL "internal")
   set(ABSL_FLAGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/flags/flag.cc)
 endif()
 
-if (SPM_USE_BUILTIN_PROTOBUF)
+if (SPM_PROTOBUF_PROVIDER STREQUAL "internal")
   set(SPM_PROTO_HDRS builtin_pb/sentencepiece.pb.h)
   set(SPM_PROTO_SRCS builtin_pb/sentencepiece.pb.cc)
   set(SPM_MODEL_PROTO_HDRS builtin_pb/sentencepiece_model.pb.h)
@@ -67,7 +67,7 @@ if (SPM_USE_BUILTIN_PROTOBUF)
   endif()
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite)
   include_directories(builtin_pb)
-else()
+elseif (SPM_PROTOBUF_PROVIDER STREQUAL "package")
   find_package(Protobuf REQUIRED)
   include_directories(${Protobuf_INCLUDE_DIRS})
   protobuf_generate_cpp(SPM_PROTO_SRCS SPM_PROTO_HDRS sentencepiece.proto)
@@ -316,7 +316,7 @@ endif()
 
 install(FILES sentencepiece_trainer.h sentencepiece_processor.h
   DESTINATION ${CMAKE_INSTALL_INCDIR})
-if (NOT SPM_USE_BUILTIN_PROTOBUF)
+if (NOT SPM_PROTOBUF_PROVIDER STREQUAL "internal")
   install(FILES ${SPM_PROTO_HDRS} DESTINATION ${CMAKE_INSTALL_INCDIR})
 endif()
 

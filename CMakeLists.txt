@@ -30,10 +30,13 @@ option(SPM_ENABLE_TENSORFLOW_SHARED "Makes a tensorflow compatible shared file."
 option(SPM_ENABLE_TCMALLOC "Enable TCMalloc if available." ON)
 option(SPM_TCMALLOC_STATIC "Link static library of TCMALLOC." OFF)
 option(SPM_NO_THREADLOCAL "Disable thread_local operator" OFF)
-option(SPM_USE_BUILTIN_PROTOBUF "Use built-in protobuf" ON)
-option(SPM_USE_EXTERNAL_ABSL "Use external abseil" OFF)
 option(SPM_ENABLE_MSVC_MT_BUILD, "Use /MT flag in MSVC build" OFF)
 option(SPM_CROSS_SYSTEM_PROCESSOR, "Override system processor" "")
+
+set(SPM_PROTOBUF_PROVIDER "internal" CACHE STRING "Provider of protobuf library")
+set_property(CACHE SPM_PROTOBUF_PROVIDER PROPERTY STRINGS "internal" "package")
+set(SPM_ABSL_PROVIDER "internal" CACHE STRING "Provider of absl library")
+set_property(CACHE SPM_ABSL_PROVIDER PROPERTY STRINGS "internal" "module" "package")
 
 if (SPM_CROSS_SYSTEM_PROCESSOR)
  set(CMAKE_SYSTEM_PROCESSOR ${SPM_CROSS_SYSTEM_PROCESSOR})
@@ -151,8 +154,26 @@ if (SPM_BUILD_TEST)
   enable_testing()
 endif()
 
-if (SPM_USE_EXTERNAL_ABSL)
- add_subdirectory(third_party/abseil-cpp)
+if (SPM_ABSL_PROVIDER STREQUAL "internal")
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
+elseif (SPM_ABSL_PROVIDER STREQUAL "module")
+  include(FetchContent)
+  FetchContent_Populate(abseil-cpp
+        GIT_REPOSITORY  https://github.com/abseil/abseil-cpp.git
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/abseil-cpp
+        GIT_PROGRESS TRUE)
+  add_subdirectory(third_party/abseil-cpp)
+  file(RENAME ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl.org)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/abseil-cpp/absl
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
+elseif (SPM_ABSL_PROVIDER STREQUAL "package")
+  find_package(absl REQUIRED)
+  get_target_property(ABSL_INCLUDE_DIRS absl::base INTERFACE_INCLUDE_DIRECTORIES)
+  file(RENAME ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl.org)
+  execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+      ${ABSL_INCLUDE_DIRS}/absl ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
+  include_directories(${ABSL_INCLUDE_DIRS})
 endif()
 
 add_subdirectory(src)
