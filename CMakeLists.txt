@@ -163,16 +163,20 @@ elseif (SPM_ABSL_PROVIDER STREQUAL "module")
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/abseil-cpp
         GIT_PROGRESS TRUE)
   add_subdirectory(third_party/abseil-cpp)
-  file(RENAME ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl.org)
-  execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/abseil-cpp/absl
-    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
+  if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl.org)
+    file(RENAME ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl.org)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+      ${CMAKE_CURRENT_SOURCE_DIR}/third_party/abseil-cpp/absl
+      ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
+  endif()
 elseif (SPM_ABSL_PROVIDER STREQUAL "package")
   find_package(absl REQUIRED)
   get_target_property(ABSL_INCLUDE_DIRS absl::base INTERFACE_INCLUDE_DIRECTORIES)
-  file(RENAME ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl.org)
-  execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-      ${ABSL_INCLUDE_DIRS}/absl ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
+  if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl.org)
+    file(RENAME ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl.org)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+        ${ABSL_INCLUDE_DIRS}/absl ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
+  endif()
   include_directories(${ABSL_INCLUDE_DIRS})
 endif()
 
