@@ -481,6 +481,11 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     return $self->DecodeIds(ids);
   }
 
+  sentencepiece::util::bytes _DecodeIdsAsBytes(const std::vector<int> &ids) const {
+    CheckIds(ids, $self->GetPieceSize());
+    return $self->DecodeIds(ids);
+  }
+
   std::string _DecodePieces(const std::vector<absl::string_view> &pieces) const {
     return $self->DecodePieces(pieces);
   }
@@ -516,6 +521,11 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
   /////////////////////////////////////////////////////////////////////////////
   // DecodeAs* (Batch request)
   std::vector<std::string> _DecodeIdsBatch(
+      const std::vector<std::vector<int>> &ins, int num_threads) const {
+    DEFINE_DECODE_BATCH_FUNC_IMPL(DecodeIds, int, std::string);
+  }
+
+  BytesArray _DecodeIdsAsBytesBatch(
       const std::vector<std::vector<int>> &ins, int num_threads) const {
     DEFINE_DECODE_BATCH_FUNC_IMPL(DecodeIds, int, std::string);
   }
@@ -1062,7 +1072,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     """Decode processed id or token sequences.
 
     Args:
-      out_type: output type. str or 'serialized_proto' or 'immutable_proto' (Default = str)
+      out_type: output type. str, bytes or 'serialized_proto' or 'immutable_proto' (Default = str)
       num_threads: the number of threads used in the batch processing (Default = -1).
     """
 
@@ -1090,6 +1100,24 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
         if type(input[0]) is list:
           if len(input[0]) == 0 or type(input[0][0]) is int:
            return self._DecodeIdsBatch(input, num_threads)
+          if type(input[0][0]) is str:
+           return self._DecodePiecesBatch(input, num_threads)
+
+    if out_type is bytes:
+      if type(input) is int:
+        return self._DecodeIdsAsBytes([input])
+      if type(input) is str:
+        return self._DecodePieces([input])
+
+      if type(input) is list:
+        if len(input) == 0 or type(input[0]) is int:
+          return self._DecodeIdsAsBytes(input)
+        if type(input[0]) is str:
+          return self._DecodePieces(input)
+
+        if type(input[0]) is list:
+          if len(input[0]) == 0 or type(input[0][0]) is int:
+           return self._DecodeIdsAsBytesBatch(input, num_threads)
           if type(input[0][0]) is str:
            return self._DecodePiecesBatch(input, num_threads)
 
@@ -1404,15 +1432,27 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 }
 
 %extend sentencepiece::ImmutableSentencePieceText_ImmutableSentencePiece {
+  const sentencepiece::util::bytes& _surface_as_bytes() const {
+    return $self->surface();
+  }
+
+  const sentencepiece::util::bytes& _piece_as_bytes() const {
+    return $self->piece();
+  }
+
   %rename(_piece) piece;
+  %rename(_piece_as_bytes) piece_as_bytes;
   %rename(_id) id;
   %rename(_surface) surface;
+  %rename(_surface_as_bytes) surface_as_bytes;
   %rename(_begin) begin;
   %rename(_end) end;
 
   %pythoncode %{
     piece = property(_piece)
+    piece_as_bytes = property(_piece_as_bytes)
     surface = property(_surface)
+    surface_as_bytes = property(_surface_as_bytes)
     id = property(_id)
     begin = property(_begin)
     end = property(_end)
@@ -1436,13 +1476,19 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 }
 
 %extend sentencepiece::ImmutableSentencePieceText {
+  const sentencepiece::util::bytes& _text_as_bytes() const {
+    return $self->text();
+  }
+
   %rename(_text) text;
+  %rename(_text_as_bytes) text_as_bytes;
   %rename(_score) score;
   %rename(_pieces) pieces;
   %rename(_pieces_size) pieces_size;
 
   %pythoncode %{
     text = property(_text)
+    text_as_bytes = property(_text_as_bytes)
     score = property(_score)
 
     class ImmutableSentencePieceIterator:
@@ -1583,6 +1629,14 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
   }
 }
 
+%typemap(out) sentencepiece::util::bytes {
+  $result = MakePyOutputBytes($1);
+}
+
+%typemap(out) const sentencepiece::util::bytes& {
+  $result = MakePyOutputBytes(*$1);
+}
+
 %typemap(out) std::string {
   PyObject *input_type = resultobj;
   $result = MakePyOutputString($1, input_type);
@@ -1593,16 +1647,12 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
   $result = MakePyOutputString(*$1, input_type);
 }
 
-%typemap(out) sentencepiece::util::bytes {
-  $result = MakePyOutputBytes($1);
-}
-
 %typemap(out) sentencepiece::util::Status {
   if (!$1.ok()) {
     SWIG_exception(ToSwigError($1.code()), $1.ToString().c_str());
   }
-  $result = SWIG_From_bool($1.ok());
-}
+  $result = SWIG_From_bool($1.ok());}
+
 
 %typemap(in) const std::string & {
   const PyInputString ustring($input);

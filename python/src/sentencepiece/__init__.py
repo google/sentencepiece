@@ -81,8 +81,16 @@ class ImmutableSentencePieceText_ImmutableSentencePiece(object):
     def _end(self):
         return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__end(self)
 
+    def _surface_as_bytes(self):
+        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__surface_as_bytes(self)
+
+    def _piece_as_bytes(self):
+        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__piece_as_bytes(self)
+
     piece = property(_piece)
+    piece_as_bytes = property(_piece_as_bytes)
     surface = property(_surface)
+    surface_as_bytes = property(_surface_as_bytes)
     id = property(_id)
     begin = property(_begin)
     end = property(_end)
@@ -129,7 +137,11 @@ class ImmutableSentencePieceText(object):
     def SerializeAsString(self):
         return _sentencepiece.ImmutableSentencePieceText_SerializeAsString(self)
 
+    def _text_as_bytes(self):
+        return _sentencepiece.ImmutableSentencePieceText__text_as_bytes(self)
+
     text = property(_text)
+    text_as_bytes = property(_text_as_bytes)
     score = property(_score)
 
     class ImmutableSentencePieceIterator:
@@ -330,6 +342,9 @@ class SentencePieceProcessor(object):
     def _DecodeIds(self, ids):
         return _sentencepiece.SentencePieceProcessor__DecodeIds(self, ids)
 
+    def _DecodeIdsAsBytes(self, ids):
+        return _sentencepiece.SentencePieceProcessor__DecodeIdsAsBytes(self, ids)
+
     def _DecodePieces(self, pieces):
         return _sentencepiece.SentencePieceProcessor__DecodePieces(self, pieces)
 
@@ -347,6 +362,9 @@ class SentencePieceProcessor(object):
 
     def _DecodeIdsBatch(self, ins, num_threads):
         return _sentencepiece.SentencePieceProcessor__DecodeIdsBatch(self, ins, num_threads)
+
+    def _DecodeIdsAsBytesBatch(self, ins, num_threads):
+        return _sentencepiece.SentencePieceProcessor__DecodeIdsAsBytesBatch(self, ins, num_threads)
 
     def _DecodeIdsAsSerializedProtoBatch(self, ins, num_threads):
         return _sentencepiece.SentencePieceProcessor__DecodeIdsAsSerializedProtoBatch(self, ins, num_threads)
@@ -759,7 +777,7 @@ class SentencePieceProcessor(object):
       """Decode processed id or token sequences.
 
       Args:
-        out_type: output type. str or 'serialized_proto' or 'immutable_proto' (Default = str)
+        out_type: output type. str, bytes or 'serialized_proto' or 'immutable_proto' (Default = str)
         num_threads: the number of threads used in the batch processing (Default = -1).
       """
 
@@ -787,6 +805,24 @@ class SentencePieceProcessor(object):
           if type(input[0]) is list:
             if len(input[0]) == 0 or type(input[0][0]) is int:
              return self._DecodeIdsBatch(input, num_threads)
+            if type(input[0][0]) is str:
+             return self._DecodePiecesBatch(input, num_threads)
+
+      if out_type is bytes:
+        if type(input) is int:
+          return self._DecodeIdsAsBytes([input])
+        if type(input) is str:
+          return self._DecodePieces([input])
+
+        if type(input) is list:
+          if len(input) == 0 or type(input[0]) is int:
+            return self._DecodeIdsAsBytes(input)
+          if type(input[0]) is str:
+            return self._DecodePieces(input)
+
+          if type(input[0]) is list:
+            if len(input[0]) == 0 or type(input[0][0]) is int:
+             return self._DecodeIdsAsBytesBatch(input, num_threads)
             if type(input[0][0]) is str:
              return self._DecodePiecesBatch(input, num_threads)
 

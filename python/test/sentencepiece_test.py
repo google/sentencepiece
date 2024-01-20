@@ -329,6 +329,40 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual(s2, s1)
     self.assertEqual(s3, s1)
 
+  def test_decode_bytes(self):
+    texts = ['Hello world', '清水寺は京都にある。']
+    ids = self.jasp_.encode(texts, out_type=int)
+    s1 = self.jasp_.decode(ids, out_type=bytes)
+    s2 = self.jasp_.decode(ids, out_type=str)
+    self.assertEqual(len(s1), 2)
+    self.assertEqual(type(s1[0]), bytes)
+    self.assertEqual(type(s1[1]), bytes)
+    self.assertEqual(len(s2), 2)
+    self.assertEqual(type(s2[0]), str)
+    self.assertEqual(type(s2[1]), str)
+    self.assertEqual(s1[0].decode(encoding='utf-8'), s2[0])
+    self.assertEqual(s1[1].decode(encoding='utf-8'), s2[1])
+
+    text = 'Hello world'
+    ids = self.jasp_.encode(text, out_type=int)
+    s1 = self.jasp_.decode(ids, out_type=bytes)
+    s2 = self.jasp_.decode(ids, out_type=str)
+    self.assertEqual(type(s1), bytes)
+    self.assertEqual(type(s2), str)
+    self.assertEqual(s1.decode(encoding='utf-8'), s2)
+
+    x = self.jasp_.encode(text, out_type='immutable_proto')
+    self.assertEqual(x.text, x.text_as_bytes.decode(encoding='utf-8'))
+    for sp in x.pieces:
+      self.assertEqual(sp.piece, sp.piece_as_bytes.decode(encoding='utf-8'))
+      self.assertEqual(sp.surface, sp.surface_as_bytes.decode(encoding='utf-8'))
+
+    x = self.jasp_.decode(ids, out_type='immutable_proto')
+    self.assertEqual(x.text, x.text_as_bytes.decode(encoding='utf-8'))
+    for sp in x.pieces:
+      self.assertEqual(sp.piece, sp.piece_as_bytes.decode(encoding='utf-8'))
+      self.assertEqual(sp.surface, sp.surface_as_bytes.decode(encoding='utf-8'))
+
   def test_immutable_proto(self):
     text = 'I saw a girl with a telescope.'
     s1 = self.sp_.EncodeAsImmutableProto(text)
