@@ -804,6 +804,10 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
     x = sp.Normalize('ＫＡＤＯＫＡＷＡABC', with_offsets=True)
     self.assertEqual('▁KADOKAWAABC', x[0])
+    self.assertEqual([0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], x[1])
+
+    x = sp.Normalize('ＫＡＤＯＫＡＷＡABC'.encode('utf8'), with_offsets=True)
+    self.assertEqual('▁KADOKAWAABC'.encode('utf8'), x[0])
     self.assertEqual(
         [0, 0, 0, 0, 3, 6, 9, 12, 15, 18, 21, 24, 25, 26, 27], x[1]
     )
@@ -815,14 +819,23 @@ class TestSentencepieceProcessor(unittest.TestCase):
         ['▁KADOKAWAABC', '▁平成'], sp.Normalize(['ＫＡＤＯＫＡＷＡABC', '㍻'])
     )
 
-    x = sp.Normalize(['ＫＡＤＯＫＡＷＡABC', '㍻'], with_offsets=True)
+    x = sp.Normalize(
+        ['ＫＡＤＯＫＡＷＡABC'.encode('utf8'), '㍻'.encode('utf8')],
+        with_offsets=True,
+    )
     self.assertEqual(len(x), 2)
-    self.assertEqual('▁KADOKAWAABC', x[0][0])
+    self.assertEqual('▁KADOKAWAABC'.encode('utf8'), x[0][0])
     self.assertEqual(
         [0, 0, 0, 0, 3, 6, 9, 12, 15, 18, 21, 24, 25, 26, 27], x[0][1]
     )
+
+    x = sp.Normalize(['ＫＡＤＯＫＡＷＡABC', '㍻'], with_offsets=True)
+    self.assertEqual(len(x), 2)
+    self.assertEqual('▁KADOKAWAABC', x[0][0])
+    self.assertEqual([0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], x[0][1])
+
     self.assertEqual('▁平成', x[1][0])
-    self.assertEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 3], x[1][1])
+    self.assertEqual([0, 0, 0, 1], x[1][1])
 
   def test_normalizer(self):
     sp = spm.SentencePieceNormalizer(
@@ -832,9 +845,13 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual('KADOKAWAABC', sp.normalize('ＫＡＤＯＫＡＷＡABC'))
     self.assertEqual('KADOKAWAABC', sp.Normalize('ＫＡＤＯＫＡＷＡABC'))
 
+    x = sp.Normalize('ＫＡＤＯＫＡＷＡABC'.encode('utf8'), with_offsets=True)
+    self.assertEqual('KADOKAWAABC'.encode('utf8'), x[0])
+    self.assertEqual([0, 3, 6, 9, 12, 15, 18, 21, 24, 25, 26, 27], x[1])
+
     x = sp.Normalize('ＫＡＤＯＫＡＷＡABC', with_offsets=True)
     self.assertEqual('KADOKAWAABC', x[0])
-    self.assertEqual([0, 3, 6, 9, 12, 15, 18, 21, 24, 25, 26, 27], x[1])
+    self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], x[1])
 
     self.assertEqual(
         ['KADOKAWAABC', '平成'], sp.normalize(['ＫＡＤＯＫＡＷＡABC', '㍻'])
@@ -843,13 +860,20 @@ class TestSentencepieceProcessor(unittest.TestCase):
         ['KADOKAWAABC', '平成'], sp.Normalize(['ＫＡＤＯＫＡＷＡABC', '㍻'])
     )
 
+    x = sp.Normalize(
+        ['ＫＡＤＯＫＡＷＡABC'.encode('utf8'), '㍻'.encode('utf8')],
+        with_offsets=True,
+    )
+    self.assertEqual(len(x), 2)
+    self.assertEqual('KADOKAWAABC'.encode('utf8'), x[0][0])
+    self.assertEqual([0, 3, 6, 9, 12, 15, 18, 21, 24, 25, 26, 27], x[0][1])
+
     x = sp.Normalize(['ＫＡＤＯＫＡＷＡABC', '㍻'], with_offsets=True)
     self.assertEqual(len(x), 2)
     self.assertEqual('KADOKAWAABC', x[0][0])
-    self.assertEqual([0, 3, 6, 9, 12, 15, 18, 21, 24, 25, 26, 27], x[0][1])
-
+    self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], x[0][1])
     self.assertEqual('平成', x[1][0])
-    self.assertEqual([0, 0, 0, 0, 0, 0, 3], x[1][1])
+    self.assertEqual([0, 0, 1], x[1][1])
 
     sp = spm.SentencePieceNormalizer(
         model_file=os.path.join('test', 'test_model.model'),

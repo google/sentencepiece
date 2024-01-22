@@ -8633,6 +8633,9 @@ SWIGINTERN PyObject *_wrap_SentencePieceProcessor__NormalizeWithOffsets(PyObject
   }
   {
     PyObject *input_type = resultobj;
+    if (PyInputString::IsUnicode(input_type)) {
+      sentencepiece::ConvertToUnicodeAlignment(arg2, (&result)->first, &(&result)->second);
+    }
     PyObject *obj = PyList_New((&result)->second.size());
     for (size_t i = 0; i < (&result)->second.size(); ++i) {
       PyList_SET_ITEM(obj, i, PyInt_FromLong(static_cast<long>((&result)->second[i])));
@@ -9541,6 +9544,9 @@ SWIGINTERN PyObject *_wrap_SentencePieceNormalizer__NormalizeWithOffsets(PyObjec
   }
   {
     PyObject *input_type = resultobj;
+    if (PyInputString::IsUnicode(input_type)) {
+      sentencepiece::ConvertToUnicodeAlignment(arg2, (&result)->first, &(&result)->second);
+    }
     PyObject *obj = PyList_New((&result)->second.size());
     for (size_t i = 0; i < (&result)->second.size(); ++i) {
       PyList_SET_ITEM(obj, i, PyInt_FromLong(static_cast<long>((&result)->second[i])));

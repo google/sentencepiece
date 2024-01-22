@@ -197,6 +197,10 @@ class SentencePieceNormalizer {
   std::unique_ptr<ModelProto> model_proto_;
 };
 
+// Converts the utf8 byte spans into Unicode char span.
+void ConvertToUnicodeAlignment(absl::string_view orig, absl::string_view norm,
+                               std::vector<size_t> *norm_to_orig);
+
 }  // namespace sentencepiece
 
 #endif  // SENTENCEPIECE_TRAINER_H_

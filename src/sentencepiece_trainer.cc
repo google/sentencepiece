@@ -366,4 +366,35 @@ std::string SentencePieceNormalizer::serialized_model_proto() const {
   return model_proto_ ? model_proto_->SerializeAsString() : "";
 }
 
+void ConvertToUnicodeAlignment(absl::string_view orig, absl::string_view norm,
+                               std::vector<size_t> *norm_to_orig) {
+  auto utf8_to_unicode_offsets = [](absl::string_view str) {
+    std::vector<int> utf8_to_unicode(str.size() + 1, 0);
+    size_t prev = 0;
+    int ulen = 0;
+    while (!str.empty()) {
+      const size_t mblen =
+          std::max<int>(1, string_util::OneCharLen(str.data()));
+      for (int i = prev; i < prev + mblen; ++i) {
+        utf8_to_unicode[i] = ulen;
+      }
+      ++ulen;
+      prev += mblen;
+      str.remove_prefix(mblen);
+    }
+    utf8_to_unicode[prev] = ulen;
+    return utf8_to_unicode;
+  };
+
+  const auto orig_offsets = utf8_to_unicode_offsets(orig);
+  const auto norm_offsets = utf8_to_unicode_offsets(norm);
+  if (orig_offsets.empty() || norm_offsets.empty()) return;
+
+  std::vector<size_t> result(norm_offsets.back() + 1, 0);
+  for (int i = 0; i < norm_to_orig->size(); ++i) {
+    result[norm_offsets[i]] = orig_offsets[(*norm_to_orig)[i]];
+  }
+  *norm_to_orig = std::move(result);
+}
+
 }  // namespace sentencepiece

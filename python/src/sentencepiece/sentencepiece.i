@@ -368,6 +368,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 %ignore sentencepiece::SentencePieceTrainer::PieceProcecssor;
 %ignore sentencepiece::SentencePieceTrainer::SetPretokenizerForTraining;
 %ignore sentencepiece::SentencePieceTrainer::GetPretokenizerForTraining;
+%ignore sentencepiece::ConvertToUnicodeAlignment;
 
 %ignore sentencepiece::SentencePieceNormalizer::Load;
 %ignore sentencepiece::SentencePieceNormalizer::Normalize;
@@ -1838,8 +1839,12 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
   }
 }
 
+// Types for normalized string and offset
 %typemap(out) std::pair<std::string, std::vector<size_t>> {
   PyObject *input_type = resultobj;
+  if (PyInputString::IsUnicode(input_type)) {
+    sentencepiece::ConvertToUnicodeAlignment(arg2, $1.first, &$1.second);
+  }
   PyObject *obj = PyList_New($1.second.size());
   for (size_t i = 0; i < $1.second.size(); ++i) {
     PyList_SET_ITEM(obj, i, PyInt_FromLong(static_cast<long>($1.second[i])));

@@ -376,32 +376,33 @@ TEST(SentencePieceTrainerTest, NormalizationTest) {
   trainer_spec.set_vocab_size(1000);
   ASSERT_TRUE(SentencePieceTrainer::Train(trainer_spec).ok());
 
+  constexpr absl::string_view kInput = "ＫＡＤＯＫＡＷＡ   ABC ";
+
   {
     SentencePieceProcessor sp;
     EXPECT_OK(sp.Load(model_file));
-    EXPECT_EQ(sp.Normalize("ＫＡＤＯＫＡＷＡ   ABC "), "▁KADOKAWA▁ABC");
+    EXPECT_EQ(sp.Normalize(kInput), "▁KADOKAWA▁ABC");
 
     std::string normalized;
     std::vector<size_t> offsets;
 
-    EXPECT_OK(sp.Normalize("ＫＡＤＯＫＡＷＡ   ABC ", &normalized, &offsets));
+    EXPECT_OK(sp.Normalize(kInput, &normalized, &offsets));
     EXPECT_EQ(normalized, "▁KADOKAWA▁ABC");
     EXPECT_EQ(offsets, std::vector<size_t>({0, 0, 0, 0, 3, 6, 9, 12, 15, 18, 21,
                                             24, 24, 24, 27, 28, 29, 30}));
-  }
+    ConvertToUnicodeAlignment(kInput, normalized, &offsets);
+    EXPECT_EQ(offsets, std::vector<size_t>(
+                           {0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14}));
 
-  {
-    SentencePieceNormalizer sp;
-    EXPECT_OK(sp.Load(model_file));
-    EXPECT_EQ(sp.Normalize("ＫＡＤＯＫＡＷＡ   ABC "), "▁KADOKAWA▁ABC");
+    EXPECT_OK(sp.Normalize("㍻元年", &normalized, &offsets));
+    EXPECT_EQ(normalized, "▁平成元年");
+    ConvertToUnicodeAlignment(kInput, normalized, &offsets);
+    EXPECT_EQ(offsets, std::vector<size_t>({0, 0, 0, 1, 2, 3}));
 
-    std::string normalized;
-    std::vector<size_t> offsets;
-
-    EXPECT_OK(sp.Normalize("ＫＡＤＯＫＡＷＡ   ABC ", &normalized, &offsets));
-    EXPECT_EQ(normalized, "▁KADOKAWA▁ABC");
-    EXPECT_EQ(offsets, std::vector<size_t>({0, 0, 0, 0, 3, 6, 9, 12, 15, 18, 21,
-                                            24, 24, 24, 27, 28, 29, 30}));
+    EXPECT_OK(sp.Normalize("ｶﾞｲﾀﾞﾝｽ", &normalized, &offsets));
+    EXPECT_EQ(normalized, "▁ガイダンス");
+    ConvertToUnicodeAlignment(kInput, normalized, &offsets);
+    EXPECT_EQ(offsets, std::vector<size_t>({0, 0, 2, 3, 5, 6, 7}));
   }
 
   auto set_normalization_only = [](SentencePieceNormalizer *normalizer) {
@@ -417,7 +418,7 @@ TEST(SentencePieceTrainerTest, NormalizationTest) {
     SentencePieceNormalizer sp;
     EXPECT_OK(sp.Load(model_file));
     set_normalization_only(&sp);
-    EXPECT_EQ(sp.Normalize("ＫＡＤＯＫＡＷＡ   ABC "), "KADOKAWA   ABC ");
+    EXPECT_EQ(sp.Normalize(kInput), "KADOKAWA   ABC ");
   }
 
   {
