@@ -24,13 +24,16 @@
 #include <utility>
 #include <vector>
 
+#include "filesystem.h"
 #include "normalizer.h"
 #include "pretokenizer_for_training.h"
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/container/flat_hash_map.h"
+#include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_replace.h"
 #include "third_party/absl/strings/str_split.h"
 #include "third_party/esaxx/esa.hxx"  // Suffix array library.
+#include "trainer_interface.h"
 #include "unicode_script.h"
 #include "util.h"
 
@@ -204,68 +207,104 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
     }
   }
 
-  CHECK_LE(array.size(),
-           static_cast<size_t>(std::numeric_limits<node_int_type>::max()))
-      << "Input corpus too large, try with train_extremely_large_corpus=true";
-  const node_int_type n = array.size();
-
-  std::vector<node_int_type> SA(n);  // suffix array
-  std::vector<node_int_type> L(n);   // left boundaries of internal node
-  std::vector<node_int_type> R(n);   // right boundaries of internal node
-  std::vector<node_int_type> D(n);   // depths of internal node
-
-  // Makes a suffix array to extract all sub strings occurring
-  // more than 2 times in the sentence.
-  constexpr node_int_type kAlphabetSize = 0x110000;  // All UCS4 range.
-  node_int_type node_num = 0;
-  LOG(INFO) << "Making suffix array...";
-  CHECK_EQ(0, esaxx(array.begin(), SA.begin(), L.begin(), R.begin(), D.begin(),
-                    n, kAlphabetSize, node_num));
-
-  LOG(INFO) << "Extracting frequent sub strings... node_num=" << node_num;
-  BoundedPriorityQueue<node_int_type> queue(
-      static_cast<size_t>(trainer_spec_.seed_sentencepiece_size()));
-
-  for (node_int_type i = 0; i < node_num; ++i) {
-    const node_int_type offset = SA[L[i]];
-    const node_int_type len = D[i];
-    if (len <= 1 || offset >= array.size() || offset + len >= array.size()) {
-      continue;
-    }
-    const char32 *begin = &array[offset];
-    const char32 *end = &array[offset + len];
-    // Skips if a substring contains a sentence boundary.
-    if (std::find(begin, end, kSentenceBoundary) != end) {
-      continue;
-    }
-    const UnicodeText uw(begin, end);
-    if (!IsValidSentencePiece(uw)) {
-      continue;
-    }
-
-    // character-wise coverage is the default score.
-    const node_int_type freq = R[i] - L[i];
-    const node_int_type score = freq * len;
-    queue.push(i, score);
-  }
-
   // all_chars must be included in the seed sentencepieces.
   TrainerModel::SentencePieces seed_sentencepieces;
   for (const auto &it : Sorted(all_chars)) {
     seed_sentencepieces.emplace_back(it);
   }
 
-  for (const auto &p : queue.get()) {
-    const node_int_type offset = SA[L[p.first]];
-    const node_int_type len = D[p.first];
-    CHECK_GT(len, 0);
-    const char32 *begin = &array[offset];
-    const char32 *end = &array[offset + len];
-    const UnicodeText uw(begin, end);
-    const std::string w = string_util::UnicodeTextToUTF8(uw);
-    CHECK(IsValidSentencePiece(uw));  // just in case.
-    CHECK(!port::ContainsKey(all_chars, w));
-    seed_sentencepieces.emplace_back(w, p.second);
+  if (!trainer_spec_.seed_sentencepieces_file().empty()) {
+    auto seed_sentencepieces_file = sentencepiece::filesystem::NewReadableFile(
+        trainer_spec_.seed_sentencepieces_file());
+    std::string line;
+    int64_t freq = 1;
+    int skipped_sentencepieces = 0;
+    while (seed_sentencepieces_file->ReadLine(&line)) {
+      const std::vector<std::string> fields = absl::StrSplit(line, '\t');
+      CHECK_GE(fields.size(), 2);
+      const auto &seed_sentencepiece = fields[0];
+      CHECK(absl::SimpleAtoi(fields[1], &freq))
+          << "Could not parse the frequency; line: " << line;
+      const UnicodeText uw = string_util::UTF8ToUnicodeText(seed_sentencepiece);
+      if (!IsValidSentencePiece(uw)) {
+        ++skipped_sentencepieces;
+        continue;
+      }
+      // Initialise score of a piece by character coverage.
+      seed_sentencepieces.emplace_back(seed_sentencepiece, freq * uw.size());
+      if (seed_sentencepieces.size() % 1000000 == 0) {
+        LOG(INFO) << "loaded " << seed_sentencepieces.size()
+                  << " seed sentencepieces";
+      }
+    }
+
+    LOG(INFO) << "skipped " << skipped_sentencepieces << " seed sentencepieces";
+
+    // Take highest scoring pieces as initial vocab.
+    seed_sentencepieces = Sorted(seed_sentencepieces);
+    seed_sentencepieces.resize(std::min<size_t>(
+        trainer_spec_.seed_sentencepiece_size(), seed_sentencepieces.size()));
+
+    LOG(INFO) << "Initialized " << seed_sentencepieces.size()
+              << " seed sentencepieces from file.";
+  } else {
+    CHECK_LE(array.size(),
+             static_cast<size_t>(std::numeric_limits<node_int_type>::max()))
+        << "Input corpus too large, try with train_extremely_large_corpus=true";
+    const node_int_type n = array.size();
+
+    std::vector<node_int_type> SA(n);  // suffix array
+    std::vector<node_int_type> L(n);   // left boundaries of internal node
+    std::vector<node_int_type> R(n);   // right boundaries of internal node
+    std::vector<node_int_type> D(n);   // depths of internal node
+
+    // Makes a suffix array to extract all sub strings occurring
+    // more than 2 times in the sentence.
+    constexpr node_int_type kAlphabetSize = 0x110000;  // All UCS4 range.
+    node_int_type node_num = 0;
+    LOG(INFO) << "Making suffix array...";
+    CHECK_EQ(0, esaxx(array.begin(), SA.begin(), L.begin(), R.begin(),
+                      D.begin(), n, kAlphabetSize, node_num));
+
+    LOG(INFO) << "Extracting frequent sub strings... node_num=" << node_num;
+    BoundedPriorityQueue<node_int_type> queue(
+        static_cast<size_t>(trainer_spec_.seed_sentencepiece_size()));
+
+    for (node_int_type i = 0; i < node_num; ++i) {
+      const node_int_type offset = SA[L[i]];
+      const node_int_type len = D[i];
+      if (len <= 1) {
+        continue;
+      }
+      const char32 *begin = &array[offset];
+      const char32 *end = &array[offset + len];
+      // Skips if a substring contains a sentence boundary.
+      if (std::find(begin, end, kSentenceBoundary) != end) {
+        continue;
+      }
+      const UnicodeText uw(begin, end);
+      if (!IsValidSentencePiece(uw)) {
+        continue;
+      }
+
+      // character-wise coverage is the default score.
+      const node_int_type freq = R[i] - L[i];
+      const node_int_type score = freq * len;
+      queue.push(i, score);
+    }
+
+    for (const auto &p : queue.get()) {
+      const node_int_type offset = SA[L[p.first]];
+      const node_int_type len = D[p.first];
+      CHECK_GT(len, 0);
+      const char32 *begin = &array[offset];
+      const char32 *end = &array[offset + len];
+      const UnicodeText uw(begin, end);
+      const std::string w = string_util::UnicodeTextToUTF8(uw);
+      CHECK(IsValidSentencePiece(uw));  // just in case.
+      CHECK(!port::ContainsKey(all_chars, w));
+      seed_sentencepieces.emplace_back(w, p.second);
+    }
   }
 
   ToLogProb(seed_sentencepieces.begin(), seed_sentencepieces.end());

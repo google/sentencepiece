@@ -58,6 +58,11 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
         << "--use_all_vocab=true is valid for WORD/CHAR model.";
   }
 
+  if (!trainer_spec.seed_sentencepieces_file().empty()) {
+    CHECK_OR_RETURN(trainer_spec.model_type() == TrainerSpec::UNIGRAM)
+        << "seed_sentencepieces_file is only supported for UNIGRAM model.";
+  }
+
 #define CHECK_RANGE(variable, minval, maxval) \
   CHECK_OR_RETURN(variable >= minval && variable <= maxval)
 
