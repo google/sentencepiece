@@ -16,12 +16,12 @@ certifi==2023.11.17 \
     --hash=sha256:9b469f3a900bf28dc19b8cfbf8019bf47f7fdd1a65a1d4ffb98fc14166beb4d1 \
     --hash=sha256:e036ab49d5b79556f99cfc2d9320b34cfbe5be05c5871b51de9329f0603b0474
     # via
-    #   -c .github/workflows/requirements/base.txt
+    #   -c base.txt
     #   cibuildwheel
-cibuildwheel==2.16.2 \
-    --hash=sha256:0f3472a1b927786f74ed3843e78d7cb368a2daeb904503b2129276a23b22f7be \
-    --hash=sha256:bbc86ca937d81745f43ab28fd378bff1c1eaf390370c2f3a6e8224290a50127e
-    # via -r .github/workflows/requirements/cibuildwheel.in
+cibuildwheel==2.16.5 \
+    --hash=sha256:9fe763405afac4aef33eb8641891dda83312848ec18cd44e30daac34dfa9336d \
+    --hash=sha256:e9a0b743a57cf2a2861e1e580765fd70237689aeda6c79db4870ee688ee24d1f
+    # via -r cibuildwheel.in
 filelock==3.13.1 \
     --hash=sha256:521f5f56c50f8426f5e03ad3b281b490a87ef15bc6c526f168290f0c7148d44e \
     --hash=sha256:57dbda9b35157b05fb3e58ee91448612eb674172fab98ee235ccb0b5bee19a1c
