@@ -18,5 +18,5 @@ else
   SRC_DIR=./sentencepiece
 fi
 
-cmake ${SRC_DIR} -B ${BUILD_DIR} -DSPM_ENABLE_SHARED=OFF -DSPM_ENABLE_TCMALLOC=OFF -DSPM_ONLY_LIB=on -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
-cmake --build ${BUILD_DIR} --config Release --target install --parallel $(nproc)
+cmake ${SRC_DIR} -B ${BUILD_DIR} -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSPM_ENABLE_SHARED=OFF -DSPM_ENABLE_TCMALLOC=OFF -DSPM_ONLY_LIB=on -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
+cmake --build ${BUILD_DIR} --config RelWithDebInfo --target install --parallel $(nproc)

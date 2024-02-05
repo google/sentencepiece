@@ -62,13 +62,13 @@ def get_cflags_and_libs(root):
   libs = []
   if os.path.exists(os.path.join(root, 'lib/pkgconfig/sentencepiece.pc')):
     libs = [
-        os.path.join(root, 'lib/libsentencepiece.a'),
         os.path.join(root, 'lib/libsentencepiece_train.a'),
+        os.path.join(root, 'lib/libsentencepiece.a'),
     ]
   elif os.path.exists(os.path.join(root, 'lib64/pkgconfig/sentencepiece.pc')):
     libs = [
-        os.path.join(root, 'lib64/libsentencepiece.a'),
         os.path.join(root, 'lib64/libsentencepiece_train.a'),
+        os.path.join(root, 'lib64/libsentencepiece.a'),
     ]
   return cflags, libs
 
@@ -92,8 +92,9 @@ class build_ext(_build_ext):
     if sys.platform == 'darwin':
       cflags.append('-mmacosx-version-min=10.9')
     else:
-      cflags.append('-Wl,-strip-all')
-      libs.append('-Wl,-strip-all')
+        pass
+        # cflags.append('-Wl,-strip-all')
+        # libs.append('-Wl,-strip-all')
     print('## cflags={}'.format(' '.join(cflags)))
     print('## libs={}'.format(' '.join(libs)))
     ext.extra_compile_args = cflags
