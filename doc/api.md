@@ -45,7 +45,7 @@ Calls `SentencePieceProcessor::Decode` method to detokenize a sequence of pieces
 
 ```C++
 std::vector<std::string> pieces = { "▁This", "▁is", "▁a", "▁", "te", "st", "." };   // sequence of pieces
-std::string text
+std::string text;
 processor.Decode(pieces, &text);
 std::cout << text << std::endl;
 
