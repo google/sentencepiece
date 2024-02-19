@@ -192,12 +192,12 @@ std::vector<T> ValuesIn(const std::vector<T> &v) {
   std::vector<base::ParamType> TCONCAT(base, _get_params_, base)(); \
   class TCONCAT(base, _Test_p_, name) : public base {               \
    public:                                                          \
-    const std::vector<ParamType> GetParams() const {                \
+    std::vector<ParamType> GetParams() const {                      \
       return TCONCAT(base, _get_params_, base)();                   \
     }                                                               \
     ParamType param_;                                               \
     void SetParam(const ParamType &param) { param_ = param; }       \
-    const ParamType GetParam() { return param_; }                   \
+    ParamType GetParam() const { return param_; }                   \
     void _Run();                                                    \
     static void _RunIt() {                                          \
       TCONCAT(base, _Test_p_, name) t;                              \
