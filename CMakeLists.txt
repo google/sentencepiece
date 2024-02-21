@@ -57,6 +57,18 @@ if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND
   string(APPEND CMAKE_CXX_FLAGS " -fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=''")
 endif()
 
+if (NOT DEFINED CMAKE_INSTALL_BINDIR)
+  set(CMAKE_INSTALL_BINDIR bin)
+endif()
+
+if (NOT DEFINED CMAKE_INSTALL_LIBDIR)
+  set(CMAKE_INSTALL_LIBDIR lib)
+endif()
+
+if (NOT DEFINED CMAKE_INSTALL_INCLUDEDIR)
+  set(CMAKE_INSTALL_INCLUDEDIR include)
+endif()
+
 if (UNIX)
   include(GNUInstallDirs)
   set(prefix ${CMAKE_INSTALL_PREFIX})
@@ -101,18 +113,6 @@ if (APPLE)
   if ("${isSystemDir}" STREQUAL "-1")
     set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
   endif()
-endif()
-
-if (NOT DEFINED CMAKE_INSTALL_BINDIR)
-  set(CMAKE_INSTALL_BINDIR bin)
-endif()
-
-if (NOT DEFINED CMAKE_INSTALL_LIBDIR)
-  set(CMAKE_INSTALL_LIBDIR lib)
-endif()
-
-if (NOT DEFINED CMAKE_INSTALL_INCDIR)
-  set(CMAKE_INSTALL_INCDIR include)
 endif()
 
 # SPDX-License-Identifier: (MIT OR CC0-1.0)
