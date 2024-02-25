@@ -166,7 +166,12 @@ int main(int argc, char **argv) {
                    {"nmt_nfkc", Builder::BuildNmtNFKCMap},
                    {"nfkc_cf", Builder::BuildNFKC_CFMap},
                    {"nmt_nfkc_cf", Builder::BuildNmtNFKC_CFMap},
-                   {"nfkd", Builder::BuildNFKDMap}};
+                   {"nfkd", Builder::BuildNFKDMap},
+                   {"nfc", Builder::BuildNFCMap},
+                   {"nfd", Builder::BuildNFDMap},
+                   {"nfkd_cf", Builder::BuildNFKD_CFMap},
+                   {"nfc_cf", Builder::BuildNFC_CFMap},
+                   {"nfd_cf", Builder::BuildNFD_CFMap}};
 
   std::vector<std::pair<std::string, std::string>> data;
   for (const auto &p : kRuleList) {
@@ -181,7 +186,10 @@ int main(int argc, char **argv) {
     CHECK_OK(Builder::SaveCharsMap(p.first + ".tsv", normalized_map));
 
     // Do not make NFKD map as it is optionally created.
-    if (p.first.find("nfkd") != std::string::npos) continue;
+    if (p.first == "nfkd" || p.first == "nfd" || p.first == "nfc" ||
+        p.first == "nfkd_cf" || p.first == "nfd_cf" || p.first == "nfc_cf") {
+      continue;
+    }
 
     data.emplace_back(p.first, index);
   }
