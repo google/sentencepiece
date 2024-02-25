@@ -46,17 +46,17 @@ namespace {
 
 constexpr int kMaxUnicode = 0x10FFFF;
 
-static constexpr char kDefaultNormalizerName[] = "nfkc";
+static constexpr absl::string_view kDefaultNormalizerName = "nfkc";
 
 #ifndef ENABLE_NFKC_COMPILE
-static constexpr char kCompileError[] =
-    "NFK compile is not enabled. rebuild with -DSPM_ENABLE_NFKC_COMPILE=ON"
+static constexpr absl::string_view kCompileError =
+    "NFK compile is not enabled. rebuild with -DSPM_ENABLE_NFKC_COMPILE=ON";
 #endif
 
 #ifdef ENABLE_NFKC_COMPILE
-    // Normalize `input` with ICU's normalizer with `mode`.
-    Builder::Chars
-    UnicodeNormalize(UNormalizationMode mode, const Builder::Chars &input) {
+// Normalize `input` with ICU's normalizer with `mode`.
+Builder::Chars UnicodeNormalize(UNormalizationMode mode,
+                                const Builder::Chars &input) {
   const std::string utf8 = string_util::UnicodeTextToUTF8(input);
   CHECK(!utf8.empty());
 
@@ -113,7 +113,7 @@ std::vector<Builder::Chars> ExpandUnnormalized(
   CHECK_EQ(nfkd.size(), results[0].size());
   return results;
 }
-#endif
+#endif  // ENABLE_NFKC_COMPILE
 
 // Normalizes `src` with `chars_map` and returns normalized Chars.
 // `max_len` specifies the maximum length of the key in `chars_map`.
@@ -292,6 +292,7 @@ util::Status Builder::GetPrecompiledCharsMap(absl::string_view name,
          << "No precompiled charsmap is found: " << name;
 }
 
+#ifdef ENABLE_NFKC_COMPILE
 namespace {
 util::Status BuildMapInternal(
     Builder::CharsMap *chars_map,
@@ -347,6 +348,7 @@ util::Status BuildMapInternal(
   return util::OkStatus();
 }
 }  // namespace
+#endif  // ENABLE_NFKC_COMPILE
 
 // static
 util::Status Builder::BuildNFKCMap(CharsMap *chars_map) {
