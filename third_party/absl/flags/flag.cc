@@ -211,7 +211,7 @@ std::vector<char *> ParseCommandLine(int argc, char *argv[]) {
 
   if (absl::GetFlag(FLAGS_help)) {
     std::cout << internal::PrintHelp(argv[0]);
-    sentencepiece::error::Exit(0);
+    sentencepiece::error::Exit(1);
   } else if (absl::GetFlag(FLAGS_version)) {
     std::cout << PACKAGE_STRING << " " << VERSION << std::endl;
     sentencepiece::error::Exit(0);
