@@ -336,7 +336,6 @@ if (SPM_BUILD_TEST OR SPM_COVERAGE)
 
   set(MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --show-leak-kinds=definite,possible --error-exitcode=1")
   find_program(CTEST_MEMORYCHECK_COMMAND NAMES valgrind)
-  include(Dart)
 
   add_test(NAME sentencepiece_test
     COMMAND $<TARGET_FILE:spm_test> --test_srcdir=${data_dir})
