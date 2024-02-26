@@ -332,7 +332,7 @@ TEST(UtilTest, InputOutputBufferTest) {
 
   {
     auto output = filesystem::NewWritableFile(
-        util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "test_file"));
+        util::JoinPath(::testing::TempDir(), "test_file"));
     for (size_t i = 0; i < kData.size(); ++i) {
       output->WriteLine(kData[i]);
     }
@@ -340,7 +340,7 @@ TEST(UtilTest, InputOutputBufferTest) {
 
   {
     auto input = filesystem::NewReadableFile(
-        util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "test_file"));
+        util::JoinPath(::testing::TempDir(), "test_file"));
     std::string line;
     for (size_t i = 0; i < kData.size(); ++i) {
       EXPECT_TRUE(input->ReadLine(&line));

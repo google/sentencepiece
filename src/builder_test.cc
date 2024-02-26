@@ -143,7 +143,7 @@ TEST(BuilderTest, LoadCharsMapTest) {
   Builder::CharsMap chars_map;
   ASSERT_TRUE(
       Builder::LoadCharsMap(
-          util::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kTestInputData),
+          util::JoinPath(::testing::SrcDir(), kTestInputData),
           &chars_map)
           .ok());
 
@@ -158,14 +158,14 @@ TEST(BuilderTest, LoadCharsMapTest) {
 
   ASSERT_TRUE(
       Builder::SaveCharsMap(
-          util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "output.tsv"),
+          util::JoinPath(::testing::TempDir(), "output.tsv"),
           chars_map)
           .ok());
 
   Builder::CharsMap saved_chars_map;
   ASSERT_TRUE(
       Builder::LoadCharsMap(
-          util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "output.tsv"),
+          util::JoinPath(::testing::TempDir(), "output.tsv"),
           &saved_chars_map)
           .ok());
   EXPECT_EQ(chars_map, saved_chars_map);
@@ -180,7 +180,7 @@ TEST(BuilderTest, LoadCharsMapTest) {
 TEST(BuilderTest, LoadCharsMapWithEmptyeTest) {
   {
     auto output = filesystem::NewWritableFile(
-        util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "test.tsv"));
+        util::JoinPath(::testing::TempDir(), "test.tsv"));
     output->WriteLine("0061\t0041");
     output->WriteLine("0062");
     output->WriteLine("0063\t\t#foo=>bar");
@@ -188,7 +188,7 @@ TEST(BuilderTest, LoadCharsMapWithEmptyeTest) {
 
   Builder::CharsMap chars_map;
   EXPECT_TRUE(Builder::LoadCharsMap(
-                  util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "test.tsv"),
+                  util::JoinPath(::testing::TempDir(), "test.tsv"),
                   &chars_map)
                   .ok());
 
@@ -199,14 +199,14 @@ TEST(BuilderTest, LoadCharsMapWithEmptyeTest) {
 
   EXPECT_TRUE(
       Builder::SaveCharsMap(
-          util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "test_out.tsv"),
+          util::JoinPath(::testing::TempDir(), "test_out.tsv"),
           chars_map)
           .ok());
 
   Builder::CharsMap new_chars_map;
   EXPECT_TRUE(
       Builder::LoadCharsMap(
-          util::JoinPath(absl::GetFlag(FLAGS_test_tmpdir), "test_out.tsv"),
+          util::JoinPath(::testing::TempDir(), "test_out.tsv"),
           &new_chars_map)
           .ok());
   EXPECT_EQ(chars_map, new_chars_map);

@@ -28,6 +28,11 @@
 ABSL_DECLARE_FLAG(std::string, test_tmpdir);
 ABSL_DECLARE_FLAG(std::string, test_srcdir);
 
+namespace testing {
+inline std::string TempDir() { return absl::GetFlag(FLAGS_test_tmpdir); }
+inline std::string SrcDir() { return absl::GetFlag(FLAGS_test_srcdir); }
+}  // namespace testing
+
 namespace sentencepiece {
 namespace test {
 // Run some of the tests registered by the TEST() macro.
