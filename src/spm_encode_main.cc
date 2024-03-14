@@ -13,6 +13,7 @@
 // limitations under the License.!
 
 #include <cassert>
+#include <cstring>
 #include <functional>
 #include <string>
 #include <vector>
@@ -70,8 +71,60 @@ ABSL_FLAG(int, code_meta_block_begin, 0x03,
 ABSL_FLAG(int, code_meta_block_end, 0x04,
           "Control character at the end of each code meta block."
           "-1 to disable");
+ABSL_FLAG(int, code_line_delimiter, 0x06,
+          "Control character that splits line numbers from line contents."
+          "-1 to disable");
 
 #define ReadBlockDelimiter(name) int32 name = absl::GetFlag(FLAGS_##name)
+
+
+struct CodeLine {
+  absl::string_view number;
+  absl::string_view content;
+};
+
+
+std::vector<CodeLine> ScanCodeLines(absl::string_view block, char delim) {
+  auto ptr = reinterpret_cast<const char *>(memchr(block.data(), delim, block.size()));
+  if (ptr == nullptr) {
+    return {{{}, block}};
+  }
+  auto base = block.data() + 1;  // offset the verbatim char
+  std::vector<CodeLine> result;
+  while (ptr != nullptr) {
+    auto head = reinterpret_cast<const char *>(memchr(ptr, '\n', block.size() - (ptr - block.data())));
+    if (head == nullptr) {
+      head = block.data() + block.size() - 1;
+    }
+    result.push_back({{base, static_cast<size_t>(ptr - base)}, {ptr, static_cast<size_t>(head - ptr) + 1}});
+    base = head + 1;
+    ptr = reinterpret_cast<const char *>(memchr(base, delim, block.size() - (head - block.data())));
+  }
+  return result;
+}
+
+void AppendCode(
+    const sentencepiece::SentencePieceProcessor &sp,
+    absl::string_view block,
+    char verbatim_control_char,
+    char code_line_delimiter,
+    int ps_line_number,
+    std::vector<int> *ids
+) {
+  for (auto &line : ScanCodeLines(block, code_line_delimiter)) {
+    std::string origin;
+    auto content = line.content;
+    if (line.number.size()) {
+      ids->push_back(ps_line_number);
+      CHECK_OK(sp.Encode(line.number, ids, false));
+      // the following hack preserves leading whitespace
+      origin.assign(2, verbatim_control_char);
+      origin.append(content);
+      content = origin;
+    }
+    CHECK_OK(sp.Encode(content, ids, false));
+  }
+}
 
 int main(int argc, char *argv[]) {
   sentencepiece::ScopedResourceDestructor cleaner;
@@ -116,6 +169,7 @@ int main(int argc, char *argv[]) {
   ReadBlockDelimiter(code_block_end);
   ReadBlockDelimiter(code_meta_block_begin);
   ReadBlockDelimiter(code_meta_block_end);
+  ReadBlockDelimiter(code_line_delimiter);
   int num_threads = absl::GetFlag(FLAGS_num_threads);
   sentencepiece::ThreadPool pool(num_threads);
   std::mutex sync;
@@ -248,6 +302,7 @@ int main(int argc, char *argv[]) {
     auto ps_code_end = sp.PieceToId("<0x00>");
     auto ps_code_meta_start = sp.PieceToId("<0x01>");
     auto ps_code_meta_end = sp.PieceToId("<0x02>");
+    auto ps_line_number = sp.PieceToId("<0x06>");
     auto ps_doc_end = sp.eos_id();
 
     process = [
@@ -255,10 +310,12 @@ int main(int argc, char *argv[]) {
         code_block_end,
         code_meta_block_begin,
         code_meta_block_end,
+        code_line_delimiter,
         ps_code_start,
         ps_code_end,
         ps_code_meta_start,
         ps_code_meta_end,
+        ps_line_number,
         ps_doc_end,
         &errors,
         &total_errors,
@@ -283,11 +340,15 @@ int main(int argc, char *argv[]) {
         }
         switch(*r) {
           case sentencepiece::MixedTextCodeIterator::BlockType::Text:
-            CHECK_OK(sp.Encode(block, &ids, false));
+            if (block.size() && block[0] == verbatim_control_char) {
+              AppendCode(sp, block, verbatim_control_char, code_line_delimiter, ps_line_number, &ids);
+            } else {
+              CHECK_OK(sp.Encode(block, &ids, false));
+            }
             break;
           case sentencepiece::MixedTextCodeIterator::BlockType::Code:
             ids.push_back(ps_code_start);
-            CHECK_OK(sp.Encode(block, &ids, false));
+            AppendCode(sp, block, verbatim_control_char, code_line_delimiter, ps_line_number, &ids);
             ids.push_back(ps_code_end);
             break;
           case sentencepiece::MixedTextCodeIterator::BlockType::CodeHeader:
