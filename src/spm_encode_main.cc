@@ -103,7 +103,7 @@ std::vector<CodeLine> ScanCodeLines(absl::string_view block, char delim) {
   return result;
 }
 
-void AppendCode(
+bool AppendCode(
     const sentencepiece::SentencePieceProcessor &sp,
     absl::string_view block,
     char verbatim_control_char,
@@ -111,10 +111,12 @@ void AppendCode(
     int ps_line_number,
     std::vector<int> *ids
 ) {
+  bool has_lines = false;
   for (auto &line : ScanCodeLines(block, code_line_delimiter)) {
     std::string origin;
     auto content = line.content;
     if (line.number.size()) {
+      has_lines = true;
       ids->push_back(ps_line_number);
       CHECK_OK(sp.Encode(line.number, ids, false));
       // the following hack preserves leading whitespace
@@ -124,6 +126,7 @@ void AppendCode(
     }
     CHECK_OK(sp.Encode(content, ids, false));
   }
+  return has_lines;
 }
 
 int main(int argc, char *argv[]) {
@@ -177,6 +180,7 @@ int main(int argc, char *argv[]) {
   constexpr int64_t pending_limit = 1ll << 31;
   std::atomic<int64_t> pending_size {0};
   std::atomic<int64_t> total_errors {0};
+  std::atomic<int64_t> total_blocks_with_lines {0};
   std::unordered_map<std::string, long> errors;
 
   const int nbest_size = absl::GetFlag(FLAGS_nbest_size);
@@ -319,6 +323,7 @@ int main(int argc, char *argv[]) {
         ps_doc_end,
         &errors,
         &total_errors,
+        &total_blocks_with_lines,
         &sync,
         &sp,
         &sentence_sizes,
@@ -332,6 +337,7 @@ int main(int argc, char *argv[]) {
 
       std::vector<int> ids;
       absl::string_view block;
+      bool has_lines = false;
       while (blocks_iterator.HasNext()) {
         auto r = blocks_iterator.Next(&block);
         if (!r.has_value()) {
@@ -341,14 +347,14 @@ int main(int argc, char *argv[]) {
         switch(*r) {
           case sentencepiece::MixedTextCodeIterator::BlockType::Text:
             if (block.size() && block[0] == verbatim_control_char) {
-              AppendCode(sp, block, verbatim_control_char, code_line_delimiter, ps_line_number, &ids);
+              has_lines |= AppendCode(sp, block, verbatim_control_char, code_line_delimiter, ps_line_number, &ids);
             } else {
               CHECK_OK(sp.Encode(block, &ids, false));
             }
             break;
           case sentencepiece::MixedTextCodeIterator::BlockType::Code:
             ids.push_back(ps_code_start);
-            AppendCode(sp, block, verbatim_control_char, code_line_delimiter, ps_line_number, &ids);
+            has_lines |= AppendCode(sp, block, verbatim_control_char, code_line_delimiter, ps_line_number, &ids);
             ids.push_back(ps_code_end);
             break;
           case sentencepiece::MixedTextCodeIterator::BlockType::CodeHeader:
@@ -359,6 +365,9 @@ int main(int argc, char *argv[]) {
           default:
             LOG(FATAL) << "Unrecognized BlockType met during encoding.";
         }
+      }
+      if (has_lines) {
+        total_blocks_with_lines++;
       }
       if (blocks_iterator.Error() != nullptr) {
         total_errors++;
@@ -380,9 +389,9 @@ int main(int argc, char *argv[]) {
   }
 
   std::atomic<int64_t> processed {0};
-  auto process_chunk = [&pool, &process, &processed, &pending_size, &total_errors](
+  auto process_chunk = [&pool, &process, &processed, &pending_size, &total_errors, &total_blocks_with_lines](
       std::vector<sentencepiece::filesystem::ps_string>& chunk) {
-    pool.Schedule([&process, &processed, chunk, &pending_size, &total_errors](){
+    pool.Schedule([&process, &processed, chunk, &pending_size, &total_errors, &total_blocks_with_lines](){
       size_t size = 0;
       for (auto &line : chunk) {
         if (auto sv = std::get_if<absl::string_view>(&line); sv != nullptr) {
@@ -397,6 +406,9 @@ int main(int argc, char *argv[]) {
       int64_t prev = processed.fetch_add(chunk.size()) + chunk.size();
       if ((prev / thread_chunk_size) % 100 == 0) {
         LOG(INFO) << "Encoded " << prev << " sentences; errors: " << total_errors.load();
+        if (total_blocks_with_lines.load()) {
+          LOG(INFO) << "Processed " << total_blocks_with_lines.load() << " blocks with line numbers";
+        }
       }
       pending_size -= size;
     });
@@ -439,6 +451,9 @@ int main(int argc, char *argv[]) {
       for (auto &it : errors) {
         LOG(WARNING) << it.second << "\t" << it.first;
       }
+    }
+    if (total_blocks_with_lines.load()) {
+      LOG(INFO) << "Processed " << total_blocks_with_lines.load() << " blocks with line numbers";
     }
   }
 
