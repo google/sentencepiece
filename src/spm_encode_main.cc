@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+#include <unistd.h> // usleep on macos
+
 #include "common.h"
 #include "filesystem.h"
 #include "init.h"
