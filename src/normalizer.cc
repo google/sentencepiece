@@ -162,7 +162,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
     }
   }
 
-  // Ignores tailing space.
+  // Ignores trailing space.
   if (spec_->remove_extra_whitespaces()) {
     const absl::string_view space =
         spec_->escape_whitespaces() ? kSpaceSymbol : " ";
@@ -257,11 +257,11 @@ std::string Normalizer::EncodePrecompiledCharsMap(
     absl::string_view trie_blob, absl::string_view normalized) {
   // <trie size(4byte)><double array trie><normalized string>
   std::string blob;
-  blob.append(string_util::EncodePOD<uint32>(trie_blob.size()));
+  blob.append(string_util::EncodePOD<uint32_t>(trie_blob.size()));
   blob.append(trie_blob.data(), trie_blob.size());
 
 #ifdef IS_BIG_ENDIAN
-  uint32 *data = reinterpret_cast<uint32 *>(const_cast<char *>(blob.data()));
+  uint32_t *data = reinterpret_cast<uint32_t *>(blob.data());
   for (int i = 0; i < blob.size() / 4; ++i) data[i] = util::Swap32(data[i]);
 #endif
 
@@ -274,9 +274,9 @@ std::string Normalizer::EncodePrecompiledCharsMap(
 util::Status Normalizer::DecodePrecompiledCharsMap(
     absl::string_view blob, absl::string_view *trie_blob,
     absl::string_view *normalized, std::string *buffer) {
-  uint32 trie_blob_size = 0;
+  uint32_t trie_blob_size = 0;
   if (blob.size() <= sizeof(trie_blob_size) ||
-      !string_util::DecodePOD<uint32>(
+      !string_util::DecodePOD<uint32_t>(
           absl::string_view(blob.data(), sizeof(trie_blob_size)),
           &trie_blob_size)) {
     return util::InternalError("Blob for normalization rule is broken.");
@@ -295,7 +295,7 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
 #ifdef IS_BIG_ENDIAN
   CHECK_OR_RETURN(buffer);
   buffer->assign(blob.data(), trie_blob_size);
-  uint32 *data = reinterpret_cast<uint32 *>(const_cast<char *>(buffer->data()));
+  uint32_t *data = reinterpret_cast<uint32_t *>(const_cast<char *>(buffer->data()));
   for (int i = 0; i < buffer->size() / 4; ++i) data[i] = util::Swap32(data[i]);
   *trie_blob = absl::string_view(buffer->data(), trie_blob_size);
 #else
