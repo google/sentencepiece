@@ -43,7 +43,7 @@ if (SPM_CROSS_SYSTEM_PROCESSOR)
 endif()
 
 # Disable shared build on windows
-if(WIN32)
+if(MSVC)
   set(SPM_ENABLE_SHARED OFF)
 endif()
 

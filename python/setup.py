@@ -102,8 +102,7 @@ class build_ext(_build_ext):
     ext.extra_link_args = libs
     _build_ext.build_extension(self, ext)
 
-
-if os.name == 'nt':
+if os.name == 'nt' and not os.environ.get('SENTENCEPIECE_MINGW_SKIP'):
   # Must pre-install sentencepice into build directory.
   arch = 'win32'
   if sys.maxsize > 2**32:
