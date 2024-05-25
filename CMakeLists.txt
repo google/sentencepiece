@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
-cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 file(STRINGS "VERSION.txt" SPM_VERSION)
 message(STATUS "VERSION: ${SPM_VERSION}")
 
@@ -24,6 +24,9 @@ project(sentencepiece VERSION ${SPM_VERSION} LANGUAGES C CXX)
 
 option(SPM_ENABLE_NFKC_COMPILE "Enables NFKC compile" OFF)
 option(SPM_ENABLE_SHARED "Builds shared libaries in addition to static libraries." ON)
+option(SPM_ENABLE_STATIC "Builds static libaries." ON)
+option(SPM_BUILD_EXECUTABLES "Builds executables such as spm_encode and spm_decode." OFF)
+option(SPM_BUILD_TRAINING "Builds training libraries." ON)
 option(SPM_BUILD_TEST "Builds test binaries." OFF)
 option(SPM_COVERAGE "Runs gcov to test coverage." OFF)
 option(SPM_ENABLE_TENSORFLOW_SHARED "Makes a tensorflow compatible shared file." OFF)
@@ -37,6 +40,10 @@ set(SPM_PROTOBUF_PROVIDER "internal" CACHE STRING "Provider of protobuf library"
 set_property(CACHE SPM_PROTOBUF_PROVIDER PROPERTY STRINGS "internal" "package")
 set(SPM_ABSL_PROVIDER "internal" CACHE STRING "Provider of absl library")
 set_property(CACHE SPM_ABSL_PROVIDER PROPERTY STRINGS "internal" "module" "package")
+
+if (SPM_BUILD_TEST)
+  set(SPM_BUILD_TRAINING ON)
+endif()
 
 if (SPM_CROSS_SYSTEM_PROCESSOR)
  set(CMAKE_SYSTEM_PROCESSOR ${SPM_CROSS_SYSTEM_PROCESSOR})
