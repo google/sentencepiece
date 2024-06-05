@@ -377,11 +377,11 @@ util::Status SentencePieceProcessor::LoadVocabulary(absl::string_view filename,
 //////////////////////////////////////////////////////////////
 // Simple API.
 util::Status SentencePieceProcessor::Encode(
-    absl::string_view input, std::vector<std::string> *pieces) const {
+    absl::string_view input, std::vector<std::string> *pieces, int nodeAllocatorSize) const {
   CHECK_OR_RETURN_STATUS_STL(pieces);
 
   SentencePieceText spt;
-  RETURN_IF_ERROR(Encode(input, &spt));
+  RETURN_IF_ERROR(Encode(input, &spt, nodeAllocatorSize));
   for (const auto &sp : spt.pieces()) {
     pieces->emplace_back(sp.piece());
   }
@@ -390,11 +390,12 @@ util::Status SentencePieceProcessor::Encode(
 }
 
 util::Status SentencePieceProcessor::Encode(absl::string_view input,
-                                            std::vector<int> *ids) const {
+                                            std::vector<int> *ids,
+                                            int nodeAllocatorSize) const {
   CHECK_OR_RETURN_STATUS_STL(ids);
 
   SentencePieceText spt;
-  RETURN_IF_ERROR(Encode(input, &spt));
+  RETURN_IF_ERROR(Encode(input, &spt,nodeAllocatorSize));
   for (const auto &sp : spt.pieces()) {
     ids->emplace_back(sp.id());
   }
@@ -432,11 +433,12 @@ util::Status SentencePieceProcessor::Decode(const std::vector<int> &ids,
 
 util::Status SentencePieceProcessor::NBestEncode(
     absl::string_view input, int nbest_size,
-    std::vector<std::vector<std::string>> *pieces) const {
+    std::vector<std::vector<std::string>> *pieces,
+    int nodeAllocatorSize) const {
   CHECK_OR_RETURN_STATUS_STL(pieces);
 
   NBestSentencePieceText spt;
-  RETURN_IF_ERROR(NBestEncode(input, nbest_size, &spt));
+  RETURN_IF_ERROR(NBestEncode(input, nbest_size, &spt, nodeAllocatorSize));
   for (const auto &nbest : spt.nbests()) {
     std::vector<std::string> result;
     for (const auto &sp : nbest.pieces()) {
@@ -450,11 +452,12 @@ util::Status SentencePieceProcessor::NBestEncode(
 
 util::Status SentencePieceProcessor::NBestEncode(
     absl::string_view input, int nbest_size,
-    std::vector<std::vector<int>> *ids) const {
+    std::vector<std::vector<int>> *ids,
+    int nodeAllocatorSize) const {
   CHECK_OR_RETURN_STATUS_STL(ids);
 
   NBestSentencePieceText spt;
-  RETURN_IF_ERROR(NBestEncode(input, nbest_size, &spt));
+  RETURN_IF_ERROR(NBestEncode(input, nbest_size, &spt, nodeAllocatorSize));
   for (const auto &nbest : spt.nbests()) {
     std::vector<int> result;
     for (const auto &sp : nbest.pieces()) {
@@ -468,11 +471,12 @@ util::Status SentencePieceProcessor::NBestEncode(
 
 util::Status SentencePieceProcessor::SampleEncode(
     absl::string_view input, int nbest_size, float alpha,
-    std::vector<std::string> *pieces) const {
+    std::vector<std::string> *pieces,
+    int nodeAllocatorSize) const {
   CHECK_OR_RETURN_STATUS_STL(pieces);
 
   SentencePieceText spt;
-  RETURN_IF_ERROR(SampleEncode(input, nbest_size, alpha, &spt));
+  RETURN_IF_ERROR(SampleEncode(input, nbest_size, alpha, &spt, nodeAllocatorSize));
   for (const auto &sp : spt.pieces()) {
     pieces->emplace_back(sp.piece());
   }
@@ -482,11 +486,12 @@ util::Status SentencePieceProcessor::SampleEncode(
 
 util::Status SentencePieceProcessor::SampleEncode(absl::string_view input,
                                                   int nbest_size, float alpha,
-                                                  std::vector<int> *ids) const {
+                                                  std::vector<int> *ids,
+                                                  int nodeAllocatorSize) const {
   CHECK_OR_RETURN_STATUS_STL(ids);
 
   SentencePieceText spt;
-  RETURN_IF_ERROR(SampleEncode(input, nbest_size, alpha, &spt));
+  RETURN_IF_ERROR(SampleEncode(input, nbest_size, alpha, &spt, nodeAllocatorSize));
   for (const auto &sp : spt.pieces()) {
     ids->emplace_back(sp.id());
   }
@@ -497,12 +502,13 @@ util::Status SentencePieceProcessor::SampleEncode(absl::string_view input,
 util::Status SentencePieceProcessor::SampleEncodeAndScore(
     absl::string_view input, int num_samples, float alpha, bool wor,
     bool include_best,
-    std::vector<std::pair<std::vector<std::string>, float>> *pieces) const {
+    std::vector<std::pair<std::vector<std::string>, float>> *pieces,
+    int nodeAllocatorSize) const {
   CHECK_OR_RETURN_STATUS_STL(pieces);
 
   NBestSentencePieceText spt;
   RETURN_IF_ERROR(
-      SampleEncodeAndScore(input, num_samples, alpha, wor, include_best, &spt));
+      SampleEncodeAndScore(input, num_samples, alpha, wor, include_best, &spt, nodeAllocatorSize));
 
   pieces->clear();
   pieces->reserve(spt.nbests_size());
@@ -522,12 +528,13 @@ util::Status SentencePieceProcessor::SampleEncodeAndScore(
 util::Status SentencePieceProcessor::SampleEncodeAndScore(
     absl::string_view input, int num_samples, float alpha, bool wor,
     bool include_best,
-    std::vector<std::pair<std::vector<int>, float>> *ids) const {
+    std::vector<std::pair<std::vector<int>, float>> *ids,
+    int nodeAllocatorSize) const {
   CHECK_OR_RETURN_STATUS_STL(ids);
 
   NBestSentencePieceText spt;
   RETURN_IF_ERROR(
-      SampleEncodeAndScore(input, num_samples, alpha, wor, include_best, &spt));
+      SampleEncodeAndScore(input, num_samples, alpha, wor, include_best, &spt, nodeAllocatorSize));
 
   ids->clear();
   ids->reserve(spt.nbests_size());
@@ -636,14 +643,15 @@ util::Status SentencePieceProcessor::PopulateSentencePieceText(
 }  // namespace sentencepiece
 
 util::Status SentencePieceProcessor::Encode(absl::string_view input,
-                                            SentencePieceText *spt) const {
+                                            SentencePieceText *spt,
+                                            int nodeAllocatorSize) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
   RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
-  const auto result = model_->Encode(normalized);
+  const auto result = model_->Encode(normalized, nodeAllocatorSize);
   RETURN_IF_ERROR(
       PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt));
 
@@ -652,7 +660,8 @@ util::Status SentencePieceProcessor::Encode(absl::string_view input,
 
 util::Status SentencePieceProcessor::NBestEncode(
     absl::string_view input, int nbest_size,
-    NBestSentencePieceText *nbest_spt) const {
+    NBestSentencePieceText *nbest_spt,
+    int nodeAllocatorSize) const {
   CHECK_OR_RETURN_STATUS_PROTO(nbest_spt);
 
   std::string normalized;
@@ -662,7 +671,7 @@ util::Status SentencePieceProcessor::NBestEncode(
   CHECK_OR_RETURN(model_->IsNBestEncodeAvailable())
       << "NBestEncode is not available for the current model.";
 
-  const auto nbests = model_->NBestEncode(normalized, nbest_size);
+  const auto nbests = model_->NBestEncode(normalized, nbest_size,nodeAllocatorSize);
   CHECK_OR_RETURN(!nbests.empty()) << "NBestEncode returns empty result.";
 
   for (const auto &result : nbests) {
@@ -677,7 +686,8 @@ util::Status SentencePieceProcessor::NBestEncode(
 
 util::Status SentencePieceProcessor::SampleEncode(
     absl::string_view input, int nbest_size, float alpha,
-    SentencePieceText *spt) const {
+    SentencePieceText *spt,
+    int nodeAllocatorSize) const {
   CHECK_OR_RETURN_STATUS_PROTO(spt);
 
   CHECK_LE_OR_RETURN(nbest_size, 512) << "nbest_size must be nbest_size <= 512";
@@ -689,15 +699,15 @@ util::Status SentencePieceProcessor::SampleEncode(
   if (!model_->IsNBestEncodeAvailable() || nbest_size < 0) {
     CHECK_OR_RETURN(model_->IsSampleEncodeAvailable())
         << "SampleEncode is not available for the current model.";
-    const auto result = model_->SampleEncode(normalized, alpha);
+    const auto result = model_->SampleEncode(normalized, alpha, nodeAllocatorSize);
     RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
                                               result, spt));
   } else if (nbest_size == 1 || nbest_size == 0) {
-    const auto result = model_->Encode(normalized);
+    const auto result = model_->Encode(normalized,nodeAllocatorSize);
     RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
                                               result, spt));
   } else if (nbest_size > 1) {
-    const auto nbests = model_->NBestEncode(normalized, nbest_size);
+    const auto nbests = model_->NBestEncode(normalized, nbest_size, nodeAllocatorSize);
     CHECK_OR_RETURN(!nbests.empty()) << "NBestEncode returns empty result.";
 
     std::vector<double> log_probs;
@@ -723,7 +733,7 @@ util::Status SentencePieceProcessor::SampleEncode(
 
 util::Status SentencePieceProcessor::SampleEncodeAndScore(
     absl::string_view input, int samples, float alpha, bool wor,
-    bool include_best, NBestSentencePieceText *samples_spt) const {
+    bool include_best, NBestSentencePieceText *samples_spt, int nodeAllocatorSize) const {
   CHECK_OR_RETURN(model_->IsSampleEncodeAndScoreAvailable())
       << "SampleEncodeAndScore is not available for the current model.";
   std::string normalized;
@@ -731,7 +741,7 @@ util::Status SentencePieceProcessor::SampleEncodeAndScore(
   RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
   const auto results = model_->SampleEncodeAndScore(normalized, alpha, samples,
-                                                    wor, include_best);
+                                                    wor, include_best, nodeAllocatorSize);
   CHECK_OR_RETURN(!results.empty())
       << "SampleEncodeAndScore returns empty result.";
 
@@ -747,14 +757,15 @@ util::Status SentencePieceProcessor::SampleEncodeAndScore(
 
 util::Status SentencePieceProcessor::CalculateEntropy(absl::string_view input,
                                                       float alpha,
-                                                      float *entropy) const {
+                                                      float *entropy,
+                                                      int nodeAllocatorSize) const {
   CHECK_OR_RETURN(model_->IsCalculateEntropyAvailable())
       << "CalculateEntropy is not available for the current model.";
   std::string normalized;
   std::vector<size_t> norm_to_orig;
   RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
-  *entropy = model_->CalculateEntropy(normalized, alpha);
+  *entropy = model_->CalculateEntropy(normalized, alpha, nodeAllocatorSize);
   return util::OkStatus();
 }
 

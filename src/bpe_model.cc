@@ -36,7 +36,7 @@ Model::Model(const ModelProto &model_proto) {
 Model::~Model() {}
 
 std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
-    absl::string_view normalized, float alpha) const {
+    absl::string_view normalized, float alpha, int /*nodeAllocatorSize*/) const {
   if (!status().ok() || normalized.empty()) {
     return {};
   }

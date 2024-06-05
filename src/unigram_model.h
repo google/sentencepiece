@@ -32,7 +32,7 @@ namespace unigram {
 // Lattice represents a search space of sentence piece segmentation.
 class Lattice {
  public:
-  Lattice();
+  Lattice(int nodeAllocatorSize = 0);
   virtual ~Lattice();
 
   struct Node {
@@ -130,20 +130,24 @@ class Model : public ModelInterface {
   Model() {}
   ~Model() override;
 
-  EncodeResult Encode(absl::string_view normalized) const override;
+  EncodeResult Encode(absl::string_view normalized, int nodeAllocatorSize = 0) const override;
 
   NBestEncodeResult NBestEncode(absl::string_view normalized,
-                                int nbest_size) const override;
+                                int nbest_size,
+                                int nodeAllocatorSize = 0) const override;
 
   EncodeResult SampleEncode(absl::string_view normalized,
-                            float theta) const override;
+                            float theta,
+                            int nodeAllocatorSize = 0) const override;
 
   NBestEncodeResult SampleEncodeAndScore(absl::string_view normalized,
                                          float theta, int samples, bool wor,
-                                         bool include_best) const override;
+                                         bool include_best,
+                                         int nodeAllocatorSize = 0) const override;
 
   float CalculateEntropy(absl::string_view normalized,
-                         float theta) const override;
+                         float theta,
+                         int nodeAllocatorSize) const override;
 
   bool IsSampleEncodeAvailable() const override { return true; }
 

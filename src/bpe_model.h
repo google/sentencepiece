@@ -32,8 +32,8 @@ class Model : public ModelInterface {
   explicit Model(const ModelProto &model_proto);
   ~Model() override;
 
-  EncodeResult Encode(absl::string_view normalized) const override {
-    return SampleEncode(normalized, 0.0);
+  EncodeResult Encode(absl::string_view normalized, int nodeAllocatorSize = 0) const override {
+    return SampleEncode(normalized, 0.0, nodeAllocatorSize);
   }
 
   // Sampling with BPE-dropout: https://arxiv.org/pdf/1910.13267.pdf
@@ -41,7 +41,8 @@ class Model : public ModelInterface {
   // Skips merge operation with `alpha` probability.
   // When alpha <= 0.0, no sampling is performed.
   EncodeResult SampleEncode(absl::string_view normalized,
-                            float alpha) const override;
+                            float alpha,
+                            int nodeAllocatorSize = 0) const override;
 
   bool IsSampleEncodeAvailable() const override { return true; }
 

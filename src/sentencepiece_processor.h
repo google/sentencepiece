@@ -293,11 +293,13 @@ class SentencePieceProcessor {
   //
   // Given a UTF8 input, encodes it into a sequence of sentence pieces.
   virtual util::Status Encode(absl::string_view input,
-                              std::vector<std::string> *pieces) const;
+                              std::vector<std::string> *pieces,
+                              int nodeAllocatorSize = 0) const;
 
   // Given a UTF8 input, encodes it into a sequence of ids.
   virtual util::Status Encode(absl::string_view input,
-                              std::vector<int> *ids) const;
+                              std::vector<int> *ids,
+                              int nodeAllocatorSize = 0) const;
 
   // Given a sequence of pieces, decodes it into a detokenized output.
   virtual util::Status Decode(const std::vector<std::string> &pieces,
@@ -317,11 +319,13 @@ class SentencePieceProcessor {
   // Same as Encode, but returns nbest results.
   virtual util::Status NBestEncode(
       absl::string_view input, int nbest_size,
-      std::vector<std::vector<std::string>> *pieces) const;
+      std::vector<std::vector<std::string>> *pieces,
+      int nodeAllocatorSize = 0) const;
 
   // Same as Encode, but returns nbest results.
   virtual util::Status NBestEncode(absl::string_view input, int nbest_size,
-                                   std::vector<std::vector<int>> *ids) const;
+                                   std::vector<std::vector<int>> *ids,
+                                   int nodeAllocatorSize = 0) const;
 
   //////////////////////////////////////////////////////////////
   // Sampling API.
@@ -345,11 +349,13 @@ class SentencePieceProcessor {
   // nbest_size parameter is ignored in BPE.
   virtual util::Status SampleEncode(absl::string_view input, int nbest_size,
                                     float alpha,
-                                    std::vector<std::string> *pieces) const;
+                                    std::vector<std::string> *pieces,
+                                    int nodeAllocatorSize = 0) const;
 
   // Same as above, but returns a sequence of ids.
   virtual util::Status SampleEncode(absl::string_view input, int nbest_size,
-                                    float alpha, std::vector<int> *ids) const;
+                                    float alpha, std::vector<int> *ids,
+                                    int nodeAllocatorSize = 0) const;
 
   //////////////////////////////////////////////////////////////
   // SampleEncodeAndScore API.
@@ -369,13 +375,15 @@ class SentencePieceProcessor {
   virtual util::Status SampleEncodeAndScore(
       absl::string_view input, int num_samples, float alpha, bool wor,
       bool include_best,
-      std::vector<std::pair<std::vector<std::string>, float>> *pieces) const;
+      std::vector<std::pair<std::vector<std::string>, float>> *pieces,
+      int nodeAllocatorSize = 0) const;
 
   // Same as above, but returns a sequence of ids.
   virtual util::Status SampleEncodeAndScore(
       absl::string_view input, int num_samples, float alpha, bool wor,
       bool include_best,
-      std::vector<std::pair<std::vector<int>, float>> *ids) const;
+      std::vector<std::pair<std::vector<int>, float>> *ids,
+      int nodeAllocatorSize = 0) const;
 
   //////////////////////////////////////////////////////////////
   // Entropy API.
@@ -383,7 +391,8 @@ class SentencePieceProcessor {
   // This only available in model_type=unigram.
   // Calculate entropy of possible tokenisations
   virtual util::Status CalculateEntropy(absl::string_view input, float alpha,
-                                        float *entropy) const;
+                                        float *entropy,
+                                        int nodeAllocatorSize = 0) const;
 
   //////////////////////////////////////////////////////////////
   // Advanced API returning SentencePieceText, which manages
@@ -399,17 +408,21 @@ class SentencePieceProcessor {
   // Encode("hello", spt.mutable_proto()).IgnoreError();
   // std::cout << spt.pieces_size() << std::endl;
   virtual util::Status Encode(absl::string_view input,
-                              SentencePieceText *spt) const;
+                              SentencePieceText *spt,
+                              int nodeAllocatorSize = 0) const;
 
   virtual util::Status NBestEncode(absl::string_view input, int nbest_size,
-                                   NBestSentencePieceText *nbest_spt) const;
+                                   NBestSentencePieceText *nbest_spt,
+                                   int nodeAllocatorSize = 0) const;
 
   virtual util::Status SampleEncode(absl::string_view input, int nbest_size,
-                                    float alpha, SentencePieceText *spt) const;
+                                    float alpha, SentencePieceText *spt,
+                                    int nodeAllocatorSize = 0) const;
 
   virtual util::Status SampleEncodeAndScore(
       absl::string_view input, int num_samples, float alpha, bool wor,
-      bool include_best, NBestSentencePieceText *samples_spt) const;
+      bool include_best, NBestSentencePieceText *samples_spt,
+      int nodeAllocatorSize = 0) const;
 
   // DEPRECATED: Remove this API and use std::vector<std::string_view>
   virtual util::Status Decode(const std::vector<std::string> &pieces,
@@ -525,19 +538,21 @@ class SentencePieceProcessor {
   // They are used in Python interface. Returns serialized proto.
   // In python module, we can get access to the full Proto after
   // deserialzing the returned byte sequence.
-  virtual util::bytes EncodeAsSerializedProto(absl::string_view input) const {
+  virtual util::bytes EncodeAsSerializedProto(absl::string_view input, int nodeAllocatorSize = 0) const {
     DEFINE_SPP_SERIALIZED_PROTO_IMPL(Encode, ImmutableSentencePieceText, input);
   }
 
   virtual util::bytes SampleEncodeAsSerializedProto(absl::string_view input,
                                                     int nbest_size,
-                                                    float alpha) const {
+                                                    float alpha,
+                                                    int nodeAllocatorSize = 0) const {
     DEFINE_SPP_SERIALIZED_PROTO_IMPL(SampleEncode, ImmutableSentencePieceText,
                                      input, nbest_size, alpha);
   }
 
   virtual util::bytes NBestEncodeAsSerializedProto(absl::string_view input,
-                                                   int nbest_size) const {
+                                                   int nbest_size,
+                                                   int nodeAllocatorSize = 0) const {
     DEFINE_SPP_SERIALIZED_PROTO_IMPL(
         NBestEncode, ImmutableNBestSentencePieceText, input, nbest_size);
   }

@@ -70,7 +70,7 @@ inline float Gumbel() {
 }
 }  // namespace
 
-Lattice::Lattice() : node_allocator_(kPreallocateLatticeNodeSize) {}
+Lattice::Lattice(int nodeAllocatorSize) : node_allocator_(nodeAllocatorSize == 0 ? kPreallocateLatticeNodeSize : nodeAllocatorSize) {}
 Lattice::~Lattice() {}
 
 const std::vector<Lattice::Node *> &Lattice::begin_nodes(int pos) const {
@@ -671,7 +671,7 @@ Model::Model(const ModelProto &model_proto) {
 
 Model::~Model() {}
 
-EncodeResult Model::Encode(absl::string_view normalized) const {
+EncodeResult Model::Encode(absl::string_view normalized, int nodeAllocatorSize) const {
   if (encoder_version_ == EncoderVersion::kOptimized) {
     return EncodeOptimized(normalized);
   }
@@ -680,7 +680,7 @@ EncodeResult Model::Encode(absl::string_view normalized) const {
     return {};
   }
 
-  Lattice lattice;
+  Lattice lattice(nodeAllocatorSize);
   lattice.SetSentence(normalized);
   PopulateNodes(&lattice);
 
@@ -693,7 +693,8 @@ EncodeResult Model::Encode(absl::string_view normalized) const {
 }
 
 NBestEncodeResult Model::NBestEncode(absl::string_view normalized,
-                                     int nbest_size) const {
+                                     int nbest_size, 
+                                     int nodeAllocatorSize) const {
   if (!status().ok() || normalized.empty()) {
     return {{{}, 0.0}};
   }
@@ -704,7 +705,7 @@ NBestEncodeResult Model::NBestEncode(absl::string_view normalized,
     return {std::pair<EncodeResult, float>(Encode(normalized), 0.0)};
   }
 
-  Lattice lattice;
+  Lattice lattice(nodeAllocatorSize);
   lattice.SetSentence(normalized);
   PopulateNodes(&lattice);
 
@@ -721,12 +722,13 @@ NBestEncodeResult Model::NBestEncode(absl::string_view normalized,
 }
 
 EncodeResult Model::SampleEncode(absl::string_view normalized,
-                                 float inv_theta) const {
+                                 float inv_theta,
+                                 int nodeAllocatorSize) const {
   if (!status().ok() || normalized.empty()) {
     return {};
   }
 
-  Lattice lattice;
+  Lattice lattice(nodeAllocatorSize);
   lattice.SetSentence(normalized);
   PopulateNodes(&lattice);
 
@@ -741,12 +743,13 @@ EncodeResult Model::SampleEncode(absl::string_view normalized,
 NBestEncodeResult Model::SampleEncodeAndScore(absl::string_view normalized,
                                               float inv_theta, int samples,
                                               bool wor,
-                                              bool include_best) const {
+                                              bool include_best,
+                                              int nodeAllocatorSize) const {
   if (!status().ok() || normalized.empty()) {
     return {};
   }
   NBestEncodeResult results;
-  Lattice lattice;
+  Lattice lattice(nodeAllocatorSize);
   lattice.SetSentence(normalized);
   PopulateNodes(&lattice);
 
@@ -827,7 +830,7 @@ NBestEncodeResult Model::SampleEncodeAndScore(absl::string_view normalized,
     }
   } else {
     while (results.size() < samples) {
-      Lattice lattice;
+      Lattice lattice(nodeAllocatorSize);
       lattice.SetSentence(normalized);
       PopulateNodes(&lattice);
 
@@ -846,8 +849,9 @@ NBestEncodeResult Model::SampleEncodeAndScore(absl::string_view normalized,
 }
 
 float Model::CalculateEntropy(absl::string_view normalized,
-                              float inv_theta) const {
-  Lattice lattice;
+                              float inv_theta,
+                              int nodeAllocatorSize) const {
+  Lattice lattice(nodeAllocatorSize);
   lattice.SetSentence(normalized);
   PopulateNodes(&lattice);
 

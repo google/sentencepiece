@@ -25,7 +25,7 @@ Model::Model(const ModelProto &model_proto) {
 
 Model::~Model() {}
 
-EncodeResult Model::Encode(absl::string_view normalized) const {
+EncodeResult Model::Encode(absl::string_view normalized, int /* nodeAllocatorSize */) const {
   if (!status().ok() || normalized.empty()) {
     return {};
   }

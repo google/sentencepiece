@@ -79,17 +79,19 @@ class ModelInterface {
 
   // Given a normalized string, returns a sequence of sentence pieces with ids.
   // The concatenation of pieces must be the same as `normalized`.
-  virtual EncodeResult Encode(absl::string_view normalized) const = 0;
+  virtual EncodeResult Encode(absl::string_view normalized, int nodeAllocatorSize = 0) const = 0;
 
   // The same as above, but returns nbest result with score.
   virtual NBestEncodeResult NBestEncode(absl::string_view normalized,
-                                        int nbest_size) const {
+                                        int nbest_size, 
+                                        int nodeAllocatorSize = 0) const {
     LOG(ERROR) << "Not implemented.";
     return NBestEncodeResult();
   }
 
   virtual EncodeResult SampleEncode(absl::string_view normalized,
-                                    float alpha) const {
+                                    float alpha,
+                                    int nodeAllocatorSize = 0) const {
     LOG(ERROR) << "Not implemented.";
     return EncodeResult();
   }
@@ -104,7 +106,8 @@ class ModelInterface {
   virtual NBestEncodeResult SampleEncodeAndScore(absl::string_view normalized,
                                                  float alpha, int samples,
                                                  bool wor,
-                                                 bool include_best) const {
+                                                 bool include_best,
+                                                 int nodeAllocatorSize = 0) const {
     LOG(ERROR) << "Not implemented.";
     return {{EncodeResult(), 0.0}};
   }
@@ -112,7 +115,8 @@ class ModelInterface {
   // Calculates the entropy of the segmentation lattice with inverse temperature
   // `alpha`. Uses a novel dynamic program to calculate the entropy.
   virtual float CalculateEntropy(absl::string_view normalized,
-                                 float alpha) const {
+                                 float alpha,
+                                 int nodeAllocatorSize = 0) const {
     LOG(ERROR) << "Not implemented.";
     return 0.0;
   }

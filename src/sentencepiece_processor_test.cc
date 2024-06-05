@@ -47,18 +47,18 @@ class MockModel : public ModelInterface {
     nbest_output_ = output;
   }
 
-  EncodeResult Encode(absl::string_view normalized) const {
+  EncodeResult Encode(absl::string_view normalized, int nodeAllocatorSize) const {
     EXPECT_EQ(normalized, input_);
     return output_;
   }
 
-  EncodeResult SampleEncode(absl::string_view normalized, float alpha) const {
+  EncodeResult SampleEncode(absl::string_view normalized, float alpha, int nodeAllocatorSize) const {
     EXPECT_EQ(normalized, input_);
     return output_;
   }
 
   NBestEncodeResult NBestEncode(absl::string_view normalized,
-                                int nbest_size) const {
+                                int nbest_size, int nodeAllocatorSize) const {
     EXPECT_EQ(normalized, input_);
     return nbest_output_;
   }
@@ -544,7 +544,7 @@ TEST(SentencepieceProcessorTest, SampleEncodeTest) {
 TEST(SentencepieceProcessorTest, DecodeTest) {
   class DecodeMockModel : public ModelInterface {
    public:
-    EncodeResult Encode(absl::string_view normalized) const override {
+    EncodeResult Encode(absl::string_view normalized, int /* nodeAllocatorSize */) const override {
       return {};
     }
 
@@ -711,7 +711,7 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
 TEST(SentencepieceProcessorTest, DummyPrefixDecodeTest) {
   class DecodeMockModel : public ModelInterface {
    public:
-    EncodeResult Encode(absl::string_view normalized) const override {
+    EncodeResult Encode(absl::string_view normalized, int /* nodeAllocatorSize */) const override {
       return {};
     }
 
@@ -791,7 +791,7 @@ TEST(SentencepieceProcessorTest, DummyPrefixDecodeTest) {
 TEST(SentencepieceProcessorTest, ByteFallbackDecodeTest) {
   class ByteFallbackDecodeMockModel : public ModelInterface {
    public:
-    EncodeResult Encode(absl::string_view normalized) const override {
+    EncodeResult Encode(absl::string_view normalized, int /* nodeAllocatorSize */) const override {
       return {};
     }
 
