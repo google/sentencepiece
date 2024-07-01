@@ -27,8 +27,8 @@ jobs:
       contents: write # svenstaro/upload-release-action 
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236 # v4.7.1
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
         with:
           python-version: "3.x"
 
@@ -74,7 +74,7 @@ jobs:
         run: sh build_sdist.sh
 
       - name: Fetch sdist archive
-        uses: tj-actions/glob@ac7d983dd3677ab0879d703cfdbde78676cdfaad # v17.3.0
+        uses: tj-actions/glob@2944188f585a0ec102a6a82d9eeb3aed69785393 # v22.0.1
         id: sdist
         with:
           files: ./python/dist/*.tar.gz
@@ -88,7 +88,7 @@ jobs:
         run: cp -f dist/*.tar.gz wheelhouse/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           path: |
             ./python/wheelhouse/*.whl
@@ -96,7 +96,7 @@ jobs:
 
       - name: Upload wheel release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: svenstaro/upload-release-action@1beeb572c19a9242f4361f4cee78f8e0d9aec5df # v2.7.0
+        uses: svenstaro/upload-release-action@04733e069f2d7f7f0b4aebc4fbdbce8613b03ccd # v2.9.0
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ./python/wheelhouse/*
@@ -146,7 +146,7 @@ jobs:
       actions: read   # To read the workflow path.
       id-token: write # To sign the provenance.
       contents: write # To add assets to a release.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
     with:
       base64-subjects: "${{ needs.gather-disgests.outputs.digests }}"
       upload-assets: true # Optional: Upload to a new release
