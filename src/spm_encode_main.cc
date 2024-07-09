@@ -42,7 +42,7 @@ ABSL_FLAG(std::string, output, "", "output filename");
 ABSL_FLAG(std::string, extra_options, "",
           "':' separated encoder extra options, e.g., \"reverse:bos:eos\"");
 ABSL_FLAG(int32, nbest_size, 10, "NBest size");
-ABSL_FLAG(double, alpha, 0.5, "Smoothing parameter for sampling mode.");
+ABSL_FLAG(double, alpha, 0.0, "Smoothing parameter for sampling mode.");
 ABSL_FLAG(uint32, random_seed, ~0u,
           "Seed value for random generator.");
 ABSL_FLAG(int, num_threads, 4,
@@ -111,6 +111,7 @@ bool AppendCode(
     char verbatim_control_char,
     char code_line_delimiter,
     int ps_line_number,
+    float alpha,
     std::vector<int> *ids
 ) {
   bool has_lines = false;
@@ -120,13 +121,13 @@ bool AppendCode(
     if (line.number.size()) {
       has_lines = true;
       ids->push_back(ps_line_number);
-      CHECK_OK(sp.Encode(line.number, ids, false));
+      CHECK_OK(sp.SampleEncode(line.number, 0, alpha, ids));
       // the following hack preserves leading whitespace
       origin.assign(2, verbatim_control_char);
       origin.append(content);
       content = origin;
     }
-    CHECK_OK(sp.Encode(content, ids, false));
+    CHECK_OK(sp.SampleEncode(content, 0, alpha, ids));
   }
   return has_lines;
 }
@@ -323,6 +324,7 @@ int main(int argc, char *argv[]) {
         ps_code_meta_end,
         ps_line_number,
         ps_doc_end,
+        alpha,
         &errors,
         &total_errors,
         &total_blocks_with_lines,
@@ -349,19 +351,21 @@ int main(int argc, char *argv[]) {
         switch(*r) {
           case sentencepiece::MixedTextCodeIterator::BlockType::Text:
             if (block.size() && block[0] == verbatim_control_char) {
-              has_lines |= AppendCode(sp, block, verbatim_control_char, code_line_delimiter, ps_line_number, &ids);
+              has_lines |= AppendCode(
+                  sp, block, verbatim_control_char, code_line_delimiter, ps_line_number, alpha, &ids);
             } else {
-              CHECK_OK(sp.Encode(block, &ids, false));
+              CHECK_OK(sp.SampleEncode(block, 0, alpha, &ids));
             }
             break;
           case sentencepiece::MixedTextCodeIterator::BlockType::Code:
             ids.push_back(ps_code_start);
-            has_lines |= AppendCode(sp, block, verbatim_control_char, code_line_delimiter, ps_line_number, &ids);
+            has_lines |= AppendCode(
+                sp, block, verbatim_control_char, code_line_delimiter, ps_line_number, alpha, &ids);
             ids.push_back(ps_code_end);
             break;
           case sentencepiece::MixedTextCodeIterator::BlockType::CodeHeader:
             ids.push_back(ps_code_meta_start);
-            CHECK_OK(sp.Encode(block, &ids, false));
+            CHECK_OK(sp.SampleEncode(block, 0, alpha, &ids));
             ids.push_back(ps_code_meta_end);
             break;
           default:

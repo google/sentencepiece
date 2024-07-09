@@ -151,7 +151,7 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
     }
 
     // Note that orignal BPE-dropout paper assumes that all merged symbols are
-    // pre computed, but here we randomly skip merge opration inside this loop.
+    // pre computed, but here we randomly skip merge operation inside this loop.
     // This implemenation is theoretically equivalent to the original one.
     if (skip_merge()) continue;
 
