@@ -25,6 +25,7 @@ from setuptools.command.build_py import build_py as _build_py
 
 sys.path.append(os.path.join('.', 'test'))
 
+print("okdjkfjdkfdjoj")
 
 def long_description():
   with codecs.open('README.md', 'r', 'utf-8') as f:
