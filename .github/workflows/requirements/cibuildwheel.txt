@@ -18,9 +18,9 @@ certifi==2024.7.4 \
     # via
     #   -c base.txt
     #   cibuildwheel
-cibuildwheel==2.19.1 \
-    --hash=sha256:b6cd9c09ddda4b8a77e93550e8c7cd423e3850ec7ba008ee1dbcb4848e9ee6c1 \
-    --hash=sha256:c60a8e9aa0322b13f5965a8396fcabb64ce0f45b2f7130273b2589f6066034be
+cibuildwheel==2.19.2 \
+    --hash=sha256:02ead5d7e3e81fe2ee0afb78746b1494af6b37afc1e32fae12f9c9a28c14e369 \
+    --hash=sha256:d331c81c505106ee585333b871718cf0516ac10d55c4dda2c00c8a7405743cab
     # via -r cibuildwheel.in
 filelock==3.13.1 \
     --hash=sha256:521f5f56c50f8426f5e03ad3b281b490a87ef15bc6c526f168290f0c7148d44e \
