@@ -28,13 +28,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
+      - uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
         with:
           python-version: "3.x"
 
       - name: Set up QEMU
         if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+        uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
         with:
           platforms: arm64
 
@@ -88,7 +88,7 @@ jobs:
         run: cp -f dist/*.tar.gz wheelhouse/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         with:
           path: |
             ./python/wheelhouse/*.whl
