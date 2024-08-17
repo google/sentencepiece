@@ -19,6 +19,7 @@ import os
 import string
 import subprocess
 import sys
+import platform
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.build_py import build_py as _build_py
@@ -103,11 +104,21 @@ class build_ext(_build_ext):
     _build_ext.build_extension(self, ext)
 
 
-if os.name == 'nt':
-  # Must pre-install sentencepice into build directory.
+def get_win_arch():
   arch = 'win32'
   if sys.maxsize > 2**32:
     arch = 'amd64'
+  if 'arm' in platform.machine().lower():
+    arch = 'arm64'
+  if os.getenv('PYTHON_ARCH', '') == 'ARM64':
+    # Special check for arm64 under ciwheelbuild, see https://github.com/pypa/cibuildwheel/issues/1942
+    arch = 'arm64'
+  return arch
+
+
+if os.name == 'nt':
+  # Must pre-install sentencepice into build directory.
+  arch = get_win_arch()
   if os.path.exists('..\\build\\root_{}\\lib'.format(arch)):
     cflags = ['/std:c++17', '/I..\\build\\root_{}\\include'.format(arch)]
     libs = [
@@ -125,6 +136,8 @@ if os.name == 'nt':
     cmake_arch = 'Win32'
     if arch == 'amd64':
       cmake_arch = 'x64'
+    elif arch == "arm64":
+      cmake_arch = "ARM64"
     subprocess.check_call([
         'cmake',
         'sentencepiece',
