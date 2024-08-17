@@ -63,7 +63,7 @@ jobs:
       working-directory: ${{github.workspace}}/python
       run: |
         python -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
-        python setup.py test
+        python -m pytest
         python setup.py bdist_wheel
 
     - name: Upload artifcacts
