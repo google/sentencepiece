@@ -150,6 +150,10 @@ util::Status Normalizer::Normalize(absl::string_view input,
 
   // adds kSpaceSymbol to the current context.
   auto add_ws = [this, &consumed, &normalized, &norm_to_orig, &kSpaceSymbol]() {
+    static auto SP_ADD_DUMMY_PREFIX = std::getenv("SP_ADD_DUMMY_PREFIX");
+    if (SP_ADD_DUMMY_PREFIX != nullptr && strcmp(SP_ADD_DUMMY_PREFIX, "no") == 0) {
+      return;
+    }
     if (spec_->escape_whitespaces()) {
       normalized->append(kSpaceSymbol.data(), kSpaceSymbol.size());
       for (size_t n = 0; n < kSpaceSymbol.size(); ++n) {
