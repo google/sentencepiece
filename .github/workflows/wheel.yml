@@ -18,6 +18,7 @@ jobs:
       digests-macos: ${{ steps.hash-macos.outputs.digests }}
       digests-windows: ${{ steps.hash-windows.outputs.digests }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-11]
     runs-on: ${{ matrix.os }}
@@ -69,8 +70,8 @@ jobs:
           CIBW_ARCHS_LINUX: auto aarch64
           CIBW_ARCHS_MACOS: x86_64 universal2 arm64
           CIBW_ARCHS_WINDOWS: auto ARM64
-          CIBW_SKIP: "pp* *-musllinux_*"
-          CIBW_BUILD_VERBOSITY: 1
+          CIBW_SKIP: "pp* *-musllinux_* *-win_arm64"
+          CIBW_BUILD_VERBOSITY: 2
 
       - name: Build sdist archive
         working-directory: ${{github.workspace}}/python
@@ -93,7 +94,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: artifacts
+          name: artifacts-${{ matrix.os }}
           path: |
             ./python/wheelhouse/*.whl
             ./python/wheelhouse/*.tar.gz
@@ -124,7 +125,7 @@ jobs:
         if: runner.os == 'Windows'
         run: echo "digests=$(sha256sum ./python/wheelhouse/* | base64 -w0)" >> $GITHUB_OUTPUT
 
-  gather-disgests:
+  gather-digests:
     needs: [build_wheels]
     outputs:
       digests: ${{ steps.hash.outputs.digests }}
@@ -138,9 +139,16 @@ jobs:
           WINDOWS_DIGESTS: "${{ needs.build_wheels.outputs.digests-windows }}"
         run: |
           set -euo pipefail
-          echo "$LINUX_DIGESTS" | base64 -d > checksums.txt
-          echo "$MACOS_DIGESTS" | base64 -d >> checksums.txt
-          echo "$WINDOWS_DIGESTS" | base64 -d >> checksums.txt
+          touch checksums.txt
+          if [ ! -z "${LINUX_DIGESTS:-}" ]; then
+            echo "$LINUX_DIGESTS" | base64 -d >> checksums.txt
+          fi
+          if [ ! -z "${MACOS_DIGESTS:-}" ]; then
+            echo "$MACOS_DIGESTS" | base64 -d >> checksums.txt
+          fi
+          if [ ! -z "${WINDOWS_DIGESTS:-}" ]; then
+            echo "$WINDOWS_DIGESTS" | base64 -d >> checksums.txt
+          fi
           echo "digests=$(cat checksums.txt | base64 -w0)" >> $GITHUB_OUTPUT
 
   provenance:

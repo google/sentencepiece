@@ -14,6 +14,7 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ ubuntu-latest, ubuntu-20.04, windows-latest, macOS-11 ]
         arch: [ x64 ]
@@ -23,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     permissions:
-      contents: write # svenstaro/upload-release-action 
+      contents: write # svenstaro/upload-release-action
 
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
@@ -63,14 +64,14 @@ jobs:
       working-directory: ${{github.workspace}}/python
       run: |
         python -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
-        python setup.py build
-        python setup.py bdist_wheel
-        python -m pytest
+        python setup.py build -v
+        python setup.py bdist_wheel -v
+        python -m pytest -v --log-cli-level=INFO
 
-    - name: Upload artifcacts
+    - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: artifcacts
+        name: artifacts-${{ matrix.os }}-${{ matrix.arch }}
         path: ./build/*.7z
 
     - name: Upload Release Assets
