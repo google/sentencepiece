@@ -232,8 +232,8 @@ class ImmutableSentencePieceText(object):
     __repr__ = __str__
 
 
-# Register ImmutableSentencePieceText in _sentencepiece:
-_load_sentencepiece().ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
+# Registration will be handled by _initialize_all_registrations() after all classes are defined
+
 class ImmutableNBestSentencePieceText(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
@@ -1193,27 +1193,45 @@ class SentencePieceNormalizer(object):
       self.__init__()
       self.LoadFromSerializedProto(serialized_model_proto)
 
+# Global initialization flag
+_module_initialized = False
+
 def _register_immutable_classes():
     """Register immutable classes in the correct order."""
     try:
         _sp = _load_sentencepiece()
+        # Register immutable classes in dependency order
         _sp.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
         _sp.ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
         _sp.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
+        return True
+    except ImportError as e:
+        raise ImportError(f"Failed to load SWIG module during immutable class registration: {e}")
     except AttributeError as e:
-        raise ImportError(f"Failed to register immutable classes: {e}")
+        raise ImportError(f"Failed to register immutable classes - missing SWIG attributes: {e}")
 
 def _initialize_all_registrations():
     """Initialize all registrations after classes are defined."""
+    global _module_initialized
+
+    if _module_initialized:
+        return  # Prevent double initialization
+
     try:
         # Register immutable classes first
-        _register_immutable_classes()
-        # Register processor classes
+        if not _register_immutable_classes():
+            raise ImportError("Failed to register immutable classes")
+
+        # Register processor classes in order
         _register_processor()
         _register_trainer()
         _register_normalizer()
-    except Exception as e:
+
+        _module_initialized = True
+    except ImportError as e:
         raise ImportError(f"Failed to initialize registrations: {e}")
+    except Exception as e:
+        raise ImportError(f"Unexpected error during registration initialization: {e}")
 
 # Initialize all registrations after classes are defined
 _initialize_all_registrations()
