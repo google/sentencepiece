@@ -9,7 +9,11 @@ on:
     branches: [ master ]
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
+  actions: read
+  checks: write
+  issues: write
 
 jobs:
   build_wheels:
