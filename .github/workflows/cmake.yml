@@ -1,5 +1,6 @@
 name: CI for general build
-
+# This workflow handles the general build process including CMake configuration,
+# C++ build, Python wrapper compilation, and testing across multiple platforms
 on:
   push:
     branches: [ master ]
