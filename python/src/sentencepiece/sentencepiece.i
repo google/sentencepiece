@@ -1916,6 +1916,8 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 
 %pythoncode %{
 
+from ._version import __version__
+
 import re
 import csv
 import sys
@@ -1973,8 +1975,6 @@ _add_snake_case(SentencePieceTrainer)
 _add_snake_case(SentencePieceNormalizer)
 set_random_generator_seed = SetRandomGeneratorSeed
 set_min_log_level = SetMinLogLevel
-
-from ._version import __version__
 
 class _LogStream(object):
   def __init__(self, ostream=None):
