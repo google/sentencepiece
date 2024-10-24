@@ -30,11 +30,13 @@ _module_initialized = False
 _registration_complete = False
 _registration_in_progress = False
 _module_load_attempted = False
+_registration_lock = False
 
 def _load_sentencepiece():
     """Load and cache the SWIG module with proper initialization checks."""
     global _sentencepiece_module, _module_loading, _module_initialized
     global _registration_complete, _registration_in_progress, _module_load_attempted
+    global _registration_lock
 
     # Return cached module if already loaded and registered
     if (_sentencepiece_module is not None and
@@ -42,11 +44,19 @@ def _load_sentencepiece():
         _registration_complete):
         return _sentencepiece_module
 
-    # If we're in registration phase, return module even if not fully initialized
-    if _registration_in_progress and _sentencepiece_module is not None:
+    # During registration phase, return module without initialization
+    if _registration_lock:
+        if _sentencepiece_module is not None:
+            return _sentencepiece_module
+        # First load during registration
+        if __package__ or "." in __name__:
+            from . import _sentencepiece as _sp
+        else:
+            import _sentencepiece as _sp
+        _sentencepiece_module = _sp
         return _sentencepiece_module
 
-    # Prevent multiple load attempts during initialization
+    # Prevent circular imports during normal loading
     if _module_loading:
         if _module_load_attempted:
             raise ImportError("Circular import detected while loading _sentencepiece")
@@ -55,21 +65,12 @@ def _load_sentencepiece():
     try:
         _module_loading = True
         _module_load_attempted = True
+
         # Import SWIG module based on package context
         if __package__ or "." in __name__:
             from . import _sentencepiece as _sp
         else:
             import _sentencepiece as _sp
-
-        # Verify required SWIG registration functions are available
-        required_funcs = [
-            'ImmutableSentencePieceText_ImmutableSentencePiece_swigregister',
-            'ImmutableSentencePieceText_swigregister',
-            'ImmutableNBestSentencePieceText_swigregister'
-        ]
-        missing_funcs = [f for f in required_funcs if not hasattr(_sp, f)]
-        if missing_funcs:
-            raise ImportError(f"Missing required SWIG registration functions: {', '.join(missing_funcs)}")
 
         _sentencepiece_module = _sp
         _module_loading = False
@@ -1433,6 +1434,29 @@ def _batchnize(classname, name):
 
   setattr(classname, name, _batched_func)
 
+
+def _register_all_classes():
+  """Register all SWIG-generated classes after they are fully defined."""
+  global _registration_complete, _registration_in_progress
+  if _registration_complete:
+    return
+
+  _registration_in_progress = True
+  try:
+    _sp = _load_sentencepiece()
+    # Register immutable classes first
+    _sp.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
+    _sp.ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
+    _sp.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
+    # Register processor classes
+    _sp.SentencePieceProcessor_swigregister(SentencePieceProcessor)
+    _sp.SentencePieceTrainer_swigregister(SentencePieceTrainer)
+    _sp.SentencePieceNormalizer_swigregister(SentencePieceNormalizer)
+    _registration_complete = True
+  finally:
+    _registration_in_progress = False
+
+_register_all_classes()
 
 _sentencepiece_processor_init_native = SentencePieceProcessor.__init__
 _sentencepiece_normalizer_init_native = SentencePieceNormalizer.__init__
