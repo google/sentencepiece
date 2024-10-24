@@ -2,18 +2,18 @@ name: CI for general build
 # This workflow handles the general build process including CMake configuration,
 # C++ build, Python wrapper compilation, and testing across multiple platforms
 on:
-  push:
-    branches: [ master ]
-    tags:
-      - 'v*'
   pull_request_target:
     branches: [ master ]
     types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 # Prevent concurrent workflow runs on the same PR
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 permissions:
   contents: write
@@ -24,6 +24,8 @@ permissions:
 
 jobs:
   build:
+    # Only run on pull requests from forks
+    if: github.event_name == 'pull_request_target' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -34,11 +36,8 @@ jobs:
             arch: x86
     runs-on: ${{ matrix.os }}
 
-    permissions:
-      contents: write
-      pull-requests: write
-      actions: write
-      checks: write
+    # Inherit permissions from workflow level
+    permissions: write-all
 
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
