@@ -23,28 +23,31 @@ try:
 except ImportError:
     import __builtin__
 
-# Lazy load _sentencepiece to prevent circular imports
+# Load _sentencepiece module
 _sentencepiece_module = None
 def _load_sentencepiece():
     global _sentencepiece_module
     if _sentencepiece_module is None:
-        try:
-            if __package__ or "." in __name__:
-                from . import _sentencepiece as _sp
-            else:
-                import _sentencepiece as _sp
-            _sentencepiece_module = _sp
-        except ImportError:
-            return None
+        if __package__ or "." in __name__:
+            from . import _sentencepiece as _sp
+        else:
+            import _sentencepiece as _sp
+        _sentencepiece_module = _sp
     return _sentencepiece_module
 
 # Function to initialize class registrations after all classes are defined
 def _initialize_registrations():
     _sp = _load_sentencepiece()
-    if _sp is not None:
-        _sp.SentencePieceProcessor_swigregister(SentencePieceProcessor)
-        _sp.SentencePieceTrainer_swigregister(SentencePieceTrainer)
-        _sp.SentencePieceNormalizer_swigregister(SentencePieceNormalizer)
+    if not _sp:
+        raise ImportError("Failed to load _sentencepiece module. Please ensure the module is properly installed.")
+    # Register immutable classes first
+    _sp.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
+    _sp.ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
+    _sp.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
+    # Register main processor classes
+    _sp.SentencePieceProcessor_swigregister(SentencePieceProcessor)
+    _sp.SentencePieceTrainer_swigregister(SentencePieceTrainer)
+    _sp.SentencePieceNormalizer_swigregister(SentencePieceNormalizer)
 
 def _swig_repr(self):
     try:
