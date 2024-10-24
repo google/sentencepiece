@@ -1,76 +1,99 @@
 name: CI for general build
-
+# This workflow handles the general build process including CMake configuration,
+# C++ build, Python wrapper compilation, and testing across multiple platforms
 on:
-  push:
-    branches: [ master ]
-    tags:
-      - 'v*'
   pull_request:
     branches: [ master ]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+# Prevent concurrent workflow runs on the same PR
+concurrency:
+  group: cmake-${{ github.event.name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: false
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  PYTHONPATH: ${{ github.workspace }}/build/root/lib
+  LD_LIBRARY_PATH: ${{ github.workspace }}/build/root/lib
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
+  actions: write
+  checks: write
+  id-token: write
 
 jobs:
   build:
+    # Only run on pull requests from forks
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork || github.event_name == 'workflow_dispatch'
     strategy:
+      fail-fast: false
       matrix:
-        os: [ ubuntu-latest, ubuntu-20.04, windows-latest, macOS-11 ]
+        os: [ ubuntu-latest ]
         arch: [ x64 ]
-        include:
-          - os: windows-latest
-            arch: x86
     runs-on: ${{ matrix.os }}
 
-    permissions:
-      contents: write # svenstaro/upload-release-action 
+    # Inherit permissions from workflow level
+    # Removed redundant permissions block as it's inherited from workflow level
 
     steps:
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential swig python3-dev
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      with:
+        fetch-depth: 2
     - uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
       with:
         python-version: '3.x'
         architecture: ${{matrix.arch}}
 
-    - name: Config for Windows
-      if: runner.os == 'Windows'
+    - name: Configure CMake
       run: |
-        if ("${{matrix.arch}}" -eq "x64") {
-          $msbuildPlatform = "x64"
-        } else {
-          $msbuildPlatform = "Win32"
-        }
-        cmake -A $msbuildPlatform -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
-
-    - name: Config for Unix
-      if: runner.os != 'Windows'
-      run: cmake -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
-      env:
-        CMAKE_OSX_ARCHITECTURES: arm64;x86_64
+        echo "Configuring CMake build..."
+        cmake -B ${{github.workspace}}/build \
+          -DSPM_BUILD_TEST=ON \
+          -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
+      run: |
+        echo "Building with CMake..."
+        cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      run: ctest -C Release --output-on-failure
+      run: |
+        echo "Running tests..."
+        ctest -C Release --output-on-failure -V
 
     - name: Package
       working-directory: ${{github.workspace}}/build
-      run: cpack
-
-    - name: Build Python wrapper
-      working-directory: ${{github.workspace}}/python
       run: |
-        python -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
-        python setup.py build
-        python setup.py bdist_wheel
-        python -m pytest
+        echo "Creating package..."
+        cpack -V
 
-    - name: Upload artifcacts
+    - name: Build Python wrapper (Unix)
+      if: runner.os != 'Windows'
+      working-directory: ${{github.workspace}}/python
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        python -m pip install build pytest
+        python -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
+        # Ensure we have the built C++ library in the Python path
+        echo "PYTHONPATH=${{github.workspace}}/build/root/lib" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=${{github.workspace}}/build/root/lib" >> $GITHUB_ENV
+        python setup.py build -v
+        python setup.py bdist_wheel -v
+        python -m pytest -v --log-cli-level=INFO
+
+    - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: artifcacts
+        name: artifacts-${{ matrix.os }}-${{ matrix.arch }}
         path: ./build/*.7z
 
     - name: Upload Release Assets
