@@ -7,12 +7,14 @@ on:
       - 'v*'
   pull_request_target:
     branches: [ master ]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
   pull-requests: write
   actions: write
   checks: write
+  id-token: write
 
 jobs:
   build:
@@ -70,20 +72,32 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: cpack
 
-    - name: Build Python wrapper
+    - name: Build Python wrapper (Windows)
+      if: runner.os == 'Windows'
       working-directory: ${{github.workspace}}/python
+      shell: pwsh
       run: |
         python -m pip install --upgrade pip setuptools wheel
         python -m pip install build pytest
         python -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
         # Ensure we have the built C++ library in the Python path
-        if [ "$RUNNER_OS" == "Windows" ]; then
-          echo "PYTHONPATH=${{github.workspace}}/build/root/lib;$PYTHONPATH" >> $GITHUB_ENV
-          echo "PATH=${{github.workspace}}/build/root/lib;$PATH" >> $GITHUB_ENV
-        else
-          echo "PYTHONPATH=${{github.workspace}}/build/root/lib:$PYTHONPATH" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=${{github.workspace}}/build/root/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-        fi
+        $env:PYTHONPATH = "${{github.workspace}}/build/root/lib;$env:PYTHONPATH"
+        $env:PATH = "${{github.workspace}}/build/root/lib;$env:PATH"
+        python setup.py build -v
+        python setup.py bdist_wheel -v
+        python -m pytest -v --log-cli-level=INFO
+
+    - name: Build Python wrapper (Unix)
+      if: runner.os != 'Windows'
+      working-directory: ${{github.workspace}}/python
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        python -m pip install build pytest
+        python -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
+        # Ensure we have the built C++ library in the Python path
+        echo "PYTHONPATH=${{github.workspace}}/build/root/lib:$PYTHONPATH" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=${{github.workspace}}/build/root/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
         python setup.py build -v
         python setup.py bdist_wheel -v
         python -m pytest -v --log-cli-level=INFO
