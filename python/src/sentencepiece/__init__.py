@@ -60,6 +60,17 @@ def _load_sentencepiece():
             from . import _sentencepiece as _sp
         else:
             import _sentencepiece as _sp
+
+        # Verify required SWIG registration functions are available
+        required_funcs = [
+            'ImmutableSentencePieceText_ImmutableSentencePiece_swigregister',
+            'ImmutableSentencePieceText_swigregister',
+            'ImmutableNBestSentencePieceText_swigregister'
+        ]
+        missing_funcs = [f for f in required_funcs if not hasattr(_sp, f)]
+        if missing_funcs:
+            raise ImportError(f"Missing required SWIG registration functions: {', '.join(missing_funcs)}")
+
         _sentencepiece_module = _sp
         _module_loading = False
         _module_initialized = True
