@@ -29,10 +29,12 @@ _module_loading = False
 _module_initialized = False
 _registration_complete = False
 _registration_in_progress = False
+_module_load_attempted = False
 
 def _load_sentencepiece():
     """Load and cache the SWIG module with proper initialization checks."""
-    global _sentencepiece_module, _module_loading, _module_initialized, _registration_complete
+    global _sentencepiece_module, _module_loading, _module_initialized
+    global _registration_complete, _registration_in_progress, _module_load_attempted
 
     # Return cached module if already loaded and registered
     if (_sentencepiece_module is not None and
@@ -40,15 +42,19 @@ def _load_sentencepiece():
         _registration_complete):
         return _sentencepiece_module
 
-    # Prevent circular imports during module loading
+    # If we're in registration phase, return module even if not fully initialized
+    if _registration_in_progress and _sentencepiece_module is not None:
+        return _sentencepiece_module
+
+    # Prevent multiple load attempts during initialization
     if _module_loading:
-        if not _registration_complete:
-            # Allow access during registration phase
-            return _sentencepiece_module
-        raise ImportError("Circular import detected while loading _sentencepiece")
+        if _module_load_attempted:
+            raise ImportError("Circular import detected while loading _sentencepiece")
+        return None
 
     try:
         _module_loading = True
+        _module_load_attempted = True
         # Import SWIG module based on package context
         if __package__ or "." in __name__:
             from . import _sentencepiece as _sp
@@ -61,6 +67,7 @@ def _load_sentencepiece():
     except ImportError as e:
         _module_loading = False
         _module_initialized = False
+        _module_load_attempted = False
         raise ImportError(f"Failed to load _sentencepiece module: {e}")
 
 def _swig_repr(self):
@@ -1288,17 +1295,23 @@ class SentencePieceNormalizer(object):
 _module_loading = False
 _module_initialized = False
 _registration_complete = False
+_registration_in_progress = False
 
 def _register_immutable_classes():
     """Register immutable classes in the correct order."""
-    global _registration_complete
+    global _registration_complete, _registration_in_progress
     if _registration_complete:
         return True
 
+    if _registration_in_progress:
+        return False
+
     try:
+        _registration_in_progress = True
         _sp = _load_sentencepiece()
         # Register immutable classes in dependency order
         if not hasattr(_sp, 'ImmutableSentencePieceText_ImmutableSentencePiece_swigregister'):
+            _registration_in_progress = False
             return False
 
         # Ensure all required registration functions exist
@@ -1308,6 +1321,7 @@ def _register_immutable_classes():
             'ImmutableNBestSentencePieceText_swigregister'
         ]
         if not all(hasattr(_sp, func) for func in required_funcs):
+            _registration_in_progress = False
             return False
 
         # Register in dependency order
@@ -1316,27 +1330,36 @@ def _register_immutable_classes():
         _sp.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
 
         _registration_complete = True
+        _registration_in_progress = False
         return True
     except ImportError as e:
+        _registration_in_progress = False
         raise ImportError(f"Failed to load SWIG module during immutable class registration: {e}")
     except AttributeError as e:
+        _registration_in_progress = False
         raise ImportError(f"Failed to register immutable classes - missing SWIG attributes: {e}")
 
 def _initialize_all_registrations():
     """Initialize all registrations after classes are defined."""
-    global _module_initialized, _registration_complete
+    global _module_initialized, _registration_complete, _registration_in_progress
 
     if _module_initialized and _registration_complete:
         return  # Prevent double initialization
 
+    if _registration_in_progress:
+        return  # Prevent recursive initialization
+
     try:
+        _registration_in_progress = True
         # Ensure SWIG module is loaded first
         _sp = _load_sentencepiece()
         if _sp is None:
+            _registration_in_progress = False
             raise ImportError("Failed to load SWIG module")
 
         # Register immutable classes first
         if not _register_immutable_classes():
+            _registration_in_progress = False
             raise ImportError("Failed to register immutable classes")
 
         # Register processor classes in order, with dependency checks
@@ -1351,9 +1374,12 @@ def _initialize_all_registrations():
                 register_func()
 
         _module_initialized = True
+        _registration_in_progress = False
     except ImportError as e:
+        _registration_in_progress = False
         raise ImportError(f"Failed to initialize registrations: {e}")
     except Exception as e:
+        _registration_in_progress = False
         raise ImportError(f"Unexpected error during registration initialization: {e}")
 
 # Initialize all registrations after classes are defined
