@@ -84,8 +84,8 @@ jobs:
         python -m pip install build pytest
         python -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
         # Ensure we have the built C++ library in the Python path
-        $env:PYTHONPATH = "${{github.workspace}}/build/root/lib;$env:PYTHONPATH"
-        $env:PATH = "${{github.workspace}}/build/root/lib;$env:PATH"
+        echo "PYTHONPATH=${{github.workspace}}/build/root/lib" | Out-File -FilePath $env:GITHUB_ENV -Append
+        echo "PATH=${{github.workspace}}/build/root/lib;$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
         python setup.py build -v
         python setup.py bdist_wheel -v
         python -m pytest -v --log-cli-level=INFO
@@ -99,8 +99,8 @@ jobs:
         python -m pip install build pytest
         python -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
         # Ensure we have the built C++ library in the Python path
-        echo "PYTHONPATH=${{github.workspace}}/build/root/lib:$PYTHONPATH" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH=${{github.workspace}}/build/root/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "PYTHONPATH=${{github.workspace}}/build/root/lib" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=${{github.workspace}}/build/root/lib" >> $GITHUB_ENV
         python setup.py build -v
         python setup.py bdist_wheel -v
         python -m pytest -v --log-cli-level=INFO
