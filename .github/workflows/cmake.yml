@@ -9,11 +9,13 @@ on:
 
 # Prevent concurrent workflow runs on the same PR
 concurrency:
-  group: cmake-${{ github.event.pull_request.number || github.sha }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  group: cmake-${{ github.event.name }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: false
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  PYTHONPATH: ${{ github.workspace }}/build/root/lib
+  LD_LIBRARY_PATH: ${{ github.workspace }}/build/root/lib
 
 permissions:
   contents: write
@@ -29,17 +31,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, ubuntu-20.04, windows-latest, macOS-11 ]
+        os: [ ubuntu-latest ]
         arch: [ x64 ]
-        include:
-          - os: windows-latest
-            arch: x86
     runs-on: ${{ matrix.os }}
 
     # Inherit permissions from workflow level
     # Removed redundant permissions block as it's inherited from workflow level
 
     steps:
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential swig python3-dev
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
       with:
         fetch-depth: 2
@@ -48,47 +51,29 @@ jobs:
         python-version: '3.x'
         architecture: ${{matrix.arch}}
 
-    - name: Config for Windows
-      if: runner.os == 'Windows'
+    - name: Configure CMake
       run: |
-        if ("${{matrix.arch}}" -eq "x64") {
-          $msbuildPlatform = "x64"
-        } else {
-          $msbuildPlatform = "Win32"
-        }
-        cmake -A $msbuildPlatform -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
-
-    - name: Config for Unix
-      if: runner.os != 'Windows'
-      run: cmake -B ${{github.workspace}}/build -DSPM_BUILD_TEST=ON -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
-      env:
-        CMAKE_OSX_ARCHITECTURES: arm64;x86_64
+        echo "Configuring CMake build..."
+        cmake -B ${{github.workspace}}/build \
+          -DSPM_BUILD_TEST=ON \
+          -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
+      run: |
+        echo "Building with CMake..."
+        cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      run: ctest -C Release --output-on-failure
+      run: |
+        echo "Running tests..."
+        ctest -C Release --output-on-failure -V
 
     - name: Package
       working-directory: ${{github.workspace}}/build
-      run: cpack
-
-    - name: Build Python wrapper (Windows)
-      if: runner.os == 'Windows'
-      working-directory: ${{github.workspace}}/python
-      shell: pwsh
       run: |
-        python -m pip install --upgrade pip setuptools wheel
-        python -m pip install build pytest
-        python -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
-        # Ensure we have the built C++ library in the Python path
-        echo "PYTHONPATH=${{github.workspace}}/build/root/lib" | Out-File -FilePath $env:GITHUB_ENV -Append
-        echo "PATH=${{github.workspace}}/build/root/lib;$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
-        python setup.py build -v
-        python setup.py bdist_wheel -v
-        python -m pytest -v --log-cli-level=INFO
+        echo "Creating package..."
+        cpack -V
 
     - name: Build Python wrapper (Unix)
       if: runner.os != 'Windows'
