@@ -70,7 +70,12 @@ jobs:
     - name: Build Python wrapper
       working-directory: ${{github.workspace}}/python
       run: |
+        python -m pip install --upgrade pip setuptools wheel
+        python -m pip install build pytest
         python -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
+        # Ensure we have the built C++ library in the Python path
+        export PYTHONPATH=${{github.workspace}}/build/root/lib:$PYTHONPATH
+        export LD_LIBRARY_PATH=${{github.workspace}}/build/root/lib:$LD_LIBRARY_PATH
         python setup.py build -v
         python setup.py bdist_wheel -v
         python -m pytest -v --log-cli-level=INFO
