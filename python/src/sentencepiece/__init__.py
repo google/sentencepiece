@@ -23,22 +23,38 @@ try:
 except ImportError:
     import __builtin__
 
-# Lazy loading of _sentencepiece module
+# Module state tracking
 _sentencepiece_module = None
+_module_loading = False
 _module_initialized = False
+_registration_complete = False
 
 def _load_sentencepiece():
-    global _sentencepiece_module
-    if _sentencepiece_module is None:
-        try:
-            if __package__ or "." in __name__:
-                from . import _sentencepiece as _sp
-            else:
-                import _sentencepiece as _sp
-            _sentencepiece_module = _sp
-        except ImportError as e:
-            raise ImportError(f"Failed to load _sentencepiece module: {e}")
-    return _sentencepiece_module
+    """Load and cache the SWIG module with proper initialization checks."""
+    global _sentencepiece_module, _module_loading, _module_initialized
+
+    # Return cached module if already loaded
+    if _sentencepiece_module is not None and _module_initialized:
+        return _sentencepiece_module
+
+    # Prevent circular imports during module loading
+    if _module_loading:
+        raise ImportError("Circular import detected while loading _sentencepiece")
+
+    try:
+        _module_loading = True
+        # Import SWIG module based on package context
+        if __package__ or "." in __name__:
+            from . import _sentencepiece as _sp
+        else:
+            import _sentencepiece as _sp
+        _sentencepiece_module = _sp
+        _module_loading = False
+        _module_initialized = True
+        return _sentencepiece_module
+    except ImportError as e:
+        _module_loading = False
+        raise ImportError(f"Failed to load _sentencepiece module: {e}")
 
 def _swig_repr(self):
     try:
@@ -1201,6 +1217,8 @@ def _register_immutable_classes():
     try:
         _sp = _load_sentencepiece()
         # Register immutable classes in dependency order
+        if not hasattr(_sp, 'ImmutableSentencePieceText_ImmutableSentencePiece_swigregister'):
+            return False
         _sp.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
         _sp.ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
         _sp.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
@@ -1218,14 +1236,22 @@ def _initialize_all_registrations():
         return  # Prevent double initialization
 
     try:
+        # Ensure SWIG module is loaded first
+        _sp = _load_sentencepiece()
+        if _sp is None:
+            raise ImportError("Failed to load SWIG module")
+
         # Register immutable classes first
         if not _register_immutable_classes():
             raise ImportError("Failed to register immutable classes")
 
-        # Register processor classes in order
-        _register_processor()
-        _register_trainer()
-        _register_normalizer()
+        # Register processor classes in order, with dependency checks
+        if hasattr(_sp, 'SentencePieceProcessor_swigregister'):
+            _register_processor()
+        if hasattr(_sp, 'SentencePieceTrainer_swigregister'):
+            _register_trainer()
+        if hasattr(_sp, 'SentencePieceNormalizer_swigregister'):
+            _register_normalizer()
 
         _module_initialized = True
     except ImportError as e:
