@@ -4,6 +4,12 @@
 # Do not make changes to this file unless you know what you are doing - modify
 # the SWIG interface file instead.
 
+# First import initialization module to set up paths
+if __package__ or "." in __name__:
+    from . import _init
+else:
+    import _init
+
 import re
 import csv
 import sys
@@ -12,16 +18,16 @@ from io import StringIO
 from io import BytesIO
 from sys import version_info as _swig_python_version_info
 
-# Import the low-level C/C++ module
-if __package__ or "." in __name__:
-    from . import _sentencepiece
-else:
-    import _sentencepiece
-
 try:
     import builtins as __builtin__
 except ImportError:
     import __builtin__
+
+# Import the low-level C/C++ module after paths are set up
+if __package__ or "." in __name__:
+    from . import _sentencepiece
+else:
+    import _sentencepiece
 
 def _swig_repr(self):
     try:
