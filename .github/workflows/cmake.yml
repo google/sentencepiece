@@ -9,7 +9,7 @@ on:
 
 # Prevent concurrent workflow runs on the same PR
 concurrency:
-  group: cmake-${{ github.event.pull_request.number || github.sha }}-${{ matrix.os }}-${{ matrix.arch }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  group: cmake-${{ github.event.pull_request.number || github.sha }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: false
 
 env:
@@ -25,7 +25,7 @@ permissions:
 jobs:
   build:
     # Only run on pull requests from forks
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -37,7 +37,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     # Inherit permissions from workflow level
-    permissions: write-all
+    # Removed redundant permissions block as it's inherited from workflow level
 
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
