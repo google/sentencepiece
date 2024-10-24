@@ -192,6 +192,7 @@ setup(
     license='Apache',
     platforms='Unix',
     py_modules=[
+        'sentencepiece/_init',
         'sentencepiece/__init__',
         'sentencepiece/_version',
         'sentencepiece/sentencepiece_model_pb2',
