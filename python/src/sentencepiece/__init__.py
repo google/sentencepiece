@@ -30,33 +30,17 @@ _module_initialized = False
 _registration_complete = False
 _registration_in_progress = False
 _module_load_attempted = False
-_registration_lock = False
 
 def _load_sentencepiece():
     """Load and cache the SWIG module with proper initialization checks."""
     global _sentencepiece_module, _module_loading, _module_initialized
     global _registration_complete, _registration_in_progress, _module_load_attempted
-    global _registration_lock
 
-    # Return cached module if already loaded and registered
-    if (_sentencepiece_module is not None and
-        _module_initialized and
-        _registration_complete):
+    # Return cached module if already loaded
+    if _sentencepiece_module is not None and _module_initialized:
         return _sentencepiece_module
 
-    # During registration phase, return module without initialization
-    if _registration_lock:
-        if _sentencepiece_module is not None:
-            return _sentencepiece_module
-        # First load during registration
-        if __package__ or "." in __name__:
-            from . import _sentencepiece as _sp
-        else:
-            import _sentencepiece as _sp
-        _sentencepiece_module = _sp
-        return _sentencepiece_module
-
-    # Prevent circular imports during normal loading
+    # Prevent circular imports during loading
     if _module_loading:
         if _module_load_attempted:
             raise ImportError("Circular import detected while loading _sentencepiece")
@@ -1437,24 +1421,33 @@ def _batchnize(classname, name):
 
 def _register_all_classes():
   """Register all SWIG-generated classes after they are fully defined."""
-  global _registration_complete, _registration_in_progress
+  global _registration_complete, _registration_in_progress, _registration_lock
   if _registration_complete:
     return
 
-  _registration_in_progress = True
+  # First ensure module is fully loaded without registration
+  _registration_lock = True
   try:
     _sp = _load_sentencepiece()
-    # Register immutable classes first
-    _sp.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
-    _sp.ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
-    _sp.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
-    # Register processor classes
-    _sp.SentencePieceProcessor_swigregister(SentencePieceProcessor)
-    _sp.SentencePieceTrainer_swigregister(SentencePieceTrainer)
-    _sp.SentencePieceNormalizer_swigregister(SentencePieceNormalizer)
-    _registration_complete = True
+    if _sp is None:
+      raise ImportError("Failed to load _sentencepiece module")
+
+    # Now that module is loaded, perform registrations
+    _registration_in_progress = True
+    try:
+      # Register immutable classes first
+      _sp.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
+      _sp.ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
+      _sp.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
+      # Register processor classes
+      _sp.SentencePieceProcessor_swigregister(SentencePieceProcessor)
+      _sp.SentencePieceTrainer_swigregister(SentencePieceTrainer)
+      _sp.SentencePieceNormalizer_swigregister(SentencePieceNormalizer)
+      _registration_complete = True
+    finally:
+      _registration_in_progress = False
   finally:
-    _registration_in_progress = False
+    _registration_lock = False
 
 _register_all_classes()
 
