@@ -9,7 +9,7 @@ on:
     branches: [ master ]
 
 concurrency:
-  group: wheel-${{ github.event.pull_request.number || github.sha }}-${{ matrix.os }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  group: wheel-${{ github.event.pull_request.number || github.sha }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: false
 
 permissions:
@@ -31,9 +31,6 @@ jobs:
         os: [ubuntu-latest, windows-latest, macOS-11]
     runs-on: ${{ matrix.os }}
     name: Build wheels on ${{ matrix.os }}
-
-    permissions:
-      contents: write # svenstaro/upload-release-action
 
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
