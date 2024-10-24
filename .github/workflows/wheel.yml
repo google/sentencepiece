@@ -153,12 +153,12 @@ jobs:
 
   provenance:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build_wheels, gather-disgests]
+    needs: [build_wheels, gather-digests]
     permissions:
       actions: read   # To read the workflow path.
       id-token: write # To sign the provenance.
       contents: write # To add assets to a release.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
     with:
-      base64-subjects: "${{ needs.gather-disgests.outputs.digests }}"
+      base64-subjects: "${{ needs.gather-digests.outputs.digests }}"
       upload-assets: true # Optional: Upload to a new release
