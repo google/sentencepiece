@@ -9,7 +9,7 @@ on:
 
 # Prevent concurrent workflow runs on the same PR
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}-${{ matrix.os }}-${{ matrix.arch }}
+  group: cmake-${{ github.event.pull_request.number || github.sha }}-${{ matrix.os }}-${{ matrix.arch }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: false
 
 env:

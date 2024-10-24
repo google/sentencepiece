@@ -9,7 +9,7 @@ on:
     branches: [ master ]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}-${{ matrix.os }}
+  group: wheel-${{ github.event.pull_request.number || github.sha }}-${{ matrix.os }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: false
 
 permissions:
