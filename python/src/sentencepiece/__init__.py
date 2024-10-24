@@ -99,42 +99,53 @@ class ImmutableSentencePieceText_ImmutableSentencePiece(object):
     __repr__ = _swig_repr
 
     def __init__(self):
-        self.this = None  # Will be initialized during registration
+        self.this = None
+        self._initialized = False
 
     def _initialize(self):
-        if not self.this:
+        if self._initialized:
+            return
+        try:
             _sp = _load_sentencepiece()
+            if not hasattr(_sp, 'new_ImmutableSentencePieceText_ImmutableSentencePiece'):
+                raise ImportError("SWIG module not properly initialized")
             self.this = _sp.new_ImmutableSentencePieceText_ImmutableSentencePiece()
-            _sp.ImmutableSentencePieceText_ImmutableSentencePiece_swiginit(self, self.this)
+            self._initialized = True
+        except ImportError as e:
+            raise RuntimeError(f"Failed to initialize: {e}")
 
-    __swig_destroy__ = property(lambda self: _load_sentencepiece().delete_ImmutableSentencePieceText_ImmutableSentencePiece)
+    def _ensure_initialized(self):
+        if not self._initialized:
+            self._initialize()
+
+    __swig_destroy__ = property(lambda self: _load_sentencepiece().delete_ImmutableSentencePieceText_ImmutableSentencePiece if self._initialized else None)
 
     def _piece(self):
-        self._initialize()
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__piece(self)
 
     def _surface(self):
-        self._initialize()
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__surface(self)
 
     def _id(self):
-        self._initialize()
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__id(self)
 
     def _begin(self):
-        self._initialize()
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__begin(self)
 
     def _end(self):
-        self._initialize()
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__end(self)
 
     def _surface_as_bytes(self):
-        self._initialize()
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__surface_as_bytes(self)
 
     def _piece_as_bytes(self):
-        self._initialize()
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__piece_as_bytes(self)
 
     piece = property(_piece)
@@ -146,7 +157,7 @@ class ImmutableSentencePieceText_ImmutableSentencePiece(object):
     end = property(_end)
 
     def __str__(self):
-        self._initialize()
+        self._ensure_initialized()
         return ('piece: \"{}\"\n'
                 'id: {}\n'
                 'surface: \"{}\"\n'
@@ -155,11 +166,11 @@ class ImmutableSentencePieceText_ImmutableSentencePiece(object):
                                     self.begin, self.end)
 
     def __eq__(self, other):
-        self._initialize()
+        self._ensure_initialized()
         return self.piece == other.piece and self.id == other.id and self.surface == other.surface and self.begin == other.begin and self.end == other.end
 
     def __hash__(self):
-        self._initialize()
+        self._ensure_initialized()
         return hash(str(self))
 
     __repr__ = __str__
@@ -169,38 +180,49 @@ class ImmutableSentencePieceText(object):
     __repr__ = _swig_repr
 
     def __init__(self):
-        self.this = None  # Will be initialized during registration
+        self.this = None
+        self._initialized = False
 
     def _initialize(self):
-        if not self.this:
+        if self._initialized:
+            return
+        try:
             _sp = _load_sentencepiece()
+            if not hasattr(_sp, 'new_ImmutableSentencePieceText'):
+                raise ImportError("SWIG module not properly initialized")
             self.this = _sp.new_ImmutableSentencePieceText()
-            _sp.ImmutableSentencePieceText_swiginit(self, self.this)
+            self._initialized = True
+        except ImportError as e:
+            raise RuntimeError(f"Failed to initialize: {e}")
 
-    __swig_destroy__ = property(lambda self: _load_sentencepiece().delete_ImmutableSentencePieceText)
+    def _ensure_initialized(self):
+        if not self._initialized:
+            self._initialize()
+
+    __swig_destroy__ = property(lambda self: _load_sentencepiece().delete_ImmutableSentencePieceText if self._initialized else None)
 
     def _pieces_size(self):
-        self._initialize()
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableSentencePieceText__pieces_size(self)
 
     def _pieces(self, index):
-        self._initialize()
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableSentencePieceText__pieces(self, index)
 
     def _text(self):
-        self._initialize()
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableSentencePieceText__text(self)
 
     def _score(self):
-        self._initialize()
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableSentencePieceText__score(self)
 
     def SerializeAsString(self):
-        self._initialize()
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableSentencePieceText_SerializeAsString(self)
 
     def _text_as_bytes(self):
-        self._initialize()
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableSentencePieceText__text_as_bytes(self)
 
     text = property(_text)
@@ -255,17 +277,37 @@ class ImmutableNBestSentencePieceText(object):
     __repr__ = _swig_repr
 
     def __init__(self):
-        _sp = _load_sentencepiece()
-        _sp.ImmutableNBestSentencePieceText_swiginit(self, _sp.new_ImmutableNBestSentencePieceText())
-    __swig_destroy__ = property(lambda self: _load_sentencepiece().delete_ImmutableNBestSentencePieceText)
+        self.this = None
+        self._initialized = False
+
+    def _initialize(self):
+        if self._initialized:
+            return
+        try:
+            _sp = _load_sentencepiece()
+            if not hasattr(_sp, 'new_ImmutableNBestSentencePieceText'):
+                raise ImportError("SWIG module not properly initialized")
+            self.this = _sp.new_ImmutableNBestSentencePieceText()
+            self._initialized = True
+        except ImportError as e:
+            raise RuntimeError(f"Failed to initialize: {e}")
+
+    def _ensure_initialized(self):
+        if not self._initialized:
+            self._initialize()
+
+    __swig_destroy__ = property(lambda self: _load_sentencepiece().delete_ImmutableNBestSentencePieceText if self._initialized else None)
 
     def _nbests_size(self):
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableNBestSentencePieceText__nbests_size(self)
 
     def _nbests(self, index):
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableNBestSentencePieceText__nbests(self, index)
 
     def SerializeAsString(self):
+        self._ensure_initialized()
         return _load_sentencepiece().ImmutableNBestSentencePieceText_SerializeAsString(self)
 
     class ImmutableSentencePieceTextIterator:
