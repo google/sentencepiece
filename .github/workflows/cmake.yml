@@ -2,7 +2,7 @@ name: CI for general build
 # This workflow handles the general build process including CMake configuration,
 # C++ build, Python wrapper compilation, and testing across multiple platforms
 on:
-  pull_request_target:
+  pull_request:
     branches: [ master ]
     types: [opened, synchronize, reopened]
   workflow_dispatch:
@@ -25,7 +25,7 @@ permissions:
 jobs:
   build:
     # Only run on pull requests from forks
-    if: github.event_name == 'pull_request_target' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -42,8 +42,6 @@ jobs:
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
       with:
-        ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
-        repository: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name || github.repository }}
         fetch-depth: 2
     - uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
       with:
