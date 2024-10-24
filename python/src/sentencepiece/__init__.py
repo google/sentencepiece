@@ -30,23 +30,26 @@ _module_initialized = False
 _registration_complete = False
 _registration_in_progress = False
 _module_load_attempted = False
+_loading_lock = False
 
 def _load_sentencepiece():
     """Load and cache the SWIG module with proper initialization checks."""
     global _sentencepiece_module, _module_loading, _module_initialized
     global _registration_complete, _registration_in_progress, _module_load_attempted
+    global _loading_lock
 
     # Return cached module if already loaded
     if _sentencepiece_module is not None and _module_initialized:
         return _sentencepiece_module
 
     # Prevent circular imports during loading
-    if _module_loading:
+    if _module_loading or _loading_lock:
         if _module_load_attempted:
             raise ImportError("Circular import detected while loading _sentencepiece")
         return None
 
     try:
+        _loading_lock = True
         _module_loading = True
         _module_load_attempted = True
 
@@ -57,14 +60,14 @@ def _load_sentencepiece():
             import _sentencepiece as _sp
 
         _sentencepiece_module = _sp
-        _module_loading = False
         _module_initialized = True
         return _sentencepiece_module
     except ImportError as e:
-        _module_loading = False
-        _module_initialized = False
-        _module_load_attempted = False
         raise ImportError(f"Failed to load _sentencepiece module: {e}")
+    finally:
+        _module_loading = False
+        _loading_lock = False
+        _module_load_attempted = False
 
 def _swig_repr(self):
     try:
@@ -1428,18 +1431,30 @@ def _register_all_classes():
   # First ensure module is fully loaded without registration
   _registration_lock = True
   try:
-    _sp = _load_sentencepiece()
+    # Load module without registrations first
+    _sp = None
+    for _ in range(2):  # Try twice to handle potential circular imports
+      _sp = _load_sentencepiece()
+      if _sp is not None:
+        break
+
     if _sp is None:
       raise ImportError("Failed to load _sentencepiece module")
 
     # Now that module is loaded, perform registrations
     _registration_in_progress = True
     try:
-      # Register immutable classes first
-      _sp.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
-      _sp.ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
-      _sp.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
-      # Register processor classes
+      # Register immutable classes first, with retries
+      for _ in range(2):
+        try:
+          _sp.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
+          _sp.ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
+          _sp.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
+          break
+        except (AttributeError, ImportError):
+          continue
+
+      # Register processor classes after immutables
       _sp.SentencePieceProcessor_swigregister(SentencePieceProcessor)
       _sp.SentencePieceTrainer_swigregister(SentencePieceTrainer)
       _sp.SentencePieceNormalizer_swigregister(SentencePieceNormalizer)
@@ -1449,6 +1464,7 @@ def _register_all_classes():
   finally:
     _registration_lock = False
 
+# Delay registration until after all classes are defined
 _register_all_classes()
 
 _sentencepiece_processor_init_native = SentencePieceProcessor.__init__
