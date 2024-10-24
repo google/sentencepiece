@@ -8,6 +8,10 @@ on:
   pull_request_target:
     branches: [ master ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}-${{ matrix.os }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
