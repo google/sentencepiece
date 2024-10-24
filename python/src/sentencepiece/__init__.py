@@ -28,17 +28,23 @@ _sentencepiece_module = None
 _module_loading = False
 _module_initialized = False
 _registration_complete = False
+_registration_in_progress = False
 
 def _load_sentencepiece():
     """Load and cache the SWIG module with proper initialization checks."""
-    global _sentencepiece_module, _module_loading, _module_initialized
+    global _sentencepiece_module, _module_loading, _module_initialized, _registration_complete
 
-    # Return cached module if already loaded
-    if _sentencepiece_module is not None and _module_initialized:
+    # Return cached module if already loaded and registered
+    if (_sentencepiece_module is not None and
+        _module_initialized and
+        _registration_complete):
         return _sentencepiece_module
 
     # Prevent circular imports during module loading
     if _module_loading:
+        if not _registration_complete:
+            # Allow access during registration phase
+            return _sentencepiece_module
         raise ImportError("Circular import detected while loading _sentencepiece")
 
     try:
@@ -54,6 +60,7 @@ def _load_sentencepiece():
         return _sentencepiece_module
     except ImportError as e:
         _module_loading = False
+        _module_initialized = False
         raise ImportError(f"Failed to load _sentencepiece module: {e}")
 
 def _swig_repr(self):
@@ -1166,32 +1173,57 @@ class SentencePieceNormalizer(object):
     __repr__ = _swig_repr
 
     def __init__(self):
-        _sp = _load_sentencepiece()
-        _sp.SentencePieceNormalizer_swiginit(self, _sp.new_SentencePieceNormalizer())
-    __swig_destroy__ = property(lambda self: _load_sentencepiece().delete_SentencePieceNormalizer)
+        self.this = None
+        self._initialized = False
+
+    def _initialize(self):
+        if self._initialized:
+            return
+        try:
+            _sp = _load_sentencepiece()
+            if not hasattr(_sp, 'new_SentencePieceNormalizer'):
+                raise ImportError("SWIG module not properly initialized")
+            self.this = _sp.new_SentencePieceNormalizer()
+            self._initialized = True
+        except ImportError as e:
+            raise RuntimeError(f"Failed to initialize: {e}")
+
+    def _ensure_initialized(self):
+        if not self._initialized:
+            self._initialize()
+
+    __swig_destroy__ = property(lambda self: _load_sentencepiece().delete_SentencePieceNormalizer if self._initialized else None)
 
     def LoadFromSerializedProto(self, serialized):
+        self._ensure_initialized()
         return _load_sentencepiece().SentencePieceNormalizer_LoadFromSerializedProto(self, serialized)
 
     def LoadFromRuleTSV(self, filename):
+        self._ensure_initialized()
         return _load_sentencepiece().SentencePieceNormalizer_LoadFromRuleTSV(self, filename)
 
     def LoadFromRuleName(self, name):
+        self._ensure_initialized()
         return _load_sentencepiece().SentencePieceNormalizer_LoadFromRuleName(self, name)
 
     def serialized_model_proto(self):
+        self._ensure_initialized()
         return _load_sentencepiece().SentencePieceNormalizer_serialized_model_proto(self)
 
     def LoadFromFile(self, arg):
+        self._ensure_initialized()
         return _load_sentencepiece().SentencePieceNormalizer_LoadFromFile(self, arg)
 
     def _Normalize(self, text):
+        self._ensure_initialized()
         return _load_sentencepiece().SentencePieceNormalizer__Normalize(self, text)
 
     def _NormalizeWithOffsets(self, text):
+        self._ensure_initialized()
         return _load_sentencepiece().SentencePieceNormalizer__NormalizeWithOffsets(self, text)
 
     def _SetProtoField(self, name, value):
+        self._ensure_initialized()
         return _load_sentencepiece().SentencePieceNormalizer__SetProtoField(self, name, value)
 
     def Init(self,
@@ -1213,7 +1245,7 @@ class SentencePieceNormalizer(object):
         escape_whitespaces: escape whitespaces.
         remove_extra_whitespaces: remove extra whitespaces.
       """
-
+      self._ensure_initialized()
       _sentencepiece_normalizer_init_native(self)
 
       if model_file:
@@ -1244,6 +1276,7 @@ class SentencePieceNormalizer(object):
 
 
     def __getstate__(self):
+      self._ensure_initialized()
       return self.serialized_model_proto()
 
 
@@ -1251,19 +1284,38 @@ class SentencePieceNormalizer(object):
       self.__init__()
       self.LoadFromSerializedProto(serialized_model_proto)
 
-# Global initialization flag
+# Global initialization and registration state
+_module_loading = False
 _module_initialized = False
+_registration_complete = False
 
 def _register_immutable_classes():
     """Register immutable classes in the correct order."""
+    global _registration_complete
+    if _registration_complete:
+        return True
+
     try:
         _sp = _load_sentencepiece()
         # Register immutable classes in dependency order
         if not hasattr(_sp, 'ImmutableSentencePieceText_ImmutableSentencePiece_swigregister'):
             return False
+
+        # Ensure all required registration functions exist
+        required_funcs = [
+            'ImmutableSentencePieceText_ImmutableSentencePiece_swigregister',
+            'ImmutableSentencePieceText_swigregister',
+            'ImmutableNBestSentencePieceText_swigregister'
+        ]
+        if not all(hasattr(_sp, func) for func in required_funcs):
+            return False
+
+        # Register in dependency order
         _sp.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
         _sp.ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
         _sp.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
+
+        _registration_complete = True
         return True
     except ImportError as e:
         raise ImportError(f"Failed to load SWIG module during immutable class registration: {e}")
@@ -1272,9 +1324,9 @@ def _register_immutable_classes():
 
 def _initialize_all_registrations():
     """Initialize all registrations after classes are defined."""
-    global _module_initialized
+    global _module_initialized, _registration_complete
 
-    if _module_initialized:
+    if _module_initialized and _registration_complete:
         return  # Prevent double initialization
 
     try:
@@ -1288,12 +1340,15 @@ def _initialize_all_registrations():
             raise ImportError("Failed to register immutable classes")
 
         # Register processor classes in order, with dependency checks
-        if hasattr(_sp, 'SentencePieceProcessor_swigregister'):
-            _register_processor()
-        if hasattr(_sp, 'SentencePieceTrainer_swigregister'):
-            _register_trainer()
-        if hasattr(_sp, 'SentencePieceNormalizer_swigregister'):
-            _register_normalizer()
+        processor_registrations = [
+            ('SentencePieceProcessor_swigregister', _register_processor),
+            ('SentencePieceTrainer_swigregister', _register_trainer),
+            ('SentencePieceNormalizer_swigregister', _register_normalizer)
+        ]
+
+        for attr, register_func in processor_registrations:
+            if hasattr(_sp, attr):
+                register_func()
 
         _module_initialized = True
     except ImportError as e:
