@@ -28,12 +28,23 @@ _sentencepiece_module = None
 def _load_sentencepiece():
     global _sentencepiece_module
     if _sentencepiece_module is None:
-        if __package__ or "." in __name__:
-            from . import _sentencepiece as _sp
-        else:
-            import _sentencepiece as _sp
-        _sentencepiece_module = _sp
+        try:
+            if __package__ or "." in __name__:
+                from . import _sentencepiece as _sp
+            else:
+                import _sentencepiece as _sp
+            _sentencepiece_module = _sp
+        except ImportError:
+            return None
     return _sentencepiece_module
+
+# Function to initialize class registrations after all classes are defined
+def _initialize_registrations():
+    _sp = _load_sentencepiece()
+    if _sp is not None:
+        _sp.SentencePieceProcessor_swigregister(SentencePieceProcessor)
+        _sp.SentencePieceTrainer_swigregister(SentencePieceTrainer)
+        _sp.SentencePieceNormalizer_swigregister(SentencePieceNormalizer)
 
 def _swig_repr(self):
     try:
@@ -984,14 +995,22 @@ class SentencePieceProcessor(object):
       return self.LoadFromFile(model_file)
 
 
-# Register SentencePieceProcessor in _sentencepiece:
-_load_sentencepiece().SentencePieceProcessor_swigregister(SentencePieceProcessor)
+# Define registration functions that will be called after all classes are defined
+def _register_processor():
+    _load_sentencepiece().SentencePieceProcessor_swigregister(SentencePieceProcessor)
+
+def _register_trainer():
+    _load_sentencepiece().SentencePieceTrainer_swigregister(SentencePieceTrainer)
+
+def _register_normalizer():
+    _load_sentencepiece().SentencePieceNormalizer_swigregister(SentencePieceNormalizer)
 
 def SetRandomGeneratorSeed(seed):
     return _load_sentencepiece().SetRandomGeneratorSeed(seed)
 
 def SetMinLogLevel(v):
     return _load_sentencepiece().SetMinLogLevel(v)
+
 class SentencePieceTrainer(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
 
@@ -1069,9 +1088,6 @@ class SentencePieceTrainer(object):
       with _LogStream(ostream=logstream):
         SentencePieceTrainer._Train(arg=arg, **kwargs)
 
-
-# Register SentencePieceTrainer in _sentencepiece:
-_load_sentencepiece().SentencePieceTrainer_swigregister(SentencePieceTrainer)
 class SentencePieceNormalizer(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
@@ -1162,9 +1178,10 @@ class SentencePieceNormalizer(object):
       self.__init__()
       self.LoadFromSerializedProto(serialized_model_proto)
 
-
-# Register SentencePieceNormalizer in _sentencepiece:
-_load_sentencepiece().SentencePieceNormalizer_swigregister(SentencePieceNormalizer)
+# Initialize all registrations after classes are defined
+_register_processor()
+_register_trainer()
+_register_normalizer()
 
 import re
 import csv
