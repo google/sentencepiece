@@ -4,7 +4,14 @@
 # Do not make changes to this file unless you know what you are doing - modify
 # the SWIG interface file instead.
 
+import re
+import csv
+import sys
+import os
+from io import StringIO
+from io import BytesIO
 from sys import version_info as _swig_python_version_info
+
 # Import the low-level C/C++ module
 if __package__ or "." in __name__:
     from . import _sentencepiece
