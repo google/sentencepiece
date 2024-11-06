@@ -91,7 +91,7 @@ jobs:
         python -m pytest -v --log-cli-level=INFO
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: artifacts-${{ matrix.os }}-${{ matrix.arch }}
         path: ./build/*.7z

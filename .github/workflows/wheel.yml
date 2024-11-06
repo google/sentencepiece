@@ -100,7 +100,7 @@ jobs:
         run: cp -f dist/*.tar.gz wheelhouse/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: artifacts-${{ matrix.os }}
           path: |
