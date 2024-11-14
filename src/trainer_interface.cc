@@ -14,9 +14,12 @@
 
 #include "trainer_interface.h"
 
+#ifdef __LINUX__
 #include <malloc.h>
-#ifdef TCMALLOC
+
+#ifdef TCMALLOC 
 #include <gperftools/malloc_extension.h>
+#endif
 #endif
 
 #include <algorithm>
@@ -802,10 +805,10 @@ void TrainerInterface::SplitSentencesByWhitespace() {
     LOG(INFO) << "Compacted " << old_size << " -> " << pos;
   }
 
-  #ifdef TCMALLOC
+  #if defined(TCMALLOC) && defined (__LINUX__)
   MallocExtension::instance()->ReleaseFreeMemory();
-  #endif
   malloc_stats();
+  #endif
 }
 
 util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {

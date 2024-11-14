@@ -289,7 +289,7 @@ namespace random {
 
 std::mt19937 *GetRandomGenerator();
 
-template <typename T, template<class> typename C>
+template <typename T, template <typename...> class C>
 class ReservoirSampler {
  public:
   explicit ReservoirSampler(C<T> *sampled, uint64 size)

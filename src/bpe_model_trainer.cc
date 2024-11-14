@@ -14,9 +14,11 @@
 
 #include "bpe_model_trainer.h"
 
+#ifdef __LINUX__
 #include <malloc.h>
 #ifdef TCMALLOC
 #include <gperftools/malloc_extension.h>
+#endif
 #endif
 
 #include <algorithm>
@@ -457,7 +459,7 @@ util::Status Trainer::Train() {
   for (ssize_t i = sentences_.size(); i >= 0; i -= max_chunk_size) {
     auto chunk_size = std::min(i, max_chunk_size);
     pool->Loop(i - chunk_size, i,
-    [this, &overflows, &sync, uint16_max](const ssize_t beg, const ssize_t end) {
+    [this, &overflows, uint16_max](const ssize_t beg, const ssize_t end) {
       for (ssize_t j = beg; j < end; j++) {
         auto &sentence = sentences_[j];
         auto &&text = string_util::UTF8ToUnicodeText(sentence.first);
@@ -479,16 +481,16 @@ util::Status Trainer::Train() {
               << symbols_.size() << " symbols";
     sentences_.resize(i - chunk_size);
     sentences_.shrink_to_fit();
-    #ifdef TCMALLOC
+    #if defined(TCMALLOC) && defined(__LINUX__)
     MallocExtension::instance()->ReleaseFreeMemory();
     #endif
   }
 
   cache_file.reset();
-  #ifdef TCMALLOC
+  #if defined(TCMALLOC) && defined (__LINUX__)
   MallocExtension::instance()->ReleaseFreeMemory();
-  #endif
   malloc_stats();
+  #endif
 
   uint32_t unisize = allocated_.size();
   LOG(INFO) << "Allocated " << unisize << " chars with "
@@ -590,17 +592,17 @@ util::Status Trainer::Train() {
   }
 
   LOG(INFO) << "Allocated " << allocated_.size() - unisize << " pairs";
-  #ifdef TCMALLOC
+  #if defined(tcmalloc) && defined(__linux__)
   MallocExtension::instance()->ReleaseFreeMemory();
-  #endif
   malloc_stats();
+  #endif
 
   LOG(INFO) << "Sorting positions...";
   SortSymbolPositions(pool.get(), 0);
-  #ifdef TCMALLOC
+  #if defined(tcmalloc) && defined(__linux__)
   MallocExtension::instance()->ReleaseFreeMemory();
-  #endif
   malloc_stats();
+  #endif
 
   for (uint32_t i = unisize; i < allocated_.size(); i++) {
     active_symbols_.insert(i);
