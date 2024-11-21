@@ -296,7 +296,7 @@ int main(int argc, char *argv[]) {
     LOG(INFO) << merged.sentences_size << " sentences, "
               << merged.required_chars.size() << " chars; allocated "
               << merged.allocated();
-    #if defined(TCMALLOC) && defined (__LINUX__)
+    #if defined(TCMALLOC)
     MallocExtension::instance()->ReleaseFreeMemory();
     malloc_stats();
     #endif

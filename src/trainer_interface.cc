@@ -803,7 +803,7 @@ void TrainerInterface::SplitSentencesByWhitespace() {
     LOG(INFO) << "Compacted " << old_size << " -> " << pos;
   }
 
-  #if defined(TCMALLOC) && defined (__LINUX__)
+  #if defined(TCMALLOC)
   MallocExtension::instance()->ReleaseFreeMemory();
   malloc_stats();
   #endif

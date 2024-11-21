@@ -480,13 +480,13 @@ util::Status Trainer::Train() {
               << symbols_.size() << " symbols";
     sentences_.resize(i - chunk_size);
     sentences_.shrink_to_fit();
-    #if defined(TCMALLOC) && defined(__LINUX__)
+    #if defined(TCMALLOC)
     MallocExtension::instance()->ReleaseFreeMemory();
     #endif
   }
 
   cache_file.reset();
-  #if defined(TCMALLOC) && defined (__LINUX__)
+  #if defined(TCMALLOC)
   MallocExtension::instance()->ReleaseFreeMemory();
   malloc_stats();
   #endif
@@ -591,14 +591,14 @@ util::Status Trainer::Train() {
   }
 
   LOG(INFO) << "Allocated " << allocated_.size() - unisize << " pairs";
-  #if defined(tcmalloc) && defined(__linux__)
+  #if defined(tcmalloc)
   MallocExtension::instance()->ReleaseFreeMemory();
   malloc_stats();
   #endif
 
   LOG(INFO) << "Sorting positions...";
   SortSymbolPositions(pool.get(), 0);
-  #if defined(tcmalloc) && defined(__linux__)
+  #if defined(tcmalloc)
   MallocExtension::instance()->ReleaseFreeMemory();
   malloc_stats();
   #endif
