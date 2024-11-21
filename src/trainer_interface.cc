@@ -14,12 +14,10 @@
 
 #include "trainer_interface.h"
 
-#ifdef __LINUX__
-#include <malloc.h>
+#include <stdlib.h>
 
 #ifdef TCMALLOC 
 #include <gperftools/malloc_extension.h>
-#endif
 #endif
 
 #include <algorithm>

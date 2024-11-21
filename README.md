@@ -41,21 +41,14 @@ cd ../python
 PKG_CONFIG_PATH=../build python -m pip install -ve .
 ```
 
-## mkm's notes:
-
 ### Macos build
 
-1. cannot build with macos clang due to a divergence in c++ stdlib. Zig's embeds a lean clang distribution that is easy to install and use (we use as a bazel toolchain in forge)
-2. LTO is not supported in zig's clang build.
-3. malloc.h is not available on macos so many targets don't build (but `spm_encode` does work!)
-4. cmake doesn't find the homebrew installed ICU library despite pkg-config providing the right paths, so we need to pass the path explicitly
-
-
 ```console
-$ brew install zig
 $ mkdir build && cd build
-$ CC="zig cc" CXX="zig c++" ICU_ROOT=/opt/homebrew/Cellar/icu4c/74.2 cmake -D CMAKE_BUILD_TYPE=RelWithDebInfo -D SPM_ENABLE_TCMALLOC=on -D SPM_ENABLE_NFKC_COMPILE=on -DSPM_ENABLE_SHARED=off -DSPM_SANITIZE=off -DSPM_DISABLE_LTO=on ..
-$ make -j16 spm_encode
+$ cmake ..
+$ make -j4
+$ sudo make install
+$ sudo update_dyld_shared_cache
 ```
 
 ## Technical highlights
