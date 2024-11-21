@@ -51,6 +51,11 @@ $ sudo make install
 $ sudo update_dyld_shared_cache
 ```
 
+After that to build python library run the following command:
+```
+PKG_CONFIG_PATH=../build python3 -m pip install --force-reinstall -ve <path_to /sentencepiece/python>
+```
+
 ## Technical highlights
 - **Purely data driven**: SentencePiece trains tokenization and detokenization
   models from sentences. Pre-tokenization ([Moses tokenizer](https://github.com/moses-smt/mosesdecoder/blob/master/scripts/tokenizer/tokenizer.perl)/[MeCab](http://taku910.github.io/mecab/)/[KyTea](http://www.phontron.com/kytea/)) is not always required.
