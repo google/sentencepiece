@@ -53,7 +53,7 @@ $ sudo update_dyld_shared_cache
 
 After that to build python library run the following command:
 ```
-PKG_CONFIG_PATH=../build python3 -m pip install --force-reinstall -ve <path_to /sentencepiece/python>
+PKG_CONFIG_PATH=<path_to /sentencepiece/build> python3 -m pip install --force-reinstall -ve <path_to /sentencepiece/python>
 ```
 
 ## Technical highlights
