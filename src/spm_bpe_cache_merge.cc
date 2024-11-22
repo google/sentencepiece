@@ -1,5 +1,6 @@
-
-#include <stdlib.h>
+#ifdef __GLIBC__
+#include <malloc.h>
+#endif
 
 #ifdef TCMALLOC
 #include <gperftools/malloc_extension.h>
@@ -296,7 +297,7 @@ int main(int argc, char *argv[]) {
     LOG(INFO) << merged.sentences_size << " sentences, "
               << merged.required_chars.size() << " chars; allocated "
               << merged.allocated();
-    #if defined(TCMALLOC)
+    #if defined(TCMALLOC) and defined(__GLIBC__)
     MallocExtension::instance()->ReleaseFreeMemory();
     malloc_stats();
     #endif

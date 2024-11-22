@@ -14,7 +14,9 @@
 
 #include "trainer_interface.h"
 
-#include <stdlib.h>
+#ifdef __GLIBC__
+#include <malloc.h>
+#endif
 
 #ifdef TCMALLOC 
 #include <gperftools/malloc_extension.h>
@@ -803,7 +805,7 @@ void TrainerInterface::SplitSentencesByWhitespace() {
     LOG(INFO) << "Compacted " << old_size << " -> " << pos;
   }
 
-  #if defined(TCMALLOC)
+  #if defined(TCMALLOC) and defined(__GLIBC__)
   MallocExtension::instance()->ReleaseFreeMemory();
   malloc_stats();
   #endif
