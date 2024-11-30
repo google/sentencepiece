@@ -39,9 +39,8 @@ jobs:
       - name: Install cibuildwheel
         working-directory: ${{github.workspace}}/python
         run: |
-          python3 -m pip install --upgrade pip
-          pip install setuptools wheel twine
-          python3 -m pip install cibuildwheel==2.12.0
+          python -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
+          python -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/cibuildwheel.txt
 
       - name: Build wheels
         working-directory: ${{github.workspace}}/python
