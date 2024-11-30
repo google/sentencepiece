@@ -66,7 +66,7 @@ jobs:
 
       - name: Build wheels
         working-directory: ${{github.workspace}}/python
-        run: python3 -m cibuildwheel --output-dir wheelhouse
+        run: python3 -m cibuildwheel --output-dir ${{env.WHEEL_DST}}
         env:
           # CIBW_BUILD: cp311-* cp312-*
           CIBW_BUILD: cp312-*
@@ -75,18 +75,18 @@ jobs:
           CIBW_SKIP: "pp* *-musllinux_*"
           CIBW_BUILD_VERBOSITY: 1
 
-      - name: Build sdist archive
-        working-directory: ${{github.workspace}}/python
-        run: sh build_sdist.sh
+      # - name: Build sdist archive
+      #   working-directory: ${{github.workspace}}/python
+      #   run: sh build_sdist.sh
 
-      - name: Fetch sdist archive
-        uses: tj-actions/glob@2944188f585a0ec102a6a82d9eeb3aed69785393 # v22.0.1
-        id: sdist
-        with:
-          files: ./python/dist/*.tar.gz
+      # - name: Fetch sdist archive
+      #   uses: tj-actions/glob@2944188f585a0ec102a6a82d9eeb3aed69785393 # v22.0.1
+      #   id: sdist
+      #   with:
+      #     files: ./python/dist/*.tar.gz
 
-      - name: Build wheel from sdist
-        run: python3 -m pip wheel "${{ steps.sdist.outputs.paths }}" --wheel-dir=${{env.WHEEL_DST}} --verbose
+      # - name: Build wheel from sdist
+      #   run: python3 -m pip wheel "${{ steps.sdist.outputs.paths }}" --wheel-dir=${{env.WHEEL_DST}} --verbose
 
 
       - name: Authenticate with AWS CodeArtifact
@@ -105,4 +105,4 @@ jobs:
           # export TWINE_PASSWORD=`aws codeartifact get-authorization-token --domain ${{env.DOMAIN}} --query authorizationToken --output text`
           # export TWINE_REPOSITORY_URL=`aws codeartifact get-repository-endpoint --domain ${{env.DOMAIN}} --repository ${{ env.REPOSITORY }}  --region us-east-1 --format pypi --query repositoryEndpoint --output text`
           # aws codeartifact login --tool twine --domain ${{env.DOMAIN}} --repository ${{ env.REPOSITORY }}
-          twine upload --verbose ${{env.WHEEL_DST}}/*.whl
+          twine upload --verbose --repository codeartifact ${{env.WHEEL_DST}}/*.whl
