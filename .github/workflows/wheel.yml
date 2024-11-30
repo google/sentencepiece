@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
       - uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
         with:
-          python-version: "3.x"
+          python-version: "3.12"
 
       - name: Set up QEMU
         if: runner.os == 'Linux'
