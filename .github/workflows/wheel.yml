@@ -1,7 +1,8 @@
-name: Build and Publlish Wheels
+name: Build and Publish Wheels
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
   
 env:
   DOMAIN: poolside
@@ -77,6 +78,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::939990436136:role/gh-action-publish-artifacts-role
           aws-region: us-east-1
+
       - name: Publish
         run: |
           export TWINE_USERNAME=aws
