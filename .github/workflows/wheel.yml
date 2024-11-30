@@ -89,20 +89,20 @@ jobs:
       #   run: python3 -m pip wheel "${{ steps.sdist.outputs.paths }}" --wheel-dir=${{env.WHEEL_DST}} --verbose
 
 
-      - name: Authenticate with AWS CodeArtifact
-        run: |
-          CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain ${{env.DOMAIN}} --query authorizationToken --output text)
-          echo "[distutils]" > ~/.pypirc
-          echo "index-servers = codeartifact" >> ~/.pypirc
-          echo "[codeartifact]" >> ~/.pypirc
-          echo "repository: ${{ env.REPOSITORY }}" >> ~/.pypirc
-          echo "username: aws" >> ~/.pypirc
-          echo "password: ${CODEARTIFACT_AUTH_TOKEN}" >> ~/.pypirc
+      # - name: Authenticate with AWS CodeArtifact
+      #   run: |
+      #     CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain ${{env.DOMAIN}} --query authorizationToken --output text)
+      #     echo "[distutils]" > ~/.pypirc
+      #     echo "index-servers = codeartifact" >> ~/.pypirc
+      #     echo "[codeartifact]" >> ~/.pypirc
+      #     echo "repository: ${{ env.REPOSITORY }}" >> ~/.pypirc
+      #     echo "username: aws" >> ~/.pypirc
+      #     echo "password: ${CODEARTIFACT_AUTH_TOKEN}" >> ~/.pypirc
           
       - name: Publish
         run: |
           # export TWINE_USERNAME=aws
           # export TWINE_PASSWORD=`aws codeartifact get-authorization-token --domain ${{env.DOMAIN}} --query authorizationToken --output text`
           # export TWINE_REPOSITORY_URL=`aws codeartifact get-repository-endpoint --domain ${{env.DOMAIN}} --repository ${{ env.REPOSITORY }}  --region us-east-1 --format pypi --query repositoryEndpoint --output text`
-          # aws codeartifact login --tool twine --domain ${{env.DOMAIN}} --repository ${{ env.REPOSITORY }}
+          aws codeartifact login --tool twine --domain ${{env.DOMAIN}} --repository ${{ env.REPOSITORY }}
           twine upload --verbose --repository codeartifact ${{env.WHEEL_DST}}/*.whl
