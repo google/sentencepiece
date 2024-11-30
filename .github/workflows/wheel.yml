@@ -73,6 +73,9 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::939990436136:role/gh-action-publish-artifacts-role
           aws-region: us-east-1
+        permissions:
+          id-token: write # This is required for requesting the JWT
+          contents: read  # This is required for actions/checkout
 
       - name: Publish
         run: |
