@@ -1,22 +1,16 @@
-name: Build Wheels
+name: Build and Publlish Wheels
 
 on:
-  push:
-    branches: [ master ]
-    tags:
-      - 'v*'
-  pull_request:
-    branches: [ master ]
+  workflow_dispatch:
+env:
+  DOMAIN: poolside
+  REPOSITORY: poolside-dagster
 
 jobs:
   build_wheels:
-    outputs:
-      digests-linux: ${{ steps.hash-linux.outputs.digests }}
-      digests-macos: ${{ steps.hash-macos.outputs.digests }}
-      digests-windows: ${{ steps.hash-windows.outputs.digests }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-11]
+        os: [ubuntu-latest, windows-latest, macOS-14]
     runs-on: ${{ matrix.os }}
     name: Build wheels on ${{ matrix.os }}
 
@@ -76,72 +70,15 @@ jobs:
 
       - name: Build wheel from sdist
         run: python -m pip wheel "${{ steps.sdist.outputs.paths }}" --verbose
-
-      - name: Copy sdist
-        working-directory: ${{github.workspace}}/python
-        if: runner.os == 'macOS'
-        run: cp -f dist/*.tar.gz wheelhouse/
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          path: |
-            ./python/wheelhouse/*.whl
-            ./python/wheelhouse/*.tar.gz
-
-      - name: Upload wheel release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./python/wheelhouse/*
-          tag: ${{ github.ref }}
-          overwrite: true
-          prerelease: true
-          file_glob: true
-
-      - name: Generate SLSA subjects - Macos
-        id: hash-macos
-        if: runner.os == 'macOS'
-        run: echo "digests=$(shasum -a 256 ./python/wheelhouse/* | base64)" >> $GITHUB_OUTPUT
-
-      - name: Generate SLSA subjects - Linux
-        id: hash-linux
-        if: runner.os == 'Linux'
-        run: echo "digests=$(sha256sum ./python/wheelhouse/* | base64 -w0)" >> $GITHUB_OUTPUT
-
-      - name: Generate SLSA subjects - Windows
-        id: hash-windows
-        if: runner.os == 'Windows'
-        run: echo "digests=$(sha256sum ./python/wheelhouse/* | base64 -w0)" >> $GITHUB_OUTPUT
-
-  gather-disgests:
-    needs: [build_wheels]
-    outputs:
-      digests: ${{ steps.hash.outputs.digests }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Merge results
-        id: hash
-        env:
-          LINUX_DIGESTS: "${{ needs.build_wheels.outputs.digests-linux }}"
-          MACOS_DIGESTS: "${{ needs.build_wheels.outputs.digests-macos }}"
-          WINDOWS_DIGESTS: "${{ needs.build_wheels.outputs.digests-windows }}"
+          role-to-assume: arn:aws:iam::939990436136:role/gh-action-publish-artifacts-role
+          aws-region: us-east-1
+      - name: Publish
         run: |
-          set -euo pipefail
-          echo "$LINUX_DIGESTS" | base64 -d > checksums.txt
-          echo "$MACOS_DIGESTS" | base64 -d >> checksums.txt
-          echo "$WINDOWS_DIGESTS" | base64 -d >> checksums.txt
-          echo "digests=$(cat checksums.txt | base64 -w0)" >> $GITHUB_OUTPUT
-
-  provenance:
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [build_wheels, gather-disgests]
-    permissions:
-      actions: read   # To read the workflow path.
-      id-token: write # To sign the provenance.
-      contents: write # To add assets to a release.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.0
-    with:
-      base64-subjects: "${{ needs.gather-disgests.outputs.digests }}"
-      upload-assets: true # Optional: Upload to a new release
+          export TWINE_USERNAME=aws
+          export TWINE_PASSWORD=`aws codeartifact get-authorization-token --domain ${{env.DOMAIN}} --domain-owner ${{ secrets.AWS_ACCOUNT_ID }} --query authorizationToken --output text`
+          export TWINE_REPOSITORY_URL=`aws codeartifact get-repository-endpoint --domain ${{env.DOMAIN}} --domain-owner ${{ secrets.AWS_ACCOUNT_ID }} --repository ${{ env.REPOSITORY }}  --region us-east-1 --format pypi --query repositoryEndpoint --output text`
+          twine upload --verbose dist/*
