@@ -35,6 +35,12 @@ jobs:
         with:
           platforms: arm64
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::939990436136:role/gh-action-publish-artifacts-role
+          aws-region: us-east-1
+
       - name: Build for Mac
         if: runner.os == 'macOS'
         run: |
@@ -72,12 +78,6 @@ jobs:
 
       - name: Build wheel from sdist
         run: python3 -m pip wheel "${{ steps.sdist.outputs.paths }}" --verbose
-      
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::939990436136:role/gh-action-publish-artifacts-role
-          aws-region: us-east-1
 
       - name: Publish
         run: |
