@@ -7,6 +7,7 @@ on:
 env:
   DOMAIN: poolside
   REPOSITORY: poolside-dagster
+  WHEEL_DST: /tmp/sp_wheelhouse
 
 jobs:
   build_wheels:
@@ -41,6 +42,20 @@ jobs:
           role-to-assume: arn:aws:iam::939990436136:role/gh-action-publish-artifacts-role
           aws-region: us-east-1
 
+      - name: Make sure destination dir exists
+        run: |
+          mkdir -p ${{env.WHEEL_DST}}
+          if [ ! -d ${{env.WHEEL_DST}}]; then
+            echo "wheel dest dir does not exist!"
+            exit 1
+          fi
+
+      - name: Install cibuildwheel
+        working-directory: ${{github.workspace}}/python
+        run: |
+          python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
+          python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/cibuildwheel.txt
+
       - name: Build for Mac
         if: runner.os == 'macOS'
         run: |
@@ -48,12 +63,6 @@ jobs:
           cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
         env:
           CMAKE_OSX_ARCHITECTURES: arm64;x86_64
-
-      - name: Install cibuildwheel
-        working-directory: ${{github.workspace}}/python
-        run: |
-          python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
-          python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/cibuildwheel.txt
 
       - name: Build wheels
         working-directory: ${{github.workspace}}/python
@@ -77,11 +86,11 @@ jobs:
           files: ./python/dist/*.tar.gz
 
       - name: Build wheel from sdist
-        run: python3 -m pip wheel "${{ steps.sdist.outputs.paths }}" --verbose
+        run: python3 -m pip wheel "${{ steps.sdist.outputs.paths }}" --wheel-dir=${{env.WHEEL_DST}} --verbose
 
       - name: Publish
         run: |
           export TWINE_USERNAME=aws
           export TWINE_PASSWORD=`aws codeartifact get-authorization-token --domain ${{env.DOMAIN}} --domain-owner ${{ secrets.AWS_ACCOUNT_ID }} --query authorizationToken --output text`
           export TWINE_REPOSITORY_URL=`aws codeartifact get-repository-endpoint --domain ${{env.DOMAIN}} --domain-owner ${{ secrets.AWS_ACCOUNT_ID }} --repository ${{ env.REPOSITORY }}  --region us-east-1 --format pypi --query repositoryEndpoint --output text`
-          twine upload --verbose ${{ steps.sdist.outputs.paths }}/*.whl
+          twine upload --verbose ${{env.WHEEL_DST}}/*.whl
