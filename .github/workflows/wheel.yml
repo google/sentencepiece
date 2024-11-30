@@ -66,7 +66,7 @@ jobs:
 
       - name: Build wheels
         working-directory: ${{github.workspace}}/python
-        run: python3 -m python setup.py bdist_wheel sdist --dist-dir ${{env.WHEEL_DST}}
+        run: python3 setup.py bdist_wheel sdist --dist-dir ${{env.WHEEL_DST}}
           
       - name: Publish
         run: |
