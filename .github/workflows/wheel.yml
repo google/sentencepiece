@@ -49,7 +49,8 @@ jobs:
         working-directory: ${{github.workspace}}/python
         run: python3 -m cibuildwheel --output-dir wheelhouse
         env:
-          CIBW_ARCHS_LINUX: auto aarch64
+          CIBW_BUILD: cp311-* cp312-*
+          CIBW_ARCHS_LINUX: x86_64 aarch64
           CIBW_ARCHS_MACOS: x86_64 universal2 arm64
           CIBW_SKIP: "pp* *-musllinux_*"
           CIBW_BUILD_VERBOSITY: 1
