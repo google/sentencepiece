@@ -2,6 +2,7 @@ name: Build and Publlish Wheels
 
 on:
   workflow_dispatch:
+  
 env:
   DOMAIN: poolside
   REPOSITORY: poolside-dagster
