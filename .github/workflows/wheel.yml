@@ -84,4 +84,4 @@ jobs:
           export TWINE_USERNAME=aws
           export TWINE_PASSWORD=`aws codeartifact get-authorization-token --domain ${{env.DOMAIN}} --domain-owner ${{ secrets.AWS_ACCOUNT_ID }} --query authorizationToken --output text`
           export TWINE_REPOSITORY_URL=`aws codeartifact get-repository-endpoint --domain ${{env.DOMAIN}} --domain-owner ${{ secrets.AWS_ACCOUNT_ID }} --repository ${{ env.REPOSITORY }}  --region us-east-1 --format pypi --query repositoryEndpoint --output text`
-          twine upload --verbose dist/*
+          twine upload --verbose ${{ steps.sdist.outputs.paths }}/*.whl
