@@ -56,6 +56,11 @@ jobs:
       #     python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
       #     # python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/cibuildwheel.txt
 
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install setuptools wheel twine build
+
       - name: Build for Mac
         if: runner.os == 'macOS'
         run: |
