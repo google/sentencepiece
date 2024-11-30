@@ -13,7 +13,7 @@ jobs:
   build_wheels:
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest, macOS-14]
+        os: [ubuntu-latest, macOS-latest]
     runs-on: ${{ matrix.os }}
     name: Build wheels on ${{ matrix.os }}
 
@@ -45,7 +45,7 @@ jobs:
       - name: Make sure destination dir exists
         run: |
           mkdir -p ${{env.WHEEL_DST}}
-          if [ ! -d ${{env.WHEEL_DST}}]; then
+          if [ ! -d ${{env.WHEEL_DST}} ]; then
             echo "wheel dest dir does not exist!"
             exit 1
           fi
