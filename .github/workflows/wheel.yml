@@ -50,11 +50,11 @@ jobs:
             exit 1
           fi
 
-      - name: Install cibuildwheel
-        working-directory: ${{github.workspace}}/python
-        run: |
-          python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
-          # python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/cibuildwheel.txt
+      # - name: Install cibuildwheel
+      #   working-directory: ${{github.workspace}}/python
+      #   run: |
+      #     python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
+      #     # python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/cibuildwheel.txt
 
       - name: Build for Mac
         if: runner.os == 'macOS'
@@ -66,14 +66,7 @@ jobs:
 
       - name: Build wheels
         working-directory: ${{github.workspace}}/python
-        run: python3 -m cibuildwheel --output-dir ${{env.WHEEL_DST}}
-        env:
-          # CIBW_BUILD: cp311-* cp312-*
-          CIBW_BUILD: cp312-*
-          CIBW_ARCHS_LINUX: x86_64 aarch64
-          CIBW_ARCHS_MACOS: arm64
-          CIBW_SKIP: "pp* *-musllinux_*"
-          CIBW_BUILD_VERBOSITY: 1
+        run: python3 -m python setup.py bdist_wheel sdist --dist-dir ${{env.WHEEL_DST}}
           
       - name: Publish
         run: |
