@@ -18,6 +18,11 @@ with the extension of direct training from raw sentences. SentencePiece allows u
 
 **This is not an official Google product.**
 
+**Why does this fork exist?**
+ - The upstream is signifaicantly slower than our fork and consumes significantly more memory;
+ - There are custom unicode normalizations, which we can and will improve in the future, optimizing it for source code generation;
+ - Siginificant changes in `spm_encode` command line utility for test purposes.
+
 ## Vadim's notes
 
 Proper installation:
