@@ -22,9 +22,6 @@ jobs:
       contents: read  # This is required for actions/checkout
 
     steps:
-      # - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      # - uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
-
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
@@ -50,30 +47,44 @@ jobs:
             exit 1
           fi
 
-      # - name: Install cibuildwheel
-      #   working-directory: ${{github.workspace}}/python
-      #   run: |
-      #     python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
-      #     # python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/cibuildwheel.txt
-
-      - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip install setuptools wheel twine build
-
       - name: Build for Mac
         if: runner.os == 'macOS'
         run: |
           cmake -B ${{github.workspace}}/build -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
           cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
         env:
-          CMAKE_OSX_ARCHITECTURES: arm64
+          CMAKE_OSX_ARCHITECTURES: arm64;x86_64
+
+      - name: Install dependencies
+        working-directory: ${{github.workspace}}/python
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine build cibuildwheel
 
       - name: Build wheels
         working-directory: ${{github.workspace}}/python
-        run: python3 setup.py bdist_wheel sdist --dist-dir ${{env.WHEEL_DST}}
-          
+        run: python -m cibuildwheel --output-dir ${{env.WHEEL_DST}}
+        env:
+          CIBW_ARCHS_LINUX: auto aarch64
+          CIBW_ARCHS_MACOS: x86_64 universal2 arm64
+          CIBW_ARCHS_WINDOWS: auto ARM64
+          CIBW_SKIP: "pp* *-musllinux_*"
+          CIBW_BUILD_VERBOSITY: 1
+
+      - name: Build sdist archive
+        working-directory: ${{github.workspace}}/python
+        run: sh build_sdist.sh
+
+      - name: Fetch sdist archive
+        uses: tj-actions/glob@2944188f585a0ec102a6a82d9eeb3aed69785393 # v22.0.1
+        id: sdist
+        with:
+          files: ./python/dist/*.tar.gz
+      
+      - name: Build wheel from sdist
+        run: python -m pip wheel "${{ steps.sdist.outputs.paths }}" --wheel-dir ${{env.WHEEL_DST}} --verbose
+      
       - name: Publish
         run: |
           aws codeartifact login --tool twine --domain ${{env.DOMAIN}} --repository ${{ env.REPOSITORY }}
-          twine upload --verbose --repository codeartifact ${{env.WHEEL_DST}}/*.whl
+          twine upload --verbose --repository codeartifact ${{env.WHEEL_DST}}/*
