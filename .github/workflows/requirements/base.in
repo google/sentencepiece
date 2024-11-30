@@ -3,3 +3,4 @@ setuptools
 wheel
 twine
 pytest
+cibuildwheel

@@ -54,7 +54,7 @@ jobs:
         working-directory: ${{github.workspace}}/python
         run: |
           python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
-          python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/cibuildwheel.txt
+          # python3 -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/cibuildwheel.txt
 
       - name: Build for Mac
         if: runner.os == 'macOS'
