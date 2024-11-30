@@ -8,10 +8,6 @@ env:
   DOMAIN: poolside
   REPOSITORY: poolside-dagster
 
-permissions:
-  id-token: write # This is required for requesting the JWT
-  contents: read  # This is required for actions/checkout
-
 jobs:
   build_wheels:
     strategy:
@@ -19,6 +15,10 @@ jobs:
         os: [ubuntu-latest, macOS-14]
     runs-on: ${{ matrix.os }}
     name: Build wheels on ${{ matrix.os }}
+
+    permissions:
+      id-token: write # This is required for requesting the JWT
+      contents: read  # This is required for actions/checkout
 
     steps:
       # - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
