@@ -54,6 +54,7 @@ jobs:
           cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
         env:
           CMAKE_OSX_ARCHITECTURES: arm64;x86_64
+          MACOSX_DEPLOYMENT_TARGET: 10.13
 
       - name: Install dependencies
         working-directory: ${{github.workspace}}/python

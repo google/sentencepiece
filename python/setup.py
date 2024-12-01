@@ -91,8 +91,7 @@ class build_ext(_build_ext):
     # Fix compile on some versions of Mac OSX
     # See: https://github.com/neulab/xnmt/issues/199
     if sys.platform == 'darwin':
-      # cflags.append('-mmacosx-version-min=10.14')
-      pass
+      cflags.append('-mmacosx-version-min=10.9')
     else:
       cflags.append('-Wl,-strip-all')
       libs.append('-Wl,-strip-all')
