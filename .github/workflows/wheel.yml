@@ -65,6 +65,7 @@ jobs:
         working-directory: ${{github.workspace}}/python
         run: python -m cibuildwheel --output-dir ${{env.WHEEL_DST}}
         env:
+          CIBW_BUILD: "cp311-* cp312-*"
           CIBW_ARCHS_LINUX: auto aarch64
           CIBW_ARCHS_MACOS: x86_64 universal2 arm64
           CIBW_ARCHS_WINDOWS: auto ARM64
