@@ -22,6 +22,7 @@ import string
 import subprocess
 import sys
 import os
+import platform
 
 sys.path.append(os.path.join('.', 'test'))
 
@@ -92,9 +93,10 @@ class build_ext(_build_ext):
     if sys.platform == 'darwin':
       cflags.append('-mmacosx-version-min=10.9')
     else:
-        pass
-        # cflags.append('-Wl,-strip-all')
-        # libs.append('-Wl,-strip-all')
+      cflags.append('-Wl,-strip-all')
+      libs.append('-Wl,-strip-all')
+    if sys.platform == 'linux':
+      libs.append('-Wl,-Bsymbolic')
     print('## cflags={}'.format(' '.join(cflags)))
     print('## libs={}'.format(' '.join(libs)))
     ext.extra_compile_args = cflags
@@ -197,6 +199,5 @@ setup(
         'Programming Language :: Python',
         'Topic :: Text Processing :: Linguistic',
         'Topic :: Software Development :: Libraries :: Python Modules',
-    ],
-    test_suite='sentencepiece_test.suite',
+    ]
 )

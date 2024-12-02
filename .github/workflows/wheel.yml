@@ -1,44 +1,50 @@
-name: Build Wheels
+name: Build and Publish Wheels
 
 on:
-  push:
-    branches: [ master ]
-    tags:
-      - 'v*'
-  pull_request:
-    branches: [ master ]
+  workflow_dispatch:
+  
+env:
+  DOMAIN: poolside
+  REPOSITORY: poolside-dagster
+  WHEEL_DST: /tmp/sp_wheelhouse
 
 jobs:
   build_wheels:
-    outputs:
-      digests-linux: ${{ steps.hash-linux.outputs.digests }}
-      digests-macos: ${{ steps.hash-macos.outputs.digests }}
-      digests-windows: ${{ steps.hash-windows.outputs.digests }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-11]
+        os: [ubuntu-latest, macOS-latest]
     runs-on: ${{ matrix.os }}
     name: Build wheels on ${{ matrix.os }}
 
+    permissions:
+      id-token: write # This is required for requesting the JWT
+      contents: read  # This is required for actions/checkout
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.12"
 
       - name: Set up QEMU
         if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
 
-      - name: Build for Windows
-        if: runner.os == 'Windows'
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::939990436136:role/gh-action-publish-artifacts-role
+          aws-region: us-east-1
+
+      - name: Make sure destination dir exists
         run: |
-          cmake -A Win32 -B ${{github.workspace}}/build_win32 -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root_win32
-          cmake --build ${{github.workspace}}/build_win32 --config Release --target install --parallel 8
-          cmake -A x64   -B ${{github.workspace}}/build_amd64 -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root_amd64
-          cmake --build ${{github.workspace}}/build_amd64 --config Release --target install --parallel 8
+          mkdir -p ${{env.WHEEL_DST}}
+          if [ ! -d ${{env.WHEEL_DST}} ]; then
+            echo "wheel dest dir does not exist!"
+            exit 1
+          fi
 
       - name: Build for Mac
         if: runner.os == 'macOS'
@@ -47,21 +53,23 @@ jobs:
           cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
         env:
           CMAKE_OSX_ARCHITECTURES: arm64;x86_64
+          MACOSX_DEPLOYMENT_TARGET: 10.13
 
-      - name: Install cibuildwheel
+      - name: Install dependencies
         working-directory: ${{github.workspace}}/python
         run: |
           python -m pip install --upgrade pip
-          pip install setuptools wheel twine
-          python -m pip install cibuildwheel==2.12.0
+          pip install setuptools wheel twine build cibuildwheel
 
       - name: Build wheels
         working-directory: ${{github.workspace}}/python
-        run: python -m cibuildwheel --output-dir wheelhouse
+        run: python -m cibuildwheel --output-dir ${{env.WHEEL_DST}}
         env:
+          CIBW_BUILD: "cp311-* cp312-*"
           CIBW_ARCHS_LINUX: auto aarch64
           CIBW_ARCHS_MACOS: x86_64 universal2 arm64
-          CIBW_SKIP: "pp* *-musllinux_*"
+          CIBW_ARCHS_WINDOWS: auto ARM64
+          CIBW_SKIP: "pp* *-musllinux_* *i686*"
           CIBW_BUILD_VERBOSITY: 1
 
       - name: Build sdist archive
@@ -69,79 +77,15 @@ jobs:
         run: sh build_sdist.sh
 
       - name: Fetch sdist archive
-        uses: tj-actions/glob@v17
+        uses: tj-actions/glob@2944188f585a0ec102a6a82d9eeb3aed69785393 # v22.0.1
         id: sdist
         with:
           files: ./python/dist/*.tar.gz
-
+      
       - name: Build wheel from sdist
-        run: python -m pip wheel "${{ steps.sdist.outputs.paths }}" --verbose
-
-      - name: Copy sdist
-        working-directory: ${{github.workspace}}/python
-        if: runner.os == 'macOS'
-        run: cp -f dist/*.tar.gz wheelhouse/
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          path: |
-            ./python/wheelhouse/*.whl
-            ./python/wheelhouse/*.tar.gz
-
-      - name: Upload wheel release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./python/wheelhouse/*
-          tag: ${{ github.ref }}
-          overwrite: true
-          prerelease: true
-          file_glob: true
-
-      - name: Generate SLSA subjects - Macos
-        id: hash-macos
-        if: runner.os == 'macOS'
-        run: echo "digests=$(shasum -a 256 ./python/wheelhouse/* | base64)" >> $GITHUB_OUTPUT
-
-      - name: Generate SLSA subjects - Linux
-        id: hash-linux
-        if: runner.os == 'Linux'
-        run: echo "digests=$(sha256sum ./python/wheelhouse/* | base64 -w0)" >> $GITHUB_OUTPUT
-
-      - name: Generate SLSA subjects - Windows
-        id: hash-windows
-        if: runner.os == 'Windows'
-        run: echo "digests=$(sha256sum ./python/wheelhouse/* | base64 -w0)" >> $GITHUB_OUTPUT
-
-  gather-disgests:
-    needs: [build_wheels]
-    outputs:
-      digests: ${{ steps.hash.outputs.digests }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Merge results
-        id: hash
-        env:
-          LINUX_DIGESTS: "${{ needs.build_wheels.outputs.digests-linux }}"
-          MACOS_DIGESTS: "${{ needs.build_wheels.outputs.digests-macos }}"
-          WINDOWS_DIGESTS: "${{ needs.build_wheels.outputs.digests-windows }}"
+        run: python -m pip wheel "${{ steps.sdist.outputs.paths }}" --wheel-dir ${{env.WHEEL_DST}} --verbose
+      
+      - name: Publish
         run: |
-          set -euo pipefail
-          echo "$LINUX_DIGESTS" | base64 -d > checksums.txt
-          echo "$MACOS_DIGESTS" | base64 -d >> checksums.txt
-          echo "$WINDOWS_DIGESTS" | base64 -d >> checksums.txt
-          echo "digests=$(cat checksums.txt | base64 -w0)" >> $GITHUB_OUTPUT
-
-  provenance:
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [build_wheels, gather-disgests]
-    permissions:
-      actions: read   # To read the workflow path.
-      id-token: write # To sign the provenance.
-      contents: write # To add assets to a release.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.0
-    with:
-      base64-subjects: "${{ needs.gather-disgests.outputs.digests }}"
-      upload-assets: true # Optional: Upload to a new release
+          aws codeartifact login --tool twine --domain ${{env.DOMAIN}} --repository ${{ env.REPOSITORY }}
+          twine upload --verbose --repository codeartifact ${{env.WHEEL_DST}}/*
