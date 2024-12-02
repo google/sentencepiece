@@ -1,8 +1,7 @@
 name: Build and Publish Wheels
 
 on:
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
   
 env:
   DOMAIN: poolside
