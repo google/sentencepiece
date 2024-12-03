@@ -366,8 +366,8 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 %ignore sentencepiece::io::SaveModelProto;
 
 %extend sentencepiece::SentencePieceProcessor {
-  sentencepiece::util::Status LoadFromFile(absl::string_view arg) {
-    return $self->Load(arg);
+  sentencepiece::util::Status LoadFromFile(absl::string_view arg, bool add_dummpy_prefix) {
+    return $self->Load(arg, add_dummpy_prefix);
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -678,6 +678,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
            reverse=False,
            emit_unk_piece=False,
            enable_sampling=False,
+           add_dummy_prefix=True,
            nbest_size=-1,
            alpha=0.1,
            num_threads=-1):
@@ -714,7 +715,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     self._alpha = alpha
     self._num_threads = num_threads
     if model_file or model_proto:
-      self.Load(model_file=model_file, model_proto=model_proto)
+      self.Load(model_file=model_file, model_proto=model_proto, add_dummy_prefix=add_dummy_prefix)
 
 
   def Encode(self,
@@ -1160,7 +1161,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     return self.PieceToId(piece)
 
 
-  def Load(self, model_file=None, model_proto=None):
+  def Load(self, model_file=None, model_proto=None, add_dummy_prefix=True):
     """Overwride SentencePieceProcessor.Load to support both model_file and model_proto.
 
     Args:
@@ -1172,7 +1173,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
       raise RuntimeError('model_file and model_proto must be exclusive.')
     if model_proto:
       return self.LoadFromSerializedProto(model_proto)
-    return self.LoadFromFile(model_file)
+    return self.LoadFromFile(model_file, add_dummy_prefix)
 }
 }
 

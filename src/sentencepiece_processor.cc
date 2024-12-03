@@ -210,10 +210,10 @@ util::bytes ImmutableNBestSentencePieceText::SerializeAsString() const {
 SentencePieceProcessor::SentencePieceProcessor() {}
 SentencePieceProcessor::~SentencePieceProcessor() {}
 
-util::Status SentencePieceProcessor::Load(absl::string_view filename) {
+util::Status SentencePieceProcessor::Load(absl::string_view filename, bool add_dummy_prefix) {
   auto model_proto = absl::make_unique<ModelProto>();
   RETURN_IF_ERROR(io::LoadModelProto(filename, model_proto.get()));
-  return Load(std::move(model_proto));
+  return Load(std::move(model_proto), add_dummy_prefix);
 }
 
 void SentencePieceProcessor::LoadOrDie(absl::string_view filename) {
@@ -235,11 +235,13 @@ util::Status SentencePieceProcessor::LoadFromSerializedProto(
 }
 
 util::Status SentencePieceProcessor::Load(
-    std::unique_ptr<ModelProto> model_proto) {
+    std::unique_ptr<ModelProto> model_proto, bool add_dummy_prefix) {
   model_proto->mutable_normalizer_spec()->set_normalization_report_file("");
   model_ = ModelFactory::Create(std::move(model_proto));
+  normalizer_spec_ = absl::make_unique<NormalizerSpec>(this->model_proto()->normalizer_spec());
+  normalizer_spec_->set_add_dummy_prefix(add_dummy_prefix);
   normalizer_ = absl::make_unique<normalizer::Normalizer>(
-      this->model_proto()->normalizer_spec(), this->model_proto()->trainer_spec());
+      *normalizer_spec_, this->model_proto()->trainer_spec());
   if (this->model_proto()->has_denormalizer_spec() &&
       !this->model_proto()->denormalizer_spec().precompiled_charsmap().empty()) {
     denormalizer_ = absl::make_unique<normalizer::Normalizer>(

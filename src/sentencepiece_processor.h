@@ -134,6 +134,7 @@ class NBestSentencePieceText;
 class ModelInterface;
 class SentencePieceText;
 class ModelProto;
+class NormalizerSpec;
 
 namespace normalizer {
 class Normalizer;
@@ -241,7 +242,7 @@ class SentencePieceProcessor {
 
   // Loads model from `filename`.
   // Returns false if `filename` cannot be loaded.
-  virtual util::Status Load(absl::string_view filename);
+  virtual util::Status Load(absl::string_view filename, bool add_dummy_prefix=true);
 
   // Loads model from `filename`.
   // Crash if `filename` cannot be loaded.
@@ -253,7 +254,7 @@ class SentencePieceProcessor {
 
   // Loads model from `model_proto`.
   // `model_proto` is moved.
-  virtual util::Status Load(std::unique_ptr<ModelProto> model_proto);
+  virtual util::Status Load(std::unique_ptr<ModelProto> model_proto, bool add_dummy_prefix=true);
 
   // Loads model from `serialized`, which is a string-serialized model proto.
   // Useful to load the model from a platform independent blob object.
@@ -694,6 +695,7 @@ class SentencePieceProcessor {
       SentencePieceText *spt) const;
 
   std::unique_ptr<ModelInterface> model_;
+  std::unique_ptr<NormalizerSpec> normalizer_spec_;
   std::unique_ptr<normalizer::Normalizer> normalizer_;
   std::unique_ptr<normalizer::Normalizer> denormalizer_;
 
