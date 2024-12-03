@@ -1,4 +1,4 @@
-#ifdef __GLIBC__
+#ifdef __linux__
 #include <malloc.h>
 #endif
 
@@ -297,8 +297,10 @@ int main(int argc, char *argv[]) {
     LOG(INFO) << merged.sentences_size << " sentences, "
               << merged.required_chars.size() << " chars; allocated "
               << merged.allocated();
-    #if defined(TCMALLOC) and defined(__GLIBC__)
+    #if defined(TCMALLOC)
     MallocExtension::instance()->ReleaseFreeMemory();
+    #endif
+    #if defined(__linux__)
     malloc_stats();
     #endif
     if (++merged_count % save_interval == 0 && inputs.size() > 1) {

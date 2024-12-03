@@ -14,7 +14,7 @@
 
 #include "bpe_model_trainer.h"
 
-#ifdef __GLIBC__
+#ifdef __linux__
 #include <malloc.h>
 #endif
 #ifdef TCMALLOC
@@ -487,8 +487,11 @@ util::Status Trainer::Train() {
   }
 
   cache_file.reset();
-  #if defined(TCMALLOC) and defined(__GLIBC__)
+  #if defined(TCMALLOC)
   MallocExtension::instance()->ReleaseFreeMemory();
+  #endif
+
+  #if defined(__linux__)
   malloc_stats();
   #endif
 
@@ -592,15 +595,19 @@ util::Status Trainer::Train() {
   }
 
   LOG(INFO) << "Allocated " << allocated_.size() - unisize << " pairs";
-  #if defined(tcmalloc) and defined(__GLIBC__)
+  #if defined(tcmalloc)
   MallocExtension::instance()->ReleaseFreeMemory();
+  #endif
+  #if defined(__linux__)
   malloc_stats();
   #endif
 
   LOG(INFO) << "Sorting positions...";
   SortSymbolPositions(pool.get(), 0);
-  #if defined(tcmalloc) and defined(__GLIBC__)
+  #if defined(tcmalloc) 
   MallocExtension::instance()->ReleaseFreeMemory();
+  #endif
+  #if defined(__linux__)
   malloc_stats();
   #endif
 
