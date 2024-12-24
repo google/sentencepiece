@@ -3,15 +3,24 @@
 Python wrapper for SentencePiece. This API will offer the encoding, decoding and training of Sentencepiece.
 
 ## Build and Install SentencePiece
+
 For Linux (x64/i686), macOS, and Windows(win32/x64/arm64) environment, you can simply use pip command to install SentencePiece python module.
 
 ```
 % pip install sentencepiece
 ```
 
-To build and install the Python wrapper from source, try the following commands to build and install wheel package.
+Before building SentencePiece from source on Linux, ensure that the following dependencies are installed.
+
 ```
-% git clone https://github.com/google/sentencepiece.git 
+% sudo apt update
+% sudo apt install -y cmake pkg-config libsentencepiece-dev
+```
+
+To build and install the Python wrapper from source, try the following commands to build and install wheel package.
+
+```
+% git clone https://github.com/google/sentencepiece.git
 % cd sentencepiece
 % mkdir build
 % cd build
@@ -23,17 +32,19 @@ To build and install the Python wrapper from source, try the following commands 
 ```
 
 If you don’t have write permission to the global site-packages directory or don’t want to install into it, please try:
+
 ```
 % python setup.py install --user
 ```
 
-For Windows users who want to build from source, you can build and install the Python wrapper using Visual Studio. First, you need to install the `pwsh.exe` (Powershell 7). Use `winget install --id Microsoft.Powershell --source winget` to install directly. Then open the `Developer PowerShell for VS 2022`, and execute the following commands. 
+For Windows users who want to build from source, you can build and install the Python wrapper using Visual Studio. First, you need to install the `pwsh.exe` (Powershell 7). Use `winget install --id Microsoft.Powershell --source winget` to install directly. Then open the `Developer PowerShell for VS 2022`, and execute the following commands.
+
 ```
 git clone https://github.com/google/sentencepiece.git
 cd sentencepiece
 mkdir build
 cd build
-cmake .. -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=".\root" 
+cmake .. -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=".\root"
 cmake --build . --config Release --target install
 cd ../python
 pip install wheel
@@ -46,6 +57,7 @@ Get-ChildItem .\dist\sentencepiece*.whl | ForEach-Object { pip install $_.FullNa
 See [this google colab page](https://github.com/google/sentencepiece/blob/master/python/sentencepiece_python_module_example.ipynb) to run sentencepiece interactively.
 
 ### Segmentation
+
 ```
 % python
 >>> import sentencepiece as spm
@@ -72,7 +84,7 @@ See [this google colab page](https://github.com/google/sentencepiece/blob/master
 >>> proto = sp.encode('This is a test', out_type='immutable_proto')
 >>> for n in proto.pieces:
 ...     print('piece="{}" surface="{}" id={} begin={} end={}'.format(n.piece, n.surface, n.id, n.begin, n.end))
-... 
+...
 piece="▁This" surface="This" id=284 begin=0 end=4
 piece="▁is" surface=" is" id=47 begin=4 end=7
 piece="▁a" surface=" a" id=11 begin=7 end=9
@@ -89,7 +101,7 @@ True
 
 >>> for _ in range(10):
 ...     sp.encode('This is a test', out_type=str, enable_sampling=True, alpha=0.1, nbest_size=-1)
-... 
+...
 ['▁', 'This', '▁', 'is', '▁a', '▁', 't', 'e', 'st']
 ['▁T', 'h', 'i', 's', '▁is', '▁a', '▁', 'te', 's', 't']
 ['▁T', 'h', 'is', '▁', 'is', '▁', 'a', '▁', 't', 'est']
@@ -102,8 +114,8 @@ True
 ['▁This', '▁', 'is', '▁a', '▁', 't', 'est']
 
 >> sp.nbest_encode('This is a test', nbest_size=5, out_type=str)
-[['▁This', '▁is', '▁a', '▁', 't', 'est'], 
-['▁This', '▁is', '▁a', '▁', 'te', 'st'], 
+[['▁This', '▁is', '▁a', '▁', 't', 'est'],
+['▁This', '▁is', '▁a', '▁', 'te', 'st'],
 ['▁This', '▁is', '▁a', '▁', 'te', 's', 't'],
 ['▁This', '▁is', '▁a', '▁', 't', 'e', 'st'],
 ['▁This', '▁is', '▁a', '▁', 't', 'es', 't']]
@@ -121,7 +133,7 @@ True
 >>> sp.decode([[284, 47, 11, 4, 15, 400], [151, 88, 21, 887]])
 ['This is a test', 'Hello world']
 
->>> proto = sp.decode([284, 47, 11, 4, 15, 400], out_type='immutable_proto') 
+>>> proto = sp.decode([284, 47, 11, 4, 15, 400], out_type='immutable_proto')
 >>> proto.text
 'This is a test'
 
@@ -154,12 +166,13 @@ True
 ```
 
 ### Model Training
-Training is performed by passing parameters of [spm_train](https://github.com/google/sentencepiece#train-sentencepiece-model) to  SentencePieceTrainer.train() function.
+
+Training is performed by passing parameters of [spm_train](https://github.com/google/sentencepiece#train-sentencepiece-model) to SentencePieceTrainer.train() function.
 
 ```
 >>> import sentencepiece as spm
 >>> spm.SentencePieceTrainer.train(input='test/botchan.txt', model_prefix='m', vocab_size=1000, user_defined_symbols=['foo', 'bar'])
-sentencepiece_trainer.cc(73) LOG(INFO) Starts training with : 
+sentencepiece_trainer.cc(73) LOG(INFO) Starts training with :
 trainer_spec {
   input: test/botchan.txt
   .. snip
@@ -172,6 +185,7 @@ trainer_interface.cc(619) LOG(INFO) Saving vocabs: m.vocab
 ```
 
 ### Training without local filesystem
+
 Sentencepiece trainer can receive any iterable object to feed training sentences. You can also pass a file object (instance with write() method) to emit the output model to any devices. These features are useful to run sentencepiece on environment that have limited access to the local file system (e.g., Google colab.)
 
 ```
