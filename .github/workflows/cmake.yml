@@ -26,8 +26,8 @@ jobs:
       contents: write # svenstaro/upload-release-action 
 
     steps:
-    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-    - uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+    - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
       with:
         python-version: '3.x'
         architecture: ${{matrix.arch}}
@@ -68,7 +68,7 @@ jobs:
         python -m pytest
 
     - name: Upload artifcacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: artifcacts
         path: ./build/*.7z
