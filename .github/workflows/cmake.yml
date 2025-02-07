@@ -67,10 +67,10 @@ jobs:
         python setup.py bdist_wheel
         python -m pytest
 
-    - name: Upload artifcacts
-      uses: actions/upload-artifact@v3
+    - name: Upload artifacts
+      uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
       with:
-        name: artifcacts
+        name: artifacts-cmake-${{ matrix.os }}-${{ matrix.arch }}
         path: ./build/*.7z
 
     - name: Upload Release Assets
