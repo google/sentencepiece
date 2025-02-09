@@ -65,7 +65,19 @@ jobs:
         python -m pip install --require-hashes --no-dependencies -r ../.github/workflows/requirements/base.txt
         python setup.py build
         python setup.py bdist_wheel
-        python -m pytest
+
+    - name: Glob wheel
+      uses: tj-actions/glob@2944188f585a0ec102a6a82d9eeb3aed69785393 # v22.0.1
+      id: wheel
+      with:
+        files: ./python/dist/sentencepiece-*.whl
+
+    - name: Install Python Wrapper
+      run: python3 -m pip install "${{ steps.wheel.outputs.paths }}"
+
+    - name: Test Python Wrapper
+      working-directory: ${{github.workspace}}/python
+      run: python -m pytest
 
     - name: Upload artifacts
       uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
