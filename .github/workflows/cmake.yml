@@ -15,7 +15,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ ubuntu-latest, ubuntu-20.04, windows-latest, macOS-11 ]
+        os: [ ubuntu-latest, ubuntu-20.04, windows-latest, macOS-latest ]
         arch: [ x64 ]
         include:
           - os: windows-latest
@@ -23,7 +23,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     permissions:
-      contents: write # svenstaro/upload-release-action 
+      contents: write # svenstaro/upload-release-action
 
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
