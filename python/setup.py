@@ -24,16 +24,19 @@ from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.build_py import build_py as _build_py
 
+# Add the source directory to the Python path
+package_root = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(os.path.join(package_root, 'src', 'sentencepiece'))
 sys.path.append(os.path.join('.', 'test'))
+
+# Import version directly from the package
+from _version import __version__
 
 
 def long_description():
   with codecs.open('README.md', 'r', 'utf-8') as f:
     long_description = f.read()
   return long_description
-
-
-exec(open('src/sentencepiece/_version.py').read())
 
 
 def run_pkg_config(section, pkg_config_path=None):
@@ -196,6 +199,7 @@ setup(
     license='Apache',
     platforms='Unix',
     py_modules=[
+        'sentencepiece/_init',
         'sentencepiece/__init__',
         'sentencepiece/_version',
         'sentencepiece/sentencepiece_model_pb2',

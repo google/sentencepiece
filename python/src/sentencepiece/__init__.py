@@ -4,17 +4,70 @@
 # Do not make changes to this file unless you know what you are doing - modify
 # the SWIG interface file instead.
 
-from sys import version_info as _swig_python_version_info
-# Import the low-level C/C++ module
+# First import initialization module to set up paths
 if __package__ or "." in __name__:
-    from . import _sentencepiece
+    from . import _init
 else:
-    import _sentencepiece
+    import _init
+
+import re
+import csv
+import sys
+import os
+from io import StringIO
+from io import BytesIO
+from sys import version_info as _swig_python_version_info
 
 try:
     import builtins as __builtin__
 except ImportError:
     import __builtin__
+
+# Module state tracking
+_sentencepiece_module = None
+_module_loading = False
+_module_initialized = False
+_registration_complete = False
+_registration_in_progress = False
+_module_load_attempted = False
+_loading_lock = False
+
+def _load_sentencepiece():
+    """Load and cache the SWIG module with proper initialization checks."""
+    global _sentencepiece_module, _module_loading, _module_initialized
+    global _registration_complete, _registration_in_progress, _module_load_attempted
+    global _loading_lock
+
+    # Return cached module if already loaded
+    if _sentencepiece_module is not None and _module_initialized:
+        return _sentencepiece_module
+
+    # Prevent circular imports during loading
+    if _module_loading or _loading_lock:
+        if _module_load_attempted:
+            raise ImportError("Circular import detected while loading _sentencepiece")
+        return None
+
+    try:
+        _loading_lock = True
+        _module_loading = True
+        _module_load_attempted = True
+
+        # Import SWIG module based on package context
+        if __package__ or "." in __name__:
+            from . import _sentencepiece as _sp
+        else:
+            import _sentencepiece as _sp
+
+        _sentencepiece_module = _sp
+        _module_initialized = True
+        return _sentencepiece_module
+    except ImportError as e:
+        raise ImportError(f"Failed to load _sentencepiece module: {e}")
+    finally:
+        _module_loading = False
+        _loading_lock = False
+        _module_load_attempted = False
 
 def _swig_repr(self):
     try:
@@ -22,7 +75,6 @@ def _swig_repr(self):
     except __builtin__.Exception:
         strthis = ""
     return "<%s.%s; %s >" % (self.__class__.__module__, self.__class__.__name__, strthis,)
-
 
 def _swig_setattr_nondynamic_instance_variable(set):
     def set_instance_attr(self, name, value):
@@ -36,7 +88,6 @@ def _swig_setattr_nondynamic_instance_variable(set):
             raise AttributeError("You cannot add instance attributes to %s" % self)
     return set_instance_attr
 
-
 def _swig_setattr_nondynamic_class_variable(set):
     def set_class_attr(cls, name, value):
         if hasattr(cls, name) and not isinstance(getattr(cls, name), property):
@@ -45,47 +96,70 @@ def _swig_setattr_nondynamic_class_variable(set):
             raise AttributeError("You cannot add class attributes to %s" % cls)
     return set_class_attr
 
-
 def _swig_add_metaclass(metaclass):
     """Class decorator for adding a metaclass to a SWIG wrapped class - a slimmed down version of six.add_metaclass"""
     def wrapper(cls):
         return metaclass(cls.__name__, cls.__bases__, cls.__dict__.copy())
     return wrapper
 
-
 class _SwigNonDynamicMeta(type):
     """Meta class to enforce nondynamic attributes (no new attributes) for a class"""
     __setattr__ = _swig_setattr_nondynamic_class_variable(type.__setattr__)
 
-
+# Define all classes before any registrations
 class ImmutableSentencePieceText_ImmutableSentencePiece(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
     def __init__(self):
-        _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece_swiginit(self, _sentencepiece.new_ImmutableSentencePieceText_ImmutableSentencePiece())
-    __swig_destroy__ = _sentencepiece.delete_ImmutableSentencePieceText_ImmutableSentencePiece
+        self.this = None
+        self._initialized = False
+
+    def _initialize(self):
+        if self._initialized:
+            return
+        try:
+            _sp = _load_sentencepiece()
+            if not hasattr(_sp, 'new_ImmutableSentencePieceText_ImmutableSentencePiece'):
+                raise ImportError("SWIG module not properly initialized")
+            self.this = _sp.new_ImmutableSentencePieceText_ImmutableSentencePiece()
+            self._initialized = True
+        except ImportError as e:
+            raise RuntimeError(f"Failed to initialize: {e}")
+
+    def _ensure_initialized(self):
+        if not self._initialized:
+            self._initialize()
+
+    __swig_destroy__ = property(lambda self: _load_sentencepiece().delete_ImmutableSentencePieceText_ImmutableSentencePiece if self._initialized else None)
 
     def _piece(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__piece(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__piece(self)
 
     def _surface(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__surface(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__surface(self)
 
     def _id(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__id(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__id(self)
 
     def _begin(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__begin(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__begin(self)
 
     def _end(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__end(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__end(self)
 
     def _surface_as_bytes(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__surface_as_bytes(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__surface_as_bytes(self)
 
     def _piece_as_bytes(self):
-        return _sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece__piece_as_bytes(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableSentencePieceText_ImmutableSentencePiece__piece_as_bytes(self)
 
     piece = property(_piece)
     piece_as_bytes = property(_piece_as_bytes)
@@ -96,49 +170,73 @@ class ImmutableSentencePieceText_ImmutableSentencePiece(object):
     end = property(_end)
 
     def __str__(self):
-      return ('piece: \"{}\"\n'
-              'id: {}\n'
-              'surface: \"{}\"\n'
-              'begin: {}\n'
-              'end: {}\n').format(self.piece, self.id, self.surface,
-                                  self.begin, self.end)
+        self._ensure_initialized()
+        return ('piece: \"{}\"\n'
+                'id: {}\n'
+                'surface: \"{}\"\n'
+                'begin: {}\n'
+                'end: {}\n').format(self.piece, self.id, self.surface,
+                                    self.begin, self.end)
 
     def __eq__(self, other):
-      return self.piece == other.piece and self.id == other.id and self.surface == other.surface and self.begin == other.begin and self.end == other.end
+        self._ensure_initialized()
+        return self.piece == other.piece and self.id == other.id and self.surface == other.surface and self.begin == other.begin and self.end == other.end
 
     def __hash__(self):
-      return hash(str(self))
+        self._ensure_initialized()
+        return hash(str(self))
 
     __repr__ = __str__
 
-
-# Register ImmutableSentencePieceText_ImmutableSentencePiece in _sentencepiece:
-_sentencepiece.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
 class ImmutableSentencePieceText(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
     def __init__(self):
-        _sentencepiece.ImmutableSentencePieceText_swiginit(self, _sentencepiece.new_ImmutableSentencePieceText())
-    __swig_destroy__ = _sentencepiece.delete_ImmutableSentencePieceText
+        self.this = None
+        self._initialized = False
+
+    def _initialize(self):
+        if self._initialized:
+            return
+        try:
+            _sp = _load_sentencepiece()
+            if not hasattr(_sp, 'new_ImmutableSentencePieceText'):
+                raise ImportError("SWIG module not properly initialized")
+            self.this = _sp.new_ImmutableSentencePieceText()
+            self._initialized = True
+        except ImportError as e:
+            raise RuntimeError(f"Failed to initialize: {e}")
+
+    def _ensure_initialized(self):
+        if not self._initialized:
+            self._initialize()
+
+    __swig_destroy__ = property(lambda self: _load_sentencepiece().delete_ImmutableSentencePieceText if self._initialized else None)
 
     def _pieces_size(self):
-        return _sentencepiece.ImmutableSentencePieceText__pieces_size(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableSentencePieceText__pieces_size(self)
 
     def _pieces(self, index):
-        return _sentencepiece.ImmutableSentencePieceText__pieces(self, index)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableSentencePieceText__pieces(self, index)
 
     def _text(self):
-        return _sentencepiece.ImmutableSentencePieceText__text(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableSentencePieceText__text(self)
 
     def _score(self):
-        return _sentencepiece.ImmutableSentencePieceText__score(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableSentencePieceText__score(self)
 
     def SerializeAsString(self):
-        return _sentencepiece.ImmutableSentencePieceText_SerializeAsString(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableSentencePieceText_SerializeAsString(self)
 
     def _text_as_bytes(self):
-        return _sentencepiece.ImmutableSentencePieceText__text_as_bytes(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableSentencePieceText__text_as_bytes(self)
 
     text = property(_text)
     text_as_bytes = property(_text_as_bytes)
@@ -185,24 +283,45 @@ class ImmutableSentencePieceText(object):
     __repr__ = __str__
 
 
-# Register ImmutableSentencePieceText in _sentencepiece:
-_sentencepiece.ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
+# Registration will be handled by _initialize_all_registrations() after all classes are defined
+
 class ImmutableNBestSentencePieceText(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
     def __init__(self):
-        _sentencepiece.ImmutableNBestSentencePieceText_swiginit(self, _sentencepiece.new_ImmutableNBestSentencePieceText())
-    __swig_destroy__ = _sentencepiece.delete_ImmutableNBestSentencePieceText
+        self.this = None
+        self._initialized = False
+
+    def _initialize(self):
+        if self._initialized:
+            return
+        try:
+            _sp = _load_sentencepiece()
+            if not hasattr(_sp, 'new_ImmutableNBestSentencePieceText'):
+                raise ImportError("SWIG module not properly initialized")
+            self.this = _sp.new_ImmutableNBestSentencePieceText()
+            self._initialized = True
+        except ImportError as e:
+            raise RuntimeError(f"Failed to initialize: {e}")
+
+    def _ensure_initialized(self):
+        if not self._initialized:
+            self._initialize()
+
+    __swig_destroy__ = property(lambda self: _load_sentencepiece().delete_ImmutableNBestSentencePieceText if self._initialized else None)
 
     def _nbests_size(self):
-        return _sentencepiece.ImmutableNBestSentencePieceText__nbests_size(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableNBestSentencePieceText__nbests_size(self)
 
     def _nbests(self, index):
-        return _sentencepiece.ImmutableNBestSentencePieceText__nbests(self, index)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableNBestSentencePieceText__nbests(self, index)
 
     def SerializeAsString(self):
-        return _sentencepiece.ImmutableNBestSentencePieceText_SerializeAsString(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().ImmutableNBestSentencePieceText_SerializeAsString(self)
 
     class ImmutableSentencePieceTextIterator:
       def __init__(self, proto):
@@ -243,182 +362,183 @@ class ImmutableNBestSentencePieceText(object):
 
 
 # Register ImmutableNBestSentencePieceText in _sentencepiece:
-_sentencepiece.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
+_load_sentencepiece().ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
 class SentencePieceProcessor(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
     def __init__(self):
-        _sentencepiece.SentencePieceProcessor_swiginit(self, _sentencepiece.new_SentencePieceProcessor())
-    __swig_destroy__ = _sentencepiece.delete_SentencePieceProcessor
+        _sp = _load_sentencepiece()
+        _sp.SentencePieceProcessor_swiginit(self, _sp.new_SentencePieceProcessor())
+    __swig_destroy__ = property(lambda self: _load_sentencepiece().delete_SentencePieceProcessor)
 
     def LoadFromSerializedProto(self, serialized):
-        return _sentencepiece.SentencePieceProcessor_LoadFromSerializedProto(self, serialized)
+        return _load_sentencepiece().SentencePieceProcessor_LoadFromSerializedProto(self, serialized)
 
     def SetEncodeExtraOptions(self, extra_option):
-        return _sentencepiece.SentencePieceProcessor_SetEncodeExtraOptions(self, extra_option)
+        return _load_sentencepiece().SentencePieceProcessor_SetEncodeExtraOptions(self, extra_option)
 
     def SetDecodeExtraOptions(self, extra_option):
-        return _sentencepiece.SentencePieceProcessor_SetDecodeExtraOptions(self, extra_option)
+        return _load_sentencepiece().SentencePieceProcessor_SetDecodeExtraOptions(self, extra_option)
 
     def SetVocabulary(self, valid_vocab):
-        return _sentencepiece.SentencePieceProcessor_SetVocabulary(self, valid_vocab)
+        return _load_sentencepiece().SentencePieceProcessor_SetVocabulary(self, valid_vocab)
 
     def ResetVocabulary(self):
-        return _sentencepiece.SentencePieceProcessor_ResetVocabulary(self)
+        return _load_sentencepiece().SentencePieceProcessor_ResetVocabulary(self)
 
     def LoadVocabulary(self, filename, threshold):
-        return _sentencepiece.SentencePieceProcessor_LoadVocabulary(self, filename, threshold)
+        return _load_sentencepiece().SentencePieceProcessor_LoadVocabulary(self, filename, threshold)
 
     def CalculateEntropy(self, *args):
-        return _sentencepiece.SentencePieceProcessor_CalculateEntropy(self, *args)
+        return _load_sentencepiece().SentencePieceProcessor_CalculateEntropy(self, *args)
 
     def GetPieceSize(self):
-        return _sentencepiece.SentencePieceProcessor_GetPieceSize(self)
+        return _load_sentencepiece().SentencePieceProcessor_GetPieceSize(self)
 
     def PieceToId(self, piece):
-        return _sentencepiece.SentencePieceProcessor_PieceToId(self, piece)
+        return _load_sentencepiece().SentencePieceProcessor_PieceToId(self, piece)
 
     def IdToPiece(self, id):
-        return _sentencepiece.SentencePieceProcessor_IdToPiece(self, id)
+        return _load_sentencepiece().SentencePieceProcessor_IdToPiece(self, id)
 
     def GetScore(self, id):
-        return _sentencepiece.SentencePieceProcessor_GetScore(self, id)
+        return _load_sentencepiece().SentencePieceProcessor_GetScore(self, id)
 
     def IsUnknown(self, id):
-        return _sentencepiece.SentencePieceProcessor_IsUnknown(self, id)
+        return _load_sentencepiece().SentencePieceProcessor_IsUnknown(self, id)
 
     def IsControl(self, id):
-        return _sentencepiece.SentencePieceProcessor_IsControl(self, id)
+        return _load_sentencepiece().SentencePieceProcessor_IsControl(self, id)
 
     def IsUnused(self, id):
-        return _sentencepiece.SentencePieceProcessor_IsUnused(self, id)
+        return _load_sentencepiece().SentencePieceProcessor_IsUnused(self, id)
 
     def IsByte(self, id):
-        return _sentencepiece.SentencePieceProcessor_IsByte(self, id)
+        return _load_sentencepiece().SentencePieceProcessor_IsByte(self, id)
 
     def unk_id(self):
-        return _sentencepiece.SentencePieceProcessor_unk_id(self)
+        return _load_sentencepiece().SentencePieceProcessor_unk_id(self)
 
     def bos_id(self):
-        return _sentencepiece.SentencePieceProcessor_bos_id(self)
+        return _load_sentencepiece().SentencePieceProcessor_bos_id(self)
 
     def eos_id(self):
-        return _sentencepiece.SentencePieceProcessor_eos_id(self)
+        return _load_sentencepiece().SentencePieceProcessor_eos_id(self)
 
     def pad_id(self):
-        return _sentencepiece.SentencePieceProcessor_pad_id(self)
+        return _load_sentencepiece().SentencePieceProcessor_pad_id(self)
 
     def serialized_model_proto(self):
-        return _sentencepiece.SentencePieceProcessor_serialized_model_proto(self)
+        return _load_sentencepiece().SentencePieceProcessor_serialized_model_proto(self)
 
     def LoadFromFile(self, arg):
-        return _sentencepiece.SentencePieceProcessor_LoadFromFile(self, arg)
+        return _load_sentencepiece().SentencePieceProcessor_LoadFromFile(self, arg)
 
     def _EncodeAsIds(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsIds(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__EncodeAsIds(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _EncodeAsPieces(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsPieces(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__EncodeAsPieces(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _EncodeAsSerializedProto(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsSerializedProto(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__EncodeAsSerializedProto(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _EncodeAsImmutableProto(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsImmutableProto(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__EncodeAsImmutableProto(self, text, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _EncodeAsIdsBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsIdsBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__EncodeAsIdsBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _EncodeAsPiecesBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsPiecesBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__EncodeAsPiecesBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _EncodeAsSerializedProtoBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsSerializedProtoBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__EncodeAsSerializedProtoBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _EncodeAsImmutableProtoBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__EncodeAsImmutableProtoBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__EncodeAsImmutableProtoBatch(self, ins, num_threads, enable_sampling, nbest_size, alpha, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _DecodeIds(self, ids):
-        return _sentencepiece.SentencePieceProcessor__DecodeIds(self, ids)
+        return _load_sentencepiece().SentencePieceProcessor__DecodeIds(self, ids)
 
     def _DecodeIdsAsBytes(self, ids):
-        return _sentencepiece.SentencePieceProcessor__DecodeIdsAsBytes(self, ids)
+        return _load_sentencepiece().SentencePieceProcessor__DecodeIdsAsBytes(self, ids)
 
     def _DecodePieces(self, pieces):
-        return _sentencepiece.SentencePieceProcessor__DecodePieces(self, pieces)
+        return _load_sentencepiece().SentencePieceProcessor__DecodePieces(self, pieces)
 
     def _DecodeIdsAsSerializedProto(self, ids):
-        return _sentencepiece.SentencePieceProcessor__DecodeIdsAsSerializedProto(self, ids)
+        return _load_sentencepiece().SentencePieceProcessor__DecodeIdsAsSerializedProto(self, ids)
 
     def _DecodePiecesAsSerializedProto(self, pieces):
-        return _sentencepiece.SentencePieceProcessor__DecodePiecesAsSerializedProto(self, pieces)
+        return _load_sentencepiece().SentencePieceProcessor__DecodePiecesAsSerializedProto(self, pieces)
 
     def _DecodeIdsAsImmutableProto(self, ids):
-        return _sentencepiece.SentencePieceProcessor__DecodeIdsAsImmutableProto(self, ids)
+        return _load_sentencepiece().SentencePieceProcessor__DecodeIdsAsImmutableProto(self, ids)
 
     def _DecodePiecesAsImmutableProto(self, pieces):
-        return _sentencepiece.SentencePieceProcessor__DecodePiecesAsImmutableProto(self, pieces)
+        return _load_sentencepiece().SentencePieceProcessor__DecodePiecesAsImmutableProto(self, pieces)
 
     def _DecodeIdsBatch(self, ins, num_threads):
-        return _sentencepiece.SentencePieceProcessor__DecodeIdsBatch(self, ins, num_threads)
+        return _load_sentencepiece().SentencePieceProcessor__DecodeIdsBatch(self, ins, num_threads)
 
     def _DecodeIdsAsBytesBatch(self, ins, num_threads):
-        return _sentencepiece.SentencePieceProcessor__DecodeIdsAsBytesBatch(self, ins, num_threads)
+        return _load_sentencepiece().SentencePieceProcessor__DecodeIdsAsBytesBatch(self, ins, num_threads)
 
     def _DecodeIdsAsSerializedProtoBatch(self, ins, num_threads):
-        return _sentencepiece.SentencePieceProcessor__DecodeIdsAsSerializedProtoBatch(self, ins, num_threads)
+        return _load_sentencepiece().SentencePieceProcessor__DecodeIdsAsSerializedProtoBatch(self, ins, num_threads)
 
     def _DecodeIdsAsImmutableProtoBatch(self, ins, num_threads):
-        return _sentencepiece.SentencePieceProcessor__DecodeIdsAsImmutableProtoBatch(self, ins, num_threads)
+        return _load_sentencepiece().SentencePieceProcessor__DecodeIdsAsImmutableProtoBatch(self, ins, num_threads)
 
     def _DecodePiecesBatch(self, ins, num_threads):
-        return _sentencepiece.SentencePieceProcessor__DecodePiecesBatch(self, ins, num_threads)
+        return _load_sentencepiece().SentencePieceProcessor__DecodePiecesBatch(self, ins, num_threads)
 
     def _DecodePiecesAsSerializedProtoBatch(self, ins, num_threads):
-        return _sentencepiece.SentencePieceProcessor__DecodePiecesAsSerializedProtoBatch(self, ins, num_threads)
+        return _load_sentencepiece().SentencePieceProcessor__DecodePiecesAsSerializedProtoBatch(self, ins, num_threads)
 
     def _DecodePiecesAsImmutableProtoBatch(self, ins, num_threads):
-        return _sentencepiece.SentencePieceProcessor__DecodePiecesAsImmutableProtoBatch(self, ins, num_threads)
+        return _load_sentencepiece().SentencePieceProcessor__DecodePiecesAsImmutableProtoBatch(self, ins, num_threads)
 
     def _NBestEncodeAsIds(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__NBestEncodeAsIds(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__NBestEncodeAsIds(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _NBestEncodeAsPieces(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__NBestEncodeAsPieces(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__NBestEncodeAsPieces(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _NBestEncodeAsSerializedProto(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__NBestEncodeAsSerializedProto(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__NBestEncodeAsSerializedProto(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _NBestEncodeAsImmutableProto(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__NBestEncodeAsImmutableProto(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__NBestEncodeAsImmutableProto(self, text, nbest_size, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _SampleEncodeAndScoreAsIds(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__SampleEncodeAndScoreAsIds(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__SampleEncodeAndScoreAsIds(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _SampleEncodeAndScoreAsPieces(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__SampleEncodeAndScoreAsPieces(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__SampleEncodeAndScoreAsPieces(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _SampleEncodeAndScoreAsSerializedProto(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__SampleEncodeAndScoreAsSerializedProto(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__SampleEncodeAndScoreAsSerializedProto(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _SampleEncodeAndScoreAsImmutableProto(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece):
-        return _sentencepiece.SentencePieceProcessor__SampleEncodeAndScoreAsImmutableProto(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
+        return _load_sentencepiece().SentencePieceProcessor__SampleEncodeAndScoreAsImmutableProto(self, text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
 
     def _Normalize(self, text):
-        return _sentencepiece.SentencePieceProcessor__Normalize(self, text)
+        return _load_sentencepiece().SentencePieceProcessor__Normalize(self, text)
 
     def _NormalizeWithOffsets(self, text):
-        return _sentencepiece.SentencePieceProcessor__NormalizeWithOffsets(self, text)
+        return _load_sentencepiece().SentencePieceProcessor__NormalizeWithOffsets(self, text)
 
     def _CalculateEntropy(self, text, alpha):
-        return _sentencepiece.SentencePieceProcessor__CalculateEntropy(self, text, alpha)
+        return _load_sentencepiece().SentencePieceProcessor__CalculateEntropy(self, text, alpha)
 
     def _CalculateEntropyBatch(self, ins, alpha, num_threads):
-        return _sentencepiece.SentencePieceProcessor__CalculateEntropyBatch(self, ins, alpha, num_threads)
+        return _load_sentencepiece().SentencePieceProcessor__CalculateEntropyBatch(self, ins, alpha, num_threads)
 
     def _OverrideNormalizerSpec(self, args):
-        return _sentencepiece.SentencePieceProcessor__OverrideNormalizerSpec(self, args)
+        return _load_sentencepiece().SentencePieceProcessor__OverrideNormalizerSpec(self, args)
 
     def Init(self,
              model_file=None,
@@ -961,14 +1081,22 @@ class SentencePieceProcessor(object):
       return self.LoadFromFile(model_file)
 
 
-# Register SentencePieceProcessor in _sentencepiece:
-_sentencepiece.SentencePieceProcessor_swigregister(SentencePieceProcessor)
+# Define registration functions that will be called after all classes are defined
+def _register_processor():
+    _load_sentencepiece().SentencePieceProcessor_swigregister(SentencePieceProcessor)
+
+def _register_trainer():
+    _load_sentencepiece().SentencePieceTrainer_swigregister(SentencePieceTrainer)
+
+def _register_normalizer():
+    _load_sentencepiece().SentencePieceNormalizer_swigregister(SentencePieceNormalizer)
 
 def SetRandomGeneratorSeed(seed):
-    return _sentencepiece.SetRandomGeneratorSeed(seed)
+    return _load_sentencepiece().SetRandomGeneratorSeed(seed)
 
 def SetMinLogLevel(v):
-    return _sentencepiece.SetMinLogLevel(v)
+    return _load_sentencepiece().SetMinLogLevel(v)
+
 class SentencePieceTrainer(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
 
@@ -978,23 +1106,23 @@ class SentencePieceTrainer(object):
 
     @staticmethod
     def _TrainFromString(arg):
-        return _sentencepiece.SentencePieceTrainer__TrainFromString(arg)
+        return _load_sentencepiece().SentencePieceTrainer__TrainFromString(arg)
 
     @staticmethod
     def _TrainFromMap(args):
-        return _sentencepiece.SentencePieceTrainer__TrainFromMap(args)
+        return _load_sentencepiece().SentencePieceTrainer__TrainFromMap(args)
 
     @staticmethod
     def _TrainFromMap2(args, iter):
-        return _sentencepiece.SentencePieceTrainer__TrainFromMap2(args, iter)
+        return _load_sentencepiece().SentencePieceTrainer__TrainFromMap2(args, iter)
 
     @staticmethod
     def _TrainFromMap3(args):
-        return _sentencepiece.SentencePieceTrainer__TrainFromMap3(args)
+        return _load_sentencepiece().SentencePieceTrainer__TrainFromMap3(args)
 
     @staticmethod
     def _TrainFromMap4(args, iter):
-        return _sentencepiece.SentencePieceTrainer__TrainFromMap4(args, iter)
+        return _load_sentencepiece().SentencePieceTrainer__TrainFromMap4(args, iter)
 
     @staticmethod
     def _Train(arg=None, **kwargs):
@@ -1046,40 +1174,63 @@ class SentencePieceTrainer(object):
       with _LogStream(ostream=logstream):
         SentencePieceTrainer._Train(arg=arg, **kwargs)
 
-
-# Register SentencePieceTrainer in _sentencepiece:
-_sentencepiece.SentencePieceTrainer_swigregister(SentencePieceTrainer)
 class SentencePieceNormalizer(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
     def __init__(self):
-        _sentencepiece.SentencePieceNormalizer_swiginit(self, _sentencepiece.new_SentencePieceNormalizer())
-    __swig_destroy__ = _sentencepiece.delete_SentencePieceNormalizer
+        self.this = None
+        self._initialized = False
+
+    def _initialize(self):
+        if self._initialized:
+            return
+        try:
+            _sp = _load_sentencepiece()
+            if not hasattr(_sp, 'new_SentencePieceNormalizer'):
+                raise ImportError("SWIG module not properly initialized")
+            self.this = _sp.new_SentencePieceNormalizer()
+            self._initialized = True
+        except ImportError as e:
+            raise RuntimeError(f"Failed to initialize: {e}")
+
+    def _ensure_initialized(self):
+        if not self._initialized:
+            self._initialize()
+
+    __swig_destroy__ = property(lambda self: _load_sentencepiece().delete_SentencePieceNormalizer if self._initialized else None)
 
     def LoadFromSerializedProto(self, serialized):
-        return _sentencepiece.SentencePieceNormalizer_LoadFromSerializedProto(self, serialized)
+        self._ensure_initialized()
+        return _load_sentencepiece().SentencePieceNormalizer_LoadFromSerializedProto(self, serialized)
 
     def LoadFromRuleTSV(self, filename):
-        return _sentencepiece.SentencePieceNormalizer_LoadFromRuleTSV(self, filename)
+        self._ensure_initialized()
+        return _load_sentencepiece().SentencePieceNormalizer_LoadFromRuleTSV(self, filename)
 
     def LoadFromRuleName(self, name):
-        return _sentencepiece.SentencePieceNormalizer_LoadFromRuleName(self, name)
+        self._ensure_initialized()
+        return _load_sentencepiece().SentencePieceNormalizer_LoadFromRuleName(self, name)
 
     def serialized_model_proto(self):
-        return _sentencepiece.SentencePieceNormalizer_serialized_model_proto(self)
+        self._ensure_initialized()
+        return _load_sentencepiece().SentencePieceNormalizer_serialized_model_proto(self)
 
     def LoadFromFile(self, arg):
-        return _sentencepiece.SentencePieceNormalizer_LoadFromFile(self, arg)
+        self._ensure_initialized()
+        return _load_sentencepiece().SentencePieceNormalizer_LoadFromFile(self, arg)
 
     def _Normalize(self, text):
-        return _sentencepiece.SentencePieceNormalizer__Normalize(self, text)
+        self._ensure_initialized()
+        return _load_sentencepiece().SentencePieceNormalizer__Normalize(self, text)
 
     def _NormalizeWithOffsets(self, text):
-        return _sentencepiece.SentencePieceNormalizer__NormalizeWithOffsets(self, text)
+        self._ensure_initialized()
+        return _load_sentencepiece().SentencePieceNormalizer__NormalizeWithOffsets(self, text)
 
     def _SetProtoField(self, name, value):
-        return _sentencepiece.SentencePieceNormalizer__SetProtoField(self, name, value)
+        self._ensure_initialized()
+        return _load_sentencepiece().SentencePieceNormalizer__SetProtoField(self, name, value)
 
     def Init(self,
              model_file=None,
@@ -1100,7 +1251,7 @@ class SentencePieceNormalizer(object):
         escape_whitespaces: escape whitespaces.
         remove_extra_whitespaces: remove extra whitespaces.
       """
-
+      self._ensure_initialized()
       _sentencepiece_normalizer_init_native(self)
 
       if model_file:
@@ -1131,6 +1282,7 @@ class SentencePieceNormalizer(object):
 
 
     def __getstate__(self):
+      self._ensure_initialized()
       return self.serialized_model_proto()
 
 
@@ -1138,10 +1290,99 @@ class SentencePieceNormalizer(object):
       self.__init__()
       self.LoadFromSerializedProto(serialized_model_proto)
 
+# Global initialization and registration state
+_module_loading = False
+_module_initialized = False
+_registration_complete = False
+_registration_in_progress = False
 
-# Register SentencePieceNormalizer in _sentencepiece:
-_sentencepiece.SentencePieceNormalizer_swigregister(SentencePieceNormalizer)
+def _register_immutable_classes():
+    """Register immutable classes in the correct order."""
+    global _registration_complete, _registration_in_progress
+    if _registration_complete:
+        return True
 
+    if _registration_in_progress:
+        return False
+
+    try:
+        _registration_in_progress = True
+        _sp = _load_sentencepiece()
+        # Register immutable classes in dependency order
+        if not hasattr(_sp, 'ImmutableSentencePieceText_ImmutableSentencePiece_swigregister'):
+            _registration_in_progress = False
+            return False
+
+        # Ensure all required registration functions exist
+        required_funcs = [
+            'ImmutableSentencePieceText_ImmutableSentencePiece_swigregister',
+            'ImmutableSentencePieceText_swigregister',
+            'ImmutableNBestSentencePieceText_swigregister'
+        ]
+        if not all(hasattr(_sp, func) for func in required_funcs):
+            _registration_in_progress = False
+            return False
+
+        # Register in dependency order
+        _sp.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
+        _sp.ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
+        _sp.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
+
+        _registration_complete = True
+        _registration_in_progress = False
+        return True
+    except ImportError as e:
+        _registration_in_progress = False
+        raise ImportError(f"Failed to load SWIG module during immutable class registration: {e}")
+    except AttributeError as e:
+        _registration_in_progress = False
+        raise ImportError(f"Failed to register immutable classes - missing SWIG attributes: {e}")
+
+def _initialize_all_registrations():
+    """Initialize all registrations after classes are defined."""
+    global _module_initialized, _registration_complete, _registration_in_progress
+
+    if _module_initialized and _registration_complete:
+        return  # Prevent double initialization
+
+    if _registration_in_progress:
+        return  # Prevent recursive initialization
+
+    try:
+        _registration_in_progress = True
+        # Ensure SWIG module is loaded first
+        _sp = _load_sentencepiece()
+        if _sp is None:
+            _registration_in_progress = False
+            raise ImportError("Failed to load SWIG module")
+
+        # Register immutable classes first
+        if not _register_immutable_classes():
+            _registration_in_progress = False
+            raise ImportError("Failed to register immutable classes")
+
+        # Register processor classes in order, with dependency checks
+        processor_registrations = [
+            ('SentencePieceProcessor_swigregister', _register_processor),
+            ('SentencePieceTrainer_swigregister', _register_trainer),
+            ('SentencePieceNormalizer_swigregister', _register_normalizer)
+        ]
+
+        for attr, register_func in processor_registrations:
+            if hasattr(_sp, attr):
+                register_func()
+
+        _module_initialized = True
+        _registration_in_progress = False
+    except ImportError as e:
+        _registration_in_progress = False
+        raise ImportError(f"Failed to initialize registrations: {e}")
+    except Exception as e:
+        _registration_in_progress = False
+        raise ImportError(f"Unexpected error during registration initialization: {e}")
+
+# Initialize all registrations after classes are defined
+_initialize_all_registrations()
 
 import re
 import csv
@@ -1180,6 +1421,51 @@ def _batchnize(classname, name):
 
   setattr(classname, name, _batched_func)
 
+
+def _register_all_classes():
+  """Register all SWIG-generated classes after they are fully defined."""
+  global _registration_complete, _registration_in_progress, _registration_lock
+  if _registration_complete:
+    return
+
+  # First ensure module is fully loaded without registration
+  _registration_lock = True
+  try:
+    # Load module without registrations first
+    _sp = None
+    for _ in range(2):  # Try twice to handle potential circular imports
+      _sp = _load_sentencepiece()
+      if _sp is not None:
+        break
+
+    if _sp is None:
+      raise ImportError("Failed to load _sentencepiece module")
+
+    # Now that module is loaded, perform registrations
+    _registration_in_progress = True
+    try:
+      # Register immutable classes first, with retries
+      for _ in range(2):
+        try:
+          _sp.ImmutableSentencePieceText_ImmutableSentencePiece_swigregister(ImmutableSentencePieceText_ImmutableSentencePiece)
+          _sp.ImmutableSentencePieceText_swigregister(ImmutableSentencePieceText)
+          _sp.ImmutableNBestSentencePieceText_swigregister(ImmutableNBestSentencePieceText)
+          break
+        except (AttributeError, ImportError):
+          continue
+
+      # Register processor classes after immutables
+      _sp.SentencePieceProcessor_swigregister(SentencePieceProcessor)
+      _sp.SentencePieceTrainer_swigregister(SentencePieceTrainer)
+      _sp.SentencePieceNormalizer_swigregister(SentencePieceNormalizer)
+      _registration_complete = True
+    finally:
+      _registration_in_progress = False
+  finally:
+    _registration_lock = False
+
+# Delay registration until after all classes are defined
+_register_all_classes()
 
 _sentencepiece_processor_init_native = SentencePieceProcessor.__init__
 _sentencepiece_normalizer_init_native = SentencePieceNormalizer.__init__
@@ -1220,5 +1506,3 @@ class _LogStream(object):
       os.dup2(self.orig_stream_dup, self.orig_stream_fileno)
       os.close(self.orig_stream_dup)
       self.ostream.close()
-
-

@@ -15,15 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
-import sys
-
-sys.path.insert(0, 'src')
-
-from collections import defaultdict
-import io
 import os
-import pickle
+import sys
 import unittest
+import io
+import pickle
+from collections import defaultdict
+
+# Ensure proper module initialization by using absolute imports
+if os.path.exists(os.path.join(os.path.dirname(__file__), '..', 'src')):
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 import sentencepiece as spm
 
 print('VERSION={}'.format(spm.__version__))
