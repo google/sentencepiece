@@ -12,7 +12,7 @@
 SentencePiece is an unsupervised text tokenizer and detokenizer mainly for
 Neural Network-based text generation systems where the vocabulary size
 is predetermined prior to the neural model training. SentencePiece implements
-**subword units** (e.g., **byte-pair-encoding (BPE)** [[Sennrich et al.](https://www.aclweb.org/anthology/P16-1162)]) and
+**subword units** (e.g., **byte-pair-encoding (BPE)** [[Sennrich et al.](https://aclanthology.org/P16-1162)]) and
 **unigram language model** [[Kudo.](https://arxiv.org/abs/1804.10959)])
 with the extension of direct training from raw sentences. SentencePiece allows us to make a purely end-to-end system that does not depend on language-specific pre/postprocessing.
 

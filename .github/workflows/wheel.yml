@@ -8,8 +8,16 @@ on:
   pull_request:
     branches: [ master ]
 
+concurrency:
+  group: wheel-${{ github.event.pull_request.number || github.sha }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: false
+
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
+  actions: write
+  checks: write
+  issues: write
 
 jobs:
   build_wheels:
@@ -18,16 +26,16 @@ jobs:
       digests-macos: ${{ steps.hash-macos.outputs.digests }}
       digests-windows: ${{ steps.hash-windows.outputs.digests }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-11]
     runs-on: ${{ matrix.os }}
     name: Build wheels on ${{ matrix.os }}
 
-    permissions:
-      contents: write # svenstaro/upload-release-action 
-
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
         with:
           python-version: "3.x"
@@ -70,7 +78,8 @@ jobs:
           CIBW_ARCHS_MACOS: x86_64 universal2 arm64
           CIBW_ARCHS_WINDOWS: auto ARM64
           CIBW_SKIP: "pp* *-musllinux_*"
-          CIBW_BUILD_VERBOSITY: 1
+          CIBW_TEST_SKIP: "*-win_arm64 *_aarch64 *-macosx_arm64"
+          CIBW_BUILD_VERBOSITY: 2
 
       - name: Build sdist archive
         working-directory: ${{github.workspace}}/python
@@ -91,9 +100,9 @@ jobs:
         run: cp -f dist/*.tar.gz wheelhouse/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: artifacts
+          name: artifacts-${{ matrix.os }}
           path: |
             ./python/wheelhouse/*.whl
             ./python/wheelhouse/*.tar.gz
@@ -124,7 +133,7 @@ jobs:
         if: runner.os == 'Windows'
         run: echo "digests=$(sha256sum ./python/wheelhouse/* | base64 -w0)" >> $GITHUB_OUTPUT
 
-  gather-disgests:
+  gather-digests:
     needs: [build_wheels]
     outputs:
       digests: ${{ steps.hash.outputs.digests }}
@@ -138,19 +147,26 @@ jobs:
           WINDOWS_DIGESTS: "${{ needs.build_wheels.outputs.digests-windows }}"
         run: |
           set -euo pipefail
-          echo "$LINUX_DIGESTS" | base64 -d > checksums.txt
-          echo "$MACOS_DIGESTS" | base64 -d >> checksums.txt
-          echo "$WINDOWS_DIGESTS" | base64 -d >> checksums.txt
+          touch checksums.txt
+          if [ ! -z "${LINUX_DIGESTS:-}" ]; then
+            echo "$LINUX_DIGESTS" | base64 -d >> checksums.txt
+          fi
+          if [ ! -z "${MACOS_DIGESTS:-}" ]; then
+            echo "$MACOS_DIGESTS" | base64 -d >> checksums.txt
+          fi
+          if [ ! -z "${WINDOWS_DIGESTS:-}" ]; then
+            echo "$WINDOWS_DIGESTS" | base64 -d >> checksums.txt
+          fi
           echo "digests=$(cat checksums.txt | base64 -w0)" >> $GITHUB_OUTPUT
 
   provenance:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build_wheels, gather-disgests]
+    needs: [build_wheels, gather-digests]
     permissions:
       actions: read   # To read the workflow path.
       id-token: write # To sign the provenance.
       contents: write # To add assets to a release.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
     with:
-      base64-subjects: "${{ needs.gather-disgests.outputs.digests }}"
+      base64-subjects: "${{ needs.gather-digests.outputs.digests }}"
       upload-assets: true # Optional: Upload to a new release
