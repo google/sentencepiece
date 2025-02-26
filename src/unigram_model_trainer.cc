@@ -273,7 +273,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
     for (node_int_type i = 0; i < node_num; ++i) {
       const node_int_type offset = SA[L[i]];
       const node_int_type len = D[i];
-      if (len <= 1) {
+      if (len <= 1 || offset >= array.size() || offset + len >= array.size()) {
         continue;
       }
       const char32 *begin = &array[offset];
