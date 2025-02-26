@@ -19,12 +19,12 @@ jobs:
       digests-windows: ${{ steps.hash-windows.outputs.digests }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-11]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
     runs-on: ${{ matrix.os }}
     name: Build wheels on ${{ matrix.os }}
 
     permissions:
-      contents: write # svenstaro/upload-release-action 
+      contents: write # svenstaro/upload-release-action
 
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
@@ -91,9 +91,9 @@ jobs:
         run: cp -f dist/*.tar.gz wheelhouse/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
-          name: artifacts
+          name: artifacts-wheel-${{ matrix.os }}
           path: |
             ./python/wheelhouse/*.whl
             ./python/wheelhouse/*.tar.gz
