@@ -93,8 +93,12 @@ class build_ext(_build_ext):
     if sys.platform == 'darwin':
       cflags.append('-mmacosx-version-min=10.9')
     else:
-      cflags.append('-Wl,-strip-all')
-      libs.append('-Wl,-strip-all')
+      if sys.platform == 'aix':
+          cflags.append('-Wl,-s')
+          libs.append('-Wl,-s')
+      else:
+          cflags.append('-Wl,-strip-all')
+          libs.append('-Wl,-strip-all')
     if sys.platform == 'linux':
       libs.append('-Wl,-Bsymbolic')
     print('## cflags={}'.format(' '.join(cflags)))
