@@ -66,11 +66,15 @@ char (&ArraySizeHelper(const T (&array)[N]))[N];
 #if defined(_FREEBSD)
 #include <sys/endian.h>
 #endif
-#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_FREEBSD)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_FREEBSD) && !defined(_AIX)
 #include <endian.h>
 #if BYTE_ORDER == __BIG_ENDIAN
 #define IS_BIG_ENDIAN
 #endif
+#endif
+
+#if defined(_AIX) && BYTE_ORDER == BIG_ENDIAN
+#define IS_BIG_ENDIAN
 #endif
 
 namespace sentencepiece {
