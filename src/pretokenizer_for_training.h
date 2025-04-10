@@ -21,7 +21,7 @@
 #include "common.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/strings/string_view.h"
 
 namespace sentencepiece {
 namespace pretokenizer {
@@ -30,7 +30,7 @@ class PretokenizerForTrainingInterface {
  public:
   PretokenizerForTrainingInterface() {}
   virtual ~PretokenizerForTrainingInterface() {}
-  virtual util::Status status() const = 0;
+  virtual absl::Status status() const = 0;
 
   // Puts kUPPBoundaryStr before and after the pre-tokenizer's segmentation
   // when there are no spaces between these tokens.

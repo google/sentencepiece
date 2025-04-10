@@ -17,7 +17,7 @@
 
 #include "bpe_model.h"
 #include "model_interface.h"
-#include "testharness.h"
+#include "gtest/gtest.h"
 
 namespace sentencepiece {
 namespace bpe {

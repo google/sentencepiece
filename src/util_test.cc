@@ -15,8 +15,8 @@
 #include <map>
 
 #include "filesystem.h"
-#include "testharness.h"
-#include "third_party/absl/strings/str_cat.h"
+#include "gtest/gtest.h"
+#include "absl/strings/str_cat.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -376,27 +376,27 @@ TEST(UtilTest, STLDeleteELementsTest) {
 }
 
 TEST(UtilTest, StatusTest) {
-  const util::Status ok;
+  const absl::Status ok;
   EXPECT_TRUE(ok.ok());
-  EXPECT_EQ(util::StatusCode::kOk, ok.code());
+  EXPECT_EQ(absl::StatusCode::kOk, ok.code());
   EXPECT_EQ(std::string(""), ok.message());
 
-  const util::Status s1(util::StatusCode::kUnknown, "unknown");
-  const util::Status s2(util::StatusCode::kUnknown, std::string("unknown"));
+  const absl::Status s1(absl::StatusCode::kUnknown, "unknown");
+  const absl::Status s2(absl::StatusCode::kUnknown, std::string("unknown"));
 
-  EXPECT_EQ(util::StatusCode::kUnknown, s1.code());
-  EXPECT_EQ(util::StatusCode::kUnknown, s2.code());
+  EXPECT_EQ(absl::StatusCode::kUnknown, s1.code());
+  EXPECT_EQ(absl::StatusCode::kUnknown, s2.code());
   EXPECT_EQ(std::string("unknown"), s1.message());
   EXPECT_EQ(std::string("unknown"), s2.message());
 
-  auto ok2 = util::OkStatus();
+  auto ok2 = absl::OkStatus();
   EXPECT_TRUE(ok2.ok());
-  EXPECT_EQ(util::StatusCode::kOk, ok2.code());
+  EXPECT_EQ(absl::StatusCode::kOk, ok2.code());
   EXPECT_EQ(std::string(""), ok2.message());
 
-  util::OkStatus().IgnoreError();
+  absl::OkStatus().IgnoreError();
   for (int i = 1; i <= 16; ++i) {
-    util::Status s(static_cast<util::StatusCode>(i), "message");
+    absl::Status s(static_cast<absl::StatusCode>(i), "message");
     EXPECT_TRUE(s.ToString().find("message") != std::string::npos)
         << s.ToString();
   }

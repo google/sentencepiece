@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "testharness.h"
+#include "gtest/gtest.h"
 
 #ifndef OS_WIN
 #include <sys/stat.h>
@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "common.h"
-#include "third_party/absl/strings/str_cat.h"
+#include "absl/strings/str_cat.h"
 #include "util.h"
 
 namespace sentencepiece {

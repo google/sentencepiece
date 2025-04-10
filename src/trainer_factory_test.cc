@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include "testharness.h"
+#include "gtest/gtest.h"
 #include "trainer_factory.h"
 
 namespace sentencepiece {

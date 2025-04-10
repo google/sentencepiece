@@ -14,10 +14,11 @@
 
 #include "sentencepiece_trainer.h"
 
+#include "absl/status/status_matchers.h"
+#include "absl/strings/str_cat.h"
 #include "filesystem.h"
+#include "gtest/gtest.h"
 #include "sentencepiece_model.pb.h"
-#include "testharness.h"
-#include "third_party/absl/strings/str_cat.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -50,10 +51,8 @@ void CheckNormalizer(absl::string_view filename, bool expected_has_normalizer,
 }
 
 TEST(SentencePieceTrainerTest, TrainFromArgsTest) {
-  const std::string input =
-      util::JoinPath(::testing::SrcDir(), kTestData);
-  const std::string model =
-      util::JoinPath(::testing::TempDir(), "m");
+  const std::string input = util::JoinPath(::testing::SrcDir(), kTestData);
+  const std::string model = util::JoinPath(::testing::TempDir(), "m");
 
   ASSERT_TRUE(SentencePieceTrainer::Train(
                   absl::StrCat("--input=", input, " --model_prefix=", model,
@@ -110,17 +109,15 @@ TEST(SentencePieceTrainerTest, TrainFromIterator) {
     bool done() const override { return idx_ == vec_.size(); }
     void Next() override { ++idx_; }
     const std::string &value() const override { return vec_[idx_]; }
-    util::Status status() const override { return util::OkStatus(); }
+    absl::Status status() const override { return absl::OkStatus(); }
 
    private:
     std::vector<std::string> vec_;
     size_t idx_ = 0;
   };
 
-  const std::string input =
-      util::JoinPath(::testing::SrcDir(), kTestData);
-  const std::string model =
-      util::JoinPath(::testing::TempDir(), "m");
+  const std::string input = util::JoinPath(::testing::SrcDir(), kTestData);
+  const std::string model = util::JoinPath(::testing::TempDir(), "m");
 
   std::vector<std::string> sentences;
   {
@@ -153,12 +150,9 @@ TEST(SentencePieceTrainerTest, TrainFromIterator) {
 }
 
 TEST(SentencePieceTrainerTest, TrainWithCustomNormalizationRule) {
-  std::string input =
-      util::JoinPath(::testing::SrcDir(), kTestData);
-  std::string rule =
-      util::JoinPath(::testing::SrcDir(), kNfkcTestData);
-  const std::string model =
-      util::JoinPath(::testing::TempDir(), "m");
+  std::string input = util::JoinPath(::testing::SrcDir(), kTestData);
+  std::string rule = util::JoinPath(::testing::SrcDir(), kNfkcTestData);
+  const std::string model = util::JoinPath(::testing::TempDir(), "m");
 
   EXPECT_TRUE(SentencePieceTrainer::Train(
                   absl::StrCat("--input=", input, " --model_prefix=", model,
@@ -171,8 +165,7 @@ TEST(SentencePieceTrainerTest, TrainWithCustomNormalizationRule) {
 TEST(SentencePieceTrainerTest, TrainWithCustomDenormalizationRule) {
   const std::string input_file =
       util::JoinPath(::testing::SrcDir(), kTestDataJa);
-  const std::string model =
-      util::JoinPath(::testing::TempDir(), "m");
+  const std::string model = util::JoinPath(::testing::TempDir(), "m");
   const std::string norm_rule_tsv =
       util::JoinPath(::testing::SrcDir(), kIdsNormTsv);
   const std::string denorm_rule_tsv =
@@ -198,10 +191,8 @@ TEST(SentencePieceTrainerTest, TrainErrorTest) {
 
 TEST(SentencePieceTrainerTest, TrainTest) {
   TrainerSpec trainer_spec;
-  trainer_spec.add_input(
-      util::JoinPath(::testing::SrcDir(), kTestData));
-  trainer_spec.set_model_prefix(
-      util::JoinPath(::testing::TempDir(), "m"));
+  trainer_spec.add_input(util::JoinPath(::testing::SrcDir(), kTestData));
+  trainer_spec.set_model_prefix(util::JoinPath(::testing::TempDir(), "m"));
   trainer_spec.set_vocab_size(1000);
   NormalizerSpec normalizer_spec;
   ASSERT_TRUE(SentencePieceTrainer::Train(trainer_spec, normalizer_spec).ok());
@@ -365,13 +356,11 @@ TEST(SentencePieceTrainerTest, PopulateModelTypeFromStringTest) {
 }
 
 TEST(SentencePieceTrainerTest, NormalizationTest) {
-  const auto model_prefix =
-      util::JoinPath(::testing::TempDir(), "m");
+  const auto model_prefix = util::JoinPath(::testing::TempDir(), "m");
   const auto model_file = absl::StrCat(model_prefix, ".model");
 
   TrainerSpec trainer_spec;
-  trainer_spec.add_input(
-      util::JoinPath(::testing::SrcDir(), kTestData));
+  trainer_spec.add_input(util::JoinPath(::testing::SrcDir(), kTestData));
   trainer_spec.set_model_prefix(model_prefix);
   trainer_spec.set_vocab_size(1000);
   ASSERT_TRUE(SentencePieceTrainer::Train(trainer_spec).ok());
@@ -380,13 +369,14 @@ TEST(SentencePieceTrainerTest, NormalizationTest) {
 
   {
     SentencePieceProcessor sp;
-    EXPECT_OK(sp.Load(model_file));
+    EXPECT_THAT(sp.Load(model_file), absl_testing::IsOk());
     EXPECT_EQ(sp.Normalize(kInput), "▁KADOKAWA▁ABC");
 
     std::string normalized;
     std::vector<size_t> offsets;
 
-    EXPECT_OK(sp.Normalize(kInput, &normalized, &offsets));
+    EXPECT_THAT(sp.Normalize(kInput, &normalized, &offsets),
+                absl_testing::IsOk());
     EXPECT_EQ(normalized, "▁KADOKAWA▁ABC");
     EXPECT_EQ(offsets, std::vector<size_t>({0, 0, 0, 0, 3, 6, 9, 12, 15, 18, 21,
                                             24, 24, 24, 27, 28, 29, 30}));
@@ -394,12 +384,14 @@ TEST(SentencePieceTrainerTest, NormalizationTest) {
     EXPECT_EQ(offsets, std::vector<size_t>(
                            {0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14}));
 
-    EXPECT_OK(sp.Normalize("㍻元年", &normalized, &offsets));
+    EXPECT_THAT(sp.Normalize("㍻元年", &normalized, &offsets),
+                absl_testing::IsOk());
     EXPECT_EQ(normalized, "▁平成元年");
     ConvertToUnicodeAlignment(kInput, normalized, &offsets);
     EXPECT_EQ(offsets, std::vector<size_t>({0, 0, 0, 1, 2, 3}));
 
-    EXPECT_OK(sp.Normalize("ｶﾞｲﾀﾞﾝｽ", &normalized, &offsets));
+    EXPECT_THAT(sp.Normalize("ｶﾞｲﾀﾞﾝｽ", &normalized, &offsets),
+                absl_testing::IsOk());
     EXPECT_EQ(normalized, "▁ガイダンス");
     ConvertToUnicodeAlignment(kInput, normalized, &offsets);
     EXPECT_EQ(offsets, std::vector<size_t>({0, 0, 2, 3, 5, 6, 7}));
@@ -416,15 +408,16 @@ TEST(SentencePieceTrainerTest, NormalizationTest) {
 
   {
     SentencePieceNormalizer sp;
-    EXPECT_OK(sp.Load(model_file));
+    EXPECT_THAT(sp.Load(model_file), absl_testing::IsOk());
     set_normalization_only(&sp);
     EXPECT_EQ(sp.Normalize(kInput), "KADOKAWA   ABC ");
   }
 
   {
     SentencePieceNormalizer sp;
-    EXPECT_OK(sp.LoadFromRuleTSV(
-        util::JoinPath(::testing::SrcDir(), "nfkc_cf.tsv")));
+    EXPECT_THAT(
+        sp.LoadFromRuleTSV(util::JoinPath(::testing::SrcDir(), "nfkc_cf.tsv")),
+        absl_testing::IsOk());
     set_normalization_only(&sp);
     EXPECT_EQ(sp.Normalize("ABCD"), "abcd");
   }
@@ -436,14 +429,14 @@ TEST(SentencePieceTrainerTest, NormalizationTest) {
 
   {
     SentencePieceNormalizer sp;
-    EXPECT_OK(sp.LoadFromRuleName("nfkc_cf"));
+    EXPECT_THAT(sp.LoadFromRuleName("nfkc_cf"), absl_testing::IsOk());
     set_normalization_only(&sp);
     EXPECT_EQ(sp.Normalize("ABCD"), "abcd");
   }
 
   {
     SentencePieceNormalizer sp;
-    EXPECT_OK(sp.LoadFromRuleName("identity"));
+    EXPECT_THAT(sp.LoadFromRuleName("identity"), absl_testing::IsOk());
     set_normalization_only(&sp);
     EXPECT_EQ(sp.Normalize("ＡＢＣＤ"), "ＡＢＣＤ");
   }

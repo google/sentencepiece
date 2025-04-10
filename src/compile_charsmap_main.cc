@@ -22,8 +22,8 @@
 #include "filesystem.h"
 #include "init.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/flags/flag.h"
+#include "absl/strings/string_view.h"
 
 using sentencepiece::normalizer::Builder;
 
@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
 
   const std::vector<std::pair<
       std::string,
-      std::function<sentencepiece::util::Status(Builder::CharsMap *)>>>
+      std::function<absl::Status(Builder::CharsMap *)>>>
       kRuleList = {{"nfkc", Builder::BuildNFKCMap},
                    {"nmt_nfkc", Builder::BuildNmtNFKCMap},
                    {"nfkc_cf", Builder::BuildNFKC_CFMap},

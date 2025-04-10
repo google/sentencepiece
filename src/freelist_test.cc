@@ -13,7 +13,7 @@
 // limitations under the License.!
 
 #include "freelist.h"
-#include "testharness.h"
+#include "gtest/gtest.h"
 
 namespace sentencepiece {
 namespace model {

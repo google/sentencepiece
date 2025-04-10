@@ -21,10 +21,10 @@
 #include "init.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_join.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/flags/flag.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "trainer_interface.h"
 
 ABSL_FLAG(std::string, model, "", "model file name");

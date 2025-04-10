@@ -17,7 +17,7 @@
 #include "builder.h"
 #include "normalizer.h"
 #include "sentencepiece_trainer.h"
-#include "testharness.h"
+#include "gtest/gtest.h"
 #include "util.h"
 
 namespace sentencepiece {

@@ -19,11 +19,11 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "gtest/gtest.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "testharness.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_join.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -489,9 +489,23 @@ const std::vector<Model::EncoderVersion> &GetEncoderVersions() {
   return v;
 }
 
-class UnigramModelTest : public test::TestWithParam<Model::EncoderVersion> {
+class UnigramModelTest : public testing::Test {
  protected:
-  void SetUp() override { encoder_version_ = GetParam(); }
+  void SetUp() override {
+    // Set a deterministic seed for testing.
+    SetRandomGeneratorSeed(/*seed=*/7);
+  }
+  void TearDown() override {}
+};
+
+class ParameterizedUnigramModelTest
+    : public testing::TestWithParam<Model::EncoderVersion> {
+ protected:
+  void SetUp() override {
+    // Set a deterministic seed for testing.
+    SetRandomGeneratorSeed(/*seed=*/7);
+    encoder_version_ = GetParam();
+  }
   void TearDown() override {}
   Model::EncoderVersion encoder_version_;
 };
@@ -503,7 +517,7 @@ void AddPiece(ModelProto *model_proto, const std::string &piece,
   sp->set_score(score);
 }
 
-TEST(UnigramModelTest, SetUnigramModelTest) {
+TEST_F(UnigramModelTest, SetParameterizedUnigramModelTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
   AddPiece(&model_proto, "a");
@@ -516,7 +530,7 @@ TEST(UnigramModelTest, SetUnigramModelTest) {
             model.model_proto().SerializeAsString());
 }
 
-TEST(UnigramModelTest, SampleEncodeAndScoreTest) {
+TEST_F(UnigramModelTest, SampleEncodeAndScoreTest) {
   // Test whether inclusion probabilities are correct
   ModelProto model_proto = MakeBaseModelProto();
   AddPiece(&model_proto, "A", 0.0);    // 3
@@ -612,7 +626,7 @@ TEST(UnigramModelTest, SampleEncodeAndScoreTest) {
   }
 }
 
-TEST_P(UnigramModelTest, PieceToIdTest) {
+TEST_P(ParameterizedUnigramModelTest, PieceToIdTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
   AddPiece(&model_proto, "a", 0.1);
@@ -675,7 +689,7 @@ TEST_P(UnigramModelTest, PieceToIdTest) {
   EXPECT_TRUE(model.Encode("").empty());
 }
 
-TEST_P(UnigramModelTest, PopulateNodesAllUnknownsTest) {
+TEST_P(ParameterizedUnigramModelTest, PopulateNodesAllUnknownsTest) {
   ModelProto model_proto = MakeBaseModelProto();
   AddPiece(&model_proto, "x");
   Model model(model_proto);
@@ -694,7 +708,7 @@ TEST_P(UnigramModelTest, PopulateNodesAllUnknownsTest) {
   EXPECT_EQ(0, lattice.begin_nodes(2)[0]->id);
 }
 
-TEST_P(UnigramModelTest, PopulateNodesTest) {
+TEST_P(ParameterizedUnigramModelTest, PopulateNodesTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
   AddPiece(&model_proto, "a", 0.1);   // 3
@@ -726,7 +740,7 @@ TEST_P(UnigramModelTest, PopulateNodesTest) {
   EXPECT_NEAR(0.4, lattice.begin_nodes(1)[1]->score, 0.001);
 }
 
-TEST_P(UnigramModelTest, PopulateNodesWithUnusedTest) {
+TEST_P(ParameterizedUnigramModelTest, PopulateNodesWithUnusedTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
   AddPiece(&model_proto, "a", 0.1);   // 3
@@ -753,7 +767,7 @@ TEST_P(UnigramModelTest, PopulateNodesWithUnusedTest) {
   EXPECT_EQ(0, lattice.begin_nodes(2)[0]->id);
 }
 
-TEST_P(UnigramModelTest, ModelNBestTest) {
+TEST_P(ParameterizedUnigramModelTest, ModelNBestTest) {
   ModelProto model_proto = MakeBaseModelProto();
   AddPiece(&model_proto, "a", 0.0);     // 3
   AddPiece(&model_proto, "b", 0.0);     // 4
@@ -779,7 +793,7 @@ TEST_P(UnigramModelTest, ModelNBestTest) {
   EXPECT_FALSE(sample.empty());
 }
 
-TEST_P(UnigramModelTest, EncodeTest) {
+TEST_P(ParameterizedUnigramModelTest, EncodeTest) {
   ModelProto model_proto = MakeBaseModelProto();
   AddPiece(&model_proto, "ab", 0.0);         // 3
   AddPiece(&model_proto, "cd", -0.1);        // 4
@@ -870,7 +884,7 @@ TEST_P(UnigramModelTest, EncodeTest) {
   EXPECT_EQ("cd", result[3].first);
 }
 
-TEST_P(UnigramModelTest, EncodeWithUnusedTest) {
+TEST_P(ParameterizedUnigramModelTest, EncodeWithUnusedTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
   AddPiece(&model_proto, "abcd", 10.0);  // 3
@@ -927,7 +941,7 @@ TEST_P(UnigramModelTest, EncodeWithUnusedTest) {
   }
 }
 
-TEST_P(UnigramModelTest, VerifyOutputsEquivalent) {
+TEST_P(ParameterizedUnigramModelTest, VerifyOutputsEquivalent) {
   ModelProto model_proto = MakeBaseModelProto();
 
   AddPiece(&model_proto, "abcd", 10.0);  // 3
@@ -950,8 +964,9 @@ TEST_P(UnigramModelTest, VerifyOutputsEquivalent) {
   EXPECT_FALSE(model.VerifyOutputsEquivalent("ab", "a b"));
 }
 
-INSTANTIATE_TEST_SUITE_P(ParametrizedUnigramModelTests, UnigramModelTest,
-                         test::ValuesIn(GetEncoderVersions()));
+INSTANTIATE_TEST_SUITE_P(ParametrizedParameterizedUnigramModelTests,
+                         ParameterizedUnigramModelTest,
+                         testing::ValuesIn(GetEncoderVersions()));
 
 }  // namespace unigram
 }  // namespace sentencepiece

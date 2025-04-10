@@ -18,10 +18,10 @@
 #include <vector>
 
 #include "common.h"
-#include "third_party/absl/strings/match.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/strings/strip.h"
-#include "third_party/darts_clone/darts.h"
+#include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
+#include "darts_clone/darts.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -33,12 +33,12 @@ Normalizer::Normalizer(const NormalizerSpec &spec,
                        const TrainerSpec &trainer_spec)
     : spec_(&spec),
       treat_whitespace_as_suffix_(trainer_spec.treat_whitespace_as_suffix()),
-      status_(util::OkStatus()) {
+      status_(absl::OkStatus()) {
   Init();
 }
 
 Normalizer::Normalizer(const NormalizerSpec &spec)
-    : spec_(&spec), status_(util::OkStatus()) {
+    : spec_(&spec), status_(absl::OkStatus()) {
   Init();
 }
 
@@ -68,14 +68,14 @@ void Normalizer::Init() {
   }
 }
 
-util::Status Normalizer::Normalize(absl::string_view input,
+absl::Status Normalizer::Normalize(absl::string_view input,
                                    std::string *normalized,
                                    std::vector<size_t> *norm_to_orig) const {
   norm_to_orig->clear();
   normalized->clear();
 
   if (input.empty()) {
-    return util::OkStatus();
+    return absl::OkStatus();
   }
 
   RETURN_IF_ERROR(status());
@@ -96,7 +96,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
 
   // all chars are whitespace.
   if (input.empty()) {
-    return util::OkStatus();
+    return absl::OkStatus();
   }
 
   // Reserves the output buffer to avoid re-allocations.
@@ -182,7 +182,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
 
   CHECK_EQ_OR_RETURN(norm_to_orig->size(), normalized->size() + 1);
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 std::string Normalizer::Normalize(absl::string_view input) const {
@@ -271,7 +271,7 @@ std::string Normalizer::EncodePrecompiledCharsMap(
 }
 
 // static
-util::Status Normalizer::DecodePrecompiledCharsMap(
+absl::Status Normalizer::DecodePrecompiledCharsMap(
     absl::string_view blob, absl::string_view *trie_blob,
     absl::string_view *normalized, std::string *buffer) {
   uint32_t trie_blob_size = 0;
@@ -279,7 +279,7 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
       !string_util::DecodePOD<uint32_t>(
           absl::string_view(blob.data(), sizeof(trie_blob_size)),
           &trie_blob_size)) {
-    return util::InternalError("Blob for normalization rule is broken.");
+    return absl::InternalError("Blob for normalization rule is broken.");
   }
 
 #ifdef IS_BIG_ENDIAN
@@ -287,7 +287,7 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
 #endif
 
   if (trie_blob_size >= blob.size()) {
-    return util::InternalError("Trie data size exceeds the input blob size.");
+    return absl::InternalError("Trie data size exceeds the input blob size.");
   }
 
   blob.remove_prefix(sizeof(trie_blob_size));
@@ -305,7 +305,7 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
   blob.remove_prefix(trie_blob_size);
   *normalized = absl::string_view(blob.data(), blob.size());
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 PrefixMatcher::PrefixMatcher(const std::set<absl::string_view> &dic) {

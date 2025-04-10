@@ -18,8 +18,9 @@ jobs:
       digests-macos: ${{ steps.hash-macos.outputs.digests }}
       digests-windows: ${{ steps.hash-windows.outputs.digests }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-11]
+        os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-latest-xlarge ]
     runs-on: ${{ matrix.os }}
     name: Build wheels on ${{ matrix.os }}
 
@@ -28,33 +29,31 @@ jobs:
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: 'recursive'
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: "3.x"
+          python-version: ">=3.9"
 
       - name: Set up QEMU
         if: runner.os == 'Linux'
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
         with:
-          platforms: arm64
+           platforms: arm64
 
-      - name: Build for Windows
-        if: runner.os == 'Windows'
+      - name: Build for Windows (x86 & x64)
+        if: runner.os == 'Windows' && runner.arch != 'ARM64'
         run: |
-          cmake -A Win32 -B ${{github.workspace}}/build_win32 -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root_win32
+          cmake -A Win32 -B ${{github.workspace}}/build_win32 -DBUILD_SHARED_LIBS=OFF -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root_win32
           cmake --build ${{github.workspace}}/build_win32 --config Release --target install --parallel 8
-          cmake -A x64   -B ${{github.workspace}}/build_amd64 -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root_amd64
+          cmake -A x64   -B ${{github.workspace}}/build_amd64 -DBUILD_SHARED_LIBS=OFF -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root_amd64
           cmake --build ${{github.workspace}}/build_amd64 --config Release --target install --parallel 8
+
+      - name: Build for Windows (arm)
+        if: runner.os == 'Windows' && runner.arch == 'ARM64'
+        run: |
           cmake -A arm64 -B ${{github.workspace}}/build_arm64 -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root_arm64
           cmake --build ${{github.workspace}}/build_arm64 --config Release --target install --parallel 8
-
-      - name: Build for Mac
-        if: runner.os == 'macOS'
-        run: |
-          cmake -B ${{github.workspace}}/build -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/root
-          cmake --build ${{github.workspace}}/build --config Release --target install --parallel 8
-        env:
-          CMAKE_OSX_ARCHITECTURES: arm64;x86_64
 
       - name: Install cibuildwheel
         working-directory: ${{github.workspace}}/python
@@ -66,10 +65,11 @@ jobs:
         working-directory: ${{github.workspace}}/python
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
-          CIBW_ARCHS_LINUX: auto aarch64
-          CIBW_ARCHS_MACOS: x86_64 universal2 arm64
-          CIBW_ARCHS_WINDOWS: auto ARM64
-          CIBW_SKIP: "pp* *-musllinux_*"
+          CIBW_ENVIRONMENT: "GITHUB_REF_NAME=${{ github.ref_name }}"
+          CIBW_ARCHS_LINUX: auto
+          CIBW_ARCHS_MACOS: auto
+          CIBW_ARCHS_WINDOWS: auto
+          CIBW_SKIP: "pp* *-musllinux_* cp3{6,7,8}-*"
           CIBW_BUILD_VERBOSITY: 1
           CIBW_ENABLE: cpython-freethreading
 
@@ -86,15 +86,10 @@ jobs:
       - name: Build wheel from sdist
         run: python -m pip wheel "${{ steps.sdist.outputs.paths }}" --verbose
 
-      - name: Copy sdist
-        working-directory: ${{github.workspace}}/python
-        if: runner.os == 'macOS'
-        run: cp -f dist/*.tar.gz wheelhouse/
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts
+          name: "build-wheel-artifacts-${{runner.os}}-${{runner.arch}}"
           path: |
             ./python/wheelhouse/*.whl
             ./python/wheelhouse/*.tar.gz

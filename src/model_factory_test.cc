@@ -13,7 +13,7 @@
 // limitations under the License.!
 
 #include "model_factory.h"
-#include "testharness.h"
+#include "gtest/gtest.h"
 
 namespace sentencepiece {
 

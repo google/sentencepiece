@@ -28,13 +28,10 @@ import threading
 import sentencepiece as spm
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-print(HERE)
-
-print('VERSION={}'.format(spm.__version__))
+print(f'{HERE=}')
+print(f'{spm.__version__}')
 
 data_dir = HERE
-if sys.platform == 'win32':
-  data_dir = os.path.join('..', 'data')
 
 
 class TestSentencepieceProcessor(unittest.TestCase):

@@ -25,8 +25,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "config.h"
-#include "third_party/absl/strings/string_view.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #define OS_WIN
@@ -66,7 +66,8 @@ char (&ArraySizeHelper(const T (&array)[N]))[N];
 #if defined(_FREEBSD)
 #include <sys/endian.h>
 #endif
-#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_FREEBSD) && !defined(_AIX)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_FREEBSD) && \
+    !defined(_AIX)
 #include <endian.h>
 #if BYTE_ORDER == __BIG_ENDIAN
 #define IS_BIG_ENDIAN
@@ -157,8 +158,6 @@ inline const char *BaseName(const char *path) {
 #define CHECK_LE(a, b) CHECK((a) <= (b))
 #define CHECK_GT(a, b) CHECK((a) > (b))
 #define CHECK_LT(a, b) CHECK((a) < (b))
-
-#define FRIEND_TEST(a, b) friend class a##_Test_##b;
 
 #define CHECK_OK(expr)                         \
   do {                                         \

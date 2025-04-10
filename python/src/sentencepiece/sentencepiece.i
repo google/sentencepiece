@@ -11,6 +11,7 @@
 #include <cmath>
 #include <thread>
 #include <vector>
+#include <absl/status/status.h>
 #include <sentencepiece_processor.h>
 #include <sentencepiece_trainer.h>
 
@@ -67,13 +68,13 @@ PyObject* MakePyOutputBytes(const sentencepiece::util::bytes& output) {
   return PyBytes_FromStringAndSize(output.data(), output.size());
 }
 
-int ToSwigError(sentencepiece::util::StatusCode code) {
+int ToSwigError(absl::StatusCode code) {
   switch (code) {
-    case sentencepiece::util::StatusCode::kNotFound:
+    case absl::StatusCode::kNotFound:
       return SWIG_IOError;
-    case sentencepiece::util::StatusCode::kOutOfRange:
+    case absl::StatusCode::kOutOfRange:
       return SWIG_IndexError;
-    case sentencepiece::util::StatusCode::kInvalidArgument:
+    case absl::StatusCode::kInvalidArgument:
       return SWIG_SyntaxError;
     default:
       return SWIG_RuntimeError;
@@ -105,7 +106,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
     return value_;
   }
 
-  sentencepiece::util::Status status() const override {
+  absl::Status status() const override {
     return status_;
   }
 
@@ -124,7 +125,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
        }
        value_.assign(data, size);
      } else {
-       status_ = sentencepiece::util::Status(sentencepiece::util::StatusCode::kInternal,
+       status_ = absl::Status(absl::StatusCode::kInternal,
                                              "Not a string.");
      }
      Py_XDECREF(item_);
@@ -132,7 +133,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
    PyObject *iter_ = nullptr;
    PyObject *item_ = nullptr;
    std::string value_;
-   sentencepiece::util::Status status_;
+   absl::Status status_;
 };
 
 inline void RewriteIds(const sentencepiece::SentencePieceProcessor &sp,
@@ -166,8 +167,8 @@ inline void RewriteIds(const sentencepiece::SentencePieceProcessor &sp,
                        sentencepiece::util::bytes *proto,
                        bool add_bos, bool add_eos, bool reverse, bool emit_unk_piece) {
   if (add_bos || add_eos || reverse || emit_unk_piece) {
-    throw sentencepiece::util::Status(
-        sentencepiece::util::StatusCode::kUnimplemented,
+    throw absl::Status(
+        absl::StatusCode::kUnimplemented,
         "add_bos, add_eos, reverse, and emit_unk_piece is not supported in proto API");
   }
 }
@@ -176,8 +177,8 @@ inline void RewriteIds(const sentencepiece::SentencePieceProcessor &sp,
                        sentencepiece::ImmutableSentencePieceText *proto,
                        bool add_bos, bool add_eos, bool reverse, bool emit_unk_piece) {
   if (add_bos || add_eos || reverse || emit_unk_piece) {
-    throw sentencepiece::util::Status(
-        sentencepiece::util::StatusCode::kUnimplemented,
+    throw absl::Status(
+        absl::StatusCode::kUnimplemented,
         "add_bos, add_eos, reverse, and emit_unk_piece is not supported in proto API");
   }
 }
@@ -185,8 +186,8 @@ inline void RewriteIds(const sentencepiece::SentencePieceProcessor &sp,
 inline void CheckIds(const std::vector<int> &ids, int num_pieces) {
   for (int id : ids) {
     if (id < 0 || id >= num_pieces) {
-      throw sentencepiece::util::Status(
-          sentencepiece::util::StatusCode::kOutOfRange,
+      throw absl::Status(
+          absl::StatusCode::kOutOfRange,
           "piece id is out of range.");
     }
   }
@@ -294,15 +295,15 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
     $action
     ReleaseResultObject(resultobj);
   }
-  catch (const sentencepiece::util::Status &status) {
+  catch (const absl::Status &status) {
     SWIG_exception(ToSwigError(status.code()), status.ToString().c_str());
   }
 }
 
 %apply unsigned int { uint32_t }
 
-%ignore sentencepiece::util::Status;
-%ignore sentencepiece::util::StatusCode;
+%ignore absl::Status;
+%ignore absl::StatusCode;
 %ignore absl::string_view;
 %ignore std::string_view;
 %ignore sentencepiece::SentencePieceText;
@@ -378,7 +379,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 %ignore sentencepiece::io::SaveModelProto;
 
 %extend sentencepiece::SentencePieceProcessor {
-  sentencepiece::util::Status LoadFromFile(absl::string_view arg) {
+  absl::Status LoadFromFile(absl::string_view arg) {
     return $self->Load(arg);
   }
 
@@ -703,9 +704,9 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
   }
 
   // override normalizer_spec
-  sentencepiece::util::Status _OverrideNormalizerSpec(
+  absl::Status _OverrideNormalizerSpec(
       const std::unordered_map<std::string, std::string> &args) {
-    sentencepiece::util::Status status;
+    absl::Status status;
     for (const auto &[key, value] : args) {
       status = sentencepiece::SentencePieceTrainer::SetProtoField(
           key, value,
@@ -1347,7 +1348,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
 }
 
 %extend sentencepiece::SentencePieceNormalizer {
-  sentencepiece::util::Status LoadFromFile(absl::string_view arg) {
+  absl::Status LoadFromFile(absl::string_view arg) {
     return $self->Load(arg);
   }
 
@@ -1648,7 +1649,7 @@ inline void InitNumThreads(const std::vector<T> &ins, int *num_threads) {
   $result = MakePyOutputString(*$1, input_type);
 }
 
-%typemap(out) sentencepiece::util::Status {
+%typemap(out) absl::Status {
   if (!$1.ok()) {
     SWIG_exception(ToSwigError($1.code()), $1.ToString().c_str());
   }

@@ -15,8 +15,8 @@
 #include <cmath>
 #include <string>
 
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
 #include "util.h"
 #include "word_model.h"
 #include "word_model_trainer.h"
@@ -24,7 +24,7 @@
 namespace sentencepiece {
 namespace word {
 
-util::Status Trainer::Train() {
+absl::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
   CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());

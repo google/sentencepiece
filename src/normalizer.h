@@ -21,11 +21,12 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "common.h"
+#include "darts_clone/darts.h"
+#include "gtest/gtest.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/darts_clone/darts.h"
 
 namespace sentencepiece {
 namespace normalizer {
@@ -74,7 +75,7 @@ class Normalizer {
 
   // Returns Status.
   // Normalizes function is valid only when status is OK.
-  virtual util::Status status() const { return status_; }
+  virtual absl::Status status() const { return status_; }
 
   // Normalizes a plain utf8 string into an internal representation for
   // Sentencepiece model. |norm_to_orig| stores the byte-alignment from
@@ -85,7 +86,7 @@ class Normalizer {
   // - Adds a prefix space.
   // - Replaces a space with a meta symbol.
   // - Removing heading, tailing and other redundant spaces.
-  virtual util::Status Normalize(absl::string_view input,
+  virtual absl::Status Normalize(absl::string_view input,
                                  std::string *normalized,
                                  std::vector<size_t> *norm_to_orig) const;
 
@@ -120,7 +121,7 @@ class Normalizer {
                                                absl::string_view normalized);
 
   // Decodes blob into trie_blob and normalized string.
-  static util::Status DecodePrecompiledCharsMap(absl::string_view blob,
+  static absl::Status DecodePrecompiledCharsMap(absl::string_view blob,
                                                 absl::string_view *trie_blob,
                                                 absl::string_view *normalized,
                                                 std::string *buffer = nullptr);
@@ -152,7 +153,7 @@ class Normalizer {
 #endif
 
   // Normalizer's status.
-  util::Status status_;
+  absl::Status status_;
 };
 }  // namespace normalizer
 }  // namespace sentencepiece

@@ -28,11 +28,11 @@
 #include "normalizer.h"
 #include "pretokenizer_for_training.h"
 #include "sentencepiece_trainer.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/strings/numbers.h"
-#include "third_party/absl/strings/str_replace.h"
-#include "third_party/absl/strings/str_split.h"
-#include "third_party/esaxx/esa.hxx"  // Suffix array library.
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_replace.h"
+#include "absl/strings/str_split.h"
+#include "esaxx/esa.hxx"  // Suffix array library.
 #include "trainer_interface.h"
 #include "unicode_script.h"
 #include "util.h"
@@ -581,7 +581,7 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
   return Sorted(final_sentencepieces);
 }
 
-util::Status Trainer::Train() {
+absl::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
   CHECK_EQ_OR_RETURN(TrainerSpec::UNIGRAM, trainer_spec_.model_type());

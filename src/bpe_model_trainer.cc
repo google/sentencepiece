@@ -20,9 +20,9 @@
 #include <vector>
 
 #include "pretokenizer_for_training.h"
-#include "third_party/absl/container/flat_hash_set.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_replace.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_replace.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -163,7 +163,7 @@ void Trainer::UpdateActiveSymbols() {
   active_symbols_.insert(symbols.begin(), symbols.begin() + size);
 }
 
-util::Status Trainer::Train() {
+absl::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
   CHECK_OR_RETURN(normalizer_spec_.escape_whitespaces());

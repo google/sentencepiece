@@ -63,6 +63,7 @@ dist/
 *.swp
 *.swo
 *.pyc
+*.whl
 
 m.model
 m.vocab
@@ -72,6 +73,8 @@ libsentencepiece.so*
 libsentencepiece_train.so*
 python/bundled
 _sentencepiece.*.so
-third_party/abseil-cpp
+
+# Generated proto files.
+src/*.pb.*
 
 python/sentencepiece

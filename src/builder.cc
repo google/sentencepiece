@@ -19,10 +19,10 @@
 #include <utility>
 
 #include "filesystem.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_replace.h"
-#include "third_party/absl/strings/str_split.h"
-#include "third_party/absl/strings/strip.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_replace.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/strip.h"
 
 #ifdef ENABLE_NFKC_COMPILE
 #include <unicode/errorcode.h>
@@ -37,7 +37,7 @@
 
 #include "normalization_rule.h"
 #include "normalizer.h"
-#include "third_party/darts_clone/darts.h"
+#include "darts_clone/darts.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -151,7 +151,7 @@ Builder::Chars Normalize(const Builder::CharsMap &chars_map,
 }  // namespace
 
 // static
-util::Status Builder::CompileCharsMap(const CharsMap &chars_map,
+absl::Status Builder::CompileCharsMap(const CharsMap &chars_map,
                                       std::string *output) {
   CHECK_OR_RETURN(output);
   CHECK_OR_RETURN(!chars_map.empty());
@@ -214,11 +214,11 @@ util::Status Builder::CompileCharsMap(const CharsMap &chars_map,
 
   LOG(INFO) << "Generated normalizer blob. size=" << output->size();
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::DecompileCharsMap(absl::string_view blob,
+absl::Status Builder::DecompileCharsMap(absl::string_view blob,
                                         Builder::CharsMap *chars_map) {
   CHECK_OR_RETURN(chars_map);
   chars_map->clear();
@@ -267,17 +267,17 @@ util::Status Builder::DecompileCharsMap(absl::string_view blob,
 
   traverse(0, 0);
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::GetPrecompiledCharsMap(absl::string_view name,
+absl::Status Builder::GetPrecompiledCharsMap(absl::string_view name,
                                              std::string *output) {
   CHECK_OR_RETURN(output);
 
   if (name == "identity") {
     output->clear();
-    return util::OkStatus();
+    return absl::OkStatus();
   }
 
   std::string result;
@@ -285,16 +285,16 @@ util::Status Builder::GetPrecompiledCharsMap(absl::string_view name,
     const auto *blob = &kNormalizationRules_blob[i];
     if (blob->name == name) {
       output->assign(blob->data, blob->size);
-      return util::OkStatus();
+      return absl::OkStatus();
     }
   }
-  return util::StatusBuilder(util::StatusCode::kNotFound, GTL_LOC)
+  return util::StatusBuilder(absl::StatusCode::kNotFound, GTL_LOC)
          << "No precompiled charsmap is found: " << name;
 }
 
 #ifdef ENABLE_NFKC_COMPILE
 namespace {
-util::Status BuildMapInternal(
+absl::Status BuildMapInternal(
     Builder::CharsMap *chars_map,
     std::function<Builder::Chars(const Builder::Chars &)> composer,
     std::function<Builder::Chars(const Builder::Chars &)> decomposer) {
@@ -345,13 +345,13 @@ util::Status BuildMapInternal(
   RETURN_IF_ERROR(Builder::RemoveRedundantMap(&nfkc_map));
   *chars_map = std::move(nfkc_map);
 #endif  // ENABLE_NFKC_COMPILE
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 }  // namespace
 #endif  // ENABLE_NFKC_COMPILE
 
 // static
-util::Status Builder::BuildNFKCMap(CharsMap *chars_map) {
+absl::Status Builder::BuildNFKCMap(CharsMap *chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   LOG(INFO) << "Running BuildNFKCMap";
   BuildMapInternal(chars_map, ToNFKC, ToNFKD);
@@ -359,21 +359,21 @@ util::Status Builder::BuildNFKCMap(CharsMap *chars_map) {
   LOG(ERROR) << kCompileError;
 #endif
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::BuildNFCMap(CharsMap *chars_map) {
+absl::Status Builder::BuildNFCMap(CharsMap *chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   LOG(INFO) << "Running BuildNFCMap";
   BuildMapInternal(chars_map, ToNFC, ToNFD);
 #else
   LOG(ERROR) << kCompileError;
 #endif
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
-util::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
+absl::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   LOG(INFO) << "Running BuildNmtNFKCMap";
 
@@ -387,11 +387,11 @@ util::Status Builder::BuildNmtNFKCMap(CharsMap *chars_map) {
   LOG(ERROR) << kCompileError;
 #endif
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::MergeUnicodeCaseFoldMap(Builder::CharsMap *chars_map) {
+absl::Status Builder::MergeUnicodeCaseFoldMap(Builder::CharsMap *chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   for (auto &c : *chars_map) {
     std::vector<char32> trg;
@@ -412,11 +412,11 @@ util::Status Builder::MergeUnicodeCaseFoldMap(Builder::CharsMap *chars_map) {
   RETURN_IF_ERROR(RemoveRedundantMap(chars_map));
 #endif
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::MergeNmtMap(Builder::CharsMap *chars_map) {
+absl::Status Builder::MergeNmtMap(Builder::CharsMap *chars_map) {
   // Other code points considered as whitespace.
   (*chars_map)[{0x0009}] = {0x20};  // TAB
   (*chars_map)[{0x000A}] = {0x20};  // LINE FEED
@@ -472,11 +472,11 @@ util::Status Builder::MergeNmtMap(Builder::CharsMap *chars_map) {
   // and HALF_WIDTH TILDE are used differently in Japanese.
   (*chars_map).erase({0xFF5E});
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::BuildNFKC_CFMap(CharsMap *chars_map) {
+absl::Status Builder::BuildNFKC_CFMap(CharsMap *chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   CharsMap nfkc_map;
   RETURN_IF_ERROR(Builder::BuildNFKCMap(&nfkc_map));
@@ -486,11 +486,11 @@ util::Status Builder::BuildNFKC_CFMap(CharsMap *chars_map) {
   LOG(ERROR) << kCompileError;
 #endif
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 //  static
-util::Status Builder::BuildNmtNFKC_CFMap(CharsMap *chars_map) {
+absl::Status Builder::BuildNmtNFKC_CFMap(CharsMap *chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   CharsMap nfkc_map;
   RETURN_IF_ERROR(Builder::BuildNmtNFKCMap(&nfkc_map));
@@ -500,11 +500,11 @@ util::Status Builder::BuildNmtNFKC_CFMap(CharsMap *chars_map) {
   LOG(ERROR) << kCompileError;
 #endif
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::BuildNFKDMap(CharsMap *chars_map) {
+absl::Status Builder::BuildNFKDMap(CharsMap *chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   constexpr int kMaxUnicode = 0x10FFFF;
   for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
@@ -519,11 +519,11 @@ util::Status Builder::BuildNFKDMap(CharsMap *chars_map) {
 #else
   LOG(ERROR) << kCompileError;
 #endif
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::BuildNFDMap(CharsMap *chars_map) {
+absl::Status Builder::BuildNFDMap(CharsMap *chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   constexpr int kMaxUnicode = 0x10FFFF;
   for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
@@ -539,11 +539,11 @@ util::Status Builder::BuildNFDMap(CharsMap *chars_map) {
 #else
   LOG(ERROR) << kCompileError;
 #endif
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::BuildNFKD_CFMap(CharsMap *chars_map) {
+absl::Status Builder::BuildNFKD_CFMap(CharsMap *chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   CharsMap nfkd_map;
   RETURN_IF_ERROR(Builder::BuildNFKDMap(&nfkd_map));
@@ -552,11 +552,11 @@ util::Status Builder::BuildNFKD_CFMap(CharsMap *chars_map) {
 #else
   LOG(ERROR) << kCompileError;
 #endif
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::BuildNFC_CFMap(CharsMap *chars_map) {
+absl::Status Builder::BuildNFC_CFMap(CharsMap *chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   CharsMap nfc_map;
   RETURN_IF_ERROR(Builder::BuildNFKDMap(&nfc_map));
@@ -565,11 +565,11 @@ util::Status Builder::BuildNFC_CFMap(CharsMap *chars_map) {
 #else
   LOG(ERROR) << kCompileError;
 #endif
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::BuildNFD_CFMap(CharsMap *chars_map) {
+absl::Status Builder::BuildNFD_CFMap(CharsMap *chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   CharsMap nfd_map;
   RETURN_IF_ERROR(Builder::BuildNFDMap(&nfd_map));
@@ -578,11 +578,11 @@ util::Status Builder::BuildNFD_CFMap(CharsMap *chars_map) {
 #else
   LOG(ERROR) << kCompileError;
 #endif
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::LoadCharsMap(absl::string_view filename,
+absl::Status Builder::LoadCharsMap(absl::string_view filename,
                                    CharsMap *chars_map) {
   LOG(INFO) << "Loading mapping file: " << filename.data();
   CHECK_OR_RETURN(chars_map);
@@ -613,11 +613,11 @@ util::Status Builder::LoadCharsMap(absl::string_view filename,
     (*chars_map)[src] = trg;
   }
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::SaveCharsMap(absl::string_view filename,
+absl::Status Builder::SaveCharsMap(absl::string_view filename,
                                    const Builder::CharsMap &chars_map) {
   auto output = filesystem::NewWritableFile(filename);
   RETURN_IF_ERROR(output->status());
@@ -643,11 +643,11 @@ util::Status Builder::SaveCharsMap(absl::string_view filename,
     output->WriteLine(line);
   }
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status Builder::RemoveRedundantMap(CharsMap *chars_map) {
+absl::Status Builder::RemoveRedundantMap(CharsMap *chars_map) {
   CHECK_OR_RETURN(chars_map);
 
   CharsMap new_chars_map;
@@ -678,7 +678,7 @@ util::Status Builder::RemoveRedundantMap(CharsMap *chars_map) {
 
   *chars_map = std::move(new_chars_map);
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 }  // namespace normalizer
 }  // namespace sentencepiece

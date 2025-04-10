@@ -23,10 +23,10 @@
 #include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_trainer.h"
-#include "testharness.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/string_view.h"
+#include "gtest/gtest.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "util.h"
 
 namespace sentencepiece {

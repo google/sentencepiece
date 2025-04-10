@@ -25,9 +25,9 @@
 #include "normalizer.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/darts_clone/darts.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/string_view.h"
+#include "darts_clone/darts.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -69,7 +69,7 @@ class ModelInterface {
 
   // Returns Status.
   // Encode/Decode functions are valid only when status is OK.
-  virtual util::Status status() const { return status_; }
+  virtual absl::Status status() const { return status_; }
 
   virtual const ModelProto &model_proto() const { return *model_proto_; }
 
@@ -243,7 +243,7 @@ class ModelInterface {
   int unk_id_ = 0;
 
   // status.
-  util::Status status_;
+  absl::Status status_;
 };
 }  // namespace sentencepiece
 #endif  // MODEL_INTERFACE_H_

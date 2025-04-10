@@ -15,7 +15,7 @@
 
 #include <string>
 
-#include "third_party/absl/strings/str_replace.h"
+#include "absl/strings/str_replace.h"
 
 namespace sentencepiece {
 namespace pretokenizer {

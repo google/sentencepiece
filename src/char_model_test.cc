@@ -15,7 +15,7 @@
 #include <string>
 
 #include "char_model.h"
-#include "testharness.h"
+#include "gtest/gtest.h"
 #include "util.h"
 
 namespace sentencepiece {

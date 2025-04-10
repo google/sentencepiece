@@ -30,7 +30,7 @@ class Trainer : public TrainerInterface {
       : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec,
                                            denormalizer_spec) {}
 
-  util::Status Train() override;
+  absl::Status Train() override;
 };
 }  // namespace character
 }  // namespace sentencepiece

@@ -13,8 +13,8 @@
 // limitations under the License.!
 
 #include "common.h"
-#include "testharness.h"
-#include "third_party/absl/strings/string_view.h"
+#include "gtest/gtest.h"
+#include "absl/strings/string_view.h"
 #include "unicode_script.h"
 #include "util.h"
 

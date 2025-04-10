@@ -15,15 +15,15 @@
 #ifndef INIT_H_
 #define INIT_H_
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "common.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/flags/parse.h"
-#include "third_party/absl/flags/usage.h"
 
 #ifdef _USE_EXTERNAL_PROTOBUF
 #include "google/protobuf/message_lite.h"
 #else
-#include "third_party/protobuf-lite/google/protobuf/message_lite.h"
+#include "protobuf/src/google/protobuf/message_lite.h"
 #endif
 
 ABSL_DECLARE_FLAG(int32, minloglevel);

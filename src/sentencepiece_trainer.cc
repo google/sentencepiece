@@ -23,12 +23,12 @@
 #include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
 #include "spec_parser.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/strings/numbers.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_split.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/strings/strip.h"
+#include "absl/flags/flag.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
 #include "trainer_factory.h"
 #include "util.h"
 
@@ -38,7 +38,7 @@ static constexpr char kDefaultNormalizerName[] = "nmt_nfkc";
 }  // namespace
 
 // static
-util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec,
+absl::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec,
                                          SentenceIterator *sentence_iterator,
                                          std::string *serialized_model_proto) {
   NormalizerSpec normalizer_spec;
@@ -46,7 +46,7 @@ util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec,
                serialized_model_proto);
 }
 
-util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec,
+absl::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec,
                                          const NormalizerSpec &normalizer_spec,
                                          SentenceIterator *sentence_iterator,
                                          std::string *serialized_model_proto) {
@@ -56,7 +56,7 @@ util::Status SentencePieceTrainer::Train(const TrainerSpec &trainer_spec,
 }
 
 // static
-util::Status SentencePieceTrainer::Train(
+absl::Status SentencePieceTrainer::Train(
     const TrainerSpec &trainer_spec, const NormalizerSpec &normalizer_spec,
     const NormalizerSpec &denormalizer_spec,
     SentenceIterator *sentence_iterator, std::string *serialized_model_proto) {
@@ -85,7 +85,7 @@ util::Status SentencePieceTrainer::Train(
     RETURN_IF_ERROR(trainer->Train(sentence_iterator, nullptr));
   }
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
@@ -98,14 +98,14 @@ NormalizerSpec SentencePieceTrainer::GetNormalizerSpec(absl::string_view name) {
 }
 
 // static
-util::Status SentencePieceTrainer::MergeSpecsFromArgs(
+absl::Status SentencePieceTrainer::MergeSpecsFromArgs(
     absl::string_view args, TrainerSpec *trainer_spec,
     NormalizerSpec *normalizer_spec, NormalizerSpec *denormalizer_spec) {
   CHECK_OR_RETURN(trainer_spec) << "`trainer_spec` must not be null.";
   CHECK_OR_RETURN(normalizer_spec) << "`normalizer_spec` must not be null.";
   CHECK_OR_RETURN(denormalizer_spec) << "`denormalizer_spec` must not be null.";
 
-  if (args.empty()) return util::OkStatus();
+  if (args.empty()) return absl::OkStatus();
 
   std::unordered_map<std::string, std::string> kwargs;
   for (auto arg : absl::StrSplit(args, " ")) {
@@ -126,7 +126,7 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
 }
 
 // static
-util::Status SentencePieceTrainer::MergeSpecsFromArgs(
+absl::Status SentencePieceTrainer::MergeSpecsFromArgs(
     const std::unordered_map<std::string, std::string> &kwargs,
     TrainerSpec *trainer_spec, NormalizerSpec *normalizer_spec,
     NormalizerSpec *denormalizer_spec) {
@@ -156,23 +156,23 @@ util::Status SentencePieceTrainer::MergeSpecsFromArgs(
 
     const auto status_train = SetProtoField(key, value, trainer_spec);
     if (status_train.ok()) continue;
-    if (!util::IsNotFound(status_train)) return status_train;
+    if (!absl::IsNotFound(status_train)) return status_train;
 
     const auto status_norm = SetProtoField(key, value, normalizer_spec);
     if (status_norm.ok()) continue;
-    if (!util::IsNotFound(status_norm)) return status_norm;
+    if (!absl::IsNotFound(status_norm)) return status_norm;
 
     // Not found both in trainer_spec and normalizer_spec.
-    if (util::IsNotFound(status_train) && util::IsNotFound(status_norm)) {
+    if (absl::IsNotFound(status_train) && absl::IsNotFound(status_norm)) {
       return status_train;
     }
   }
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status SentencePieceTrainer::Train(absl::string_view args,
+absl::Status SentencePieceTrainer::Train(absl::string_view args,
                                          SentenceIterator *sentence_iterator,
                                          std::string *serialized_model_proto) {
   LOG(INFO) << "Running command: " << args.data();
@@ -186,7 +186,7 @@ util::Status SentencePieceTrainer::Train(absl::string_view args,
 }
 
 // static
-util::Status SentencePieceTrainer::Train(
+absl::Status SentencePieceTrainer::Train(
     const std::unordered_map<std::string, std::string> &kwargs,
     SentenceIterator *sentence_iterator, std::string *serialized_model_proto) {
   TrainerSpec trainer_spec;
@@ -207,7 +207,7 @@ class VectorSentenceIterator : public SentenceIterator {
   virtual bool done() const { return iter_ == end_; }
   void Next() override { ++iter_; }
   const std::string &value() const override { return *iter_; }
-  util::Status status() const override { return util::OkStatus(); }
+  absl::Status status() const override { return absl::OkStatus(); }
 
  private:
   std::vector<std::string>::const_iterator iter_;
@@ -216,7 +216,7 @@ class VectorSentenceIterator : public SentenceIterator {
 }  // namespace
 
 // static
-util::Status SentencePieceTrainer::Train(
+absl::Status SentencePieceTrainer::Train(
     absl::string_view args, const std::vector<std::string> &sentences,
     std::string *serialized_model_proto) {
   VectorSentenceIterator iter(sentences);
@@ -224,7 +224,7 @@ util::Status SentencePieceTrainer::Train(
 }
 
 // static
-util::Status SentencePieceTrainer::Train(
+absl::Status SentencePieceTrainer::Train(
     const std::unordered_map<std::string, std::string> &kwargs,
     const std::vector<std::string> &sentences,
     std::string *serialized_model_proto) {
@@ -233,7 +233,7 @@ util::Status SentencePieceTrainer::Train(
 }
 
 // static
-util::Status SentencePieceTrainer::PopulateNormalizerSpec(
+absl::Status SentencePieceTrainer::PopulateNormalizerSpec(
     NormalizerSpec *normalizer_spec, bool is_denormalizer) {
   CHECK_OR_RETURN(normalizer_spec);
 
@@ -257,11 +257,11 @@ util::Status SentencePieceTrainer::PopulateNormalizerSpec(
     }
   }
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
-util::Status SentencePieceTrainer::PopulateModelTypeFromString(
+absl::Status SentencePieceTrainer::PopulateModelTypeFromString(
     absl::string_view type, TrainerSpec *spec) {
   static const std::unordered_map<std::string, TrainerSpec::ModelType>
       kModelTypeMap = {{"unigram", TrainerSpec::UNIGRAM},
@@ -271,10 +271,10 @@ util::Status SentencePieceTrainer::PopulateModelTypeFromString(
   const auto it = kModelTypeMap.find(absl::AsciiStrToLower(type));
   if (it != kModelTypeMap.end()) {
     spec->set_model_type(it->second);
-    return util::OkStatus();
+    return absl::OkStatus();
   }
 
-  return util::StatusBuilder(util::StatusCode::kInternal, GTL_LOC)
+  return util::StatusBuilder(absl::StatusCode::kInternal, GTL_LOC)
          << "\"" << type << "\" is not found in TrainerSpec";
 }
 
@@ -283,10 +283,10 @@ const pretokenizer::PretokenizerForTrainingInterface *g_pretokenizer = nullptr;
 }  // namespace
 
 // static
-util::Status SentencePieceTrainer::SetPretokenizerForTraining(
+absl::Status SentencePieceTrainer::SetPretokenizerForTraining(
     const pretokenizer::PretokenizerForTrainingInterface *pretokenizer) {
   g_pretokenizer = pretokenizer;
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // static
@@ -298,7 +298,7 @@ SentencePieceTrainer::GetPretokenizerForTraining() {
 SentencePieceNormalizer::SentencePieceNormalizer() {}
 SentencePieceNormalizer::~SentencePieceNormalizer() {}
 
-util::Status SentencePieceNormalizer::Load(
+absl::Status SentencePieceNormalizer::Load(
     std::unique_ptr<ModelProto> model_proto) {
   model_proto_ = std::move(model_proto);
   normalizer_ =
@@ -307,13 +307,13 @@ util::Status SentencePieceNormalizer::Load(
   return normalizer_->status();
 }
 
-util::Status SentencePieceNormalizer::Load(absl::string_view filename) {
+absl::Status SentencePieceNormalizer::Load(absl::string_view filename) {
   auto model_proto = std::make_unique<ModelProto>();
   RETURN_IF_ERROR(io::LoadModelProto(filename, model_proto.get()));
   return Load(std::move(model_proto));
 }
 
-util::Status SentencePieceNormalizer::LoadFromSerializedProto(
+absl::Status SentencePieceNormalizer::LoadFromSerializedProto(
     absl::string_view serialized) {
   auto model_proto = std::make_unique<ModelProto>();
   CHECK_OR_RETURN(
@@ -321,7 +321,7 @@ util::Status SentencePieceNormalizer::LoadFromSerializedProto(
   return Load(std::move(model_proto));
 }
 
-util::Status SentencePieceNormalizer::LoadFromRuleTSV(
+absl::Status SentencePieceNormalizer::LoadFromRuleTSV(
     absl::string_view filename) {
   auto model_proto = std::make_unique<ModelProto>();
   auto *spec = model_proto->mutable_normalizer_spec();
@@ -330,7 +330,7 @@ util::Status SentencePieceNormalizer::LoadFromRuleTSV(
   return Load(std::move(model_proto));
 }
 
-util::Status SentencePieceNormalizer::LoadFromRuleName(absl::string_view name) {
+absl::Status SentencePieceNormalizer::LoadFromRuleName(absl::string_view name) {
   auto model_proto = std::make_unique<ModelProto>();
   auto *spec = model_proto->mutable_normalizer_spec();
   spec->set_name(std::string(name));
@@ -338,14 +338,14 @@ util::Status SentencePieceNormalizer::LoadFromRuleName(absl::string_view name) {
   return Load(std::move(model_proto));
 }
 
-util::Status SentencePieceNormalizer::Normalize(absl::string_view input,
+absl::Status SentencePieceNormalizer::Normalize(absl::string_view input,
                                                 std::string *normalized) const {
   CHECK_OR_RETURN(normalizer_);
   std::vector<size_t> norm_to_orig;
   return normalizer_->Normalize(input, normalized, &norm_to_orig);
 }
 
-util::Status SentencePieceNormalizer::Normalize(
+absl::Status SentencePieceNormalizer::Normalize(
     absl::string_view input, std::string *normalized,
     std::vector<size_t> *norm_to_orig) const {
   CHECK_OR_RETURN(normalizer_);

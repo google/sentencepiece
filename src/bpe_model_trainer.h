@@ -21,8 +21,8 @@
 #include <vector>
 
 #include "sentencepiece_model.pb.h"
-#include "third_party/absl/container/btree_set.h"
-#include "third_party/absl/container/flat_hash_map.h"
+#include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_map.h"
 #include "trainer_interface.h"
 
 namespace sentencepiece {
@@ -37,7 +37,7 @@ class Trainer : public TrainerInterface {
       : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec,
                                            denormalizer_spec) {}
 
-  util::Status Train() override;
+  absl::Status Train() override;
 
  private:
   // Symbol represents a character or symbol bigram.

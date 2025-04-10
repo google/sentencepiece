@@ -13,10 +13,10 @@
 // limitations under the License.!
 #include "pretokenizer_for_training.h"
 
-#include "testharness.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_split.h"
+#include "gtest/gtest.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "trainer_interface.h"
 
 namespace sentencepiece {
@@ -31,7 +31,7 @@ class MockPretokenizer : public PretokenizerForTrainingInterface {
     return spt_;
   }
 
-  util::Status status() const override { return util::OkStatus(); }
+  absl::Status status() const override { return absl::OkStatus(); }
 
   void SetOutput(const SentencePieceText &spt) { spt_ = spt; }
 

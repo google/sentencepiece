@@ -12,63 +12,49 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
-if (SPM_ABSL_PROVIDER STREQUAL "module" OR SPM_ABSL_PROVIDER STREQUAL "package")
-  set(ABSL_FLAGS_SRCS "")
-  set(ABSL_STRINGS_SRCS "")
-  list(APPEND SPM_LIBS absl::strings)
+if (SPM_ABSL_PROVIDER STREQUAL "internal" OR SPM_ABSL_PROVIDER STREQUAL "package")
+  list(APPEND SPM_LIBS absl::check)
+  list(APPEND SPM_LIBS absl::btree)
+  list(APPEND SPM_LIBS absl::flat_hash_map)
+  list(APPEND SPM_LIBS absl::flat_hash_set)
   list(APPEND SPM_LIBS absl::flags)
   list(APPEND SPM_LIBS absl::flags_parse)
+  list(APPEND SPM_LIBS absl::hash)
   list(APPEND SPM_LIBS absl::log)
-  list(APPEND SPM_LIBS absl::check)
+  list(APPEND SPM_LIBS absl::log_flags)
+  list(APPEND SPM_LIBS absl::strings)
+  list(APPEND SPM_LIBS absl::status)
   if (MSVC)
    add_definitions("/D_USE_EXTERNAL_ABSL")
   else()
    add_definitions("-D_USE_EXTERNAL_ABSL")
   endif()
-elseif (SPM_ABSL_PROVIDER STREQUAL "internal")
-  set(ABSL_FLAGS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/absl/flags/flag.cc)
 endif()
 
 if (SPM_PROTOBUF_PROVIDER STREQUAL "internal")
-  set(SPM_PROTO_HDRS builtin_pb/sentencepiece.pb.h)
-  set(SPM_PROTO_SRCS builtin_pb/sentencepiece.pb.cc)
-  set(SPM_MODEL_PROTO_HDRS builtin_pb/sentencepiece_model.pb.h)
-  set(SPM_MODEL_PROTO_SRCS builtin_pb/sentencepiece_model.pb.cc)
-  set(PROTOBUF_LITE_LIBRARY "")
-  set(PROTOBUF_LITE_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/arena.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/arenastring.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/bytestream.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/coded_stream.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/common.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/extension_set.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/generated_enum_util.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/generated_message_table_driven_lite.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/generated_message_util.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/implicit_weak_message.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/int128.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/io_win32.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/message_lite.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/parse_context.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/repeated_field.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/status.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/statusor.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/stringpiece.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/stringprintf.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/structurally_valid.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/strutil.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/time.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/wire_format_lite.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/zero_copy_stream.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/zero_copy_stream_impl.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/zero_copy_stream_impl_lite.cc)
+  include_directories(${Protobuf_INCLUDE_DIRS})
+  set(PROTO_BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+  protobuf_generate(
+          LANGUAGE cpp
+          PROTOS sentencepiece.proto
+          OUT_VAR SPM_MODEL_PROTO_SRCS
+          PROTOC_OUT_DIR ${PROTO_BINARY_DIR})
+  protobuf_generate(
+          LANGUAGE cpp
+          PROTOS sentencepiece_model.proto
+          OUT_VAR SPM_PROTO_SRCS
+          PROTOC_OUT_DIR ${PROTO_BINARY_DIR})
+  set(SPM_PROTO_HDRS "${PROTO_BINARY_DIR}/sentencepiece.pb.h")
+  #set(SPM_PROTO_SRCS "${PROTO_BINARY_DIR}/sentencepiece.pb.cc")
+  set(SPM_MODEL_PROTO_HDRS "${PROTO_BINARY_DIR}/sentencepiece_model.pb.h")
+  #set(SPM_MODEL_PROTO_SRCS "${PROTO_BINARY_DIR}/sentencepiece_model.pb.cc")
   if (MSVC)
     add_definitions("/DHAVE_PTHREAD /wd4018 /wd4514")
   else()
     add_definitions("-pthread -DHAVE_PTHREAD=1 -Wno-sign-compare -Wno-deprecated-declarations")
   endif()
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite)
-  include_directories(builtin_pb)
+  set(PROTOBUF_LITE_LIBRARY protobuf::libprotobuf-lite)
 elseif (SPM_PROTOBUF_PROVIDER STREQUAL "package")
   find_package(Protobuf REQUIRED)
   include_directories(${Protobuf_INCLUDE_DIRS})
@@ -104,13 +90,11 @@ set(SPM_SRCS
   util.h
   freelist.h
   filesystem.h
-  init.h
   sentencepiece_processor.h
   word_model.h
   model_factory.h
   char_model.h
   model_interface.h
-  testharness.h
   unigram_model.h
   bpe_model.cc
   char_model.cc
@@ -122,9 +106,7 @@ set(SPM_SRCS
   sentencepiece_processor.cc
   unigram_model.cc
   util.cc
-  word_model.cc
-  ${ABSL_STRINGS_SRCS}
-  ${ABSL_FLAGS_SRCS})
+  word_model.cc)
 
 set(SPM_TRAIN_SRCS
   ${SPM_PROTO_HDRS}
@@ -155,21 +137,17 @@ set(SPM_TRAIN_SRCS
 set(SPM_TEST_SRCS
   ${SPM_PROTO_HDRS}
   ${SPM_MODEL_PROTO_HDRS}
-  testharness.h
   bpe_model_test.cc
   bpe_model_trainer_test.cc
   builder_test.cc
   char_model_test.cc
   char_model_trainer_test.cc
   filesystem_test.cc
-  init_test.cc
   model_factory_test.cc
   model_interface_test.cc
   normalizer_test.cc
   sentencepiece_processor_test.cc
   sentencepiece_trainer_test.cc
-  test_main.cc
-  testharness.cc
   trainer_factory_test.cc
   trainer_interface_test.cc
   unicode_script_test.cc
@@ -278,8 +256,8 @@ if (NOT MSVC)
   set_source_files_properties(${SPM_TEST_SRCS}
     PROPERTIES COMPILE_FLAGS "-Wno-sign-compare")
   if (SPM_ENABLE_SHARED)
-    set_property(TARGET sentencepiece APPEND_STRING PROPERTY COMPILE_FLAGS " -DPIC")
-    set_property(TARGET sentencepiece_train APPEND_STRING PROPERTY COMPILE_FLAGS " -DPIC")
+    set_property(TARGET sentencepiece APPEND_STRING PROPERTY COMPILE_FLAGS " -fPIC")
+    set_property(TARGET sentencepiece_train APPEND_STRING PROPERTY COMPILE_FLAGS " -fPIC")
   endif()
 endif()
 
@@ -326,7 +304,8 @@ file(TO_NATIVE_PATH "${PROJECT_SOURCE_DIR}/data" data_dir)
 
 if (SPM_BUILD_TEST OR SPM_COVERAGE)
   enable_testing()
-  add_executable(spm_test test_main.cc ${SPM_TEST_SRCS})
+  add_executable(spm_test ${SPM_TEST_SRCS})
+  target_link_libraries(spm_test GTest::gtest GTest::gtest_main)
 
   if (SPM_COVERAGE)
     target_link_libraries(spm_test sentencepiece sentencepiece_train "-lgcov")
@@ -337,8 +316,10 @@ if (SPM_BUILD_TEST OR SPM_COVERAGE)
   set(MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --show-leak-kinds=definite,possible --error-exitcode=1")
   find_program(CTEST_MEMORYCHECK_COMMAND NAMES valgrind)
 
-  add_test(NAME sentencepiece_test
-    COMMAND $<TARGET_FILE:spm_test> --test_srcdir=${data_dir})
+  include(GoogleTest)
+  gtest_discover_tests(
+	spm_test
+	WORKING_DIRECTORY ${data_dir})
 endif()
 
 if (SPM_COVERAGE)

@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "sentencepiece_model.pb.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/strings/string_view.h"
 #include "trainer_interface.h"
 #include "unigram_model.h"
 #include "util.h"
@@ -70,7 +70,7 @@ class Trainer : public TrainerInterface {
 
   TrainerModel::SentencePieces MakeSeedSentencePieces();
 
-  util::Status Train() override;
+  absl::Status Train() override;
 
  private:
   FRIEND_TEST(TrainerTest, IsValidSentencePieceTest);

@@ -22,12 +22,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "common.h"
 #include "filesystem.h"
+#include "gtest/gtest.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
-#include "third_party/absl/container/flat_hash_map.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -57,7 +58,7 @@ class MultiFileSentenceIterator : public SentenceIterator {
   bool done() const override;
   void Next() override;
   const std::string &value() const override { return value_; }
-  util::Status status() const override;
+  absl::Status status() const override;
 
  private:
   void TryRead();
@@ -90,16 +91,16 @@ class TrainerInterface {
 
   // Loads sentence from `sentence_iterator` and stores the model
   // to `output_model_proto`.
-  virtual util::Status Train(SentenceIterator *sentence_iterator,
+  virtual absl::Status Train(SentenceIterator *sentence_iterator,
                              ModelProto *output_model_proto) {
     sentence_iterator_ = sentence_iterator;
     output_model_proto_ = output_model_proto;
     return Train();
   }
 
-  virtual util::Status Train() { return status(); }
+  virtual absl::Status Train() { return status(); }
 
-  virtual util::Status status() const { return status_; }
+  virtual absl::Status status() const { return status_; }
 
   FRIEND_TEST(TrainerInterfaceTest, IsValidSentencePieceTest);
   FRIEND_TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest);
@@ -109,7 +110,7 @@ class TrainerInterface {
 
   // Loads all sentences from spec.input() or SentenceIterator.
   // It loads at most input_sentence_size sentences.
-  util::Status LoadSentences();
+  absl::Status LoadSentences();
 
  protected:
   // Returns true if |piece| is valid sentence piece.
@@ -125,7 +126,7 @@ class TrainerInterface {
   void SplitSentencesByWhitespace();
 
   // Save model files into spec.model_prefix().
-  util::Status Save() const;
+  absl::Status Save() const;
 
   // Set of characters which must be included in the final vocab.
   // The value of this map stores the frequency.
@@ -152,7 +153,7 @@ class TrainerInterface {
       meta_pieces_;
 
   // Detect errors on initialization.
-  util::Status status_;
+  absl::Status status_;
 
   // Loads sentences from SentenceIterator if not null.
   SentenceIterator *sentence_iterator_ = nullptr;
@@ -162,19 +163,19 @@ class TrainerInterface {
 
  private:
   // Serialize final_pieces_ to |model_proto|.
-  util::Status Serialize(ModelProto *model_proto) const;
+  absl::Status Serialize(ModelProto *model_proto) const;
 
   // Saves the best sentence split with the current model for debugging.
-  util::Status SaveSplits(absl::string_view filename) const;
+  absl::Status SaveSplits(absl::string_view filename) const;
 
   // Saves model file.
-  util::Status SaveModel(absl::string_view filename) const;
+  absl::Status SaveModel(absl::string_view filename) const;
 
   // Saves vocabulary file for NMT.
-  util::Status SaveVocab(absl::string_view filename) const;
+  absl::Status SaveVocab(absl::string_view filename) const;
 
   // Initializes `meta_pieces_` from TrainerSpec.
-  util::Status InitMetaPieces();
+  absl::Status InitMetaPieces();
 
   // Randomly sampled raw sentences for self-testing.
   std::vector<std::string> self_test_samples_;

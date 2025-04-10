@@ -15,11 +15,13 @@
 # limitations under the License.!
 
 import codecs
+import glob
 import os
+import pathlib
+import platform
 import string
 import subprocess
 import sys
-import platform
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.build_py import build_py as _build_py
@@ -35,42 +37,22 @@ def long_description():
 
 exec(open('src/sentencepiece/_version.py').read())
 
+_GITHUB_REF_NAME = os.environ.get('GITHUB_REF_NAME', __version__)
 
-def run_pkg_config(section, pkg_config_path=None):
+
+def get_cflags_and_libs(root, pkgcfg_dir):
+  # TODO: We'd really like to use pkg-config here, but the GitHub action
+  # runners of pkg-config seems old and interacts poorly with absl, causing
+  # timeouts: https://github.com/pkgconf/pkgconf/issues/229
+  cflags = ['-std=c++17', f'-I{root}/include']
+  lib_dir = os.path.join(root, 'lib')
   try:
-    cmd = 'pkg-config sentencepiece --{}'.format(section)
-    if pkg_config_path:
-      cmd = 'env PKG_CONFIG_PATH={} {}'.format(pkg_config_path, cmd)
-    output = subprocess.check_output(cmd, shell=True)
-    if sys.version_info >= (3, 0, 0):
-      output = output.decode('utf-8')
-  except subprocess.CalledProcessError:
-    sys.stderr.write('Failed to find sentencepiece pkg-config\n')
-    sys.exit(1)
-  return output.strip().split()
-
-
-def is_sentencepiece_installed():
-  try:
-    subprocess.check_call('pkg-config sentencepiece --libs', shell=True)
-    return True
-  except subprocess.CalledProcessError:
-    return False
-
-
-def get_cflags_and_libs(root):
-  cflags = ['-std=c++17', '-I' + os.path.join(root, 'include')]
-  libs = []
-  if os.path.exists(os.path.join(root, 'lib/pkgconfig/sentencepiece.pc')):
     libs = [
-        os.path.join(root, 'lib/libsentencepiece.a'),
-        os.path.join(root, 'lib/libsentencepiece_train.a'),
+      os.path.join(lib_dir, f) for f in os.listdir(lib_dir)
+      if f.endswith('.a')
     ]
-  elif os.path.exists(os.path.join(root, 'lib64/pkgconfig/sentencepiece.pc')):
-    libs = [
-        os.path.join(root, 'lib64/libsentencepiece.a'),
-        os.path.join(root, 'lib64/libsentencepiece_train.a'),
-    ]
+  except:
+    libs = []
   return cflags, libs
 
 
@@ -78,15 +60,20 @@ class build_ext(_build_ext):
   """Override build_extension to run cmake."""
 
   def build_extension(self, ext):
-    cflags, libs = get_cflags_and_libs('../build/root')
+    root = './build/root'
+    pkgcfg_dir = os.path.join(root, 'lib/pkgconfig')
+    cflags, libs = get_cflags_and_libs(root, pkgcfg_dir)
 
-    if len(libs) == 0:
-      if is_sentencepiece_installed():
-        cflags = cflags + run_pkg_config('cflags')
-        libs = run_pkg_config('libs')
-      else:
-        subprocess.check_call(['./build_bundled.sh', __version__])
-        cflags, libs = get_cflags_and_libs('./build/root')
+    print(f'Found {libs=}')
+    if not libs:
+      cmd = ['./build_bundled.sh', _GITHUB_REF_NAME]
+      print(f'Running {cmd=}')
+      subprocess.check_call(cmd)
+      cflags, libs = get_cflags_and_libs(root, pkgcfg_dir)
+      if sys.platform == 'linux':
+        # TODO: Remove these linker flags once pkg-config can be used to return
+        # the correct library ordering.
+        libs = ['-Wl,--start-group'] + libs + ['-Wl,--end-group']
 
     # Fix compile on some versions of Mac OSX
     # See: https://github.com/neulab/xnmt/issues/199
@@ -94,11 +81,11 @@ class build_ext(_build_ext):
       cflags.append('-mmacosx-version-min=10.9')
     else:
       if sys.platform == 'aix':
-          cflags.append('-Wl,-s')
-          libs.append('-Wl,-s')
+        cflags.append('-Wl,-s')
+        libs.append('-Wl,-s')
       else:
-          cflags.append('-Wl,-strip-all')
-          libs.append('-Wl,-strip-all')
+        cflags.append('-Wl,-strip-all')
+        libs.append('-Wl,-strip-all')
     if sys.platform == 'linux':
       libs.append('-Wl,-Bsymbolic')
     print('## cflags={}'.format(' '.join(cflags)))
@@ -121,27 +108,38 @@ def get_win_arch():
 
 
 if os.name == 'nt':
-  # Must pre-install sentencepice into build directory.
+  # Must pre-install sentencepice into build/ directory.
   arch = get_win_arch()
-  if os.path.exists('..\\build\\root_{}\\lib'.format(arch)):
-    cflags = ['/std:c++17', '/I..\\build\\root_{}\\include'.format(arch)]
-    libs = [
-        '..\\build\\root_{}\\lib\\sentencepiece.lib'.format(arch),
-        '..\\build\\root_{}\\lib\\sentencepiece_train.lib'.format(arch),
-    ]
-  elif os.path.exists('..\\build\\root\\lib'):
-    cflags = ['/std:c++17', '/I..\\build\\root\\include']
-    libs = [
-        '..\\build\\root\\lib\\sentencepiece.lib',
-        '..\\build\\root\\lib\\sentencepiece_train.lib',
-    ]
-  else:
+
+  def _win_cflags_and_libs(path):
+    if not os.path.exists(path):
+      return [], []
+    else:
+      include_dir = path / 'include'
+      cflags = ['/std:c++17', f'/I{include_dir}']
+      lib_dir = path / 'lib'
+      print(f'{os.listdir(lib_dir)=}')
+      libs = [
+          str(lib_dir / file)
+          for file in os.listdir(lib_dir)
+          if file.endswith('.lib')
+      ]
+      return cflags, libs
+
+  cflags, libs = _win_cflags_and_libs(
+      pathlib.PurePath('..', 'build', f'root_{arch}')
+  )
+  if not cflags:
+    cflags, libs = _win_cflags_and_libs(pathlib.PurePath('..', 'build', 'root'))
+  if not cflags:
     # build library locally with cmake and vc++.
     cmake_arch = 'Win32'
     if arch == 'amd64':
       cmake_arch = 'x64'
-    elif arch == "arm64":
-      cmake_arch = "ARM64"
+    elif arch == 'arm64':
+      cmake_arch = 'ARM64'
+    print('## cflags={}'.format(' '.join(cflags)))
+    print('## libs={}'.format(' '.join(libs)))
     subprocess.check_call([
         'cmake',
         'sentencepiece',
@@ -163,12 +161,10 @@ if os.name == 'nt':
         '--parallel',
         '8',
     ])
-    cflags = ['/std:c++17', '/I.\\build\\root\\include']
-    libs = [
-        '.\\build\\root\\lib\\sentencepiece.lib',
-        '.\\build\\root\\lib\\sentencepiece_train.lib',
-    ]
+    cflags, libs = _win_cflags_and_libs(pathlib.PurePath('.', 'build', 'root'))
 
+  print('## cflags={}'.format(' '.join(cflags)))
+  print('## libs={}'.format(' '.join(libs)))
   SENTENCEPIECE_EXT = Extension(
       'sentencepiece._sentencepiece',
       sources=['src/sentencepiece/sentencepiece_wrap.cxx'],
@@ -203,12 +199,12 @@ setup(
     ],
     ext_modules=[SENTENCEPIECE_EXT],
     cmdclass=cmdclass,
+    install_requires=['protobuf~=6.30.2'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: Apache Software License',
         'Operating System :: Unix',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.8',
@@ -220,6 +216,4 @@ setup(
         'Topic :: Text Processing :: Linguistic',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    test_suite='sentencepiece_test.suite',
-    tests_require=['pytest'],
 )
