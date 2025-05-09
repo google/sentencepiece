@@ -151,6 +151,7 @@ if os.name == 'nt':
         'build',
         '-DSPM_ENABLE_SHARED=OFF',
         '-DCMAKE_INSTALL_PREFIX=build\\root',
+        '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
     ])
     subprocess.check_call([
         'cmake',
