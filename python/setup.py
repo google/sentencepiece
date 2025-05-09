@@ -144,7 +144,7 @@ if os.name == 'nt':
       cmake_arch = "ARM64"
     subprocess.check_call([
         'cmake',
-        'sentencepiece',
+        '..',
         '-A',
         cmake_arch,
         '-B',
