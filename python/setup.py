@@ -142,9 +142,12 @@ if os.name == 'nt':
       cmake_arch = 'x64'
     elif arch == "arm64":
       cmake_arch = "ARM64"
+
+    cmake_source_dir = os.path.abspath('..')
+
     subprocess.check_call([
         'cmake',
-        '..',
+        cmake_source_dir,
         '-A',
         cmake_arch,
         '-B',
