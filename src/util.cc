@@ -306,7 +306,7 @@ double LogSum(const std::vector<double> &xs) {
     }
     return xb + std::log1p(std::exp(xa - xb));
   };
-  for (int i = 1; i < xs.size(); ++i) {
+  for (std::size_t i = 1; i < xs.size(); ++i) {
     sum = log_add(sum, xs[i]);
   }
   return sum;
