@@ -24,9 +24,9 @@ certifi==2024.7.4 \
     # via
     #   -c base.txt
     #   cibuildwheel
-cibuildwheel==3.1.2 \
-    --hash=sha256:412362741f42244bbb44ca9c3f22d55f0a85d549435c8107bc0d04b74a77c780 \
-    --hash=sha256:493949b9cd37b7ee4c803bca88557773daece2f767c07865b2282e08fb5e7709
+cibuildwheel==3.3.0 \
+    --hash=sha256:034f606fa0b69b8f6e160a0fa0eb52eba797dd4dc4edcbcb34491f592e8fb1a1 \
+    --hash=sha256:99bdcc34e27f9160bfeb0ef8a49fcc5d0378369ec50d4f587e093431d7f5de71
     # via -r cibuildwheel.in
 dependency-groups==1.3.0 \
     --hash=sha256:1abf34d712deda5581e80d507512664d52b35d1c2d7caf16c85e58ca508547e0 \
@@ -48,6 +48,17 @@ packaging==25.0 \
     #   build
     #   cibuildwheel
     #   dependency-groups
+patchelf==0.17.2.4 \
+    --hash=sha256:09fd848d625a165fc7b7e07745508c24077129b019c4415a882938781d43adf8 \
+    --hash=sha256:2931a1b5b85f3549661898af7bf746afbda7903c7c9a967cfc998a3563f84fad \
+    --hash=sha256:343bb1b94e959f9070ca9607453b04390e36bbaa33c88640b989cefad0aa049e \
+    --hash=sha256:680a266a70f60a7a4f4c448482c5bdba80cc8e6bb155a49dcc24238ba49927b0 \
+    --hash=sha256:7076d9e127230982e20a81a6e2358d3343004667ba510d9f822d4fdee29b0d71 \
+    --hash=sha256:970ee5cd8af33e5ea2099510b2f9013fa1b8d5cd763bf3fd3961281c18101a09 \
+    --hash=sha256:ae44cb3c857d50f54b99e5697aa978726ada33a8a6129d4b8b7ffd28b996652d \
+    --hash=sha256:d842b51f0401460f3b1f3a3a67d2c266a8f515a5adfbfa6e7b656cb3ac2ed8bc \
+    --hash=sha256:d9b35ebfada70c02679ad036407d9724ffe1255122ba4ac5e4be5868618a5689
+    # via cibuildwheel
 platformdirs==4.1.0 \
     --hash=sha256:11c8f37bcca40db96d8144522d925583bdb7a31f7b0e37e3ed4318400a8e2380 \
     --hash=sha256:906d548203468492d432bcb294d4bc2fff751bf84971fbb2c10918cc206ee420
