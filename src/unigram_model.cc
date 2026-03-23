@@ -791,6 +791,10 @@ NBestEncodeResult Model::SampleEncodeAndScore(absl::string_view normalized,
         nbest_samples.pop_back();
       }
     }
+    if (nbest_samples.empty()) {
+      return results;
+    }
+
     // We use the perturbed score of the k+1th element to calculate the
     // inclusion probability.
     const double kappa = static_cast<double>(nbest_samples.back().second);
