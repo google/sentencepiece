@@ -17,10 +17,12 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <future>
 #include <iterator>
 #include <map>
 #include <memory>
 #include <set>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -405,6 +407,34 @@ util::Status SentencePieceProcessor::Encode(absl::string_view input,
   return util::OkStatus();
 }
 
+util::Status SentencePieceProcessor::EncodeParallel(
+    absl::string_view input, std::vector<std::string> *pieces, int num_threads) const {
+  CHECK_OR_RETURN_STATUS_STL(pieces);
+
+  SentencePieceText spt;
+  RETURN_IF_ERROR(EncodeParallel(input, &spt, num_threads));
+  for (const auto &sp : spt.pieces()) {
+    pieces->emplace_back(sp.piece());
+  }
+
+  return util::OkStatus();
+}
+
+util::Status SentencePieceProcessor::EncodeParallel(absl::string_view input,
+                                                    std::vector<int> *ids,
+                                                    int num_threads) const {
+  CHECK_OR_RETURN_STATUS_STL(ids);
+
+  SentencePieceText spt;
+  RETURN_IF_ERROR(EncodeParallel(input, &spt, num_threads));
+  ids->reserve(spt.pieces().size());
+  for (const auto &sp : spt.pieces()) {
+    ids->emplace_back(sp.id());
+  }
+
+  return util::OkStatus();
+}
+
 util::Status SentencePieceProcessor::Decode(
     const std::vector<std::string> &pieces, std::string *detokenized) const {
   return Decode(ToPieceArray(pieces), detokenized);
@@ -654,6 +684,48 @@ util::Status SentencePieceProcessor::Encode(absl::string_view input,
       PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt));
 
   return util::OkStatus();
+}
+
+util::Status SentencePieceProcessor::EncodeParallel(absl::string_view input,
+                                                    SentencePieceText *spt,
+                                                    int num_threads) const {
+  CHECK_OR_RETURN_STATUS_PROTO(spt);
+  CHECK_OR_RETURN(num_threads > 0) << "num_threads must be positive";
+
+  // For short inputs or single thread, use regular encoding
+  if (input.size() < 10000 || num_threads == 1) {
+    return Encode(input, spt);
+  }
+
+  // Normalize the entire input first
+  std::string normalized;
+  std::vector<size_t> norm_to_orig;
+  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+
+  // Split normalized text into chunks
+  std::vector<absl::string_view> normalized_chunks = SplitInputIntoChunks(normalized, num_threads);
+
+  // Encode chunks in parallel
+  std::vector<std::future<EncodeResult>> futures;
+  for (const auto &chunk : normalized_chunks) {
+    futures.emplace_back(std::async(std::launch::async, [this, chunk]() {
+      return this->model_->Encode(chunk);
+    }));
+  }
+
+  // Wait for all encodings to complete and combine results
+  EncodeResult combined_result;
+  size_t normalized_offset = 0;
+  for (size_t i = 0; i < futures.size(); ++i) {
+    const auto chunk_result = futures[i].get();
+    for (const auto &piece : chunk_result) {
+      combined_result.emplace_back(piece.first, piece.second);
+    }
+    normalized_offset += normalized_chunks[i].size();
+  }
+
+  // Populate the final SentencePieceText
+  return PopulateSentencePieceText(input, normalized, norm_to_orig, combined_result, spt);
 }
 
 util::Status SentencePieceProcessor::NBestEncode(
@@ -1167,4 +1239,50 @@ util::Status SaveModelProto(absl::string_view filename,
   return util::OkStatus();
 }
 }  // namespace io
+
+// Helper functions for parallel encoding
+std::vector<absl::string_view> SentencePieceProcessor::SplitInputIntoChunks(
+    absl::string_view input, int num_chunks) const {
+  std::vector<absl::string_view> chunks;
+  if (input.empty() || num_chunks <= 1) {
+    chunks.emplace_back(input);
+    return chunks;
+  }
+
+  const size_t total_size = input.size();
+  const size_t chunk_size = total_size / num_chunks;
+  size_t start = 0;
+
+  for (int i = 0; i < num_chunks; ++i) {
+    size_t end = (i == num_chunks - 1) ? total_size : start + chunk_size;
+
+    // Ensure we don't split in the middle of a UTF-8 character
+    if (end < total_size) {
+      // Find the next character boundary
+      const char *data = input.data();
+      while (end < total_size && (data[end] & 0x80)) {
+        // If this is a continuation byte, move back
+        if (IsTrailByte(data[end])) {
+          end--;
+        } else {
+          // This is a start byte, so we're at a safe boundary
+          break;
+        }
+      }
+      // If we moved back too far, find the start of the current character
+      if (end > start) {
+        size_t char_len = OneCharLen(data + end);
+        if (end + char_len <= total_size) {
+          end += char_len;
+        }
+      }
+    }
+
+    chunks.emplace_back(input.data() + start, end - start);
+    start = end;
+  }
+
+  return chunks;
+}
+
 }  // namespace sentencepiece

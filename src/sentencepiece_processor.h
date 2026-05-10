@@ -317,6 +317,21 @@ class SentencePieceProcessor {
                               std::string *detokenized) const;
 
   //////////////////////////////////////////////////////////////
+  // Parallel Encode API.
+  //
+  // Given a UTF8 input, encodes it into a sequence of sentence pieces using
+  // parallel processing for improved performance on long texts.
+  virtual util::Status EncodeParallel(absl::string_view input,
+                                      std::vector<std::string> *pieces,
+                                      int num_threads = 4) const;
+
+  // Given a UTF8 input, encodes it into a sequence of ids using parallel
+  // processing for improved performance on long texts.
+  virtual util::Status EncodeParallel(absl::string_view input,
+                                      std::vector<int> *ids,
+                                      int num_threads = 4) const;
+
+  //////////////////////////////////////////////////////////////
   // NBest API.
   //
   // Same as Encode, but returns nbest results.
@@ -406,6 +421,11 @@ class SentencePieceProcessor {
   virtual util::Status Encode(absl::string_view input,
                               SentencePieceText *spt) const;
 
+  // Parallel version of Encode for improved performance on long texts.
+  virtual util::Status EncodeParallel(absl::string_view input,
+                                      SentencePieceText *spt,
+                                      int num_threads = 4) const;
+
   virtual util::Status NBestEncode(absl::string_view input, int nbest_size,
                                    NBestSentencePieceText *nbest_spt) const;
 
@@ -460,8 +480,20 @@ class SentencePieceProcessor {
     DEFINE_SPP_DIRECT_FUNC_IMPL(Encode, std::vector<std::string>, input);
   }
 
+  virtual std::vector<std::string> EncodeAsPiecesParallel(
+      absl::string_view input, int num_threads = 4) const {
+    DEFINE_SPP_DIRECT_FUNC_IMPL(EncodeParallel, std::vector<std::string>, input,
+                                num_threads);
+  }
+
   virtual std::vector<int> EncodeAsIds(absl::string_view input) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(Encode, std::vector<int>, input);
+  }
+
+  virtual std::vector<int> EncodeAsIdsParallel(absl::string_view input,
+                                               int num_threads = 4) const {
+    DEFINE_SPP_DIRECT_FUNC_IMPL(EncodeParallel, std::vector<int>, input,
+                                num_threads);
   }
 
   virtual std::vector<std::vector<std::string>> NBestEncodeAsPieces(
@@ -578,6 +610,12 @@ class SentencePieceProcessor {
   virtual ImmutableSentencePieceText EncodeAsImmutableProto(
       absl::string_view input) const {
     DEFINE_SPP_IMMUTABLE_PROTO_IMPL(Encode, ImmutableSentencePieceText, input);
+  }
+
+  virtual ImmutableSentencePieceText EncodeAsImmutableProtoParallel(
+      absl::string_view input, int num_threads = 4) const {
+    DEFINE_SPP_IMMUTABLE_PROTO_IMPL(EncodeParallel, ImmutableSentencePieceText,
+                                    input, num_threads);
   }
 
   virtual ImmutableSentencePieceText SampleEncodeAsImmutableProto(
@@ -717,6 +755,10 @@ class SentencePieceProcessor {
       const std::vector<size_t> &norm_to_orig,
       const std::vector<std::pair<absl::string_view, int>> &result,
       SentencePieceText *spt) const;
+
+  // Helper functions for parallel encoding
+  std::vector<absl::string_view> SplitInputIntoChunks(
+      absl::string_view input, int num_chunks) const;
 
   std::unique_ptr<ModelInterface> model_;
   std::unique_ptr<normalizer::Normalizer> normalizer_;
