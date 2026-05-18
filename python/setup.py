@@ -54,7 +54,12 @@ def find_abseil_lib(search_root):
 
 
 def get_cflags_and_libs(root):
-  cflags = ['-std=c++17', '-I' + os.path.join(root, 'include')]
+  cflags = [
+      '-std=c++17',
+      '-I' + os.path.join(root, 'include'),
+      '-I..',
+      '-I../third_party',
+  ]
   libs = []
   if os.path.exists(os.path.join(root, 'lib/libsentencepiece.a')):
     libs = [
@@ -129,16 +134,17 @@ class build_ext_win(_build_ext):
   def build_extension(self, ext):
     # Must pre-install sentencepice into build directory.
     arch = get_win_arch()
+    cflags = ['/std:c++17', '/I..', '/I..\\third_party']
 
     if os.path.exists('..\\build_{}\\root\\lib'.format(arch)):
-      cflags = ['/std:c++17', '/I..\\build_{}\\root\\include'.format(arch)]
+      cflags.append('/I..\\build_{}\\root\\include'.format(arch))
       libs = [
           '..\\build_{}\\root\\lib\\sentencepiece.lib'.format(arch),
           '..\\build_{}\\root\\lib\\sentencepiece_train.lib'.format(arch),
       ]
       libs.extend(find_abseil_lib('..\\build_{}\\third_party'.format(arch)))
     elif os.path.exists('..\\build\\root\\lib'):
-      cflags = ['/std:c++17', '/I..\\build\\root\\include']
+      cflags.append('/I..\\build\\root\\include')
       libs = [
           '..\\build\\root\\lib\\sentencepiece.lib',
           '..\\build\\root\\lib\\sentencepiece_train.lib',
@@ -174,7 +180,7 @@ class build_ext_win(_build_ext):
           '--parallel',
           '8',
       ])
-      cflags = ['/std:c++17', '/I.\\build\\root\\include']
+      cflag.append('/I.\\build\\root\\include')
       libs = [
           '.\\build\\root\\lib\\sentencepiece.lib',
           '.\\build\\root\\lib\\sentencepiece_train.lib',
