@@ -623,7 +623,7 @@ void Model::BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces) {
   if (!status().ok()) return;
 
   if (pieces->empty()) {
-    status_ = util::InternalError("no pieces are loaded.");
+    status_ = absl::InternalError("no pieces are loaded.");
     return;
   }
 
@@ -644,7 +644,7 @@ void Model::BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces) {
   trie_ = std::make_unique<Darts::DoubleArray>();
   if (trie_->build(key.size(), const_cast<char **>(&key[0]),
                    const_cast<size_t *>(&length[0]), &value[0]) != 0) {
-    status_ = util::InternalError("cannot build double-array.");
+    status_ = absl::InternalError("cannot build double-array.");
     return;
   }
 
@@ -662,7 +662,7 @@ void Model::BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces) {
   pieces_.clear();
 
   if (trie_results_size_ == 0)
-    status_ = util::InternalError("no entry is found in the trie.");
+    status_ = absl::InternalError("no entry is found in the trie.");
 }
 
 Model::Model(const ModelProto &model_proto) {

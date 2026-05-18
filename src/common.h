@@ -46,7 +46,7 @@ using char32 = uint32_t;
     if (!_status.ok()) return _status; \
   } while (0)
 
-// CHECK_OK must work on util::Status, not absl::Status.
+// CHECK_OK must work on absl::Status, not absl::Status.
 #if defined CHECK_OK
 #undef CHECK_OK
 #endif  // CHECK_OK

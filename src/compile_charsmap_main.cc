@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
 
   const std::vector<std::pair<
       std::string,
-      std::function<sentencepiece::util::Status(Builder::CharsMap *)>>>
+      std::function<sentencepiece::absl::Status(Builder::CharsMap *)>>>
       kRuleList = {{"nfkc", Builder::BuildNFKCMap},
                    {"nmt_nfkc", Builder::BuildNmtNFKCMap},
                    {"nfkc_cf", Builder::BuildNFKC_CFMap},

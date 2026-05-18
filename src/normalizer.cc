@@ -34,12 +34,12 @@ Normalizer::Normalizer(const NormalizerSpec &spec,
                        const TrainerSpec &trainer_spec)
     : spec_(&spec),
       treat_whitespace_as_suffix_(trainer_spec.treat_whitespace_as_suffix()),
-      status_(util::OkStatus()) {
+      status_(absl::OkStatus()) {
   Init();
 }
 
 Normalizer::Normalizer(const NormalizerSpec &spec)
-    : spec_(&spec), status_(util::OkStatus()) {
+    : spec_(&spec), status_(absl::OkStatus()) {
   Init();
 }
 
@@ -64,21 +64,21 @@ void Normalizer::Init() {
                      trie_blob.size() / trie_->unit_size());
 
     if (!trie_->validate()) {
-      status_ = util::InternalError(
+      status_ = absl::InternalError(
           "Trie data contains out-of-bounds node references.");
       return;
     }
   }
 }
 
-util::Status Normalizer::Normalize(absl::string_view input,
+absl::Status Normalizer::Normalize(absl::string_view input,
                                    std::string *normalized,
                                    std::vector<size_t> *norm_to_orig) const {
   if (norm_to_orig) norm_to_orig->clear();
   normalized->clear();
 
   if (input.empty()) {
-    return util::OkStatus();
+    return absl::OkStatus();
   }
 
   RETURN_IF_ERROR(status());
@@ -99,7 +99,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
 
   // all chars are whitespace.
   if (input.empty()) {
-    return util::OkStatus();
+    return absl::OkStatus();
   }
 
   // Reserves the output buffer to avoid re-allocations.
@@ -180,7 +180,7 @@ util::Status Normalizer::Normalize(absl::string_view input,
     RET_CHECK_EQ(norm_to_orig->size(), normalized->size() + 1);
   }
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 std::string Normalizer::Normalize(absl::string_view input) const {
@@ -269,7 +269,7 @@ std::string Normalizer::EncodePrecompiledCharsMap(
 }
 
 // static
-util::Status Normalizer::DecodePrecompiledCharsMap(
+absl::Status Normalizer::DecodePrecompiledCharsMap(
     absl::string_view blob, absl::string_view *trie_blob,
     absl::string_view *normalized, std::string *buffer) {
   uint32_t trie_blob_size = 0;
@@ -277,7 +277,7 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
       !string_util::DecodePOD<uint32_t>(
           absl::string_view(blob.data(), sizeof(trie_blob_size)),
           &trie_blob_size)) {
-    return util::InternalError("Blob for normalization rule is broken.");
+    return absl::InternalError("Blob for normalization rule is broken.");
   }
 
   if constexpr (util::is_bigendian()) {
@@ -285,12 +285,12 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
   }
 
   if (trie_blob_size >= blob.size()) {
-    return util::InternalError("Trie data size exceeds the input blob size.");
+    return absl::InternalError("Trie data size exceeds the input blob size.");
   }
 
   // Dart unit_size is 4 and blob size in units must be a multiple of 256.
   if (trie_blob_size < 1024 || (trie_blob_size & 0x3FF) != 0) {
-    return util::InternalError("Trie data size is not divisible by 1024.");
+    return absl::InternalError("Trie data size is not divisible by 1024.");
   }
 
   blob.remove_prefix(sizeof(trie_blob_size));
@@ -311,10 +311,10 @@ util::Status Normalizer::DecodePrecompiledCharsMap(
   *normalized = absl::string_view(blob.data(), blob.size());
 
   if (normalized->empty() || normalized->back() != '\0') {
-    return util::InternalError("normalized block must be null terminated.");
+    return absl::InternalError("normalized block must be null terminated.");
   }
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 PrefixMatcher::PrefixMatcher(const std::set<absl::string_view> &dic) {

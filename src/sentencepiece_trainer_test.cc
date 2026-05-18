@@ -108,7 +108,7 @@ TEST(SentencePieceTrainerTest, TrainFromIterator) {
     bool done() const override { return idx_ == vec_.size(); }
     void Next() override { ++idx_; }
     const std::string &value() const override { return vec_[idx_]; }
-    util::Status status() const override { return util::OkStatus(); }
+    absl::Status status() const override { return absl::OkStatus(); }
 
    private:
     std::vector<std::string> vec_;
@@ -405,12 +405,13 @@ TEST(SentencePieceTrainerTest, NormalizationTest) {
   }
 
   auto set_normalization_only = [](SentencePieceNormalizer *normalizer) {
-    SentencePieceTrainer::SetProtoField("add_dummy_prefix", "false",
-                                        normalizer->mutable_normalizer_spec());
-    SentencePieceTrainer::SetProtoField("escape_whitespaces", "false",
-                                        normalizer->mutable_normalizer_spec());
-    SentencePieceTrainer::SetProtoField("remove_extra_whitespaces", "false",
-                                        normalizer->mutable_normalizer_spec());
+    EXPECT_OK(SentencePieceTrainer::SetProtoField(
+        "add_dummy_prefix", "false", normalizer->mutable_normalizer_spec()));
+    EXPECT_OK(SentencePieceTrainer::SetProtoField(
+        "escape_whitespaces", "false", normalizer->mutable_normalizer_spec()));
+    EXPECT_OK(SentencePieceTrainer::SetProtoField(
+        "remove_extra_whitespaces", "false",
+        normalizer->mutable_normalizer_spec()));
   };
 
   {

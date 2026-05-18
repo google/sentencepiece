@@ -137,7 +137,7 @@ const TrainerModel::SentencePieces &TrainerModel::GetSentencePieces() const {
   return sentencepieces_;
 }
 
-util::Status TrainerModel::SetSentencePieces(SentencePieces &&sentencepieces) {
+absl::Status TrainerModel::SetSentencePieces(SentencePieces &&sentencepieces) {
   sentencepieces_ = std::move(sentencepieces);
 
   min_score_ = FLT_MAX;
@@ -604,7 +604,7 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
   return Sorted(final_sentencepieces);
 }
 
-util::Status Trainer::Train() {
+absl::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
   RET_CHECK_EQ(TrainerSpec::UNIGRAM, trainer_spec_.model_type());

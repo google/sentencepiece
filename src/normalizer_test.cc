@@ -383,7 +383,7 @@ TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest) {
       test_trie_blob, test_normalized_blob);
   std::string buf;
   absl::string_view trie_blob, normalized_blob;
-  util::Status status = Normalizer::DecodePrecompiledCharsMap(
+  absl::Status status = Normalizer::DecodePrecompiledCharsMap(
       blob, &trie_blob, &normalized_blob, &buf);
   ASSERT_TRUE(status.ok());
   EXPECT_EQ(test_trie_blob, trie_blob);

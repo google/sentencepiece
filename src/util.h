@@ -33,6 +33,7 @@
 #include "sentencepiece_processor.h"
 #include "third_party/absl/numeric/bits.h"
 #include "third_party/absl/random/random.h"
+#include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/ascii.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -266,39 +267,12 @@ std::vector<std::string> StrSplitAsCSV(absl::string_view text);
 std::wstring Utf8ToWide(const absl::string_view input);
 #endif
 
-inline Status OkStatus() { return Status(); }
-
-#define DECLARE_ERROR(FUNC)                                \
-  inline util::Status FUNC##Error(absl::string_view str) { \
-    return util::Status(StatusCode::k##FUNC, str.data());  \
-  }                                                        \
-  inline bool Is##FUNC(const util::Status &status) {       \
-    return status.code() == StatusCode::k##FUNC;           \
-  }
-
-DECLARE_ERROR(Cancelled)
-DECLARE_ERROR(InvalidArgument)
-DECLARE_ERROR(NotFound)
-DECLARE_ERROR(AlreadyExists)
-DECLARE_ERROR(ResourceExhausted)
-DECLARE_ERROR(Unavailable)
-DECLARE_ERROR(FailedPrecondition)
-DECLARE_ERROR(OutOfRange)
-DECLARE_ERROR(Unimplemented)
-DECLARE_ERROR(Internal)
-DECLARE_ERROR(Aborted)
-DECLARE_ERROR(DeadlineExceeded)
-DECLARE_ERROR(DataLoss)
-DECLARE_ERROR(Unknown)
-DECLARE_ERROR(PermissionDenied)
-DECLARE_ERROR(Unauthenticated)
-
 #define GTL_LOC (0)
 
 class StatusBuilder {
  public:
-  explicit StatusBuilder(StatusCode code) : code_(code) {}
-  explicit StatusBuilder(StatusCode code, int loc) : code_(code) {}
+  explicit StatusBuilder(absl::StatusCode code, int loc) : code_(code) {}
+  explicit StatusBuilder(absl::StatusCode code) : code_(code) {}
 
   template <typename T>
   StatusBuilder &operator<<(const T &value) {
@@ -306,18 +280,17 @@ class StatusBuilder {
     return *this;
   }
 
-  operator Status() const { return Status(code_, os_.str()); }
+  operator absl::Status() const { return absl::Status(code_, os_.str()); }
 
  private:
-  const StatusCode code_;
+  const absl::StatusCode code_;
   std::ostringstream os_;
 };
 
-#define RET_CHECK(condition)                                 \
-  if (condition) {                                           \
-  } else /* NOLINT */                                        \
-    return ::sentencepiece::util::StatusBuilder(             \
-               ::sentencepiece::util::StatusCode::kInternal) \
+#define RET_CHECK(condition)                                                 \
+  if (condition) {                                                           \
+  } else /* NOLINT */                                                        \
+    return ::sentencepiece::util::StatusBuilder(absl::StatusCode::kInternal) \
            << __FILE__ << "(" << __LINE__ << ") [" << #condition << "] "
 
 #define RET_CHECK_EQ(a, b) RET_CHECK((a) == (b))

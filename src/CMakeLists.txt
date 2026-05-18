@@ -18,6 +18,7 @@ list(APPEND SPM_LIBS absl::flags_parse)
 list(APPEND SPM_LIBS absl::log)
 list(APPEND SPM_LIBS absl::log_initialize)
 list(APPEND SPM_LIBS absl::check)
+list(APPEND SPM_LIBS absl::status)
 list(APPEND SPM_LIBS absl::random_random)
 
 if (SPM_PROTOBUF_PROVIDER STREQUAL "internal")
@@ -95,7 +96,6 @@ set(SPM_SRCS
   unigram_model.h
   bpe_model.cc
   char_model.cc
-  error.cc
   filesystem.cc
   init.cc
   model_factory.cc

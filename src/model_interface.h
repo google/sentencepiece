@@ -68,7 +68,7 @@ class ModelInterface {
 
   // Returns Status.
   // Encode/Decode functions are valid only when status is OK.
-  virtual util::Status status() const { return status_; }
+  virtual absl::Status status() const { return status_; }
 
   virtual const ModelProto &model_proto() const { return *model_proto_; }
 
@@ -268,7 +268,7 @@ class ModelInterface {
   int unk_id_ = 0;
 
   // status.
-  util::Status status_;
+  absl::Status status_;
 };
 }  // namespace sentencepiece
 #endif  // MODEL_INTERFACE_H_

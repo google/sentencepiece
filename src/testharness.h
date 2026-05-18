@@ -133,8 +133,8 @@ class Tester {
   sentencepiece::test::Tester(__FILE__, __LINE__).IsLt((a), (b), #a, #b)
 #define EXPECT_NEAR(a, b, c) \
   sentencepiece::test::Tester(__FILE__, __LINE__).IsNear((a), (b), (c), #a, #b)
-#define EXPECT_OK(c) EXPECT_EQ(c, ::sentencepiece::util::OkStatus())
-#define EXPECT_NOT_OK(c) EXPECT_NE(c, ::sentencepiece::util::OkStatus())
+#define EXPECT_OK(c) EXPECT_EQ(c, ::absl::OkStatus())
+#define EXPECT_NOT_OK(c) EXPECT_NE(c, ::absl::OkStatus())
 
 #define ASSERT_TRUE EXPECT_TRUE
 #define ASSERT_FALSE EXPECT_FALSE

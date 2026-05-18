@@ -31,7 +31,7 @@ class MockPretokenizer : public PretokenizerForTrainingInterface {
     return spt_;
   }
 
-  util::Status status() const override { return util::OkStatus(); }
+  absl::Status status() const override { return absl::OkStatus(); }
 
   void SetOutput(const SentencePieceText &spt) { spt_ = spt; }
 

@@ -22,7 +22,7 @@
 namespace sentencepiece {
 namespace character {
 
-util::Status Trainer::Train() {
+absl::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
   RET_CHECK(normalizer_spec_.escape_whitespaces());

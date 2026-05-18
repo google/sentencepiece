@@ -51,7 +51,7 @@ const char32 TrainerInterface::kUPPBoundaryChar = L'\u0009';
 const char TrainerInterface::kUPPBoundaryStr[] = "\t";
 
 namespace {
-util::Status VerifySpec(const TrainerSpec &trainer_spec) {
+absl::Status VerifySpec(const TrainerSpec &trainer_spec) {
   RET_CHECK_GT(trainer_spec.vocab_size(), 0);
 
   if (trainer_spec.model_type() == TrainerSpec::UNIGRAM ||
@@ -92,7 +92,7 @@ util::Status VerifySpec(const TrainerSpec &trainer_spec) {
         << "PretokenizerForTraining is only supported in UNIGRAM or BPE mode.";
   }
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 bool is_unicode_decimal_number(char32 c) {
@@ -173,7 +173,7 @@ bool MultiFileSentenceIterator::done() const {
   return (!read_done_ && file_index_ == files_.size());
 }
 
-util::Status MultiFileSentenceIterator::status() const {
+absl::Status MultiFileSentenceIterator::status() const {
   RET_CHECK(fp_);
   return fp_->status();
 }
@@ -185,7 +185,7 @@ void MultiFileSentenceIterator::Next() {
     const auto &filename = files_[file_index_++];
     fp_ = filesystem::NewReadableFile(filename);
     LOG(INFO) << "Loading corpus: " << filename;
-    if (fp_->status() != util::OkStatus()) {
+    if (fp_->status() != absl::OkStatus()) {
       file_index_ = files_.size();
       read_done_ = false;
       return;
@@ -324,7 +324,7 @@ void AddDPNoise(const TrainerSpec &trainer_spec, absl::BitGen *generator,
   }
 }
 
-util::Status TrainerInterface::LoadSentences() {
+absl::Status TrainerInterface::LoadSentences() {
   RETURN_IF_ERROR(status());
   RET_CHECK(sentences_.empty());
   RET_CHECK(required_chars_.empty());
@@ -593,7 +593,7 @@ END:
 
   LOG(INFO) << "Done! preprocessed " << sentences_.size() << " sentences.";
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 void TrainerInterface::SplitSentencesByWhitespace() {
@@ -611,7 +611,7 @@ void TrainerInterface::SplitSentencesByWhitespace() {
   LOG(INFO) << "Done! " << sentences_.size();
 }
 
-util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
+absl::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
   RETURN_IF_ERROR(status());
 
   // Duplicated sentencepiece is not allowed.
@@ -680,10 +680,10 @@ util::Status TrainerInterface::Serialize(ModelProto *model_proto) const {
     }
   }
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
-util::Status TrainerInterface::SaveModel(absl::string_view filename) const {
+absl::Status TrainerInterface::SaveModel(absl::string_view filename) const {
   LOG(INFO) << "Saving model: " << filename;
   ModelProto model_proto;
 
@@ -692,10 +692,10 @@ util::Status TrainerInterface::SaveModel(absl::string_view filename) const {
   auto output = filesystem::NewWritableFile(filename.data(), true);
   RETURN_IF_ERROR(output->status());
   output->Write(model_proto.SerializeAsString());
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
-util::Status TrainerInterface::SaveVocab(absl::string_view filename) const {
+absl::Status TrainerInterface::SaveVocab(absl::string_view filename) const {
   LOG(INFO) << "Saving vocabs: " << filename;
   ModelProto model_proto;
   RETURN_IF_ERROR(Serialize(&model_proto));
@@ -722,20 +722,20 @@ util::Status TrainerInterface::SaveVocab(absl::string_view filename) const {
     }
   }
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
-util::Status TrainerInterface::Save() const {
+absl::Status TrainerInterface::Save() const {
   if (output_model_proto_) {
     RETURN_IF_ERROR(Serialize(output_model_proto_));
   } else {
     RETURN_IF_ERROR(SaveModel(trainer_spec_.model_prefix() + ".model"));
     RETURN_IF_ERROR(SaveVocab(trainer_spec_.model_prefix() + ".vocab"));
   }
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
-util::Status TrainerInterface::InitMetaPieces() {
+absl::Status TrainerInterface::InitMetaPieces() {
   RET_CHECK(meta_pieces_.empty());
   bool has_unk = false;
 
@@ -764,14 +764,14 @@ util::Status TrainerInterface::InitMetaPieces() {
   int id = 0;
   auto insert_meta_symbol =
       [&id, &dup, this](const std::string &w,
-                        ModelProto::SentencePiece::Type type) -> util::Status {
+                        ModelProto::SentencePiece::Type type) -> absl::Status {
     if (!dup.insert(w).second) {
-      return util::InternalError(absl::StrCat(
+      return absl::InternalError(absl::StrCat(
           w, " is already defined. duplicated symbols are not allowed."));
     }
 
     if (w == trainer_spec_.unk_piece()) {
-      return util::InternalError(
+      return absl::InternalError(
           absl::StrCat(trainer_spec_.unk_piece(),
                        " must not be defined with --control_symbols and "
                        "--user_defined_symbols."));
@@ -788,7 +788,7 @@ util::Status TrainerInterface::InitMetaPieces() {
       meta_pieces_[id] = std::make_pair(w, type);
     }
 
-    return util::OkStatus();
+    return absl::OkStatus();
   };
 
   for (const auto &w : trainer_spec_.control_symbols()) {
@@ -807,7 +807,7 @@ util::Status TrainerInterface::InitMetaPieces() {
     }
   }
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 }  // namespace sentencepiece

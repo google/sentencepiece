@@ -37,14 +37,14 @@ class Trainer : public TrainerInterface {
       : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec,
                                            denormalizer_spec) {}
 
-  util::Status Train() override;
+  absl::Status Train() override;
 
 #ifdef SPM_NLCODEC_BPE
   // Fast BPE training using nlcodec's max-heap + linked-list algorithm.
   // Based on nlcodec by Thamme Gowda (https://github.com/isi-nlp/nlcodec)
   // "Many-to-English Machine Translation Tools, Data, and Pretrained Models"
   // Gowda et al., ACL 2021. https://arxiv.org/abs/2104.00290v2
-  util::Status TrainFast();
+  absl::Status TrainFast();
 #endif  // SPM_NLCODEC_BPE
 
  private:
@@ -117,7 +117,7 @@ class Trainer : public TrainerInterface {
   // if this bigram is not |best|.
   void ResetFreq(int sid, int left, int right, const Symbol *best);
 
-  util::Status AcceptSymbol(Symbol *symbol);
+  absl::Status AcceptSymbol(Symbol *symbol);
 
   // Updates |active_symbols_| by copying the top 5% frequent symbols in
   // symbols_cache_.

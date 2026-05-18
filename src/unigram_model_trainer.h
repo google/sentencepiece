@@ -47,7 +47,7 @@ class TrainerModel : public Model {
 
   // Sets sentencepieces. The sentencepieces are moved.
   // The meta symbols, e.g., </s> are NOT included.
-  util::Status SetSentencePieces(SentencePieces &&sentencepieces);
+  absl::Status SetSentencePieces(SentencePieces &&sentencepieces);
 
   EncodeResult Encode(absl::string_view normalized) const override {
     return {};
@@ -70,7 +70,7 @@ class Trainer : public TrainerInterface {
 
   TrainerModel::SentencePieces MakeSeedSentencePieces();
 
-  util::Status Train() override;
+  absl::Status Train() override;
 
  private:
   FRIEND_TEST(TrainerTest, IsValidSentencePieceTest);

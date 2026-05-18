@@ -141,7 +141,7 @@ void Trainer::ResetFreq(int sid, int left, int right, const Symbol* best) {
   }
 }
 
-util::Status Trainer::AcceptSymbol(Symbol* symbol) {
+absl::Status Trainer::AcceptSymbol(Symbol* symbol) {
   // Add new bigrams which are created after symbol replacement.
   // We do not need to scan all characters, but scan the neighbors in
   // best_symbol.
@@ -177,7 +177,7 @@ util::Status Trainer::AcceptSymbol(Symbol* symbol) {
   symbols_cache_.erase(symbol->fp);
   active_symbols_.erase(symbol);
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 void Trainer::UpdateActiveSymbols() {
@@ -212,7 +212,7 @@ void Trainer::UpdateActiveSymbols() {
   active_symbols_.insert(symbols.begin(), symbols.begin() + size);
 }
 
-util::Status Trainer::Train() {
+absl::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
 #ifdef SPM_NLCODEC_BPE
@@ -343,7 +343,7 @@ util::Status Trainer::Train() {
 }
 
 #ifdef SPM_NLCODEC_BPE
-util::Status Trainer::TrainFast() {
+absl::Status Trainer::TrainFast() {
   RET_CHECK(normalizer_spec_.escape_whitespaces());
   RET_CHECK_EQ(TrainerSpec::BPE, trainer_spec_.model_type());
 
