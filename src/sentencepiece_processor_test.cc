@@ -416,6 +416,173 @@ TEST(SentencepieceProcessorTest, EncodeTest) {
   }
 }
 
+// Custom model that tokenizes any input character-by-character (no input verification)
+class CharByCharModel : public ModelInterface {
+ public:
+  CharByCharModel() : ModelInterface() {}
+
+  EncodeResult Encode(absl::string_view normalized) const override {
+    EncodeResult result;
+    for (size_t i = 0; i < normalized.size();) {
+      const size_t char_len = std::max<size_t>(1, static_cast<size_t>(string_util::OneCharLen(normalized.data() + i)));
+      result.emplace_back(
+          absl::string_view(normalized.data() + i, char_len), 3);
+      i += char_len;
+    }
+    return result;
+  }
+
+  int GetPieceSize() const override { return 10; }
+  int PieceToId(absl::string_view piece) const override { return 3; }
+  const std::string &IdToPiece(int id) const override { return kEmptyString; }
+  float GetScore(int id) const override { return 0.0; }
+  bool IsControl(int id) const override { return id == 1 || id == 2; }
+  bool IsUnknown(int id) const override { return id == 0; }
+
+ private:
+  const std::string kEmptyString;
+};
+
+TEST(SentencepieceProcessorTest, SplitEncodedResultIntoChunksBasicTest) {
+  // Build a SentencePieceText directly to avoid MockModel complexity
+  SentencePieceText spt;
+  spt.set_text("ABC DEF GHI");
+
+  auto *p1 = spt.add_pieces();
+  p1->set_piece("\xe2\x96\x81" "ABC");
+  p1->set_id(3);
+  p1->set_begin(0);
+  p1->set_end(3);
+
+  auto *p2 = spt.add_pieces();
+  p2->set_piece("\xe2\x96\x81" "DE");
+  p2->set_id(4);
+  p2->set_begin(4);
+  p2->set_end(6);
+
+  auto *p3 = spt.add_pieces();
+  p3->set_piece("F");
+  p3->set_id(0);
+  p3->set_begin(6);
+  p3->set_end(7);
+
+  auto *p4 = spt.add_pieces();
+  p4->set_piece("\xe2\x96\x81" "GHI");
+  p4->set_id(5);
+  p4->set_begin(8);
+  p4->set_end(11);
+
+  SentencePieceProcessor sp;
+
+  // max_tokens_per_chunk=2: words are {3}, {4, 0}, {5}
+  // Chunk 0: {3} (word fits)
+  // Chunk 1: {4, 0} (word{4,0}=2 > remaining=1, starts new chunk)
+  // Chunk 2: {5} (word{5}=1 fits in new chunk)
+  {
+    std::vector<std::vector<int>> chunks;
+    EXPECT_TRUE(sp.SplitEncodedResultIntoChunks(spt, 2, &chunks).ok());
+    EXPECT_EQ(chunks.size(), 3);
+    EXPECT_EQ(chunks[0], std::vector<int>({3}));
+    EXPECT_EQ(chunks[1], std::vector<int>({4, 0}));
+    EXPECT_EQ(chunks[2], std::vector<int>({5}));
+  }
+
+  // max_tokens_per_chunk=10 (one chunk)
+  {
+    std::vector<std::vector<int>> chunks;
+    EXPECT_TRUE(sp.SplitEncodedResultIntoChunks(spt, 10, &chunks).ok());
+    EXPECT_EQ(chunks.size(), 1);
+    EXPECT_EQ(chunks[0].size(), 4);
+  }
+}
+
+TEST(SentencepieceProcessorTest, SplitEncodedResultIntoChunksWordBoundaryTest) {
+  SentencePieceText spt;
+  spt.set_text("AB CD");
+
+  // First word: "AB" (2 tokens, no delimiter prefix)
+  auto *p1 = spt.add_pieces();
+  p1->set_piece("A");
+  p1->set_id(1);
+  p1->set_begin(0);
+  p1->set_end(1);
+
+  auto *p2 = spt.add_pieces();
+  p2->set_piece("B");
+  p2->set_id(2);
+  p2->set_begin(1);
+  p2->set_end(2);
+
+  // Second word: " CD" (2 tokens, starts with delimiter)
+  auto *p3 = spt.add_pieces();
+  p3->set_piece("\xe2\x96\x81" "C");
+  p3->set_id(3);
+  p3->set_begin(2);
+  p3->set_end(4);
+
+  auto *p4 = spt.add_pieces();
+  p4->set_piece("D");
+  p4->set_id(4);
+  p4->set_begin(4);
+  p4->set_end(5);
+
+  SentencePieceProcessor sp;
+
+  // max_tokens_per_chunk=3: word1 "AB" (2) fits, word2 "▁CD" (2) starts new chunk
+  std::vector<std::vector<int>> chunks;
+  EXPECT_TRUE(sp.SplitEncodedResultIntoChunks(spt, 3, &chunks).ok());
+  EXPECT_EQ(chunks.size(), 2);
+  EXPECT_EQ(chunks[0], std::vector<int>({1, 2}));
+  EXPECT_EQ(chunks[1], std::vector<int>({3, 4}));
+}
+
+TEST(SentencepieceProcessorTest, SplitEncodedResultIntoChunksEmptyInputTest) {
+  SentencePieceProcessor sp;
+  SentencePieceText spt;
+  std::vector<std::vector<int>> chunks;
+  EXPECT_TRUE(sp.SplitEncodedResultIntoChunks(spt, 5, &chunks).ok());
+  EXPECT_TRUE(chunks.empty());
+}
+
+TEST(SentencepieceProcessorTest, SplitEncodedResultIntoChunksInvalidParamsTest) {
+  SentencePieceProcessor sp;
+  SentencePieceText spt;
+  std::vector<std::vector<int>> chunks;
+  EXPECT_FALSE(sp.SplitEncodedResultIntoChunks(spt, 0, &chunks).ok());
+}
+
+TEST(SentencepieceProcessorTest, EncodeAndSplitIntoChunksTest) {
+  const auto normalization_spec = MakeDefaultNormalizerSpec();
+  SentencePieceProcessor sp;
+  sp.SetModel(std::make_unique<CharByCharModel>());
+  sp.SetNormalizer(std::make_unique<normalizer::Normalizer>(normalization_spec));
+
+  // Encode directly to get total count
+  std::string input = "Hello World Foo Bar";
+  SentencePieceText spt;
+  EXPECT_TRUE(sp.Encode(input, &spt).ok());
+  const int total_pieces = spt.pieces_size();
+
+  std::vector<std::vector<int>> chunks;
+  EXPECT_TRUE(sp.EncodeAndSplitIntoChunks(input, 5, &chunks).ok());
+  EXPECT_GE(chunks.size(), 1);
+
+  // Verify all IDs are preserved across chunks
+  int count = 0;
+  for (const auto &chunk : chunks) {
+    EXPECT_FALSE(chunk.empty());
+    count += static_cast<int>(chunk.size());
+  }
+  EXPECT_EQ(count, total_pieces);
+
+  // EncodeAndSplitAsIds convenience wrapper
+  auto ids_chunks = sp.EncodeAndSplitAsIds(input, 5);
+  EXPECT_EQ(ids_chunks.size(), chunks.size());
+  for (size_t i = 0; i < ids_chunks.size(); ++i) {
+    EXPECT_EQ(ids_chunks[i], chunks[i]);
+  }
+}
+
 TEST(SentencepieceProcessorTest, NBestEncodeTest) {
   const std::string kInput = WS "ABC" WS "DEF";
   SentencePieceProcessor sp;

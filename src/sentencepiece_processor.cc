@@ -732,6 +732,84 @@ util::Status SentencePieceProcessor::Encode(absl::string_view input,
   return util::OkStatus();
 }
 
+namespace {
+constexpr char kDefaultDelimiter[] = "\xe2\x96\x81";  // U+2581
+
+bool StartsWithDelimiter(absl::string_view piece, absl::string_view delimiter) {
+  if (delimiter.empty()) {
+    delimiter = kDefaultDelimiter;
+  }
+  return piece.substr(0, delimiter.size()) == delimiter;
+}
+}  // namespace
+
+bool SentencePieceProcessor::IsWordBoundary(
+    const SentencePieceText &spt, int piece_index,
+    absl::string_view delimiter) const {
+  if (piece_index <= 0) return true;
+  if (piece_index >= spt.pieces_size()) return false;
+  return StartsWithDelimiter(spt.pieces(piece_index).piece(), delimiter);
+}
+
+util::Status SentencePieceProcessor::SplitEncodedResultIntoChunks(
+    const SentencePieceText &spt, int max_tokens_per_chunk,
+    std::vector<std::vector<int>> *chunks) const {
+  CHECK_OR_RETURN(chunks);
+  CHECK_OR_RETURN(max_tokens_per_chunk > 0)
+      << "max_tokens_per_chunk must be positive";
+  chunks->clear();
+
+  if (spt.pieces_size() == 0) return util::OkStatus();
+
+  const std::string delimiter = (model_proto_ != nullptr)
+      ? model_proto_->trainer_spec().pretokenization_delimiter()
+      : "";
+
+  // Build word groups
+  struct WordGroup {
+    std::vector<int> ids;
+  };
+  std::vector<WordGroup> words;
+  WordGroup current_word;
+  for (int i = 0; i < spt.pieces_size(); ++i) {
+    const auto &piece = spt.pieces(i);
+    if (IsWordBoundary(spt, i, delimiter) && !current_word.ids.empty()) {
+      words.emplace_back(std::move(current_word));
+      current_word = WordGroup();
+    }
+    current_word.ids.emplace_back(piece.id());
+  }
+  if (!current_word.ids.empty()) {
+    words.emplace_back(std::move(current_word));
+  }
+
+  // Pack word groups into chunks
+  std::vector<int> current_chunk;
+  for (const auto &word : words) {
+    if (static_cast<int>(current_chunk.size() + word.ids.size()) > max_tokens_per_chunk &&
+        !current_chunk.empty()) {
+      chunks->emplace_back(std::move(current_chunk));
+      current_chunk.clear();
+    }
+    current_chunk.insert(current_chunk.end(), word.ids.begin(), word.ids.end());
+  }
+  if (!current_chunk.empty()) {
+    chunks->emplace_back(std::move(current_chunk));
+  }
+
+  return util::OkStatus();
+}
+
+util::Status SentencePieceProcessor::EncodeAndSplitIntoChunks(
+    absl::string_view input, int max_tokens_per_chunk,
+    std::vector<std::vector<int>> *chunks) const {
+  CHECK_OR_RETURN(chunks);
+
+  SentencePieceText spt;
+  RETURN_IF_ERROR(Encode(input, &spt));
+  return SplitEncodedResultIntoChunks(spt, max_tokens_per_chunk, chunks);
+}
+
 util::Status SentencePieceProcessor::NBestEncode(
     absl::string_view input, int nbest_size,
     NBestSentencePieceText *nbest_spt) const {

@@ -329,6 +329,22 @@ class SentencePieceProcessor {
                               std::string *detokenized) const;
 
   //////////////////////////////////////////////////////////////
+  // Chunking API.
+  //
+  // Given an already-encoded SentencePieceText, splits the encoded pieces
+  // into chunks of at most max_tokens_per_chunk, ensuring no word is split
+  // across chunks. Useful for LLM context window management.
+  virtual util::Status SplitEncodedResultIntoChunks(
+      const SentencePieceText &spt, int max_tokens_per_chunk,
+      std::vector<std::vector<int>> *chunks) const;
+
+  // Encodes the input and splits the result into chunks respecting word
+  // boundaries.
+  virtual util::Status EncodeAndSplitIntoChunks(
+      absl::string_view input, int max_tokens_per_chunk,
+      std::vector<std::vector<int>> *chunks) const;
+
+  //////////////////////////////////////////////////////////////
   // NBest API.
   //
   // Same as Encode, but returns nbest results.
@@ -631,6 +647,14 @@ class SentencePieceProcessor {
     DEFINE_SPP_IMMUTABLE_PROTO_IMPL(Encode, ImmutableSentencePieceText, input);
   }
 
+  virtual std::vector<std::vector<int>> EncodeAndSplitAsIds(
+      absl::string_view input, int max_tokens_per_chunk) const {
+    std::vector<std::vector<int>> output;
+    const auto status = EncodeAndSplitIntoChunks(input, max_tokens_per_chunk, &output);
+    SPP_SWIG_CHECK_AND_THROW;
+    return output;
+  }
+
   virtual ImmutableSentencePieceText SampleEncodeAsImmutableProto(
       absl::string_view input, int nbest_size, float alpha) const {
     DEFINE_SPP_IMMUTABLE_PROTO_IMPL(SampleEncode, ImmutableSentencePieceText,
@@ -784,6 +808,9 @@ class SentencePieceProcessor {
                                       std::vector<std::string> *pieces,
                                       std::vector<int> *ids,
                                       SentencePieceText *spt) const;
+
+  bool IsWordBoundary(const SentencePieceText &spt, int piece_index,
+                      absl::string_view delimiter) const;
 
   std::unique_ptr<ModelInterface> model_;
   std::unique_ptr<normalizer::Normalizer> normalizer_;
