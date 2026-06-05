@@ -482,8 +482,10 @@ class SentencePieceProcessor {
 
   virtual std::vector<std::string> EncodeAsPiecesParallel(
       absl::string_view input, int num_threads = 4) const {
-    DEFINE_SPP_DIRECT_FUNC_IMPL(EncodeParallel, std::vector<std::string>, input,
-                                num_threads);
+    std::vector<std::string> output;
+    const auto status = EncodeParallel(input, &output, num_threads);
+    SPP_SWIG_CHECK_AND_THROW;
+    return output;
   }
 
   virtual std::vector<int> EncodeAsIds(absl::string_view input) const {
@@ -492,8 +494,10 @@ class SentencePieceProcessor {
 
   virtual std::vector<int> EncodeAsIdsParallel(absl::string_view input,
                                                int num_threads = 4) const {
-    DEFINE_SPP_DIRECT_FUNC_IMPL(EncodeParallel, std::vector<int>, input,
-                                num_threads);
+    std::vector<int> output;
+    const auto status = EncodeParallel(input, &output, num_threads);
+    SPP_SWIG_CHECK_AND_THROW;
+    return output;
   }
 
   virtual std::vector<std::vector<std::string>> NBestEncodeAsPieces(
@@ -614,8 +618,10 @@ class SentencePieceProcessor {
 
   virtual ImmutableSentencePieceText EncodeAsImmutableProtoParallel(
       absl::string_view input, int num_threads = 4) const {
-    DEFINE_SPP_IMMUTABLE_PROTO_IMPL(EncodeParallel, ImmutableSentencePieceText,
-                                    input, num_threads);
+    ImmutableSentencePieceText output;
+    const auto status = EncodeParallel(input, output.mutable_proto(), num_threads);
+    SPP_SWIG_CHECK_AND_THROW;
+    return output;
   }
 
   virtual ImmutableSentencePieceText SampleEncodeAsImmutableProto(

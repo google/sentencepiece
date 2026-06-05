@@ -715,13 +715,11 @@ util::Status SentencePieceProcessor::EncodeParallel(absl::string_view input,
 
   // Wait for all encodings to complete and combine results
   EncodeResult combined_result;
-  size_t normalized_offset = 0;
   for (size_t i = 0; i < futures.size(); ++i) {
     const auto chunk_result = futures[i].get();
     for (const auto &piece : chunk_result) {
       combined_result.emplace_back(piece.first, piece.second);
     }
-    normalized_offset += normalized_chunks[i].size();
   }
 
   // Populate the final SentencePieceText
@@ -1256,25 +1254,10 @@ std::vector<absl::string_view> SentencePieceProcessor::SplitInputIntoChunks(
   for (int i = 0; i < num_chunks; ++i) {
     size_t end = (i == num_chunks - 1) ? total_size : start + chunk_size;
 
-    // Ensure we don't split in the middle of a UTF-8 character
+    // Adjust end to not split in the middle of a UTF-8 character
     if (end < total_size) {
-      // Find the next character boundary
-      const char *data = input.data();
-      while (end < total_size && (data[end] & 0x80)) {
-        // If this is a continuation byte, move back
-        if (IsTrailByte(data[end])) {
-          end--;
-        } else {
-          // This is a start byte, so we're at a safe boundary
-          break;
-        }
-      }
-      // If we moved back too far, find the start of the current character
-      if (end > start) {
-        size_t char_len = OneCharLen(data + end);
-        if (end + char_len <= total_size) {
-          end += char_len;
-        }
+      while (end > start && string_util::IsTrailByte(input.data()[end])) {
+        --end;
       }
     }
 

@@ -415,6 +415,201 @@ TEST(SentencepieceProcessorTest, EncodeTest) {
   }
 }
 
+TEST(SentencepieceProcessorTest, EncodeParallelShortInputTest) {
+  // Short input (< 10000 bytes) should fall back to serial encoding
+  const absl::string_view kInput = WS "ABC" WS "DEF";
+  SentencePieceProcessor sp;
+
+  const auto normalization_spec = MakeDefaultNormalizerSpec();
+
+  auto mock = std::make_unique<MockModel>();
+  const EncodeResult result = {
+      {WS "ABC", 3}, {WS "DE", 4}, {"F", 0}, {"</s>", 2}};
+  mock->SetEncodeResult(kInput, result);
+
+  sp.SetModel(std::move(mock));
+  sp.SetNormalizer(
+      std::make_unique<normalizer::Normalizer>(normalization_spec));
+
+  // Test with multiple threads - should still work correctly
+  {
+    std::vector<std::string> output;
+    EXPECT_TRUE(sp.EncodeParallel("ABC DEF", &output, 4).ok());
+    EXPECT_EQ(GetSpVec(result), output);
+  }
+
+  {
+    std::vector<int> ids;
+    EXPECT_TRUE(sp.EncodeParallel("ABC DEF", &ids, 4).ok());
+    EXPECT_EQ(GetIdVec(result), ids);
+  }
+
+  {
+    SentencePieceText spt;
+    EXPECT_TRUE(sp.EncodeParallel("ABC DEF", &spt, 4).ok());
+    EXPECT_EQ(4, spt.pieces_size());
+    for (int i = 0; i < 4; ++i) {
+      EXPECT_EQ(result[i].first, spt.pieces(i).piece());
+    }
+  }
+
+  // EncodeAsPiecesParallel and EncodeAsIdsParallel
+  {
+    const auto pieces = sp.EncodeAsPiecesParallel("ABC DEF", 4);
+    EXPECT_EQ(GetSpVec(result), pieces);
+  }
+
+  {
+    const auto ids = sp.EncodeAsIdsParallel("ABC DEF", 4);
+    EXPECT_EQ(GetIdVec(result), ids);
+  }
+
+  // EncodeAsImmutableProtoParallel
+  {
+    const auto spt = sp.EncodeAsImmutableProtoParallel("ABC DEF", 4);
+    EXPECT_EQ(4, spt.pieces_size());
+    for (int i = 0; i < 4; ++i) {
+      EXPECT_EQ(result[i].first, spt.pieces(i).piece());
+    }
+  }
+}
+
+TEST(SentencepieceProcessorTest, EncodeParallelSingleThreadTest) {
+  // Single thread should produce same result as serial encoding
+  SentencePieceProcessor sp;
+  const auto normalization_spec = MakeDefaultNormalizerSpec();
+  const absl::string_view kInput = WS "ABC" WS "DEF";
+
+  auto mock = std::make_unique<MockModel>();
+  const EncodeResult result = {
+      {WS "ABC", 3}, {WS "DE", 4}, {"F", 0}, {"</s>", 2}};
+  mock->SetEncodeResult(kInput, result);
+
+  sp.SetModel(std::move(mock));
+  sp.SetNormalizer(
+      std::make_unique<normalizer::Normalizer>(normalization_spec));
+
+  SentencePieceText spt_serial;
+  EXPECT_TRUE(sp.Encode("ABC DEF", &spt_serial).ok());
+
+  SentencePieceText spt_parallel;
+  EXPECT_TRUE(sp.EncodeParallel("ABC DEF", &spt_parallel, 1).ok());
+
+  EXPECT_EQ(spt_serial.SerializeAsString(), spt_parallel.SerializeAsString());
+}
+
+TEST(SentencepieceProcessorTest, EncodeParallelInvalidNumThreadsTest) {
+  SentencePieceProcessor sp;
+  const auto normalization_spec = MakeDefaultNormalizerSpec();
+
+  auto mock = std::make_unique<MockModel>();
+  const EncodeResult result = {{WS "ABC", 3}, {WS "DE", 4}, {"F", 0}, {"</s>", 2}};
+  mock->SetEncodeResult(WS "ABC" WS "DEF", result);
+
+  sp.SetModel(std::move(mock));
+  sp.SetNormalizer(std::make_unique<normalizer::Normalizer>(normalization_spec));
+
+  SentencePieceText spt;
+  // num_threads=0 should fail
+  EXPECT_FALSE(sp.EncodeParallel("ABC DEF", &spt, 0).ok());
+}
+
+// Custom model that tokenizes any input character-by-character (no input verification)
+class CharByCharModel : public ModelInterface {
+ public:
+  CharByCharModel() : ModelInterface() {}
+
+  EncodeResult Encode(absl::string_view normalized) const override {
+    EncodeResult result;
+    for (size_t i = 0; i < normalized.size();) {
+      const size_t char_len = std::max<size_t>(1, static_cast<size_t>(string_util::OneCharLen(normalized.data() + i)));
+      result.emplace_back(
+          absl::string_view(normalized.data() + i, char_len), 3);
+      i += char_len;
+    }
+    return result;
+  }
+
+  int GetPieceSize() const override { return 10; }
+  int PieceToId(absl::string_view piece) const override { return 3; }
+  const std::string &IdToPiece(int id) const override { return kEmptyString; }
+  float GetScore(int id) const override { return 0.0; }
+  bool IsControl(int id) const override { return id == 1 || id == 2; }
+  bool IsUnknown(int id) const override { return id == 0; }
+
+ private:
+  const std::string kEmptyString;
+};
+
+TEST(SentencepieceProcessorTest, EncodeParallelConsistentWithSerialTest) {
+  // Test that parallel encoding produces the same result as serial encoding
+  // for long inputs that exceed the 10KB threshold.
+  const auto normalization_spec = MakeDefaultNormalizerSpec();
+
+  // Build input
+  std::string input;
+  for (int i = 0; i < 5000; ++i) {
+    input += "ABC";
+  }
+  ASSERT_GT(input.size(), 10000);
+
+  SentencePieceProcessor sp;
+  sp.SetModel(std::make_unique<CharByCharModel>());
+  sp.SetNormalizer(std::make_unique<normalizer::Normalizer>(normalization_spec));
+
+  SentencePieceText spt_serial;
+  EXPECT_TRUE(sp.Encode(input, &spt_serial).ok());
+
+  SentencePieceText spt_parallel;
+  EXPECT_TRUE(sp.EncodeParallel(input, &spt_parallel, 4).ok());
+
+  EXPECT_EQ(spt_serial.pieces_size(), spt_parallel.pieces_size());
+  EXPECT_EQ(spt_serial.SerializeAsString(), spt_parallel.SerializeAsString());
+
+  // Verify byte offset consistency
+  for (int i = 0; i < spt_parallel.pieces_size(); ++i) {
+    const auto &piece = spt_parallel.pieces(i);
+    EXPECT_LE(piece.begin(), piece.end());
+    EXPECT_LE(piece.end(), input.size());
+    EXPECT_EQ(input.substr(piece.begin(), piece.end() - piece.begin()), piece.surface());
+  }
+}
+
+TEST(SentencepieceProcessorTest, EncodeParallelMultiByteUtf8Test) {
+  // Test with multi-byte UTF-8 characters across chunk boundaries
+  const auto normalization_spec = MakeDefaultNormalizerSpec();
+
+  // Create input where chunk boundaries may fall in the middle of multi-byte chars
+  std::string input;
+  for (int i = 0; i < 3000; ++i) {
+    input += "あ";  // 3-byte UTF-8 character (9000 bytes)
+  }
+  for (int i = 0; i < 3000; ++i) {
+    input += "a";  // 1-byte ASCII (3000 bytes)
+  }
+  ASSERT_GT(input.size(), 10000);
+
+  SentencePieceProcessor sp;
+  sp.SetModel(std::make_unique<CharByCharModel>());
+  sp.SetNormalizer(std::make_unique<normalizer::Normalizer>(normalization_spec));
+
+  SentencePieceText spt_serial;
+  EXPECT_TRUE(sp.Encode(input, &spt_serial).ok());
+
+  SentencePieceText spt_parallel;
+  EXPECT_TRUE(sp.EncodeParallel(input, &spt_parallel, 4).ok());
+
+  EXPECT_EQ(spt_serial.pieces_size(), spt_parallel.pieces_size());
+  EXPECT_EQ(spt_serial.SerializeAsString(), spt_parallel.SerializeAsString());
+
+  for (int i = 0; i < spt_parallel.pieces_size(); ++i) {
+    const auto &piece = spt_parallel.pieces(i);
+    EXPECT_GE(piece.begin(), 0);
+    EXPECT_GE(piece.end(), piece.begin());
+    EXPECT_LE(piece.end(), input.size());
+  }
+}
+
 TEST(SentencepieceProcessorTest, NBestEncodeTest) {
   const std::string kInput = WS "ABC" WS "DEF";
   SentencePieceProcessor sp;
