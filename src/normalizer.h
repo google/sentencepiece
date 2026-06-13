@@ -99,6 +99,7 @@ class Normalizer {
  private:
   FRIEND_TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest);
   FRIEND_TEST(NormalizerTest, ManySharedPrefixesTest);
+  FRIEND_TEST(NormalizerTest, MalformedRootUnitTest);
 
   void Init();
 

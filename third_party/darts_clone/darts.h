@@ -437,6 +437,16 @@ bool DoubleArrayImpl<A, B, T, C>::validate() const {
   if (size_ == 0) {
     return true;
   }
+  // commonPrefixSearch()/traverse() always follow the root unit's offset()
+  // before inspecting any label, so the root must be a real node. The loop
+  // below skips units whose MSB label bit is set, which would otherwise let a
+  // crafted root unit (MSB set, large offset) slip through and make the first
+  // transition read out of bounds. Validate the root explicitly, as open()
+  // does, using the same in-bounds rule as the loop.
+  if (array_[0].label() != '\0' || array_[0].has_leaf() ||
+      array_[0].offset() == 0 || (array_[0].offset() | 0xFF) >= size_) {
+    return false;
+  }
   for (std::size_t i = 0; i < size_; ++i) {
     // Leaf/value units store data in the offset field, not child pointers.
     // label() has MSB set (> 0xFF) for these units. Skip them, matching

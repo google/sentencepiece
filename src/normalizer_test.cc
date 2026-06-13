@@ -14,6 +14,8 @@
 
 #include "normalizer.h"
 
+#include <cstdint>
+#include <cstring>
 #include <set>
 #include <string>
 #include <vector>
@@ -442,6 +444,46 @@ TEST(NormalizerTest, ManySharedPrefixesTest) {
   const std::string output = normalizer.Normalize(input);
   EXPECT_FALSE(output.empty());
   EXPECT_EQ(std::string(output.size(), 'a'), output);
+}
+
+TEST(NormalizerTest, MalformedRootUnitTest) {
+  // commonPrefixSearch() and traverse() always follow the root unit's offset()
+  // before inspecting any label, but validate() skips units whose MSB label bit
+  // is set. A precompiled charsmap loaded from a model whose root unit has that
+  // bit set together with a large offset must be rejected at construction;
+  // otherwise the first prefix lookup reads past the trie array.
+  std::vector<std::string> keys = {"a", "ab", "abc"};
+  std::vector<const char*> kptr;
+  std::vector<int> values;
+  for (auto& k : keys) {
+    kptr.push_back(k.c_str());
+    values.push_back(0);
+  }
+
+  Darts::DoubleArray trie;
+  ASSERT_EQ(0, trie.build(kptr.size(), const_cast<char**>(kptr.data()), nullptr,
+                          values.data()));
+  std::string trie_blob(static_cast<const char*>(trie.array()),
+                        trie.size() * trie.unit_size());
+
+  // Corrupt the root unit: set its MSB label bit (so validate() would skip it)
+  // and a large offset field that points outside the array.
+  const uint32_t bad_root = 0x80000000u | (0x00040000u << 10);
+  std::memcpy(&trie_blob[0], &bad_root, sizeof(bad_root));
+
+  std::string normalized_block = "a";
+  normalized_block += '\0';
+  const std::string blob =
+      Normalizer::EncodePrecompiledCharsMap(trie_blob, normalized_block);
+
+  NormalizerSpec spec;
+  spec.set_precompiled_charsmap(blob);
+  spec.set_add_dummy_prefix(false);
+  spec.set_remove_extra_whitespaces(false);
+  spec.set_escape_whitespaces(false);
+
+  const Normalizer normalizer(spec);
+  EXPECT_FALSE(normalizer.status().ok());
 }
 
 TEST(PrefixMatcherTest, ManySharedPrefixesTest) {
