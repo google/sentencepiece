@@ -41,7 +41,7 @@ For those unfamiliar with SentencePiece as a software/algorithm, one can read [a
 | OSS?                                    |                      Yes                       |                           Yes                           |                  Google internal                  |
 | Subword regularization                  | [Yes](#subword-regularization-and-bpe-dropout) |                           No                            |                        No                         |
 | Python Library (pip)                    |            [Yes](python/README.md)             |                           No                            |                        N/A                        |
-| C++ Library                             |               [Yes](doc/api.md)                |                           No                            |                        N/A                        |
+| C++ Library                             |               [Yes](doc/cpp.md)                |                           No                            |                        N/A                        |
 | Pre-segmentation required?              | [No](#whitespace-is-treated-as-a-basic-symbol) |                           Yes                           |                        Yes                        |
 | Customizable normalization (e.g., NFKC) |          [Yes](doc/normalization.md)           |                           No                            |                        N/A                        |
 | Direct id generation                    |           [Yes](#end-to-end-example)           |                           No                            |                        N/A                        |
@@ -112,7 +112,7 @@ Subword regularization [[Kudo.](https://arxiv.org/abs/1804.10959)] and BPE-dropo
 that virtually augment training data with on-the-fly subword sampling, which helps to improve the accuracy as well as robustness of NMT models.
 
 To enable subword regularization, you would like to integrate SentencePiece library
-([C++](doc/api.md#sampling-subword-regularization)/[Python](python/README.md)) into the NMT system to sample one segmentation for each parameter update, which is different from the standard off-line data preparations. Here's the example of [Python library](python/README.md). You can find that 'New York' is segmented differently on each `SampleEncode (C++)` or `encode with enable_sampling=True (Python)` calls. The details of sampling parameters are found in [sentencepiece_processor.h](src/sentencepiece_processor.h).
+([C++](doc/cpp.md#sampling-subword-regularization)/[Python](python/README.md)) into the NMT system to sample one segmentation for each parameter update, which is different from the standard off-line data preparations. Here's the example of [Python library](python/README.md). You can find that 'New York' is segmented differently on each `SampleEncode (C++)` or `encode with enable_sampling=True (Python)` calls. The details of sampling parameters are found in [sentencepiece_processor.h](src/sentencepiece_processor.h).
 
 ```
 >>> import sentencepiece as spm
@@ -316,10 +316,10 @@ Then segment train/test corpus with `--vocabulary` option
 
 ## Advanced topics
 
-- [SentencePiece Experiments](doc/experiments.md)
-- [SentencePieceProcessor C++ API](doc/api.md)
+- [SentencePieceProcessor C++ API](doc/cpp.md)
 - [Use custom text normalization rules](doc/normalization.md)
 - [Use custom symbols](doc/special_symbols.md)
+- [SentencePiece Piece Constraints](doc/piece_constraints.md)
 - [Python Module](python/README.md)
 - [Segmentation and training algorithms in detail]
 

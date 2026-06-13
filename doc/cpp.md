@@ -67,7 +67,9 @@ processor.SampleEncode("This is a test.", &ids, -1, 0.2);
 SampleEncode has two sampling parameters, `nbest_size` and `alpha`, which correspond to `l` and `alpha` in the [original paper](https://arxiv.org/abs/1804.10959). When `nbest_size` is -1, one segmentation is sampled from all hypotheses with forward-filtering and backward sampling algorithm.
 
 ## Training
-Calls `SentencePieceTrainer::Train` function to train sentencepiece model. You can pass the same parameters of [spm_train](https://github.com/google/sentencepiece#train-sentencepiece-model) as a single string.
+Calls `SentencePieceTrainer::Train` function to train a SentencePiece model.
+
+You can pass training parameters as a single command-line like string:
 
 ```C++
 #include <sentencepiece_trainer.h>
@@ -75,37 +77,19 @@ Calls `SentencePieceTrainer::Train` function to train sentencepiece model. You c
 sentencepiece::SentencePieceTrainer::Train("--input=test/botchan.txt --model_prefix=m --vocab_size=1000");
 ```
 
-## ImmutableSentencePieceText
-You will want to use `ImmutableSentencePieceText` class to obtain the pieces and ids at the same time.
-This proto also encodes a utf8-byte offset of each piece over user input or detokenized text.
+Alternatively, you can pass parameters as a `std::unordered_map<std::string, std::string>`:
 
 ```C++
-#include <sentencepiece_processor.h>
+#include <sentencepiece_trainer.h>
 
-sentencepiece::ImmutableSentencePieceText spt;
-
-// Encode
-processor.Encode("This is a test.", spt.mutable_proto());
-
-// or
-// spt = processor.EncodeAsImmutableProto("This is a test.");
-
-std::cout << spt.text() << std::endl;   // This is the same as the input.
-for (const auto &piece : spt.pieces()) {
-   std::cout << piece.begin() << std::endl;   // beginning of byte offset
-   std::cout << piece.end() << std::endl;     // end of byte offset
-   std::cout << piece.piece() << std::endl;   // internal representation.
-   std::cout << piece.surface() << std::endl; // external representation. spt.text().substr(begin, end - begin) == surface().
-   std::cout << piece.id() << std::endl;      // vocab id
-}
-
-// Decode
-processor.Decode({10, 20, 30}, spt.mutable_proto());
-std::cout << spt.text() << std::endl;   // This is the same as the decoded string.
-for (const auto &piece : spt.pieces()) {
-   // the same as above.
-}
+sentencepiece::SentencePieceTrainer::Train({
+  {"input", "test/botchan.txt"},
+  {"model_prefix", "m"},
+  {"vocab_size", "1000"}
+});
 ```
+
+
 
 ## Vocabulary management
 You will want to use the following methods to obtain ids from/to pieces.
@@ -118,12 +102,3 @@ processor.IsUnknown(0);      // returns true if the given id is an unknown token
 processor.IsControl(10);     // returns true if the given id is a control token. e.g., <s>, </s>
 ```
 
-## Extra Options
-Use `SetEncodeExtraOptions` and `SetDecodeExtraOptions` methods to set extra options for encoding and decoding respectively. These methods need to be called just after `Load` methods.
-
-```C++
-processor.SetEncodeExtraOptions("bos:eos");   // add <s> and </s>.
-processor.SetEncodeExtraOptions("reverse:bos:eos");   // reverse the input and then add <s> and </s>.
-
-processor.SetDecodeExtraOptions("reverse");   // the decoder's output is reversed.
-```
