@@ -4,14 +4,13 @@ SentencePiece is **deliberately designed to operate directly on raw, un-pretoken
 
 ## Design Philosophy: Why Avoid Pre-tokenization?
 
-Many subword tokenizers require a pre-tokenization step (e.g., space-splitting or regex rules). SentencePiece deliberately operates directly on raw text to avoid several issues:
+Many subword tokenizers require a pre-tokenization step (e.g., space-splitting or regex rules) that has several issues:
 
 *   **Language Dependency**: Managing external morphological analyzers (e.g., MeCab, Jieba) for non-space-segmented languages adds system complexity.
-*   **Security Risks (ReDoS)**: Regex-based splitters are vulnerable to Regular Expression Denial of Service (ReDoS) attacks.
-*   **Inconsistency**: Relying on runtime Unicode tables (e.g., Python, Rust) makes tokenization inconsistent across environments over time.
-*   **Reproducibility and Portability**: Regex behavior varies across programming languages (e.g., Python vs. C++ vs. Java), making consistent reimplementation difficult. Avoiding regex during inference makes SentencePiece highly portable and easy to reimplement with guaranteed identical output.
+*   **Security Risks (ReDoS)**: Regex-based splitters are vulnerable to Regular Expression Denial of Service (ReDoS) attacks (such as [CVE-2025-1194](https://nvd.nist.gov/vuln/detail/CVE-2025-1194) in Hugging Face's GPT-NeoX-Japanese tokenizer).
+*   **Inconsistency & Portability**: Pre-tokenizers often rely on regex engines (such as Python or Rust) or runtime Unicode versions, which can behave differently across environments, making consistent tokenization and cross-language deployment extremely difficult.
 
-Instead, SentencePiece uses **piece constraints during training** to construct the vocabulary. Because these constraints only apply during training, even if complex rules or regular expressions were used to validate pieces, they do not run during inference. The resulting model is completely self-contained, ensuring safe, consistent, and fast tokenization during inference without external dependencies or regex execution. For cases where space-separated tokenization is desired, simple constraints like `split_by_whitespace=true` can safely approximate this behavior.
+To avoid these issues, SentencePiece operates directly on raw text and applies **piece constraints during training** to construct a static vocabulary. Because these constraints do not run during inference, the resulting model is completely self-contained, guaranteeing consistent, safe, and fast tokenization across all platforms. For cases where space-separated tokenization is desired, simple constraints like `split_by_whitespace=true` can safely approximate this behavior.
 
 ---
 
@@ -33,7 +32,7 @@ The following table describes the flags that control whether a candidate subword
 ---
 
 ## Pre-tokenization Delimiter
-The `pretokenization_delimiter` flag (available only in `unigram` mode) allows you to enforce hard boundaries based on external pre-tokenization (e.g., word segmenters like MeCab, Jieba, or SpaCy) without requiring that pre-tokenization tool at inference time.
+The `pretokenization_delimiter` flag (available only in `unigram` mode) is the most general way to introduce arbitrary segmentation boundaries or control constraints into a SentencePiece model. It allows you to enforce hard boundaries based on external pre-tokenization (e.g., word segmenters like MeCab, syntax parsers, or custom rules) without requiring those tools at inference time.
 
 #### How it Works
 
