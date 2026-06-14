@@ -55,7 +55,7 @@ Get-ChildItem .\dist\sentencepiece*.whl | ForEach-Object { pip install $_.FullNa
 
 ## Usage
 
-See [this google colab page](https://github.com/google/sentencepiece/blob/master/python/sentencepiece_python_module_example.ipynb) to run sentencepiece interactively.
+For advanced usage examples, see [extra usage documentation](extra_usage.md).
 
 ### Segmentation
 

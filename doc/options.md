@@ -47,10 +47,7 @@ These options control the input/output files, the tokenization algorithm type, a
         *   `char`: Character-level segmentation.
 *   **`vocab_size`** (int32, default: `8000`)
     *   Desired vocabulary size (including special symbols).
-*   **`self_test_sample_size`** (int32, default: `0`)
-    *   Number of sentences to randomly sample from the training corpus and store as self-test samples inside the model.
-    *   *How it works*: If `> 0`, SentencePiece samples this many sentences during training, encodes them, and stores the input sentences and their expected tokenizations inside the `.model` file. When the model is loaded later, it automatically re-encodes these sentences and verifies the output matches the stored expected tokenization. If any sample fails to match, loading the model will fail with an error.
-    *   *Usage*: Useful for regression testing and ensuring model loading safety in production (e.g., detecting if a library update broke backward compatibility of tokenization).
+
 *   **`accept_language`** (string, default: `""`)
     *   Comma-separated list of ISO language codes (e.g., `ja,en`).
     *   *Note*: This option is currently not used by the training logic and does not affect the model behavior. It is kept for backward compatibility and can be used to store language metadata inside the model file.

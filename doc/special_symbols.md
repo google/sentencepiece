@@ -169,6 +169,107 @@ print(f"Decoded:      {sp.decode_ids(inserted_ids)}")
 
 ```
 
+
+
+---
+
+## Customizing Default Special Symbols (UNK, BOS, EOS, PAD)
+
+By default, SentencePiece defines the following mappings for default special symbols:
+
+| Symbol | Default Piece | Default ID |
+| :--- | :--- | :--- |
+| **UNK** | `<unk>` | `0` |
+| **BOS** | `<s>` | `1` |
+| **EOS** | `</s>` | `2` |
+| **PAD** | `<pad>` | Undefined (`-1`) |
+
+You can customize these pieces and IDs at training time using the following flags:
+*   `--{unk|bos|eos|pad}_id=<int>`: Set the integer ID for the symbol. Setting `-1` disables the symbol (except for `unk_id` which must always be defined).
+*   `--{unk|bos|eos|pad}_piece=<string>`: Set the surface string representation for the symbol (e.g., `[PAD]`, `[UNK]`).
+*   `--unk_surface=<string>`: Customize the surface string that `decode` emits for unknown tokens. By default, unknown tokens are decoded as `⁇` (U+2047, Double Question Mark).
+
+### Training with Custom Special Symbols
+
+#### C++ CLI
+```bash
+spm_train \
+  --input=corpus.txt \
+  --vocab_size=2000 \
+  --model_prefix=m \
+  --pad_id=0 \
+  --unk_id=1 \
+  --bos_id=2 \
+  --eos_id=3 \
+  --pad_piece="[PAD]" \
+  --unk_piece="[UNK]" \
+  --bos_piece="[BOS]" \
+  --eos_piece="[EOS]" \
+  --unk_surface="__UNKNOWN__"
+```
+
+#### Python API
+```python
+import sentencepiece as spm
+
+spm.SentencePieceTrainer.train(
+    input='corpus.txt',
+    vocab_size=2000,
+    model_prefix='m',
+    pad_id=0,
+    unk_id=1,
+    bos_id=2,
+    eos_id=3,
+    pad_piece='[PAD]',
+    unk_piece='[UNK]',
+    bos_piece='[BOS]',
+    eos_piece='[EOS]',
+    unk_surface='__UNKNOWN__'
+)
+```
+
+### Disabling BOS/EOS
+
+If your model does not require start/end tokens, you can disable them by setting their IDs to `-1`:
+
+```python
+spm.SentencePieceTrainer.train(
+    input='corpus.txt',
+    vocab_size=2000,
+    model_prefix='m',
+    bos_id=-1,
+    eos_id=-1
+)
+```
+When disabled, the default pieces `<s>` and `</s>` are treated as normal text (or mapped to `<unk>` if they appear in input and are not in the learned vocabulary).
+
+### Redefining Default Special Symbols as User-Defined
+
+By default, default special symbols (like `<s>` and `</s>`) are treated as **control symbols** (they cannot be parsed from raw text). If you want them to behave like **user-defined symbols** (allowing them to be tokenized directly from raw text input), you can explicitly add their piece strings to the `user_defined_symbols` list at training time.
+
+```python
+import sentencepiece as spm
+
+# Train a model where <s> and </s> are user-defined symbols
+spm.SentencePieceTrainer.train(
+    input='corpus.txt',
+    model_prefix='m_bos_as_user',
+    user_defined_symbols=['<s>', '</s>'],
+    vocab_size=2000
+)
+
+# Behavior comparison:
+# Default model (<s> is CONTROL):
+sp_default = spm.SentencePieceProcessor(model_file='m.model')
+print(sp_default.encode_as_pieces('<s> hello</s>'))
+# Output: ['<', 's', '>', ' hello', '<', '/', 's', '>'] (split as raw text)
+
+# Redefined model (<s> is USER_DEFINED):
+sp_user = spm.SentencePieceProcessor(model_file='m_bos_as_user.model')
+print(sp_user.encode_as_pieces('<s> hello</s>'))
+# Output: ['<s>', ' hello', '</s>'] (matched as single special tokens)
+```
+
 ---
 
 ## Modifying Model Post-Training (At Your Own Risk)
