@@ -53,8 +53,8 @@ from typing import Any, IO, Literal, Sequence, overload
 
 __version__: str
 
-_OutType = type[int] | type[str] | Literal["serialized_proto", "proto", "immutable_proto"]
-_DecodeOutType = type[str] | type[bytes] | Literal["serialized_proto", "immutable_proto"]
+_OutType = type[int] | type[str] | type[bytes] | Literal["serialized_proto", "proto", "numpy", "offset_mapping"]
+_DecodeOutType = type[str] | type[bytes] | Literal["serialized_proto", "proto", "offset_mapping"]
 '''
 
 # Names re-exported / leaked at module scope that are not part of the API.
@@ -83,77 +83,83 @@ CLASS_ORDER = [
 # Reusable signature fragments (everything after the method name).
 _SPP_INIT = (
     "(self, model_file: str | None = ..., model_proto: bytes | None = ..., "
-    "out_type: type[int] | type[str] = ..., add_bos: bool = ..., add_eos: bool = ..., "
+    "return_type: _OutType | None = ..., add_bos: bool = ..., add_eos: bool = ..., "
     "reverse: bool = ..., emit_unk_piece: bool = ..., enable_sampling: bool = ..., "
-    "nbest_size: int = ..., alpha: float = ..., num_threads: int = ...) -> None"
+    "nbest_size: int = ..., alpha: float = ..., num_threads: int = ..., "
+    "out_type: _OutType | None = ...) -> None"
 )
 _ENCODE = (
-    "(self, input: str | Sequence[str], out_type: _OutType | None = ..., "
+    "(self, input: str | bytes | Sequence[str] | Sequence[bytes], return_type: _OutType | None = ..., "
     "add_bos: bool | None = ..., add_eos: bool | None = ..., reverse: bool | None = ..., "
     "emit_unk_piece: bool | None = ..., enable_sampling: bool | None = ..., "
-    "nbest_size: int | None = ..., alpha: float | None = ..., num_threads: int | None = ...) -> Any"
+    "nbest_size: int | None = ..., alpha: float | None = ..., num_threads: int | None = ..., "
+    "thread_pool: ThreadPool | None = ..., out_type: _OutType | None = ...) -> Any"
 )
 _PARALLEL_ENCODE = (
-    "(self, input: str | Sequence[str], out_type: _OutType | None = ..., "
+    "(self, input: str | bytes | Sequence[str] | Sequence[bytes], return_type: _OutType | None = ..., "
     "add_bos: bool | None = ..., add_eos: bool | None = ..., reverse: bool | None = ..., "
     "emit_unk_piece: bool | None = ..., chunk_len: int | None = ..., "
-    "num_threads: int | None = ..., thread_pool: ThreadPool | None = ...) -> Any"
+    "num_threads: int | None = ..., thread_pool: ThreadPool | None = ..., "
+    "out_type: _OutType | None = ...) -> Any"
 )
 _DECODE = (
-    "(self, input: int | str | Sequence[int] | Sequence[str] | Sequence[Sequence[int]] "
-    "| Sequence[Sequence[str]], out_type: _DecodeOutType = ..., num_threads: int | None = ...) -> Any"
+    "(self, input: int | str | bytes | Sequence[int] | Sequence[str] | Sequence[bytes] "
+    "| Sequence[Sequence[int]] | Sequence[Sequence[str]] | Sequence[Sequence[bytes]], "
+    "return_type: _DecodeOutType | None = ..., num_threads: int | None = ..., "
+    "thread_pool: ThreadPool | None = ..., out_type: _DecodeOutType | None = ..., "
+    "return_bytes: bool | None = ...) -> Any"
 )
-_INPUT_KWARGS = "(self, input: str | Sequence[str], **kwargs: Any) -> Any"
+_INPUT_KWARGS = "(self, input: str | bytes | Sequence[str] | Sequence[bytes], **kwargs: Any) -> Any"
 _SAMPLE_AS = (
-    "(self, input: str | Sequence[str], nbest_size: int | None = ..., "
+    "(self, input: str | bytes | Sequence[str] | Sequence[bytes], nbest_size: int | None = ..., "
     "alpha: float | None = ..., **kwargs: Any) -> Any"
 )
-_NBEST_AS = "(self, input: str | Sequence[str], nbest_size: int | None = ..., **kwargs: Any) -> Any"
+_NBEST_AS = "(self, input: str | bytes | Sequence[str] | Sequence[bytes], nbest_size: int | None = ..., **kwargs: Any) -> Any"
 _NBEST = (
-    "(self, input: str | Sequence[str], out_type: _OutType | None = ..., "
+    "(self, input: str | bytes | Sequence[str] | Sequence[bytes], return_type: _OutType | None = ..., "
     "add_bos: bool | None = ..., add_eos: bool | None = ..., reverse: bool | None = ..., "
-    "emit_unk_piece: bool | None = ..., nbest_size: int | None = ...) -> Any"
+    "emit_unk_piece: bool | None = ..., nbest_size: int | None = ..., "
+    "out_type: _OutType | None = ...) -> Any"
 )
 _SAMPLE_SCORE = (
-    "(self, input: str | Sequence[str], out_type: _OutType | None = ..., "
+    "(self, input: str | bytes | Sequence[str] | Sequence[bytes], return_type: _OutType | None = ..., "
     "add_bos: bool | None = ..., add_eos: bool | None = ..., reverse: bool | None = ..., "
     "emit_unk_piece: bool | None = ..., num_samples: int | None = ..., alpha: float | None = ..., "
-    "wor: bool | None = ..., include_best: bool | None = ...) -> Any"
+    "wor: bool | None = ..., include_best: bool | None = ..., out_type: _OutType | None = ...) -> Any"
 )
 _SAMPLE_SCORE_AS = (
-    "(self, input: str | Sequence[str], num_samples: int | None = ..., "
+    "(self, input: str | bytes | Sequence[str] | Sequence[bytes], num_samples: int | None = ..., "
     "alpha: float | None = ..., **kwargs: Any) -> Any"
 )
 _DECODE_PIECES = (
-    "(self, input: str | Sequence[str] | Sequence[Sequence[str]], "
-    "out_type: _DecodeOutType = ..., **kwargs: Any) -> Any"
+    "(self, input: str | bytes | Sequence[str] | Sequence[bytes] | Sequence[Sequence[str]] | Sequence[Sequence[bytes]], "
+    "return_type: _DecodeOutType = ..., out_type: _DecodeOutType = ..., **kwargs: Any) -> Any"
 )
 _DECODE_IDS = (
     "(self, input: int | Sequence[int] | Sequence[Sequence[int]], "
-    "out_type: _DecodeOutType = ..., **kwargs: Any) -> Any"
+    "return_type: _DecodeOutType = ..., out_type: _DecodeOutType = ..., **kwargs: Any) -> Any"
 )
 _DECODE_PIECES_SER = (
-    "(self, input: str | Sequence[str] | Sequence[Sequence[str]], "
-    "out_type: Literal[\"serialized_proto\"] = ..., **kwargs: Any) -> Any"
+    "(self, input: str | bytes | Sequence[str] | Sequence[bytes] | Sequence[Sequence[str]] | Sequence[Sequence[bytes]], "
+    "return_type: Literal[\"serialized_proto\"] = ..., out_type: Literal[\"serialized_proto\"] = ..., **kwargs: Any) -> Any"
 )
 _DECODE_IDS_SER = (
     "(self, input: int | Sequence[int] | Sequence[Sequence[int]], "
-    "out_type: Literal[\"serialized_proto\"] = ..., **kwargs: Any) -> Any"
+    "return_type: Literal[\"serialized_proto\"] = ..., out_type: Literal[\"serialized_proto\"] = ..., **kwargs: Any) -> Any"
 )
-_DECODE_PIECES_IMM = (
-    "(self, input: str | Sequence[str] | Sequence[Sequence[str]], "
-    "out_type: Literal[\"immutable_proto\"] = ..., **kwargs: Any) -> Any"
+_DECODE_PIECES_PROTO = (
+    "(self, input: str | bytes | Sequence[str] | Sequence[bytes] | Sequence[Sequence[str]] | Sequence[Sequence[bytes]], "
+    "**kwargs: Any) -> Any"
 )
-_DECODE_IDS_IMM = (
-    "(self, input: int | Sequence[int] | Sequence[Sequence[int]], "
-    "out_type: Literal[\"immutable_proto\"] = ..., **kwargs: Any) -> Any"
+_DECODE_IDS_PROTO = (
+    "(self, input: int | Sequence[int] | Sequence[Sequence[int]], **kwargs: Any) -> Any"
 )
 _NORMALIZER_INIT = (
     "(self, model_file: str | None = ..., model_proto: bytes | None = ..., "
     "rule_tsv: str | None = ..., rule_name: str | None = ..., add_dummy_prefix: bool = ..., "
     "escape_whitespaces: bool = ..., remove_extra_whitespaces: bool = ...) -> None"
 )
-_NORMALIZE = "(self, input: str | Sequence[str], with_offsets: bool | None = ...) -> Any"
+_NORMALIZE = "(self, input: str | bytes | Sequence[str] | Sequence[bytes], with_offsets: bool | None = ...) -> Any"
 
 # Curated signatures, keyed by class name then by the *CamelCase* method name.
 # snake_case aliases are derived automatically (mirroring _add_snake_case), so
@@ -211,34 +217,48 @@ METHOD_SIGS = {
         "Encode": _ENCODE,
         "EncodeAsPieces": _INPUT_KWARGS,
         "EncodeAsIds": _INPUT_KWARGS,
+        "EncodeAsNumpy": _INPUT_KWARGS,
         "EncodeAsSerializedProto": _INPUT_KWARGS,
+        "EncodeAsProto": _INPUT_KWARGS,
+        "EncodeAsOffsetMapping": _INPUT_KWARGS,
         "EncodeAsImmutableProto": _INPUT_KWARGS,
         "ParallelEncode": _PARALLEL_ENCODE,
         "ParallelEncodeAsPieces": _INPUT_KWARGS,
         "ParallelEncodeAsIds": _INPUT_KWARGS,
+        "ParallelEncodeAsNumpy": _INPUT_KWARGS,
         "ParallelEncodeAsSerializedProto": _INPUT_KWARGS,
+        "ParallelEncodeAsProto": _INPUT_KWARGS,
         "ParallelEncodeAsImmutableProto": _INPUT_KWARGS,
         "SampleEncodeAsPieces": _SAMPLE_AS,
         "SampleEncodeAsIds": _SAMPLE_AS,
+        "SampleEncodeAsNumpy": _SAMPLE_AS,
         "SampleEncodeAsSerializedProto": _SAMPLE_AS,
+        "SampleEncodeAsProto": _SAMPLE_AS,
         "SampleEncodeAsImmutableProto": _SAMPLE_AS,
         "NBestEncode": _NBEST,
         "NBestEncodeAsPieces": _NBEST_AS,
         "NBestEncodeAsIds": _NBEST_AS,
+        "NBestEncodeAsNumpy": _NBEST_AS,
         "NBestEncodeAsSerializedProto": _NBEST_AS,
+        "NBestEncodeAsProto": _NBEST_AS,
         "NBestEncodeAsImmutableProto": _NBEST_AS,
         "SampleEncodeAndScore": _SAMPLE_SCORE,
         "SampleEncodeAndScoreAsPieces": _SAMPLE_SCORE_AS,
         "SampleEncodeAndScoreAsIds": _SAMPLE_SCORE_AS,
         "SampleEncodeAndScoreAsSerializedProto": _SAMPLE_SCORE_AS,
+        "SampleEncodeAndScoreAsProto": _SAMPLE_SCORE_AS,
         "SampleEncodeAndScoreAsImmutableProto": _SAMPLE_SCORE_AS,
         "Decode": _DECODE,
         "DecodePieces": _DECODE_PIECES,
         "DecodeIds": _DECODE_IDS,
         "DecodePiecesAsSerializedProto": _DECODE_PIECES_SER,
         "DecodeIdsAsSerializedProto": _DECODE_IDS_SER,
-        "DecodePiecesAsImmutableProto": _DECODE_PIECES_IMM,
-        "DecodeIdsAsImmutableProto": _DECODE_IDS_IMM,
+        "DecodePiecesAsProto": _DECODE_PIECES_PROTO,
+        "DecodeIdsAsProto": _DECODE_IDS_PROTO,
+        "DecodePiecesAsImmutableProto": _DECODE_PIECES_PROTO,
+        "DecodeIdsAsImmutableProto": _DECODE_IDS_PROTO,
+        "from_file": "(cls, model_file: str, return_type: _OutType | None = ..., **kwargs: Any) -> SentencePieceProcessor",
+        "from_proto": "(cls, model_proto: bytes, return_type: _OutType | None = ..., **kwargs: Any) -> SentencePieceProcessor",
         "CalculateEntropy": "(self, input: str | Sequence[str], alpha: float, num_threads: int | None = ...) -> float | list[float]",
         "Normalize": _NORMALIZE,
         "Tokenize": _ENCODE,
@@ -249,6 +269,7 @@ METHOD_SIGS = {
         "__getitem__": "(self, piece: str) -> int",
     },
     "SentencePieceTrainer": {
+        "__init__": "(self) -> None",
         "Train": "(arg: str | None = ..., logstream: IO[Any] | None = ..., **kwargs: Any) -> None",
     },
     "SentencePieceNormalizer": {
@@ -337,6 +358,10 @@ def is_property(cls, name):
   return isinstance(inspect.getattr_static(cls, name, None), property)
 
 
+def is_classmethod(cls, name):
+  return isinstance(inspect.getattr_static(cls, name, None), classmethod)
+
+
 def public_members(cls):
   """Public (and selected dunder) member names of a class, deduped/sorted."""
   members = set()
@@ -362,7 +387,7 @@ def _method_sort_key(name):
   return (group, name)
 
 
-def emit_method(name, sig, indent, static=False):
+def emit_method(name, sig, indent, static=False, is_cls=False):
   pad = " " * indent
   lines = []
   variants = sig if isinstance(sig, list) else [sig]
@@ -370,6 +395,8 @@ def emit_method(name, sig, indent, static=False):
   for variant in variants:
     if static:
       lines.append(f"{pad}@staticmethod")
+    elif is_cls:
+      lines.append(f"{pad}@classmethod")
     if overloaded:
       lines.append(f"{pad}@overload")
     lines.append(f"{pad}def {name}{variant}: ...")
@@ -398,14 +425,17 @@ def emit_class(cls, class_name, uncurated):
 
   for name in methods:
     static = name in static_set
+    is_cls = is_classmethod(cls, name)
     sig = sig_map.get(name)
     if sig is None:
       uncurated.append(f"{class_name}.{name}")
       if static:
         sig = "(*args: Any, **kwargs: Any) -> None" if name == "__init__" else "(*args: Any, **kwargs: Any) -> Any"
+      elif is_cls:
+        sig = "(cls, *args: Any, **kwargs: Any) -> Any"
       else:
         sig = "(self, *args: Any, **kwargs: Any) -> None" if name == "__init__" else "(self, *args: Any, **kwargs: Any) -> Any"
-    body.extend(emit_method(name, sig, indent=4, static=static))
+    body.extend(emit_method(name, sig, indent=4, static=static, is_cls=is_cls))
 
   if not body:
     body.append("    ...")
@@ -419,7 +449,7 @@ def discover_classes(module):
     if name.startswith("_"):
       continue
     obj = getattr(module, name)
-    if isinstance(obj, type) and getattr(obj, "__module__", "") == _MODULE_NAME:
+    if isinstance(obj, type) and getattr(obj, "__module__", "").split('.')[0] == _MODULE_NAME:
       found[name] = obj
   return found
 
@@ -432,7 +462,7 @@ def discover_functions(module):
     obj = getattr(module, name)
     if isinstance(obj, type):
       continue
-    if callable(obj) and getattr(obj, "__module__", "") == _MODULE_NAME:
+    if callable(obj) and getattr(obj, "__module__", "").split('.')[0] == _MODULE_NAME:
       found[name] = obj
   return found
 

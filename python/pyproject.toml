@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel", "pybind11>=2.12"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -35,10 +35,15 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest"]
+numpy = ["numpy"]
+protobuf = ["protobuf"]
+test = ["pytest", "numpy", "protobuf"]
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
+markers = [
+    "thread_unsafe: mark test as thread-unsafe for pytest-run-parallel"
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -47,5 +52,10 @@ where = ["src"]
 sentencepiece = ["*.bin", "*.pyi", "py.typed"]
 
 [tool.cibuildwheel]
-test-requires = ["pytest"]
+test-requires = ["pytest", "numpy", "protobuf"]
 test-command = "pytest -v {project}/test"
+
+[[tool.cibuildwheel.overrides]]
+select = "*-win_arm64"
+test-requires = ["pytest", "protobuf"]
+

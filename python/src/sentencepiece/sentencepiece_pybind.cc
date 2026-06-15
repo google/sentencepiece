@@ -1,0 +1,1551 @@
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <sentencepiece.pb.h>
+#include <sentencepiece_processor.h>
+#include <sentencepiece_trainer.h>
+
+#include <algorithm>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+#include "absl/status/status.h"
+
+
+namespace py = pybind11;
+
+namespace {
+
+// Helper to check if a python object is bytes or unicode, and get it as
+// std::string_view without copying.
+struct PyInputStringView {
+  bool is_bytes = false;
+  std::string_view value;
+
+  explicit PyInputStringView(const py::object& obj) {
+    if (py::isinstance<py::bytes>(obj)) {
+      is_bytes = true;
+      value = obj.cast<std::string_view>();
+    } else if (py::isinstance<py::str>(obj)) {
+      is_bytes = false;
+      value = obj.cast<std::string_view>();
+    } else {
+      throw py::type_error("Input must be str or bytes");
+    }
+  }
+};
+
+// Helper to convert std::string to py::str or py::bytes based on flag.
+py::object ToPyString(const std::string& str, bool is_bytes) {
+  if (is_bytes) {
+    return py::bytes(str);
+  } else {
+    return py::str(str);
+  }
+}
+
+// Helper to convert std::vector<std::string> to py::list of py::str or
+// py::bytes.
+py::list ToPyStringList(const std::vector<std::string>& vec, bool is_bytes) {
+  py::list l(vec.size());
+  if (is_bytes) {
+    for (size_t i = 0; i < vec.size(); ++i) {
+      l[i] = py::bytes(vec[i]);
+    }
+  } else {
+    for (size_t i = 0; i < vec.size(); ++i) {
+      l[i] = py::str(vec[i]);
+    }
+  }
+  return l;
+}
+
+// Exception translator
+void RegisterExceptionTranslator() {
+  py::register_exception_translator([](std::exception_ptr p) {
+    try {
+      if (p) std::rethrow_exception(p);
+    } catch (const absl::Status& status) {
+      std::string msg = status.ToString();
+      switch (status.code()) {
+        case absl::StatusCode::kNotFound:
+          throw std::runtime_error(msg);  // Maps to RuntimeError
+        case absl::StatusCode::kOutOfRange:
+          throw std::out_of_range(msg);  // Maps to IndexError
+        case absl::StatusCode::kInvalidArgument:
+          throw std::invalid_argument(msg);  // Maps to ValueError
+        default:
+          throw std::runtime_error(msg);  // Maps to RuntimeError
+      }
+    }
+  });
+}
+
+// PySentenceIterator wraps a Python iterator and implements
+// sentencepiece::SentenceIterator.
+class PySentenceIterator : public sentencepiece::SentenceIterator {
+ public:
+  explicit PySentenceIterator(py::iterator it) : it_(std::move(it)) { Next(); }
+
+  bool done() const override { return done_; }
+
+  void Next() override {
+    py::gil_scoped_acquire acquire;
+    if (it_ == py::iterator::sentinel()) {
+      done_ = true;
+      return;
+    }
+    try {
+      py::object item = py::reinterpret_borrow<py::object>(*it_);
+      if (py::isinstance<py::str>(item) || py::isinstance<py::bytes>(item)) {
+        value_ = item.cast<std::string>();
+      } else {
+        status_ = absl::Status(
+            absl::StatusCode::kInvalidArgument,
+            "Iterator must return str or bytes.");
+        done_ = true;
+        return;
+      }
+      // Strip trailing \r or \n
+      while (!value_.empty() &&
+             (value_.back() == '\r' || value_.back() == '\n')) {
+        value_.pop_back();
+      }
+      ++it_;
+    } catch (const py::error_already_set& e) {
+      status_ = absl::Status(
+          absl::StatusCode::kInternal, e.what());
+      done_ = true;
+    }
+  }
+
+  const std::string& value() const override { return value_; }
+
+  absl::Status status() const override { return status_; }
+
+ private:
+  py::iterator it_;
+  std::string value_;
+  absl::Status status_;
+  bool done_ = false;
+};
+
+// Helper functions for RewriteIds (adapted from sentencepiece_swig.h)
+void RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
+                std::vector<int>* ids, bool add_bos, bool add_eos,
+                bool reverse) {
+  if (!add_bos && !add_eos && !reverse) return;
+  if (reverse) std::reverse(ids->begin(), ids->end());
+  if (add_bos) ids->insert(ids->begin(), sp.bos_id());
+  if (add_eos) ids->push_back(sp.eos_id());
+}
+
+void RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
+                std::vector<std::string>* pieces, bool add_bos, bool add_eos,
+                bool reverse, bool emit_unk_piece) {
+  if (!add_bos && !add_eos && !reverse && !emit_unk_piece) return;
+  if (reverse) std::reverse(pieces->begin(), pieces->end());
+  if (add_bos) pieces->insert(pieces->begin(), sp.IdToPiece(sp.bos_id()));
+  if (add_eos) pieces->push_back(sp.IdToPiece(sp.eos_id()));
+  if (emit_unk_piece) {
+    const auto& unk = sp.IdToPiece(sp.unk_id());
+    for (auto& piece : *pieces) {
+      const int id = sp.PieceToId(piece);
+      if (id == sp.unk_id()) {
+        piece = unk;
+      }
+    }
+  }
+}
+
+void CheckIds(const std::vector<int>& ids, int num_pieces) {
+  for (int id : ids) {
+    if (id < 0 || id >= num_pieces) {
+      throw absl::Status(
+          absl::StatusCode::kOutOfRange,
+          "piece id is out of range.");
+    }
+  }
+}
+
+int GetNumThreads(int num_threads) {
+  if (num_threads < 0) {
+    return std::thread::hardware_concurrency();
+  }
+  return std::max<int>(1, std::min<int>(num_threads, 65536));
+}
+
+class PyThreadPool {
+ public:
+  explicit PyThreadPool(int num_threads)
+      : resolved_num_threads_(GetNumThreads(num_threads)),
+        pool_(std::make_unique<sentencepiece::ThreadPool>(
+            resolved_num_threads_)) {}
+  sentencepiece::ThreadPool* get() { return pool_.get(); }
+  int num_threads() const { return resolved_num_threads_; }
+
+ private:
+  int resolved_num_threads_;
+  std::unique_ptr<sentencepiece::ThreadPool> pool_;
+};
+
+// Helper class to manage ThreadPool lifetime and acquisition in bindings
+class WorkerPool {
+ public:
+  WorkerPool(int num_threads, py::object thread_pool) {
+    if (!thread_pool.is_none()) {
+      pool_ = thread_pool.cast<PyThreadPool*>()->get();
+    } else {
+      pool_impl_ = std::make_unique<sentencepiece::ThreadPool>(
+          GetNumThreads(num_threads));
+      pool_ = pool_impl_.get();
+    }
+  }
+
+  sentencepiece::ThreadPool* get() { return pool_; }
+
+ private:
+  sentencepiece::ThreadPool* pool_ = nullptr;
+  std::unique_ptr<sentencepiece::ThreadPool> pool_impl_;
+};
+
+// Helper to cast py::list to std::vector<std::string_view> with type check
+std::vector<std::string_view> CastToStringViewVector(const py::list& ins) {
+  std::vector<std::string_view> C_ins(ins.size());
+  for (size_t i = 0; i < ins.size(); ++i) {
+    try {
+      C_ins[i] = ins[i].cast<std::string_view>();
+    } catch (const py::cast_error&) {
+      throw py::type_error("List elements must be str or bytes");
+    }
+  }
+  return C_ins;
+}
+
+// Wrapper for std::vector<int> to expose it as a Python buffer
+class VectorBuffer {
+ public:
+  VectorBuffer() = default;
+  explicit VectorBuffer(std::vector<int>&& vec) : vec_(std::move(vec)) {}
+
+  const int* data() const { return vec_.data(); }
+  size_t size() const { return vec_.size(); }
+
+ private:
+  std::vector<int> vec_;
+};
+
+bool IsIntegerFormat(const std::string& format) {
+  if (format.empty()) return false;
+  char c = format.back();
+  return (c == 'b' || c == 'B' || c == 'h' || c == 'H' || c == 'i' ||
+          c == 'I' || c == 'l' || c == 'L' || c == 'q' || c == 'Q' ||
+          c == 'n' || c == 'N');
+}
+
+// Helper to convert py::object (list, tuple, numpy array, etc) to
+// std::vector<int>
+std::vector<int> CastToVectorInt(const py::object& ids_obj) {
+  std::vector<int> ids;
+  if (py::isinstance<py::buffer>(ids_obj)) {
+    try {
+      py::buffer_info info = ids_obj.cast<py::buffer>().request();
+      if (!IsIntegerFormat(info.format)) {
+        throw py::type_error("Buffer must be of integer type");
+      }
+      if (info.ndim != 1) {
+        throw py::type_error("Buffer must be 1-dimensional");
+      }
+      ids.resize(info.shape[0]);
+      if (info.itemsize == 4) {
+        std::memcpy(ids.data(), info.ptr, info.shape[0] * 4);
+      } else if (info.itemsize == 8) {
+        const int64_t* src = static_cast<const int64_t*>(info.ptr);
+        for (size_t i = 0; i < info.shape[0]; ++i) {
+          ids[i] = static_cast<int>(src[i]);
+        }
+      } else {
+        throw py::type_error(
+            "Unsupported buffer integer size (must be 32-bit or 64-bit)");
+      }
+      return ids;
+    } catch (const py::error_already_set&) {
+      // Fallback if buffer request fails
+    }
+  }
+
+  try {
+    ids = ids_obj.cast<std::vector<int>>();
+  } catch (const py::cast_error&) {
+    throw py::type_error(
+        "Input must be an integer buffer, list of integers, or a sequence of "
+        "integers.");
+  }
+  return ids;
+}
+
+// Helper to convert py::object (sequence of sequences/buffers) to
+// std::vector<std::vector<int>>
+std::vector<std::vector<int>> CastToVectorVectorInt(const py::object& ins_obj) {
+  py::sequence seq;
+  try {
+    seq = ins_obj.cast<py::sequence>();
+  } catch (const py::cast_error&) {
+    throw py::type_error(
+        "Batch input must be a sequence of sequences or a 2D integer array.");
+  }
+  std::vector<std::vector<int>> outs(seq.size());
+  for (size_t i = 0; i < seq.size(); ++i) {
+    outs[i] = CastToVectorInt(py::reinterpret_borrow<py::object>(seq[i]));
+  }
+  return outs;
+}
+
+void CheckProtoArguments(bool add_bos, bool add_eos, bool reverse,
+                         bool emit_unk_piece) {
+  if (add_bos || add_eos || reverse || emit_unk_piece) {
+    throw absl::Status(
+        absl::StatusCode::kUnimplemented,
+        "add_bos, add_eos, reverse, and emit_unk_piece is not "
+        "supported in proto API");
+  }
+}
+
+inline size_t OneCharLen(const char* src) {
+  return "\1\1\1\1\1\1\1\1\1\1\1\1\2\2\3\4"[(*src & 0xFF) >> 4];
+}
+
+std::vector<int> BuildUtf8ToUnicodeMap(absl::string_view orig) {
+  std::vector<int> utf8_to_unicode(orig.size() + 1, 0);
+  size_t prev = 0;
+  int ulen = 0;
+  absl::string_view str = orig;
+  while (!str.empty()) {
+    const size_t mblen =
+        std::min(str.size(),
+                 static_cast<size_t>(std::max<int>(1, OneCharLen(str.data()))));
+    for (size_t i = prev; i < prev + mblen; ++i) {
+      utf8_to_unicode[i] = ulen;
+    }
+    ++ulen;
+    prev += mblen;
+    str.remove_prefix(mblen);
+  }
+  utf8_to_unicode[prev] = ulen;
+  return utf8_to_unicode;
+}
+py::dict ExtractOffsetMapping(const sentencepiece::SentencePieceText& spt, bool return_bytes) {
+  std::vector<int> utf8_to_unicode;
+  if (!return_bytes) {
+    utf8_to_unicode = BuildUtf8ToUnicodeMap(spt.text());
+  }
+
+  const size_t num_pieces = spt.pieces_size();
+  py::list ids_list(num_pieces);
+  py::list pieces(num_pieces);
+  py::list offsets(num_pieces);
+
+  for (size_t i = 0; i < num_pieces; ++i) {
+    const auto& piece = spt.pieces(i);
+    ids_list[i] = piece.id();
+    if (return_bytes) {
+      pieces[i] = py::bytes(piece.piece());
+      offsets[i] = py::make_tuple(piece.begin(), piece.end());
+    } else {
+      pieces[i] = py::str(piece.piece());
+      int start_unicode = utf8_to_unicode[piece.begin()];
+      int end_unicode = utf8_to_unicode[piece.end()];
+      offsets[i] = py::make_tuple(start_unicode, end_unicode);
+    }
+  }
+
+  py::dict result;
+  result["text"] = ToPyString(spt.text(), return_bytes);
+  result["ids"] = ids_list;
+  result["pieces"] = pieces;
+  result["offsets"] = offsets;
+  return result;
+}
+
+}  // namespace
+
+PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
+  RegisterExceptionTranslator();
+
+  py::class_<VectorBuffer>(m, "VectorBuffer", py::buffer_protocol())
+      .def_buffer([](const VectorBuffer& m) -> py::buffer_info {
+        return py::buffer_info(const_cast<int*>(m.data()), sizeof(int),
+                               py::format_descriptor<int>::format(), 1,
+                               {m.size()}, {sizeof(int)},
+                               true  // readonly
+        );
+      })
+      .def("data_address", [](const VectorBuffer& self) {
+        return reinterpret_cast<uintptr_t>(self.data());
+      });
+
+  // Global functions
+  m.def("SetRandomGeneratorSeed", &sentencepiece::SetRandomGeneratorSeed);
+  m.def("SetMinLogLevel", &sentencepiece::SetMinLogLevel);
+  m.def("SetDataDir", [](const std::string& data_dir) {
+    sentencepiece::SetDataDir(data_dir);
+  });
+
+  py::class_<PyThreadPool>(m, "ThreadPool")
+      .def(py::init<int>())
+      .def("num_threads", &PyThreadPool::num_threads);
+
+  py::class_<sentencepiece::SentencePieceProcessor>(m, "SentencePieceProcessor")
+      .def(py::init<>())
+      .def("LoadFromFile",
+           [](sentencepiece::SentencePieceProcessor& self,
+              const std::string& filename) {
+             py::gil_scoped_release release;
+             auto status = self.Load(filename);
+             if (!status.ok()) throw status;
+             return true;
+           })
+      .def("LoadFromSerializedProto",
+           [](sentencepiece::SentencePieceProcessor& self,
+              const py::bytes& serialized) {
+             py::gil_scoped_release release;
+             auto status =
+                 self.LoadFromSerializedProto(serialized.cast<std::string>());
+             if (!status.ok()) throw status;
+             return true;
+           })
+      .def("status", &sentencepiece::SentencePieceProcessor::status)
+      .def("SetEncodeExtraOptions",
+           &sentencepiece::SentencePieceProcessor::SetEncodeExtraOptions)
+      .def("SetDecodeExtraOptions",
+           &sentencepiece::SentencePieceProcessor::SetDecodeExtraOptions)
+
+      // Single Encode APIs
+      .def("_EncodeAsIds",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, bool enable_sampling, int nbest_size,
+              float alpha, bool add_bos, bool add_eos, bool reverse) {
+             PyInputStringView in(input);
+             std::vector<int> ids;
+             {
+               py::gil_scoped_release release;
+               absl::Status status;
+               if (enable_sampling) {
+                 status = self.SampleEncode(in.value, nbest_size, alpha, &ids);
+               } else {
+                 status = self.Encode(in.value, &ids);
+               }
+               if (!status.ok()) throw status;
+               RewriteIds(self, &ids, add_bos, add_eos, reverse);
+             }
+             return ids;
+           })
+      .def("_EncodeAsBuffer",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, bool enable_sampling, int nbest_size,
+              float alpha, bool add_bos, bool add_eos, bool reverse) {
+             PyInputStringView in(input);
+             std::vector<int> ids;
+             {
+               py::gil_scoped_release release;
+               absl::Status status;
+               if (enable_sampling) {
+                 status = self.SampleEncode(in.value, nbest_size, alpha, &ids);
+               } else {
+                 status = self.Encode(in.value, &ids);
+               }
+               if (!status.ok()) throw status;
+               RewriteIds(self, &ids, add_bos, add_eos, reverse);
+             }
+             return VectorBuffer(std::move(ids));
+           })
+      .def("_EncodeAsPieces",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, bool enable_sampling, int nbest_size,
+              float alpha, bool add_bos, bool add_eos, bool reverse,
+              bool emit_unk_piece, bool return_bytes) {
+             PyInputStringView in(input);
+             std::vector<std::string> pieces;
+             {
+               py::gil_scoped_release release;
+               absl::Status status;
+               if (enable_sampling) {
+                 status =
+                     self.SampleEncode(in.value, nbest_size, alpha, &pieces);
+               } else {
+                 status = self.Encode(in.value, &pieces);
+               }
+               if (!status.ok()) throw status;
+               RewriteIds(self, &pieces, add_bos, add_eos, reverse,
+                          emit_unk_piece);
+             }
+             return ToPyStringList(pieces, return_bytes);
+           })
+      .def("_EncodeAsSerializedProto",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, bool enable_sampling, int nbest_size,
+              float alpha, bool add_bos, bool add_eos, bool reverse,
+              bool emit_unk_piece) {
+             CheckProtoArguments(add_bos, add_eos, reverse, emit_unk_piece);
+             PyInputStringView in(input);
+             sentencepiece::SentencePieceText spt;
+             {
+               py::gil_scoped_release release;
+               absl::Status status;
+               if (enable_sampling) {
+                 status = self.SampleEncode(in.value, nbest_size, alpha, &spt);
+               } else {
+                 status = self.Encode(in.value, &spt);
+               }
+               if (!status.ok()) throw status;
+             }
+             return py::bytes(spt.SerializeAsString());
+           })
+      .def("_EncodeAsOffsetMapping",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, bool enable_sampling, int nbest_size,
+              float alpha, bool add_bos, bool add_eos, bool reverse,
+              bool emit_unk_piece, bool return_bytes) {
+             PyInputStringView in(input);
+             sentencepiece::SentencePieceText spt;
+             {
+               py::gil_scoped_release release;
+               absl::Status status;
+               if (enable_sampling) {
+                 status = self.SampleEncode(in.value, nbest_size, alpha, &spt);
+               } else {
+                 status = self.Encode(in.value, &spt);
+               }
+               if (!status.ok()) throw status;
+             }
+
+             std::vector<int> utf8_to_unicode;
+             if (!return_bytes) {
+               utf8_to_unicode = BuildUtf8ToUnicodeMap(in.value);
+             }
+
+             const size_t num_pieces = spt.pieces_size();
+             py::list ids(num_pieces);
+             py::list pieces(num_pieces);
+             py::list offsets(num_pieces);
+
+             for (size_t i = 0; i < num_pieces; ++i) {
+               const auto& piece = spt.pieces(i);
+               ids[i] = piece.id();
+               if (return_bytes) {
+                 pieces[i] = py::bytes(piece.piece());
+                 offsets[i] = py::make_tuple(piece.begin(), piece.end());
+               } else {
+                 pieces[i] = py::str(piece.piece());
+                 int start_unicode = utf8_to_unicode[piece.begin()];
+                 int end_unicode = utf8_to_unicode[piece.end()];
+                 offsets[i] = py::make_tuple(start_unicode, end_unicode);
+               }
+             }
+
+             py::dict result;
+             result["ids"] = ids;
+             result["pieces"] = pieces;
+             result["offsets"] = offsets;
+             return result;
+           })
+
+      // Batch Encode APIs
+      .def("_EncodeAsIdsBatch",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::list& ins, int num_threads, py::object thread_pool,
+              bool enable_sampling, int nbest_size, float alpha, bool add_bos,
+              bool add_eos, bool reverse) {
+             std::vector<std::string_view> C_ins = CastToStringViewVector(ins);
+             std::vector<std::vector<int>> outs(ins.size());
+             WorkerPool pool(num_threads, thread_pool);
+             {
+               py::gil_scoped_release release;
+               auto status = sentencepiece::RunBatch(
+                   ins.size(),
+                   [&](size_t i) {
+                     std::vector<int> out;
+                     absl::Status s;
+                     if (enable_sampling) {
+                       s = self.SampleEncode(C_ins[i], nbest_size, alpha, &out);
+                     } else {
+                       s = self.Encode(C_ins[i], &out);
+                     }
+                     if (!s.ok()) return s;
+                     RewriteIds(self, &out, add_bos, add_eos, reverse);
+                     outs[i] = std::move(out);
+                     return absl::OkStatus();
+                   },
+                   *pool.get());
+               if (!status.ok()) throw status;
+             }
+             return outs;
+           })
+      .def("_EncodeAsBufferBatch",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::list& ins, int num_threads, py::object thread_pool,
+              bool enable_sampling, int nbest_size, float alpha, bool add_bos,
+              bool add_eos, bool reverse) {
+             std::vector<std::string_view> C_ins = CastToStringViewVector(ins);
+             std::vector<std::vector<int>> temp_outs(ins.size());
+             WorkerPool pool(num_threads, thread_pool);
+             {
+               py::gil_scoped_release release;
+               auto status = sentencepiece::RunBatch(
+                   ins.size(),
+                   [&](size_t i) {
+                     std::vector<int> out;
+                     absl::Status s;
+                     if (enable_sampling) {
+                       s = self.SampleEncode(C_ins[i], nbest_size, alpha, &out);
+                     } else {
+                       s = self.Encode(C_ins[i], &out);
+                     }
+                     if (!s.ok()) return s;
+                     RewriteIds(self, &out, add_bos, add_eos, reverse);
+                     temp_outs[i] = std::move(out);
+                     return absl::OkStatus();
+                   },
+                   *pool.get());
+               if (!status.ok()) throw status;
+             }
+             std::vector<VectorBuffer> outs(ins.size());
+             for (size_t i = 0; i < ins.size(); ++i) {
+               outs[i] = VectorBuffer(std::move(temp_outs[i]));
+             }
+             return outs;
+           })
+      .def("_EncodeAsPiecesBatch",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::list& ins, int num_threads, py::object thread_pool,
+              bool enable_sampling, int nbest_size, float alpha, bool add_bos,
+              bool add_eos, bool reverse, bool emit_unk_piece, bool return_bytes) {
+             if (ins.empty()) return py::list();
+             std::vector<std::string_view> C_ins = CastToStringViewVector(ins);
+             std::vector<std::vector<std::string>> outs(ins.size());
+             WorkerPool pool(num_threads, thread_pool);
+             {
+               py::gil_scoped_release release;
+               auto status = sentencepiece::RunBatch(
+                   ins.size(),
+                   [&](size_t i) {
+                     std::vector<std::string> out;
+                     absl::Status s;
+                     if (enable_sampling) {
+                       s = self.SampleEncode(C_ins[i], nbest_size, alpha, &out);
+                     } else {
+                       s = self.Encode(C_ins[i], &out);
+                     }
+                     if (!s.ok()) return s;
+                     RewriteIds(self, &out, add_bos, add_eos, reverse,
+                                emit_unk_piece);
+                     outs[i] = std::move(out);
+                     return absl::OkStatus();
+                   },
+                   *pool.get());
+               if (!status.ok()) throw status;
+             }
+             py::list py_outs(outs.size());
+             for (size_t i = 0; i < outs.size(); ++i) {
+               py_outs[i] = ToPyStringList(outs[i], return_bytes);
+             }
+             return py_outs;
+           })
+      .def("_EncodeAsSerializedProtoBatch",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::list& ins, int num_threads, py::object thread_pool,
+              bool enable_sampling, int nbest_size, float alpha, bool add_bos,
+              bool add_eos, bool reverse, bool emit_unk_piece) {
+             CheckProtoArguments(add_bos, add_eos, reverse, emit_unk_piece);
+             std::vector<std::string_view> C_ins = CastToStringViewVector(ins);
+             std::vector<std::string> outs(ins.size());
+             WorkerPool pool(num_threads, thread_pool);
+             {
+               py::gil_scoped_release release;
+               auto status = sentencepiece::RunBatch(
+                   ins.size(),
+                   [&](size_t i) {
+                     sentencepiece::SentencePieceText spt;
+                     absl::Status s;
+                     if (enable_sampling) {
+                       s = self.SampleEncode(C_ins[i], nbest_size, alpha, &spt);
+                     } else {
+                       s = self.Encode(C_ins[i], &spt);
+                     }
+                     if (!s.ok()) return s;
+                     outs[i] = spt.SerializeAsString();
+                     return absl::OkStatus();
+                   },
+                   *pool.get());
+               if (!status.ok()) throw status;
+             }
+             py::list py_outs(outs.size());
+             for (size_t i = 0; i < outs.size(); ++i) {
+               py_outs[i] = py::bytes(outs[i]);
+             }
+             return py_outs;
+           })
+      .def("_EncodeAsOffsetMappingBatch",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::list& ins, int num_threads, py::object thread_pool,
+              bool enable_sampling, int nbest_size, float alpha, bool add_bos,
+              bool add_eos, bool reverse, bool emit_unk_piece, bool return_bytes) {
+             std::vector<std::string_view> C_ins = CastToStringViewVector(ins);
+             std::vector<sentencepiece::SentencePieceText> spts(ins.size());
+             WorkerPool pool(num_threads, thread_pool);
+             {
+               py::gil_scoped_release release;
+               auto status = sentencepiece::RunBatch(
+                   ins.size(),
+                   [&](size_t i) {
+                     absl::Status s;
+                     if (enable_sampling) {
+                       s = self.SampleEncode(C_ins[i], nbest_size, alpha,
+                                             &spts[i]);
+                     } else {
+                       s = self.Encode(C_ins[i], &spts[i]);
+                     }
+                     if (!s.ok()) return s;
+                     return absl::OkStatus();
+                   },
+                   *pool.get());
+               if (!status.ok()) throw status;
+             }
+
+             py::list py_results(ins.size());
+             for (size_t batch_idx = 0; batch_idx < ins.size(); ++batch_idx) {
+               absl::string_view orig = C_ins[batch_idx];
+               const auto& spt = spts[batch_idx];
+
+               std::vector<int> utf8_to_unicode;
+               if (!return_bytes) {
+                 utf8_to_unicode = BuildUtf8ToUnicodeMap(orig);
+               }
+
+               const size_t num_pieces = spt.pieces_size();
+               py::list ids(num_pieces);
+               py::list pieces(num_pieces);
+               py::list offsets(num_pieces);
+
+               for (size_t i = 0; i < num_pieces; ++i) {
+                 const auto& piece = spt.pieces(i);
+                 ids[i] = piece.id();
+                 if (return_bytes) {
+                   pieces[i] = py::bytes(piece.piece());
+                   offsets[i] = py::make_tuple(piece.begin(), piece.end());
+                 } else {
+                   pieces[i] = py::str(piece.piece());
+                   int start_unicode = utf8_to_unicode[piece.begin()];
+                   int end_unicode = utf8_to_unicode[piece.end()];
+                   offsets[i] = py::make_tuple(start_unicode, end_unicode);
+                 }
+               }
+
+               py::dict result;
+               result["ids"] = ids;
+               result["pieces"] = pieces;
+               result["offsets"] = offsets;
+               py_results[batch_idx] = result;
+             }
+             return py_results;
+           })
+
+      // Single Decode APIs
+      .def("_DecodeIds",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& ids_obj) {
+             std::vector<int> ids = CastToVectorInt(ids_obj);
+             CheckIds(ids, self.GetPieceSize());
+             std::string detok;
+             {
+               py::gil_scoped_release release;
+               auto status = self.Decode(ids, &detok);
+               if (!status.ok()) throw status;
+             }
+             return py::str(detok);
+           })
+      .def("_DecodeIdsAsBytes",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& ids_obj) {
+             std::vector<int> ids = CastToVectorInt(ids_obj);
+             CheckIds(ids, self.GetPieceSize());
+             std::string detok;
+             {
+               py::gil_scoped_release release;
+               auto status = self.Decode(ids, &detok);
+               if (!status.ok()) throw status;
+             }
+             return py::bytes(detok);
+           })
+      .def("_DecodePieces",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::list& pieces) {
+             if (pieces.empty()) return py::object(py::str(""));
+             bool is_bytes = py::isinstance<py::bytes>(pieces[0]);
+             std::vector<std::string_view> C_pieces =
+                 CastToStringViewVector(pieces);
+             std::string detok;
+             {
+               py::gil_scoped_release release;
+               auto status = self.Decode(C_pieces, &detok);
+               if (!status.ok()) throw status;
+             }
+             return ToPyString(detok, is_bytes);
+           })
+      .def("_DecodePiecesAsBytes",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::list& pieces) {
+             if (pieces.empty()) return py::bytes("");
+             std::vector<std::string_view> C_pieces =
+                 CastToStringViewVector(pieces);
+             std::string detok;
+             {
+               py::gil_scoped_release release;
+               auto status = self.Decode(C_pieces, &detok);
+               if (!status.ok()) throw status;
+             }
+             return py::bytes(detok);
+           })
+      .def("_DecodeIdsAsSerializedProto",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& ids_obj) {
+             std::vector<int> ids = CastToVectorInt(ids_obj);
+             CheckIds(ids, self.GetPieceSize());
+             sentencepiece::SentencePieceText spt;
+             {
+               py::gil_scoped_release release;
+               auto status = self.Decode(ids, &spt);
+               if (!status.ok()) throw status;
+             }
+             return py::bytes(spt.SerializeAsString());
+           })
+      .def("_DecodePiecesAsSerializedProto",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::list& pieces) {
+             std::vector<std::string_view> C_pieces =
+                 CastToStringViewVector(pieces);
+             sentencepiece::SentencePieceText spt;
+             {
+               py::gil_scoped_release release;
+               auto status = self.Decode(C_pieces, &spt);
+               if (!status.ok()) throw status;
+             }
+             return py::bytes(spt.SerializeAsString());
+           })
+
+      .def("_DecodeAsOffsetMapping",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, bool return_bytes) {
+             py::object normalized_input = input;
+             if (py::isinstance<py::tuple>(input)) {
+               normalized_input = py::list(input);
+             }
+
+             bool input_is_pieces = false;
+             bool detected_bytes = false;
+
+             if (py::isinstance<py::list>(normalized_input)) {
+               py::sequence seq = normalized_input;
+               if (!seq.empty()) {
+                 py::object first = seq[0];
+                 if (py::isinstance<py::str>(first)) {
+                   input_is_pieces = true;
+                 } else if (py::isinstance<py::bytes>(first)) {
+                   input_is_pieces = true;
+                   detected_bytes = true;
+                 }
+               }
+             }
+
+             if (input_is_pieces) {
+               return_bytes = detected_bytes;
+             }
+
+             sentencepiece::SentencePieceText spt;
+             absl::Status status;
+             if (input_is_pieces) {
+               std::vector<std::string_view> pieces =
+                   CastToStringViewVector(normalized_input.cast<py::list>());
+               {
+                 py::gil_scoped_release release;
+                 status = self.Decode(pieces, &spt);
+               }
+             } else {
+               std::vector<int> ids = CastToVectorInt(normalized_input);
+               CheckIds(ids, self.GetPieceSize());
+               {
+                 py::gil_scoped_release release;
+                 status = self.Decode(ids, &spt);
+               }
+             }
+             if (!status.ok()) throw status;
+
+             return ExtractOffsetMapping(spt, return_bytes);
+           })
+
+      // Batch Decode APIs
+      .def("_DecodeIdsBatch",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& ins_obj, int num_threads,
+              py::object thread_pool) {
+             std::vector<std::vector<int>> ins = CastToVectorVectorInt(ins_obj);
+             for (const auto& ids : ins) CheckIds(ids, self.GetPieceSize());
+             std::vector<std::string> outs(ins.size());
+             WorkerPool pool(num_threads, thread_pool);
+             {
+               py::gil_scoped_release release;
+               auto status = sentencepiece::RunBatch(
+                   ins.size(),
+                   [&](size_t i) { return self.Decode(ins[i], &outs[i]); },
+                   *pool.get());
+               if (!status.ok()) throw status;
+             }
+             py::list py_outs(outs.size());
+             for (size_t i = 0; i < outs.size(); ++i) {
+               py_outs[i] = py::str(outs[i]);
+             }
+             return py_outs;
+           })
+      .def("_DecodeIdsAsBytesBatch",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& ins_obj, int num_threads,
+              py::object thread_pool) {
+             std::vector<std::vector<int>> ins = CastToVectorVectorInt(ins_obj);
+             for (const auto& ids : ins) CheckIds(ids, self.GetPieceSize());
+             std::vector<std::string> outs(ins.size());
+             WorkerPool pool(num_threads, thread_pool);
+             {
+               py::gil_scoped_release release;
+               auto status = sentencepiece::RunBatch(
+                   ins.size(),
+                   [&](size_t i) { return self.Decode(ins[i], &outs[i]); },
+                   *pool.get());
+               if (!status.ok()) throw status;
+             }
+             py::list py_outs(outs.size());
+             for (size_t i = 0; i < outs.size(); ++i) {
+               py_outs[i] = py::bytes(outs[i]);
+             }
+             return py_outs;
+           })
+      .def("_DecodeIdsAsSerializedProtoBatch",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& ins_obj, int num_threads,
+              py::object thread_pool) {
+             std::vector<std::vector<int>> ins = CastToVectorVectorInt(ins_obj);
+             for (const auto& ids : ins) CheckIds(ids, self.GetPieceSize());
+             std::vector<std::string> outs(ins.size());
+             WorkerPool pool(num_threads, thread_pool);
+             {
+               py::gil_scoped_release release;
+               auto status = sentencepiece::RunBatch(
+                   ins.size(),
+                   [&](size_t i) {
+                     sentencepiece::SentencePieceText spt;
+                     auto s = self.Decode(ins[i], &spt);
+                     if (!s.ok()) return s;
+                     outs[i] = spt.SerializeAsString();
+                     return absl::OkStatus();
+                   },
+                   *pool.get());
+               if (!status.ok()) throw status;
+             }
+             py::list py_outs(outs.size());
+             for (size_t i = 0; i < outs.size(); ++i) {
+               py_outs[i] = py::bytes(outs[i]);
+             }
+             return py_outs;
+           })
+      .def("_DecodePiecesBatch",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::list& ins, int num_threads, py::object thread_pool) {
+             if (ins.empty()) return py::list();
+             py::list sublist0 = ins[0].cast<py::list>();
+             if (sublist0.empty()) return py::list();
+             bool is_bytes = py::isinstance<py::bytes>(sublist0[0]);
+
+             std::vector<std::vector<std::string_view>> C_ins(ins.size());
+             for (size_t i = 0; i < ins.size(); ++i) {
+               C_ins[i] = CastToStringViewVector(ins[i].cast<py::list>());
+             }
+             std::vector<std::string> outs(ins.size());
+             WorkerPool pool(num_threads, thread_pool);
+             {
+               py::gil_scoped_release release;
+               auto status = sentencepiece::RunBatch(
+                   ins.size(),
+                   [&](size_t i) { return self.Decode(C_ins[i], &outs[i]); },
+                   *pool.get());
+               if (!status.ok()) throw status;
+             }
+             py::list py_outs(outs.size());
+             for (size_t i = 0; i < outs.size(); ++i) {
+               py_outs[i] = ToPyString(outs[i], is_bytes);
+             }
+             return py_outs;
+           })
+      .def("_DecodePiecesAsBytesBatch",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::list& ins, int num_threads, py::object thread_pool) {
+             if (ins.empty()) return py::list();
+             std::vector<std::vector<std::string_view>> C_ins(ins.size());
+             for (size_t i = 0; i < ins.size(); ++i) {
+               C_ins[i] = CastToStringViewVector(ins[i].cast<py::list>());
+             }
+             std::vector<std::string> outs(ins.size());
+             WorkerPool pool(num_threads, thread_pool);
+             {
+               py::gil_scoped_release release;
+               auto status = sentencepiece::RunBatch(
+                   ins.size(),
+                   [&](size_t i) { return self.Decode(C_ins[i], &outs[i]); },
+                   *pool.get());
+               if (!status.ok()) throw status;
+             }
+             py::list py_outs(outs.size());
+             for (size_t i = 0; i < outs.size(); ++i) {
+               py_outs[i] = py::bytes(outs[i]);
+             }
+             return py_outs;
+           })
+      .def("_DecodePiecesAsSerializedProtoBatch",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::list& ins, int num_threads, py::object thread_pool) {
+             if (ins.empty()) return py::list();
+             std::vector<std::vector<std::string_view>> C_ins(ins.size());
+             for (size_t i = 0; i < ins.size(); ++i) {
+               C_ins[i] = CastToStringViewVector(ins[i].cast<py::list>());
+             }
+             std::vector<std::string> outs(ins.size());
+             WorkerPool pool(num_threads, thread_pool);
+             {
+               py::gil_scoped_release release;
+               auto status = sentencepiece::RunBatch(
+                   ins.size(),
+                   [&](size_t i) {
+                     sentencepiece::SentencePieceText spt;
+                     auto s = self.Decode(C_ins[i], &spt);
+                     if (!s.ok()) return s;
+                     outs[i] = spt.SerializeAsString();
+                     return absl::OkStatus();
+                   },
+                   *pool.get());
+               if (!status.ok()) throw status;
+             }
+             py::list py_outs(outs.size());
+             for (size_t i = 0; i < outs.size(); ++i) {
+               py_outs[i] = py::bytes(outs[i]);
+             }
+             return py_outs;
+           })
+
+      .def("_DecodeAsOffsetMappingBatch",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& ins_obj, int num_threads, py::object thread_pool,
+              bool return_bytes) {
+             
+             py::object normalized_ins = ins_obj;
+             if (py::isinstance<py::tuple>(ins_obj)) {
+               normalized_ins = py::list(ins_obj);
+             }
+             
+             py::sequence seq_ins = normalized_ins;
+             if (seq_ins.empty()) return py::list();
+
+             py::list py_ins(seq_ins.size());
+             for (size_t i = 0; i < seq_ins.size(); ++i) {
+               py::object inner = seq_ins[i];
+               if (py::isinstance<py::tuple>(inner)) {
+                 py_ins[i] = py::list(inner);
+               } else {
+                 py_ins[i] = inner;
+               }
+             }
+
+             bool is_pieces_batch = false;
+             bool detected_bytes = false;
+
+             if (!py_ins.empty()) {
+               py::object first_seq = py_ins[0];
+               if (py::isinstance<py::list>(first_seq) || py::isinstance<py::tuple>(first_seq)) {
+                 py::sequence inner_seq = first_seq;
+                 if (!inner_seq.empty()) {
+                   py::object first_item = inner_seq[0];
+                   if (py::isinstance<py::str>(first_item)) {
+                     is_pieces_batch = true;
+                   } else if (py::isinstance<py::bytes>(first_item)) {
+                     is_pieces_batch = true;
+                     detected_bytes = true;
+                   }
+                 }
+               }
+             }
+
+             if (is_pieces_batch) {
+               return_bytes = detected_bytes;
+             }
+
+             std::vector<sentencepiece::SentencePieceText> spts(py_ins.size());
+             WorkerPool pool(num_threads, thread_pool);
+             
+             if (is_pieces_batch) {
+               std::vector<std::vector<std::string_view>> C_ins(py_ins.size());
+               for (size_t i = 0; i < py_ins.size(); ++i) {
+                 C_ins[i] = CastToStringViewVector(py_ins[i].cast<py::list>());
+               }
+               {
+                 py::gil_scoped_release release;
+                 auto status = sentencepiece::RunBatch(
+                     py_ins.size(),
+                     [&](size_t i) {
+                       return self.Decode(C_ins[i], &spts[i]);
+                     },
+                     *pool.get());
+                 if (!status.ok()) throw status;
+               }
+             } else {
+               std::vector<std::vector<int>> C_ins = CastToVectorVectorInt(py_ins);
+               for (const auto& ids : C_ins) CheckIds(ids, self.GetPieceSize());
+               {
+                 py::gil_scoped_release release;
+                 auto status = sentencepiece::RunBatch(
+                     py_ins.size(),
+                     [&](size_t i) {
+                       return self.Decode(C_ins[i], &spts[i]);
+                     },
+                     *pool.get());
+                 if (!status.ok()) throw status;
+               }
+             }
+
+             py::list py_outs(spts.size());
+             for (size_t i = 0; i < spts.size(); ++i) {
+               py_outs[i] = ExtractOffsetMapping(spts[i], return_bytes);
+             }
+             return py_outs;
+           })
+
+      // NBest APIs
+      .def("_NBestEncodeAsIds",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, int nbest_size, bool add_bos,
+              bool add_eos, bool reverse) {
+             PyInputStringView in(input);
+             std::vector<std::vector<int>> idss;
+             {
+               py::gil_scoped_release release;
+               auto status = self.NBestEncode(in.value, nbest_size, &idss);
+               if (!status.ok()) throw status;
+               for (auto& ids : idss) {
+                 RewriteIds(self, &ids, add_bos, add_eos, reverse);
+               }
+             }
+             return idss;
+           })
+      .def("_NBestEncodeAsBuffer",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, int nbest_size, bool add_bos,
+              bool add_eos, bool reverse) {
+             PyInputStringView in(input);
+             std::vector<std::vector<int>> idss;
+             {
+               py::gil_scoped_release release;
+               auto status = self.NBestEncode(in.value, nbest_size, &idss);
+               if (!status.ok()) throw status;
+               for (auto& ids : idss) {
+                 RewriteIds(self, &ids, add_bos, add_eos, reverse);
+               }
+             }
+             std::vector<VectorBuffer> outs(idss.size());
+             for (size_t i = 0; i < idss.size(); ++i) {
+               outs[i] = VectorBuffer(std::move(idss[i]));
+             }
+             return outs;
+           })
+      .def("_NBestEncodeAsPieces",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, int nbest_size, bool add_bos,
+              bool add_eos, bool reverse, bool emit_unk_piece, bool return_bytes) {
+             PyInputStringView in(input);
+             std::vector<std::vector<std::string>> piecess;
+             {
+               py::gil_scoped_release release;
+               auto status = self.NBestEncode(in.value, nbest_size, &piecess);
+               if (!status.ok()) throw status;
+               for (auto& pieces : piecess) {
+                 RewriteIds(self, &pieces, add_bos, add_eos, reverse,
+                            emit_unk_piece);
+               }
+             }
+             py::list py_outs(piecess.size());
+             for (size_t i = 0; i < piecess.size(); ++i) {
+               py_outs[i] = ToPyStringList(piecess[i], return_bytes);
+             }
+             return py_outs;
+           })
+      .def("_NBestEncodeAsSerializedProto",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, int nbest_size, bool add_bos,
+              bool add_eos, bool reverse, bool emit_unk_piece) {
+             CheckProtoArguments(add_bos, add_eos, reverse, emit_unk_piece);
+             PyInputStringView in(input);
+             sentencepiece::NBestSentencePieceText nbest_spt;
+             {
+               py::gil_scoped_release release;
+               auto status = self.NBestEncode(in.value, nbest_size, &nbest_spt);
+               if (!status.ok()) throw status;
+             }
+             return py::bytes(nbest_spt.SerializeAsString());
+           })
+
+      // Sample and Score APIs
+      .def("_SampleEncodeAndScoreAsIds",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, int num_samples, float alpha, bool wor,
+              bool include_best, bool add_bos, bool add_eos, bool reverse) {
+             PyInputStringView in(input);
+             std::vector<std::pair<std::vector<int>, float>> idss;
+             {
+               py::gil_scoped_release release;
+               auto status = self.SampleEncodeAndScore(
+                   in.value, num_samples, alpha, wor, include_best, &idss);
+               if (!status.ok()) throw status;
+               for (auto& ids : idss) {
+                 RewriteIds(self, &ids.first, add_bos, add_eos, reverse);
+               }
+             }
+             return idss;
+           })
+      .def("_SampleEncodeAndScoreAsPieces",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, int num_samples, float alpha, bool wor,
+              bool include_best, bool add_bos, bool add_eos, bool reverse,
+              bool emit_unk_piece, bool return_bytes) {
+             PyInputStringView in(input);
+             std::vector<std::pair<std::vector<std::string>, float>> piecess;
+             {
+               py::gil_scoped_release release;
+               auto status = self.SampleEncodeAndScore(
+                   in.value, num_samples, alpha, wor, include_best, &piecess);
+               if (!status.ok()) throw status;
+               for (auto& pieces : piecess) {
+                 RewriteIds(self, &pieces.first, add_bos, add_eos, reverse,
+                            emit_unk_piece);
+               }
+             }
+             py::list py_outs(piecess.size());
+             for (size_t i = 0; i < piecess.size(); ++i) {
+               py_outs[i] =
+                   py::make_tuple(ToPyStringList(piecess[i].first, return_bytes),
+                                  piecess[i].second);
+             }
+             return py_outs;
+           })
+      .def("_SampleEncodeAndScoreAsSerializedProto",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, int num_samples, float alpha, bool wor,
+              bool include_best, bool add_bos, bool add_eos, bool reverse,
+              bool emit_unk_piece) {
+             CheckProtoArguments(add_bos, add_eos, reverse, emit_unk_piece);
+             PyInputStringView in(input);
+             sentencepiece::NBestSentencePieceText samples_spt;
+             {
+               py::gil_scoped_release release;
+               auto status =
+                   self.SampleEncodeAndScore(in.value, num_samples, alpha, wor,
+                                             include_best, &samples_spt);
+               if (!status.ok()) throw status;
+             }
+             return py::bytes(samples_spt.SerializeAsString());
+           })
+
+      // Parallel Encode APIs
+      .def(
+          "_ParallelEncodeAsIds",
+          [](const sentencepiece::SentencePieceProcessor& self,
+             const py::object& input, int chunk_len, int num_threads,
+             py::object thread_pool, bool add_bos, bool add_eos, bool reverse) {
+            PyInputStringView in(input);
+            std::vector<int> ids;
+            WorkerPool pool(num_threads, thread_pool);
+            {
+              py::gil_scoped_release release;
+              auto status =
+                  self.ParallelEncode(in.value, chunk_len, *pool.get(), &ids);
+              if (!status.ok()) throw status;
+              RewriteIds(self, &ids, add_bos, add_eos, reverse);
+            }
+            return ids;
+          })
+      .def(
+          "_ParallelEncodeAsBuffer",
+          [](const sentencepiece::SentencePieceProcessor& self,
+             const py::object& input, int chunk_len, int num_threads,
+             py::object thread_pool, bool add_bos, bool add_eos, bool reverse) {
+            PyInputStringView in(input);
+            std::vector<int> ids;
+            WorkerPool pool(num_threads, thread_pool);
+            {
+              py::gil_scoped_release release;
+              auto status =
+                  self.ParallelEncode(in.value, chunk_len, *pool.get(), &ids);
+              if (!status.ok()) throw status;
+              RewriteIds(self, &ids, add_bos, add_eos, reverse);
+            }
+            return VectorBuffer(std::move(ids));
+          })
+      .def("_ParallelEncodeAsPieces",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, int chunk_len, int num_threads,
+              py::object thread_pool, bool add_bos, bool add_eos, bool reverse,
+              bool emit_unk_piece, bool return_bytes) {
+             PyInputStringView in(input);
+             std::vector<std::string> pieces;
+             WorkerPool pool(num_threads, thread_pool);
+             {
+               py::gil_scoped_release release;
+               auto status = self.ParallelEncode(in.value, chunk_len,
+                                                 *pool.get(), &pieces);
+               if (!status.ok()) throw status;
+               RewriteIds(self, &pieces, add_bos, add_eos, reverse,
+                          emit_unk_piece);
+             }
+             return ToPyStringList(pieces, return_bytes);
+           })
+      .def("_ParallelEncodeAsSerializedProto",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, int chunk_len, int num_threads,
+              py::object thread_pool, bool add_bos, bool add_eos, bool reverse,
+              bool emit_unk_piece) {
+             CheckProtoArguments(add_bos, add_eos, reverse, emit_unk_piece);
+             PyInputStringView in(input);
+             sentencepiece::SentencePieceText spt;
+             WorkerPool pool(num_threads, thread_pool);
+             {
+               py::gil_scoped_release release;
+               auto status =
+                   self.ParallelEncode(in.value, chunk_len, *pool.get(), &spt);
+               if (!status.ok()) throw status;
+             }
+             return py::bytes(spt.SerializeAsString());
+           })
+
+      // Normalize APIs
+      .def("_Normalize",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input) {
+             PyInputStringView in(input);
+             std::string norm;
+             {
+               py::gil_scoped_release release;
+               norm = self.Normalize(in.value);
+             }
+             return ToPyString(norm, in.is_bytes);
+           })
+      .def("_NormalizeWithOffsets",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input) {
+             PyInputStringView in(input);
+             std::string norm;
+             std::vector<size_t> offsets;
+             {
+               py::gil_scoped_release release;
+               auto status = self.Normalize(in.value, &norm, &offsets);
+               if (!status.ok()) throw status;
+             }
+             if (!in.is_bytes) {
+               sentencepiece::ConvertToUnicodeAlignment(in.value, norm,
+                                                        &offsets);
+             }
+             return py::make_tuple(ToPyString(norm, in.is_bytes), offsets);
+           })
+
+      // Entropy API
+      .def("_CalculateEntropy",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::object& input, float alpha) {
+             PyInputStringView in(input);
+             float entropy = 0.0;
+             {
+               py::gil_scoped_release release;
+               auto status = self.CalculateEntropy(in.value, alpha, &entropy);
+               if (!status.ok()) throw status;
+             }
+             return entropy;
+           })
+
+      // Normalizer Spec Override
+      .def("_OverrideNormalizerSpec",
+           [](sentencepiece::SentencePieceProcessor& self,
+              const std::unordered_map<std::string, std::string>& args) {
+             absl::Status status;
+             for (const auto& [key, value] : args) {
+               status = sentencepiece::SentencePieceTrainer::SetProtoField(
+                   key, value, self.mutable_normalizer_spec());
+               if (!status.ok()) throw status;
+             }
+           })
+
+      // Vocab management
+      .def("GetPieceSize", &sentencepiece::SentencePieceProcessor::GetPieceSize)
+      .def("PieceToId",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const std::string& piece) { return self.PieceToId(piece); })
+      .def("IdToPiece", [](const sentencepiece::SentencePieceProcessor& self,
+                           int id) { return self.IdToPiece(id); })
+      .def("GetScore", &sentencepiece::SentencePieceProcessor::GetScore)
+      .def("IsUnknown", &sentencepiece::SentencePieceProcessor::IsUnknown)
+      .def("IsControl", &sentencepiece::SentencePieceProcessor::IsControl)
+      .def("IsUnused", &sentencepiece::SentencePieceProcessor::IsUnused)
+      .def("IsByte", &sentencepiece::SentencePieceProcessor::IsByte)
+      .def("unk_id", &sentencepiece::SentencePieceProcessor::unk_id)
+      .def("bos_id", &sentencepiece::SentencePieceProcessor::bos_id)
+      .def("eos_id", &sentencepiece::SentencePieceProcessor::eos_id)
+      .def("pad_id", &sentencepiece::SentencePieceProcessor::pad_id)
+
+      // Serialization
+      .def("serialized_model_proto",
+           [](const sentencepiece::SentencePieceProcessor& self) {
+             return py::bytes(self.serialized_model_proto());
+           });
+
+  // Bind Trainer. Use py::nodelete holder to avoid trying to delete it because
+  // destructor is private.
+  py::class_<
+      sentencepiece::SentencePieceTrainer,
+      std::unique_ptr<sentencepiece::SentencePieceTrainer, py::nodelete>>(
+      m, "SentencePieceTrainer")
+      .def_static("_TrainFromString",
+                  [](const std::string& arg) {
+                    py::gil_scoped_release release;
+                    auto status =
+                        sentencepiece::SentencePieceTrainer::Train(arg);
+                    if (!status.ok()) throw status;
+                    return true;
+                  })
+      .def_static("_TrainFromMap",
+                  [](const std::unordered_map<std::string, std::string>& args) {
+                    py::gil_scoped_release release;
+                    auto status =
+                        sentencepiece::SentencePieceTrainer::Train(args);
+                    if (!status.ok()) throw status;
+                    return true;
+                  })
+      .def_static("_TrainFromMap2",
+                  [](const std::unordered_map<std::string, std::string>& args,
+                     py::iterator iter) {
+                    PySentenceIterator py_iter(std::move(iter));
+                    {
+                      py::gil_scoped_release release;
+                      auto status = sentencepiece::SentencePieceTrainer::Train(
+                          args, &py_iter);
+                      if (!status.ok()) throw status;
+                    }
+                    return true;
+                  })
+      .def_static("_TrainFromMap3",
+                  [](const std::unordered_map<std::string, std::string>& args) {
+                    std::string model_proto;
+                    {
+                      py::gil_scoped_release release;
+                      auto status = sentencepiece::SentencePieceTrainer::Train(
+                          args, nullptr, &model_proto);
+                      if (!status.ok()) throw status;
+                    }
+                    return py::bytes(model_proto);
+                  })
+      .def_static("_TrainFromMap4",
+                  [](const std::unordered_map<std::string, std::string>& args,
+                     py::iterator iter) {
+                    std::string model_proto;
+                    PySentenceIterator py_iter(std::move(iter));
+                    {
+                      py::gil_scoped_release release;
+                      auto status = sentencepiece::SentencePieceTrainer::Train(
+                          args, &py_iter, &model_proto);
+                      if (!status.ok()) throw status;
+                    }
+                    return py::bytes(model_proto);
+                  });
+
+  // Bind Normalizer
+  py::class_<sentencepiece::SentencePieceNormalizer>(m,
+                                                     "SentencePieceNormalizer")
+      .def(py::init<>())
+      .def("LoadFromFile",
+           [](sentencepiece::SentencePieceNormalizer& self,
+              const std::string& filename) {
+             py::gil_scoped_release release;
+             auto status = self.Load(filename);
+             if (!status.ok()) throw status;
+             return true;
+           })
+      .def("LoadFromSerializedProto",
+           [](sentencepiece::SentencePieceNormalizer& self,
+              const py::bytes& serialized) {
+             py::gil_scoped_release release;
+             auto status =
+                 self.LoadFromSerializedProto(serialized.cast<std::string>());
+             if (!status.ok()) throw status;
+             return true;
+           })
+      .def("LoadFromRuleTSV",
+           [](sentencepiece::SentencePieceNormalizer& self,
+              const std::string& filename) {
+             py::gil_scoped_release release;
+             auto status = self.LoadFromRuleTSV(filename);
+             if (!status.ok()) throw status;
+             return true;
+           })
+      .def("LoadFromRuleName",
+           [](sentencepiece::SentencePieceNormalizer& self,
+              const std::string& name) {
+             py::gil_scoped_release release;
+             auto status = self.LoadFromRuleName(name);
+             if (!status.ok()) throw status;
+             return true;
+           })
+      .def("_Normalize",
+           [](const sentencepiece::SentencePieceNormalizer& self,
+              const py::object& input) {
+             PyInputStringView in(input);
+             std::string norm;
+             {
+               py::gil_scoped_release release;
+               auto status = self.Normalize(in.value, &norm);
+               if (!status.ok()) throw status;
+             }
+             return ToPyString(norm, in.is_bytes);
+           })
+      .def("_NormalizeWithOffsets",
+           [](const sentencepiece::SentencePieceNormalizer& self,
+              const py::object& input) {
+             PyInputStringView in(input);
+             std::string norm;
+             std::vector<size_t> offsets;
+             {
+               py::gil_scoped_release release;
+               auto status = self.Normalize(in.value, &norm, &offsets);
+               if (!status.ok()) throw status;
+             }
+             if (!in.is_bytes) {
+               sentencepiece::ConvertToUnicodeAlignment(in.value, norm,
+                                                        &offsets);
+             }
+             return py::make_tuple(ToPyString(norm, in.is_bytes), offsets);
+           })
+      .def("_SetProtoField",
+           [](sentencepiece::SentencePieceNormalizer& self,
+              const std::string& name, bool value) {
+             auto status = sentencepiece::SentencePieceTrainer::SetProtoField(
+                 name, value ? "1" : "0", self.mutable_normalizer_spec());
+             if (!status.ok()) throw status;
+           })
+      .def("serialized_model_proto",
+           [](const sentencepiece::SentencePieceNormalizer& self) {
+             return py::bytes(self.serialized_model_proto());
+           });
+}

@@ -24,6 +24,10 @@ import sys
 import sysconfig
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext as _build_ext
+try:
+  from pybind11.setup_helpers import Pybind11Extension
+except ImportError:
+  Pybind11Extension = None
 
 sys.path.append(os.path.join('.', 'test'))
 
@@ -53,8 +57,22 @@ def find_abseil_lib(search_root):
   return absl_libs
 
 
+def get_protobuf_includes():
+  prefix = '/I' if os.name == 'nt' else '-I'
+  paths = [
+      '../src/builtin_pb',
+      './sentencepiece/src/builtin_pb',
+      '../third_party/protobuf-lite',
+      './sentencepiece/third_party/protobuf-lite',
+  ]
+  return [prefix + os.path.normpath(p) for p in paths]
+
+
 def get_cflags_and_libs(root):
-  cflags = ['-std=c++17', '-I' + os.path.join(root, 'include')]
+  cflags = [
+      '-std=c++17',
+      '-I' + os.path.normpath(os.path.join(root, 'include')),
+  ] + get_protobuf_includes()
   libs = []
   if os.path.exists(os.path.join(root, 'lib/libsentencepiece.a')):
     libs = [
@@ -146,14 +164,20 @@ class build_ext_win(_build_ext):
     arch = get_win_arch()
 
     if os.path.exists('..\\build_{}\\root\\lib'.format(arch)):
-      cflags = ['/std:c++17', '/I..\\build_{}\\root\\include'.format(arch)]
+      cflags = [
+          '/std:c++17',
+          '/I' + os.path.normpath('..\\build_{}\\root\\include'.format(arch)),
+      ] + get_protobuf_includes()
       libs = [
           '..\\build_{}\\root\\lib\\sentencepiece.lib'.format(arch),
           '..\\build_{}\\root\\lib\\sentencepiece_train.lib'.format(arch),
       ]
       libs.extend(find_abseil_lib('..\\build_{}\\third_party'.format(arch)))
     elif os.path.exists('..\\build\\root\\lib'):
-      cflags = ['/std:c++17', '/I..\\build\\root\\include']
+      cflags = [
+          '/std:c++17',
+          '/I' + os.path.normpath('..\\build\\root\\include'),
+      ] + get_protobuf_includes()
       libs = [
           '..\\build\\root\\lib\\sentencepiece.lib',
           '..\\build\\root\\lib\\sentencepiece_train.lib',
@@ -189,7 +213,10 @@ class build_ext_win(_build_ext):
           '--parallel',
           '8',
       ])
-      cflags = ['/std:c++17', '/I.\\build\\root\\include']
+      cflags = [
+          '/std:c++17',
+          '/I' + os.path.normpath('.\\build\\root\\include'),
+      ] + get_protobuf_includes()
       libs = [
           '.\\build\\root\\lib\\sentencepiece.lib',
           '.\\build\\root\\lib\\sentencepiece_train.lib',
@@ -251,10 +278,16 @@ def get_win_arch():
   return arch
 
 
-SENTENCEPIECE_EXT = Extension(
-    'sentencepiece._sentencepiece',
-    sources=['src/sentencepiece/sentencepiece_wrap.cxx'],
-)
+if Pybind11Extension:
+  SENTENCEPIECE_EXT = Pybind11Extension(
+      'sentencepiece._sentencepiece',
+      sources=['src/sentencepiece/sentencepiece_pybind.cc'],
+  )
+else:
+  SENTENCEPIECE_EXT = Extension(
+      'sentencepiece._sentencepiece',
+      sources=['src/sentencepiece/sentencepiece_pybind.cc'],
+  )
 
 
 if os.name == 'nt':

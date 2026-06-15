@@ -146,6 +146,7 @@ jobs:
         with:
           sparse-checkout: |
             python/test
+            python/tools
             data/botchan.txt
 
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -162,7 +163,7 @@ jobs:
         run: pip install --find-links=python/wheelhouse sentencepiece
 
       - name: Install test dependencies
-        run: pip install pytest pytest-run-parallel
+        run: pip install "sentencepiece[test]" pytest-run-parallel --find-links=python/wheelhouse
       
       - name: Run free-threading tests
         working-directory: python

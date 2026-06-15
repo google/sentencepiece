@@ -26,12 +26,9 @@
 
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/types/span.h"
-
-#ifndef SWIG
 namespace absl {
 using std::string_view;
 }  // namespace absl
-#endif  // SWIG
 
 #include "third_party/absl/status/status.h"
 
@@ -143,14 +140,9 @@ absl::Status RunBatch(size_t total_tasks,
                       std::function<absl::Status(size_t index)> task_func,
                       ThreadPool& pool);
 
-#ifndef SWIGGO
 namespace util {
-// Redefine std::string for serialized_proto interface as Python's string is
-// a Unicode string. We can enforce the return value to be raw byte sequence
-// with SWIG's typemap.
 using bytes = std::string;
 }  // namespace util
-#endif  // SWIGGO
 
 class NBestSentencePieceText;
 class ModelInterface;
@@ -509,31 +501,19 @@ class SentencePieceProcessor {
                                       ThreadPool& thread_pool,
                                       SentencePieceText* spt) const;
 
-#ifdef SWIG
-#define SPP_SWIG_CHECK_AND_THROW \
-  if (!status.ok()) throw status;
-#else
-#define SPP_SWIG_CHECK_AND_THROW \
-  if (!status.ok()) {            \
-  }
-#endif  // SWIG
-
 #define DEFINE_SPP_DIRECT_FUNC_IMPL(FuncName, OutType, ...) \
   OutType output;                                           \
   const auto status = FuncName(__VA_ARGS__, &output);       \
-  SPP_SWIG_CHECK_AND_THROW;                                 \
   return output;
 
 #define DEFINE_SPP_SERIALIZED_PROTO_IMPL(FuncName, OutType, ...)     \
   OutType output;                                                    \
   const auto status = FuncName(__VA_ARGS__, output.mutable_proto()); \
-  SPP_SWIG_CHECK_AND_THROW;                                          \
   return output.SerializeAsString();
 
 #define DEFINE_SPP_IMMUTABLE_PROTO_IMPL(FuncName, OutType, ...)      \
   OutType output;                                                    \
   const auto status = FuncName(__VA_ARGS__, output.mutable_proto()); \
-  SPP_SWIG_CHECK_AND_THROW;                                          \
   return output;
 
   //////////////////////////////////////////////////////////////
