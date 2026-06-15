@@ -858,6 +858,12 @@ void SetRandomGeneratorSeed(unsigned int seed);
 // The log is emitted only when min_log_level >= output_log_level.
 void SetMinLogLevel(int v);
 
+// Sets global timeout in milliseconds for NBestEncode.
+// If timeout is reached, the search falls back to Viterbi.
+// The default value is 30000 (30 seconds).
+// 0 or negative value means no timeout.
+void SetNBestTimeout(int timeout_ms);
+
 // IO related functions to absorb model formats.
 namespace io {
 // Loads `model_proto` from `filename`.

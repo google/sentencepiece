@@ -786,6 +786,40 @@ TEST(UnigramModelTest, ModelNBestTest) {
   EXPECT_FALSE(sample.empty());
 }
 
+TEST(UnigramModelTest, ModelNBestTimeoutTest) {
+  const int original_timeout = sentencepiece::GetNBestTimeout();
+  ModelProto model_proto = MakeBaseModelProto();
+  AddPiece(&model_proto, "a", -1.0);
+  AddPiece(&model_proto, "b", -1.0);
+  AddPiece(&model_proto, "c", -1.0);
+  AddPiece(&model_proto, "ab", -0.5);
+  AddPiece(&model_proto, "bc", -0.5);
+  AddPiece(&model_proto, "abc", 0.0);
+
+  Model model(model_proto);
+
+  // Without timeout, we get 4 paths for "abc"
+  auto nbest = model.NBestEncode("abc", 10);
+  EXPECT_EQ(4, nbest.size());
+
+  // With a very large timeout, we should still get 4 paths
+  sentencepiece::SetNBestTimeout(10000);  // 10 second
+  nbest = model.NBestEncode("abc", 10);
+  EXPECT_EQ(4, nbest.size());
+
+  // With a very small timeout (1ms) and a long input, it should timeout
+  // and fallback to Viterbi (size 1).
+  std::string long_input;
+  for (int i = 0; i < 10000; ++i) {
+    long_input += "abc";
+  }
+
+  sentencepiece::SetNBestTimeout(1);  // 1 ms
+  nbest = model.NBestEncode(long_input, 100);
+  EXPECT_EQ(1, nbest.size());  // fallback to viterbi.
+  sentencepiece::SetNBestTimeout(original_timeout);
+}
+
 TEST(UnigramModelTest, EncodeTest) {
   ModelProto model_proto = MakeBaseModelProto();
   AddPiece(&model_proto, "ab", 0.0);         // 3
