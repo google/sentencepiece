@@ -20,6 +20,7 @@ list(APPEND SPM_LIBS absl::log)
 list(APPEND SPM_LIBS absl::log_initialize)
 list(APPEND SPM_LIBS absl::check)
 list(APPEND SPM_LIBS absl::random_random)
+list(APPEND SPM_LIBS absl::time)
 
 if (SPM_PROTOBUF_PROVIDER STREQUAL "internal")
   set(SPM_PROTO_HDRS builtin_pb/sentencepiece.pb.h)

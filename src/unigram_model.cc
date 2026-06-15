@@ -30,6 +30,8 @@
 #include "third_party/absl/random/random.h"
 #include "third_party/absl/strings/str_split.h"
 #include "third_party/absl/strings/string_view.h"
+#include "third_party/absl/time/clock.h"
+#include "third_party/absl/time/time.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -371,6 +373,9 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
     return {Viterbi()};
   }
 
+  const int timeout_ms = sentencepiece::GetNBestTimeout();
+  const absl::Time start_time = absl::Now();
+
   // Uses A* search to enumerate N-bests.
   // Given a lattice, enumerates hypotheses (paths) from EOS.
   // At each partial path x, compute f(x) as follows
@@ -498,6 +503,15 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
     constexpr int kMaxAgendaSize = 10000;
     constexpr int kMinAgendaSize = 512;
     if (agenda.size() >= kMaxAgendaSize) {
+      if (timeout_ms > 0) {
+        const auto elapsed =
+            absl::ToInt64Milliseconds(absl::Now() - start_time);
+        if (elapsed >= timeout_ms) {
+          LOG(WARNING) << "NBest search timed out after " << elapsed << " ms. "
+                       << "Falling back to Viterbi best path.";
+          return {Viterbi()};
+        }
+      }
       // Keeps the top `kMinAgendaSize` hypothesis.
       Agenda new_agenda;
       // Keeps the top hypothesis and the ones on their "next" paths.

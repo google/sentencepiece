@@ -29,6 +29,7 @@ namespace sentencepiece {
 namespace {
 static constexpr uint32_t kDefaultSeed = static_cast<uint32_t>(-1);
 static std::atomic<uint32_t> g_seed = kDefaultSeed;
+static std::atomic<int> g_nbest_timeout_ms = 30000;
 }  // namespace
 
 void SetRandomGeneratorSeed(uint32_t seed) { g_seed.store(seed); }
@@ -56,6 +57,10 @@ void SetDataDir(absl::string_view data_dir) {
 void SetMinLogLevel(int v) {
   absl::SetMinLogLevel(static_cast<absl::LogSeverityAtLeast>(v));
 }
+
+void SetNBestTimeout(int timeout_ms) { g_nbest_timeout_ms.store(timeout_ms); }
+
+int GetNBestTimeout() { return g_nbest_timeout_ms.load(); }
 
 namespace string_util {
 

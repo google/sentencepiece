@@ -57,6 +57,7 @@ std::ostream& operator<<(std::ostream& out, const std::vector<T>& v) {
 }
 
 uint32_t GetRandomGeneratorSeed();
+int GetNBestTimeout();
 
 // Sets data dir containing the global resources, e.g., pre-compiled
 // normalization data.
