@@ -782,6 +782,32 @@ class TestSentencepieceProcessor(unittest.TestCase):
           sp.nbest_encode_as_proto(text, nbest_size=10),
       )
 
+  def test_nbest_timeout(self):
+    model_prefix = 'm_timeout'
+    spm.SentencePieceTrainer.train(
+        input=os.path.join(HERE, 'botchan.txt'),
+        model_prefix=model_prefix,
+        vocab_size=1000,
+        model_type='unigram',
+    )
+    sp = spm.SentencePieceProcessor(model_file=model_prefix + '.model')
+    long_input = 'the' * 1000
+    results = sp.nbest_encode(long_input, nbest_size=10, return_type=str)
+    self.assertEqual(len(results), 10)
+
+    spm.SetNBestTimeout(1)
+    results_timeout = sp.nbest_encode(long_input, nbest_size=10, return_type=str)
+    self.assertEqual(len(results_timeout), 1)
+
+    spm.SetNBestTimeout(0)
+    results_no_timeout = sp.nbest_encode(long_input, nbest_size=10, return_type=str)
+    self.assertEqual(len(results_no_timeout), 10)
+
+    spm.set_nbest_timeout(1)
+    results_timeout2 = sp.nbest_encode(long_input, nbest_size=10, return_type=str)
+    self.assertEqual(len(results_timeout2), 1)
+    spm.set_nbest_timeout(0)
+
   def test_sample_and_score(self):
     sp = self.sp_
     text = 'hello world'

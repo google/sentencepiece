@@ -390,6 +390,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
   // Global functions
   m.def("SetRandomGeneratorSeed", &sentencepiece::SetRandomGeneratorSeed);
   m.def("SetMinLogLevel", &sentencepiece::SetMinLogLevel);
+  m.def("SetNBestTimeout", &sentencepiece::SetNBestTimeout);
   m.def("SetDataDir", [](const std::string& data_dir) {
     sentencepiece::SetDataDir(data_dir);
   });

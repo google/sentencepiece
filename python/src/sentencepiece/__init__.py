@@ -126,10 +126,12 @@ ThreadPool = _sentencepiece.ThreadPool
 
 SetRandomGeneratorSeed = _sentencepiece.SetRandomGeneratorSeed
 SetMinLogLevel = _sentencepiece.SetMinLogLevel
+SetNBestTimeout = _sentencepiece.SetNBestTimeout
 SetDataDir = _sentencepiece.SetDataDir
 
 set_random_generator_seed = SetRandomGeneratorSeed
 set_min_log_level = SetMinLogLevel
+set_nbest_timeout = SetNBestTimeout
 
 class SentencePieceProcessor:
     def __init__(self,
