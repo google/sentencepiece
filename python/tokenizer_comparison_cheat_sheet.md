@@ -18,6 +18,7 @@ This cheat sheet compares the capabilities, API designs, and performance feature
 | **Batch Encoding Parallelism** |  ✅ Yes (via `num_threads` or `ThreadPool`) |  ✅ Yes (automatic Rayon multi-threading) |  ✅ Yes (via `num_threads`) |
 | **Within-Doc Parallelism** |  ✅ Yes (`parallel_encode`) | ❌ No (sequential per document) | ❌ No (sequential per document) |
 | **Training from Iterator** |  ✅ Yes (`sentence_iterator`) |  ✅ Yes (`train_from_iterator`) | ❌ No |
+| **Subword Regularization (Sampling / N-best)** | ✅ Yes (at call-time; supports Unigram sampling and BPE-dropout) | ⚠️ Partial (BPE-dropout only, configured at model training/load time, no call-time sampling) | ❌ No |
 | **In-Memory Add Tokens** | ⚠️ Hard (via `protobuf` rewrite) |  ✅ Yes (Easy, via `add_tokens`) | ❌ No |
 | **Pre-Tokenization (Modular)** | ❌ No (Intentional design: parses raw Unicode stream without pre-splitting) |  ✅ Yes (fully modular: `tokenizer.pre_tokenizer = ...`) | ⚠️ Partial (static via regex `pat_str` in constructor) |
 | **Modular Post-Processing** | ❌ No (BOS/EOS toggles only) |  ✅ Yes (template post-processor) | ❌ No |
@@ -357,5 +358,28 @@ Below is a side-by-side comparison of common tasks across the three libraries.
     ```
 *   **Hugging Face `tokenizers`**:
     *   *Not Supported directly* on normalizer (offsets are computed during full encoding only)
+*   **tiktoken**:
+    *   *Not Supported*
+
+### 2.20. Subword Regularization / Sampling (N-best)
+
+*   **SentencePiece**:
+    ```python
+    # Encode with sampling (Unigram sampling or BPE-dropout depending on model)
+    # nbest_size: -1 (unlimited, default), alpha: 0.1 (smoothing parameter)
+    ids = sp.encode("Hello world", enable_sampling=True, alpha=0.1, nbest_size=-1)
+
+    # N-best encoding (returns list of list of segmentations)
+    nbest_ids = sp.nbest_encode("Hello world", nbest_size=5, return_type=int)
+    # nbest_ids -> list[list[int]] (5 segmentations)
+    ```
+*   **Hugging Face `tokenizers`**:
+    ```python
+    # BPE-dropout is configured at model creation time, not at encode call time:
+    from tokenizers.models import BPE
+    model = BPE(dropout=0.1) # 10% dropout during tokenization
+
+    # Unigram sampling / N-best: Not Supported in fast tokenizers API
+    ```
 *   **tiktoken**:
     *   *Not Supported*
