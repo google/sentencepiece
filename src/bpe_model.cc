@@ -246,9 +246,19 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
     }
   }
 
+  // Limit recursion depth to prevent stack overflow on malicious models
+  // with extremely deep BPE merge chains.
+  constexpr int kMaxBpeResegmentDepth = 100;
+
   auto resegment = [this, &rev_merge](auto& self, absl::string_view w,
-                                      EncodeResult* output) -> void {
+                                      EncodeResult* output, int depth) -> void {
     const int id = PieceToIdNoReserved(w);
+    if (depth > kMaxBpeResegmentDepth) {
+      // Gracefully stop recursion and output the merged piece as-is to avoid
+      // stack overflow.
+      output->emplace_back(w, id);
+      return;
+    }
     if (id == -1 || !IsUnusedInlined(id)) {
       output->emplace_back(w, id);
       return;
@@ -259,15 +269,15 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
       return;
     }
     // Direct recursive calls
-    self(self, p->second.first, output);
-    self(self, p->second.second, output);
+    self(self, p->second.first, output, depth + 1);
+    self(self, p->second.second, output, depth + 1);
   };
 
   EncodeResult output;
   output.reserve(symbols.size());
   for (int index = 0; index != -1; index = symbols[index].next) {
     if (index >= 0 && index < static_cast<int>(symbols.size())) {
-      resegment(resegment, symbols[index].piece, &output);
+      resegment(resegment, symbols[index].piece, &output, 0);
     }
   }
 

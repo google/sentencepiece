@@ -262,5 +262,19 @@ TEST(BuilderTest, ContainsTooManySharedPrefixTest) {
   EXPECT_FALSE(Builder::CompileCharsMap(chars_map, &output).ok());
 }
 
+TEST(BuilderTest, DecompileDeepCharsMapTest) {
+  Builder::CharsMap chars_map;
+  std::vector<char32> key(1001, 'a');
+  chars_map[key] = {'b'};
+
+  std::string blob;
+  ASSERT_TRUE(Builder::CompileCharsMap(chars_map, &blob).ok());
+
+  Builder::CharsMap decompiled_map;
+  absl::Status status = Builder::DecompileCharsMap(blob, &decompiled_map);
+  EXPECT_FALSE(status.ok());
+  EXPECT_EQ(status.message(), "Max recursion depth exceeded in decompile.");
+}
+
 }  // namespace normalizer
 }  // namespace sentencepiece

@@ -32,6 +32,7 @@
 #include "sentencepiece.pb.h"
 #include "third_party/absl/cleanup/cleanup.h"
 #include "third_party/absl/container/fixed_array.h"
+#include "third_party/absl/container/flat_hash_set.h"
 #include "third_party/absl/functional/function_ref.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/numbers.h"
@@ -326,8 +327,8 @@ absl::Status SentencePieceProcessor::SetVocabulary(
   RET_CHECK(type == TrainerSpec::UNIGRAM || type == TrainerSpec::BPE)
       << "Vocabulary constraint is only enabled in subword units.";
 
-  const std::set<absl::string_view> vocab(valid_vocab.begin(),
-                                          valid_vocab.end());
+  const absl::flat_hash_set<absl::string_view> vocab(valid_vocab.begin(),
+                                                     valid_vocab.end());
 
   for (int i = 0; i < model_proto_->pieces_size(); ++i) {
     auto* piece = model_proto_->mutable_pieces(i);

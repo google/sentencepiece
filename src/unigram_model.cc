@@ -592,10 +592,15 @@ void Model::PopulateNodes(Lattice *lattice) const {
     const char *begin = lattice->surface(begin_pos);
 
     // Finds all pieces which are prefix of surface(begin_pos).
-    const size_t num_nodes = trie_->commonPrefixSearch(
-        begin, trie_results.data(), trie_results.size(),
-        static_cast<int>(end - begin));
-    CHECK_LT(num_nodes, trie_results.size());
+    size_t num_nodes = trie_->commonPrefixSearch(begin, trie_results.data(),
+                                                 trie_results.size(),
+                                                 static_cast<int>(end - begin));
+    if (num_nodes > trie_results.size()) {
+      trie_results.resize(num_nodes + 1);
+      num_nodes = trie_->commonPrefixSearch(begin, trie_results.data(),
+                                            trie_results.size(),
+                                            static_cast<int>(end - begin));
+    }
 
     bool has_single_node = false;
 

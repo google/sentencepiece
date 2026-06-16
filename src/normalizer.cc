@@ -59,14 +59,21 @@ void Normalizer::Init() {
     // Reads the body of double array.
     trie_ = std::make_unique<Darts::DoubleArray>();
 
-    // The second arg of set_array is not the size of blob,
-    // but the number of double array units.
-    trie_->set_array(const_cast<char*>(trie_blob.data()),
-                     trie_blob.size() / trie_->unit_size());
+    // copy_array ensures correct alignment even if the trie_blob is
+    // mis-aligned. Although standard proto parsing copies data to the heap
+    // (guaranteeing alignment), zero-copy parsing or custom buffers might
+    // pass misaligned data.
+    if (reinterpret_cast<uintptr_t>(trie_blob.data()) % 4 == 0) {
+      trie_->set_array(const_cast<char*>(trie_blob.data()),
+                       trie_blob.size() / trie_->unit_size());
+    } else {
+      trie_->copy_array(reinterpret_cast<const char*>(trie_blob.data()),
+                        trie_blob.size());
+    }
 
-    if (!trie_->validate()) {
-      status_ = util::InternalError(
-          "Trie data contains out-of-bounds node references.");
+    if (!trie_->validate(normalized_.size())) {
+      status_ = absl::InternalError("precompiled_charsmap is invalid.");
+      trie_.reset();
       return;
     }
   }

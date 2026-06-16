@@ -190,7 +190,7 @@ class Model : public ModelInterface {
 
   // Maximum size of the return value of Trie, which corresponds
   // to the maximum size of shared common prefix in the sentence pieces.
-  int trie_results_size_;
+  int trie_results_size_ = 0;
 };
 
 }  // namespace unigram

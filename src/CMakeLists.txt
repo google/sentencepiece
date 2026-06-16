@@ -143,6 +143,7 @@ set(SPM_TEST_SRCS
   bpe_model_test.cc
   bpe_model_trainer_test.cc
   builder_test.cc
+  invalid_model_test.cc
   char_model_test.cc
   char_model_trainer_test.cc
   filesystem_test.cc

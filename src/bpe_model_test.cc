@@ -295,6 +295,51 @@ TEST(SampleModelTest, EncodeTest) {
   }
 }
 
+TEST(BPEModelTest, EncodeWithDeepUnusedMergeChainTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+
+  const int kDepth = 101;  // Should exceed kMaxBpeResegmentDepth (100)
+
+  // Add base characters
+  std::vector<std::string> chars;
+  for (int i = 0; i <= kDepth + 1; ++i) {
+    std::string c = string_util::UnicodeCharToUTF8(0x1000 + i);
+    chars.push_back(c);
+    AddPiece(&model_proto, c, 0.0);
+  }
+
+  // Add merged pieces
+  std::string current_merge = chars[0] + chars[1];
+  AddPiece(&model_proto, current_merge, -1.0);
+  int merge_start_index = 3 + kDepth + 2;
+
+  for (int i = 1; i <= kDepth; ++i) {
+    current_merge += chars[i + 1];
+    AddPiece(&model_proto, current_merge, -static_cast<float>(i + 1));
+  }
+
+  // Set all merges to UNUSED
+  for (int i = 0; i <= kDepth; ++i) {
+    model_proto.mutable_pieces(merge_start_index + i)
+        ->set_type(ModelProto::SentencePiece::UNUSED);
+  }
+
+  const Model model(model_proto);
+
+  std::string input;
+  for (const auto& c : chars) {
+    input += c;
+  }
+
+  const auto result = model.Encode(input);
+
+  EXPECT_EQ(kDepth + 1, result.size());
+  EXPECT_EQ(chars[0] + chars[1], result[0].first);
+  for (int i = 1; i <= kDepth; ++i) {
+    EXPECT_EQ(chars[i + 1], result[i].first);
+  }
+}
+
 }  // namespace
 }  // namespace bpe
 }  // namespace sentencepiece

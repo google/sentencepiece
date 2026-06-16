@@ -2,6 +2,7 @@
 #define DARTS_H_
 
 #include <cstdio>
+#include <cstring>
 #include <exception>
 #include <new>
 
@@ -173,6 +174,14 @@ class DoubleArrayImpl {
     array_ = static_cast<const unit_type *>(ptr);
     size_ = size;
   }
+  void copy_array(const void* ptr, std::size_t num_bytes) {
+    clear();
+    const std::size_t extra_padding = num_bytes % unit_size() == 0 ? 0 : 1;
+    size_ = num_bytes / unit_size() + extra_padding;
+    buf_ = new unit_type[size_];
+    std::memcpy(buf_, ptr, num_bytes);
+    array_ = buf_;
+  }
   // array() returns a pointer to the array of units.
   const void *array() const {
     return array_;
@@ -297,7 +306,7 @@ class DoubleArrayImpl {
   inline value_type traverse(const key_type *key, std::size_t &node_pos,
       std::size_t &key_pos, std::size_t length = 0) const;
 
-  bool validate() const;
+  bool validate(value_type max_value_limit = -1) const;
 
  private:
   typedef Details::uchar_type uchar_type;
@@ -433,24 +442,23 @@ int DoubleArrayImpl<A, B, T, C>::save(const char *file_name,
 }
 
 template <typename A, typename B, typename T, typename C>
-bool DoubleArrayImpl<A, B, T, C>::validate() const {
-  if (size_ == 0) {
-    return true;
+bool DoubleArrayImpl<A, B, T, C>::validate(value_type max_value_limit) const {
+  if (size_ == 0 || array_ == NULL) return false;
+  if (array_[0].label() != '\0' || array_[0].has_leaf() ||
+      array_[0].offset() == 0 || ((0 ^ array_[0].offset()) | 0xFF) >= size_) {
+    return false;
   }
-  for (std::size_t i = 0; i < size_; ++i) {
-    // Leaf/value units store data in the offset field, not child pointers.
-    // label() has MSB set (> 0xFF) for these units. Skip them, matching
-    // the same pattern used in open().
-    if (array_[i].label() > 0xFF) {
-      continue;
-    }
-    const id_type offset = array_[i].offset();
-    if (offset == 0) {
-      continue;
-    }
-    const std::size_t base = i ^ offset;
-    if ((base | 0xFF) >= size_) {
-      return false;
+  for (std::size_t i = 1; i < size_; ++i) {
+    if (array_[i].label() <= 0xFF) {
+      if (((i ^ array_[i].offset()) | 0xFF) >= size_) {
+        return false;
+      }
+    } else {
+      if (max_value_limit >= 0) {
+        if (array_[i].value() >= max_value_limit) {
+          return false;
+        }
+      }
     }
   }
   return true;

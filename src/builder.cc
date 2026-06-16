@@ -244,23 +244,29 @@ absl::Status Builder::DecompileCharsMap(absl::string_view blob,
                                                         &normalized, &buf));
 
   Darts::DoubleArray trie;
-  trie.set_array(const_cast<char*>(trie_blob.data()),
-                 trie_blob.size() / trie.unit_size());
+  // copy array as try_blob may not be 4-byte aligned.
+  trie.copy_array(reinterpret_cast<const char*>(trie_blob.data()),
+                  trie_blob.size());
 
   if (!trie.validate()) {
-    return util::InternalError(
+    return absl::InternalError(
         "Trie data contains out-of-bounds node references.");
   }
 
   std::string key;
   bool value_out_of_range = false;
-  std::function<void(size_t, size_t)> traverse;
+  // Limit recursion depth to prevent stack overflow on deep or cyclic tries.
+  constexpr int kMaxDepth = 1000;
+  bool depth_limit_exceeded = false;
+  std::function<void(size_t, size_t, int)> traverse;
 
-  // Given a Trie node at `node_pos` and the key position at `key_position`,
-  // Expands children nodes from `node_pos`.
-  // When leaf nodes are found, stores them into `chars_map`.
   traverse = [&traverse, &key, &trie, &normalized, &chars_map,
-              &value_out_of_range](size_t node_pos, size_t key_pos) -> void {
+              &value_out_of_range, &depth_limit_exceeded](
+                 size_t node_pos, size_t key_pos, int depth) -> void {
+    if (depth > kMaxDepth) {
+      depth_limit_exceeded = true;
+      return;
+    }
     for (int c = 0; c <= 255; ++c) {
       key.push_back(static_cast<char>(c));
       size_t copied_node_pos = node_pos;
@@ -279,25 +285,35 @@ absl::Status Builder::DecompileCharsMap(absl::string_view blob,
           } else {
             const absl::string_view value = normalized.data() + result;
             Chars key_chars, value_chars;
-            for (const auto c : string_util::UTF8ToUnicodeText(key))
+            const auto key_unicode = string_util::UTF8ToUnicodeText(key);
+            key_chars.reserve(key_unicode.size());
+            for (const auto c : key_unicode) {
               key_chars.push_back(c);
-            for (const auto c : string_util::UTF8ToUnicodeText(value))
+            }
+            const auto value_unicode = string_util::UTF8ToUnicodeText(value);
+            value_chars.reserve(value_unicode.size());
+            for (const auto c : value_unicode) {
               value_chars.push_back(c);
+            }
             (*chars_map)[key_chars] = value_chars;
           }
         }
         // Recursively traverse.
-        traverse(copied_node_pos, copied_key_pos);
+        traverse(copied_node_pos, copied_key_pos, depth + 1);
       }
       key.pop_back();
     }
   };
 
-  traverse(0, 0);
+  traverse(0, 0, 0);
 
   if (value_out_of_range) {
-    return util::InternalError(
+    return absl::InternalError(
         "Normalization rule value offset is out of range.");
+  }
+
+  if (depth_limit_exceeded) {
+    return absl::InternalError("Max recursion depth exceeded in decompile.");
   }
 
   return absl::OkStatus();
