@@ -99,7 +99,7 @@ Builder::Chars ToNFD(const Builder::Chars& input) {
 // un-normalized character mapping.
 std::vector<Builder::Chars> ExpandUnnormalized(
     const Builder::Chars& nfkd,
-    const std::map<char32, std::set<char32>>& norm2orig) {
+    const std::map<char32_t, std::set<char32_t>>& norm2orig) {
   CHECK(!nfkd.empty());
   std::vector<Builder::Chars> results;
   for (const auto c : port::FindOrDie(norm2orig, nfkd[0])) {
@@ -256,7 +256,7 @@ absl::Status Builder::DecompileCharsMap(absl::string_view blob,
   std::string key;
   bool value_out_of_range = false;
   // Limit recursion depth to prevent stack overflow on deep or cyclic tries.
-  constexpr int kMaxDepth = 1000;
+  static constexpr int kMaxDepth = 1000;
   bool depth_limit_exceeded = false;
   std::function<void(size_t, size_t, int)> traverse;
 
@@ -332,7 +332,7 @@ absl::Status Builder::GetPrecompiledCharsMap(absl::string_view name,
   if (!std::all_of(name.begin(), name.end(), [](auto c) {
         return (c >= 'a' && c <= 'z') || c == '_' || c == '-';
       })) {
-    return util::StatusBuilder(absl::StatusCode::kInvalidArgument, GTL_LOC)
+    return absl::StatusBuilder(absl::StatusCode::kInvalidArgument)
            << "Invalid charsmap name " << name;
   }
 
@@ -358,7 +358,7 @@ absl::Status Builder::GetPrecompiledCharsMap(absl::string_view name,
   }
 #endif  // DISABLE_EMBEDDED_DATA
 
-  return util::StatusBuilder(absl::StatusCode::kNotFound, GTL_LOC)
+  return absl::StatusBuilder(absl::StatusCode::kNotFound)
          << "No precompiled charsmap is found: " << name << " in "
          << GetDataDir();
 }
@@ -374,12 +374,12 @@ absl::Status BuildMapInternal(
   std::set<Builder::Chars> nfkd_decomposed;
 
   // Fully normalized one character to unnormalized one character map.
-  std::map<char32, std::set<char32>> norm2orig;
+  std::map<char32_t, std::set<char32_t>> norm2orig;
 
   Builder::CharsMap nfkc_map;  // The final NFKC mapping.
 
   constexpr int kMaxUnicode = 0x10FFFF;
-  for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
+  for (char32_t cp = 1; cp <= kMaxUnicode; ++cp) {
     if (!U_IS_UNICODE_CHAR(cp)) {
       continue;
     }
@@ -465,19 +465,21 @@ absl::Status Builder::BuildNmtNFKCMap(CharsMap* chars_map) {
 absl::Status Builder::MergeUnicodeCaseFoldMap(Builder::CharsMap* chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   for (auto& c : *chars_map) {
-    std::vector<char32> trg;
+    std::vector<char32_t> trg;
     trg.reserve(c.second.size());
-    for (char32 c : c.second) trg.push_back(u_foldCase(c, U_FOLD_CASE_DEFAULT));
+    for (char32_t c : c.second) {
+      trg.push_back(u_foldCase(c, U_FOLD_CASE_DEFAULT));
+    }
     c.second = trg;
   }
 
   constexpr int kMaxUnicode = 0x10FFFF;
-  for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
+  for (char32_t cp = 1; cp <= kMaxUnicode; ++cp) {
     if (!U_IS_UNICODE_CHAR(cp)) {
       continue;
     }
     if (chars_map->find({cp}) != chars_map->end()) continue;
-    const char32 trg = u_foldCase(cp, U_FOLD_CASE_DEFAULT);
+    const char32_t trg = u_foldCase(cp, U_FOLD_CASE_DEFAULT);
     if (trg != cp) (*chars_map)[{cp}] = {trg};
   }
 
@@ -579,7 +581,7 @@ absl::Status Builder::BuildNmtNFKC_CFMap(CharsMap* chars_map) {
 absl::Status Builder::BuildNFKDMap(CharsMap* chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   constexpr int kMaxUnicode = 0x10FFFF;
-  for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
+  for (char32_t cp = 1; cp <= kMaxUnicode; ++cp) {
     if (!U_IS_UNICODE_CHAR(cp)) {
       continue;
     }
@@ -598,7 +600,7 @@ absl::Status Builder::BuildNFKDMap(CharsMap* chars_map) {
 absl::Status Builder::BuildNFDMap(CharsMap* chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   constexpr int kMaxUnicode = 0x10FFFF;
-  for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
+  for (char32_t cp = 1; cp <= kMaxUnicode; ++cp) {
     if (!U_IS_UNICODE_CHAR(cp)) {
       continue;
     }
@@ -670,16 +672,16 @@ absl::Status Builder::LoadCharsMap(absl::string_view filename,
         absl::StrSplit(line, '\t', absl::AllowEmpty());
     CHECK_GE(fields.size(), 1);
     if (fields.size() == 1) fields.push_back("");  // Deletion rule.
-    std::vector<char32> src, trg;
+    std::vector<char32_t> src, trg;
     for (auto s : absl::StrSplit(fields[0], ' ')) {
       if (s.empty()) continue;
       absl::ConsumePrefix(&s, "U+");
-      src.push_back(string_util::HexToInt<char32>(s));
+      src.push_back(string_util::HexToInt<char32_t>(s));
     }
     for (auto s : absl::StrSplit(fields[1], ' ')) {
       if (s.empty()) continue;
       absl::ConsumePrefix(&s, "U+");
-      trg.push_back(string_util::HexToInt<char32>(s));
+      trg.push_back(string_util::HexToInt<char32_t>(s));
     }
     RET_CHECK(!src.empty());
     (*chars_map)[src] = trg;
@@ -697,11 +699,11 @@ absl::Status Builder::SaveCharsMap(absl::string_view filename,
   for (const auto& c : chars_map) {
     std::vector<std::string> src, trg;
     string_util::UnicodeText srcu, trgu;
-    for (char32 v : c.first) {
+    for (char32_t v : c.first) {
       src.push_back(string_util::IntToHex(v));
       srcu.push_back(v);
     }
-    for (char32 v : c.second) {
+    for (char32_t v : c.second) {
       trg.push_back(string_util::IntToHex(v));
       trgu.push_back(v);
     }

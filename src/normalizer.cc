@@ -289,7 +289,7 @@ absl::Status Normalizer::DecodePrecompiledCharsMap(
       !string_util::DecodePOD<uint32_t>(
           absl::string_view(blob.data(), sizeof(trie_blob_size)),
           &trie_blob_size)) {
-    return util::InternalError("Blob for normalization rule is broken.");
+    return absl::InternalError("Blob for normalization rule is broken.");
   }
 
   if constexpr (util::is_bigendian()) {
@@ -297,12 +297,12 @@ absl::Status Normalizer::DecodePrecompiledCharsMap(
   }
 
   if (trie_blob_size >= blob.size() - sizeof(trie_blob_size)) {
-    return util::InternalError("Trie data size exceeds the input blob size.");
+    return absl::InternalError("Trie data size exceeds the input blob size.");
   }
 
   // Dart unit_size is 4 and blob size in units must be a multiple of 256.
   if (trie_blob_size < 1024 || (trie_blob_size & 0x3FF) != 0) {
-    return util::InternalError("Trie data size is not divisible by 1024.");
+    return absl::InternalError("Trie data size is not divisible by 1024.");
   }
 
   blob.remove_prefix(sizeof(trie_blob_size));
@@ -323,7 +323,7 @@ absl::Status Normalizer::DecodePrecompiledCharsMap(
   *normalized = absl::string_view(blob.data(), blob.size());
 
   if (normalized->empty() || normalized->back() != '\0') {
-    return util::InternalError("normalized block must be null terminated.");
+    return absl::InternalError("normalized block must be null terminated.");
   }
 
   return absl::OkStatus();

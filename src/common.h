@@ -22,6 +22,7 @@
 #include "third_party/absl/log/globals.h"
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/status/status_macros.h"
 #include "third_party/absl/strings/string_view.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
@@ -37,35 +38,10 @@
 #include <windows.h>
 #endif
 
-using char32 = uint32_t;
-
 #define FRIEND_TEST(a, b) friend class a##_Test_##b;
 
-#define RETURN_IF_ERROR(expr)          \
-  do {                                 \
-    const auto _status = expr;         \
-    if (!_status.ok()) return _status; \
-  } while (0)
-
-// CHECK_OK must work on absl::Status, not absl::Status.
-#if defined CHECK_OK
-#undef CHECK_OK
-#endif  // CHECK_OK
-
-#if defined QCHECK_OK
-#undef QCHECK_OK
-#endif  // QCHECK_OK
-
-#define CHECK_OK(expr)                         \
-  do {                                         \
-    const auto _status = expr;                 \
-    CHECK(_status.ok()) << _status.ToString(); \
-  } while (0)
-
-#define QCHECK_OK(expr)                         \
-  do {                                          \
-    const auto _status = expr;                  \
-    QCHECK(_status.ok()) << _status.ToString(); \
-  } while (0)
+#ifndef RETURN_IF_ERROR
+#define RETURN_IF_ERROR(...) ABSL_RETURN_IF_ERROR(__VA_ARGS__)
+#endif
 
 #endif  // COMMON_H_

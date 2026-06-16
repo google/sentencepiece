@@ -30,9 +30,9 @@ constexpr int kMaxUnicode = 0x10FFFF;
 }
 
 TEST(UtilTest, Hex) {
-  for (char32 a = 0; a < 100000; ++a) {
-    const std::string s = string_util::IntToHex<char32>(a);
-    CHECK_EQ(a, string_util::HexToInt<char32>(s));
+  for (char32_t a = 0; a < 100000; ++a) {
+    const std::string s = string_util::IntToHex<char32_t>(a);
+    CHECK_EQ(a, string_util::HexToInt<char32_t>(s));
   }
   const int n = 151414;
   CHECK_EQ("24F76", string_util::IntToHex(n));
@@ -200,11 +200,11 @@ TEST(UtilTest, DecodeUTF8Test) {
 
 TEST(UtilTest, EncodeUTF8Test) {
   char buf[16];
-  for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
+  for (char32_t cp = 1; cp <= kMaxUnicode; ++cp) {
     if (!string_util::IsValidCodepoint(cp)) continue;
     const size_t mblen = string_util::EncodeUTF8(cp, buf);
     size_t mblen2;
-    const char32 c = string_util::DecodeUTF8(buf, buf + 16, &mblen2);
+    const char32_t c = string_util::DecodeUTF8(buf, buf + 16, &mblen2);
     EXPECT_EQ(mblen2, mblen);
     EXPECT_EQ(cp, c);
   }
@@ -224,7 +224,7 @@ TEST(UtilTest, EncodeUTF8Test) {
 }
 
 TEST(UtilTest, UnicodeCharToUTF8Test) {
-  for (char32 cp = 1; cp <= kMaxUnicode; ++cp) {
+  for (char32_t cp = 1; cp <= kMaxUnicode; ++cp) {
     if (!string_util::IsValidCodepoint(cp)) continue;
     const auto s = string_util::UnicodeCharToUTF8(cp);
     const auto ut = string_util::UTF8ToUnicodeText(s);
@@ -462,7 +462,7 @@ TEST(BatchRunnerTest, EarlyAbortOnError) {
       [&](size_t i) {
         execution_count++;
         if (i == 3) {
-          return util::InternalError("Intentional failure at index 50");
+          return absl::InternalError("Intentional failure at index 50");
         }
         absl::SleepFor(absl::Milliseconds(1));
         return absl::OkStatus();

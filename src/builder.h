@@ -39,7 +39,7 @@ class Builder {
   ~Builder() = delete;
 
   // Basic Unicode character sequence.
-  using Chars = std::vector<char32>;
+  using Chars = std::vector<char32_t>;
 
   // String-to-string mapping.
   using CharsMap = std::map<Chars, Chars>;

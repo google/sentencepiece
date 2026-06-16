@@ -293,7 +293,7 @@ absl::Status SentencePieceProcessor::Load(
     for (const auto& e : errors) {
       LOG(INFO) << e;
     }
-    return util::InternalError("Self-test failures. See LOG(INFO).");
+    return absl::InternalError("Self-test failures. See LOG(INFO).");
   }
 
   return absl::OkStatus();
@@ -466,7 +466,7 @@ absl::Status SentencePieceProcessor::Encode(absl::string_view input,
         break;
       default:
         ids->clear();
-        return util::InternalError("unknown extra_option type.");
+        return absl::InternalError("unknown extra_option type.");
     }
   }
 
@@ -1210,7 +1210,7 @@ absl::Status SentencePieceProcessor::ParallelEncodeInternal(
   }
 
   if (input.size() > std::numeric_limits<uint32_t>::max()) {
-    return util::InvalidArgumentError(
+    return absl::InvalidArgumentError(
         absl::StrCat("Input larger than ", std::numeric_limits<uint32_t>::max(),
                      " bytes is not supported."));
   }
@@ -1555,7 +1555,7 @@ absl::Status SentencePieceProcessor::ApplyExtraOptions(
       } break;
       default:
         spt->Clear();
-        return util::InternalError("unknown extra_option type.");
+        return absl::InternalError("unknown extra_option type.");
     }
   }
 
@@ -1628,17 +1628,17 @@ namespace io {
 absl::Status LoadModelProto(absl::string_view filename,
                             ModelProto* model_proto) {
   if (filename.empty()) {
-    return util::NotFoundError("model file path should not be empty.");
+    return absl::NotFoundError("model file path should not be empty.");
   }
 
   auto input = filesystem::NewReadableFile(filename, true);
   RETURN_IF_ERROR(input->status());
   std::string serialized;
   if (!input->ReadAll(&serialized)) {
-    return util::InternalError(absl::StrCat("could not read ", filename));
+    return absl::InternalError(absl::StrCat("could not read ", filename));
   }
   if (!model_proto->ParseFromArray(serialized.data(), serialized.size())) {
-    return util::InternalError(
+    return absl::InternalError(
         absl::StrCat("could not parse ModelProto from ", filename));
   }
 
@@ -1648,7 +1648,7 @@ absl::Status LoadModelProto(absl::string_view filename,
 absl::Status SaveModelProto(absl::string_view filename,
                             const ModelProto& model_proto) {
   if (filename.empty()) {
-    return util::NotFoundError("model file path should not be empty.");
+    return absl::NotFoundError("model file path should not be empty.");
   }
   auto output = filesystem::NewWritableFile(filename, true);
   RETURN_IF_ERROR(output->status());

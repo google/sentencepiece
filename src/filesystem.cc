@@ -40,7 +40,7 @@ class PosixReadableFile : public ReadableFile {
                                     is_binary ? std::ios::binary | std::ios::in
                                               : std::ios::in)) {
     if (!*is_ || (is_->peek() && is_->fail())) {
-      status_ = util::StatusBuilder(absl::StatusCode::kNotFound, GTL_LOC)
+      status_ = absl::StatusBuilder(absl::StatusCode::kNotFound)
                 << "\"" << filename.data() << "\": " << util::StrError(errno);
     }
   }
@@ -79,9 +79,8 @@ class PosixWritableFile : public WritableFile {
                                     is_binary ? std::ios::binary | std::ios::out
                                               : std::ios::out)) {
     if (!*os_)
-      status_ =
-          util::StatusBuilder(absl::StatusCode::kPermissionDenied, GTL_LOC)
-          << "\"" << filename.data() << "\": " << util::StrError(errno);
+      status_ = absl::StatusBuilder(absl::StatusCode::kPermissionDenied)
+                << "\"" << filename.data() << "\": " << util::StrError(errno);
   }
 
   ~PosixWritableFile() {

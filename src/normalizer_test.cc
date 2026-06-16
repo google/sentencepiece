@@ -75,7 +75,7 @@ TEST(NormalizerTest, NormalizeTest) {
   EXPECT_EQ("", normalizer.Normalize(string_util::UnicodeCharToUTF8(0x8F)));
   EXPECT_EQ("", normalizer.Normalize(string_util::UnicodeCharToUTF8(0x9F)));
   EXPECT_EQ("", normalizer.Normalize(string_util::UnicodeCharToUTF8(0x0B)));
-  for (char32 c = 0x10; c <= 0x1F; ++c) {
+  for (char32_t c = 0x10; c <= 0x1F; ++c) {
     EXPECT_EQ("", normalizer.Normalize(string_util::UnicodeCharToUTF8(c)));
   }
 }
@@ -157,10 +157,10 @@ TEST(NormalizeTest, NomalizeWithSpaceContainedRules) {
 
   auto AddRule = [&](const std::string& src, const std::string& trg) {
     Builder::Chars src_chars, trg_chars;
-    for (const char32 c : string_util::UTF8ToUnicodeText(src)) {
+    for (const char32_t c : string_util::UTF8ToUnicodeText(src)) {
       src_chars.push_back(c);
     }
-    for (const char32 c : string_util::UTF8ToUnicodeText(trg)) {
+    for (const char32_t c : string_util::UTF8ToUnicodeText(trg)) {
       trg_chars.push_back(c);
     }
     charsmap[src_chars] = trg_chars;

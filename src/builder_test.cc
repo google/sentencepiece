@@ -105,9 +105,9 @@ TEST(BuilderTest, CompileCharsMap) {
   Builder::CharsMap chars_map;
 
   // Lowercase => Uppercase
-  for (char32 lc = static_cast<char32>('a'); lc <= static_cast<char32>('z');
-       ++lc) {
-    const char32 uc = lc + 'A' - 'a';
+  for (char32_t lc = static_cast<char32_t>('a');
+       lc <= static_cast<char32_t>('z'); ++lc) {
+    const char32_t uc = lc + 'A' - 'a';
     chars_map[{lc}] = {uc};
   }
 
@@ -233,9 +233,9 @@ TEST(BuilderTest, LoadCharsMapWithEmptyeTest) {
                   .ok());
 
   EXPECT_EQ(3, chars_map.size());
-  EXPECT_EQ(std::vector<char32>({0x0041}), chars_map[{0x0061}]);
-  EXPECT_EQ(std::vector<char32>({}), chars_map[{0x0062}]);
-  EXPECT_EQ(std::vector<char32>({}), chars_map[{0x0063}]);
+  EXPECT_EQ(std::vector<char32_t>({0x0041}), chars_map[{0x0061}]);
+  EXPECT_EQ(std::vector<char32_t>({}), chars_map[{0x0062}]);
+  EXPECT_EQ(std::vector<char32_t>({}), chars_map[{0x0063}]);
 
   EXPECT_TRUE(
       Builder::SaveCharsMap(
@@ -252,7 +252,7 @@ TEST(BuilderTest, LoadCharsMapWithEmptyeTest) {
 
 TEST(BuilderTest, ContainsTooManySharedPrefixTest) {
   Builder::CharsMap chars_map;
-  std::vector<char32> keys;
+  std::vector<char32_t> keys;
   // chars_map contains too many shared prefix ("aaaa...");
   for (int i = 0; i < 100; ++i) {
     keys.push_back('a');
@@ -264,7 +264,7 @@ TEST(BuilderTest, ContainsTooManySharedPrefixTest) {
 
 TEST(BuilderTest, DecompileDeepCharsMapTest) {
   Builder::CharsMap chars_map;
-  std::vector<char32> key(1001, 'a');
+  std::vector<char32_t> key(1001, 'a');
   chars_map[key] = {'b'};
 
   std::string blob;

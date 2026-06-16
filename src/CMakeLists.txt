@@ -13,6 +13,7 @@
 # limitations under the License.!
 
 list(APPEND SPM_LIBS absl::status)
+list(APPEND SPM_LIBS absl::status_builder)
 list(APPEND SPM_LIBS absl::strings)
 list(APPEND SPM_LIBS absl::flags)
 list(APPEND SPM_LIBS absl::flags_parse)

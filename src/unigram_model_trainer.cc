@@ -43,7 +43,7 @@ namespace sentencepiece {
 namespace unigram {
 namespace {
 
-constexpr char32 kSentenceBoundary = 0x0000;
+constexpr char32_t kSentenceBoundary = 0x0000;
 
 double Digamma(double x) {
   double result = 0.0;
@@ -181,7 +181,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
 
   auto pretokenize_or_rewrite = [&](std::pair<std::string, int64_t>* w) {
     if (pretokenizer) {
-      std::vector<char32> chars;
+      std::vector<char32_t> chars;
       for (const auto& w : pretokenizer->PreTokenize(w->first)) {
         for (const auto& c : string_util::UTF8ToUnicodeText(w)) {
           chars.push_back(c);
@@ -193,7 +193,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
       // When delimiter is specified, tokenize the input with the delimiter.
       // For EM training, we assume that the delimiter doesn't exist and
       // rewrite the original sentence.
-      std::vector<char32> chars;
+      std::vector<char32_t> chars;
       absl::string_view delimiter = trainer_spec_.pretokenization_delimiter();
       for (const auto& w : absl::StrSplit(w->first, delimiter)) {
         for (const auto& c : string_util::UTF8ToUnicodeText(w)) {
@@ -209,7 +209,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
   };
 
   // Merges all sentences into one array with 0x0000 delimiter.
-  std::vector<char32> array;
+  std::vector<char32_t> array;
   absl::flat_hash_map<std::string, int64_t> all_chars;
 
   const bool is_tsv = trainer_spec_.input_format() == "tsv";
@@ -319,14 +319,14 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
       if (len <= 1 || offset >= array.size() || offset + len >= array.size()) {
         continue;
       }
-      const char32* begin = &array[offset];
-      const char32* end = &array[offset + len];
+      const char32_t* begin = &array[offset];
+      const char32_t* end = &array[offset + len];
       const uint64_t freq = R[i] - L[i];
 
       // Split by kSentenceBoundary, as some frequent phrases may cross
       // the sentence boundary.
       while (begin < end) {
-        const char32* delim = std::find(begin, end, kSentenceBoundary);
+        const char32_t* delim = std::find(begin, end, kSentenceBoundary);
         const UnicodeText uw(begin, delim);
         begin = delim + 1;
         if (uw.size() <= 1) continue;

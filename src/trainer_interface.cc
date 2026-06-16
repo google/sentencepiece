@@ -44,13 +44,13 @@
 
 namespace sentencepiece {
 
-const char32 TrainerInterface::kWSChar = L'\u2581';
+const char32_t TrainerInterface::kWSChar = L'\u2581';
 const char TrainerInterface::kWSStr[] = "\xe2\x96\x81";
 
-const char32 TrainerInterface::kUNKChar = L'\u2585';
+const char32_t TrainerInterface::kUNKChar = L'\u2585';
 const char TrainerInterface::kUNKStr[] = "\xe2\x96\x85";
 
-const char32 TrainerInterface::kUPPBoundaryChar = L'\u0009';
+const char32_t TrainerInterface::kUPPBoundaryChar = L'\u0009';
 const char TrainerInterface::kUPPBoundaryStr[] = "\t";
 
 namespace {
@@ -98,7 +98,7 @@ absl::Status VerifySpec(const TrainerSpec& trainer_spec) {
   return absl::OkStatus();
 }
 
-bool is_unicode_decimal_number(char32 c) {
+bool is_unicode_decimal_number(char32_t c) {
   return (c >= 0x30 && c <= 0x39) || (c >= 0xff10 && c <= 0xff19);
 }
 
@@ -225,15 +225,15 @@ bool TrainerInterface::IsValidSentencePiece(
 
   constexpr unicode_script::ScriptType kAnyType =
       static_cast<unicode_script::ScriptType>(
-          std::numeric_limits<char32>::max());
+          std::numeric_limits<char32_t>::max());
 
   unicode_script::ScriptType prev_script = kAnyType;
   bool all_whitespace_piece =
       std::all_of(sentencepiece.begin(), sentencepiece.end(),
-                  [](char32 c) { return c == kWSChar; });
+                  [](char32_t c) { return c == kWSChar; });
 
   for (size_t pos = 0; pos < sentencepiece.size(); ++pos) {
-    const char32 c = sentencepiece[pos];
+    const char32_t c = sentencepiece[pos];
     if (c == kUNKChar) {  // UNK must not be included
       return false;
     }
@@ -511,8 +511,8 @@ END:
   // Count character frequencies.
   int64_t all_chars_count = 0;
   // A map from a character to {is_required_char, character count}.
-  absl::flat_hash_map<char32, std::pair<bool, int64_t>> chars_count;
-  for (const char32 c :
+  absl::flat_hash_map<char32_t, std::pair<bool, int64_t>> chars_count;
+  for (const char32_t c :
        string_util::UTF8ToUnicodeText(trainer_spec_.required_chars())) {
     RET_CHECK(string_util::IsValidCodepoint(c));
     if (c == 0x0000) {
@@ -523,7 +523,7 @@ END:
     chars_count[c].first = true;  // is_required_character.
   }
   for (const auto& w : sentences_) {
-    for (const char32 c : string_util::UTF8ToUnicodeText(w.first)) {
+    for (const char32_t c : string_util::UTF8ToUnicodeText(w.first)) {
       if (!string_util::IsValidCodepoint(c)) continue;
       if (c == 0x0000) {
         LOG(INFO)
@@ -572,7 +572,7 @@ END:
   // with kUNKChar.
   for (auto& w : sentences_) {
     string_util::UnicodeText uw2;
-    for (const char32 c : string_util::UTF8ToUnicodeText(w.first)) {
+    for (const char32_t c : string_util::UTF8ToUnicodeText(w.first)) {
       if (port::ContainsKey(required_chars_, c)) {
         uw2.push_back(c);
       } else {
@@ -768,12 +768,12 @@ absl::Status TrainerInterface::InitMetaPieces() {
       [&id, &dup, this](const std::string& w,
                         ModelProto::SentencePiece::Type type) -> absl::Status {
     if (!dup.insert(w).second) {
-      return util::InternalError(absl::StrCat(
+      return absl::InternalError(absl::StrCat(
           w, " is already defined. duplicated symbols are not allowed."));
     }
 
     if (w == trainer_spec_.unk_piece()) {
-      return util::InternalError(
+      return absl::InternalError(
           absl::StrCat(trainer_spec_.unk_piece(),
                        " must not be defined with --control_symbols and "
                        "--user_defined_symbols."));

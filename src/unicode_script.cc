@@ -25,16 +25,16 @@ class GetScriptInternal {
  public:
   GetScriptInternal() { InitTable(&smap_); }
 
-  ScriptType GetScript(char32 c) const {
+  ScriptType GetScript(char32_t c) const {
     return port::FindWithDefault(smap_, c, ScriptType::U_Common);
   }
 
  private:
-  absl::flat_hash_map<char32, ScriptType> smap_;
+  absl::flat_hash_map<char32_t, ScriptType> smap_;
 };
 }  // namespace
 
-ScriptType GetScript(char32 c) {
+ScriptType GetScript(char32_t c) {
   static GetScriptInternal sc;
   return sc.GetScript(c);
 }

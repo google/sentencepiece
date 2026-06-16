@@ -159,7 +159,7 @@ enum ScriptType : int32_t {
   U_Yi
 };
 
-ScriptType GetScript(char32 c);
+ScriptType GetScript(char32_t c);
 }  // namespace unicode_script
 }  // namespace sentencepiece
 #endif  // UNICODE_SCRIPT

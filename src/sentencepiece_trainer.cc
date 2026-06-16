@@ -155,14 +155,14 @@ absl::Status SentencePieceTrainer::MergeSpecsFromArgs(
 
     const auto status_train = SetProtoField(key, value, trainer_spec);
     if (status_train.ok()) continue;
-    if (!util::IsNotFound(status_train)) return status_train;
+    if (!absl::IsNotFound(status_train)) return status_train;
 
     const auto status_norm = SetProtoField(key, value, normalizer_spec);
     if (status_norm.ok()) continue;
-    if (!util::IsNotFound(status_norm)) return status_norm;
+    if (!absl::IsNotFound(status_norm)) return status_norm;
 
     // Not found both in trainer_spec and normalizer_spec.
-    if (util::IsNotFound(status_train) && util::IsNotFound(status_norm)) {
+    if (absl::IsNotFound(status_train) && absl::IsNotFound(status_norm)) {
       return status_train;
     }
   }
@@ -273,7 +273,7 @@ absl::Status SentencePieceTrainer::PopulateModelTypeFromString(
     return absl::OkStatus();
   }
 
-  return util::StatusBuilder(absl::StatusCode::kInternal, GTL_LOC)
+  return absl::StatusBuilder(absl::StatusCode::kInternal)
          << "\"" << type << "\" is not found in TrainerSpec";
 }
 

@@ -41,7 +41,7 @@ std::string Trainer::Symbol::ToString() const {
   return string_util::UnicodeTextToUTF8(chars);
 }
 
-Trainer::Symbol* Trainer::GetCharSymbol(char32 c) {
+Trainer::Symbol* Trainer::GetCharSymbol(char32_t c) {
   const uint64_t freq = port::FindWithDefault(required_chars_, c, 1);
   CHECK_GT(freq, 0);
   const auto it = symbols_cache_.find(c);
@@ -73,8 +73,8 @@ Trainer::Symbol* Trainer::GetPairSymbol(const Symbol* left,
   CHECK(!left->chars.empty());
   CHECK(!right->chars.empty());
   string_util::UnicodeText ut;
-  for (const char32 c : left->chars) ut.push_back(c);
-  for (const char32 c : right->chars) ut.push_back(c);
+  for (const char32_t c : left->chars) ut.push_back(c);
+  for (const char32_t c : right->chars) ut.push_back(c);
 
   // Do not make an invalid piece.
   if (!IsValidSentencePiece(ut)) {
@@ -232,7 +232,8 @@ absl::Status Trainer::Train() {
   // Initializes symbols_. symbols_[sid][i] stores an unary symbol.
   symbols_.resize(sentences_.size());
   for (size_t i = 0; i < sentences_.size(); ++i) {
-    for (const char32 c : string_util::UTF8ToUnicodeText(sentences_[i].first)) {
+    for (const char32_t c :
+         string_util::UTF8ToUnicodeText(sentences_[i].first)) {
       symbols_[i].push_back(GetCharSymbol(c));
     }
   }

@@ -191,7 +191,7 @@ if (SPM_ABSL_PROVIDER STREQUAL "module")
         GIT_REPOSITORY  https://github.com/abseil/abseil-cpp.git
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/abseil-cpp
         GIT_PROGRESS TRUE
-        GIT_TAG 20260107.1)
+        GIT_TAG 20260526.0)
   add_subdirectory(third_party/abseil-cpp)
   if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
     file(CREATE_LINK

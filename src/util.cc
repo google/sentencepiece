@@ -65,20 +65,20 @@ int GetNBestTimeout() { return g_nbest_timeout_ms.load(); }
 namespace string_util {
 
 // mblen sotres the number of bytes consumed after decoding.
-char32 DecodeUTF8(const char* begin, const char* end, size_t* mblen) {
+char32_t DecodeUTF8(const char* begin, const char* end, size_t* mblen) {
   const size_t len = end - begin;
 
   if (static_cast<unsigned char>(begin[0]) < 0x80) {
     *mblen = 1;
     return static_cast<unsigned char>(begin[0]);
   } else if (len >= 2 && (begin[0] & 0xE0) == 0xC0) {
-    const char32 cp = (((begin[0] & 0x1F) << 6) | ((begin[1] & 0x3F)));
+    const char32_t cp = (((begin[0] & 0x1F) << 6) | ((begin[1] & 0x3F)));
     if (IsTrailByte(begin[1]) && cp >= 0x0080 && IsValidCodepoint(cp)) {
       *mblen = 2;
       return cp;
     }
   } else if (len >= 3 && (begin[0] & 0xF0) == 0xE0) {
-    const char32 cp = (((begin[0] & 0x0F) << 12) | ((begin[1] & 0x3F) << 6) |
+    const char32_t cp = (((begin[0] & 0x0F) << 12) | ((begin[1] & 0x3F) << 6) |
                        ((begin[2] & 0x3F)));
     if (IsTrailByte(begin[1]) && IsTrailByte(begin[2]) && cp >= 0x0800 &&
         IsValidCodepoint(cp)) {
@@ -86,7 +86,7 @@ char32 DecodeUTF8(const char* begin, const char* end, size_t* mblen) {
       return cp;
     }
   } else if (len >= 4 && (begin[0] & 0xf8) == 0xF0) {
-    const char32 cp = (((begin[0] & 0x07) << 18) | ((begin[1] & 0x3F) << 12) |
+    const char32_t cp = (((begin[0] & 0x07) << 18) | ((begin[1] & 0x3F) << 12) |
                        ((begin[2] & 0x3F) << 6) | ((begin[3] & 0x3F)));
     if (IsTrailByte(begin[1]) && IsTrailByte(begin[2]) &&
         IsTrailByte(begin[3]) && cp >= 0x10000 && IsValidCodepoint(cp)) {
@@ -105,7 +105,7 @@ bool IsStructurallyValid(absl::string_view str) {
   const char* end = str.data() + str.size();
   size_t mblen = 0;
   while (begin < end) {
-    const char32 c = DecodeUTF8(begin, end, &mblen);
+    const char32_t c = DecodeUTF8(begin, end, &mblen);
     if (c == kUnicodeError && mblen != 3) return false;
     if (!IsValidCodepoint(c)) return false;
     begin += mblen;
@@ -113,7 +113,7 @@ bool IsStructurallyValid(absl::string_view str) {
   return true;
 }
 
-size_t EncodeUTF8(char32 c, char* output) {
+size_t EncodeUTF8(char32_t c, char* output) {
   if (c <= 0x7F) {
     *output = static_cast<char>(c);
     return 1;
@@ -150,7 +150,9 @@ size_t EncodeUTF8(char32 c, char* output) {
   return 4;
 }
 
-std::string UnicodeCharToUTF8(const char32 c) { return UnicodeTextToUTF8({c}); }
+std::string UnicodeCharToUTF8(const char32_t c) {
+  return UnicodeTextToUTF8({c});
+}
 
 UnicodeText UTF8ToUnicodeText(absl::string_view utf8) {
   UnicodeText uc;
@@ -158,7 +160,7 @@ UnicodeText UTF8ToUnicodeText(absl::string_view utf8) {
   const char* end = utf8.data() + utf8.size();
   while (begin < end) {
     size_t mblen;
-    const char32 c = DecodeUTF8(begin, end, &mblen);
+    const char32_t c = DecodeUTF8(begin, end, &mblen);
     uc.push_back(c);
     begin += mblen;
   }
@@ -168,7 +170,7 @@ UnicodeText UTF8ToUnicodeText(absl::string_view utf8) {
 std::string UnicodeTextToUTF8(const UnicodeText& utext) {
   char buf[8];
   std::string result;
-  for (const char32 c : utext) {
+  for (const char32_t c : utext) {
     const size_t mblen = EncodeUTF8(c, buf);
     result.append(buf, mblen);
   }
@@ -185,7 +187,7 @@ UnicodeTextAndOffsets UTF8ToUnicodeTextAndOffsets(absl::string_view utf8) {
   const char* end = utf8.data() + utf8.size();
   while (begin < end) {
     size_t mblen;
-    const char32 c = DecodeUTF8(begin, end, &mblen);
+    const char32_t c = DecodeUTF8(begin, end, &mblen);
     running_offset += mblen;
     ret.unicode_text.push_back(c);
     ret.offsets.push_back(running_offset);

@@ -21,6 +21,7 @@
 #include <memory>
 
 #include "testharness.h"
+#include "third_party/absl/base/internal/endian.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
@@ -62,7 +63,7 @@ TEST(SentencePieceProcessorTest, RejectCorruptedModel1269) {
   // bit 31 set (0x80000000) -> bypass validate() if it exists and uses label()
   // > 0xFF offset set to large value to steer traversal out of bounds.
   uint32_t mal = (0x80000000 | (0x00200000 << 10)) & 0xFFFFFFFF;
-  std::memcpy(const_cast<char*>(charsmap.data()) + 4, &mal, 4);
+  absl::little_endian::Store32(const_cast<char*>(charsmap.data()) + 4, mal);
   spec->set_precompiled_charsmap(charsmap);
 
   // 3. Load the corrupted model
@@ -135,7 +136,7 @@ TEST(SentencePieceProcessorTest, CharsmapValidationTests) {
     std::string charsmap = original_charsmap;
     // Set size to a very large value (1MB)
     uint32_t bad_size = 1024 * 1024;
-    std::memcpy(const_cast<char*>(charsmap.data()), &bad_size, 4);
+    absl::little_endian::Store32(const_cast<char*>(charsmap.data()), bad_size);
     absl::Status status = LoadModelWithModifiedCharsmap(base_model, charsmap);
     EXPECT_FALSE(status.ok());
     EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
@@ -146,7 +147,7 @@ TEST(SentencePieceProcessorTest, CharsmapValidationTests) {
   {
     std::string charsmap = original_charsmap;
     uint32_t bad_size = 512;
-    std::memcpy(const_cast<char*>(charsmap.data()), &bad_size, 4);
+    absl::little_endian::Store32(const_cast<char*>(charsmap.data()), bad_size);
     absl::Status status = LoadModelWithModifiedCharsmap(base_model, charsmap);
     EXPECT_FALSE(status.ok());
     EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
@@ -157,7 +158,7 @@ TEST(SentencePieceProcessorTest, CharsmapValidationTests) {
   {
     std::string charsmap = original_charsmap;
     uint32_t bad_size = 1025;
-    std::memcpy(const_cast<char*>(charsmap.data()), &bad_size, 4);
+    absl::little_endian::Store32(const_cast<char*>(charsmap.data()), bad_size);
     absl::Status status = LoadModelWithModifiedCharsmap(base_model, charsmap);
     EXPECT_FALSE(status.ok());
     EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
@@ -186,19 +187,17 @@ TEST(SentencePieceProcessorTest, RejectModelWithOOBCharsmapValue) {
   std::string charsmap = spec->precompiled_charsmap();
   ASSERT_GE(charsmap.size(), 8);
 
-  uint32_t trie_blob_size = 0;
-  std::memcpy(&trie_blob_size, charsmap.data(), 4);
+  uint32_t trie_blob_size = absl::little_endian::Load32(charsmap.data());
 
   size_t num_units = trie_blob_size / 4;
   bool found_leaf = false;
   for (size_t i = 0; i < num_units; ++i) {
-    uint32_t unit;
-    std::memcpy(&unit, charsmap.data() + 4 + i * 4, 4);
+    uint32_t unit = absl::little_endian::Load32(charsmap.data() + 4 + i * 4);
     if (unit & 0x80000000) {  // Leaf node
       // Corrupt it by setting value to maximum possible (0x7FFFFFFF)
       uint32_t corrupted_unit = 0xFFFFFFFF;
-      std::memcpy(const_cast<char*>(charsmap.data()) + 4 + i * 4,
-                  &corrupted_unit, 4);
+      absl::little_endian::Store32(
+          const_cast<char*>(charsmap.data()) + 4 + i * 4, corrupted_unit);
       found_leaf = true;
       break;
     }

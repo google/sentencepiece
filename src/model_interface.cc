@@ -96,11 +96,11 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
   for (int i = 0; i < model_proto_->pieces_size(); ++i) {
     const auto& sp = model_proto_->pieces(i);
     if (sp.piece().empty()) {
-      status_ = util::InternalError("piece must not be empty.");
+      status_ = absl::InternalError("piece must not be empty.");
       return;
     }
     if (sp.piece().find('\0') != absl::string_view::npos) {
-      status_ = util::InternalError("piece must not include null character.");
+      status_ = absl::InternalError("piece must not include null character.");
       return;
     }
     if (use_reserved_id_map) {
@@ -110,11 +110,11 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
            sp.type() == ModelProto::SentencePiece::UNUSED);
       if (!port::InsertIfNotPresent(
               is_normal_piece ? &pieces_ : &reserved_id_map_, sp.piece(), i)) {
-        status_ = util::InternalError(sp.piece() + " is already defined.");
+        status_ = absl::InternalError(sp.piece() + " is already defined.");
         return;
       }
     } else if (!port::InsertIfNotPresent(&pieces_, sp.piece(), i)) {
-      status_ = util::InternalError(sp.piece() + " is already defined.");
+      status_ = absl::InternalError(sp.piece() + " is already defined.");
       return;
     }
 
@@ -124,7 +124,7 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
 
     if (sp.type() == ModelProto::SentencePiece::UNKNOWN) {
       if (unk_id_ >= 0) {
-        status_ = util::InternalError("unk is already defined.");
+        status_ = absl::InternalError("unk is already defined.");
         return;
       }
       unk_id_ = i;
@@ -133,7 +133,7 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
     if (sp.type() == ModelProto::SentencePiece::BYTE) {
       if (!model_proto_->trainer_spec().byte_fallback()) {
         status_ =
-            util::InternalError("byte piece " + sp.piece() +
+            absl::InternalError("byte piece " + sp.piece() +
                                 " is found although `byte_fallback` is false.");
         return;
       }
@@ -142,14 +142,14 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
         byte_found[byte] = true;
       } else {
         status_ =
-            util::InternalError("byte piece " + sp.piece() + " is invalid.");
+            absl::InternalError("byte piece " + sp.piece() + " is invalid.");
         return;
       }
     }
   }
 
   if (unk_id_ == -1) {
-    status_ = util::InternalError("unk is not defined.");
+    status_ = absl::InternalError("unk is not defined.");
     return;
   }
 
@@ -157,7 +157,7 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
     // Checks that there are 256 byte pieces.
     if (std::find(byte_found.begin(), byte_found.end(), false) !=
         byte_found.end()) {
-      status_ = util::InternalError(
+      status_ = absl::InternalError(
           "there are not 256 byte pieces although `byte_fallback` is true.");
       return;
     }

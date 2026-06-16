@@ -29,7 +29,7 @@ namespace sentencepiece {
 #define WS "\xe2\x96\x81"
 
 // Converts the 1 unicode string to the code point.
-static char32 ToChar32(absl::string_view str) {
+static char32_t ToChar32(absl::string_view str) {
   string_util::UnicodeText utext = string_util::UTF8ToUnicodeText(str);
   return !utext.empty() ? *utext.begin() : 0;
 }
@@ -517,7 +517,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   trainer_spec.set_model_prefix("model");
   trainer_spec.set_character_coverage(0.98);
 
-  using E = absl::flat_hash_map<char32, int64_t>;
+  using E = absl::flat_hash_map<char32_t, int64_t>;
   {
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_OK(trainer.LoadSentences());
