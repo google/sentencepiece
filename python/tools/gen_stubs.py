@@ -323,6 +323,7 @@ STATIC_METHODS = {("SentencePieceTrainer", "Train")}
 FUNCTION_SIGS = {
     "SetRandomGeneratorSeed": "(seed: int) -> None",
     "SetMinLogLevel": "(v: int) -> None",
+    "SetNBestTimeout": "(timeout_ms: int) -> None",
     "SetDataDir": "(data_dir: str) -> None",
 }
 

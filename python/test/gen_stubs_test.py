@@ -28,9 +28,7 @@ sys.path.insert(0, TOOLS_DIR)
 import gen_stubs  # pylint: disable=g-import-not-at-top
 import sentencepiece as spm  # pylint: disable=g-import-not-at-top
 
-STUB_PATH = os.path.abspath(
-    os.path.join(HERE, os.pardir, "src", "sentencepiece", "__init__.pyi")
-)
+STUB_PATH = os.path.join(os.path.dirname(spm.__file__), "__init__.pyi")
 
 pytestmark = pytest.mark.thread_unsafe
 

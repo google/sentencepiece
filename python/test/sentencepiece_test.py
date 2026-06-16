@@ -24,6 +24,7 @@ import sys
 import tempfile
 import threading
 import unittest
+import pytest
 import sentencepiece as spm
 try:
   from sentencepiece import sentencepiece_pb2
@@ -781,7 +782,10 @@ class TestSentencepieceProcessor(unittest.TestCase):
           sp.nbest_encode(text, nbest_size=10, return_type='proto'),
           sp.nbest_encode_as_proto(text, nbest_size=10),
       )
-
+  # SetNBestTimeout/set_nbest_timeout modify a global atomic variable in C++.
+  # This makes this test thread-unsafe when run in parallel with other tests
+  # that perform nbest encoding.
+  @pytest.mark.thread_unsafe
   def test_nbest_timeout(self):
     model_prefix = 'm_timeout'
     spm.SentencePieceTrainer.train(
