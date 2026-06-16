@@ -127,14 +127,13 @@ spm.SentencePieceTrainer.train(
 )
 
 # 3. Load model
-sp = spm.SentencePieceProcessor()
-sp.load(f"{model_prefix}.model")
+sp = spm.SentencePieceProcessor.from_file(f"{model_prefix}.model")
 
 def print_tokenization(sp, text):
     print(f"Input:   {text}")
-    print(f"Pieces:  {sp.encode_as_pieces(text)}")
-    print(f"IDs:     {sp.encode_as_ids(text)}")
-    print(f"Decoded: {sp.decode_ids(sp.encode_as_ids(text))}\n")
+    print(f"Pieces:  {sp.encode(text, return_type=str)}")
+    print(f"IDs:     {sp.encode(text, return_type=int)}")
+    print(f"Decoded: {sp.decode(sp.encode(text, return_type=int))}\n")
 
 # --- Test User-Defined Symbol ---
 # It is tokenized as a single piece and survives decoding
@@ -158,10 +157,10 @@ print_tokenization(sp, "hello <control1> world")
 # Control symbol <control1> has ID 3 in this model.
 # When programmatically inserted, it is skipped during decoding.
 control_id = sp.piece_to_id('<control1>')
-ids = sp.encode_as_ids("hello world")
+ids = sp.encode("hello world", return_type=int)
 inserted_ids = ids[:1] + [control_id] + ids[1:]
 print(f"Inserted IDs: {inserted_ids}")
-print(f"Decoded:      {sp.decode_ids(inserted_ids)}")
+print(f"Decoded:      {sp.decode(inserted_ids)}")
 # Output:
 # Inserted IDs: [6, 3, 10, 9, 5, 5, 7, 6, 12, 7, 11, 5, 8]
 # Decoded:      hello world
@@ -260,13 +259,13 @@ spm.SentencePieceTrainer.train(
 
 # Behavior comparison:
 # Default model (<s> is CONTROL):
-sp_default = spm.SentencePieceProcessor(model_file='m.model')
-print(sp_default.encode_as_pieces('<s> hello</s>'))
+sp_default = spm.SentencePieceProcessor.from_file('m.model')
+print(sp_default.encode('<s> hello</s>', return_type=str))
 # Output: ['<', 's', '>', ' hello', '<', '/', 's', '>'] (split as raw text)
 
 # Redefined model (<s> is USER_DEFINED):
-sp_user = spm.SentencePieceProcessor(model_file='m_bos_as_user.model')
-print(sp_user.encode_as_pieces('<s> hello</s>'))
+sp_user = spm.SentencePieceProcessor.from_file('m_bos_as_user.model')
+print(sp_user.encode('<s> hello</s>', return_type=str))
 # Output: ['<s>', ' hello', '</s>'] (matched as single special tokens)
 ```
 
@@ -310,7 +309,7 @@ By design, `SentencePieceProcessor.decode` maps control symbols to empty strings
 If you need to verify or inspect control symbols in the output, you must look at the token IDs directly or convert them to pieces individually using `id_to_piece(id)`:
 
 ```python
-# sp.decode_ids([14, 6, 3, 6, 24]) -> "hello world"
+# sp.decode([14, 6, 3, 6, 24]) -> "hello world"
 pieces = [sp.id_to_piece(i) for i in [14, 6, 3, 6, 24]]
 # pieces -> [' hello', ' ', '<control1>', ' ', 'world']
 ```
