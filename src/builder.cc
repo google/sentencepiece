@@ -51,6 +51,10 @@ namespace normalizer {
 namespace {
 
 constexpr int kMaxUnicode = 0x10FFFF;
+// Limit recursion depth to prevent stack overflow on deep or cyclic tries.
+// Must be at namespace scope (not local scope) to avoid MSVC lambda capture
+// bugs (C3493) in DecompileCharsMap.
+constexpr int kMaxDepth = 1000;
 
 static constexpr absl::string_view kDefaultNormalizerName = "nfkc";
 
@@ -256,7 +260,6 @@ absl::Status Builder::DecompileCharsMap(absl::string_view blob,
   std::string key;
   bool value_out_of_range = false;
   // Limit recursion depth to prevent stack overflow on deep or cyclic tries.
-  static constexpr int kMaxDepth = 1000;
   bool depth_limit_exceeded = false;
   std::function<void(size_t, size_t, int)> traverse;
 

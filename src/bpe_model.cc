@@ -35,6 +35,12 @@ namespace sentencepiece {
 namespace bpe {
 namespace {
 
+// Limit recursion depth to prevent stack overflow on malicious models
+// with extremely deep BPE merge chains.
+// Must be at namespace scope (not local scope) to avoid MSVC lambda capture
+// bugs (C3493) in SampleEncode.
+constexpr int kMaxBpeResegmentDepth = 100;
+
 struct SymbolPair {
   union {
     float score;  // score of this pair. large is better.
@@ -248,7 +254,6 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
 
   // Limit recursion depth to prevent stack overflow on malicious models
   // with extremely deep BPE merge chains.
-  constexpr int kMaxBpeResegmentDepth = 100;
 
   auto resegment = [this, &rev_merge](auto& self, absl::string_view w,
                                       EncodeResult* output, int depth) -> void {
