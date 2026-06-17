@@ -207,7 +207,6 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
     const bool use_dropout = alpha > 0.0;
     absl::BitGen* rand_gen =
         use_dropout ? random::GetRandomGenerator() : nullptr;
-    std::bernoulli_distribution dropout(alpha);
 
     // Main loop.
     while (!agenda.empty()) {
@@ -229,7 +228,7 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
       // are pre computed, but here we randomly skip merge operation inside this
       // loop. This implementation is theoretically equivalent to the original
       // one. BPE-dropout: https://arxiv.org/pdf/1910.13267.pdf
-      if (use_dropout && dropout(*rand_gen)) continue;
+      if (use_dropout && absl::Bernoulli(*rand_gen, alpha)) continue;
 
       Symbol& left_symbol = symbols[top.left];
       Symbol& right_symbol = symbols[top.right];

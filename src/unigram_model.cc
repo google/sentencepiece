@@ -82,8 +82,8 @@ inline float GetUserDefinedScore(int length) { return 0.1 * (length - 1); }
 inline float Gumbel() {
   const float kEpsilon = 1e-7;
   auto *mt = random::GetRandomGenerator();
-  std::uniform_real_distribution<float> dis(0.0, 1.0);
-  float noise = -std::log(-(std::log(dis(*mt) + kEpsilon)));
+  float noise =
+      -std::log(-(std::log(absl::Uniform(*mt, 0.0f, 1.0f) + kEpsilon)));
 
   return noise;
 }
