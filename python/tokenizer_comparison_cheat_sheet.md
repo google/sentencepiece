@@ -23,7 +23,7 @@ This cheat sheet compares the capabilities, API designs, and performance feature
 | **Pre-Tokenization (Modular)** | ❌ No (Intentional design: parses raw Unicode stream without pre-splitting) |  ✅ Yes (fully modular: `tokenizer.pre_tokenizer = ...`) | ⚠️ Partial (static via regex `pat_str` in constructor) |
 | **Modular Post-Processing** | ❌ No (BOS/EOS toggles only) |  ✅ Yes (template post-processor) | ❌ No |
 | **Text Normalization Support** |  ✅ Yes (baked into model, highly optimized precompiled rules) |  ✅ Yes (fully modular pipeline, e.g. Lowercase, NFKC) | ❌ No (Intentional design: tokenizes raw input exactly as-is) |
-| **Custom Normalizers** |  ✅ Yes (defined at training time via TSV mapping) |  ✅ Yes (custom Python/Rust functions or sequences) | ❌ No |
+| **Custom Normalizers** |  ✅ Yes (defined at training time via TSV mapping, or at runtime via Python mapping passed to trainer) |  ✅ Yes (custom Python/Rust functions or sequences) | ❌ No |
 | **Special Token Security Policy** |  ✅ Yes (static per-token: `control_symbols` [safe] vs `user_defined_symbols` [unsafe] in same model) | ⚠️ Partial (global toggle `split_special_tokens`, cannot mix per-token) | ⚠️ Partial (global call-time toggle `allowed_special`/`disallowed_special`, cannot mix per-token) |
 | **Token/Char Alignment Helpers** | ❌ No (returns raw offsets only) |  ✅ Yes (`char_to_token()`, `token_to_word()`, etc.) | ❌ No |
 
@@ -321,7 +321,13 @@ Below is a side-by-side comparison of common tasks across the three libraries.
 ### 2.17. Configure Normalizer
 
 *   **SentencePiece**:
-    *   *Training-time only* (normalization rule defined via `normalization_rule_name` or `normalization_rule_tsv` during training).
+    *   *Training-time only* (normalization rule defined via `normalization_rule_name` or `normalization_rule_tsv` during training). You can also pass a pre-configured `SentencePieceNormalizer` instance:
+        ```python
+        # Define normalizer rules at runtime in Python
+        norm = spm.SentencePieceNormalizer(norm_map=[('foo', 'bar')], escape_whitespaces=True)
+        # Pass the normalizer instance to the trainer
+        spm.SentencePieceTrainer.train(..., normalizer=norm)
+        ```
 *   **Hugging Face `tokenizers`**:
     ```python
     from tokenizers import normalizers
@@ -340,6 +346,10 @@ Below is a side-by-side comparison of common tasks across the three libraries.
     print(norm.normalize("text"))
     # Or via processor:
     print(sp.normalize("text"))
+
+    # Or initialize with custom mapping directly:
+    norm_custom = spm.SentencePieceNormalizer(norm_map=[('foo', 'bar')])
+    print(norm_custom.normalize("foo"))  # Output: bar
     ```
 *   **Hugging Face `tokenizers`**:
     ```python

@@ -156,7 +156,10 @@ _DECODE_IDS_PROTO = (
 )
 _NORMALIZER_INIT = (
     "(self, model_file: str | None = ..., model_proto: bytes | None = ..., "
-    "rule_tsv: str | None = ..., rule_name: str | None = ..., add_dummy_prefix: bool = ..., "
+    "normalizer_spec: bytes | None = ..., "
+    "rule_tsv: str | None = ..., rule_name: str | None = ..., "
+    "norm_map: Sequence[tuple[str, str]] | None = ..., "
+    "add_dummy_prefix: bool = ..., "
     "escape_whitespaces: bool = ..., remove_extra_whitespaces: bool = ...) -> None"
 )
 _NORMALIZE = "(self, input: str | bytes | Sequence[str] | Sequence[bytes], with_offsets: bool | None = ...) -> Any"
@@ -270,16 +273,20 @@ METHOD_SIGS = {
     },
     "SentencePieceTrainer": {
         "__init__": "(self) -> None",
-        "Train": "(arg: str | None = ..., logstream: IO[Any] | None = ..., **kwargs: Any) -> None",
+        "Train": "(arg: str | None = ..., logstream: IO[Any] | None = ..., normalizer: SentencePieceNormalizer | None = ..., **kwargs: Any) -> None",
     },
     "SentencePieceNormalizer": {
         "__init__": _NORMALIZER_INIT,
         "Init": _NORMALIZER_INIT,
         "LoadFromSerializedProto": "(self, serialized: bytes) -> bool",
+        "LoadFromSerializedNormalizerSpec": "(self, serialized: bytes) -> bool",
         "LoadFromRuleTSV": "(self, filename: str) -> bool",
         "LoadFromRuleName": "(self, name: str) -> bool",
         "LoadFromFile": "(self, arg: str) -> bool",
+        "LoadFromMap": "(self, norm_map: Sequence[tuple[str, str]]) -> bool",
+        "Decompile": "(self) -> list[tuple[str, str]]",
         "serialized_model_proto": "(self) -> bytes",
+        "serialized_normalizer_spec": "(self) -> bytes",
         "Normalize": _NORMALIZE,
     },
     "ThreadPool": {

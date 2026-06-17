@@ -12,8 +12,8 @@
 #include <string_view>
 #include <utility>
 #include <vector>
-#include "absl/status/status.h"
 
+#include "absl/status/status.h"
 
 namespace py = pybind11;
 
@@ -103,9 +103,8 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
       if (py::isinstance<py::str>(item) || py::isinstance<py::bytes>(item)) {
         value_ = item.cast<std::string>();
       } else {
-        status_ = absl::Status(
-            absl::StatusCode::kInvalidArgument,
-            "Iterator must return str or bytes.");
+        status_ = absl::Status(absl::StatusCode::kInvalidArgument,
+                               "Iterator must return str or bytes.");
         done_ = true;
         return;
       }
@@ -116,8 +115,7 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
       }
       ++it_;
     } catch (const py::error_already_set& e) {
-      status_ = absl::Status(
-          absl::StatusCode::kInternal, e.what());
+      status_ = absl::Status(absl::StatusCode::kInternal, e.what());
       done_ = true;
     }
   }
@@ -164,9 +162,8 @@ void RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
 void CheckIds(const std::vector<int>& ids, int num_pieces) {
   for (int id : ids) {
     if (id < 0 || id >= num_pieces) {
-      throw absl::Status(
-          absl::StatusCode::kOutOfRange,
-          "piece id is out of range.");
+      throw absl::Status(absl::StatusCode::kOutOfRange,
+                         "piece id is out of range.");
     }
   }
 }
@@ -307,10 +304,9 @@ std::vector<std::vector<int>> CastToVectorVectorInt(const py::object& ins_obj) {
 void CheckProtoArguments(bool add_bos, bool add_eos, bool reverse,
                          bool emit_unk_piece) {
   if (add_bos || add_eos || reverse || emit_unk_piece) {
-    throw absl::Status(
-        absl::StatusCode::kUnimplemented,
-        "add_bos, add_eos, reverse, and emit_unk_piece is not "
-        "supported in proto API");
+    throw absl::Status(absl::StatusCode::kUnimplemented,
+                       "add_bos, add_eos, reverse, and emit_unk_piece is not "
+                       "supported in proto API");
   }
 }
 
@@ -337,7 +333,8 @@ std::vector<int> BuildUtf8ToUnicodeMap(absl::string_view orig) {
   utf8_to_unicode[prev] = ulen;
   return utf8_to_unicode;
 }
-py::dict ExtractOffsetMapping(const sentencepiece::SentencePieceText& spt, bool return_bytes) {
+py::dict ExtractOffsetMapping(const sentencepiece::SentencePieceText& spt,
+                              bool return_bytes) {
   std::vector<int> utf8_to_unicode;
   if (!return_bytes) {
     utf8_to_unicode = BuildUtf8ToUnicodeMap(spt.text());
@@ -623,7 +620,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
            [](const sentencepiece::SentencePieceProcessor& self,
               const py::list& ins, int num_threads, py::object thread_pool,
               bool enable_sampling, int nbest_size, float alpha, bool add_bos,
-              bool add_eos, bool reverse, bool emit_unk_piece, bool return_bytes) {
+              bool add_eos, bool reverse, bool emit_unk_piece,
+              bool return_bytes) {
              if (ins.empty()) return py::list();
              std::vector<std::string_view> C_ins = CastToStringViewVector(ins);
              std::vector<std::vector<std::string>> outs(ins.size());
@@ -693,7 +691,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
            [](const sentencepiece::SentencePieceProcessor& self,
               const py::list& ins, int num_threads, py::object thread_pool,
               bool enable_sampling, int nbest_size, float alpha, bool add_bos,
-              bool add_eos, bool reverse, bool emit_unk_piece, bool return_bytes) {
+              bool add_eos, bool reverse, bool emit_unk_piece,
+              bool return_bytes) {
              std::vector<std::string_view> C_ins = CastToStringViewVector(ins);
              std::vector<sentencepiece::SentencePieceText> spts(ins.size());
              WorkerPool pool(num_threads, thread_pool);
@@ -1045,14 +1044,13 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
 
       .def("_DecodeAsOffsetMappingBatch",
            [](const sentencepiece::SentencePieceProcessor& self,
-              const py::object& ins_obj, int num_threads, py::object thread_pool,
-              bool return_bytes) {
-             
+              const py::object& ins_obj, int num_threads,
+              py::object thread_pool, bool return_bytes) {
              py::object normalized_ins = ins_obj;
              if (py::isinstance<py::tuple>(ins_obj)) {
                normalized_ins = py::list(ins_obj);
              }
-             
+
              py::sequence seq_ins = normalized_ins;
              if (seq_ins.empty()) return py::list();
 
@@ -1071,7 +1069,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
 
              if (!py_ins.empty()) {
                py::object first_seq = py_ins[0];
-               if (py::isinstance<py::list>(first_seq) || py::isinstance<py::tuple>(first_seq)) {
+               if (py::isinstance<py::list>(first_seq) ||
+                   py::isinstance<py::tuple>(first_seq)) {
                  py::sequence inner_seq = first_seq;
                  if (!inner_seq.empty()) {
                    py::object first_item = inner_seq[0];
@@ -1091,7 +1090,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
 
              std::vector<sentencepiece::SentencePieceText> spts(py_ins.size());
              WorkerPool pool(num_threads, thread_pool);
-             
+
              if (is_pieces_batch) {
                std::vector<std::vector<std::string_view>> C_ins(py_ins.size());
                for (size_t i = 0; i < py_ins.size(); ++i) {
@@ -1101,22 +1100,19 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                  py::gil_scoped_release release;
                  auto status = sentencepiece::RunBatch(
                      py_ins.size(),
-                     [&](size_t i) {
-                       return self.Decode(C_ins[i], &spts[i]);
-                     },
+                     [&](size_t i) { return self.Decode(C_ins[i], &spts[i]); },
                      *pool.get());
                  if (!status.ok()) throw status;
                }
              } else {
-               std::vector<std::vector<int>> C_ins = CastToVectorVectorInt(py_ins);
+               std::vector<std::vector<int>> C_ins =
+                   CastToVectorVectorInt(py_ins);
                for (const auto& ids : C_ins) CheckIds(ids, self.GetPieceSize());
                {
                  py::gil_scoped_release release;
                  auto status = sentencepiece::RunBatch(
                      py_ins.size(),
-                     [&](size_t i) {
-                       return self.Decode(C_ins[i], &spts[i]);
-                     },
+                     [&](size_t i) { return self.Decode(C_ins[i], &spts[i]); },
                      *pool.get());
                  if (!status.ok()) throw status;
                }
@@ -1169,7 +1165,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
       .def("_NBestEncodeAsPieces",
            [](const sentencepiece::SentencePieceProcessor& self,
               const py::object& input, int nbest_size, bool add_bos,
-              bool add_eos, bool reverse, bool emit_unk_piece, bool return_bytes) {
+              bool add_eos, bool reverse, bool emit_unk_piece,
+              bool return_bytes) {
              PyInputStringView in(input);
              std::vector<std::vector<std::string>> piecess;
              {
@@ -1239,9 +1236,9 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              }
              py::list py_outs(piecess.size());
              for (size_t i = 0; i < piecess.size(); ++i) {
-               py_outs[i] =
-                   py::make_tuple(ToPyStringList(piecess[i].first, return_bytes),
-                                  piecess[i].second);
+               py_outs[i] = py::make_tuple(
+                   ToPyStringList(piecess[i].first, return_bytes),
+                   piecess[i].second);
              }
              return py_outs;
            })
@@ -1509,6 +1506,25 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              if (!status.ok()) throw status;
              return true;
            })
+      .def(
+          "LoadFromMap",
+          [](sentencepiece::SentencePieceNormalizer& self,
+             const std::vector<std::pair<std::string, std::string>>& norm_map) {
+            py::gil_scoped_release release;
+            auto status = self.LoadFromMap(norm_map);
+            if (!status.ok()) throw status;
+            return true;
+          })
+      .def("Decompile",
+           [](const sentencepiece::SentencePieceNormalizer& self) {
+             std::vector<std::pair<std::string, std::string>> norm_map;
+             {
+               py::gil_scoped_release release;
+               auto status = self.Decompile(&norm_map);
+               if (!status.ok()) throw status;
+             }
+             return norm_map;
+           })
       .def("_Normalize",
            [](const sentencepiece::SentencePieceNormalizer& self,
               const py::object& input) {
@@ -1548,5 +1564,9 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
       .def("serialized_model_proto",
            [](const sentencepiece::SentencePieceNormalizer& self) {
              return py::bytes(self.serialized_model_proto());
+           })
+      .def("serialized_normalizer_spec",
+           [](const sentencepiece::SentencePieceNormalizer& self) {
+             return py::bytes(self.serialized_normalizer_spec());
            });
 }
