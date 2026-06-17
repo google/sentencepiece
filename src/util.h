@@ -72,7 +72,7 @@ namespace string_util {
 
 template <typename T>
 inline bool DecodePOD(absl::string_view str, T* result) {
-  static_assert(std::is_trivially_copyable<T>::value,
+  static_assert(std::is_trivially_copyable_v<T>,
                 "T must be trivially copyable");
   if (sizeof(*result) != str.size()) {
     return false;
@@ -83,9 +83,9 @@ inline bool DecodePOD(absl::string_view str, T* result) {
 
 template <typename T>
 inline std::string EncodePOD(const T& value) {
-  static_assert(std::is_trivially_copyable<T>::value,
+  static_assert(std::is_trivially_copyable_v<T>,
                 "T must be trivially copyable");
-  return std::string(reinterpret_cast<const char*>(&value), sizeof(T));
+  return {reinterpret_cast<const char*>(&value), sizeof(T)};
 }
 
 template <typename T>
@@ -97,7 +97,9 @@ template <typename T>
 inline T HexToInt(absl::string_view value) {
   absl::ConsumePrefix(&value, "0x");
   T n = 0;
-  if (!absl::numbers_internal::safe_strtoi_base(value, &n, 16)) return 0;
+  if (!absl::numbers_internal::safe_strtoi_base(value, &n, 16)) {
+    return 0;
+  }
   return n;
 }
 
@@ -136,7 +138,7 @@ inline bool IsValidDecodeUTF8(absl::string_view input, size_t* mblen) {
 
 size_t EncodeUTF8(char32_t c, char* output);
 
-std::string UnicodeCharToUTF8(const char32_t c);
+std::string UnicodeCharToUTF8(char32_t c);
 
 UnicodeText UTF8ToUnicodeText(absl::string_view utf8);
 
@@ -221,21 +223,25 @@ class ReservoirSampler {
   explicit ReservoirSampler(std::vector<T>* sampled, uint64_t size,
                             uint64_t seed)
       : sampled_(sampled), size_(size), gen_(std::seed_seq{seed}) {}
-  virtual ~ReservoirSampler() {}
+  virtual ~ReservoirSampler() = default;
 
   void Add(const T& item) {
-    if (size_ == 0) return;
+    if (size_ == 0) {
+      return;
+    }
 
     ++total_;
     if (sampled_->size() < size_) {
       sampled_->push_back(item);
     } else {
       const auto n = absl::Uniform<uint64_t>(gen_, 0, total_ - 1);
-      if (n < sampled_->size()) (*sampled_)[n] = item;
+      if (n < sampled_->size()) {
+        (*sampled_)[n] = item;
+      }
     }
   }
 
-  uint64_t total_size() const { return total_; }
+  [[nodiscard]] uint64_t total_size() const { return total_; }
 
  private:
   std::vector<T>* sampled_ = nullptr;
@@ -249,19 +255,13 @@ class ReservoirSampler {
 namespace util {
 
 constexpr bool is_bigendian() {
-  if constexpr (absl::endian::native == absl::endian::big) {
-    return true;
-  } else {
-    return false;
-  }
+  return absl::endian::native == absl::endian::big;
 }
 
-inline uint32_t Swap32(uint32_t x) {
-  return absl::gbswap_32(x);
-}
+inline uint32_t Swap32(uint32_t x) { return absl::gbswap_32(x); }
 
 inline std::string JoinPath(absl::string_view path) {
-  return std::string(path.data(), path.size());
+  return {path.data(), path.size()};
 }
 
 template <typename... T>
@@ -302,16 +302,6 @@ std::wstring Utf8ToWide(const absl::string_view input);
 #define RET_QCHECK_LT(a, b) RET_CHECK_LT(a, b)
 
 }  // namespace util
-
-namespace port {
-template <typename T>
-void STLDeleteElements(std::vector<T*>* vec) {
-  for (auto item : *vec) {
-    delete item;
-  }
-  vec->clear();
-}
-}  // namespace port
 
 namespace log_domain {
 

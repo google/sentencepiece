@@ -156,10 +156,11 @@ enum ScriptType : int32_t {
   U_Ugaritic,
   U_Vai,
   U_Warang_Citi,
-  U_Yi
+  U_Yi,
 };
 
 ScriptType GetScript(char32_t c);
 }  // namespace unicode_script
 }  // namespace sentencepiece
+
 #endif  // UNICODE_SCRIPT

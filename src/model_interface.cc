@@ -17,6 +17,7 @@
 #include <algorithm>
 
 #include "sentencepiece_model.pb.h"
+#include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_format.h"
 #include "third_party/absl/strings/string_view.h"
 #include "util.h"
@@ -110,11 +111,13 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
            sp.type() == ModelProto::SentencePiece::UNUSED);
       if (!port::InsertIfNotPresent(
               is_normal_piece ? &pieces_ : &reserved_id_map_, sp.piece(), i)) {
-        status_ = absl::InternalError(sp.piece() + " is already defined.");
+        status_ = absl::InternalError(
+            absl::StrCat(sp.piece(), " is already defined."));
         return;
       }
     } else if (!port::InsertIfNotPresent(&pieces_, sp.piece(), i)) {
-      status_ = absl::InternalError(sp.piece() + " is already defined.");
+      status_ =
+          absl::InternalError(absl::StrCat(sp.piece(), " is already defined."));
       return;
     }
 
@@ -132,17 +135,17 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
 
     if (sp.type() == ModelProto::SentencePiece::BYTE) {
       if (!model_proto_->trainer_spec().byte_fallback()) {
-        status_ =
-            absl::InternalError("byte piece " + sp.piece() +
-                                " is found although `byte_fallback` is false.");
+        status_ = absl::InternalError(
+            absl::StrCat("byte piece ", sp.piece(),
+                         " is found although `byte_fallback` is false."));
         return;
       }
       const int byte = PieceToByte(sp.piece());
       if (0 <= byte && byte < 256) {
         byte_found[byte] = true;
       } else {
-        status_ =
-            absl::InternalError("byte piece " + sp.piece() + " is invalid.");
+        status_ = absl::InternalError(
+            absl::StrCat("byte piece ", sp.piece(), " is invalid."));
         return;
       }
     }
@@ -178,7 +181,9 @@ std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
 
   std::vector<absl::string_view> result;
   if (treat_ws_as_suffix) {  // put ws tokens at the end of non-ws sequences.
-    if (begin < end) result.emplace_back(begin, 0);
+    if (begin < end) {
+      result.emplace_back(begin, 0);
+    }
     while (begin < end) {
       const int mblen =
           std::min<int>(string_util::OneCharLen(begin), end - begin);
@@ -187,7 +192,9 @@ std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
       if (is_ws) {  // keep track of sequences consecutive ws tokens.
         in_ws_sequence = true;
       } else if (in_ws_sequence) {
-        if (allow_ws_only_pieces) result.emplace_back(begin, 0);
+        if (allow_ws_only_pieces) {
+          result.emplace_back(begin, 0);
+        }
 
         in_ws_sequence = false;
       }
@@ -196,8 +203,9 @@ std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
           absl::string_view(result.back().data(), result.back().size() + mblen);
       begin += mblen;
 
-      if (begin < end && is_ws && !allow_ws_only_pieces)
+      if (begin < end && is_ws && !allow_ws_only_pieces) {
         result.emplace_back(begin, 0);
+      }
     }
   } else {
     while (begin < end) {
@@ -212,7 +220,9 @@ std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
         in_ws_sequence = true;
       }
 
-      if (in_ws_sequence && !is_ws) in_ws_sequence = false;
+      if (in_ws_sequence && !is_ws) {
+        in_ws_sequence = false;
+      }
 
       result.back() =
           absl::string_view(result.back().data(), result.back().size() + mblen);
@@ -224,7 +234,7 @@ std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
 }
 
 const std::string& ByteToPiece(unsigned char c) {
-  static const std::vector<std::string>* const kBytePieces = []() {
+  static const std::vector<std::string>* const kBytePieces = [] {
     auto* v = new std::vector<std::string>(256);
     for (int i = 0; i < 256; ++i) {
       (*v)[i] = absl::StrFormat("<0x%02X>", i);

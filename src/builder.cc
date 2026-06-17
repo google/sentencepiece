@@ -19,6 +19,8 @@
 #include <utility>
 
 #include "filesystem.h"
+#include "third_party/absl/container/flat_hash_map.h"
+#include "third_party/absl/container/flat_hash_set.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_join.h"
@@ -46,8 +48,7 @@
 #include "normalization_rule.h"
 #endif
 
-namespace sentencepiece {
-namespace normalizer {
+namespace sentencepiece::normalizer {
 namespace {
 
 constexpr int kMaxUnicode = 0x10FFFF;
@@ -56,10 +57,10 @@ constexpr int kMaxUnicode = 0x10FFFF;
 // bugs (C3493) in DecompileCharsMap.
 constexpr int kMaxDepth = 1000;
 
-static constexpr absl::string_view kDefaultNormalizerName = "nfkc";
+constexpr absl::string_view kDefaultNormalizerName = "nfkc";
 
 #ifndef ENABLE_NFKC_COMPILE
-static constexpr absl::string_view kCompileError =
+constexpr absl::string_view kCompileError =
     "NFK compile is not enabled. rebuild with -DSPM_ENABLE_NFKC_COMPILE=ON";
 #endif
 
@@ -103,7 +104,8 @@ Builder::Chars ToNFD(const Builder::Chars& input) {
 // un-normalized character mapping.
 std::vector<Builder::Chars> ExpandUnnormalized(
     const Builder::Chars& nfkd,
-    const std::map<char32_t, std::set<char32_t>>& norm2orig) {
+    const absl::flat_hash_map<char32_t, absl::flat_hash_set<char32_t>>&
+        norm2orig) {
   CHECK(!nfkd.empty());
   std::vector<Builder::Chars> results;
   for (const auto c : port::FindOrDie(norm2orig, nfkd[0])) {
@@ -133,7 +135,7 @@ Builder::Chars Normalize(const Builder::CharsMap& chars_map,
   Builder::Chars normalized;
 
   for (size_t i = 0; i < src.size();) {
-    Builder::CharsMap::const_iterator it = chars_map.end();
+    auto it = chars_map.end();
     const size_t slice = std::min<size_t>(i + max_len, src.size());
     // starts with the longest prefix.
     Builder::Chars key(src.begin() + i, src.begin() + slice);
@@ -209,8 +211,8 @@ absl::Status Builder::CompileCharsMap(const CharsMap& chars_map,
   }
 
   Darts::DoubleArray trie;
-  RET_CHECK_EQ(0, trie.build(key.size(), const_cast<char**>(&key[0]), nullptr,
-                             &value[0]))
+  RET_CHECK_EQ(0, trie.build(key.size(), const_cast<char**>(key.data()),
+                             nullptr, value.data()))
       << "cannot build double-array";
 
   int max_nodes_size = 0;
@@ -242,7 +244,8 @@ absl::Status Builder::DecompileCharsMap(absl::string_view blob,
   RET_CHECK(chars_map);
   chars_map->clear();
 
-  absl::string_view trie_blob, normalized;
+  absl::string_view trie_blob;
+  absl::string_view normalized;
   std::string buf;
   RETURN_IF_ERROR(Normalizer::DecodePrecompiledCharsMap(blob, &trie_blob,
                                                         &normalized, &buf));
@@ -287,7 +290,8 @@ absl::Status Builder::DecompileCharsMap(absl::string_view blob,
             value_out_of_range = true;
           } else {
             const absl::string_view value = normalized.data() + result;
-            Chars key_chars, value_chars;
+            Chars key_chars;
+            Chars value_chars;
             const auto key_unicode = string_util::UTF8ToUnicodeText(key);
             key_chars.reserve(key_unicode.size());
             for (const auto c : key_unicode) {
@@ -377,7 +381,7 @@ absl::Status BuildMapInternal(
   std::set<Builder::Chars> nfkd_decomposed;
 
   // Fully normalized one character to unnormalized one character map.
-  std::map<char32_t, std::set<char32_t>> norm2orig;
+  absl::flat_hash_map<char32_t, absl::flat_hash_set<char32_t>> norm2orig;
 
   Builder::CharsMap nfkc_map;  // The final NFKC mapping.
 
@@ -674,15 +678,22 @@ absl::Status Builder::LoadCharsMap(absl::string_view filename,
     std::vector<std::string> fields =
         absl::StrSplit(line, '\t', absl::AllowEmpty());
     CHECK_GE(fields.size(), 1);
-    if (fields.size() == 1) fields.push_back("");  // Deletion rule.
-    std::vector<char32_t> src, trg;
+    if (fields.size() == 1) {
+      fields.emplace_back("");  // Deletion rule.
+    }
+    std::vector<char32_t> src;
+    std::vector<char32_t> trg;
     for (auto s : absl::StrSplit(fields[0], ' ')) {
-      if (s.empty()) continue;
+      if (s.empty()) {
+        continue;
+      }
       absl::ConsumePrefix(&s, "U+");
       src.push_back(string_util::HexToInt<char32_t>(s));
     }
     for (auto s : absl::StrSplit(fields[1], ' ')) {
-      if (s.empty()) continue;
+      if (s.empty()) {
+        continue;
+      }
       absl::ConsumePrefix(&s, "U+");
       trg.push_back(string_util::HexToInt<char32_t>(s));
     }
@@ -700,8 +711,10 @@ absl::Status Builder::SaveCharsMap(absl::string_view filename,
   RETURN_IF_ERROR(output->status());
 
   for (const auto& c : chars_map) {
-    std::vector<std::string> src, trg;
-    string_util::UnicodeText srcu, trgu;
+    std::vector<std::string> src;
+    std::vector<std::string> trg;
+    string_util::UnicodeText srcu;
+    string_util::UnicodeText trgu;
     for (char32_t v : c.first) {
       src.push_back(string_util::IntToHex(v));
       srcu.push_back(v);
@@ -757,5 +770,4 @@ absl::Status Builder::RemoveRedundantMap(CharsMap* chars_map) {
 
   return absl::OkStatus();
 }
-}  // namespace normalizer
-}  // namespace sentencepiece
+}  // namespace sentencepiece::normalizer

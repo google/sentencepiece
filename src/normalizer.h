@@ -28,8 +28,7 @@
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
 
-namespace sentencepiece {
-namespace normalizer {
+namespace sentencepiece::normalizer {
 
 // Given a list of strings, finds the longest string which is a
 // prefix of a query.
@@ -45,7 +44,8 @@ class PrefixMatcher {
   int PrefixMatch(absl::string_view w, bool* found = nullptr) const;
 
   // Replaces entries in `w` with `out`.
-  std::string GlobalReplace(absl::string_view w, absl::string_view out) const;
+  [[nodiscard]] std::string GlobalReplace(absl::string_view w,
+                                          absl::string_view out) const;
 
  private:
   std::unique_ptr<Darts::DoubleArray> trie_;
@@ -92,7 +92,7 @@ class Normalizer {
 
   // Returns a normalized string without alignments.
   // This function is used in sentencepiece training.
-  virtual std::string Normalize(absl::string_view input) const;
+  [[nodiscard]] virtual std::string Normalize(absl::string_view input) const;
 
   friend class Builder;
 
@@ -114,7 +114,7 @@ class Normalizer {
   //   output.append(p.first.data(), p.first.size());
   //   input.remove_prefix(p.second);
   // }
-  std::pair<absl::string_view, int> NormalizePrefix(
+  [[nodiscard]] std::pair<absl::string_view, int> NormalizePrefix(
       absl::string_view input) const;
 
   // Encodes trie_blob and normalized string and return compiled blob.
@@ -154,6 +154,6 @@ class Normalizer {
   // Normalizer's status.
   absl::Status status_;
 };
-}  // namespace normalizer
-}  // namespace sentencepiece
+}  // namespace sentencepiece::normalizer
+
 #endif  // NORMALIZER_NORMALIZER_H_

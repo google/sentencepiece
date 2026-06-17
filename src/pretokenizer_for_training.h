@@ -24,13 +24,12 @@
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/string_view.h"
 
-namespace sentencepiece {
-namespace pretokenizer {
+namespace sentencepiece::pretokenizer {
 
 class PretokenizerForTrainingInterface {
  public:
-  PretokenizerForTrainingInterface() {}
-  virtual ~PretokenizerForTrainingInterface() {}
+  PretokenizerForTrainingInterface() = default;
+  virtual ~PretokenizerForTrainingInterface() = default;
   virtual absl::Status status() const = 0;
 
   // Puts kUPPBoundaryStr before and after the pre-tokenizer's segmentation
@@ -45,20 +44,21 @@ class PretokenizerForTrainingInterface {
   // segmentation: piece[0] = {0, 1}, piece[1] = {2, 6},
   //               piece[2] = {7, 15}, piece[3] = {15, 20}
   // output: I love sentence<tab>piece.
-  std::vector<std::string> PreTokenize(absl::string_view text) const;
+  [[nodiscard]] std::vector<std::string> PreTokenize(
+      absl::string_view text) const;
 
   // Returns pre-tokenized result.
   // Note that the pre-tokenized constraint is specified with the
   // byte offsets (SentencePiece::begin, SentencePiece::end) over
   // the input text.
-  virtual SentencePieceText Tokenize(absl::string_view text) const = 0;
+  [[nodiscard]] virtual SentencePieceText Tokenize(
+      absl::string_view text) const = 0;
 
  private:
   static std::string Preprocess(absl::string_view text);
   static std::vector<std::string> Postprocess(const SentencePieceText& spt);
 };
 
-}  // namespace pretokenizer
-}  // namespace sentencepiece
+}  // namespace sentencepiece::pretokenizer
 
 #endif  // PRETOKENIZER_FOR_TRAINING_H_

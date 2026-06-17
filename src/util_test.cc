@@ -322,26 +322,6 @@ TEST(UtilTest, InputOutputBufferInvalidFileTest) {
   EXPECT_FALSE(input->status().ok());
 }
 
-TEST(UtilTest, STLDeleteELementsTest) {
-  class Item {
-   public:
-    explicit Item(int* counter) : counter_(counter) {}
-    ~Item() { ++*counter_; }
-
-   private:
-    int* counter_;
-  };
-
-  std::vector<Item*> data;
-  int counter = 0;
-  for (int i = 0; i < 10; ++i) {
-    data.push_back(new Item(&counter));
-  }
-  port::STLDeleteElements(&data);
-  CHECK_EQ(10, counter);
-  EXPECT_EQ(0, data.size());
-}
-
 TEST(UtilTest, StatusTest) {
   const absl::Status ok;
   EXPECT_TRUE(ok.ok());

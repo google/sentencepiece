@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <queue>
 #include <string>
 #include <vector>
@@ -27,8 +28,7 @@
 #include "third_party/absl/status/status.h"
 #include "trainer_interface.h"
 
-namespace sentencepiece {
-namespace bpe {
+namespace sentencepiece::bpe {
 
 // Trainer class for BPE model.
 class Trainer : public TrainerInterface {
@@ -67,8 +67,10 @@ class Trainer : public TrainerInterface {
     // See EncodePos/DecodePos.
     absl::btree_set<uint64_t> positions;
 
-    bool IsBigram() const { return left != nullptr && right != nullptr; }
-    std::string ToString() const;
+    [[nodiscard]] bool IsBigram() const {
+      return left != nullptr && right != nullptr;
+    }
+    [[nodiscard]] std::string ToString() const;
     Symbol() = default;
   };
 
@@ -149,12 +151,12 @@ class Trainer : public TrainerInterface {
       pq_;
   std::vector<Symbol*> pending_queue_;
 
-  // Stores symbols allocated in heap so that we can delete them at onece.
-  std::vector<Symbol*> allocated_;
+  // Stores symbols allocated in heap so that they are automatically deleted.
+  std::vector<std::unique_ptr<Symbol>> allocated_;
 
   // Sentences. symbols_[sid][index] stores a symbol in sentence_[sid][index].
   std::vector<std::vector<Symbol*>> symbols_;
 };
-}  // namespace bpe
-}  // namespace sentencepiece
+}  // namespace sentencepiece::bpe
+
 #endif  // BPE_MODEL_TRAINER_H_

@@ -34,8 +34,7 @@
 ABSL_DECLARE_FLAG(bool, nlcodec_bpe);
 #endif  // SPM_NLCODEC_BPE
 
-namespace sentencepiece {
-namespace bpe {
+namespace sentencepiece::bpe {
 
 std::string Trainer::Symbol::ToString() const {
   return string_util::UnicodeTextToUTF8(chars);
@@ -48,14 +47,15 @@ Trainer::Symbol* Trainer::GetCharSymbol(char32_t c) {
   if (it != symbols_cache_.end()) {
     return it->second;
   }
-  Symbol* s = new Symbol;
-  allocated_.push_back(s);
+  auto s = std::make_unique<Symbol>();
   s->is_unk = (kUNKChar == c);
   s->fp = c;
   s->chars.push_back(c);
   s->freq = freq;
-  port::InsertOrDie(&symbols_cache_, s->fp, s);
-  return s;
+  port::InsertOrDie(&symbols_cache_, s->fp, s.get());
+  Symbol* s_ptr = s.get();
+  allocated_.push_back(std::move(s));
+  return s_ptr;
 }
 
 Trainer::Symbol* Trainer::GetPairSymbol(const Symbol* left,
@@ -73,22 +73,27 @@ Trainer::Symbol* Trainer::GetPairSymbol(const Symbol* left,
   CHECK(!left->chars.empty());
   CHECK(!right->chars.empty());
   string_util::UnicodeText ut;
-  for (const char32_t c : left->chars) ut.push_back(c);
-  for (const char32_t c : right->chars) ut.push_back(c);
+  for (const char32_t c : left->chars) {
+    ut.push_back(c);
+  }
+  for (const char32_t c : right->chars) {
+    ut.push_back(c);
+  }
 
   // Do not make an invalid piece.
   if (!IsValidSentencePiece(ut)) {
     return nullptr;
   }
 
-  Symbol* s = new Symbol;
-  allocated_.push_back(s);
+  auto s = std::make_unique<Symbol>();
   s->fp = fp;
   s->left = left;
   s->right = right;
   s->chars = ut;
-  port::InsertOrDie(&symbols_cache_, s->fp, s);
-  return s;
+  port::InsertOrDie(&symbols_cache_, s->fp, s.get());
+  Symbol* s_ptr = s.get();
+  allocated_.push_back(std::move(s));
+  return s_ptr;
 }
 
 void Trainer::ComputeFreq(Symbol* symbol) const {
@@ -113,7 +118,9 @@ void Trainer::ComputeFreq(Symbol* symbol) const {
 
 int Trainer::GetNextIndex(int sid, int index) const {
   for (size_t i = index + 1; i < symbols_[sid].size(); ++i) {
-    if (symbols_[sid][i] == nullptr) continue;
+    if (symbols_[sid][i] == nullptr) {
+      continue;
+    }
     return i;
   }
   return -1;
@@ -121,14 +128,18 @@ int Trainer::GetNextIndex(int sid, int index) const {
 
 int Trainer::GetPrevIndex(int sid, int index) const {
   for (int i = index - 1; i >= 0; --i) {
-    if (symbols_[sid][i] == nullptr) continue;
+    if (symbols_[sid][i] == nullptr) {
+      continue;
+    }
     return i;
   }
   return -1;
 }
 
 void Trainer::AddNewPair(int sid, int left, int right) {
-  if (left == -1 || right == -1) return;
+  if (left == -1 || right == -1) {
+    return;
+  }
   auto* symbol = GetPairSymbol(symbols_[sid][left], symbols_[sid][right]);
   if (symbol != nullptr) {
     symbol->positions.insert(EncodePos(sid, left, right));
@@ -140,7 +151,9 @@ void Trainer::AddNewPair(int sid, int left, int right) {
 }
 
 void Trainer::ResetFreq(int sid, int left, int right, const Symbol* best) {
-  if (left == -1 || right == -1) return;
+  if (left == -1 || right == -1) {
+    return;
+  }
   auto* symbol = GetPairSymbol(symbols_[sid][left], symbols_[sid][right]);
   if (symbol != nullptr && symbol != best) {
     symbol->needs_recomputation = true;
@@ -215,11 +228,12 @@ absl::Status Trainer::Train() {
   // Pretokenizer is used as a constraint of piece extractions.
   const auto* pretokenizer = SentencePieceTrainer::GetPretokenizerForTraining();
 
-  if (pretokenizer || !trainer_spec_.pretokenization_delimiter().empty()) {
+  if ((pretokenizer != nullptr) ||
+      !trainer_spec_.pretokenization_delimiter().empty()) {
     absl::string_view delimiter = trainer_spec_.pretokenization_delimiter();
     LOG(INFO) << "Preprocessing with pretokenizer...";
     for (auto& w : sentences_) {
-      if (pretokenizer) {
+      if (pretokenizer != nullptr) {
         w.first = absl::StrJoin(pretokenizer->PreTokenize(w.first),
                                 TrainerInterface::kUPPBoundaryStr);
       } else if (!delimiter.empty()) {
@@ -329,7 +343,8 @@ absl::Status Trainer::Train() {
                                -static_cast<float>(final_pieces_.size()));
   }
 
-  port::STLDeleteElements(&allocated_);
+  allocated_.clear();
+  symbols_cache_.clear();
 
   return Save();
 }
@@ -363,10 +378,10 @@ absl::Status Trainer::TrainFast() {
                                -static_cast<float>(final_pieces_.size()));
   }
 
-  port::STLDeleteElements(&allocated_);
+  allocated_.clear();
+  symbols_cache_.clear();
 
   return Save();
 }
 #endif  // SPM_NLCODEC_BPE
-}  // namespace bpe
-}  // namespace sentencepiece
+}  // namespace sentencepiece::bpe

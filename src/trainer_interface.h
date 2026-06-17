@@ -54,11 +54,11 @@ std::vector<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V>& m) {
 class MultiFileSentenceIterator : public SentenceIterator {
  public:
   explicit MultiFileSentenceIterator(const std::vector<std::string>& files);
-  ~MultiFileSentenceIterator() {}
+  ~MultiFileSentenceIterator() override = default;
 
-  bool done() const override;
+  [[nodiscard]] bool done() const override;
   void Next() override;
-  const std::string& value() const override { return value_; }
+  [[nodiscard]] const std::string& value() const override { return value_; }
   absl::Status status() const override;
 
  private:
@@ -84,9 +84,8 @@ class TrainerInterface {
   static const char kUNKStr[];
   static const char kUPPBoundaryStr[];
 
-  TrainerInterface(const TrainerSpec& trainer_spec,
-                   const NormalizerSpec& normalizer_spec,
-                   const NormalizerSpec& denormalizer_spec);
+  TrainerInterface(TrainerSpec trainer_spec, NormalizerSpec normalizer_spec,
+                   NormalizerSpec denormalizer_spec);
 
   virtual ~TrainerInterface();
 

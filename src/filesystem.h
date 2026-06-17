@@ -30,9 +30,9 @@ namespace sentencepiece {
 namespace filesystem {
 class ReadableFile {
  public:
-  ReadableFile() {}
+  ReadableFile() = default;
   explicit ReadableFile(absl::string_view filename, bool is_binary = false) {}
-  virtual ~ReadableFile() {}
+  virtual ~ReadableFile() = default;
 
   virtual absl::Status status() const = 0;
   virtual bool ReadLine(std::string* line) = 0;
@@ -41,9 +41,9 @@ class ReadableFile {
 
 class WritableFile {
  public:
-  WritableFile() {}
+  WritableFile() = default;
   explicit WritableFile(absl::string_view filename, bool is_binary = false) {}
-  virtual ~WritableFile() {}
+  virtual ~WritableFile() = default;
 
   virtual absl::Status status() const = 0;
   virtual bool Write(absl::string_view text) = 0;
@@ -57,4 +57,5 @@ std::unique_ptr<WritableFile> NewWritableFile(absl::string_view filename,
 
 }  // namespace filesystem
 }  // namespace sentencepiece
+
 #endif  // FILESYSTEM_H_

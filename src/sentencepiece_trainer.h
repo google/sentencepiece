@@ -48,13 +48,13 @@ class Normalizer;
 //
 class SentenceIterator {
  public:
-  virtual ~SentenceIterator() {}
+  virtual ~SentenceIterator() = default;
   // Returns true if iteration finishes (including error case).
   // Uses SentenceIterator::status() method to know whether
   // all sentences are loaded successfully.
-  virtual bool done() const = 0;
+  [[nodiscard]] virtual bool done() const = 0;
   virtual void Next() = 0;
-  virtual const std::string& value() const = 0;
+  [[nodiscard]] virtual const std::string& value() const = 0;
   virtual absl::Status status() const = 0;
 };
 
@@ -164,7 +164,7 @@ class SentencePieceTrainer {
 
  private:
   SentencePieceTrainer() {}
-  ~SentencePieceTrainer() {}
+  ~SentencePieceTrainer() = default;
 };
 
 class SentencePieceNormalizer {
@@ -189,11 +189,11 @@ class SentencePieceNormalizer {
                                  std::string* normalized,
                                  std::vector<size_t>* norm_to_orig) const;
 
-  virtual std::string Normalize(absl::string_view input) const;
+  [[nodiscard]] virtual std::string Normalize(absl::string_view input) const;
 
-  virtual NormalizerSpec* mutable_normalizer_spec() const;
+  [[nodiscard]] virtual NormalizerSpec* mutable_normalizer_spec() const;
 
-  virtual std::string serialized_model_proto() const;
+  [[nodiscard]] virtual std::string serialized_model_proto() const;
 
  private:
   std::unique_ptr<normalizer::Normalizer> normalizer_;
