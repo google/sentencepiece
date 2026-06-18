@@ -313,17 +313,32 @@ std::vector<int> CastToVectorInt(const py::object& ids_obj) {
       if (info.ndim != 1) {
         throw py::type_error("Buffer must be 1-dimensional");
       }
-      ids.resize(info.shape[0]);
-      if (info.itemsize == 4) {
-        std::memcpy(ids.data(), info.ptr, info.shape[0] * 4);
-      } else if (info.itemsize == 8) {
-        const int64_t* src = static_cast<const int64_t*>(info.ptr);
-        for (size_t i = 0; i < info.shape[0]; ++i) {
-          ids[i] = static_cast<int>(src[i]);
-        }
-      } else {
+      if (info.itemsize != 4 && info.itemsize != 8) {
         throw py::type_error(
             "Unsupported buffer integer size (must be 32-bit or 64-bit)");
+      }
+      ids.resize(info.shape[0]);
+      // A buffer obtained with strides may be non-contiguous: a numpy slice or
+      // a reversed `a[::-1]` view reports a data pointer to its first logical
+      // element with a stride that is not equal to itemsize (negative for the
+      // reversed case). Reading info.shape[0] items straight off info.ptr then
+      // walks past the allocation, so step by info.strides[0] instead.
+      const py::ssize_t stride =
+          info.strides.empty() ? info.itemsize : info.strides[0];
+      const char* base = static_cast<const char*>(info.ptr);
+      if (info.itemsize == 4) {
+        if (stride == info.itemsize) {
+          std::memcpy(ids.data(), info.ptr, info.shape[0] * 4);
+        } else {
+          for (py::ssize_t i = 0; i < info.shape[0]; ++i) {
+            ids[i] = *reinterpret_cast<const int32_t*>(base + i * stride);
+          }
+        }
+      } else {  // info.itemsize == 8
+        for (py::ssize_t i = 0; i < info.shape[0]; ++i) {
+          const auto* p = reinterpret_cast<const int64_t*>(base + i * stride);
+          ids[i] = static_cast<int>(*p);
+        }
       }
       return ids;
     } catch (const py::error_already_set&) {

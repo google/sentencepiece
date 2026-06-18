@@ -124,6 +124,25 @@ class TestNumpyIntegration(unittest.TestCase):
         decoded_64 = self.sp.decode(ids_2d_64)
         self.assertEqual(decoded_64, [text, text])
 
+    def test_decode_numpy_non_contiguous(self):
+        text = "This is a test sentence."
+        ids = self.sp.encode(text, return_type=int)
+
+        for dtype in (np.int32, np.int64):
+            arr = np.array(ids, dtype=dtype)
+
+            # Reversed view: negative stride, data pointer at the last element.
+            reversed_view = arr[::-1]
+            self.assertFalse(reversed_view.flags['C_CONTIGUOUS'])
+            self.assertEqual(self.sp.decode(reversed_view),
+                             self.sp.decode(list(ids[::-1])))
+
+            # Strided slice: stride larger than itemsize.
+            strided = arr[::2]
+            self.assertFalse(strided.flags['C_CONTIGUOUS'])
+            self.assertEqual(self.sp.decode(strided),
+                             self.sp.decode(list(ids[::2])))
+
     def test_decode_numpy_invalid_types(self):
         # Float array should fail
         ids_float = np.array([1.0, 2.0], dtype=np.float32)
