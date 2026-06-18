@@ -9,19 +9,20 @@ This cheat sheet compares the capabilities, API designs, and performance feature
 | Feature / Capability | SentencePiece | Hugging Face `tokenizers` | tiktoken |
 | :--- | :--- | :--- | :--- |
 | **Compared Version** | `v0.2.2` (New pybind11 API) | `v1.1.1` | `v0.13.0` |
-| **GIL Release (Parallelism)** |  ✅ Yes (NoGIL/Free-Threading) |  ✅ Yes |  ✅ Yes |
+| **GIL Release (Parallelism)** |  ✅ Yes (Releases GIL in almost all cases including single/batch encode & decode; supports Free-Threading) |  ⚠️ Partial (Releases GIL during core Rust execution, but string copying is done with GIL held) |  ⚠️ Partial (Releases GIL during core Rust execution, but python-level threading and conversions hold GIL) |
 | **Encode Offset Mapping (Unicode)** |  ✅ Yes (via `return_type='offset_mapping'`) |  ✅ Yes (via `Encoding.offsets`) | ❌ No |
 | **Decode Offset Mapping (Unicode)** |  ✅ Yes (via `return_type='offset_mapping'`, includes `text` key) | ❌ No | ❌ No |
 | **Raw Byte Offset Mapping** |  ✅ Yes (triggered by bytes input or `return_bytes=True` for both encode and decode) | ❌ No | ❌ No |
 | **Direct UTF-8 Bytes I/O** |  ✅ Yes (accepts bytes for encode, returns bytes for decode) | ❌ No (requires str) |  ⚠️ Partial (requires str for encode, returns bytes via `decode_bytes`) |
+| **Zero-Copy Input (str/bytes)** |  ✅ Yes (zero-copy for both str and bytes via Pybind11 memory view) | ❌ No (always copies input str to Rust owned String via PyO3) |  ⚠️ Partial (zero-copy for str under some conditions, no bytes support) |
 | **NumPy Array Output** |  ✅ Yes (Direct to NumPy, zero-copy) | ❌ No (Transformers wrapper only) | ❌ No |
-| **Batch Encoding Parallelism** |  ✅ Yes (via `num_threads` or `ThreadPool`) |  ✅ Yes (automatic Rayon multi-threading) |  ✅ Yes (via `num_threads`) |
+| **Batch Encoding Parallelism** |  ✅ Yes (via native C++ `WorkerPool`) |  ✅ Yes (via native Rust Rayon multi-threading) |  ⚠️ Partial (via Python `ThreadPoolExecutor` mapping to Rust) |
 | **Within-Doc Parallelism** |  ✅ Yes (`parallel_encode`) | ❌ No (sequential per document) | ❌ No (sequential per document) |
 | **Training from Iterator** |  ✅ Yes (`sentence_iterator`) |  ✅ Yes (`train_from_iterator`) | ❌ No |
 | **Subword Regularization (Sampling / N-best)** | ✅ Yes (at call-time; supports Unigram sampling and BPE-dropout) | ⚠️ Partial (BPE-dropout only, configured at model training/load time, no call-time sampling) | ❌ No |
-| **In-Memory Add Tokens** | ⚠️ Hard (via `protobuf` rewrite) |  ✅ Yes (Easy, via `add_tokens`) | ❌ No |
+| **In-Memory Add Tokens** | ⚠️ Partial (Intentional design: dynamic adding is not supported for thread-safety; requires model recreation via modified protobuf) |  ✅ Yes (Easy, via `add_tokens`) | ❌ No |
 | **Pre-Tokenization (Modular)** | ❌ No (Intentional design: parses raw Unicode stream without pre-splitting) |  ✅ Yes (fully modular: `tokenizer.pre_tokenizer = ...`) | ⚠️ Partial (static via regex `pat_str` in constructor) |
-| **Modular Post-Processing** | ❌ No (BOS/EOS toggles only) |  ✅ Yes (template post-processor) | ❌ No |
+| **Modular Post-Processing** | ⚠️ Partial (BOS/EOS toggles and extra options only) |  ✅ Yes (template post-processor) | ❌ No |
 | **Text Normalization Support** |  ✅ Yes (baked into model, highly optimized precompiled rules) |  ✅ Yes (fully modular pipeline, e.g. Lowercase, NFKC) | ❌ No (Intentional design: tokenizes raw input exactly as-is) |
 | **Custom Normalizers** |  ✅ Yes (defined at training time via TSV mapping, or at runtime via Python mapping passed to trainer) |  ✅ Yes (custom Python/Rust functions or sequences) | ❌ No |
 | **Special Token Security Policy** |  ✅ Yes (static per-token: `control_symbols` [safe] vs `user_defined_symbols` [unsafe] in same model) | ⚠️ Partial (global toggle `split_special_tokens`, cannot mix per-token) | ⚠️ Partial (global call-time toggle `allowed_special`/`disallowed_special`, cannot mix per-token) |
@@ -208,7 +209,7 @@ Below is a side-by-side comparison of common tasks across the three libraries.
     ```
 *   **tiktoken**:
     ```python
-    # Parallel processing in Rust:
+    # Parallel processing via Python ThreadPoolExecutor mapping to Rust:
     ids_list = enc.encode_batch(texts, num_threads=4)
     ```
 
@@ -256,7 +257,8 @@ Below is a side-by-side comparison of common tasks across the three libraries.
 
 *   **SentencePiece**:
     ```python
-    # Edit the underlying protobuf (unsupported/no guarantee):
+    # Intentional design: The processor is immutable for thread-safety.
+    # To modify, rewrite the model protobuf and recreate the processor:
     import sentencepiece_model_pb2 as pb
     proto = pb.ModelProto()
     proto.ParseFromString(open("m.model", "rb").read())
