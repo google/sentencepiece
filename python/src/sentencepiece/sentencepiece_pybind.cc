@@ -132,22 +132,48 @@ class PySentenceIterator : public sentencepiece::SentenceIterator {
 };
 
 // Helper functions for RewriteIds (adapted from sentencepiece_swig.h)
-void RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
-                std::vector<int>* ids, bool add_bos, bool add_eos,
-                bool reverse) {
-  if (!add_bos && !add_eos && !reverse) return;
+absl::Status RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
+                        std::vector<int>* ids, bool add_bos, bool add_eos,
+                        bool reverse) {
+  if (add_bos && sp.bos_id() == -1) {
+    return absl::InvalidArgumentError(
+        "BOS token is not defined as a control symbol in this model.");
+  }
+  if (add_eos && sp.eos_id() == -1) {
+    return absl::InvalidArgumentError(
+        "EOS token is not defined as a control symbol in this model.");
+  }
+  if (!add_bos && !add_eos && !reverse) return absl::OkStatus();
   if (reverse) std::reverse(ids->begin(), ids->end());
-  if (add_bos) ids->insert(ids->begin(), sp.bos_id());
-  if (add_eos) ids->push_back(sp.eos_id());
+  if (add_bos) {
+    ids->insert(ids->begin(), sp.bos_id());
+  }
+  if (add_eos) {
+    ids->push_back(sp.eos_id());
+  }
+  return absl::OkStatus();
 }
 
-void RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
-                std::vector<std::string>* pieces, bool add_bos, bool add_eos,
-                bool reverse, bool emit_unk_piece) {
-  if (!add_bos && !add_eos && !reverse && !emit_unk_piece) return;
+absl::Status RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
+                        std::vector<std::string>* pieces, bool add_bos,
+                        bool add_eos, bool reverse, bool emit_unk_piece) {
+  if (add_bos && sp.bos_id() == -1) {
+    return absl::InvalidArgumentError(
+        "BOS token is not defined as a control symbol in this model.");
+  }
+  if (add_eos && sp.eos_id() == -1) {
+    return absl::InvalidArgumentError(
+        "EOS token is not defined as a control symbol in this model.");
+  }
+  if (!add_bos && !add_eos && !reverse && !emit_unk_piece)
+    return absl::OkStatus();
   if (reverse) std::reverse(pieces->begin(), pieces->end());
-  if (add_bos) pieces->insert(pieces->begin(), sp.IdToPiece(sp.bos_id()));
-  if (add_eos) pieces->push_back(sp.IdToPiece(sp.eos_id()));
+  if (add_bos) {
+    pieces->insert(pieces->begin(), sp.IdToPiece(sp.bos_id()));
+  }
+  if (add_eos) {
+    pieces->push_back(sp.IdToPiece(sp.eos_id()));
+  }
   if (emit_unk_piece) {
     const auto& unk = sp.IdToPiece(sp.unk_id());
     for (auto& piece : *pieces) {
@@ -157,9 +183,25 @@ void RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
       }
     }
   }
+  return absl::OkStatus();
 }
 
-void CheckIds(const std::vector<int>& ids, int num_pieces) {
+void RewriteIdsThrowException(const sentencepiece::SentencePieceProcessor& sp,
+                              std::vector<int>* ids, bool add_bos, bool add_eos,
+                              bool reverse) {
+  auto status = RewriteIds(sp, ids, add_bos, add_eos, reverse);
+  if (!status.ok()) throw status;
+}
+
+void RewriteIdsThrowException(const sentencepiece::SentencePieceProcessor& sp,
+                              std::vector<std::string>* pieces, bool add_bos,
+                              bool add_eos, bool reverse, bool emit_unk_piece) {
+  auto status =
+      RewriteIds(sp, pieces, add_bos, add_eos, reverse, emit_unk_piece);
+  if (!status.ok()) throw status;
+}
+
+void CheckIdsThrowException(const std::vector<int>& ids, int num_pieces) {
   for (int id : ids) {
     if (id < 0 || id >= num_pieces) {
       throw absl::Status(absl::StatusCode::kOutOfRange,
@@ -301,8 +343,8 @@ std::vector<std::vector<int>> CastToVectorVectorInt(const py::object& ins_obj) {
   return outs;
 }
 
-void CheckProtoArguments(bool add_bos, bool add_eos, bool reverse,
-                         bool emit_unk_piece) {
+void CheckProtoArgsThrowException(bool add_bos, bool add_eos, bool reverse,
+                                  bool emit_unk_piece) {
   if (add_bos || add_eos || reverse || emit_unk_piece) {
     throw absl::Status(absl::StatusCode::kUnimplemented,
                        "add_bos, add_eos, reverse, and emit_unk_piece is not "
@@ -437,7 +479,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                  status = self.Encode(in.value, &ids);
                }
                if (!status.ok()) throw status;
-               RewriteIds(self, &ids, add_bos, add_eos, reverse);
+               RewriteIdsThrowException(self, &ids, add_bos, add_eos, reverse);
              }
              return ids;
            })
@@ -456,7 +498,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                  status = self.Encode(in.value, &ids);
                }
                if (!status.ok()) throw status;
-               RewriteIds(self, &ids, add_bos, add_eos, reverse);
+               RewriteIdsThrowException(self, &ids, add_bos, add_eos, reverse);
              }
              return VectorBuffer(std::move(ids));
            })
@@ -477,8 +519,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                  status = self.Encode(in.value, &pieces);
                }
                if (!status.ok()) throw status;
-               RewriteIds(self, &pieces, add_bos, add_eos, reverse,
-                          emit_unk_piece);
+               RewriteIdsThrowException(self, &pieces, add_bos, add_eos,
+                                        reverse, emit_unk_piece);
              }
              return ToPyStringList(pieces, return_bytes);
            })
@@ -487,7 +529,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               const py::object& input, bool enable_sampling, int nbest_size,
               float alpha, bool add_bos, bool add_eos, bool reverse,
               bool emit_unk_piece) {
-             CheckProtoArguments(add_bos, add_eos, reverse, emit_unk_piece);
+             CheckProtoArgsThrowException(add_bos, add_eos, reverse,
+                                          emit_unk_piece);
              PyInputStringView in(input);
              sentencepiece::SentencePieceText spt;
              {
@@ -573,7 +616,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                        s = self.Encode(C_ins[i], &out);
                      }
                      if (!s.ok()) return s;
-                     RewriteIds(self, &out, add_bos, add_eos, reverse);
+                     s = RewriteIds(self, &out, add_bos, add_eos, reverse);
+                     if (!s.ok()) return s;
                      outs[i] = std::move(out);
                      return absl::OkStatus();
                    },
@@ -603,7 +647,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                        s = self.Encode(C_ins[i], &out);
                      }
                      if (!s.ok()) return s;
-                     RewriteIds(self, &out, add_bos, add_eos, reverse);
+                     s = RewriteIds(self, &out, add_bos, add_eos, reverse);
+                     if (!s.ok()) return s;
                      temp_outs[i] = std::move(out);
                      return absl::OkStatus();
                    },
@@ -639,8 +684,9 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                        s = self.Encode(C_ins[i], &out);
                      }
                      if (!s.ok()) return s;
-                     RewriteIds(self, &out, add_bos, add_eos, reverse,
-                                emit_unk_piece);
+                     s = RewriteIds(self, &out, add_bos, add_eos, reverse,
+                                    emit_unk_piece);
+                     if (!s.ok()) return s;
                      outs[i] = std::move(out);
                      return absl::OkStatus();
                    },
@@ -658,7 +704,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               const py::list& ins, int num_threads, py::object thread_pool,
               bool enable_sampling, int nbest_size, float alpha, bool add_bos,
               bool add_eos, bool reverse, bool emit_unk_piece) {
-             CheckProtoArguments(add_bos, add_eos, reverse, emit_unk_piece);
+             CheckProtoArgsThrowException(add_bos, add_eos, reverse,
+                                          emit_unk_piece);
              std::vector<std::string_view> C_ins = CastToStringViewVector(ins);
              std::vector<std::string> outs(ins.size());
              WorkerPool pool(num_threads, thread_pool);
@@ -758,10 +805,10 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
            [](const sentencepiece::SentencePieceProcessor& self,
               const py::object& ids_obj) {
              std::vector<int> ids = CastToVectorInt(ids_obj);
-             CheckIds(ids, self.GetPieceSize());
              std::string detok;
              {
                py::gil_scoped_release release;
+               CheckIdsThrowException(ids, self.GetPieceSize());
                auto status = self.Decode(ids, &detok);
                if (!status.ok()) throw status;
              }
@@ -771,10 +818,10 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
            [](const sentencepiece::SentencePieceProcessor& self,
               const py::object& ids_obj) {
              std::vector<int> ids = CastToVectorInt(ids_obj);
-             CheckIds(ids, self.GetPieceSize());
              std::string detok;
              {
                py::gil_scoped_release release;
+               CheckIdsThrowException(ids, self.GetPieceSize());
                auto status = self.Decode(ids, &detok);
                if (!status.ok()) throw status;
              }
@@ -813,10 +860,10 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
            [](const sentencepiece::SentencePieceProcessor& self,
               const py::object& ids_obj) {
              std::vector<int> ids = CastToVectorInt(ids_obj);
-             CheckIds(ids, self.GetPieceSize());
              sentencepiece::SentencePieceText spt;
              {
                py::gil_scoped_release release;
+               CheckIdsThrowException(ids, self.GetPieceSize());
                auto status = self.Decode(ids, &spt);
                if (!status.ok()) throw status;
              }
@@ -875,9 +922,9 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                }
              } else {
                std::vector<int> ids = CastToVectorInt(normalized_input);
-               CheckIds(ids, self.GetPieceSize());
                {
                  py::gil_scoped_release release;
+                 CheckIdsThrowException(ids, self.GetPieceSize());
                  status = self.Decode(ids, &spt);
                }
              }
@@ -892,11 +939,12 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               const py::object& ins_obj, int num_threads,
               py::object thread_pool) {
              std::vector<std::vector<int>> ins = CastToVectorVectorInt(ins_obj);
-             for (const auto& ids : ins) CheckIds(ids, self.GetPieceSize());
              std::vector<std::string> outs(ins.size());
              WorkerPool pool(num_threads, thread_pool);
              {
                py::gil_scoped_release release;
+               for (const auto& ids : ins)
+                 CheckIdsThrowException(ids, self.GetPieceSize());
                auto status = sentencepiece::RunBatch(
                    ins.size(),
                    [&](size_t i) { return self.Decode(ins[i], &outs[i]); },
@@ -914,11 +962,12 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               const py::object& ins_obj, int num_threads,
               py::object thread_pool) {
              std::vector<std::vector<int>> ins = CastToVectorVectorInt(ins_obj);
-             for (const auto& ids : ins) CheckIds(ids, self.GetPieceSize());
              std::vector<std::string> outs(ins.size());
              WorkerPool pool(num_threads, thread_pool);
              {
                py::gil_scoped_release release;
+               for (const auto& ids : ins)
+                 CheckIdsThrowException(ids, self.GetPieceSize());
                auto status = sentencepiece::RunBatch(
                    ins.size(),
                    [&](size_t i) { return self.Decode(ins[i], &outs[i]); },
@@ -936,11 +985,12 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               const py::object& ins_obj, int num_threads,
               py::object thread_pool) {
              std::vector<std::vector<int>> ins = CastToVectorVectorInt(ins_obj);
-             for (const auto& ids : ins) CheckIds(ids, self.GetPieceSize());
              std::vector<std::string> outs(ins.size());
              WorkerPool pool(num_threads, thread_pool);
              {
                py::gil_scoped_release release;
+               for (const auto& ids : ins)
+                 CheckIdsThrowException(ids, self.GetPieceSize());
                auto status = sentencepiece::RunBatch(
                    ins.size(),
                    [&](size_t i) {
@@ -1107,9 +1157,11 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              } else {
                std::vector<std::vector<int>> C_ins =
                    CastToVectorVectorInt(py_ins);
-               for (const auto& ids : C_ins) CheckIds(ids, self.GetPieceSize());
+
                {
                  py::gil_scoped_release release;
+                 for (const auto& ids : C_ins)
+                   CheckIdsThrowException(ids, self.GetPieceSize());
                  auto status = sentencepiece::RunBatch(
                      py_ins.size(),
                      [&](size_t i) { return self.Decode(C_ins[i], &spts[i]); },
@@ -1137,7 +1189,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                auto status = self.NBestEncode(in.value, nbest_size, &idss);
                if (!status.ok()) throw status;
                for (auto& ids : idss) {
-                 RewriteIds(self, &ids, add_bos, add_eos, reverse);
+                 RewriteIdsThrowException(self, &ids, add_bos, add_eos,
+                                          reverse);
                }
              }
              return idss;
@@ -1153,7 +1206,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                auto status = self.NBestEncode(in.value, nbest_size, &idss);
                if (!status.ok()) throw status;
                for (auto& ids : idss) {
-                 RewriteIds(self, &ids, add_bos, add_eos, reverse);
+                 RewriteIdsThrowException(self, &ids, add_bos, add_eos,
+                                          reverse);
                }
              }
              std::vector<VectorBuffer> outs(idss.size());
@@ -1174,8 +1228,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                auto status = self.NBestEncode(in.value, nbest_size, &piecess);
                if (!status.ok()) throw status;
                for (auto& pieces : piecess) {
-                 RewriteIds(self, &pieces, add_bos, add_eos, reverse,
-                            emit_unk_piece);
+                 RewriteIdsThrowException(self, &pieces, add_bos, add_eos,
+                                          reverse, emit_unk_piece);
                }
              }
              py::list py_outs(piecess.size());
@@ -1188,7 +1242,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
            [](const sentencepiece::SentencePieceProcessor& self,
               const py::object& input, int nbest_size, bool add_bos,
               bool add_eos, bool reverse, bool emit_unk_piece) {
-             CheckProtoArguments(add_bos, add_eos, reverse, emit_unk_piece);
+             CheckProtoArgsThrowException(add_bos, add_eos, reverse,
+                                          emit_unk_piece);
              PyInputStringView in(input);
              sentencepiece::NBestSentencePieceText nbest_spt;
              {
@@ -1212,7 +1267,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                    in.value, num_samples, alpha, wor, include_best, &idss);
                if (!status.ok()) throw status;
                for (auto& ids : idss) {
-                 RewriteIds(self, &ids.first, add_bos, add_eos, reverse);
+                 RewriteIdsThrowException(self, &ids.first, add_bos, add_eos,
+                                          reverse);
                }
              }
              return idss;
@@ -1230,8 +1286,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                    in.value, num_samples, alpha, wor, include_best, &piecess);
                if (!status.ok()) throw status;
                for (auto& pieces : piecess) {
-                 RewriteIds(self, &pieces.first, add_bos, add_eos, reverse,
-                            emit_unk_piece);
+                 RewriteIdsThrowException(self, &pieces.first, add_bos, add_eos,
+                                          reverse, emit_unk_piece);
                }
              }
              py::list py_outs(piecess.size());
@@ -1247,7 +1303,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               const py::object& input, int num_samples, float alpha, bool wor,
               bool include_best, bool add_bos, bool add_eos, bool reverse,
               bool emit_unk_piece) {
-             CheckProtoArguments(add_bos, add_eos, reverse, emit_unk_piece);
+             CheckProtoArgsThrowException(add_bos, add_eos, reverse,
+                                          emit_unk_piece);
              PyInputStringView in(input);
              sentencepiece::NBestSentencePieceText samples_spt;
              {
@@ -1274,7 +1331,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               auto status =
                   self.ParallelEncode(in.value, chunk_len, *pool.get(), &ids);
               if (!status.ok()) throw status;
-              RewriteIds(self, &ids, add_bos, add_eos, reverse);
+              RewriteIdsThrowException(self, &ids, add_bos, add_eos, reverse);
             }
             return ids;
           })
@@ -1291,7 +1348,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               auto status =
                   self.ParallelEncode(in.value, chunk_len, *pool.get(), &ids);
               if (!status.ok()) throw status;
-              RewriteIds(self, &ids, add_bos, add_eos, reverse);
+              RewriteIdsThrowException(self, &ids, add_bos, add_eos, reverse);
             }
             return VectorBuffer(std::move(ids));
           })
@@ -1308,8 +1365,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                auto status = self.ParallelEncode(in.value, chunk_len,
                                                  *pool.get(), &pieces);
                if (!status.ok()) throw status;
-               RewriteIds(self, &pieces, add_bos, add_eos, reverse,
-                          emit_unk_piece);
+               RewriteIdsThrowException(self, &pieces, add_bos, add_eos,
+                                        reverse, emit_unk_piece);
              }
              return ToPyStringList(pieces, return_bytes);
            })
@@ -1318,7 +1375,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               const py::object& input, int chunk_len, int num_threads,
               py::object thread_pool, bool add_bos, bool add_eos, bool reverse,
               bool emit_unk_piece) {
-             CheckProtoArguments(add_bos, add_eos, reverse, emit_unk_piece);
+             CheckProtoArgsThrowException(add_bos, add_eos, reverse,
+                                          emit_unk_piece);
              PyInputStringView in(input);
              sentencepiece::SentencePieceText spt;
              WorkerPool pool(num_threads, thread_pool);

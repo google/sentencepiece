@@ -275,6 +275,20 @@ absl::Status SentencePieceProcessor::Load(
 
   RETURN_IF_ERROR(status());
 
+  // Precomputes and caches special token IDs.
+  // Note that these IDs are not always the same as the IDs in TrainerSpec.
+  unk_id_ = PieceToId(model_->unk_piece());
+  if (!IsUnknown(unk_id_)) unk_id_ = -1;
+
+  bos_id_ = PieceToId(model_->bos_piece());
+  if (!IsControl(bos_id_)) bos_id_ = -1;
+
+  eos_id_ = PieceToId(model_->eos_piece());
+  if (!IsControl(eos_id_)) eos_id_ = -1;
+
+  pad_id_ = PieceToId(model_->pad_piece());
+  if (!IsControl(pad_id_)) pad_id_ = -1;
+
   // Running self-testing.
   std::vector<std::string> errors, sps;
   for (const auto& s : model_proto_->self_test_data().samples()) {
@@ -459,10 +473,14 @@ absl::Status SentencePieceProcessor::Encode(absl::string_view input,
         std::reverse(ids->begin(), ids->end());
         break;
       case EOS:
-        ids->emplace_back(PieceToId(model_->eos_piece()));
+        if (const int id = eos_id(); id != -1) {
+          ids->emplace_back(id);
+        }
         break;
       case BOS:
-        ids->insert(ids->begin(), PieceToId(model_->bos_piece()));
+        if (const int id = bos_id(); id != -1) {
+          ids->insert(ids->begin(), id);
+        }
         break;
       default:
         ids->clear();
@@ -1493,25 +1511,13 @@ bool SentencePieceProcessor::IsByte(int id) const {
   return model_->IsByte(id);
 }
 
-int SentencePieceProcessor::unk_id() const {
-  const int id = PieceToId(model_->unk_piece());
-  return IsUnknown(id) ? id : -1;
-}
+int SentencePieceProcessor::unk_id() const { return unk_id_; }
 
-int SentencePieceProcessor::bos_id() const {
-  const int id = PieceToId(model_->bos_piece());
-  return IsControl(id) ? id : -1;
-}
+int SentencePieceProcessor::bos_id() const { return bos_id_; }
 
-int SentencePieceProcessor::eos_id() const {
-  const int id = PieceToId(model_->eos_piece());
-  return IsControl(id) ? id : -1;
-}
+int SentencePieceProcessor::eos_id() const { return eos_id_; }
 
-int SentencePieceProcessor::pad_id() const {
-  const int id = PieceToId(model_->pad_piece());
-  return IsControl(id) ? id : -1;
-}
+int SentencePieceProcessor::pad_id() const { return pad_id_; }
 
 // static
 absl::Status SentencePieceProcessor::ApplyExtraOptions(
@@ -1523,27 +1529,31 @@ absl::Status SentencePieceProcessor::ApplyExtraOptions(
         std::reverse(spt->mutable_pieces()->begin(),
                      spt->mutable_pieces()->end());
         break;
-      case EOS: {
-        auto* piece = spt->add_pieces();
-        piece->set_id(PieceToId(model_->eos_piece()));
-        piece->set_piece(model_->eos_piece().data(),
-                         model_->eos_piece().size());
-        piece->set_begin(spt->text().size());
-        piece->set_end(spt->text().size());
-      } break;
-      case BOS: {
-        auto* array = spt->mutable_pieces();
-        array->Add();
-        for (int i = array->size() - 1; i > 0; --i) {
-          array->SwapElements(i - 1, i);
+      case EOS:
+        if (const int id = eos_id(); id != -1) {
+          auto* piece = spt->add_pieces();
+          piece->set_id(id);
+          piece->set_piece(model_->eos_piece().data(),
+                           model_->eos_piece().size());
+          piece->set_begin(spt->text().size());
+          piece->set_end(spt->text().size());
         }
-        auto* piece = array->Mutable(0);
-        piece->set_id(PieceToId(model_->bos_piece()));
-        piece->set_piece(model_->bos_piece().data(),
-                         model_->bos_piece().size());
-        piece->set_begin(0);
-        piece->set_end(0);
-      } break;
+        break;
+      case BOS:
+        if (const int id = bos_id(); id != -1) {
+          auto* array = spt->mutable_pieces();
+          array->Add();
+          for (int i = array->size() - 1; i > 0; --i) {
+            array->SwapElements(i - 1, i);
+          }
+          auto* piece = array->Mutable(0);
+          piece->set_id(id);
+          piece->set_piece(model_->bos_piece().data(),
+                           model_->bos_piece().size());
+          piece->set_begin(0);
+          piece->set_end(0);
+        }
+        break;
       case UNK_PIECE: {
         for (int i = 0; i < spt->pieces_size(); ++i) {
           auto* piece = spt->mutable_pieces(i);
@@ -1586,11 +1596,11 @@ absl::Status SentencePieceProcessor::ParseExtraOptions(
     extra_options->push_back(it->second);
 
     if (it->second == SentencePieceProcessor::BOS) {
-      RET_CHECK(!IsUnknown(PieceToId(model_->bos_piece())))
+      RET_CHECK(bos_id() != -1)
           << "id for `" << model_->bos_piece() << "` is not defined.";
     }
     if (it->second == SentencePieceProcessor::EOS) {
-      RET_CHECK(!IsUnknown(PieceToId(model_->eos_piece())))
+      RET_CHECK(eos_id() != -1)
           << "id for `" << model_->eos_piece() << "` is not defined.";
     }
   }
