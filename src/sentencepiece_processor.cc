@@ -472,18 +472,16 @@ absl::Status SentencePieceProcessor::Encode(absl::string_view input,
       case REVERSE:
         std::reverse(ids->begin(), ids->end());
         break;
-      case EOS: {
-        const int id = eos_id();
-        if (id != -1) {
+      case EOS:
+        if (const int id = eos_id(); id != -1) {
           ids->emplace_back(id);
         }
-      } break;
-      case BOS: {
-        const int id = bos_id();
-        if (id != -1) {
+        break;
+      case BOS:
+        if (const int id = bos_id(); id != -1) {
           ids->insert(ids->begin(), id);
         }
-      } break;
+        break;
       default:
         ids->clear();
         return absl::InternalError("unknown extra_option type.");
@@ -1531,9 +1529,8 @@ absl::Status SentencePieceProcessor::ApplyExtraOptions(
         std::reverse(spt->mutable_pieces()->begin(),
                      spt->mutable_pieces()->end());
         break;
-      case EOS: {
-        const int id = eos_id();
-        if (id != -1) {
+      case EOS:
+        if (const int id = eos_id(); id != -1) {
           auto* piece = spt->add_pieces();
           piece->set_id(id);
           piece->set_piece(model_->eos_piece().data(),
@@ -1541,10 +1538,9 @@ absl::Status SentencePieceProcessor::ApplyExtraOptions(
           piece->set_begin(spt->text().size());
           piece->set_end(spt->text().size());
         }
-      } break;
-      case BOS: {
-        const int id = bos_id();
-        if (id != -1) {
+        break;
+      case BOS:
+        if (const int id = bos_id(); id != -1) {
           auto* array = spt->mutable_pieces();
           array->Add();
           for (int i = array->size() - 1; i > 0; --i) {
@@ -1557,7 +1553,7 @@ absl::Status SentencePieceProcessor::ApplyExtraOptions(
           piece->set_begin(0);
           piece->set_end(0);
         }
-      } break;
+        break;
       case UNK_PIECE: {
         for (int i = 0; i < spt->pieces_size(); ++i) {
           auto* piece = spt->mutable_pieces(i);

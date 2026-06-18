@@ -164,6 +164,9 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
       // constraint to prevent CONTROL symbols (which are in reserved_id_map_)
       // from being merged.
       const int id = PieceToIdNoReserved(piece);
+      // PieceToIdNoReserved() returns unk_id_ on lookup failure (not found in pieces_).
+      // Comparing directly with unk_id_ is a fast way to check if the piece
+      // is not a mergeable normal piece, avoiding memory access overhead of IsUnknown().
       if (id == unk_id_) continue;
       SymbolPair& h = agenda_vec.emplace_back();
       h.left = left;
@@ -199,6 +202,8 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
       // constraint to prevent CONTROL symbols (which are in reserved_id_map_)
       // from being merged.
       const int id = PieceToIdNoReserved(piece);
+      // PieceToIdNoReserved() returns unk_id_ on lookup failure.
+      // See explanation above for why we compare directly with unk_id_.
       if (id == unk_id_) {
         return;
       }

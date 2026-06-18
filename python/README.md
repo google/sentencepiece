@@ -620,29 +620,24 @@ Since v0.2.2, the SentencePiece Python wrapper has been migrated from SWIG to **
 
 This migration introduces a few changes to standard usage and output formats:
 
-### 1. Unified `return_type` Parameter
+### 1. BOS/EOS Behavior for USER_DEFINED Symbols
+
+Historically, `SentencePieceProcessor::bos_id()` and `eos_id()` returned `-1` if the corresponding tokens were defined as `USER_DEFINED` rather than `CONTROL`. However, the C++ `Encode` method with extra options (e.g. `bos`) still prepended the token, while the Python wrapper `encode(..., add_bos=True)` would prepend `-1` or crash.
+
+To resolve this inconsistency:
+*   **Behavior Alignment**: The behavior has been aligned to strictly respect the `CONTROL` token type requirement.
+*   **Strict Verification & Errors**: If the BOS/EOS tokens are defined as `USER_DEFINED` (which are essentially treated the same as `NORMAL` tokens, with no clear distinction in this context) or any type other than `CONTROL` (or if they are completely missing), trying to add them during encoding will now result in an error:
+    *   In C++, `SetEncodeExtraOptions("bos")` or `SetEncodeExtraOptions("eos")` will **fail** (return an error).
+    *   In Python, passing `add_bos=True` or `add_eos=True` to `encode()` will **raise a `ValueError`** (instead of silently ignoring it, prepending `-1`, or crashing).
+
+### 2. Unified `return_type` Parameter
 The previous parameter `out_type` has been renamed to **`return_type`** to better describe what the functions yield.
 *   **Backward Compatibility**: The name `out_type` remains supported as a deprecated keyword argument alias. Passing `out_type=int` will work exactly as before, mapping internally to `return_type=int`. Specifying both `return_type` and `out_type` at the same time is invalid and will raise a `ValueError`.
 
-### 2. Removal of `immutable_proto`
+### 3. Removal of `immutable_proto`
 The custom C++ wrapper classes (`ImmutableSentencePieceText`, `ImmutableNBestSentencePieceText`) have been **removed**. 
 *   Using `return_type='immutable_proto'` (or `out_type='immutable_proto'`) or helper methods like `EncodeAsImmutableProto` will now raise a `ValueError`.
 *   Use `return_type='proto'` or `EncodeAsProto` instead.
-
-### 3. Standard Python Protobuf Output
-When using `return_type='proto'`, the API now returns standard Python `protobuf` message instances (`sentencepiece_pb2.SentencePieceText`) populated via lazy deserialization.
-*   **Mutability & Hashing**: Unlike the old immutable wrappers, standard Python protobuf messages are **mutable** and **unhashable**. They cannot be used as keys in dictionaries or added to sets.
-*   **Byte Offsets**: The `begin` and `end` offsets inside the `SentencePiece` message represent **raw byte offsets** in the UTF-8 encoded string (matching the core C++ behavior), not Unicode character offsets. To slice a Python string using these offsets, you must first encode the string to UTF-8 bytes:
-    ```python
-    text = "吾輩は猫である。"
-    proto = sp.encode(text, return_type='proto')
-    
-    # Correct slicing using byte offsets
-    text_bytes = text.encode('utf-8')
-    for piece in proto.pieces:
-      surface = text_bytes[piece.begin:piece.end].decode('utf-8')
-      assert surface == piece.surface
-    ```
 
 ### 4. New Classmethod Factories
 To align with pythonic best practices and avoid overloaded constructor argument logic, `SentencePieceProcessor` now exposes clean classmethod factories to initialize processors:
@@ -656,16 +651,6 @@ sp = spm.SentencePieceProcessor.from_file("m.model", return_type=str)
 # 2. Loading from in-memory bytes
 sp = spm.SentencePieceProcessor.from_proto(model_bytes, return_type=str)
 ```
-
-### 5. BOS/EOS Behavior for USER_DEFINED Symbols
-
-Historically, `SentencePieceProcessor::bos_id()` and `eos_id()` returned `-1` if the corresponding tokens were defined as `USER_DEFINED` symbols rather than the default `CONTROL` tokens. However, the C++ `Encode` method with extra options (e.g. `bos`) still prepended the token, while the Python wrapper `encode(..., add_bos=True)` would prepend `-1` or crash.
-
-To resolve this inconsistency:
-*   **Behavior Alignment**: The behavior has been aligned to strictly respect the `CONTROL` token type requirement.
-*   **Ignoring Non-Control BOS/EOS**: If the BOS/EOS tokens are defined as `USER_DEFINED` (which are essentially treated the same as `NORMAL` tokens, with no clear distinction in this context) or any type other than `CONTROL`, they will now be **ignored** (not added) during encoding.
-    *   In C++, setting the `bos` or `eos` extra options will have no effect.
-    *   In Python, passing `add_bos=True` or `add_eos=True` will also have no effect (they will not be prepended/appended, and it will not crash).
 
 ## Further Documentation
 

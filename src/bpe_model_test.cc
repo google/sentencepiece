@@ -343,18 +343,38 @@ TEST(BPEModelTest, EncodeWithDeepUnusedMergeChainTest) {
 TEST(BPEModelTest, ControlSymbolsNoMergeTest) {
   ModelProto model_proto = MakeBaseModelProto();
 
+  // For <s> (BOS)
   AddPiece(&model_proto, "<", -1.0);  // ID 3
   AddPiece(&model_proto, "s", -1.0);  // ID 4
   AddPiece(&model_proto, ">", -1.0);  // ID 5
   AddPiece(&model_proto, "<s", 0.0);  // ID 6
 
+  // For <unk> (UNKNOWN)
+  AddPiece(&model_proto, "u", -1.0);   // ID 7
+  AddPiece(&model_proto, "n", -1.0);   // ID 8
+  AddPiece(&model_proto, "k", -1.0);   // ID 9
+  AddPiece(&model_proto, "<u", 0.0);   // ID 10
+  AddPiece(&model_proto, "nk", 0.0);   // ID 11 (Intermediate for BPE)
+  AddPiece(&model_proto, "nk>", 0.0);  // ID 12
+
   const Model model(model_proto);
 
-  EncodeResult result = model.Encode("<s>");
-  EXPECT_EQ(2, result.size());
-  EXPECT_EQ("<s", result[0].first);
-  EXPECT_EQ(">", result[1].first);
+  {
+    EncodeResult result = model.Encode("<s>");
+    EXPECT_EQ(2, result.size());
+    EXPECT_EQ("<s", result[0].first);
+    EXPECT_EQ(">", result[1].first);
+  }
+
+  {
+    EncodeResult result = model.Encode("<unk>");
+    EXPECT_EQ(2, result.size());
+    EXPECT_EQ("<u", result[0].first);
+    EXPECT_EQ("nk>", result[1].first);
+  }
 }
+
+
 
 }  // namespace
 }  // namespace bpe
