@@ -657,6 +657,16 @@ sp = spm.SentencePieceProcessor.from_file("m.model", return_type=str)
 sp = spm.SentencePieceProcessor.from_proto(model_bytes, return_type=str)
 ```
 
+### 5. BOS/EOS Behavior for USER_DEFINED Symbols
+
+Historically, `SentencePieceProcessor::bos_id()` and `eos_id()` returned `-1` if the corresponding tokens were defined as `USER_DEFINED` symbols rather than the default `CONTROL` tokens. However, the C++ `Encode` method with extra options (e.g. `bos`) still prepended the token, while the Python wrapper `encode(..., add_bos=True)` would prepend `-1` or crash.
+
+To resolve this inconsistency:
+*   **Behavior Alignment**: The behavior has been aligned to strictly respect the `CONTROL` token type requirement.
+*   **Ignoring Non-Control BOS/EOS**: If the BOS/EOS tokens are defined as `USER_DEFINED` (which are essentially treated the same as `NORMAL` tokens, with no clear distinction in this context) or any type other than `CONTROL`, they will now be **ignored** (not added) during encoding.
+    *   In C++, setting the `bos` or `eos` extra options will have no effect.
+    *   In Python, passing `add_bos=True` or `add_eos=True` will also have no effect (they will not be prepended/appended, and it will not crash).
+
 ## Further Documentation
 
 For more detailed information on SentencePiece concepts, options, and advanced configurations, please refer to the core documentation:

@@ -139,8 +139,14 @@ void RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
                 bool reverse) {
   if (!add_bos && !add_eos && !reverse) return;
   if (reverse) std::reverse(ids->begin(), ids->end());
-  if (add_bos) ids->insert(ids->begin(), sp.bos_id());
-  if (add_eos) ids->push_back(sp.eos_id());
+  if (add_bos) {
+    const int id = sp.bos_id();
+    if (id != -1) ids->insert(ids->begin(), id);
+  }
+  if (add_eos) {
+    const int id = sp.eos_id();
+    if (id != -1) ids->push_back(id);
+  }
 }
 
 void RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
@@ -148,8 +154,14 @@ void RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
                 bool reverse, bool emit_unk_piece) {
   if (!add_bos && !add_eos && !reverse && !emit_unk_piece) return;
   if (reverse) std::reverse(pieces->begin(), pieces->end());
-  if (add_bos) pieces->insert(pieces->begin(), sp.IdToPiece(sp.bos_id()));
-  if (add_eos) pieces->push_back(sp.IdToPiece(sp.eos_id()));
+  if (add_bos) {
+    const int id = sp.bos_id();
+    if (id != -1) pieces->insert(pieces->begin(), sp.IdToPiece(id));
+  }
+  if (add_eos) {
+    const int id = sp.eos_id();
+    if (id != -1) pieces->push_back(sp.IdToPiece(id));
+  }
   if (emit_unk_piece) {
     const auto& unk = sp.IdToPiece(sp.unk_id());
     for (auto& piece : *pieces) {

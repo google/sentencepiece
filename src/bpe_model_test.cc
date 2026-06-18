@@ -340,6 +340,22 @@ TEST(BPEModelTest, EncodeWithDeepUnusedMergeChainTest) {
   }
 }
 
+TEST(BPEModelTest, ControlSymbolsNoMergeTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+
+  AddPiece(&model_proto, "<", -1.0);  // ID 3
+  AddPiece(&model_proto, "s", -1.0);  // ID 4
+  AddPiece(&model_proto, ">", -1.0);  // ID 5
+  AddPiece(&model_proto, "<s", 0.0);  // ID 6
+
+  const Model model(model_proto);
+
+  EncodeResult result = model.Encode("<s>");
+  EXPECT_EQ(2, result.size());
+  EXPECT_EQ("<s", result[0].first);
+  EXPECT_EQ(">", result[1].first);
+}
+
 }  // namespace
 }  // namespace bpe
 }  // namespace sentencepiece

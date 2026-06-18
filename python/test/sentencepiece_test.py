@@ -236,6 +236,47 @@ class TestSentencepieceProcessor(unittest.TestCase):
         sp.DecodePieces(sp.EncodeAsPieces(line))
         sp.DecodeIds(sp.EncodeAsIds(line))
 
+  def test_special_tokens_combinations(self):
+    tid = threading.get_native_id()
+
+    # 1. CONTROL (default)
+    spm.SentencePieceTrainer.train(
+        input=os.path.join(data_dir, 'botchan.txt'),
+        model_prefix=f'm_control_{tid}',
+        vocab_size=1000,
+    )
+    sp = spm.SentencePieceProcessor()
+    self.assertTrue(sp.Load(f'm_control_{tid}.model'))
+    self.assertNotEqual(-1, sp.bos_id())
+    self.assertEqual([sp.bos_id()] + sp.encode('a'), sp.encode('a', add_bos=True))
+
+    # 2. USER_DEFINED
+    spm.SentencePieceTrainer.train(
+        input=os.path.join(data_dir, 'botchan.txt'),
+        model_prefix=f'm_user_{tid}',
+        vocab_size=1000,
+        user_defined_symbols=['<s>', '</s>'],
+        bos_piece='<s>',
+        eos_piece='</s>',
+    )
+    sp = spm.SentencePieceProcessor()
+    self.assertTrue(sp.Load(f'm_user_{tid}.model'))
+    self.assertEqual(-1, sp.bos_id())
+    self.assertEqual(sp.encode('a'), sp.encode('a', add_bos=True))
+
+    # 3. Missing (disabled)
+    spm.SentencePieceTrainer.train(
+        input=os.path.join(data_dir, 'botchan.txt'),
+        model_prefix=f'm_missing_{tid}',
+        vocab_size=1000,
+        bos_id=-1,
+        eos_id=-1,
+    )
+    sp = spm.SentencePieceProcessor()
+    self.assertTrue(sp.Load(f'm_missing_{tid}.model'))
+    self.assertEqual(-1, sp.bos_id())
+    self.assertEqual(sp.encode('a'), sp.encode('a', add_bos=True))
+
   def test_train_iterator(self):
     tid = threading.get_native_id()
     spm.SentencePieceTrainer.Train(

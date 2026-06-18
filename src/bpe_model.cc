@@ -101,7 +101,11 @@ struct Symbol {
 
 Model::Model(const ModelProto& model_proto) {
   model_proto_ = &model_proto;
-  InitializePieces(/* use_reserved_id_map= */ false);
+  // BPE model prevents control symbols from being merged by placing them in
+  // reserved_id_map_ (which BPE merge ignores).
+  // We use PieceToIdNoReserved() during inference to bypass reserved_id_map_
+  // for performance.
+  InitializePieces();
 }
 
 Model::~Model() {}
@@ -155,16 +159,20 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
       const absl::string_view piece(
           symbol_left->piece.data(),
           symbol_left->piece.size() + symbol_right->piece.size());
-      const auto it = pieces_.find(piece);
-      if (it == pieces_.end()) continue;
+      // Use PieceToIdNoReserved() instead of PieceToId() to bypass
+      // reserved_id_map_ lookup. This is both an optimization and a design
+      // constraint to prevent CONTROL symbols (which are in reserved_id_map_)
+      // from being merged.
+      const int id = PieceToIdNoReserved(piece);
+      if (id == unk_id_) continue;
       SymbolPair& h = agenda_vec.emplace_back();
       h.left = left;
       h.right = right;
-      h.score = GetScoreInlined(it->second);
+      h.score = GetScoreInlined(id);
       h.size = piece.size();
 
       // Makes `rev_merge` for resegmentation.
-      if (IsUnusedInlined(it->second))
+      if (IsUnusedInlined(id))
         rev_merge[piece] =
             std::make_pair(symbol_left->piece, symbol_right->piece);
     }
@@ -186,11 +194,14 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
       const absl::string_view piece(
           left_symbol.piece.data(),
           left_symbol.piece.size() + right_symbol.piece.size());
-      const auto it = pieces_.find(piece);
-      if (it == pieces_.end()) {
+      // Use PieceToIdNoReserved() instead of PieceToId() to bypass
+      // reserved_id_map_ lookup. This is both an optimization and a design
+      // constraint to prevent CONTROL symbols (which are in reserved_id_map_)
+      // from being merged.
+      const int id = PieceToIdNoReserved(piece);
+      if (id == unk_id_) {
         return;
       }
-      const int id = it->second;
       SymbolPair h;
       h.left = left;
       h.right = right;
