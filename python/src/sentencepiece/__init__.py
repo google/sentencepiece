@@ -794,14 +794,20 @@ class SentencePieceTrainer:
 
         sentence_iterator = None
         model_writer = None
+        normalizer = None
         new_kwargs = {}
         for key, value in kwargs.items():
             if key in ['sentence_iterator', 'sentence_reader']:
                 sentence_iterator = value
             elif key in ['model_writer']:
                 model_writer = value
+            elif key in ['normalizer']:
+                normalizer = value
             else:
                 new_kwargs[key] = _encode(value)
+
+        if normalizer:
+            new_kwargs['_serialized_normalizer_spec'] = normalizer.serialized_normalizer_spec()
 
         if model_writer:
             if sentence_iterator:
@@ -826,27 +832,42 @@ class SentencePieceNormalizer:
     def __init__(self,
                  model_file=None,
                  model_proto=None,
+                 normalizer_spec=None,
                  rule_tsv=None,
                  rule_name=None,
+                 norm_map=None,
                  add_dummy_prefix=False,
                  escape_whitespaces=False,
                  remove_extra_whitespaces=False):
         self._normalizer = _sentencepiece.SentencePieceNormalizer()
-        
+
         if model_file:
             self._normalizer.LoadFromFile(model_file)
         elif model_proto:
             self._normalizer.LoadFromSerializedProto(model_proto)
+        elif normalizer_spec:
+            self._normalizer.LoadFromSerializedNormalizerSpec(normalizer_spec)
         elif rule_tsv:
             self._normalizer.LoadFromRuleTSV(rule_tsv)
         elif rule_name:
             self._normalizer.LoadFromRuleName(rule_name)
+        elif norm_map:
+            self._normalizer.LoadFromMap(norm_map)
         else:
             raise ValueError('no model is specified')
 
         self._normalizer._SetProtoField('add_dummy_prefix', add_dummy_prefix)
         self._normalizer._SetProtoField('escape_whitespaces', escape_whitespaces)
         self._normalizer._SetProtoField('remove_extra_whitespaces', remove_extra_whitespaces)
+
+    def Decompile(self):
+        return self._normalizer.Decompile()
+
+    def serialized_model_proto(self):
+        return self._normalizer.serialized_model_proto()
+
+    def serialized_normalizer_spec(self):
+        return self._normalizer.serialized_normalizer_spec()
 
     def Normalize(self, input, with_offsets=None):
         if isinstance(input, list):

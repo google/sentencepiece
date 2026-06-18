@@ -1180,6 +1180,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              } else {
                std::vector<std::vector<int>> C_ins =
                    CastToVectorVectorInt(py_ins);
+
                {
                  py::gil_scoped_release release;
                  for (const auto& ids : C_ins)
@@ -1586,6 +1587,25 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              if (!status.ok()) throw status;
              return true;
            })
+      .def(
+          "LoadFromMap",
+          [](sentencepiece::SentencePieceNormalizer& self,
+             const std::vector<std::pair<std::string, std::string>>& norm_map) {
+            py::gil_scoped_release release;
+            auto status = self.LoadFromMap(norm_map);
+            if (!status.ok()) throw status;
+            return true;
+          })
+      .def("Decompile",
+           [](const sentencepiece::SentencePieceNormalizer& self) {
+             std::vector<std::pair<std::string, std::string>> norm_map;
+             {
+               py::gil_scoped_release release;
+               auto status = self.Decompile(&norm_map);
+               if (!status.ok()) throw status;
+             }
+             return norm_map;
+           })
       .def("_Normalize",
            [](const sentencepiece::SentencePieceNormalizer& self,
               const py::object& input) {
@@ -1625,5 +1645,9 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
       .def("serialized_model_proto",
            [](const sentencepiece::SentencePieceNormalizer& self) {
              return py::bytes(self.serialized_model_proto());
+           })
+      .def("serialized_normalizer_spec",
+           [](const sentencepiece::SentencePieceNormalizer& self) {
+             return py::bytes(self.serialized_normalizer_spec());
            });
 }

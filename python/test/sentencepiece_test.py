@@ -1122,6 +1122,69 @@ class TestSentencepieceProcessor(unittest.TestCase):
     sp = spm.SentencePieceNormalizer(rule_name='nfkc_cf')
     self.assertEqual('abc', sp.Normalize('ＡＢＣ'))
 
+  def test_normalizer_map(self):
+    norm_map = [
+        ('foo', 'bar'),
+        ('apple', 'orange'),
+    ]
+    sp = spm.SentencePieceNormalizer(norm_map=norm_map)
+    self.assertEqual('bar', sp.Normalize('foo'))
+    self.assertEqual('orange', sp.Normalize('apple'))
+    self.assertEqual('banana', sp.Normalize('banana'))
+    self.assertEqual('bar orange', sp.Normalize('foo apple'))
+
+    decompiled = sp.Decompile()
+    self.assertEqual(2, len(decompiled))
+    self.assertEqual('apple', decompiled[0][0])
+    self.assertEqual('orange', decompiled[0][1])
+    self.assertEqual('foo', decompiled[1][0])
+    self.assertEqual('bar', decompiled[1][1])
+
+    # Test invalid UTF-8, empty source, identity conversion, and duplicate keys.
+    self.assertRaises(ValueError, spm.SentencePieceNormalizer, norm_map=[(b'\xFF', b'bar')])
+    self.assertRaises(ValueError, spm.SentencePieceNormalizer, norm_map=[(b'foo', b'\xFF')])
+    self.assertRaises(ValueError, spm.SentencePieceNormalizer, norm_map=[('', 'bar')])
+    self.assertRaises(ValueError, spm.SentencePieceNormalizer, norm_map=[(b'', b'bar')])
+    self.assertRaises(ValueError, spm.SentencePieceNormalizer, norm_map=[('foo', 'foo')])
+    self.assertRaises(ValueError, spm.SentencePieceNormalizer, norm_map=[(b'foo', b'foo')])
+    self.assertRaises(ValueError, spm.SentencePieceNormalizer, norm_map=[('foo', 'bar'), ('foo', 'baz')])
+    self.assertRaises(ValueError, spm.SentencePieceNormalizer, norm_map=[(b'foo', b'bar'), (b'foo', b'baz')])
+
+  def test_trainer_with_normalizer(self):
+    tid = threading.get_native_id()
+    norm_map = [
+        ('foo', 'bar'),
+        ('apple', 'orange'),
+    ]
+    normalizer = spm.SentencePieceNormalizer(norm_map=norm_map, add_dummy_prefix=False, escape_whitespaces=True)
+
+    spm.SentencePieceTrainer.Train(
+        input=os.path.join(data_dir, 'botchan.txt'),
+        model_prefix=f'm_{tid}',
+        vocab_size=100,
+        normalizer=normalizer
+    )
+
+    sp_norm = spm.SentencePieceNormalizer(model_file=f'm_{tid}.model')
+    self.assertEqual('bar', sp_norm.Normalize('foo'))
+    self.assertEqual('orange', sp_norm.Normalize('apple'))
+
+    sp = spm.SentencePieceProcessor()
+    self.assertTrue(sp.Load(f'm_{tid}.model'))
+    pieces = sp.EncodeAsPieces('foo')
+    self.assertTrue(len(pieces) > 0)
+    self.assertNotEqual(pieces[0][0], '\u2581')
+
+    # Test conflict error
+    with self.assertRaises(ValueError):
+      spm.SentencePieceTrainer.Train(
+          input=os.path.join(data_dir, 'botchan.txt'),
+          model_prefix=f'm_{tid}_override',
+          vocab_size=100,
+          normalizer=normalizer,
+          add_dummy_prefix=True
+      )
+
   def test_override_normalize_spec(self):
     sp = spm.SentencePieceProcessor(
         model_file=os.path.join(HERE, 'test_model.model')
