@@ -251,18 +251,33 @@ class WorkerPool {
   std::unique_ptr<sentencepiece::ThreadPool> pool_impl_;
 };
 
-// Helper to cast py::list to std::vector<std::string_view> with type check
-std::vector<std::string_view> CastToStringViewVector(const py::list& ins) {
-  std::vector<std::string_view> C_ins(ins.size());
-  for (size_t i = 0; i < ins.size(); ++i) {
-    try {
-      C_ins[i] = ins[i].cast<std::string_view>();
-    } catch (const py::cast_error&) {
-      throw py::type_error("List elements must be str or bytes");
+// Wrapper to cast py::list to std::vector<std::string_view> and keep
+// the underlying Python objects alive for the lifetime of this object.
+class PyListStringViewVector {
+ public:
+  explicit PyListStringViewVector(const py::list& ins) {
+    keep_alive_.reserve(ins.size());
+    views_.reserve(ins.size());
+    for (size_t i = 0; i < ins.size(); ++i) {
+      try {
+        py::object obj = py::reinterpret_borrow<py::object>(ins[i]);
+        views_.push_back(obj.cast<std::string_view>());
+        keep_alive_.push_back(std::move(obj));
+      } catch (const py::cast_error&) {
+        throw py::type_error("List elements must be str or bytes");
+      }
     }
   }
-  return C_ins;
-}
+
+  const std::vector<std::string_view>& views() const { return views_; }
+  size_t size() const { return views_.size(); }
+  bool empty() const { return views_.empty(); }
+  const std::string_view& operator[](size_t i) const { return views_[i]; }
+
+ private:
+  std::vector<py::object> keep_alive_;
+  std::vector<std::string_view> views_;
+};
 
 // Wrapper for std::vector<int> to expose it as a Python buffer
 class VectorBuffer {
@@ -600,7 +615,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               const py::list& ins, int num_threads, py::object thread_pool,
               bool enable_sampling, int nbest_size, float alpha, bool add_bos,
               bool add_eos, bool reverse) {
-             std::vector<std::string_view> C_ins = CastToStringViewVector(ins);
+             PyListStringViewVector C_ins(ins);
              std::vector<std::vector<int>> outs(ins.size());
              WorkerPool pool(num_threads, thread_pool);
              {
@@ -631,7 +646,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               const py::list& ins, int num_threads, py::object thread_pool,
               bool enable_sampling, int nbest_size, float alpha, bool add_bos,
               bool add_eos, bool reverse) {
-             std::vector<std::string_view> C_ins = CastToStringViewVector(ins);
+             PyListStringViewVector C_ins(ins);
              std::vector<std::vector<int>> temp_outs(ins.size());
              WorkerPool pool(num_threads, thread_pool);
              {
@@ -668,7 +683,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               bool add_eos, bool reverse, bool emit_unk_piece,
               bool return_bytes) {
              if (ins.empty()) return py::list();
-             std::vector<std::string_view> C_ins = CastToStringViewVector(ins);
+             PyListStringViewVector C_ins(ins);
              std::vector<std::vector<std::string>> outs(ins.size());
              WorkerPool pool(num_threads, thread_pool);
              {
@@ -706,7 +721,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               bool add_eos, bool reverse, bool emit_unk_piece) {
              CheckProtoArgsThrowException(add_bos, add_eos, reverse,
                                           emit_unk_piece);
-             std::vector<std::string_view> C_ins = CastToStringViewVector(ins);
+             PyListStringViewVector C_ins(ins);
              std::vector<std::string> outs(ins.size());
              WorkerPool pool(num_threads, thread_pool);
              {
@@ -740,7 +755,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               bool enable_sampling, int nbest_size, float alpha, bool add_bos,
               bool add_eos, bool reverse, bool emit_unk_piece,
               bool return_bytes) {
-             std::vector<std::string_view> C_ins = CastToStringViewVector(ins);
+             PyListStringViewVector C_ins(ins);
              std::vector<sentencepiece::SentencePieceText> spts(ins.size());
              WorkerPool pool(num_threads, thread_pool);
              {
@@ -832,12 +847,11 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               const py::list& pieces) {
              if (pieces.empty()) return py::object(py::str(""));
              bool is_bytes = py::isinstance<py::bytes>(pieces[0]);
-             std::vector<std::string_view> C_pieces =
-                 CastToStringViewVector(pieces);
+             PyListStringViewVector C_pieces(pieces);
              std::string detok;
              {
                py::gil_scoped_release release;
-               auto status = self.Decode(C_pieces, &detok);
+               auto status = self.Decode(C_pieces.views(), &detok);
                if (!status.ok()) throw status;
              }
              return ToPyString(detok, is_bytes);
@@ -846,12 +860,11 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
            [](const sentencepiece::SentencePieceProcessor& self,
               const py::list& pieces) {
              if (pieces.empty()) return py::bytes("");
-             std::vector<std::string_view> C_pieces =
-                 CastToStringViewVector(pieces);
+             PyListStringViewVector C_pieces(pieces);
              std::string detok;
              {
                py::gil_scoped_release release;
-               auto status = self.Decode(C_pieces, &detok);
+               auto status = self.Decode(C_pieces.views(), &detok);
                if (!status.ok()) throw status;
              }
              return py::bytes(detok);
@@ -872,12 +885,11 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
       .def("_DecodePiecesAsSerializedProto",
            [](const sentencepiece::SentencePieceProcessor& self,
               const py::list& pieces) {
-             std::vector<std::string_view> C_pieces =
-                 CastToStringViewVector(pieces);
+             PyListStringViewVector C_pieces(pieces);
              sentencepiece::SentencePieceText spt;
              {
                py::gil_scoped_release release;
-               auto status = self.Decode(C_pieces, &spt);
+               auto status = self.Decode(C_pieces.views(), &spt);
                if (!status.ok()) throw status;
              }
              return py::bytes(spt.SerializeAsString());
@@ -914,11 +926,10 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              sentencepiece::SentencePieceText spt;
              absl::Status status;
              if (input_is_pieces) {
-               std::vector<std::string_view> pieces =
-                   CastToStringViewVector(normalized_input.cast<py::list>());
+               PyListStringViewVector pieces(normalized_input.cast<py::list>());
                {
                  py::gil_scoped_release release;
-                 status = self.Decode(pieces, &spt);
+                 status = self.Decode(pieces.views(), &spt);
                }
              } else {
                std::vector<int> ids = CastToVectorInt(normalized_input);
@@ -1017,9 +1028,12 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              if (sublist0.empty()) return py::list();
              bool is_bytes = py::isinstance<py::bytes>(sublist0[0]);
 
+             std::vector<PyListStringViewVector> C_ins_wrappers;
+             C_ins_wrappers.reserve(ins.size());
              std::vector<std::vector<std::string_view>> C_ins(ins.size());
              for (size_t i = 0; i < ins.size(); ++i) {
-               C_ins[i] = CastToStringViewVector(ins[i].cast<py::list>());
+               C_ins_wrappers.emplace_back(ins[i].cast<py::list>());
+               C_ins[i] = C_ins_wrappers.back().views();
              }
              std::vector<std::string> outs(ins.size());
              WorkerPool pool(num_threads, thread_pool);
@@ -1041,9 +1055,12 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
            [](const sentencepiece::SentencePieceProcessor& self,
               const py::list& ins, int num_threads, py::object thread_pool) {
              if (ins.empty()) return py::list();
+             std::vector<PyListStringViewVector> C_ins_wrappers;
+             C_ins_wrappers.reserve(ins.size());
              std::vector<std::vector<std::string_view>> C_ins(ins.size());
              for (size_t i = 0; i < ins.size(); ++i) {
-               C_ins[i] = CastToStringViewVector(ins[i].cast<py::list>());
+               C_ins_wrappers.emplace_back(ins[i].cast<py::list>());
+               C_ins[i] = C_ins_wrappers.back().views();
              }
              std::vector<std::string> outs(ins.size());
              WorkerPool pool(num_threads, thread_pool);
@@ -1065,9 +1082,12 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
            [](const sentencepiece::SentencePieceProcessor& self,
               const py::list& ins, int num_threads, py::object thread_pool) {
              if (ins.empty()) return py::list();
+             std::vector<PyListStringViewVector> C_ins_wrappers;
+             C_ins_wrappers.reserve(ins.size());
              std::vector<std::vector<std::string_view>> C_ins(ins.size());
              for (size_t i = 0; i < ins.size(); ++i) {
-               C_ins[i] = CastToStringViewVector(ins[i].cast<py::list>());
+               C_ins_wrappers.emplace_back(ins[i].cast<py::list>());
+               C_ins[i] = C_ins_wrappers.back().views();
              }
              std::vector<std::string> outs(ins.size());
              WorkerPool pool(num_threads, thread_pool);
@@ -1142,9 +1162,12 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              WorkerPool pool(num_threads, thread_pool);
 
              if (is_pieces_batch) {
+               std::vector<PyListStringViewVector> C_ins_wrappers;
+               C_ins_wrappers.reserve(py_ins.size());
                std::vector<std::vector<std::string_view>> C_ins(py_ins.size());
                for (size_t i = 0; i < py_ins.size(); ++i) {
-                 C_ins[i] = CastToStringViewVector(py_ins[i].cast<py::list>());
+                 C_ins_wrappers.emplace_back(py_ins[i].cast<py::list>());
+                 C_ins[i] = C_ins_wrappers.back().views();
                }
                {
                  py::gil_scoped_release release;
