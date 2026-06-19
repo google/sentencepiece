@@ -204,15 +204,17 @@ class SentencePieceProcessor:
         if model_file and model_proto:
             raise ValueError('model_file and model_proto must be exclusive.')
         if model_proto:
-            return self._processor.LoadFromSerializedProto(model_proto)
+            return self.LoadFromSerializedProto(model_proto)
         if model_file:
-            return self._processor.LoadFromFile(model_file)
+            return self.LoadFromFile(model_file)
         raise ValueError('Either model_file or model_proto must be specified.')
 
     def LoadFromFile(self, filename):
         return self._processor.LoadFromFile(filename)
 
     def LoadFromSerializedProto(self, serialized):
+        if hasattr(serialized, 'SerializeToString'):
+            serialized = serialized.SerializeToString()
         return self._processor.LoadFromSerializedProto(serialized)
 
     def Encode(self,
@@ -844,8 +846,12 @@ class SentencePieceNormalizer:
         if model_file:
             self._normalizer.LoadFromFile(model_file)
         elif model_proto:
+            if hasattr(model_proto, 'SerializeToString'):
+                model_proto = model_proto.SerializeToString()
             self._normalizer.LoadFromSerializedProto(model_proto)
         elif normalizer_spec:
+            if hasattr(normalizer_spec, 'SerializeToString'):
+                normalizer_spec = normalizer_spec.SerializeToString()
             self._normalizer.LoadFromSerializedNormalizerSpec(normalizer_spec)
         elif rule_tsv:
             self._normalizer.LoadFromRuleTSV(rule_tsv)
