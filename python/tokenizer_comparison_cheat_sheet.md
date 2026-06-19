@@ -2,25 +2,32 @@
 
 This cheat sheet compares the capabilities, API designs, and performance features of three major tokenizer libraries: **SentencePiece** (new pybind11 API), **Hugging Face Tokenizers**, and OpenAI's **tiktoken**.
 
+*Note: Please feel free to send a PR if you find any problems or inaccuracies.*
+
 ---
 
 ## 1. Capability Matrix
 
 | Feature / Capability | SentencePiece | Hugging Face `tokenizers` | tiktoken |
 | :--- | :--- | :--- | :--- |
-| **Compared Version** | `v0.2.2` (New pybind11 API) | `v1.1.1` | `v0.13.0` |
+| **Compared Version** | `v0.2.2` (New pybind11 API) | `v0.23.1` | `v0.13.0` |
+| **Native Backend** | C++ / pybind11 | Rust / PyO3 | Rust / PyO3 |
+| **Supported Algorithms** | BPE, Unigram, Char, Word | BPE, WordPiece, Unigram, WordLevel | BPE |
+| **OOV / Unknown Handling** | `<unk>` token, `byte_fallback` | `<unk>` token, `byte_fallback` (BPE/Unigram), or Byte-level BPE (no `<unk>`) | Byte-level BPE (no `<unk>` token) |
+| **Training Support** |  ✅ Yes (via `SentencePieceTrainer`) |  ✅ Yes (via `Trainer` classes) | ❌ No |
 | **GIL Release (Parallelism)** |  ✅ Yes (Releases GIL in almost all cases including single/batch encode & decode; supports Free-Threading) |  ⚠️ Partial (Releases GIL during core Rust execution, but string copying is done with GIL held) |  ⚠️ Partial (Releases GIL during core Rust execution, but python-level threading and conversions hold GIL) |
 | **Encode Offset Mapping (Unicode)** |  ✅ Yes (via `return_type='offset_mapping'`) |  ✅ Yes (via `Encoding.offsets`) | ❌ No |
-| **Decode Offset Mapping (Unicode)** |  ✅ Yes (via `return_type='offset_mapping'`, includes `text` key) | ❌ No | ❌ No |
+| **Decode Offset Mapping (Unicode)** |  ✅ Yes (via `return_type='offset_mapping'`, includes `text` key) | ❌ No |  ⚠️ Partial (via Python `decode_with_offsets`; start offsets only) |
 | **Raw Byte Offset Mapping** |  ✅ Yes (triggered by bytes input or `return_bytes=True` for both encode and decode) | ❌ No | ❌ No |
 | **Direct UTF-8 Bytes I/O** |  ✅ Yes (accepts bytes for encode, returns bytes for decode) | ❌ No (requires str) |  ⚠️ Partial (requires str for encode, returns bytes via `decode_bytes`) |
 | **Zero-Copy Input (str/bytes)** |  ✅ Yes (zero-copy for both str and bytes via Pybind11 memory view) | ❌ No (always copies input str to Rust owned String via PyO3) |  ⚠️ Partial (zero-copy for str under some conditions, no bytes support) |
-| **NumPy Array Output** |  ✅ Yes (Direct to NumPy, zero-copy) | ❌ No (Transformers wrapper only) | ❌ No |
+| **NumPy Array Output (Encode)** |  ✅ Yes (Direct to NumPy, zero-copy) | ❌ No (Transformers wrapper only) |  ✅ Yes (via `encode_to_numpy`, zero-copy) |
+| **NumPy Array Input (Decode)** |  ✅ Yes (Accepts 1D/2D; zero-copy on best-effort basis) |  ✅ Yes (Accepts 1D/2D; copied) |  ✅ Yes (Accepts 1D/2D; copied) |
 | **Batch Encoding Parallelism** |  ✅ Yes (via native C++ `WorkerPool`) |  ✅ Yes (via native Rust Rayon multi-threading) |  ⚠️ Partial (via Python `ThreadPoolExecutor` mapping to Rust) |
 | **Within-Doc Parallelism** |  ✅ Yes (`parallel_encode`) | ❌ No (sequential per document) | ❌ No (sequential per document) |
 | **Training from Iterator** |  ✅ Yes (`sentence_iterator`) |  ✅ Yes (`train_from_iterator`) | ❌ No |
 | **Subword Regularization (Sampling / N-best)** | ✅ Yes (at call-time; supports Unigram sampling and BPE-dropout) | ⚠️ Partial (BPE-dropout only, configured at model training/load time, no call-time sampling) | ❌ No |
-| **In-Memory Add Tokens** | ⚠️ Partial (Intentional design: dynamic adding is not supported for thread-safety; requires model recreation via modified protobuf) |  ✅ Yes (Easy, via `add_tokens`) | ❌ No |
+| **In-Memory Add Tokens** | ⚠️ Partial (Intentional design: dynamic adding is not supported; requires model recreation via modified protobuf) |  ✅ Yes (Easy, via `add_tokens`) | ⚠️ Partial (Intentional design: dynamic adding not supported; requires model recreation via modified dicts) |
 | **Pre-Tokenization (Modular)** | ❌ No (Intentional design: parses raw Unicode stream without pre-splitting) |  ✅ Yes (fully modular: `tokenizer.pre_tokenizer = ...`) | ⚠️ Partial (static via regex `pat_str` in constructor) |
 | **Modular Post-Processing** | ⚠️ Partial (BOS/EOS toggles and extra options only) |  ✅ Yes (template post-processor) | ❌ No |
 | **Text Normalization Support** |  ✅ Yes (baked into model, highly optimized precompiled rules) |  ✅ Yes (fully modular pipeline, e.g. Lowercase, NFKC) | ❌ No (Intentional design: tokenizes raw input exactly as-is) |
@@ -153,7 +160,12 @@ Below is a side-by-side comparison of common tasks across the three libraries.
     # *Not Supported*
     ```
 *   **tiktoken**:
-    *   *Not Supported*
+    *   *Encode: Not Supported*
+    ```python
+    # Decode with offsets:
+    text, offsets = enc.decode_with_offsets(ids)
+    # text -> str, offsets -> list[int] (start character indices)
+    ```
 
 ### 2.7. Offset Mapping (Bytes)
 
@@ -192,7 +204,10 @@ Below is a side-by-side comparison of common tasks across the three libraries.
     arr = np.array(tokenizer.encode("text").ids)
     ```
 *   **tiktoken**:
-    *   *Not Supported* (requires manual conversion)
+    ```python
+    # Direct encoding to NumPy array (zero-copy):
+    arr = enc.encode_to_numpy("text")
+    ```
 
 ### 2.9. Encode Batch
 
@@ -257,7 +272,7 @@ Below is a side-by-side comparison of common tasks across the three libraries.
 
 *   **SentencePiece**:
     ```python
-    # Intentional design: The processor is immutable for thread-safety.
+    # Intentional design: The processor is immutable.
     # To modify, rewrite the model protobuf and recreate the processor:
     import sentencepiece_model_pb2 as pb
     proto = pb.ModelProto()
@@ -272,7 +287,22 @@ Below is a side-by-side comparison of common tasks across the three libraries.
     tokenizer.add_special_tokens(["<|special|>"])
     ```
 *   **tiktoken**:
-    *   *Not Supported*
+    ```python
+    # Recreate encoding with modified ranks/special tokens dicts:
+    enc = tiktoken.get_encoding("cl100k_base")
+    ranks = dict(enc._mergeable_ranks)
+    special = dict(enc._special_tokens)
+    
+    # Modify dicts
+    ranks[b"new_token"] = len(ranks)
+    
+    new_enc = tiktoken.Encoding(
+        name="modified_cl100k",
+        pat_str=enc._pat_str,
+        mergeable_ranks=ranks,
+        special_tokens=special
+    )
+    ```
 
 ### 2.14. Configure Pre-tokenizer
 
@@ -395,3 +425,42 @@ Below is a side-by-side comparison of common tasks across the three libraries.
     ```
 *   **tiktoken**:
     *   *Not Supported*
+
+### 2.21. Decode NumPy Input
+
+*   **SentencePiece**:
+    ```python
+    import numpy as np
+    
+    # Decode 1D NumPy array (single sequence)
+    arr_1d = np.array([284, 47, 11], dtype=np.int32)
+    text = sp.decode(arr_1d)
+    
+    # Decode 2D NumPy array (batch)
+    arr_2d = np.array([[284, 47, 11], [10, 20, 30]], dtype=np.int32)
+    texts = sp.decode(arr_2d)
+    ```
+*   **Hugging Face `tokenizers`**:
+    ```python
+    import numpy as np
+    
+    # Decode 1D NumPy array
+    arr_1d = np.array([101, 7592, 102], dtype=np.uint32)
+    text = tokenizer.decode(arr_1d)
+    
+    # Decode 2D NumPy array (batch)
+    arr_2d = np.array([[101, 7592, 102], [101, 2088, 102]], dtype=np.uint32)
+    texts = tokenizer.decode_batch(arr_2d)
+    ```
+*   **tiktoken**:
+    ```python
+    import numpy as np
+    
+    # Decode 1D NumPy array
+    arr_1d = np.array([31373, 995], dtype=np.uint32)
+    text = enc.decode(arr_1d)
+    
+    # Decode 2D NumPy array (batch)
+    arr_2d = np.array([[31373, 995], [11274, 16390]], dtype=np.uint32)
+    texts = enc.decode_batch(arr_2d)
+    ```
