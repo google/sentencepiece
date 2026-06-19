@@ -258,5 +258,42 @@ class TestNumpyIntegration(unittest.TestCase):
         decoded = self.sp.decode([arr1, arr2])
         self.assertEqual(decoded, texts)
 
+    def test_native_batch_id_to_piece_numpy(self):
+        vocab_size = self.sp.vocab_size()
+        # Batch valid (numpy)
+        ids = np.array([0, 1, 2], dtype=np.int32)
+        pieces = self.sp.IdToPiece(ids)
+        self.assertIsInstance(pieces, list)
+        self.assertEqual(len(pieces), len(ids))
+        for i, p in zip(ids, pieces):
+            self.assertEqual(p, self.sp.IdToPiece(int(i)))
+
+        # Invalid ID in numpy array
+        with self.assertRaises(IndexError):
+            self.sp.IdToPiece(np.array([0, -1], dtype=np.int32))
+        with self.assertRaises(IndexError):
+            self.sp.IdToPiece(np.array([0, vocab_size], dtype=np.int32))
+
+    def test_native_batch_other_id_methods_numpy(self):
+        vocab_size = self.sp.vocab_size()
+        methods = [
+            self.sp.GetScore,
+            self.sp.IsUnknown,
+            self.sp.IsControl,
+            self.sp.IsUnused,
+            self.sp.IsByte
+        ]
+        for method in methods:
+            # Batch valid (numpy)
+            res_numpy = method(np.array([0, 1], dtype=np.int32))
+            self.assertIsInstance(res_numpy, list)
+            self.assertEqual(len(res_numpy), 2)
+            
+            # Batch invalid (numpy)
+            with self.assertRaises(IndexError):
+                method(np.array([0, -1], dtype=np.int32))
+            with self.assertRaises(IndexError):
+                method(np.array([0, vocab_size], dtype=np.int32))
+
 if __name__ == '__main__':
     unittest.main()

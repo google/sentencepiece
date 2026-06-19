@@ -407,6 +407,33 @@ std::vector<IntSpanOrVector> CastToVectorIntSpanOrVector(
   return outs;
 }
 
+template <typename FuncType>
+decltype(auto) SingleCall(const sentencepiece::SentencePieceProcessor& self, int id, FuncType func) {
+  CheckIdsThrowException(absl::Span<const int>(&id, 1), self.GetPieceSize());
+  return (self.*func)(id);
+}
+
+template <typename FuncType>
+py::list BatchCall(const sentencepiece::SentencePieceProcessor& self, const py::object& ids_obj, FuncType func) {
+  IntSpanOrVector ids = CastToIntSpanOrVector(ids_obj);
+  CheckIdsThrowException(ids.span(), self.GetPieceSize());
+  py::list outs(ids.span().size());
+  for (size_t i = 0; i < ids.span().size(); ++i) {
+    outs[i] = (self.*func)(ids.span()[i]);
+  }
+  return outs;
+}
+
+#define REGISTER_ID_METHOD(NAME)                                                \
+  .def(#NAME,                                                                   \
+       [](const sentencepiece::SentencePieceProcessor& self, int id) {          \
+         return SingleCall(self, id, &sentencepiece::SentencePieceProcessor::NAME);\
+       })                                                                       \
+  .def(#NAME, [](const sentencepiece::SentencePieceProcessor& self,             \
+                 const py::object& ids_obj) {                                   \
+    return BatchCall(self, ids_obj, &sentencepiece::SentencePieceProcessor::NAME);\
+  })
+
 void CheckProtoArgsThrowException(bool add_bos, bool add_eos, bool reverse,
                                   bool emit_unk_piece) {
   if (add_bos || add_eos || reverse || emit_unk_piece) {
@@ -1557,14 +1584,26 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
       .def("GetPieceSize", &sentencepiece::SentencePieceProcessor::GetPieceSize)
       .def("PieceToId",
            [](const sentencepiece::SentencePieceProcessor& self,
-              const std::string& piece) { return self.PieceToId(piece); })
-      .def("IdToPiece", [](const sentencepiece::SentencePieceProcessor& self,
-                           int id) { return self.IdToPiece(id); })
-      .def("GetScore", &sentencepiece::SentencePieceProcessor::GetScore)
-      .def("IsUnknown", &sentencepiece::SentencePieceProcessor::IsUnknown)
-      .def("IsControl", &sentencepiece::SentencePieceProcessor::IsControl)
-      .def("IsUnused", &sentencepiece::SentencePieceProcessor::IsUnused)
-      .def("IsByte", &sentencepiece::SentencePieceProcessor::IsByte)
+              std::string_view piece) { return self.PieceToId(piece); })
+      .def("PieceToId",
+           [](const sentencepiece::SentencePieceProcessor& self,
+              const py::sequence& pieces) {
+             py::list ids(pieces.size());
+             for (size_t i = 0; i < pieces.size(); ++i) {
+               try {
+                 ids[i] = self.PieceToId(pieces[i].cast<std::string_view>());
+               } catch (const py::cast_error&) {
+                 throw py::type_error("Sequence elements must be str or bytes");
+               }
+             }
+             return ids;
+           })
+      REGISTER_ID_METHOD(IdToPiece)
+      REGISTER_ID_METHOD(GetScore)
+      REGISTER_ID_METHOD(IsUnknown)
+      REGISTER_ID_METHOD(IsControl)
+      REGISTER_ID_METHOD(IsUnused)
+      REGISTER_ID_METHOD(IsByte)
       .def("unk_id", &sentencepiece::SentencePieceProcessor::unk_id)
       .def("bos_id", &sentencepiece::SentencePieceProcessor::bos_id)
       .def("eos_id", &sentencepiece::SentencePieceProcessor::eos_id)

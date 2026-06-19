@@ -898,31 +898,14 @@ def _add_snake_case(classname):
         setattr(classname, k, v)
 
 
-def _batchnize(classname, name):
-    func = getattr(classname, name, None)
-    def _func(v, n):
-        if isinstance(n, int) and (n < 0 or n >= v.piece_size()):
-            raise IndexError('piece id is out of range.')
-        return func(v, n)
 
-    def _batched_func(self, arg):
-        if isinstance(arg, list):
-            return [_func(self, n) for n in arg]
-        else:
-            return _func(self, arg)
-
-    setattr(classname, name, _batched_func)
 
 
 # Run batchnize and snake_case on classes
 SentencePieceProcessor.Tokenize = SentencePieceProcessor.Encode
 SentencePieceProcessor.Detokenize = SentencePieceProcessor.Decode
 
-for m in [
-    'PieceToId', 'IdToPiece', 'GetScore', 'IsUnknown', 'IsControl', 'IsUnused',
-    'IsByte'
-]:
-    _batchnize(SentencePieceProcessor, m)
+
 
 _add_snake_case(SentencePieceProcessor)
 _add_snake_case(SentencePieceTrainer)

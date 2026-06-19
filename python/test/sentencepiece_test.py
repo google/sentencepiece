@@ -1507,6 +1507,100 @@ class TestSentencepieceProcessor(unittest.TestCase):
     with self.assertRaises(ValueError):
       sp.encode(text_str, return_type=int, return_bytes=True)
 
+  def test_native_batch_piece_to_id(self):
+    sp = self.sp_
+    valid_ids = [3, 4, 5]
+    valid_pieces = [sp.IdToPiece(i) for i in valid_ids]
+
+    # Single
+    self.assertEqual(sp.PieceToId(valid_pieces[0]), valid_ids[0])
+    self.assertEqual(sp.PieceToId("unknown_piece_xyz"), 0)
+
+    # Batch list
+    pieces_list = valid_pieces + ["unknown_piece_xyz"]
+    ids = sp.PieceToId(pieces_list)
+    self.assertIsInstance(ids, list)
+    self.assertEqual(ids[:-1], valid_ids)
+    self.assertEqual(ids[-1], 0)
+
+    # Batch tuple
+    pieces_tuple = tuple(valid_pieces)
+    ids_t = sp.PieceToId(pieces_tuple)
+    self.assertIsInstance(ids_t, list)
+    self.assertEqual(ids_t, valid_ids)
+
+    # Type error
+    with self.assertRaises(TypeError):
+      sp.PieceToId(123)
+    with self.assertRaises(TypeError):
+      sp.PieceToId([123])
+    with self.assertRaises(TypeError):
+      sp.PieceToId(["a", 123])
+
+  def test_native_batch_id_to_piece(self):
+    sp = self.sp_
+    vocab_size = sp.vocab_size()
+
+    # Single
+    piece = sp.IdToPiece(3)
+    self.assertIsInstance(piece, str)
+    with self.assertRaises(IndexError):
+      sp.IdToPiece(-1)
+    with self.assertRaises(IndexError):
+      sp.IdToPiece(vocab_size)
+
+    # Batch list
+    ids = [0, 1, 2, 3]
+    pieces = sp.IdToPiece(ids)
+    self.assertIsInstance(pieces, list)
+    for i, p in zip(ids, pieces):
+      self.assertEqual(p, sp.IdToPiece(i))
+    with self.assertRaises(IndexError):
+      sp.IdToPiece([0, -1, 2])
+    with self.assertRaises(IndexError):
+      sp.IdToPiece([0, vocab_size])
+
+    # Batch tuple
+    ids_t = (0, 1, 2)
+    pieces_t = sp.IdToPiece(ids_t)
+    self.assertIsInstance(pieces_t, list)
+
+    # Type error
+    with self.assertRaises(TypeError):
+      sp.IdToPiece("a")
+    with self.assertRaises(TypeError):
+      sp.IdToPiece(["a"])
+
+  def test_native_batch_other_id_methods(self):
+    sp = self.sp_
+    vocab_size = sp.vocab_size()
+    methods = [
+        sp.GetScore,
+        sp.IsUnknown,
+        sp.IsControl,
+        sp.IsUnused,
+        sp.IsByte
+    ]
+    for method in methods:
+      # Single
+      res = method(0)
+      with self.assertRaises(IndexError):
+        method(-1)
+      with self.assertRaises(IndexError):
+        method(vocab_size)
+      
+      # Batch list
+      res_batch = method([0, 1, 2])
+      self.assertIsInstance(res_batch, list)
+      self.assertEqual(len(res_batch), 3)
+      with self.assertRaises(IndexError):
+        method([0, -1])
+          
+      # Batch tuple
+      res_tuple = method((0, 1))
+      self.assertIsInstance(res_tuple, list)
+      self.assertEqual(len(res_tuple), 2)
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTests(unittest.makeSuite(TestSentencepieceProcessor))
