@@ -91,6 +91,17 @@ class TestSentencepieceProcessor(unittest.TestCase):
       piece = self.sp_.id_to_piece(i)
       self.assertEqual(i, self.sp_.piece_to_id(piece))
 
+  def test_decode_invalid_ids(self):
+    # kOutOfRange should map to IndexError
+    with self.assertRaises(IndexError):
+      self.sp_.decode([10000])
+    with self.assertRaises(IndexError):
+      self.sp_.decode([[0, 10000]])
+    with self.assertRaises(IndexError):
+      self.sp_.decode(10000)
+    with self.assertRaises(IndexError):
+      self.sp_.DecodeIds([10000])
+
   def test_roundtrip(self):
     text = 'I saw a girl with a telescope.'
     ids = self.sp_.EncodeAsIds(text)

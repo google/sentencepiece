@@ -237,5 +237,26 @@ class TestNumpyIntegration(unittest.TestCase):
         decoded = self.sp.decode(np.array([], dtype=np.int32))
         self.assertEqual(decoded, "")
 
+    def test_decode_invalid_ids_numpy(self):
+        # kOutOfRange should map to IndexError for numpy inputs
+        with self.assertRaises(IndexError):
+            self.sp.decode(np.array([10000], dtype=np.int32))
+        with self.assertRaises(IndexError):
+            self.sp.decode(np.array([0, 10000], dtype=np.int32))
+        with self.assertRaises(IndexError):
+            self.sp.decode([np.array([10000], dtype=np.int32)])
+
+    def test_decode_numpy_batch_mixed(self):
+        texts = ["Hello world", "This is another test."]
+        ids_list = self.sp.encode(texts, return_type=int)
+        
+        # Mix of read-only and writable numpy arrays in a list
+        arr1 = np.array(ids_list[0], dtype=np.int32)
+        arr1.flags.writeable = False
+        arr2 = np.array(ids_list[1], dtype=np.int32)
+        
+        decoded = self.sp.decode([arr1, arr2])
+        self.assertEqual(decoded, texts)
+
 if __name__ == '__main__':
     unittest.main()
