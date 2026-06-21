@@ -1,4 +1,4 @@
-FROM alpine:3.23 AS build
+FROM alpine:3.24 AS build
 
 RUN apk add --no-cache \
     linux-headers \
@@ -23,7 +23,7 @@ RUN cd /workspace && \
 
 # ---
 
-FROM alpine:3.23
+FROM alpine:3.24
 
 ENV PATH="/usr/local/bin:${PATH}"
 COPY --from=build /usr/local /usr/local
