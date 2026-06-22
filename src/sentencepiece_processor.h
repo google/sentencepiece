@@ -834,8 +834,19 @@ class SentencePieceProcessor {
   absl::Status ParseExtraOptions(absl::string_view extra_option,
                                  std::vector<ExtraOption>* extra_options) const;
 
-  absl::Status ApplyExtraOptions(const std::vector<ExtraOption>& extra_options,
-                                 SentencePieceText* spt) const;
+  template <typename T>
+  absl::Status ApplyExtraOptions(absl::Span<const ExtraOption> extra_options,
+                                 T* output) const;
+
+  template <typename T>
+  absl::Status EncodeOptimized(absl::string_view input,
+                               std::vector<T>* output) const;
+
+  template <typename T>
+  absl::Status DecodeOptimized(absl::Span<const T> input,
+                               std::string* detokenized) const;
+
+  bool HasUnkPieceOption() const;
 
   absl::Status PopulateSentencePieceText(
       absl::string_view input, absl::string_view normalized,
