@@ -35,11 +35,9 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Build for Windows (Win32/x64)
+      - name: Build for Windows (x64)
         if: runner.os == 'Windows' && runner.arch != 'ARM64'
         run: |
-          cmake -A Win32 -B build_win32 -DSPM_ENABLE_SHARED=OFF -DSPM_DISABLE_EMBEDDED_DATA=ON -DCMAKE_INSTALL_PREFIX=build_win32/root
-          cmake --build build_win32 --config Release --target install --parallel 8
           cmake -A x64   -B build_amd64 -DSPM_ENABLE_SHARED=OFF -DSPM_DISABLE_EMBEDDED_DATA=ON -DCMAKE_INSTALL_PREFIX=build_amd64/root
           cmake --build build_amd64 --config Release --target install --parallel 8
 
@@ -74,7 +72,7 @@ jobs:
           CIBW_ARCHS_LINUX: auto
           CIBW_ARCHS_MACOS: x86_64 universal2 arm64
           CIBW_ARCHS_WINDOWS: auto
-          CIBW_SKIP: "*-musllinux_*"
+          CIBW_SKIP: "*-musllinux_* *-win32"
           CIBW_ENVIRONMENT: "CMAKE_BUILD_PARALLEL_LEVEL=8"
           CIBW_BUILD_VERBOSITY: 1
           CIBW_ENABLE: cpython-freethreading

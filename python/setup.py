@@ -185,11 +185,12 @@ class build_ext_win(_build_ext):
       libs.extend(find_abseil_lib('..\\build\\third_party'))
     else:
       # build library locally with cmake and vc++.
-      cmake_arch = 'Win32'
       if arch == 'amd64':
         cmake_arch = 'x64'
       elif arch == 'arm64':
         cmake_arch = 'ARM64'
+      else:
+        raise RuntimeError(f"Unsupported architecture: {arch}")
 
       subprocess.check_call([
           'cmake',
@@ -267,9 +268,9 @@ def copy_package_data():
 
 
 def get_win_arch():
-  arch = 'win32'
-  if sys.maxsize > 2**32:
-    arch = 'amd64'
+  if sys.maxsize <= 2**32:
+    raise RuntimeError("32-bit Windows (Win32) is not supported.")
+  arch = 'amd64'
   if 'arm' in platform.machine().lower():
     arch = 'arm64'
   if os.getenv('PYTHON_ARCH', '') == 'ARM64':

@@ -6,7 +6,7 @@ For a detailed feature and API comparison with Hugging Face Tokenizers and OpenA
 
 ## Installation
 
-For Linux (x86_64/aarch64), macOS, and Windows (win32/x64/arm64) environments, you can use the pip command to install the SentencePiece Python module.
+For Linux (x86_64/aarch64), macOS, and Windows (x64/arm64) environments, you can use the pip command to install the SentencePiece Python module.
 
 ```bash
 pip install sentencepiece
