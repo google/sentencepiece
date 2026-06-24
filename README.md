@@ -99,6 +99,37 @@ for _ in range(3):
 
 ---
 
+## Performance Benchmark (SentencePiece vs. Hugging Face Fast)
+
+### Benchmark Setup
+*   **Environment**: 24-core CPU, Python 3.13.
+*   **Dataset**: Balanced raw multilingual text from FLORES-200 (parallel sentences in English, Chinese, Japanese, and Thai; 11.29 MB, 60,720 lines). CJK and Thai texts are raw and do not contain artificial space delimiters.
+*   **Batch Request Size**: The entire dataset (**60,720 sentences**) is fed as a **single batch request** (a single Python `list[str]`) in one call.
+*   **Metric**: Encoding throughput in **MB/s** (higher is better).
+
+### 1. Unigram Model: T5-base (32k vocab)
+
+| Tokenizer | 1 Thread | 2 Threads | 4 Threads | 8 Threads | 16 Threads | 24 Threads |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **SentencePiece** | **27.41** | **43.83** | **71.62** | **102.08** | **123.33** | **127.60** |
+| Hugging Face Fast | 3.78 | 7.15 | 12.45 | 20.33 | 27.00 | 31.49 |
+
+### 2. BPE Model: Gemma 3 (256k vocab)
+
+| Tokenizer | 1 Thread | 2 Threads | 4 Threads | 8 Threads | 16 Threads | 24 Threads |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **SentencePiece** | **7.44** | **12.82** | **23.03** | **36.66** | **48.65** | **52.43** |
+| Hugging Face Fast | 3.66 | 6.37 | 10.45 | 15.54 | 21.05 | 20.48 |
+
+### Why performance does not scale linearly:
+While the core tokenization (C++ or Rust) runs in parallel, the final step of converting the native results (C++ vector of vectors or Rust vector of vectors) into Python objects (`list[list[int]]` or `list[Encoding]`) is **sequential and must be done on Python's main thread (GIL-locked)**. At high thread counts, this single-threaded serialization step becomes the dominant bottleneck, capping the scaling performance.
+
+For the detailed analysis and single-thread reference comparison, see [Performance Benchmark Details](doc/performance_benchmark.md).
+
+To run these benchmarks yourself, see the [reproduction instructions and scripts](benchmark/README.md).
+
+---
+
 ## Documentation & Resources
 
 For detailed guides, API references, and advanced usage, please refer to the following resources:
@@ -107,6 +138,8 @@ For detailed guides, API references, and advanced usage, please refer to the fol
 *   [C++ API Reference](doc/cpp.md)
 *   [Python API Reference](python/README.md) & [Python Module Directory](python/)
 *   [Python Tokenizer Comparison Cheat Sheet](python/tokenizer_comparison_cheat_sheet.md)
+*   [Performance Benchmark Details](doc/performance_benchmark.md)
+*   [Performance Benchmark Code & Reproduction Guide](benchmark/README.md)
 *   [Training Options Reference](doc/options.md)
 *   [Text Normalization & Custom Rules](doc/normalization.md)
 *   [Special Symbols & Control Tokens](doc/special_symbols.md)
