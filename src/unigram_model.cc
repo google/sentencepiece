@@ -1,5 +1,3 @@
-
-
 // Copyright 2016 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -687,7 +685,7 @@ void Model::BuildTrie(std::vector<std::pair<absl::string_view, int>> *pieces) {
 Model::Model(const ModelProto &model_proto) {
   model_proto_ = &model_proto;
 
-  InitializePieces();
+  InitializePieces(/* use_reserved_id_map= */ true);
 
   min_score_ = FLT_MAX;
   for (const auto &sp : model_proto_->pieces()) {

@@ -233,7 +233,7 @@ class ModelInterface {
   // `reserved_id_map_` instead of `pieces_`. This excludes them from the main
   // vocabulary map, which in turn prevents them from being merged during BPE
   // segmentation (since BPE merge only looks up in `pieces_`).
-  void InitializePieces();
+  void InitializePieces(bool use_reserved_id_map);
 
   // Non-virtual (inlined) implementation for faster execution.
   [[nodiscard]] float GetScoreInlined(int id) const {
@@ -274,6 +274,15 @@ class ModelInterface {
     DCHECK_GE(id, 0);
     DCHECK_LT(id, model_proto_->pieces_size());
     return (model_proto_->pieces(id).type() == ModelProto::SentencePiece::BYTE);
+  }
+
+  [[nodiscard]] bool IsReservedId(int id) const {
+    DCHECK_GE(id, 0);
+    DCHECK_LT(id, model_proto_->pieces_size());
+    const auto& piece = model_proto_->pieces(id);
+    return (piece.type() != ModelProto::SentencePiece::NORMAL &&
+            piece.type() != ModelProto::SentencePiece::USER_DEFINED &&
+            piece.type() != ModelProto::SentencePiece::UNUSED);
   }
 
   const ModelProto* model_proto_ = nullptr;

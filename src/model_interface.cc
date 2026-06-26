@@ -64,7 +64,7 @@ int ModelInterface::PieceToIdNoReserved(absl::string_view piece) const {
   return unk_id_;
 }
 
-void ModelInterface::InitializePieces() {
+void ModelInterface::InitializePieces(bool use_reserved_id_map) {
   pieces_.clear();
   reserved_id_map_.clear();
   unk_id_ = -1;
@@ -85,7 +85,7 @@ void ModelInterface::InitializePieces() {
         (sp.type() == ModelProto::SentencePiece::NORMAL ||
          sp.type() == ModelProto::SentencePiece::USER_DEFINED ||
          sp.type() == ModelProto::SentencePiece::UNUSED);
-    if (is_normal_piece) {
+    if (is_normal_piece || !use_reserved_id_map) {
       ++pieces_size;
     } else {
       ++reserved_id_map_size;
@@ -104,14 +104,20 @@ void ModelInterface::InitializePieces() {
       status_ = absl::InternalError("piece must not include null character.");
       return;
     }
-    const bool is_normal_piece =
-        (sp.type() == ModelProto::SentencePiece::NORMAL ||
-         sp.type() == ModelProto::SentencePiece::USER_DEFINED ||
-         sp.type() == ModelProto::SentencePiece::UNUSED);
-    if (!port::InsertIfNotPresent(
-            is_normal_piece ? &pieces_ : &reserved_id_map_, sp.piece(), i)) {
-      status_ = absl::InternalError(
-          absl::StrCat(sp.piece(), " is already defined."));
+    if (use_reserved_id_map) {
+      const bool is_normal_piece =
+          (sp.type() == ModelProto::SentencePiece::NORMAL ||
+           sp.type() == ModelProto::SentencePiece::USER_DEFINED ||
+           sp.type() == ModelProto::SentencePiece::UNUSED);
+      if (!port::InsertIfNotPresent(
+              is_normal_piece ? &pieces_ : &reserved_id_map_, sp.piece(), i)) {
+        status_ = absl::InternalError(
+            absl::StrCat(sp.piece(), " is already defined."));
+        return;
+      }
+    } else if (!port::InsertIfNotPresent(&pieces_, sp.piece(), i)) {
+      status_ =
+          absl::InternalError(absl::StrCat(sp.piece(), " is already defined."));
       return;
     }
 
