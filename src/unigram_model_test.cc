@@ -15,6 +15,7 @@
 #include "unigram_model.h"
 
 #include <cmath>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -1137,6 +1138,39 @@ TEST(UnigramModelTest, SpecialSymbolsNoSegmentTest) {
     for (const auto& part : result) {
       EXPECT_NE(byte_piece, part.first);
     }
+  }
+}
+
+TEST(UnigramModelTest, RejectNaNAndInfScoresTest) {
+  for (float bad_score : {std::numeric_limits<float>::quiet_NaN(),
+                          std::numeric_limits<float>::infinity(),
+                          -std::numeric_limits<float>::infinity()}) {
+    ModelProto model_proto = MakeBaseModelProto();
+    AddPiece(&model_proto, "ab", bad_score);
+    Model model(model_proto);
+    EXPECT_FALSE(model.status().ok());
+  }
+}
+
+TEST(UnigramModelTest, LongTextScoreRecenteringTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+  AddPiece(&model_proto, "ab", -10.0);
+  AddPiece(&model_proto, "cd", -10.0);
+  Model model(model_proto);
+  ASSERT_TRUE(model.status().ok());
+
+  // Create a long text of 30,000 "ab" pairs (60,000 characters).
+  // Each "ab" has a score of -10.0, so 30,000 pairs reach -300,000.0,
+  // triggering the score re-centering threshold (-100,000.0) multiple times.
+  std::string long_input;
+  long_input.reserve(60000);
+  for (int i = 0; i < 30000; ++i) {
+    long_input += "ab";
+  }
+  EncodeResult result = model.Encode(long_input);
+  EXPECT_EQ(30000, result.size());
+  for (const auto& pair : result) {
+    EXPECT_EQ("ab", pair.first);
   }
 }
 
