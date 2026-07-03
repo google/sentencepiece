@@ -18,8 +18,8 @@
 #include <iostream>
 #include <memory>
 
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "util.h"
 
 #if defined(OS_WIN) && defined(UNICODE) && defined(_UNICODE)

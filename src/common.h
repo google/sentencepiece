@@ -18,12 +18,12 @@
 #include <cstdint>
 #include <iostream>
 
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/globals.h"
-#include "third_party/absl/log/log.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/status/status_macros.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/log/check.h"
+#include "absl/log/globals.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/status_macros.h"
+#include "absl/strings/string_view.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #define OS_WIN

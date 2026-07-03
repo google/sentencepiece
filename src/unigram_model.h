@@ -24,8 +24,8 @@
 #include "freelist.h"
 #include "model_interface.h"
 #include "sentencepiece_model.pb.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/darts_clone/darts.h"
+#include "absl/strings/string_view.h"
+#include "darts.h"
 
 namespace sentencepiece {
 namespace unigram {

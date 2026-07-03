@@ -15,8 +15,8 @@
 
 #include <string>
 
-#include "third_party/absl/strings/str_replace.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/strings/str_replace.h"
+#include "absl/strings/string_view.h"
 
 namespace sentencepiece {
 namespace pretokenizer {

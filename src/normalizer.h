@@ -24,9 +24,9 @@
 #include "common.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/darts_clone/darts.h"
+#include "absl/status/status.h"
+#include "absl/strings/string_view.h"
+#include "darts.h"
 
 namespace sentencepiece::normalizer {
 

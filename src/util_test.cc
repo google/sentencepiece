@@ -18,11 +18,11 @@
 
 #include "filesystem.h"
 #include "testharness.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/time/clock.h"
-#include "third_party/absl/time/time.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
 
 namespace sentencepiece {
 namespace {

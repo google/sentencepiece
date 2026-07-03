@@ -8,8 +8,8 @@
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/strings/str_cat.h"
+#include "absl/flags/flag.h"
+#include "absl/strings/str_cat.h"
 #include "util.h"
 
 ABSL_DECLARE_FLAG(bool, nlcodec_bpe);

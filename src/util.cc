@@ -18,11 +18,11 @@
 #include <cstddef>
 #include <memory>
 
-#include "third_party/absl/random/random.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/synchronization/blocking_counter.h"
-#include "third_party/absl/synchronization/mutex.h"
+#include "absl/random/random.h"
+#include "absl/status/status.h"
+#include "absl/strings/string_view.h"
+#include "absl/synchronization/blocking_counter.h"
+#include "absl/synchronization/mutex.h"
 
 namespace sentencepiece {
 

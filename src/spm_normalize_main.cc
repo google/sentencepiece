@@ -21,7 +21,7 @@
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
-#include "third_party/absl/flags/flag.h"
+#include "absl/flags/flag.h"
 
 ABSL_FLAG(std::string, model, "", "Model file name");
 ABSL_FLAG(bool, use_internal_normalization, false,

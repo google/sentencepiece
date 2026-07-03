@@ -1,0 +1,37 @@
+# Copyright 2018 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.!
+
+module(
+    name = "sentencepiece",
+    version = "0.2.2",
+)
+
+# Keep in sync with the abseil-cpp GIT_TAG in CMakeLists.txt.
+bazel_dep(name = "abseil-cpp", version = "20260526.0")
+
+# Upstream darts-clone v0.32h plus the compatibility helpers (copy_array,
+# validate, ...) that the vendored third_party/darts_clone copy carries.
+bazel_dep(name = "darts-clone", version = "0.32h.bcr.1")
+
+# Upstream esaxx at the commit the vendored third_party/esaxx copy is based
+# on. The .bcr.1 revision exports esa.hxx and carries the index_type(0)
+# template-deduction fix that the int64_t instantiation of esaxx() needs.
+bazel_dep(name = "esaxx", version = "20250106.1.bcr.1")
+bazel_dep(name = "platforms", version = "1.1.0")
+
+# The .pb.cc/.pb.h files are regenerated from src/*.proto at build time, so
+# the Bazel build follows the SPM_PROTOBUF_PROVIDER=package CMake
+# configuration instead of the vendored third_party/protobuf-lite runtime.
+bazel_dep(name = "protobuf", version = "35.1")
+bazel_dep(name = "rules_cc", version = "0.2.18")

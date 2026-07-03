@@ -1,0 +1,77 @@
+name: CI for Bazel build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest ]
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
+    env:
+      # Stop the MSYS bash on Windows from rewriting Bazel labels like
+      # //src:spm_test as filesystem paths.
+      MSYS_NO_PATHCONV: "1"
+      MSYS2_ARG_CONV_EXCL: "*"
+
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+    - name: Mount Bazel caches
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      with:
+        path: |
+          ~/.cache/bazel-disk
+          ~/.cache/bazel-repo
+        key: bazel-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('MODULE.bazel', '.bazelrc', '.bazelversion') }}
+        restore-keys: |
+          bazel-${{ runner.os }}-${{ runner.arch }}-
+
+    - name: Configure Bazel
+      shell: bash
+      run: |
+        home="$HOME"
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          home="$(cygpath -m "$HOME")"
+          # Keep output paths short to stay within MAX_PATH limits.
+          echo "startup --output_user_root=C:/bzl" >> "$HOME/.bazelrc"
+          # Materialize the runfiles tree so tests can read their data
+          # dependencies from the working directory, as on Linux/macOS.
+          echo "build --enable_runfiles" >> "$HOME/.bazelrc"
+          if [[ -z "${BAZEL_SH:-}" ]]; then
+            echo 'BAZEL_SH=C:\Program Files\Git\bin\bash.exe' >> "$GITHUB_ENV"
+          fi
+        fi
+        echo "build --disk_cache=$home/.cache/bazel-disk" >> "$HOME/.bazelrc"
+        echo "build --repository_cache=$home/.cache/bazel-repo" >> "$HOME/.bazelrc"
+
+    - name: Build
+      shell: bash
+      run: bazel build --verbose_failures //...
+
+    - name: Test
+      shell: bash
+      run: bazel test //src:spm_test
+
+    - name: Smoke test
+      shell: bash
+      run: |
+        workdir="$PWD"
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          workdir="$(cygpath -m "$PWD")"
+        fi
+        bazel run //src:spm_train -- \
+          --input="$workdir/data/botchan.txt" --model_prefix="$workdir/m" --vocab_size=1000
+        echo "Hello world." | bazel-bin/src/spm_encode --model="$workdir/m.model"

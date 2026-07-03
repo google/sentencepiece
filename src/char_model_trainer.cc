@@ -17,7 +17,7 @@
 #include <cmath>
 
 #include "char_model.h"
-#include "third_party/absl/status/status.h"
+#include "absl/status/status.h"
 #include "util.h"
 
 namespace sentencepiece {

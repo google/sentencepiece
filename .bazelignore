@@ -1,0 +1,8 @@
+# Directories populated by the CMake build (FetchContent checkouts and the
+# third_party/absl symlink) contain their own BUILD files and must not be
+# treated as packages of this workspace.
+third_party/abseil-cpp
+third_party/absl
+third_party/benchmark
+build
+python

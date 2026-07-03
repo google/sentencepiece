@@ -20,13 +20,13 @@
 #include <vector>
 
 #include "pretokenizer_for_training.h"
-#include "third_party/absl/container/flat_hash_set.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/hash/hash.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_replace.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
+#include "absl/hash/hash.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_replace.h"
+#include "absl/strings/string_view.h"
 #include "util.h"
 
 #ifdef SPM_NLCODEC_BPE

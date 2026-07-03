@@ -20,8 +20,8 @@
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "testharness.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/log.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "util.h"
 
 namespace sentencepiece {

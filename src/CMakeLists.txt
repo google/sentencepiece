@@ -78,6 +78,8 @@ endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/darts_clone)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/esaxx)
 
 set(SPM_SRCS
   ${PROTOBUF_LITE_SRCS}
@@ -304,34 +306,10 @@ install(TARGETS ${SPM_INSTALLTARGETS}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 
-# Generate modified headers for installation
-set(GENERATED_HEADERS_DIR "${CMAKE_CURRENT_BINARY_DIR}/installed_headers")
-set(MODIFIER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modify_headers.cmake")
-
-add_custom_command(
-  OUTPUT "${GENERATED_HEADERS_DIR}/sentencepiece_processor.h"
-  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece_processor.h" "${MODIFIER_SCRIPT}"
-  COMMAND ${CMAKE_COMMAND} -DINPUT_FILE="${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece_processor.h"
-                           -DOUTPUT_FILE="${GENERATED_HEADERS_DIR}/sentencepiece_processor.h"
-                           -P "${MODIFIER_SCRIPT}"
-  COMMENT "Generating modified sentencepiece_processor.h for installation"
-)
-
-add_custom_command(
-  OUTPUT "${GENERATED_HEADERS_DIR}/sentencepiece_trainer.h"
-  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece_trainer.h" "${MODIFIER_SCRIPT}"
-  COMMAND ${CMAKE_COMMAND} -DINPUT_FILE="${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece_trainer.h"
-                           -DOUTPUT_FILE="${GENERATED_HEADERS_DIR}/sentencepiece_trainer.h"
-                           -P "${MODIFIER_SCRIPT}"
-  COMMENT "Generating modified sentencepiece_trainer.h for installation"
-)
-
-add_custom_target(generate_installed_headers ALL
-  DEPENDS "${GENERATED_HEADERS_DIR}/sentencepiece_processor.h"
-          "${GENERATED_HEADERS_DIR}/sentencepiece_trainer.h"
-)
-
-install(FILES "${GENERATED_HEADERS_DIR}/sentencepiece_trainer.h" "${GENERATED_HEADERS_DIR}/sentencepiece_processor.h"
+# The public headers include Abseil with plain "absl/..." paths, so they can
+# be installed as-is; consumers point their include path at an Abseil
+# installation as usual.
+install(FILES sentencepiece_trainer.h sentencepiece_processor.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 if (NOT SPM_PROTOBUF_PROVIDER STREQUAL "internal")
   install(FILES ${SPM_PROTO_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

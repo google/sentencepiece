@@ -83,3 +83,7 @@ python/test/sp_*.pickle
 third_party/absl
 
 test_tmp
+
+# Bazel
+/bazel-*
+MODULE.bazel.lock

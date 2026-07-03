@@ -16,12 +16,12 @@
 
 #include "common.h"
 #include "config.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/flags/parse.h"
-#include "third_party/absl/flags/usage.h"
-#include "third_party/absl/flags/usage_config.h"
-#include "third_party/absl/log/initialize.h"
-#include "third_party/absl/strings/str_cat.h"
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
+#include "absl/flags/usage_config.h"
+#include "absl/log/initialize.h"
+#include "absl/strings/str_cat.h"
 #include "util.h"
 
 #ifdef _USE_EXTERNAL_PROTOBUF
