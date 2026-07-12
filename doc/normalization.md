@@ -1,6 +1,6 @@
 # Text Normalization in SentencePiece
 
-By default, SentencePiece normalizes input sentences using a custom variant of Unicode **NFKC** normalization (see [Unicode Standard Annex #15: Unicode Normalization Forms](https://unicode.org/reports/tr15/) and [Unicode Equivalence on Wikipedia](https://en.wikipedia.org/wiki/Unicode_equivalence)). 
+By default, SentencePiece normalizes input sentences using a custom variant of Unicode **NFKC** normalization (see [Unicode Standard Annex #15: Unicode Normalization Forms](https://unicode.org/reports/tr15/) and [Unicode Equivalence on Wikipedia](https://en.wikipedia.org/wiki/Unicode_equivalence)).
 
 SentencePiece also allows you to define custom normalization rules, which are compiled and embedded directly into the model file. Normalization always happens *before* tokenization, meaning the vocabulary is learned from and applied to normalized text.
 

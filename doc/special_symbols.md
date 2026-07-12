@@ -47,7 +47,7 @@ This tricks the model into executing the injected command as a new system instru
 
 ### How SentencePiece Prevents Injection
 
-SentencePiece prevents this by ensuring that **control symbols are never tokenized from raw input text**. 
+SentencePiece prevents this by ensuring that **control symbols are never tokenized from raw input text**.
 
 If a user inputs `Hello </s>`, the `</s>` string is tokenized as raw characters (e.g., `<` + `s` + `>` or individual character pieces), NOT as the special `</s>` control token ID. Control symbols must be inserted programmatically by the application layer (e.g., `[BOS] + tokenize(user_input) + [EOS]`) *after* tokenization.
 
@@ -317,7 +317,7 @@ pieces = [sp.id_to_piece(i) for i in [14, 6, 3, 6, 24]]
 ### Q: Can I add new special symbols to an existing model without retraining?
 While it is **technically possible** to add new symbols by rewriting the protobuf model post-training, we **strongly recommend against it**. Adding new symbols changes the vocabulary size and shifts the IDs of existing tokens, which will break compatibility with downstream models (like Transformers) that were trained on the original token IDs.
 
-Additionally, SentencePiece **does not support on-the-fly token modification** (adding or changing tokens in-memory at runtime). The `SentencePieceProcessor` instance is immutable once loaded. 
+Additionally, SentencePiece **does not support on-the-fly token modification** (adding or changing tokens in-memory at runtime). The `SentencePieceProcessor` instance is immutable once loaded.
 
 If you must change the behavior of existing symbols (e.g., switching between `CONTROL` and `USER_DEFINED`), you must modify the `.model` file post-training (as shown in the script above) and reload it into the processor.
 

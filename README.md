@@ -36,8 +36,8 @@ import sentencepiece as spm
 # 1. Train a model directly from a raw text file.
 # (No pre-tokenization or language-specific preprocessing required!)
 spm.SentencePieceTrainer.train(
-    input='data/botchan.txt', 
-    model_prefix='m', 
+    input='data/botchan.txt',
+    model_prefix='m',
     vocab_size=1000
 )
 
@@ -69,7 +69,7 @@ print(sp.decode(pieces))
 ## Why SentencePiece?
 
 ### 1. Reversible & Lossless Tokenization (Whitespace as a Basic Symbol)
-Traditional tokenizers drop whitespace information (e.g., treating `Tokenize("World.")` identically to `Tokenize("World .")`), making detokenization ambiguous and language-dependent. 
+Traditional tokenizers drop whitespace information (e.g., treating `Tokenize("World.")` identically to `Tokenize("World .")`), making detokenization ambiguous and language-dependent.
 
 SentencePiece treats the input text as a raw sequence of Unicode characters. It escapes whitespaces with a meta-symbol `▁` (U+2581) and includes it in the tokenization. This design ensures that **detokenization is a simple, lossless string join operation**, entirely independent of the language:
 ```python
