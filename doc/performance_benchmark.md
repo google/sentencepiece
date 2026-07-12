@@ -44,7 +44,7 @@ This section compares the scaling performance of SentencePiece and Hugging Face 
 
 ## 2. The Scaling Bottleneck (GIL-Locked Conversion)
 
-A key observation across all tokenizers is that **performance does not scale linearly with the number of threads**. 
+A key observation across all tokenizers is that **performance does not scale linearly with the number of threads**.
 
 *   **Parallel core execution**: The core tokenization algorithms (written in C++ for SentencePiece and Rust for Hugging Face) run in parallel, releasing the GIL and utilizing multiple CPU cores efficiently.
 *   **Sequential Python conversion**: After the native threads finish, the resulting native arrays (C++ `std::vector<std::vector<int>>` or Rust `Vec<Vec<u32>>`) must be converted into Python objects (`list[list[int]]` or Hugging Face's `Encoding` objects).

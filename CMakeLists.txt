@@ -225,7 +225,7 @@ if(SPM_ENABLE_BENCHMARK)
   set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "Disable benchmark testing" FORCE)
 
   add_subdirectory(third_party/benchmark)
-  
+
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/benchmark/include)
 endif()
 
