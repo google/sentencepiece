@@ -77,7 +77,7 @@ class MockModel : public ModelInterface {
 
   int PieceToId(absl::string_view piece) const override { return 0; }
 
-  const std::string& IdToPiece(int id) const override { return kEmptyString; }
+  absl::string_view IdToPiece(int id) const override { return ""; }
 
   float GetScore(int id) const override { return 0.0; }
 
@@ -559,7 +559,7 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
       return port::FindWithDefault(kMap, piece, 0);
     }
 
-    const std::string& IdToPiece(int id) const override {
+    absl::string_view IdToPiece(int id) const override {
       static std::vector<std::string> kMap = {
           "<unk>", "<s>", "</s>", WS "ABC", WS "DE", "F", "G" WS "H"};
       return kMap[id];
@@ -726,7 +726,7 @@ TEST(SentencepieceProcessorTest, DummyPrefixDecodeTest) {
       return port::FindWithDefault(kMap, piece, 0);
     }
 
-    const std::string& IdToPiece(int id) const override {
+    absl::string_view IdToPiece(int id) const override {
       static std::vector<std::string> kMap = {
           "<unk>", "<s>", "</s>", WS "ABC", WS "DE", "F", "G" WS "H", WS};
       return kMap[id];
@@ -811,7 +811,7 @@ TEST(SentencepieceProcessorTest, ByteFallbackDecodeTest) {
       return port::FindWithDefault(kMap, std::string(piece), 0);
     }
 
-    const std::string& IdToPiece(int id) const override {
+    absl::string_view IdToPiece(int id) const override {
       static std::vector<std::string> kMap = []() -> std::vector<std::string> {
         std::vector<std::string> m = {"<unk>", "<s>", "</s>", "A", "B", "C"};
         for (int i = 0; i < 256; ++i) {

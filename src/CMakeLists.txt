@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.!
+# SPM_BUILD_TEST can be enabled manually in upb mode now
 
 list(APPEND SPM_LIBS absl::status)
 list(APPEND SPM_LIBS absl::status_builder)
@@ -23,68 +24,38 @@ list(APPEND SPM_LIBS absl::check)
 list(APPEND SPM_LIBS absl::random_random)
 list(APPEND SPM_LIBS absl::time)
 
-if (SPM_PROTOBUF_PROVIDER STREQUAL "internal")
-  set(SPM_PROTO_HDRS builtin_pb/sentencepiece.pb.h)
-  set(SPM_PROTO_SRCS builtin_pb/sentencepiece.pb.cc)
-  set(SPM_MODEL_PROTO_HDRS builtin_pb/sentencepiece_model.pb.h)
-  set(SPM_MODEL_PROTO_SRCS builtin_pb/sentencepiece_model.pb.cc)
-  set(PROTOBUF_LITE_LIBRARY "")
-  set(PROTOBUF_LITE_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/arena.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/arenastring.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/bytestream.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/coded_stream.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/common.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/extension_set.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/generated_enum_util.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/generated_message_table_driven_lite.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/generated_message_util.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/implicit_weak_message.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/int128.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/io_win32.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/message_lite.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/parse_context.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/repeated_field.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/status.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/statusor.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/stringpiece.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/stringprintf.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/structurally_valid.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/strutil.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/time.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/wire_format_lite.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/zero_copy_stream.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/zero_copy_stream_impl.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/zero_copy_stream_impl_lite.cc)
-  if (MSVC)
-    add_definitions("/DHAVE_PTHREAD /wd4018 /wd4514")
-  elseif (WIN32)
-    # Windows but not cl.exe (e.g. Clang targeting *-pc-windows-msvc, MinGW).
-    add_definitions("-DHAVE_PTHREAD=1 -Wno-sign-compare -Wno-deprecated-declarations")
+if (NOT SPM_USE_UPB)
+  if (SPM_PROTOBUF_PROVIDER STREQUAL "package")
+    find_package(Protobuf REQUIRED)
+    include_directories(${Protobuf_INCLUDE_DIRS})
+    protobuf_generate_cpp(SPM_PROTO_SRCS SPM_PROTO_HDRS sentencepiece.proto)
+    protobuf_generate_cpp(SPM_MODEL_PROTO_SRCS SPM_MODEL_PROTO_HDRS sentencepiece_model.proto)
+    set(PROTOBUF_LITE_SRCS "")
+    include_directories(${PROTOBUF_INCLUDE_DIR})
+    add_compile_definitions(_USE_EXTERNAL_PROTOBUF)
   else()
-    add_definitions("-pthread -DHAVE_PTHREAD=1 -Wno-sign-compare -Wno-deprecated-declarations")
+    message(FATAL_ERROR "Unsupported protobuf provider: ${SPM_PROTOBUF_PROVIDER}")
   endif()
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite)
-  include_directories(builtin_pb)
-elseif (SPM_PROTOBUF_PROVIDER STREQUAL "package")
-  find_package(Protobuf REQUIRED)
-  include_directories(${Protobuf_INCLUDE_DIRS})
-  protobuf_generate_cpp(SPM_PROTO_SRCS SPM_PROTO_HDRS sentencepiece.proto)
-  protobuf_generate_cpp(SPM_MODEL_PROTO_SRCS SPM_MODEL_PROTO_HDRS sentencepiece_model.proto)
-  set(PROTOBUF_LITE_SRCS "")
-  include_directories(${PROTOBUF_INCLUDE_DIR})
-  add_compile_definitions(_USE_EXTERNAL_PROTOBUF)
 endif()
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 
-set(SPM_SRCS
-  ${PROTOBUF_LITE_SRCS}
-  ${SPM_PROTO_HDRS}
-  ${SPM_PROTO_SRCS}
-  ${SPM_MODEL_PROTO_HDRS}
-  ${SPM_MODEL_PROTO_SRCS}
+set(SPM_COMMON_SRCS
+  bpe_model.cc
+  char_model.cc
+  filesystem.cc
+  init.cc
+  model_factory.cc
+  model_interface.cc
+  normalizer.cc
+  sentencepiece_processor.cc
+  unigram_model.cc
+  util.cc
+  word_model.cc
+)
+
+set(SPM_COMMON_HDRS
   bpe_model.h
   common.h
   normalizer.h
@@ -99,17 +70,32 @@ set(SPM_SRCS
   model_interface.h
   testharness.h
   unigram_model.h
-  bpe_model.cc
-  char_model.cc
-  filesystem.cc
-  init.cc
-  model_factory.cc
-  model_interface.cc
-  normalizer.cc
-  sentencepiece_processor.cc
-  unigram_model.cc
-  util.cc
-  word_model.cc)
+)
+
+if (SPM_USE_UPB)
+  set(UPB_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/upb/upb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/upb/utf8_range.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb/sentencepiece_model.upb_minitable.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb/sentencepiece.upb_minitable.c 
+  )
+
+  set(SPM_SRCS
+    ${UPB_SRCS}
+    ${SPM_COMMON_SRCS}
+    ${SPM_COMMON_HDRS}
+  )
+else()
+  set(SPM_SRCS
+    ${PROTOBUF_LITE_SRCS}
+    ${SPM_PROTO_HDRS}
+    ${SPM_PROTO_SRCS}
+    ${SPM_MODEL_PROTO_HDRS}
+    ${SPM_MODEL_PROTO_SRCS}
+    ${SPM_COMMON_SRCS}
+    ${SPM_COMMON_HDRS}
+  )
+endif()
 
 set(SPM_TRAIN_SRCS
   ${SPM_PROTO_HDRS}
@@ -222,32 +208,81 @@ endif()
 
 if (SPM_ENABLE_SHARED)
   add_library(sentencepiece SHARED ${SPM_SRCS})
-  add_library(sentencepiece_train SHARED ${SPM_TRAIN_SRCS})
+  if (SPM_INTERNAL_PROTO_INC AND NOT SPM_USE_UPB)
+    target_include_directories(sentencepiece PUBLIC ${SPM_INTERNAL_PROTO_INC})
+  endif()
   if (ANDROID)
     target_link_libraries(sentencepiece PRIVATE log)
+  endif()
+  add_library(sentencepiece_train SHARED ${SPM_TRAIN_SRCS})
+  if (SPM_INTERNAL_PROTO_INC AND NOT SPM_USE_UPB)
+    target_include_directories(sentencepiece_train PUBLIC ${SPM_INTERNAL_PROTO_INC})
+  endif()
+  if (ANDROID)
     target_link_libraries(sentencepiece_train PRIVATE log)
   endif()
 endif()
 
 add_library(sentencepiece-static STATIC ${SPM_SRCS})
+if (SPM_INTERNAL_PROTO_INC AND NOT SPM_USE_UPB)
+  target_include_directories(sentencepiece-static PUBLIC ${SPM_INTERNAL_PROTO_INC})
+endif()
 add_library(sentencepiece_train-static STATIC ${SPM_TRAIN_SRCS})
+if (SPM_INTERNAL_PROTO_INC AND NOT SPM_USE_UPB)
+  target_include_directories(sentencepiece_train-static PUBLIC ${SPM_INTERNAL_PROTO_INC})
+endif()
 
-target_link_libraries(sentencepiece-static INTERFACE ${SPM_LIBS})
-target_link_libraries(sentencepiece_train-static INTERFACE sentencepiece-static ${SPM_LIBS})
+if (SPM_USE_UPB)
+  if (SPM_ENABLE_SHARED)
+    target_link_libraries(sentencepiece PUBLIC ${SPM_LIBS})
+    target_compile_definitions(sentencepiece PUBLIC SPM_USE_UPB=1)
+    target_include_directories(sentencepiece PUBLIC
+      ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb
+      ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/upb
+    )
+    target_link_libraries(sentencepiece_train PUBLIC ${SPM_LIBS} sentencepiece)
+    target_compile_definitions(sentencepiece_train PUBLIC SPM_USE_UPB=1)
+    target_include_directories(sentencepiece_train PUBLIC
+      ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb
+      ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/upb
+    )
+  endif()
+  target_link_libraries(sentencepiece-static INTERFACE ${SPM_LIBS})
+  target_compile_definitions(sentencepiece-static PUBLIC SPM_USE_UPB=1)
+  target_include_directories(sentencepiece-static PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/upb
+  )
+  target_link_libraries(sentencepiece_train-static INTERFACE sentencepiece-static ${SPM_LIBS})
+  target_compile_definitions(sentencepiece_train-static PUBLIC SPM_USE_UPB=1)
+  target_include_directories(sentencepiece_train-static PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/upb
+  )
+else()
+  target_link_libraries(sentencepiece-static INTERFACE ${SPM_LIBS})
+  if (SPM_ENABLE_SHARED)
+    target_link_libraries(sentencepiece PUBLIC ${SPM_LIBS})
+    target_link_libraries(sentencepiece_train PUBLIC ${SPM_LIBS} sentencepiece)
+  endif()
+  target_link_libraries(sentencepiece_train-static INTERFACE sentencepiece-static ${SPM_LIBS})
+endif()
 
 if (SPM_ENABLE_SHARED)
-  target_link_libraries(sentencepiece PUBLIC ${SPM_LIBS})
-  target_link_libraries(sentencepiece_train PUBLIC ${SPM_LIBS} sentencepiece)
   set(SPM_INSTALLTARGETS sentencepiece sentencepiece_train sentencepiece-static sentencepiece_train-static)
-  set_target_properties(sentencepiece sentencepiece_train PROPERTIES SOVERSION 0 VERSION 0.0.0)
-  set_target_properties(sentencepiece PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
+  set_target_properties(sentencepiece_train PROPERTIES SOVERSION 0 VERSION 0.0.0)
   set_target_properties(sentencepiece_train PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
   if (MSVC)
-    set_target_properties(sentencepiece PROPERTIES IMPORT_SUFFIX "_import.lib")
     set_target_properties(sentencepiece_train PROPERTIES IMPORT_SUFFIX "_import.lib")
   elseif (MINGW)
-    set_target_properties(sentencepiece PROPERTIES IMPORT_SUFFIX ".dll.a")
     set_target_properties(sentencepiece_train PROPERTIES IMPORT_SUFFIX ".dll.a")
+  endif()
+  set_target_properties(sentencepiece PROPERTIES SOVERSION 0 VERSION 0.0.0)
+  set_target_properties(sentencepiece PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
+  if (MSVC)
+    set_target_properties(sentencepiece PROPERTIES IMPORT_SUFFIX "_import.lib")
+  elseif (MINGW)
+    set_target_properties(sentencepiece PROPERTIES IMPORT_SUFFIX ".dll.a")
   endif()
 else()
   add_library(sentencepiece ALIAS sentencepiece-static)
@@ -260,9 +295,11 @@ set_target_properties(sentencepiece_train-static PROPERTIES OUTPUT_NAME "sentenc
 
 if (NOT WIN32)
   set(CMAKE_CXX_FLAGS "-O3 -Wall -fPIC ${CMAKE_CXX_FLAGS}")
-  set_source_files_properties(
-    sentencepiece.pb.cc sentencepiece_model.pb.cc
-    PROPERTIES COMPILE_FLAGS "-Wno-misleading-indentation")
+  if (NOT SPM_USE_UPB)
+    set_source_files_properties(
+      sentencepiece.pb.cc sentencepiece_model.pb.cc
+      PROPERTIES COMPILE_FLAGS "-Wno-misleading-indentation")
+  endif()
   set_source_files_properties(${SPM_TEST_SRCS}
     PROPERTIES COMPILE_FLAGS "-Wno-sign-compare")
   if (SPM_ENABLE_SHARED)
@@ -273,15 +310,16 @@ endif()
 
 add_executable(spm_encode spm_encode_main.cc)
 add_executable(spm_decode spm_decode_main.cc)
-add_executable(spm_normalize spm_normalize_main.cc)
-add_executable(spm_train spm_train_main.cc)
 add_executable(spm_export_vocab spm_export_vocab_main.cc)
 
 target_link_libraries(spm_encode sentencepiece)
 target_link_libraries(spm_decode sentencepiece)
+target_link_libraries(spm_export_vocab sentencepiece)
+
+add_executable(spm_normalize spm_normalize_main.cc)
+add_executable(spm_train spm_train_main.cc)
 target_link_libraries(spm_normalize sentencepiece sentencepiece_train)
 target_link_libraries(spm_train sentencepiece sentencepiece_train)
-target_link_libraries(spm_export_vocab sentencepiece)
 
 if (SPM_ENABLE_NFKC_COMPILE)
   add_executable(compile_charsmap compile_charsmap_main.cc)
@@ -333,7 +371,7 @@ add_custom_target(generate_installed_headers ALL
 
 install(FILES "${GENERATED_HEADERS_DIR}/sentencepiece_trainer.h" "${GENERATED_HEADERS_DIR}/sentencepiece_processor.h"
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-if (NOT SPM_PROTOBUF_PROVIDER STREQUAL "internal")
+if (SPM_PROTO_HDRS)
   install(FILES ${SPM_PROTO_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endif()
 

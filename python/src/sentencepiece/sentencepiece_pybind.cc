@@ -39,11 +39,11 @@ struct PyInputStringView {
 };
 
 // Helper to convert std::string to py::str or py::bytes based on flag.
-py::object ToPyString(const std::string& str, bool is_bytes) {
+py::object ToPyString(std::string_view str, bool is_bytes) {
   if (is_bytes) {
-    return py::bytes(str);
+    return py::bytes(str.data(), str.size());
   } else {
-    return py::str(str);
+    return py::str(str.data(), str.size());
   }
 }
 
@@ -169,10 +169,10 @@ absl::Status RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
     return absl::OkStatus();
   if (reverse) std::reverse(pieces->begin(), pieces->end());
   if (add_bos) {
-    pieces->insert(pieces->begin(), sp.IdToPiece(sp.bos_id()));
+    pieces->insert(pieces->begin(), std::string(sp.IdToPiece(sp.bos_id())));
   }
   if (add_eos) {
-    pieces->push_back(sp.IdToPiece(sp.eos_id()));
+    pieces->push_back(std::string(sp.IdToPiece(sp.eos_id())));
   }
   if (emit_unk_piece) {
     const auto& unk = sp.IdToPiece(sp.unk_id());

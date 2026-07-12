@@ -118,9 +118,11 @@ TEST(BuilderTest, CompileCharsMap) {
   chars_map[{0x3048, 0x304A}] = {};
 
   NormalizerSpec spec;
+  std::string compiled;
   EXPECT_TRUE(
-      Builder::CompileCharsMap(chars_map, spec.mutable_precompiled_charsmap())
+      Builder::CompileCharsMap(chars_map, &compiled)
           .ok());
+  spec.set_precompiled_charsmap(compiled);
   Builder::CharsMap decompiled_chars_map;
   EXPECT_TRUE(Builder::DecompileCharsMap(spec.precompiled_charsmap(),
                                          &decompiled_chars_map)

@@ -25,7 +25,7 @@
 #if defined(OS_WIN) && defined(UNICODE) && defined(_UNICODE)
 #define WPATH(path) (::sentencepiece::util::Utf8ToWide(path).c_str())
 #else
-#define WPATH(path) (path.data())
+#define WPATH(path) (std::string(path).c_str())
 #endif
 
 namespace sentencepiece {
@@ -44,7 +44,7 @@ class PosixReadableFile : public ReadableFile {
     }
     if (!*is_ || ((is_->peek() != 0) && is_->fail())) {
       status_ = absl::StatusBuilder(absl::StatusCode::kNotFound)
-                << "\"" << filename.data() << "\": " << util::StrError(errno);
+                << "\"" << filename << "\": " << util::StrError(errno);
     }
   }
 
@@ -85,7 +85,7 @@ class PosixWritableFile : public WritableFile {
     }
     if (!*os_) {
       status_ = absl::StatusBuilder(absl::StatusCode::kPermissionDenied)
-                << "\"" << filename.data() << "\": " << util::StrError(errno);
+                << "\"" << filename << "\": " << util::StrError(errno);
     }
   }
 

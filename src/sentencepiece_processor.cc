@@ -47,11 +47,7 @@
 #include "unigram_model.h"
 #include "util.h"
 
-#ifdef _USE_EXTERNAL_PROTOBUF
 #include "google/protobuf/arena.h"
-#else
-#include "third_party/protobuf-lite/google/protobuf/arena.h"
-#endif
 
 using ::google::protobuf::Arena;
 
@@ -128,12 +124,12 @@ ImmutableSentencePieceText_ImmutableSentencePiece::
         const SentencePieceText_SentencePiece& sp)
     : sp_(&sp) {}
 
-const std::string& ImmutableSentencePieceText_ImmutableSentencePiece::piece()
+absl::string_view ImmutableSentencePieceText_ImmutableSentencePiece::piece()
     const {
   return sp_->piece();
 }
 
-const std::string& ImmutableSentencePieceText_ImmutableSentencePiece::surface()
+absl::string_view ImmutableSentencePieceText_ImmutableSentencePiece::surface()
     const {
   return sp_->surface();
 }
@@ -169,7 +165,7 @@ ImmutableSentencePieceText::pieces(int index) const {
   return ImmutableSentencePieceText_ImmutableSentencePiece(spt_->pieces(index));
 }
 
-const std::string& ImmutableSentencePieceText::text() const {
+absl::string_view ImmutableSentencePieceText::text() const {
   return spt_->text();
 }
 
@@ -352,7 +348,7 @@ absl::Status SentencePieceProcessor::SetVocabulary(
       continue;
     }
     if (vocab.find(piece->piece()) != vocab.end() ||
-        string_util::OneCharLen(piece->piece().c_str()) ==
+        string_util::OneCharLen(piece->piece()) ==
             piece->piece().size()) {
       piece->set_type(ModelProto::SentencePiece::NORMAL);
     } else {
@@ -607,8 +603,8 @@ absl::Status SentencePieceProcessor::PopulateSentencePieceText(
           // Create a byte piece
           const uint8_t b = static_cast<uint8_t>(w[i]);
           SentencePieceText::SentencePiece* sp = spt->add_pieces();
-          std::string& piece = *sp->mutable_piece();
-          piece = ByteToPiece(b);
+          std::string piece = ByteToPiece(b);
+          sp->set_piece(piece);
           int sp_id = model_->PieceToId(piece);
           sp->set_id(sp_id);
 
@@ -631,8 +627,14 @@ absl::Status SentencePieceProcessor::PopulateSentencePieceText(
         // since known pieces never consist of unknown characters.
         if (is_prev_unk && is_unk) {
           auto* sp = spt->mutable_pieces(spt->pieces_size() - 1);
-          sp->mutable_piece()->append(w);
-          if (!skip_surface) sp->mutable_surface()->append(surface);
+          std::string piece(sp->piece());
+          piece.append(w.data(), w.size());
+          sp->set_piece(piece);
+          if (!skip_surface) {
+            std::string surf(sp->surface());
+            surf.append(surface.data(), surface.size());
+            sp->set_surface(surf);
+          }
           sp->set_end(orig_end);
         } else {
           auto* sp = spt->add_pieces();
@@ -849,19 +851,19 @@ absl::Status SentencePieceProcessor::Decode(
   spt->mutable_pieces()->Reserve(pieces.size());
   for (absl::string_view w : pieces) {
     auto* sp = spt->add_pieces();
-    sp->mutable_piece()->assign(w.data(), w.size());
+    sp->set_piece(w.data(), w.size());
     sp->set_id(PieceToId(w));
   }
 
   RETURN_IF_ERROR(ApplyExtraOptions(decode_extra_options_, spt));
 
-  std::string* text = spt->mutable_text();
+  std::string decoded_text;
   auto SetSurface = [&](int index, absl::string_view surface) {
     auto* sp = spt->mutable_pieces(index);
     sp->set_surface(surface.data(), surface.size());
-    sp->set_begin(text->size());
-    sp->set_end(text->size() + surface.size());
-    absl::StrAppend(text, surface);
+    sp->set_begin(decoded_text.size());
+    sp->set_end(decoded_text.size() + surface.size());
+    absl::StrAppend(&decoded_text, surface);
   };
 
   auto ProcessBytePieces = [&](int token_index_begin,
@@ -928,7 +930,7 @@ absl::Status SentencePieceProcessor::Decode(
       RETURN_IF_ERROR(ProcessBytePieces(byte_start, i));
 
       // if we have seen a bos_ws token or any non-empty token
-      if (bos_ws_seen || !text->empty()) is_bos_ws = false;
+      if (bos_ws_seen || !decoded_text.empty()) is_bos_ws = false;
 
       byte_start = i + 1;
       std::tie(decoded, bos_ws_seen) =
@@ -940,8 +942,9 @@ absl::Status SentencePieceProcessor::Decode(
   RETURN_IF_ERROR(ProcessBytePieces(byte_start, spt->pieces_size()));
 
   if (denormalizer_) {
-    *text = denormalizer_->Normalize(*text);
+    decoded_text = denormalizer_->Normalize(decoded_text);
   }
+  spt->set_text(decoded_text);
 
   return absl::OkStatus();
 }
@@ -1384,9 +1387,8 @@ int SentencePieceProcessor::PieceToId(absl::string_view piece) const {
   return model_->PieceToId(piece);
 }
 
-const std::string& SentencePieceProcessor::IdToPiece(int id) const {
-  static const std::string* kEmptyString = new std::string;
-  RET_CHECK_OR_RETURN_DEFAULT(*kEmptyString);
+absl::string_view SentencePieceProcessor::IdToPiece(int id) const {
+  RET_CHECK_OR_RETURN_DEFAULT("");
   return model_->IdToPiece(id);
 }
 

@@ -119,8 +119,10 @@ absl::Status SentencePieceTrainer::Train(
 NormalizerSpec SentencePieceTrainer::GetNormalizerSpec(absl::string_view name) {
   NormalizerSpec spec;
   spec.set_name(name.data(), name.size());
+  std::string precompiled;
   CHECK_OK(normalizer::Builder::GetPrecompiledCharsMap(
-      spec.name(), spec.mutable_precompiled_charsmap()));
+      spec.name(), &precompiled));
+  spec.set_precompiled_charsmap(precompiled);
   return spec;
 }
 
@@ -292,17 +294,21 @@ absl::Status SentencePieceTrainer::PopulateNormalizerSpec(
     normalizer::Builder::CharsMap chars_map;
     RETURN_IF_ERROR(normalizer::Builder::LoadCharsMap(
         normalizer_spec->normalization_rule_tsv(), &chars_map));
+    std::string precompiled;
     RETURN_IF_ERROR(normalizer::Builder::CompileCharsMap(
-        chars_map, normalizer_spec->mutable_precompiled_charsmap()));
+        chars_map, &precompiled));
+    normalizer_spec->set_precompiled_charsmap(precompiled);
     normalizer_spec->set_name("user_defined");
   } else if (!is_denormalizer) {
     if (normalizer_spec->name().empty()) {
       normalizer_spec->set_name(kDefaultNormalizerName);
     }
     if (normalizer_spec->precompiled_charsmap().empty()) {
+      std::string precompiled;
       RETURN_IF_ERROR(normalizer::Builder::GetPrecompiledCharsMap(
           normalizer_spec->name(),
-          normalizer_spec->mutable_precompiled_charsmap()));
+          &precompiled));
+      normalizer_spec->set_precompiled_charsmap(precompiled);
     }
   }
 
@@ -474,37 +480,4 @@ std::string SentencePieceNormalizer::serialized_model_proto() const {
 std::string SentencePieceNormalizer::serialized_normalizer_spec() const {
   return normalizer_spec_ ? normalizer_spec_->SerializeAsString() : "";
 }
-
-void ConvertToUnicodeAlignment(absl::string_view orig, absl::string_view norm,
-                               std::vector<size_t>* norm_to_orig) {
-  auto utf8_to_unicode_offsets = [](absl::string_view str) {
-    std::vector<int> utf8_to_unicode(str.size() + 1, 0);
-    size_t prev = 0;
-    int ulen = 0;
-    while (!str.empty()) {
-      const size_t mblen =
-          std::min(str.size(), static_cast<size_t>(std::max<int>(
-                                   1, string_util::OneCharLen(str.data()))));
-      for (size_t i = prev; i < prev + mblen; ++i) {
-        utf8_to_unicode[i] = ulen;
-      }
-      ++ulen;
-      prev += mblen;
-      str.remove_prefix(mblen);
-    }
-    utf8_to_unicode[prev] = ulen;
-    return utf8_to_unicode;
-  };
-
-  const auto orig_offsets = utf8_to_unicode_offsets(orig);
-  const auto norm_offsets = utf8_to_unicode_offsets(norm);
-  if (orig_offsets.empty() || norm_offsets.empty()) return;
-
-  std::vector<size_t> result(norm_offsets.back() + 1, 0);
-  for (size_t i = 0; i < norm_to_orig->size(); ++i) {
-    result[norm_offsets[i]] = orig_offsets[(*norm_to_orig)[i]];
-  }
-  *norm_to_orig = std::move(result);
-}
-
 }  // namespace sentencepiece

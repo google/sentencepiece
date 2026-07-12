@@ -173,9 +173,11 @@ TEST(NormalizeTest, NomalizeWithSpaceContainedRules) {
   AddRule("d", " F G ");
 
   NormalizerSpec spec;
+  std::string compiled;
   EXPECT_TRUE(
-      Builder::CompileCharsMap(charsmap, spec.mutable_precompiled_charsmap())
+      Builder::CompileCharsMap(charsmap, &compiled)
           .ok());
+  spec.set_precompiled_charsmap(compiled);
 
   // Test default behavior
   {

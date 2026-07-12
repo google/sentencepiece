@@ -113,6 +113,11 @@ inline size_t OneCharLen(const char* src) {
   return "\1\1\1\1\1\1\1\1\1\1\1\1\2\2\3\4"[(*src & 0xFF) >> 4];
 }
 
+inline size_t OneCharLen(absl::string_view src) {
+  if (src.empty()) return 0;
+  return OneCharLen(src.data());
+}
+
 // Return (x & 0xC0) == 0x80;
 // Since trail bytes are always in [0x80, 0xBF], we can optimize:
 inline bool IsTrailByte(char x) { return static_cast<signed char>(x) < -0x40; }
@@ -308,5 +313,9 @@ namespace log_domain {
 double LogSum(const std::vector<double>& xs);
 
 }  // namespace log_domain
+
+void ConvertToUnicodeAlignment(absl::string_view orig, absl::string_view norm,
+                               std::vector<size_t>* norm_to_orig);
+
 }  // namespace sentencepiece
 #endif  // UTIL_H_

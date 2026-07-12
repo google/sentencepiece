@@ -24,6 +24,7 @@ project(sentencepiece VERSION ${SPM_VERSION} LANGUAGES C CXX)
 
 option(SPM_ENABLE_NFKC_COMPILE "Enables NFKC compile" OFF)
 option(SPM_ENABLE_SHARED "Builds shared libaries in addition to static libraries." ON)
+option(SPM_USE_UPB "Use upb for core engine" ON)
 option(SPM_BUILD_TEST "Builds test binaries." OFF)
 option(SPM_ENABLE_TCMALLOC "Enable TCMalloc if available." ON)
 option(SPM_TCMALLOC_STATIC "Link static library of TCMALLOC." OFF)
@@ -35,8 +36,8 @@ option(SPM_NLCODEC_BPE
        "Build the NLCodec fast BPE trainer from contrib/nlcodec (adds --nlcodec_bpe flag)."
        OFF)
 
-set(SPM_PROTOBUF_PROVIDER "internal" CACHE STRING "Provider of protobuf library")
-set_property(CACHE SPM_PROTOBUF_PROVIDER PROPERTY STRINGS "internal" "package")
+set(SPM_PROTOBUF_PROVIDER "package" CACHE STRING "Provider of protobuf library")
+set_property(CACHE SPM_PROTOBUF_PROVIDER PROPERTY STRINGS "package")
 set(SPM_ABSL_PROVIDER "module" CACHE STRING "Provider of absl library")
 set_property(CACHE SPM_ABSL_PROVIDER PROPERTY STRINGS "module" "package")
 
@@ -188,10 +189,8 @@ endif()
 if (SPM_ABSL_PROVIDER STREQUAL "module")
   include(FetchContent)
   FetchContent_Populate(abseil-cpp
-        GIT_REPOSITORY  https://github.com/abseil/abseil-cpp.git
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/abseil-cpp
-        GIT_PROGRESS TRUE
-        GIT_TAG 20260526.0)
+        URL             https://github.com/abseil/abseil-cpp/archive/refs/tags/20260526.0.tar.gz
+        SOURCE_DIR      ${CMAKE_CURRENT_SOURCE_DIR}/third_party/abseil-cpp)
   add_subdirectory(third_party/abseil-cpp)
   if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
     file(CREATE_LINK

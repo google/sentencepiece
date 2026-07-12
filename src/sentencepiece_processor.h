@@ -158,8 +158,8 @@ class ImmutableSentencePieceText_ImmutableSentencePiece {
   ImmutableSentencePieceText_ImmutableSentencePiece();
   ~ImmutableSentencePieceText_ImmutableSentencePiece() = default;
 
-  [[nodiscard]] const std::string& piece() const;
-  [[nodiscard]] const std::string& surface() const;
+  [[nodiscard]] absl::string_view piece() const;
+  [[nodiscard]] absl::string_view surface() const;
   [[nodiscard]] uint32_t id() const;
   [[nodiscard]] uint32_t begin() const;
   [[nodiscard]] uint32_t end() const;
@@ -184,7 +184,7 @@ class ImmutableSentencePieceText {
   [[nodiscard]] ImmutableSentencePieceText_ImmutableSentencePiece pieces(
       int index) const;
 
-  [[nodiscard]] const std::string& text() const;
+  [[nodiscard]] absl::string_view text() const;
   [[nodiscard]] float score() const;
 
   [[nodiscard]] util::bytes SerializeAsString() const;
@@ -754,7 +754,7 @@ class SentencePieceProcessor {
   [[nodiscard]] virtual int PieceToId(absl::string_view piece) const;
 
   // Returns the string representation of vocab with `id`.
-  [[nodiscard]] virtual const std::string& IdToPiece(int id) const;
+  [[nodiscard]] virtual absl::string_view IdToPiece(int id) const;
 
   // Returns the string representation of vocab with `id`.
   // Returns false when id is out of range.

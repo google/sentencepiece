@@ -744,8 +744,8 @@ absl::Status TrainerInterface::Save() const {
   if (output_model_proto_ != nullptr) {
     RETURN_IF_ERROR(Serialize(output_model_proto_));
   } else {
-    RETURN_IF_ERROR(SaveModel(trainer_spec_.model_prefix() + ".model"));
-    RETURN_IF_ERROR(SaveVocab(trainer_spec_.model_prefix() + ".vocab"));
+    RETURN_IF_ERROR(SaveModel(absl::StrCat(trainer_spec_.model_prefix(), ".model")));
+    RETURN_IF_ERROR(SaveVocab(absl::StrCat(trainer_spec_.model_prefix(), ".vocab")));
   }
   return absl::OkStatus();
 }

@@ -60,30 +60,29 @@ def find_abseil_lib(search_root):
 def get_protobuf_includes():
   prefix = '/I' if os.name == 'nt' else '-I'
   paths = [
-      '../src/builtin_pb',
-      './sentencepiece/src/builtin_pb',
-      '../third_party/protobuf-lite',
-      './sentencepiece/third_party/protobuf-lite',
+      '../src',
+      '../src/builtin_upb',
+      '../third_party/upb',
   ]
   return [prefix + os.path.normpath(p) for p in paths]
 
 
 def get_cflags_and_libs(root):
+  lib_dir = 'lib'
+  if not os.path.exists(os.path.join(root, 'lib/libsentencepiece.a')) and os.path.exists(os.path.join(root, 'lib64/libsentencepiece.a')):
+    lib_dir = 'lib64'
   cflags = [
       '-std=c++17',
       '-I' + os.path.normpath(os.path.join(root, 'include')),
+      '-DSPM_USE_UPB=1',
   ] + get_protobuf_includes()
   libs = []
-  if os.path.exists(os.path.join(root, 'lib/libsentencepiece.a')):
-    libs = [
-        os.path.join(root, 'lib/libsentencepiece.a'),
-        os.path.join(root, 'lib/libsentencepiece_train.a'),
-    ]
-  elif os.path.exists(os.path.join(root, 'lib64/libsentencepiece.a')):
-    libs = [
-        os.path.join(root, 'lib64/libsentencepiece.a'),
-        os.path.join(root, 'lib64/libsentencepiece_train.a'),
-    ]
+  sp_lib = os.path.join(root, lib_dir, 'libsentencepiece.a')
+  train_lib = os.path.join(root, lib_dir, 'libsentencepiece_train.a')
+  if os.path.exists(sp_lib):
+    libs.append(sp_lib)
+  if os.path.exists(train_lib):
+    libs.append(train_lib)
   return cflags, libs
 
 
@@ -167,20 +166,20 @@ class build_ext_win(_build_ext):
       cflags = [
           '/std:c++17',
           '/I' + os.path.normpath('..\\build_{}\\root\\include'.format(arch)),
+          '/DSPM_USE_UPB=1',
       ] + get_protobuf_includes()
       libs = [
           '..\\build_{}\\root\\lib\\sentencepiece.lib'.format(arch),
-          '..\\build_{}\\root\\lib\\sentencepiece_train.lib'.format(arch),
       ]
       libs.extend(find_abseil_lib('..\\build_{}\\third_party'.format(arch)))
     elif os.path.exists('..\\build\\root\\lib'):
       cflags = [
           '/std:c++17',
           '/I' + os.path.normpath('..\\build\\root\\include'),
+          '/DSPM_USE_UPB=1',
       ] + get_protobuf_includes()
       libs = [
           '..\\build\\root\\lib\\sentencepiece.lib',
-          '..\\build\\root\\lib\\sentencepiece_train.lib',
       ]
       libs.extend(find_abseil_lib('..\\build\\third_party'))
     else:
@@ -200,6 +199,7 @@ class build_ext_win(_build_ext):
           '-B',
           'build',
           '-DSPM_ENABLE_SHARED=OFF',
+          '-DSPM_USE_UPB=ON',
           #          '-DCMAKE_SHARED_LINKER_FLAGS="/OPT:REF /OPT:ICF /LTCG"',
           '-DCMAKE_INSTALL_PREFIX=build\\root',
       ])
@@ -217,10 +217,10 @@ class build_ext_win(_build_ext):
       cflags = [
           '/std:c++17',
           '/I' + os.path.normpath('.\\build\\root\\include'),
+          '/DSPM_USE_UPB=1',
       ] + get_protobuf_includes()
       libs = [
           '.\\build\\root\\lib\\sentencepiece.lib',
-          '.\\build\\root\\lib\\sentencepiece_train.lib',
       ]
       libs.extend(find_abseil_lib('.\\build\\third_party'))
 

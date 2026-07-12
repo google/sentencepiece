@@ -149,7 +149,7 @@ class ModelInterface {
 
   // Returns the string representation of vocab with `id`.
   // id must be 0 <= id < GetPieceSize().
-  [[nodiscard]] virtual const std::string& IdToPiece(int id) const {
+  [[nodiscard]] virtual absl::string_view IdToPiece(int id) const {
     DCHECK_GE(id, 0);
     DCHECK_LT(id, model_proto_->pieces_size());
     return model_proto_->pieces(id).piece();
