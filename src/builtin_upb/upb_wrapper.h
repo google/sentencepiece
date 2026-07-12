@@ -860,10 +860,10 @@ class ModelProtoWrapper {
 
 class SentencePieceTextWrapper {
  public:
-  SentencePieceTextWrapper() : arena_(upb_Arena_New()), owns_msg_(true) {
+  SentencePieceTextWrapper() : owns_msg_(true), arena_(upb_Arena_New()) {
     msg_ = sentencepiece_SentencePieceText_new(arena_);
   }
-  explicit SentencePieceTextWrapper(std::nullptr_t) : msg_(nullptr), arena_(nullptr), owns_msg_(false) {}
+  explicit SentencePieceTextWrapper(std::nullptr_t) : msg_(nullptr), owns_msg_(false), arena_(nullptr) {}
 
   virtual ~SentencePieceTextWrapper() {
     if (owns_msg_ && arena_) {
@@ -1446,8 +1446,7 @@ inline const upb_Arena* NBestSentencePieceText_Sub::arena() const { return paren
 
 inline NBestSentencePieceText_Sub* upb::NBestSentencePieceTextWrapper::add_nbests() {
   if (!msg_) return nullptr;
-  sentencepiece_SentencePieceText* sub_msg =
-      sentencepiece_NBestSentencePieceText_add_nbests(msg_, arena_);
+  sentencepiece_NBestSentencePieceText_add_nbests(msg_, arena_);
   
   int index = nbests_size() - 1;
   
