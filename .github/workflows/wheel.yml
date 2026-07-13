@@ -64,7 +64,15 @@ jobs:
 
       - name: Build wheels
         working-directory: python
+        shell: bash
         run: |
+          mkdir -p sentencepiece
+          for i in CMakeLists.txt LICENSE README.md VERSION.txt cmake config.h.in sentencepiece.pc.in src third_party
+          do
+            echo "copying ../${i} sentencepiece/${i}"
+            rm -rf "sentencepiece/${i}"
+            cp -f -R "../${i}" sentencepiece
+          done
           mkdir -p src/sentencepiece/package_data
           cp ../data/*.bin src/sentencepiece/package_data
           python -m cibuildwheel --output-dir wheelhouse
@@ -79,6 +87,7 @@ jobs:
 
       - name: Build sdist archive
         working-directory: python
+        shell: bash
         run: |
           sh build_sdist.sh
 

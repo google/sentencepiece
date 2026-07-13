@@ -18,9 +18,16 @@ else
   SRC_DIR=./sentencepiece
 fi
 
+if [ "${SPM_USE_PROTOC}" = "1" ]; then
+  SPM_USE_PROTOC_FLAG="-DSPM_USE_PROTOC=ON"
+else
+  SPM_USE_PROTOC_FLAG="-DSPM_USE_PROTOC=OFF"
+fi
+
 cmake ${SRC_DIR} -B ${BUILD_DIR} \
   -DSPM_ENABLE_SHARED=OFF \
   -DSPM_DISABLE_EMBEDDED_DATA=ON \
+  ${SPM_USE_PROTOC_FLAG} \
   -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
   -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
   -DCMAKE_CXX_FLAGS="-fPIC -fvisibility=default -ffunction-sections -fdata-sections"

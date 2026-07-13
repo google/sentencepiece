@@ -35,8 +35,6 @@ sys.path.append(os.path.join('.', 'test'))
 with open('src/sentencepiece/_version.py') as f:
   line = f.readline().strip()
   __version__ = line.split('=')[1].strip().strip("'")
-
-
 def is_gil_disabled():
   return sysconfig.get_config_var('Py_GIL_DISABLED')
 
@@ -59,10 +57,19 @@ def find_abseil_lib(search_root):
 
 def get_protobuf_includes():
   prefix = '/I' if os.name == 'nt' else '-I'
+  # Check if SPM_USE_PROTOC is requested
+  use_protoc = os.environ.get('SPM_USE_PROTOC', '0') == '1'
+  if use_protoc:
+    return []
+
+  if os.path.exists(os.path.join('.', 'sentencepiece', 'src', 'CMakeLists.txt')):
+    src_root = os.path.join('.', 'sentencepiece')
+  else:
+    src_root = '..'
   paths = [
-      '../src',
-      '../src/builtin_upb',
-      '../third_party/upb',
+      os.path.join(src_root, 'src'),
+      os.path.join(src_root, 'src', 'builtin_upb'),
+      os.path.join(src_root, 'third_party', 'upb'),
   ]
   return [prefix + os.path.normpath(p) for p in paths]
 
@@ -74,8 +81,11 @@ def get_cflags_and_libs(root):
   cflags = [
       '-std=c++17',
       '-I' + os.path.normpath(os.path.join(root, 'include')),
-      '-DSPM_USE_UPB=1',
-  ] + get_protobuf_includes()
+  ]
+  use_protoc = os.environ.get('SPM_USE_PROTOC', '0') == '1'
+  if use_protoc:
+    cflags.append('-DSPM_USE_PROTOC=1')
+  cflags += get_protobuf_includes()
   libs = []
   sp_lib = os.path.join(root, lib_dir, 'libsentencepiece.a')
   train_lib = os.path.join(root, lib_dir, 'libsentencepiece_train.a')
@@ -161,26 +171,37 @@ class build_ext_win(_build_ext):
   def build_extension(self, ext):
     # Must pre-install sentencepice into build directory.
     arch = get_win_arch()
+    use_protoc = os.environ.get('SPM_USE_PROTOC', '0') == '1'
 
     if os.path.exists('..\\build_{}\\root\\lib'.format(arch)):
       cflags = [
           '/std:c++17',
           '/I' + os.path.normpath('..\\build_{}\\root\\include'.format(arch)),
-          '/DSPM_USE_UPB=1',
-      ] + get_protobuf_includes()
+      ]
+      if use_protoc:
+        cflags.append('/DSPM_USE_PROTOC=1')
+      cflags += get_protobuf_includes()
       libs = [
           '..\\build_{}\\root\\lib\\sentencepiece.lib'.format(arch),
       ]
+      train_lib = '..\\build_{}\\root\\lib\\sentencepiece_train.lib'.format(arch)
+      if os.path.exists(train_lib):
+        libs.append(train_lib)
       libs.extend(find_abseil_lib('..\\build_{}\\third_party'.format(arch)))
     elif os.path.exists('..\\build\\root\\lib'):
       cflags = [
           '/std:c++17',
           '/I' + os.path.normpath('..\\build\\root\\include'),
-          '/DSPM_USE_UPB=1',
-      ] + get_protobuf_includes()
+      ]
+      if use_protoc:
+        cflags.append('/DSPM_USE_PROTOC=1')
+      cflags += get_protobuf_includes()
       libs = [
           '..\\build\\root\\lib\\sentencepiece.lib',
       ]
+      train_lib = '..\\build\\root\\lib\\sentencepiece_train.lib'
+      if os.path.exists(train_lib):
+        libs.append(train_lib)
       libs.extend(find_abseil_lib('..\\build\\third_party'))
     else:
       # build library locally with cmake and vc++.
@@ -199,8 +220,7 @@ class build_ext_win(_build_ext):
           '-B',
           'build',
           '-DSPM_ENABLE_SHARED=OFF',
-          '-DSPM_USE_UPB=ON',
-          #          '-DCMAKE_SHARED_LINKER_FLAGS="/OPT:REF /OPT:ICF /LTCG"',
+          '-DSPM_USE_PROTOC=ON' if use_protoc else '-DSPM_USE_PROTOC=OFF',
           '-DCMAKE_INSTALL_PREFIX=build\\root',
       ])
       subprocess.check_call([
@@ -217,11 +237,16 @@ class build_ext_win(_build_ext):
       cflags = [
           '/std:c++17',
           '/I' + os.path.normpath('.\\build\\root\\include'),
-          '/DSPM_USE_UPB=1',
-      ] + get_protobuf_includes()
+      ]
+      if use_protoc:
+        cflags.append('/DSPM_USE_PROTOC=1')
+      cflags += get_protobuf_includes()
       libs = [
           '.\\build\\root\\lib\\sentencepiece.lib',
       ]
+      train_lib = '.\\build\\root\\lib\\sentencepiece_train.lib'
+      if os.path.exists(train_lib):
+        libs.append(train_lib)
       libs.extend(find_abseil_lib('.\\build\\third_party'))
 
     cflags.extend(find_absl_include(is_msvc=True))

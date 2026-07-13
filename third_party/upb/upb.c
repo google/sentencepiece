@@ -6873,9 +6873,13 @@ static size_t upb_MtDecoder_SizeOfRep(upb_FieldRep rep,
 
 static size_t upb_MtDecoder_AlignOfRep(upb_FieldRep rep,
                                        upb_MiniTablePlatform platform) {
-  enum { string_view_align_32 = 4, string_view_align_64 = 8 };
-  UPB_STATIC_ASSERT(UPB_ALIGN_OF(upb_StringView) ==
-                        UPB_SIZE(string_view_align_32, string_view_align_64),
+  enum {
+    string_view_align_32 = UPB_ALIGN_OF(upb_StringView),
+    string_view_align_64 = 8
+  };
+  UPB_STATIC_ASSERT(UPB_ALIGN_OF(upb_StringView) == 8 ||
+                        UPB_ALIGN_OF(upb_StringView) == 4 ||
+                        UPB_ALIGN_OF(upb_StringView) == 2,
                     "StringView size mismatch");
 
   static const uint8_t kRepToAlign32[] = {

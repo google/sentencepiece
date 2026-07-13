@@ -79,6 +79,7 @@ python/sentencepiece
 python/test/m_*.model
 python/test/m_*.vocab
 python/test/sp_*.pickle
+python/build
 
 third_party/absl
 

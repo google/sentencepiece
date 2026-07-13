@@ -378,16 +378,21 @@ Error, UINTPTR_MAX is undefined
 #define UPB_LONGJMP(buf, val) longjmp(buf, val)
 #endif
 
-#if ((__STDC_VERSION__ >= 201112L) && !defined(__STDC_NO_ATOMICS__)) || \
+#ifdef __cplusplus
+#define UPB_USE_CPP_ATOMICS
+#elif ((__STDC_VERSION__ >= 201112L) && !defined(__STDC_NO_ATOMICS__)) || \
     UPB_HAS_EXTENSION(c_atomic) ||                                      \
     defined(__GNUC__)  // GCC supported atomics as an extension before it
-                       // supported __has_extension
+                        // supported __has_extension
 #define UPB_USE_C11_ATOMICS
 #elif defined(_MSC_VER)
 #define UPB_USE_MSC_ATOMICS
 #endif
 
-#if defined(UPB_USE_C11_ATOMICS)
+#if defined(UPB_USE_CPP_ATOMICS)
+#include <atomic>
+#define UPB_ATOMIC(T) std::atomic<T>
+#elif defined(UPB_USE_C11_ATOMICS)
 #define UPB_ATOMIC(T) _Atomic(T)
 #elif defined(UPB_USE_MSC_ATOMICS)
 #define UPB_ATOMIC(T) volatile T
@@ -6464,7 +6469,35 @@ int upb_Unicode_ToUTF8(uint32_t cp, char* out);
 #define UPB_PORT_ATOMIC_H_
 
 
-#ifdef UPB_USE_C11_ATOMICS
+#ifdef UPB_USE_CPP_ATOMICS
+
+#include <atomic>
+
+#ifdef __cplusplus
+using std::memory_order_relaxed;
+using std::memory_order_consume;
+using std::memory_order_acquire;
+using std::memory_order_release;
+using std::memory_order_acq_rel;
+using std::memory_order_seq_cst;
+#endif
+
+#define upb_Atomic_Init(addr, val) (addr)->store(val, std::memory_order_relaxed)
+#define upb_Atomic_Load(addr, order) (addr)->load(order)
+#define upb_Atomic_Store(addr, val, order) (addr)->store(val, order)
+#define upb_Atomic_Exchange(addr, val, order) (addr)->exchange(val, order)
+#define upb_Atomic_CompareExchangeStrong(addr, expected, desired,      \
+                                         success_order, failure_order) \
+  (addr)->compare_exchange_strong(*(expected), desired, success_order, \
+                                  failure_order)
+#define upb_Atomic_CompareExchangeWeak(addr, expected, desired, success_order, \
+                                       failure_order)                          \
+  (addr)->compare_exchange_weak(*(expected), desired, success_order,           \
+                                failure_order)
+#define upb_Atomic_Add(addr, val, order) (addr)->fetch_add(val, order)
+#define upb_Atomic_Sub(addr, val, order) (addr)->fetch_sub(val, order)
+
+#elif defined(UPB_USE_C11_ATOMICS)
 
 // IWYU pragma: begin_exports
 #include <stdatomic.h>
@@ -6501,7 +6534,8 @@ int upb_Unicode_ToUTF8(uint32_t cp, char* out);
 static int32_t upb_Atomic_LoadMsc32(int32_t volatile* addr) {
   // Compare exchange with an unlikely value reduces the risk of a spurious
   // (but harmless) store
-  return _InterlockedCompareExchange(addr, 0xDEADC0DE, 0xDEADC0DE);
+  return _InterlockedCompareExchange((long volatile*)addr, 0xDEADC0DE,
+                                     0xDEADC0DE);
 }
 
 #pragma intrinsic(_InterlockedCompareExchange)
@@ -6509,7 +6543,8 @@ static bool upb_Atomic_CompareExchangeMscP32(int32_t volatile* addr,
                                              int32_t* expected,
                                              int32_t desired) {
   int32_t expect_val = *expected;
-  int32_t actual_val = _InterlockedCompareExchange(addr, desired, expect_val);
+  int32_t actual_val = _InterlockedCompareExchange(
+      (long volatile*)addr, desired, expect_val);
   if (expect_val != actual_val) {
     *expected = actual_val;
     return false;
@@ -6524,7 +6559,8 @@ static bool upb_Atomic_CompareExchangeMscP32(int32_t volatile* addr,
 static uintptr_t upb_Atomic_LoadMsc64(uint64_t volatile* addr) {
   // Compare exchange with an unlikely value reduces the risk of a spurious
   // (but harmless) store
-  return _InterlockedCompareExchange64(addr, 0xDEADC0DEBAADF00D,
+  return _InterlockedCompareExchange64((__int64 volatile*)addr,
+                                       0xDEADC0DEBAADF00D,
                                        0xDEADC0DEBAADF00D);
 }
 
@@ -6533,8 +6569,8 @@ static bool upb_Atomic_CompareExchangeMscP64(uint64_t volatile* addr,
                                              uint64_t* expected,
                                              uint64_t desired) {
   uint64_t expect_val = *expected;
-  uint64_t actual_val =
-      _InterlockedCompareExchange64(addr, desired, expect_val);
+  uint64_t actual_val = _InterlockedCompareExchange64(
+      (__int64 volatile*)addr, desired, expect_val);
   if (expect_val != actual_val) {
     *expected = actual_val;
     return false;
@@ -6596,9 +6632,9 @@ static bool upb_Atomic_CompareExchangeMscP64(uint64_t volatile* addr,
 UPB_INLINE void _upb_Atomic_StoreP(void volatile* addr, uint64_t val,
                                    size_t size) {
   if (size == sizeof(int32_t)) {
-    (void)_InterlockedExchange((int32_t volatile*)addr, (int32_t)val);
+    (void)_InterlockedExchange((long volatile*)addr, (int32_t)val);
   } else {
-    (void)_InterlockedExchange64((uint64_t volatile*)addr, val);
+    (void)_InterlockedExchange64((__int64 volatile*)addr, val);
   }
 }
 
@@ -6619,9 +6655,9 @@ UPB_INLINE int64_t _upb_Atomic_LoadP(void volatile* addr, size_t size) {
 UPB_INLINE int64_t _upb_Atomic_ExchangeP(void volatile* addr, uint64_t val,
                                          size_t size) {
   if (size == sizeof(int32_t)) {
-    return (int64_t)_InterlockedExchange((int32_t volatile*)addr, (int32_t)val);
+    return (int64_t)_InterlockedExchange((long volatile*)addr, (int32_t)val);
   } else {
-    return (int64_t)_InterlockedExchange64((uint64_t volatile*)addr, val);
+    return (int64_t)_InterlockedExchange64((__int64 volatile*)addr, val);
   }
 }
 
@@ -16945,7 +16981,7 @@ UPB_INLINE void* _upb_DefBuilder_AllocCounted(upb_DefBuilder* ctx, size_t size,
 // adding, so we know which entries to remove if building this file fails.
 UPB_INLINE void _upb_DefBuilder_Add(upb_DefBuilder* ctx, const char* name,
                                     upb_value v) {
-  upb_StringView sym = {.data = name, .size = strlen(name)};
+  upb_StringView sym = {name, strlen(name)};
   bool ok = _upb_DefPool_InsertSym(ctx->symtab, sym, v, ctx->status);
   if (!ok) _upb_DefBuilder_FailJmp(ctx);
 }

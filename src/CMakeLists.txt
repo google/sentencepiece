@@ -24,7 +24,7 @@ list(APPEND SPM_LIBS absl::check)
 list(APPEND SPM_LIBS absl::random_random)
 list(APPEND SPM_LIBS absl::time)
 
-if (NOT SPM_USE_UPB)
+if (SPM_USE_PROTOC)
   if (SPM_PROTOBUF_PROVIDER STREQUAL "package")
     find_package(Protobuf REQUIRED)
     include_directories(${Protobuf_INCLUDE_DIRS})
@@ -36,6 +36,16 @@ if (NOT SPM_USE_UPB)
   else()
     message(FATAL_ERROR "Unsupported protobuf provider: ${SPM_PROTOBUF_PROVIDER}")
   endif()
+else()
+  # In UPB mode, manually specify our protobuf wrapper headers so they are
+  # installed as public headers.
+  set(SPM_PROTO_HDRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb/sentencepiece.pb.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb/upb_wrapper.h
+  )
+  set(SPM_MODEL_PROTO_HDRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb/sentencepiece_model.pb.h
+  )
 endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
@@ -72,7 +82,7 @@ set(SPM_COMMON_HDRS
   unigram_model.h
 )
 
-if (SPM_USE_UPB)
+if (NOT SPM_USE_PROTOC)
   set(UPB_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/upb/upb.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/upb/utf8_range.c
@@ -152,6 +162,10 @@ set(SPM_TEST_SRCS
   word_model_trainer_test.cc
   pretokenizer_for_training_test.cc)
 
+if (SPM_USE_UPB)
+  list(APPEND SPM_TEST_SRCS builtin_upb/upb_wrapper_test.cc)
+endif()
+
 if (SPM_NLCODEC_BPE)
   set(NLCODEC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/nlcodec)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
@@ -208,14 +222,14 @@ endif()
 
 if (SPM_ENABLE_SHARED)
   add_library(sentencepiece SHARED ${SPM_SRCS})
-  if (SPM_INTERNAL_PROTO_INC AND NOT SPM_USE_UPB)
+  if (SPM_INTERNAL_PROTO_INC AND SPM_USE_PROTOC)
     target_include_directories(sentencepiece PUBLIC ${SPM_INTERNAL_PROTO_INC})
   endif()
   if (ANDROID)
     target_link_libraries(sentencepiece PRIVATE log)
   endif()
   add_library(sentencepiece_train SHARED ${SPM_TRAIN_SRCS})
-  if (SPM_INTERNAL_PROTO_INC AND NOT SPM_USE_UPB)
+  if (SPM_INTERNAL_PROTO_INC AND SPM_USE_PROTOC)
     target_include_directories(sentencepiece_train PUBLIC ${SPM_INTERNAL_PROTO_INC})
   endif()
   if (ANDROID)
@@ -224,42 +238,45 @@ if (SPM_ENABLE_SHARED)
 endif()
 
 add_library(sentencepiece-static STATIC ${SPM_SRCS})
-if (SPM_INTERNAL_PROTO_INC AND NOT SPM_USE_UPB)
+if (SPM_INTERNAL_PROTO_INC AND SPM_USE_PROTOC)
   target_include_directories(sentencepiece-static PUBLIC ${SPM_INTERNAL_PROTO_INC})
 endif()
 add_library(sentencepiece_train-static STATIC ${SPM_TRAIN_SRCS})
-if (SPM_INTERNAL_PROTO_INC AND NOT SPM_USE_UPB)
+if (SPM_INTERNAL_PROTO_INC AND SPM_USE_PROTOC)
   target_include_directories(sentencepiece_train-static PUBLIC ${SPM_INTERNAL_PROTO_INC})
 endif()
 
-if (SPM_USE_UPB)
+if (NOT SPM_USE_PROTOC)
   if (SPM_ENABLE_SHARED)
     target_link_libraries(sentencepiece PUBLIC ${SPM_LIBS})
-    target_compile_definitions(sentencepiece PUBLIC SPM_USE_UPB=1)
     target_include_directories(sentencepiece PUBLIC
       ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb
       ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/upb
     )
     target_link_libraries(sentencepiece_train PUBLIC ${SPM_LIBS} sentencepiece)
-    target_compile_definitions(sentencepiece_train PUBLIC SPM_USE_UPB=1)
     target_include_directories(sentencepiece_train PUBLIC
       ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb
       ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/upb
     )
   endif()
   target_link_libraries(sentencepiece-static INTERFACE ${SPM_LIBS})
-  target_compile_definitions(sentencepiece-static PUBLIC SPM_USE_UPB=1)
   target_include_directories(sentencepiece-static PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/upb
   )
   target_link_libraries(sentencepiece_train-static INTERFACE sentencepiece-static ${SPM_LIBS})
-  target_compile_definitions(sentencepiece_train-static PUBLIC SPM_USE_UPB=1)
   target_include_directories(sentencepiece_train-static PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb
     ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/upb
   )
 else()
+  if (SPM_ENABLE_SHARED)
+    target_compile_definitions(sentencepiece PUBLIC SPM_USE_PROTOC=1)
+    target_compile_definitions(sentencepiece_train PUBLIC SPM_USE_PROTOC=1)
+  endif()
+  target_compile_definitions(sentencepiece-static PUBLIC SPM_USE_PROTOC=1)
+  target_compile_definitions(sentencepiece_train-static PUBLIC SPM_USE_PROTOC=1)
+
   target_link_libraries(sentencepiece-static INTERFACE ${SPM_LIBS})
   if (SPM_ENABLE_SHARED)
     target_link_libraries(sentencepiece PUBLIC ${SPM_LIBS})
@@ -295,7 +312,7 @@ set_target_properties(sentencepiece_train-static PROPERTIES OUTPUT_NAME "sentenc
 
 if (NOT WIN32)
   set(CMAKE_CXX_FLAGS "-O3 -Wall -fPIC ${CMAKE_CXX_FLAGS}")
-  if (NOT SPM_USE_UPB)
+  if (SPM_USE_PROTOC)
     set_source_files_properties(
       sentencepiece.pb.cc sentencepiece_model.pb.cc
       PROPERTIES COMPILE_FLAGS "-Wno-misleading-indentation")
