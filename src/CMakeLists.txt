@@ -42,6 +42,7 @@ else()
   set(SPM_PROTO_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb/sentencepiece.pb.h
     ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb/upb_wrapper.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb/upb_message_wrapper.h
   )
   set(SPM_MODEL_PROTO_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/builtin_upb/sentencepiece_model.pb.h
@@ -162,7 +163,7 @@ set(SPM_TEST_SRCS
   word_model_trainer_test.cc
   pretokenizer_for_training_test.cc)
 
-if (SPM_USE_UPB)
+if (NOT SPM_USE_PROTOC)
   list(APPEND SPM_TEST_SRCS builtin_upb/upb_wrapper_test.cc)
 endif()
 

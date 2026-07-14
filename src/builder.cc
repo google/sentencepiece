@@ -674,7 +674,7 @@ absl::Status Builder::BuildNFD_CFMap(CharsMap* chars_map) {
 // static
 absl::Status Builder::LoadCharsMap(absl::string_view filename,
                                    CharsMap* chars_map) {
-  LOG(INFO) << "Loading mapping file: " << filename.data();
+  LOG(INFO) << "Loading mapping file: " << filename;
   RET_CHECK(chars_map);
 
   auto input = filesystem::NewReadableFile(filename);

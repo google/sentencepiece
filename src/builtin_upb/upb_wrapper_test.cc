@@ -292,5 +292,68 @@ TEST(UpbWrapperTest, ThreadSafetyLazyInitRace) {
   }
 }
 
+// 7. Verify that OOB write on ModelProto pieces is safely ignored and doesn't crash.
+TEST(UpbWrapperTest, OOBWritePoC) {
+  ModelProto model;
+  // Initialize with 0 pieces.
+  ASSERT_EQ(model.pieces_size(), 0);
+
+  // Get a wrapper pointing to index 99999 (which is OOB)
+  auto piece = model.pieces(99999);
+
+  std::cout << "DEBUG: Executing OOB write. Expecting NO crash (safe ignore)..." << std::endl;
+  // With boundary checks, these should be safe no-ops and not crash.
+  piece.set_score(1.0f);
+  piece.set_type(ModelProto_SentencePiece::NORMAL);
+  piece.set_piece("test");
+
+  // We should reach here successfully.
+  ASSERT_TRUE(true);
+}
+
+// 8. Verify that OOB write on SentencePieceText is safely ignored and doesn't crash.
+TEST(UpbWrapperTest, SentencePieceTextOOBWritePoC) {
+  SentencePieceText spt;
+  // Initialize with 0 pieces.
+  ASSERT_EQ(spt.pieces_size(), 0);
+
+  std::cout << "DEBUG: Executing SentencePieceText OOB write. Expecting NO crash..." << std::endl;
+  // With boundary checks, these should be safe no-ops or return nullptr.
+  spt.set_id_at(99999, 123);
+  spt.set_piece_at(99999, "test");
+  spt.set_surface_at(99999, "test");
+  spt.set_begin_at(99999, 0);
+  spt.set_end_at(99999, 1);
+  spt.SwapElementsData(99999, 0);
+
+  auto* piece = spt.mutable_pieces(99999);
+  ASSERT_EQ(piece, nullptr);
+
+  // We should reach here successfully.
+  ASSERT_TRUE(true);
+}
+
+// 9. Verify that OOB access on NBestSentencePieceText is safely ignored and doesn't crash.
+TEST(UpbWrapperTest, NBestSentencePieceTextOOBWritePoC) {
+  NBestSentencePieceText nbest;
+  // Initialize with 0 nbests.
+  ASSERT_EQ(nbest.nbests_size(), 0);
+
+  std::cout << "DEBUG: Executing NBestSentencePieceText OOB write. Expecting NO crash..." << std::endl;
+  // With boundary checks, this should return nullptr instead of crashing.
+  auto* sub = nbest.mutable_nbests_at(99999);
+  ASSERT_EQ(sub, nullptr);
+}
+
+// 10. Verify that OOB access on ModelProto mutable_pieces is safely ignored.
+TEST(UpbWrapperTest, ModelProtoMutablePiecesOOBPoC) {
+  ModelProto model;
+  ASSERT_EQ(model.pieces_size(), 0);
+
+  std::cout << "DEBUG: Executing ModelProto mutable_pieces OOB. Expecting nullptr..." << std::endl;
+  // With boundary checks, this should return nullptr instead of crashing.
+  auto* p = model.mutable_pieces(99999);
+  ASSERT_EQ(p, nullptr);
+}
 }  // namespace
 }  // namespace sentencepiece

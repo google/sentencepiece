@@ -33,36 +33,9 @@
 // Include the upb generated headers
 #include "sentencepiece.upb.h"
 #include "sentencepiece_model.upb.h"
+#include "builtin_upb/upb_message_wrapper.h"
 
 namespace sentencepiece {
-class ProtoStr : public absl::string_view {
- public:
-  ProtoStr(absl::string_view sv) : absl::string_view(sv) {}
-  ProtoStr(const char* s) : absl::string_view(s ? s : "") {}
-  ProtoStr(upb_StringView sv) : absl::string_view(sv.data, sv.size) {}
-
-  operator std::string() const { return std::string(*this); }
-  bool operator==(const std::string& other) const {
-    return absl::string_view(*this) == other;
-  }
-  friend bool operator==(const std::string& a, const ProtoStr& b) {
-    return a == absl::string_view(b);
-  }
-};
-
-inline upb_StringView MakeUpbString(absl::string_view val, upb_Arena* arena) {
-  upb_StringView sv;
-  if (arena && !val.empty()) {
-    char* ptr = static_cast<char*>(upb_Arena_Malloc(arena, val.size()));
-    memcpy(ptr, val.data(), val.size());
-    sv.data = ptr;
-    sv.size = val.size();
-  } else {
-    sv.data = nullptr;
-    sv.size = 0;
-  }
-  return sv;
-}
 
 class TrainerSpec;
 class NormalizerSpec;
@@ -108,45 +81,7 @@ class ModelProto_SentencePiece {
 
 namespace upb {
 
-#define DEFINE_UPB_SERIALIZATION_METHODS(ClassName, CPrefix)                   \
-  std::string SerializeAsString() const {                                      \
-    if (!msg_) return "";                                                      \
-    size_t len;                                                                \
-    upb_Arena* tmp_arena = upb_Arena_New();                                    \
-    char* ptr = CPrefix##_serialize(msg_, tmp_arena, &len);                    \
-    std::string ret;                                                           \
-    if (ptr) {                                                                 \
-      ret.assign(ptr, len);                                                    \
-    }                                                                          \
-    upb_Arena_Free(tmp_arena);                                                 \
-    return ret;                                                                \
-  }                                                                            \
-  bool ParseFromArray(const void* data, int size) {                            \
-    if (owns_msg_ && arena_) {                                                 \
-      upb_Arena_Free(arena_);                                                  \
-    }                                                                          \
-    arena_ = upb_Arena_New();                                                  \
-    owns_msg_ = true;                                                          \
-    msg_ = CPrefix##_parse(reinterpret_cast<const char*>(data), size, arena_); \
-    OnArenaReset();                                                            \
-    return msg_ != nullptr;                                                    \
-  }                                                                            \
-  bool ParseFromString(const std::string& bytes) {                             \
-    return ParseFromArray(bytes.data(), bytes.size());                         \
-  }                                                                            \
-  void CopyFrom(const ClassName& other) {                                      \
-    std::string bytes = other.SerializeAsString();                             \
-    ParseFromString(bytes);                                                    \
-  }                                                                            \
-  void Clear() {                                                               \
-    if (owns_msg_ && arena_) {                                                 \
-      upb_Arena_Free(arena_);                                                  \
-    }                                                                          \
-    arena_ = upb_Arena_New();                                                  \
-    owns_msg_ = true;                                                          \
-    msg_ = CPrefix##_new(arena_);                                              \
-    OnArenaReset();                                                            \
-  }
+
 
 class SentencePieceTextWrapper;
 }  // namespace upb
@@ -197,207 +132,35 @@ class NBestSentencePieceTextWrapper;
 class SelfTestDataWrapper;
 class SelfTestData_SampleWrapper;
 
-class RepeatedStringWrapper {
- public:
-  RepeatedStringWrapper(const upb_StringView* arr, size_t size)
-      : arr_(arr), size_(size) {}
 
-  class Iterator {
-   public:
-    using iterator_category = std::forward_iterator_tag;
-    using value_type = ProtoStr;
-    using difference_type = std::ptrdiff_t;
-    using pointer = ProtoStr*;
-    using reference = ProtoStr;
-
-    Iterator(const upb_StringView* arr, size_t index)
-        : arr_(arr), index_(index) {}
-    Iterator& operator++() {
-      ++index_;
-      return *this;
-    }
-    Iterator operator++(int) {
-      Iterator tmp = *this;
-      ++index_;
-      return tmp;
-    }
-    bool operator==(const Iterator& other) const {
-      return index_ == other.index_;
-    }
-    bool operator!=(const Iterator& other) const {
-      return index_ != other.index_;
-    }
-    ProtoStr operator*() const { return ProtoStr(arr_[index_]); }
-
-   private:
-    const upb_StringView* arr_;
-    size_t index_;
-  };
-
-  Iterator begin() const { return Iterator(arr_, 0); }
-  Iterator end() const { return Iterator(arr_, size_); }
-  size_t size() const { return size_; }
-  bool empty() const { return size_ == 0; }
-  ProtoStr operator[](size_t index) const { return ProtoStr(arr_[index]); }
-
- private:
-  const upb_StringView* arr_;
-  size_t size_;
-};
-
-#define DEFINE_UPB_PRIMITIVE_ACCESSOR(FieldName, Type, DefaultVal, UpbPrefix) \
-  Type FieldName() const {                                                    \
-    return msg_ ? UpbPrefix##_##FieldName(msg_) : DefaultVal;                 \
-  }                                                                           \
-  void set_##FieldName(Type val) {                                            \
-    if (msg_) {                                                               \
-      UpbPrefix##_set_##FieldName(msg_, val);                                 \
-      if (on_change_) on_change_(msg_);                                       \
-    }                                                                         \
-  }                                                                           \
-  void clear_##FieldName() {                                                  \
-    if (msg_) {                                                               \
-      UpbPrefix##_clear_##FieldName(msg_);                                    \
-      if (on_change_) on_change_(msg_);                                       \
-    }                                                                         \
-  }
-
-#define DEFINE_UPB_STRING_ACCESSOR(FieldName, DefaultVal, UpbPrefix)    \
-  ProtoStr FieldName() const {                                          \
-    if (!msg_ || !UpbPrefix##_has_##FieldName(msg_)) return DefaultVal; \
-    return UpbPrefix##_##FieldName(msg_);                               \
-  }                                                                     \
-  void set_##FieldName(absl::string_view val) {                         \
-    if (msg_ && arena_) {                                               \
-      UpbPrefix##_set_##FieldName(msg_, MakeUpbString(val, arena_));    \
-      if (on_change_) on_change_(msg_);                                 \
-    }                                                                   \
-  }                                                                     \
-  void set_##FieldName(const char* data, size_t size) {                 \
-    set_##FieldName(absl::string_view(data, size));                     \
-  }                                                                     \
-  void clear_##FieldName() {                                            \
-    if (msg_) {                                                         \
-      UpbPrefix##_clear_##FieldName(msg_);                              \
-      if (on_change_) on_change_(msg_);                                 \
-    }                                                                   \
-  }
-
-#define DEFINE_UPB_HAS_FIELD_ACCESSOR(FieldName, UpbPrefix) \
-  bool has_##FieldName() const {                            \
-    return msg_ && UpbPrefix##_has_##FieldName(msg_);       \
-  }
-
-#define DEFINE_UPB_ENUM_ACCESSOR(FieldName, EnumType, DefaultVal, UpbPrefix) \
-  EnumType FieldName() const {                                               \
-    return msg_ ? static_cast<EnumType>(UpbPrefix##_##FieldName(msg_))       \
-                : DefaultVal;                                                \
-  }                                                                          \
-  void set_##FieldName(EnumType type) {                                      \
-    if (msg_) {                                                              \
-      UpbPrefix##_set_##FieldName(msg_, static_cast<int32_t>(type));         \
-      if (on_change_) on_change_(msg_);                                      \
-    }                                                                        \
-  }                                                                          \
-  void clear_##FieldName() {                                                 \
-    if (msg_) {                                                              \
-      UpbPrefix##_clear_##FieldName(msg_);                                   \
-      if (on_change_) on_change_(msg_);                                      \
-    }                                                                        \
-  }
-
-#define DEFINE_UPB_REPEATED_STRING_ACCESSOR(FieldName, UpbPrefix)            \
-  int FieldName##_size() const {                                             \
-    if (!msg_) return 0;                                                     \
-    size_t size;                                                             \
-    UpbPrefix##_##FieldName(msg_, &size);                                    \
-    return size;                                                             \
-  }                                                                          \
-  ProtoStr FieldName(int index) const {                                      \
-    if (!msg_) return "";                                                    \
-    size_t size;                                                             \
-    const upb_StringView* arr = UpbPrefix##_##FieldName(msg_, &size);        \
-    if (index < 0 || static_cast<size_t>(index) >= size) return "";          \
-    return arr[index];                                                       \
-  }                                                                          \
-  RepeatedStringWrapper FieldName() const {                                  \
-    if (!msg_) return RepeatedStringWrapper(nullptr, 0);                     \
-    size_t size;                                                             \
-    const upb_StringView* arr = UpbPrefix##_##FieldName(msg_, &size);        \
-    return RepeatedStringWrapper(arr, size);                                 \
-  }                                                                          \
-  void add_##FieldName(const std::string& val) {                             \
-    if (msg_ && arena_) {                                                    \
-      UpbPrefix##_add_##FieldName(msg_, MakeUpbString(val, arena_), arena_); \
-      if (on_change_) on_change_(msg_);                                      \
-    }                                                                        \
-  }                                                                          \
-  void clear_##FieldName() {                                                 \
-    if (msg_) {                                                              \
-      UpbPrefix##_clear_##FieldName(msg_);                                   \
-      if (on_change_) on_change_(msg_);                                      \
-    }                                                                        \
-  }
 
 class TrainerSpecWrapper {
   friend class upb::ModelProtoWrapper;
 
  public:
-  TrainerSpecWrapper() : arena_(upb_Arena_New()), owns_msg_(true) {
-    msg_ = sentencepiece_TrainerSpec_new(arena_);
+  TrainerSpecWrapper() {
+    upb_Arena* arena = upb_Arena_New();
+    holder_.Reset(sentencepiece_TrainerSpec_new(arena), arena, true);
   }
   explicit TrainerSpecWrapper(const sentencepiece_TrainerSpec* msg,
                               upb_Arena* arena = nullptr)
-      : msg_(const_cast<sentencepiece_TrainerSpec*>(msg)),
-        arena_(arena),
-        owns_msg_(false) {}
+      : holder_(const_cast<sentencepiece_TrainerSpec*>(msg), arena, false) {}
 
   TrainerSpecWrapper(
       const sentencepiece_TrainerSpec* msg, upb_Arena* arena,
       std::function<void(const sentencepiece_TrainerSpec*)> on_change)
-      : msg_(const_cast<sentencepiece_TrainerSpec*>(msg)),
-        arena_(arena),
-        owns_msg_(false),
+      : holder_(const_cast<sentencepiece_TrainerSpec*>(msg), arena, false),
         on_change_(on_change) {}
 
-  TrainerSpecWrapper(const TrainerSpecWrapper& other)
-      : arena_(upb_Arena_New()), owns_msg_(true) {
-    msg_ = sentencepiece_TrainerSpec_new(arena_);
+  TrainerSpecWrapper(const TrainerSpecWrapper& other) {
+    upb_Arena* arena = upb_Arena_New();
+    holder_.Reset(sentencepiece_TrainerSpec_new(arena), arena, true);
     CopyFrom(other);
   }
 
-  TrainerSpecWrapper& operator=(const TrainerSpecWrapper& other) {
-    if (this != &other) {
-      if (owns_msg_) {
-        if (arena_) upb_Arena_Free(arena_);
-        arena_ = upb_Arena_New();
-        owns_msg_ = true;
-        CopyFrom(other);
-      } else {
-        if (other.msg_) {
-          size_t size = 0;
-          upb_Arena* tmp_arena = upb_Arena_New();
-          char* buf =
-              sentencepiece_TrainerSpec_serialize(other.msg_, tmp_arena, &size);
-          if (buf) {
-            msg_ = sentencepiece_TrainerSpec_parse(buf, size, arena_);
-            if (on_change_) on_change_(msg_);
-          }
-          upb_Arena_Free(tmp_arena);
-        } else {
-          msg_ = nullptr;
-          if (on_change_) on_change_(msg_);
-        }
-      }
-    }
-    return *this;
-  }
+  DEFINE_UPB_ASSIGNMENT_OPERATOR(TrainerSpecWrapper, sentencepiece_TrainerSpec)
 
-  virtual ~TrainerSpecWrapper() {
-    if (owns_msg_ && arena_) {
-      upb_Arena_Free(arena_);
-    }
-  }
+  virtual ~TrainerSpecWrapper() = default;
 
   DEFINE_UPB_SERIALIZATION_METHODS(TrainerSpecWrapper,
                                    sentencepiece_TrainerSpec)
@@ -497,9 +260,7 @@ class TrainerSpecWrapper {
                              sentencepiece_TrainerSpec)
 
  private:
-  sentencepiece_TrainerSpec* msg_;
-  upb_Arena* arena_;
-  bool owns_msg_ = false;
+  mutable sentencepiece::upb_internal::UpbMessageHolder<sentencepiece_TrainerSpec> holder_;
   std::function<void(const sentencepiece_TrainerSpec*)> on_change_;
 };
 
@@ -507,61 +268,29 @@ class NormalizerSpecWrapper {
   friend class upb::ModelProtoWrapper;
 
  public:
-  NormalizerSpecWrapper() : arena_(upb_Arena_New()), owns_msg_(true) {
-    msg_ = sentencepiece_NormalizerSpec_new(arena_);
+  NormalizerSpecWrapper() {
+    upb_Arena* arena = upb_Arena_New();
+    holder_.Reset(sentencepiece_NormalizerSpec_new(arena), arena, true);
   }
   explicit NormalizerSpecWrapper(const sentencepiece_NormalizerSpec* msg,
                                  upb_Arena* arena = nullptr)
-      : msg_(const_cast<sentencepiece_NormalizerSpec*>(msg)),
-        arena_(arena),
-        owns_msg_(false) {}
+      : holder_(const_cast<sentencepiece_NormalizerSpec*>(msg), arena, false) {}
 
   NormalizerSpecWrapper(
       const sentencepiece_NormalizerSpec* msg, upb_Arena* arena,
       std::function<void(const sentencepiece_NormalizerSpec*)> on_change)
-      : msg_(const_cast<sentencepiece_NormalizerSpec*>(msg)),
-        arena_(arena),
-        owns_msg_(false),
+      : holder_(const_cast<sentencepiece_NormalizerSpec*>(msg), arena, false),
         on_change_(on_change) {}
 
-  NormalizerSpecWrapper(const NormalizerSpecWrapper& other)
-      : arena_(upb_Arena_New()), owns_msg_(true) {
-    msg_ = sentencepiece_NormalizerSpec_new(arena_);
+  NormalizerSpecWrapper(const NormalizerSpecWrapper& other) {
+    upb_Arena* arena = upb_Arena_New();
+    holder_.Reset(sentencepiece_NormalizerSpec_new(arena), arena, true);
     CopyFrom(other);
   }
 
-  NormalizerSpecWrapper& operator=(const NormalizerSpecWrapper& other) {
-    if (this != &other) {
-      if (owns_msg_) {
-        if (arena_) upb_Arena_Free(arena_);
-        arena_ = upb_Arena_New();
-        owns_msg_ = true;
-        CopyFrom(other);
-      } else {
-        if (other.msg_) {
-          size_t size = 0;
-          upb_Arena* tmp_arena = upb_Arena_New();
-          char* buf = sentencepiece_NormalizerSpec_serialize(other.msg_,
-                                                             tmp_arena, &size);
-          if (buf) {
-            msg_ = sentencepiece_NormalizerSpec_parse(buf, size, arena_);
-            if (on_change_) on_change_(msg_);
-          }
-          upb_Arena_Free(tmp_arena);
-        } else {
-          msg_ = nullptr;
-          if (on_change_) on_change_(msg_);
-        }
-      }
-    }
-    return *this;
-  }
+  DEFINE_UPB_ASSIGNMENT_OPERATOR(NormalizerSpecWrapper, sentencepiece_NormalizerSpec)
 
-  virtual ~NormalizerSpecWrapper() {
-    if (owns_msg_ && arena_) {
-      upb_Arena_Free(arena_);
-    }
-  }
+  virtual ~NormalizerSpecWrapper() = default;
 
   DEFINE_UPB_SERIALIZATION_METHODS(NormalizerSpecWrapper,
                                    sentencepiece_NormalizerSpec)
@@ -581,9 +310,7 @@ class NormalizerSpecWrapper {
                              sentencepiece_NormalizerSpec)
 
  private:
-  sentencepiece_NormalizerSpec* msg_;
-  upb_Arena* arena_;
-  bool owns_msg_ = false;
+  mutable sentencepiece::upb_internal::UpbMessageHolder<sentencepiece_NormalizerSpec> holder_;
   std::function<void(const sentencepiece_NormalizerSpec*)> on_change_;
 };
 
@@ -591,45 +318,24 @@ class SelfTestData_SampleWrapper {
  public:
   explicit SelfTestData_SampleWrapper(
       const sentencepiece_SelfTestData_Sample* msg)
-      : msg_(msg), mutable_msg_(nullptr), arena_(nullptr) {}
+      : holder_(const_cast<sentencepiece_SelfTestData_Sample*>(msg), nullptr, false) {}
   SelfTestData_SampleWrapper(sentencepiece_SelfTestData_Sample* msg,
                              upb_Arena* arena)
-      : msg_(msg), mutable_msg_(msg), arena_(arena) {}
-  ProtoStr input() const {
-    if (!msg_ || !sentencepiece_SelfTestData_Sample_has_input(msg_)) return "";
-    return sentencepiece_SelfTestData_Sample_input(msg_);
-  }
-  ProtoStr expected() const {
-    if (!msg_ || !sentencepiece_SelfTestData_Sample_has_expected(msg_))
-      return "";
-    return sentencepiece_SelfTestData_Sample_expected(msg_);
-  }
-  void set_input(const std::string& val) {
-    if (mutable_msg_ && arena_) {
-      sentencepiece_SelfTestData_Sample_set_input(mutable_msg_,
-                                                  MakeUpbString(val, arena_));
-    }
-  }
-  void set_expected(const std::string& val) {
-    if (mutable_msg_ && arena_) {
-      sentencepiece_SelfTestData_Sample_set_expected(
-          mutable_msg_, MakeUpbString(val, arena_));
-    }
-  }
+      : holder_(msg, arena, false) {}
+  DEFINE_UPB_STRING_ACCESSOR(input, "", sentencepiece_SelfTestData_Sample)
+  DEFINE_UPB_STRING_ACCESSOR(expected, "", sentencepiece_SelfTestData_Sample)
 
  private:
-  const sentencepiece_SelfTestData_Sample* msg_;
-  sentencepiece_SelfTestData_Sample* mutable_msg_;
-  upb_Arena* arena_;
+  sentencepiece::upb_internal::UpbMessageHolder<sentencepiece_SelfTestData_Sample> holder_;
   std::function<void(const sentencepiece_SelfTestData_Sample*)> on_change_;
 };
 
 class SelfTestDataWrapper {
  public:
   explicit SelfTestDataWrapper(const sentencepiece_SelfTestData* msg)
-      : msg_(msg), mutable_msg_(nullptr), arena_(nullptr) {}
+      : holder_(const_cast<sentencepiece_SelfTestData*>(msg), nullptr, false) {}
   SelfTestDataWrapper(sentencepiece_SelfTestData* msg, upb_Arena* arena)
-      : msg_(msg), mutable_msg_(msg), arena_(arena) {}
+      : holder_(msg, arena, false) {}
 
   class SamplesRepeatedWrapper {
    public:
@@ -687,57 +393,52 @@ class SelfTestDataWrapper {
   SamplesRepeatedWrapper samples() const {
     size_t size = 0;
     const sentencepiece_SelfTestData_Sample* const* elements = nullptr;
-    if (msg_) {
-      elements = sentencepiece_SelfTestData_samples(msg_, &size);
+    const auto* m = static_cast<const sentencepiece_SelfTestData*>(holder_.msg());
+    if (m) {
+      elements = sentencepiece_SelfTestData_samples(m, &size);
     }
     return SamplesRepeatedWrapper(elements, size);
   }
   int samples_size() const { return samples().size(); }
   SelfTestData_SampleWrapper* add_samples() {
-    if (mutable_msg_ && arena_) {
-      sentencepiece_SelfTestData_add_samples(mutable_msg_, arena_);
+    auto* m = static_cast<sentencepiece_SelfTestData*>(holder_.msg());
+    if (m && holder_.arena()) {
+      sentencepiece_SelfTestData_add_samples(m, holder_.arena());
       int new_index = samples_size() - 1;
       sample_wrappers_.resize(samples_size());
       size_t size;
       sentencepiece_SelfTestData_Sample** samples =
-          sentencepiece_SelfTestData_mutable_samples(mutable_msg_, &size);
+          sentencepiece_SelfTestData_mutable_samples(m, &size);
       sample_wrappers_[new_index] =
           std::make_unique<SelfTestData_SampleWrapper>(samples[new_index],
-                                                       arena_);
+                                                       holder_.arena());
       return sample_wrappers_[new_index].get();
     }
     return nullptr;
   }
 
  private:
-  const sentencepiece_SelfTestData* msg_;
-  sentencepiece_SelfTestData* mutable_msg_;
-  upb_Arena* arena_;
+  mutable sentencepiece::upb_internal::UpbMessageHolder<sentencepiece_SelfTestData> holder_;
   mutable std::vector<std::unique_ptr<SelfTestData_SampleWrapper>>
       sample_wrappers_;
 };
 
 class ModelProtoWrapper {
  public:
-  ModelProtoWrapper() : arena_(upb_Arena_New()), owns_msg_(true) {
-    msg_ = sentencepiece_ModelProto_new(arena_);
+  ModelProtoWrapper() {
+    upb_Arena* arena = upb_Arena_New();
+    holder_.Reset(sentencepiece_ModelProto_new(arena), arena, true);
     normalizer_spec_cache_ = std::make_unique<NormalizerSpec>(
-        sentencepiece_ModelProto_normalizer_spec(msg_), arena_);
+        sentencepiece_ModelProto_normalizer_spec(static_cast<const sentencepiece_ModelProto*>(holder_.msg())), holder_.arena());
     denormalizer_spec_cache_ = std::make_unique<NormalizerSpec>(
-        sentencepiece_ModelProto_denormalizer_spec(msg_), arena_);
+        sentencepiece_ModelProto_denormalizer_spec(static_cast<const sentencepiece_ModelProto*>(holder_.msg())), holder_.arena());
   }
 
   explicit ModelProtoWrapper(const sentencepiece_ModelProto* msg,
                              upb_Arena* arena)
-      : msg_(const_cast<sentencepiece_ModelProto*>(msg)),
-        arena_(arena),
-        owns_msg_(false) {}
+      : holder_(const_cast<sentencepiece_ModelProto*>(msg), arena, false) {}
 
-  virtual ~ModelProtoWrapper() {
-    if (owns_msg_ && arena_) {
-      upb_Arena_Free(arena_);
-    }
-  }
+  virtual ~ModelProtoWrapper() = default;
 
   ModelProtoWrapper(const ModelProtoWrapper& other) : ModelProtoWrapper() {
     CopyFrom(other);
@@ -761,11 +462,12 @@ class ModelProtoWrapper {
     denormalizer_spec_cache_.reset();
     mutable_denormalizer_spec_.reset();
     mutable_self_test_data_.reset();
-    if (msg_) {
+    const auto* m = static_cast<const sentencepiece_ModelProto*>(holder_.msg());
+    if (m) {
       normalizer_spec_cache_ = std::make_unique<NormalizerSpec>(
-          sentencepiece_ModelProto_normalizer_spec(msg_), arena_);
+          sentencepiece_ModelProto_normalizer_spec(m), holder_.arena());
       denormalizer_spec_cache_ = std::make_unique<NormalizerSpec>(
-          sentencepiece_ModelProto_denormalizer_spec(msg_), arena_);
+          sentencepiece_ModelProto_denormalizer_spec(m), holder_.arena());
     }
   }
 
@@ -776,9 +478,9 @@ class ModelProtoWrapper {
   }
 
   int pieces_size() const {
-    if (!msg_) return 0;
+    if (!holder_.msg()) return 0;
     size_t size = 0;
-    sentencepiece_ModelProto_pieces(msg_, &size);
+    sentencepiece_ModelProto_pieces(static_cast<const sentencepiece_ModelProto*>(holder_.msg()), &size);
     return size;
   }
 
@@ -934,77 +636,90 @@ class ModelProtoWrapper {
   }
 
   inline ModelProto_SentencePiece* mutable_pieces(int index) {
+    UPB_WRAPPER_RET_VAL_IF_OOB(index, pieces_size(), nullptr);
     LazyInitPieceWrappersCache();
     return piece_wrappers_[index].get();
   }
 
   ProtoStr piece_at(int index) const {
     size_t size = 0;
+    const auto* m = static_cast<const sentencepiece_ModelProto*>(holder_.msg());
     const sentencepiece_ModelProto_SentencePiece* const* pieces =
-        sentencepiece_ModelProto_pieces(msg_, &size);
-    if (index < 0 || static_cast<size_t>(index) >= size) return "";
+        sentencepiece_ModelProto_pieces(m, &size);
+    UPB_WRAPPER_RET_VAL_IF_OOB(index, size, "");
     return ProtoStr(
         sentencepiece_ModelProto_SentencePiece_piece(pieces[index]));
   }
   float score_at(int index) const {
     size_t size = 0;
+    const auto* m = static_cast<const sentencepiece_ModelProto*>(holder_.msg());
     const sentencepiece_ModelProto_SentencePiece* const* pieces =
-        sentencepiece_ModelProto_pieces(msg_, &size);
-    if (index < 0 || static_cast<size_t>(index) >= size) return 0.0f;
+        sentencepiece_ModelProto_pieces(m, &size);
+    UPB_WRAPPER_RET_VAL_IF_OOB(index, size, 0.0f);
     return sentencepiece_ModelProto_SentencePiece_score(pieces[index]);
   }
   int type_at(int index) const {
     size_t size = 0;
+    const auto* m = static_cast<const sentencepiece_ModelProto*>(holder_.msg());
     const sentencepiece_ModelProto_SentencePiece* const* pieces =
-        sentencepiece_ModelProto_pieces(msg_, &size);
-    if (index < 0 || static_cast<size_t>(index) >= size) return 0;
+        sentencepiece_ModelProto_pieces(m, &size);
+    UPB_WRAPPER_RET_VAL_IF_OOB(index, size, 0);
     return sentencepiece_ModelProto_SentencePiece_type(pieces[index]);
   }
   void set_type_at(int index, int type) {
-    if (msg_) {
+    auto* m = static_cast<sentencepiece_ModelProto*>(holder_.msg());
+    if (m) {
       size_t size = 0;
       sentencepiece_ModelProto_SentencePiece** pieces =
-          sentencepiece_ModelProto_mutable_pieces(msg_, &size);
+          sentencepiece_ModelProto_mutable_pieces(m, &size);
+      UPB_WRAPPER_RET_IF_OOB(index, size);
       sentencepiece_ModelProto_SentencePiece_set_type(
           pieces[index],
           static_cast<sentencepiece_ModelProto_SentencePiece_Type>(type));
     }
   }
   void set_piece_at(int index, absl::string_view piece) {
-    if (msg_) {
+    auto* m = static_cast<sentencepiece_ModelProto*>(holder_.msg());
+    if (m) {
       size_t size = 0;
       sentencepiece_ModelProto_SentencePiece** pieces =
-          sentencepiece_ModelProto_mutable_pieces(msg_, &size);
+          sentencepiece_ModelProto_mutable_pieces(m, &size);
+      UPB_WRAPPER_RET_IF_OOB(index, size);
       sentencepiece_ModelProto_SentencePiece_set_piece(
-          pieces[index], MakeUpbString(piece, arena_));
+          pieces[index], MakeUpbString(piece, holder_.arena()));
     }
   }
   void set_piece_at(int index, const std::string& piece) {
     set_piece_at(index, absl::string_view(piece));
   }
   void set_score_at(int index, float score) {
-    if (msg_) {
+    auto* m = static_cast<sentencepiece_ModelProto*>(holder_.msg());
+    if (m) {
       size_t size = 0;
       sentencepiece_ModelProto_SentencePiece** pieces =
-          sentencepiece_ModelProto_mutable_pieces(msg_, &size);
+          sentencepiece_ModelProto_mutable_pieces(m, &size);
+      UPB_WRAPPER_RET_IF_OOB(index, size);
       sentencepiece_ModelProto_SentencePiece_set_score(pieces[index], score);
     }
   }
 
   inline bool has_trainer_spec() const {
-    return msg_ && sentencepiece_ModelProto_has_trainer_spec(msg_);
+    const auto* m = static_cast<const sentencepiece_ModelProto*>(holder_.msg());
+    return m && sentencepiece_ModelProto_has_trainer_spec(m);
   }
   inline TrainerSpec trainer_spec() const;
   inline ::sentencepiece::TrainerSpec* mutable_trainer_spec() const;
 
   inline bool has_normalizer_spec() const {
-    return msg_ && sentencepiece_ModelProto_has_normalizer_spec(msg_);
+    const auto* m = static_cast<const sentencepiece_ModelProto*>(holder_.msg());
+    return m && sentencepiece_ModelProto_has_normalizer_spec(m);
   }
   inline const NormalizerSpec& normalizer_spec() const;
   inline ::sentencepiece::NormalizerSpec* mutable_normalizer_spec() const;
 
   inline bool has_denormalizer_spec() const {
-    return msg_ && sentencepiece_ModelProto_has_denormalizer_spec(msg_);
+    const auto* m = static_cast<const sentencepiece_ModelProto*>(holder_.msg());
+    return m && sentencepiece_ModelProto_has_denormalizer_spec(m);
   }
   inline const NormalizerSpec& denormalizer_spec() const;
   inline ::sentencepiece::NormalizerSpec* mutable_denormalizer_spec() const;
@@ -1013,15 +728,14 @@ class ModelProtoWrapper {
   inline void set_denormalizer_spec(const NormalizerSpec& spec);
 
   inline bool has_self_test_data() const {
-    return msg_ && sentencepiece_ModelProto_has_self_test_data(msg_);
+    const auto* m = static_cast<const sentencepiece_ModelProto*>(holder_.msg());
+    return m && sentencepiece_ModelProto_has_self_test_data(m);
   }
   inline SelfTestData self_test_data() const;
   inline ::sentencepiece::SelfTestData* mutable_self_test_data() const;
 
  protected:
-  sentencepiece_ModelProto* msg_;
-  upb_Arena* arena_;
-  bool owns_msg_;
+  mutable sentencepiece::upb_internal::UpbMessageHolder<sentencepiece_ModelProto> holder_;
 
   std::vector<std::unique_ptr<ModelProto_SentencePiece>> piece_wrappers_;
   std::unique_ptr<MutablePiecesRepeatedWrapper> mutable_pieces_wrapper_;
@@ -1033,32 +747,54 @@ class ModelProtoWrapper {
   mutable std::unique_ptr<SelfTestData> mutable_self_test_data_;
 
  private:
-  void LazyInitPieceWrappersCache() {
-    if (piece_wrappers_.size() != pieces_size()) {
-      piece_wrappers_.resize(pieces_size());
-      for (int i = 0; i < pieces_size(); ++i) {
-        if (!piece_wrappers_[i]) {
-          piece_wrappers_[i] =
-              std::make_unique<ModelProto_SentencePiece>(this, i);
+  template <typename SpecWrapperType, typename CSpecType,
+            CSpecType* (*MutableFn)(sentencepiece_ModelProto*, upb_Arena*),
+            void (*SetFn)(sentencepiece_ModelProto*, CSpecType*),
+            const CSpecType* (*GetFn)(const sentencepiece_ModelProto*)>
+  inline SpecWrapperType* GetOrCreateMutableSpec(
+      std::unique_ptr<SpecWrapperType>& mutable_spec_cache,
+      std::unique_ptr<SpecWrapperType>* spec_cache_ptr = nullptr) const {
+    if (!mutable_spec_cache) {
+      auto* m = static_cast<sentencepiece_ModelProto*>(holder_.msg());
+      if (m) {
+        CSpecType* sub_msg = MutableFn(m, holder_.arena());
+        if (spec_cache_ptr && *spec_cache_ptr) {
+          (*spec_cache_ptr)->holder_.Reset(sub_msg, holder_.arena(), false);
         }
+        auto* non_const_this = const_cast<ModelProtoWrapper*>(this);
+        mutable_spec_cache = std::make_unique<SpecWrapperType>(
+            sub_msg, holder_.arena(),
+            [non_const_this, spec_cache_ptr](const CSpecType* new_sub_msg) {
+              auto* parent_m = static_cast<sentencepiece_ModelProto*>(non_const_this->holder_.msg());
+              SetFn(parent_m, const_cast<CSpecType*>(new_sub_msg));
+              if (spec_cache_ptr && *spec_cache_ptr) {
+                auto* m = static_cast<sentencepiece_ModelProto*>(non_const_this->holder_.msg());
+                auto* spec = const_cast<CSpecType*>(GetFn(m));
+                (*spec_cache_ptr)->holder_.Reset(spec, non_const_this->holder_.arena(), false);
+              }
+            });
+      } else {
+        mutable_spec_cache = std::make_unique<SpecWrapperType>(nullptr);
       }
     }
+    return mutable_spec_cache.get();
+  }
+
+  void LazyInitPieceWrappersCache() {
+    upb_internal::LazyInitCache(piece_wrappers_, this, pieces_size());
   }
 };
 
 class SentencePieceTextWrapper {
  public:
-  SentencePieceTextWrapper() : owns_msg_(true), arena_(upb_Arena_New()) {
-    msg_ = sentencepiece_SentencePieceText_new(arena_);
+  SentencePieceTextWrapper() {
+    upb_Arena* arena = upb_Arena_New();
+    holder_.Reset(sentencepiece_SentencePieceText_new(arena), arena, true);
   }
   explicit SentencePieceTextWrapper(std::nullptr_t)
-      : msg_(nullptr), owns_msg_(false), arena_(nullptr) {}
+      : holder_(nullptr, nullptr, false) {}
 
-  virtual ~SentencePieceTextWrapper() {
-    if (owns_msg_ && arena_) {
-      upb_Arena_Free(arena_);
-    }
-  }
+  virtual ~SentencePieceTextWrapper() = default;
 
   SentencePieceTextWrapper(const SentencePieceTextWrapper& other)
       : SentencePieceTextWrapper() {
@@ -1078,15 +814,20 @@ class SentencePieceTextWrapper {
   void OnArenaReset() {
     piece_wrappers_.clear();
     mutable_pieces_wrapper_.reset();
-    if (msg_) {
+    if (holder_.msg()) {
       LazyInitPieceWrappersCache();
     }
   }
 
-  virtual sentencepiece_SentencePieceText* mutable_msg() { return msg_; }
-  virtual const sentencepiece_SentencePieceText* msg() const { return msg_; }
-  virtual upb_Arena* arena() { return arena_; }
-  virtual const upb_Arena* arena() const { return arena_; }
+  virtual sentencepiece_SentencePieceText* mutable_msg() {
+    return static_cast<sentencepiece_SentencePieceText*>(holder_.msg());
+  }
+  virtual const sentencepiece_SentencePieceText* msg() const {
+    return static_cast<const sentencepiece_SentencePieceText*>(holder_.msg());
+  }
+
+  virtual upb_Arena* arena() { return holder_.arena(); }
+  virtual const upb_Arena* arena() const { return holder_.arena(); }
 
   void clear_pieces() {
     if (mutable_msg()) {
@@ -1126,18 +867,15 @@ class SentencePieceTextWrapper {
   }
 
   const SentencePieceText_SentencePiece& pieces(int index) const {
-    if (index < 0 || static_cast<size_t>(index) >= piece_wrappers_.size()) {
-      return SentencePieceText_SentencePiece::default_instance();
-    }
+    UPB_WRAPPER_RET_VAL_IF_OOB(index, piece_wrappers_.size(),
+                               SentencePieceText_SentencePiece::default_instance());
     return *piece_wrappers_[index];
   }
 
   SentencePieceText_SentencePiece& pieces(int index) {
     LazyInitPieceWrappersCache();
-    if (index < 0 || static_cast<size_t>(index) >= piece_wrappers_.size()) {
-      static SentencePieceText_SentencePiece dummy(nullptr, -1);
-      return dummy;
-    }
+    static SentencePieceText_SentencePiece dummy(nullptr, -1);
+    UPB_WRAPPER_RET_VAL_IF_OOB(index, piece_wrappers_.size(), dummy);
     return *piece_wrappers_[index];
   }
 
@@ -1313,6 +1051,7 @@ class SentencePieceTextWrapper {
   }
 
   SentencePieceText_SentencePiece* mutable_pieces(int index) {
+    if (index < 0 || index >= pieces_size()) return nullptr;
     LazyInitPieceWrappersCache();
     return piece_wrappers_[index].get();
   }
@@ -1330,6 +1069,7 @@ class SentencePieceTextWrapper {
     size_t size = 0;
     auto** pieces =
         sentencepiece_SentencePieceText_mutable_pieces(mutable_msg(), &size);
+    if (index < 0 || static_cast<size_t>(index) >= size) return;
     sentencepiece_SentencePieceText_SentencePiece_set_piece(
         pieces[index], MakeUpbString(piece, arena()));
   }
@@ -1344,6 +1084,7 @@ class SentencePieceTextWrapper {
     size_t size = 0;
     auto** pieces =
         sentencepiece_SentencePieceText_mutable_pieces(mutable_msg(), &size);
+    if (index < 0 || static_cast<size_t>(index) >= size) return;
     sentencepiece_SentencePieceText_SentencePiece_set_id(pieces[index], id);
   }
 
@@ -1359,6 +1100,7 @@ class SentencePieceTextWrapper {
     size_t size = 0;
     auto** pieces =
         sentencepiece_SentencePieceText_mutable_pieces(mutable_msg(), &size);
+    if (index < 0 || static_cast<size_t>(index) >= size) return;
     sentencepiece_SentencePieceText_SentencePiece_set_surface(
         pieces[index], MakeUpbString(surface, arena()));
   }
@@ -1373,6 +1115,7 @@ class SentencePieceTextWrapper {
     size_t size = 0;
     auto** pieces =
         sentencepiece_SentencePieceText_mutable_pieces(mutable_msg(), &size);
+    if (index < 0 || static_cast<size_t>(index) >= size) return;
     sentencepiece_SentencePieceText_SentencePiece_set_begin(pieces[index],
                                                             begin);
   }
@@ -1387,6 +1130,7 @@ class SentencePieceTextWrapper {
     size_t size = 0;
     auto** pieces =
         sentencepiece_SentencePieceText_mutable_pieces(mutable_msg(), &size);
+    if (index < 0 || static_cast<size_t>(index) >= size) return;
     sentencepiece_SentencePieceText_SentencePiece_set_end(pieces[index], end);
   }
 
@@ -1394,26 +1138,19 @@ class SentencePieceTextWrapper {
     size_t size = 0;
     auto** pieces =
         sentencepiece_SentencePieceText_mutable_pieces(mutable_msg(), &size);
+    UPB_WRAPPER_RET_IF_OOB(i, size);
+    UPB_WRAPPER_RET_IF_OOB(j, size);
     std::swap(pieces[i], pieces[j]);
   }
 
   void LazyInitPieceWrappersCache() const {
-    if (piece_wrappers_.size() != pieces_size()) {
-      piece_wrappers_.resize(pieces_size());
-      for (int i = 0; i < pieces_size(); ++i) {
-        if (!piece_wrappers_[i]) {
-          piece_wrappers_[i] =
-              std::make_unique<SentencePieceText_SentencePiece>(
-                  const_cast<SentencePieceTextWrapper*>(this), i);
-        }
-      }
-    }
+    upb_internal::LazyInitCache(
+        piece_wrappers_, const_cast<SentencePieceTextWrapper*>(this),
+        pieces_size());
   }
 
  private:
-  sentencepiece_SentencePieceText* msg_;
-  bool owns_msg_;
-  upb_Arena* arena_;
+  mutable sentencepiece::upb_internal::UpbMessageHolder<sentencepiece_SentencePieceText> holder_;
 
   mutable std::vector<std::unique_ptr<SentencePieceText_SentencePiece>>
       piece_wrappers_;
@@ -1422,14 +1159,11 @@ class SentencePieceTextWrapper {
 
 class NBestSentencePieceTextWrapper {
  public:
-  NBestSentencePieceTextWrapper() : arena_(upb_Arena_New()), owns_msg_(true) {
-    msg_ = sentencepiece_NBestSentencePieceText_new(arena_);
+  NBestSentencePieceTextWrapper() {
+    upb_Arena* arena = upb_Arena_New();
+    holder_.Reset(sentencepiece_NBestSentencePieceText_new(arena), arena, true);
   }
-  virtual ~NBestSentencePieceTextWrapper() {
-    if (owns_msg_ && arena_) {
-      upb_Arena_Free(arena_);
-    }
-  }
+  virtual ~NBestSentencePieceTextWrapper() = default;
 
   NBestSentencePieceTextWrapper(const NBestSentencePieceTextWrapper& other)
       : NBestSentencePieceTextWrapper() {
@@ -1449,28 +1183,31 @@ class NBestSentencePieceTextWrapper {
 
   void OnArenaReset() {
     nbest_wrappers_.clear();
-    if (msg_) {
+    if (holder_.msg()) {
       LazyInitNbestWrappersCache();
     }
   }
 
-  virtual sentencepiece_NBestSentencePieceText* mutable_msg() { return msg_; }
-  virtual const sentencepiece_NBestSentencePieceText* msg() const {
-    return msg_;
+  virtual sentencepiece_NBestSentencePieceText* mutable_msg() {
+    return static_cast<sentencepiece_NBestSentencePieceText*>(holder_.msg());
   }
-  virtual upb_Arena* arena() { return arena_; }
-  virtual const upb_Arena* arena() const { return arena_; }
+  virtual const sentencepiece_NBestSentencePieceText* msg() const {
+    return static_cast<const sentencepiece_NBestSentencePieceText*>(holder_.msg());
+  }
+  virtual upb_Arena* arena() { return holder_.arena(); }
+  virtual const upb_Arena* arena() const { return holder_.arena(); }
+
 
   int nbests_size() const {
-    if (!msg_) return 0;
+    if (!holder_.msg()) return 0;
     size_t size = 0;
-    sentencepiece_NBestSentencePieceText_nbests(msg_, &size);
+    sentencepiece_NBestSentencePieceText_nbests(holder_.msg(), &size);
     return size;
   }
 
   void ReserveNbests(int size) {
-    if (msg_) {
-      sentencepiece_NBestSentencePieceText_resize_nbests(msg_, size, arena_);
+    if (holder_.msg()) {
+      sentencepiece_NBestSentencePieceText_resize_nbests(holder_.msg(), size, holder_.arena());
     }
   }
 
@@ -1517,21 +1254,13 @@ class NBestSentencePieceTextWrapper {
   }
 
   void LazyInitNbestWrappersCache() const {
-    if (nbest_wrappers_.size() != nbests_size()) {
-      nbest_wrappers_.resize(nbests_size());
-    }
-    for (int i = 0; i < nbests_size(); ++i) {
-      if (!nbest_wrappers_[i]) {
-        nbest_wrappers_[i] = std::make_unique<NBestSentencePieceText_Sub>(
-            const_cast<NBestSentencePieceTextWrapper*>(this), i);
-      }
-    }
+    upb_internal::LazyInitCache(
+        nbest_wrappers_, const_cast<NBestSentencePieceTextWrapper*>(this),
+        nbests_size());
   }
 
  protected:
-  sentencepiece_NBestSentencePieceText* msg_;
-  upb_Arena* arena_;
-  bool owns_msg_;
+  mutable sentencepiece::upb_internal::UpbMessageHolder<sentencepiece_NBestSentencePieceText> holder_;
 
   mutable std::vector<std::unique_ptr<NBestSentencePieceText_Sub>>
       nbest_wrappers_;
@@ -1703,8 +1432,9 @@ inline void ModelProto_SentencePiece::set_type(Type type) {
 }
 
 inline TrainerSpec upb::ModelProtoWrapper::trainer_spec() const {
+  const auto* m = static_cast<const sentencepiece_ModelProto*>(holder_.msg());
   return TrainerSpec(
-      msg_ ? sentencepiece_ModelProto_trainer_spec(msg_) : nullptr, arena_);
+      m ? sentencepiece_ModelProto_trainer_spec(m) : nullptr, holder_.arena());
 }
 inline const NormalizerSpec& upb::ModelProtoWrapper::normalizer_spec() const {
   static const NormalizerSpec default_instance(nullptr);
@@ -1715,7 +1445,8 @@ inline const NormalizerSpec& upb::ModelProtoWrapper::denormalizer_spec() const {
   return denormalizer_spec_cache_ ? *denormalizer_spec_cache_ : default_instance;
 }
 inline SelfTestData upb::ModelProtoWrapper::self_test_data() const {
-  return SelfTestData(msg_ ? sentencepiece_ModelProto_self_test_data(msg_)
+  const auto* m = static_cast<const sentencepiece_ModelProto*>(holder_.msg());
+  return SelfTestData(m ? sentencepiece_ModelProto_self_test_data(m)
                            : nullptr);
 }
 
@@ -1728,8 +1459,9 @@ inline const upb_Arena* NBestSentencePieceText_Sub::arena() const {
 
 inline NBestSentencePieceText_Sub*
 upb::NBestSentencePieceTextWrapper::add_nbests() {
-  if (!msg_) return nullptr;
-  sentencepiece_NBestSentencePieceText_add_nbests(msg_, arena_);
+  auto* m = static_cast<sentencepiece_NBestSentencePieceText*>(holder_.msg());
+  if (!m) return nullptr;
+  sentencepiece_NBestSentencePieceText_add_nbests(m, holder_.arena());
 
   int index = nbests_size() - 1;
 
@@ -1741,10 +1473,8 @@ upb::NBestSentencePieceTextWrapper::add_nbests() {
 
 inline const NBestSentencePieceText_Sub&
 upb::NBestSentencePieceTextWrapper::nbests(int index) const {
-  if (index < 0 || static_cast<size_t>(index) >= nbest_wrappers_.size()) {
-    static const NBestSentencePieceText_Sub default_sub(nullptr, -1);
-    return default_sub;
-  }
+  static const NBestSentencePieceText_Sub default_sub(nullptr, -1);
+  UPB_WRAPPER_RET_VAL_IF_OOB(index, nbest_wrappers_.size(), default_sub);
   return *nbest_wrappers_[index];
 }
 
@@ -1842,82 +1572,33 @@ inline NBestSentencePieceText_Sub* NBestSentencePieceText::add_nbests() {
 }
 inline NBestSentencePieceText_Sub* NBestSentencePieceText::mutable_nbests_at(
     int index) {
-  if (nbest_wrappers_.size() != nbests_size()) {
-    nbest_wrappers_.resize(nbests_size());
-    for (int i = 0; i < nbests_size(); ++i) {
-      if (!nbest_wrappers_[i]) {
-        nbest_wrappers_[i] =
-            std::make_unique<NBestSentencePieceText_Sub>(this, i);
-      }
-    }
-  }
+  UPB_WRAPPER_RET_VAL_IF_OOB(index, nbests_size(), nullptr);
+  LazyInitNbestWrappersCache();
   return nbest_wrappers_[index].get();
 }
 
 inline ::sentencepiece::NormalizerSpec*
 upb::ModelProtoWrapper::mutable_normalizer_spec() const {
-  if (!mutable_normalizer_spec_) {
-    if (msg_) {
-      sentencepiece_NormalizerSpec* sub_msg =
-          sentencepiece_ModelProto_mutable_normalizer_spec(msg_, arena_);
-      if (normalizer_spec_cache_) {
-        normalizer_spec_cache_->msg_ = sub_msg;
-      }
-      mutable_normalizer_spec_ =
-          std::make_unique<::sentencepiece::NormalizerSpec>(
-              sub_msg, arena_,
-              [this](const sentencepiece_NormalizerSpec* new_sub_msg) {
-                sentencepiece_ModelProto_set_normalizer_spec(
-                    this->msg_,
-                    const_cast<sentencepiece_NormalizerSpec*>(new_sub_msg));
-                if (this->normalizer_spec_cache_) {
-                  this->normalizer_spec_cache_->msg_ =
-                      const_cast<sentencepiece_NormalizerSpec*>(
-                          sentencepiece_ModelProto_normalizer_spec(this->msg_));
-                }
-              });
-    } else {
-      mutable_normalizer_spec_ =
-          std::make_unique<::sentencepiece::NormalizerSpec>(nullptr);
-    }
-  }
-  return mutable_normalizer_spec_.get();
+  return GetOrCreateMutableSpec<::sentencepiece::NormalizerSpec, sentencepiece_NormalizerSpec,
+                                sentencepiece_ModelProto_mutable_normalizer_spec,
+                                sentencepiece_ModelProto_set_normalizer_spec,
+                                sentencepiece_ModelProto_normalizer_spec>(
+      mutable_normalizer_spec_, &normalizer_spec_cache_);
 }
 
 inline ::sentencepiece::NormalizerSpec*
 upb::ModelProtoWrapper::mutable_denormalizer_spec() const {
-  if (!mutable_denormalizer_spec_) {
-    if (msg_) {
-      sentencepiece_NormalizerSpec* sub_msg =
-          sentencepiece_ModelProto_mutable_denormalizer_spec(msg_, arena_);
-      if (denormalizer_spec_cache_) {
-        denormalizer_spec_cache_->msg_ = sub_msg;
-      }
-      mutable_denormalizer_spec_ =
-          std::make_unique<::sentencepiece::NormalizerSpec>(
-              sub_msg, arena_,
-              [this](const sentencepiece_NormalizerSpec* new_sub_msg) {
-                sentencepiece_ModelProto_set_denormalizer_spec(
-                    this->msg_,
-                    const_cast<sentencepiece_NormalizerSpec*>(new_sub_msg));
-                if (this->denormalizer_spec_cache_) {
-                  this->denormalizer_spec_cache_->msg_ =
-                      const_cast<sentencepiece_NormalizerSpec*>(
-                          sentencepiece_ModelProto_denormalizer_spec(
-                              this->msg_));
-                }
-              });
-    } else {
-      mutable_denormalizer_spec_ =
-          std::make_unique<::sentencepiece::NormalizerSpec>(nullptr);
-    }
-  }
-  return mutable_denormalizer_spec_.get();
+  return GetOrCreateMutableSpec<::sentencepiece::NormalizerSpec, sentencepiece_NormalizerSpec,
+                                sentencepiece_ModelProto_mutable_denormalizer_spec,
+                                sentencepiece_ModelProto_set_denormalizer_spec,
+                                sentencepiece_ModelProto_denormalizer_spec>(
+      mutable_denormalizer_spec_, &denormalizer_spec_cache_);
 }
 
 inline ModelProto_SentencePiece* ModelProto::add_pieces() {
-  if (msg_) {
-    sentencepiece_ModelProto_add_pieces(msg_, arena_);
+  auto* m = static_cast<sentencepiece_ModelProto*>(holder_.msg());
+  if (m) {
+    sentencepiece_ModelProto_add_pieces(m, holder_.arena());
     int new_index = pieces_size() - 1;
     piece_wrappers_.resize(pieces_size());
     piece_wrappers_[new_index] =
@@ -1929,33 +1610,22 @@ inline ModelProto_SentencePiece* ModelProto::add_pieces() {
 
 inline ::sentencepiece::TrainerSpec*
 upb::ModelProtoWrapper::mutable_trainer_spec() const {
-  if (!mutable_trainer_spec_) {
-    if (msg_) {
-      sentencepiece_TrainerSpec* sub_msg =
-          sentencepiece_ModelProto_mutable_trainer_spec(msg_, arena_);
-      mutable_trainer_spec_ = std::make_unique<::sentencepiece::TrainerSpec>(
-          sub_msg, arena_,
-          [this](const sentencepiece_TrainerSpec* new_sub_msg) {
-            sentencepiece_ModelProto_set_trainer_spec(
-                this->msg_,
-                const_cast<sentencepiece_TrainerSpec*>(new_sub_msg));
-          });
-    } else {
-      mutable_trainer_spec_ =
-          std::make_unique<::sentencepiece::TrainerSpec>(nullptr);
-    }
-  }
-  return mutable_trainer_spec_.get();
+  return GetOrCreateMutableSpec<::sentencepiece::TrainerSpec, sentencepiece_TrainerSpec,
+                                sentencepiece_ModelProto_mutable_trainer_spec,
+                                sentencepiece_ModelProto_set_trainer_spec,
+                                sentencepiece_ModelProto_trainer_spec>(
+      mutable_trainer_spec_);
 }
 
 inline ::sentencepiece::SelfTestData*
 upb::ModelProtoWrapper::mutable_self_test_data() const {
   if (!mutable_self_test_data_) {
-    if (msg_) {
+    auto* m = static_cast<sentencepiece_ModelProto*>(holder_.msg());
+    if (m) {
       sentencepiece_SelfTestData* sub_msg =
-          sentencepiece_ModelProto_mutable_self_test_data(msg_, arena_);
+          sentencepiece_ModelProto_mutable_self_test_data(m, holder_.arena());
       mutable_self_test_data_ =
-          std::make_unique<::sentencepiece::SelfTestData>(sub_msg, arena_);
+          std::make_unique<::sentencepiece::SelfTestData>(sub_msg, holder_.arena());
     } else {
       mutable_self_test_data_ =
           std::make_unique<::sentencepiece::SelfTestData>(nullptr, nullptr);
@@ -1965,55 +1635,40 @@ upb::ModelProtoWrapper::mutable_self_test_data() const {
 }
 
 inline void upb::ModelProtoWrapper::set_trainer_spec(const TrainerSpec& spec) {
-  if (msg_ && spec.msg_) {
-    size_t size = 0;
-    upb_Arena* tmp_arena = upb_Arena_New();
-    char* buf =
-        sentencepiece_TrainerSpec_serialize(spec.msg_, tmp_arena, &size);
-    if (buf) {
-      sentencepiece_TrainerSpec* sub_msg =
-          sentencepiece_TrainerSpec_parse(buf, size, arena_);
-      sentencepiece_ModelProto_set_trainer_spec(msg_, sub_msg);
-      mutable_trainer_spec_ =
-          std::make_unique<::sentencepiece::TrainerSpec>(sub_msg, arena_);
-    }
-    upb_Arena_Free(tmp_arena);
+  auto* m = static_cast<sentencepiece_ModelProto*>(holder_.msg());
+  if (m) {
+    UPB_WRAPPER_COPY_AND_SET_SUB_MSG(m, spec,
+                                     sentencepiece_ModelProto_set_trainer_spec,
+                                     sentencepiece_TrainerSpec_parse,
+                                     mutable_trainer_spec_,
+                                     ::sentencepiece::TrainerSpec,
+                                     holder_.arena());
   }
 }
 
 inline void upb::ModelProtoWrapper::set_normalizer_spec(
     const NormalizerSpec& spec) {
-  if (msg_ && spec.msg_) {
-    size_t size = 0;
-    upb_Arena* tmp_arena = upb_Arena_New();
-    char* buf =
-        sentencepiece_NormalizerSpec_serialize(spec.msg_, tmp_arena, &size);
-    if (buf) {
-      sentencepiece_NormalizerSpec* sub_msg =
-          sentencepiece_NormalizerSpec_parse(buf, size, arena_);
-      sentencepiece_ModelProto_set_normalizer_spec(msg_, sub_msg);
-      normalizer_spec_cache_ =
-          std::make_unique<::sentencepiece::NormalizerSpec>(sub_msg, arena_);
-    }
-    upb_Arena_Free(tmp_arena);
+  auto* m = static_cast<sentencepiece_ModelProto*>(holder_.msg());
+  if (m) {
+    UPB_WRAPPER_COPY_AND_SET_SUB_MSG(m, spec,
+                                     sentencepiece_ModelProto_set_normalizer_spec,
+                                     sentencepiece_NormalizerSpec_parse,
+                                     normalizer_spec_cache_,
+                                     ::sentencepiece::NormalizerSpec,
+                                     holder_.arena());
   }
 }
 
 inline void upb::ModelProtoWrapper::set_denormalizer_spec(
     const NormalizerSpec& spec) {
-  if (msg_ && spec.msg_) {
-    size_t size = 0;
-    upb_Arena* tmp_arena = upb_Arena_New();
-    char* buf =
-        sentencepiece_NormalizerSpec_serialize(spec.msg_, tmp_arena, &size);
-    if (buf) {
-      sentencepiece_NormalizerSpec* sub_msg =
-          sentencepiece_NormalizerSpec_parse(buf, size, arena_);
-      sentencepiece_ModelProto_set_denormalizer_spec(msg_, sub_msg);
-      mutable_denormalizer_spec_ =
-          std::make_unique<::sentencepiece::NormalizerSpec>(sub_msg, arena_);
-    }
-    upb_Arena_Free(tmp_arena);
+  auto* m = static_cast<sentencepiece_ModelProto*>(holder_.msg());
+  if (m) {
+    UPB_WRAPPER_COPY_AND_SET_SUB_MSG(m, spec,
+                                     sentencepiece_ModelProto_set_denormalizer_spec,
+                                     sentencepiece_NormalizerSpec_parse,
+                                     mutable_denormalizer_spec_,
+                                     ::sentencepiece::NormalizerSpec,
+                                     holder_.arena());
   }
 }
 
