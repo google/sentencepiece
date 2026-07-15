@@ -1251,10 +1251,14 @@ void InitTable(absl::flat_hash_map<char32_t, ScriptType> *smap) {
   for (char32_t c = 0x13F8; c <= 0x13FD; ++c) (*smap)[c] = U_Cherokee;
   for (char32_t c = 0xAB70; c <= 0xABBF; ++c) (*smap)[c] = U_Cherokee;
   (*smap)[0x1400] = U_Canadian_Aboriginal;
-  for (char32_t c = 0x1401; c <= 0x166C; ++c) (*smap)[c] = U_Canadian_Aboriginal;
-  for (char32_t c = 0x166D; c <= 0x166E; ++c) (*smap)[c] = U_Canadian_Aboriginal;
-  for (char32_t c = 0x166F; c <= 0x167F; ++c) (*smap)[c] = U_Canadian_Aboriginal;
-  for (char32_t c = 0x18B0; c <= 0x18F5; ++c) (*smap)[c] = U_Canadian_Aboriginal;
+  for (char32_t c = 0x1401; c <= 0x166C; ++c)
+    (*smap)[c] = U_Canadian_Aboriginal;
+  for (char32_t c = 0x166D; c <= 0x166E; ++c)
+    (*smap)[c] = U_Canadian_Aboriginal;
+  for (char32_t c = 0x166F; c <= 0x167F; ++c)
+    (*smap)[c] = U_Canadian_Aboriginal;
+  for (char32_t c = 0x18B0; c <= 0x18F5; ++c)
+    (*smap)[c] = U_Canadian_Aboriginal;
   (*smap)[0x1680] = U_Ogham;
   for (char32_t c = 0x1681; c <= 0x169A; ++c) (*smap)[c] = U_Ogham;
   (*smap)[0x169B] = U_Ogham;
@@ -1653,8 +1657,10 @@ void InitTable(absl::flat_hash_map<char32_t, ScriptType> *smap) {
   for (char32_t c = 0x10840; c <= 0x10855; ++c) (*smap)[c] = U_Imperial_Aramaic;
   (*smap)[0x10857] = U_Imperial_Aramaic;
   for (char32_t c = 0x10858; c <= 0x1085F; ++c) (*smap)[c] = U_Imperial_Aramaic;
-  for (char32_t c = 0x10A60; c <= 0x10A7C; ++c) (*smap)[c] = U_Old_South_Arabian;
-  for (char32_t c = 0x10A7D; c <= 0x10A7E; ++c) (*smap)[c] = U_Old_South_Arabian;
+  for (char32_t c = 0x10A60; c <= 0x10A7C; ++c)
+    (*smap)[c] = U_Old_South_Arabian;
+  for (char32_t c = 0x10A7D; c <= 0x10A7E; ++c)
+    (*smap)[c] = U_Old_South_Arabian;
   (*smap)[0x10A7F] = U_Old_South_Arabian;
   for (char32_t c = 0x10B40; c <= 0x10B55; ++c)
     (*smap)[c] = U_Inscriptional_Parthian;
@@ -1742,7 +1748,8 @@ void InitTable(absl::flat_hash_map<char32_t, ScriptType> *smap) {
   (*smap)[0x116B6] = U_Takri;
   (*smap)[0x116B7] = U_Takri;
   for (char32_t c = 0x116C0; c <= 0x116C9; ++c) (*smap)[c] = U_Takri;
-  for (char32_t c = 0x10530; c <= 0x10563; ++c) (*smap)[c] = U_Caucasian_Albanian;
+  for (char32_t c = 0x10530; c <= 0x10563; ++c)
+    (*smap)[c] = U_Caucasian_Albanian;
   (*smap)[0x1056F] = U_Caucasian_Albanian;
   for (char32_t c = 0x16AD0; c <= 0x16AED; ++c) (*smap)[c] = U_Bassa_Vah;
   for (char32_t c = 0x16AF0; c <= 0x16AF4; ++c) (*smap)[c] = U_Bassa_Vah;
@@ -1826,8 +1833,10 @@ void InitTable(absl::flat_hash_map<char32_t, ScriptType> *smap) {
   for (char32_t c = 0x16A40; c <= 0x16A5E; ++c) (*smap)[c] = U_Mro;
   for (char32_t c = 0x16A60; c <= 0x16A69; ++c) (*smap)[c] = U_Mro;
   for (char32_t c = 0x16A6E; c <= 0x16A6F; ++c) (*smap)[c] = U_Mro;
-  for (char32_t c = 0x10A80; c <= 0x10A9C; ++c) (*smap)[c] = U_Old_North_Arabian;
-  for (char32_t c = 0x10A9D; c <= 0x10A9F; ++c) (*smap)[c] = U_Old_North_Arabian;
+  for (char32_t c = 0x10A80; c <= 0x10A9C; ++c)
+    (*smap)[c] = U_Old_North_Arabian;
+  for (char32_t c = 0x10A9D; c <= 0x10A9F; ++c)
+    (*smap)[c] = U_Old_North_Arabian;
   for (char32_t c = 0x10880; c <= 0x1089E; ++c) (*smap)[c] = U_Nabataean;
   for (char32_t c = 0x108A7; c <= 0x108AF; ++c) (*smap)[c] = U_Nabataean;
   for (char32_t c = 0x10860; c <= 0x10876; ++c) (*smap)[c] = U_Palmyrene;

@@ -102,8 +102,6 @@ class Lattice {
   // `theta` is a smoothing parameter.
   std::vector<Node*> Sample(float theta);
 
-
-
   // Populates marginal probability of every node in this lattice.
   // |freq| is the frequency of the sentence.
   //  for (auto *node : all_nodes_) {
@@ -138,10 +136,7 @@ class Model : public ModelInterface {
   EncodeResult SampleEncode(absl::string_view normalized,
                             float theta) const override;
 
-
-
   bool IsSampleEncodeAvailable() const override { return true; }
-
 
   bool IsNBestEncodeAvailable() const override { return true; }
 

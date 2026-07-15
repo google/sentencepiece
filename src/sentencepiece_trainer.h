@@ -179,7 +179,8 @@ class SentencePieceNormalizer {
   virtual absl::Status Load(absl::string_view filename);
 
   virtual absl::Status LoadFromSerializedProto(absl::string_view serialized);
-  virtual absl::Status LoadFromSerializedNormalizerSpec(absl::string_view serialized);
+  virtual absl::Status LoadFromSerializedNormalizerSpec(
+      absl::string_view serialized);
 
   virtual absl::Status LoadFromRuleTSV(absl::string_view filename);
 
@@ -189,7 +190,7 @@ class SentencePieceNormalizer {
       absl::Span<const std::pair<std::string, std::string>> norm_map);
 
   virtual absl::Status Decompile(
-      std::vector<std::pair<std::string, std::string>> *norm_map) const;
+      std::vector<std::pair<std::string, std::string>>* norm_map) const;
 
   virtual absl::Status Normalize(absl::string_view input,
                                  std::string* normalized) const;

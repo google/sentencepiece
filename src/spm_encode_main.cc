@@ -43,7 +43,6 @@ ABSL_FLAG(double, alpha, 0.5, "Smoothing parameter for sampling mode.");
 ABSL_FLAG(uint32_t, random_seed, std::numeric_limits<uint32_t>::max(),
           "Seed value for random generator.");
 
-
 ABSL_FLAG(bool, generate_vocabulary, false,
           "Generates vocabulary file instead of segmentation");
 
@@ -73,8 +72,6 @@ int main(int argc, char* argv[]) {
   sentencepiece::SentencePieceProcessor sp;
   QCHECK_OK(sp.Load(absl::GetFlag(FLAGS_model)));
   QCHECK_OK(sp.SetEncodeExtraOptions(absl::GetFlag(FLAGS_extra_options)));
-
-
 
   auto output =
       sentencepiece::filesystem::NewWritableFile(absl::GetFlag(FLAGS_output));

@@ -465,13 +465,12 @@ TEST(SentencePieceTrainerTest, NormalizerMapTest) {
   SentencePieceNormalizer sp;
   EXPECT_OK(sp.LoadFromMap(norm_map));
 
+  EXPECT_OK(SentencePieceTrainer::SetProtoField("add_dummy_prefix", "false",
+                                                sp.mutable_normalizer_spec()));
+  EXPECT_OK(SentencePieceTrainer::SetProtoField("escape_whitespaces", "false",
+                                                sp.mutable_normalizer_spec()));
   EXPECT_OK(SentencePieceTrainer::SetProtoField(
-      "add_dummy_prefix", "false", sp.mutable_normalizer_spec()));
-  EXPECT_OK(SentencePieceTrainer::SetProtoField(
-      "escape_whitespaces", "false", sp.mutable_normalizer_spec()));
-  EXPECT_OK(SentencePieceTrainer::SetProtoField(
-      "remove_extra_whitespaces", "false",
-      sp.mutable_normalizer_spec()));
+      "remove_extra_whitespaces", "false", sp.mutable_normalizer_spec()));
 
   EXPECT_EQ(sp.Normalize("foo"), "bar");
   EXPECT_EQ(sp.Normalize("apple"), "orange");
@@ -487,11 +486,12 @@ TEST(SentencePieceTrainerTest, NormalizerMapTest) {
   EXPECT_EQ(decompiled_map[1].first, "foo");
   EXPECT_EQ(decompiled_map[1].second, "bar");
 
-  // Test invalid UTF-8 validation, empty source, identity conversion, and duplicate keys
+  // Test invalid UTF-8 validation, empty source, identity conversion, and
+  // duplicate keys
   SentencePieceNormalizer sp_invalid;
   EXPECT_FALSE(sp_invalid.LoadFromMap({{"\xFF", "bar"}}).ok());
   EXPECT_FALSE(sp_invalid.LoadFromMap({{"foo", "\xFF"}}).ok());
-  EXPECT_FALSE(sp_invalid.LoadFromMap({{"" , "bar"}}).ok());
+  EXPECT_FALSE(sp_invalid.LoadFromMap({{"", "bar"}}).ok());
   EXPECT_FALSE(sp_invalid.LoadFromMap({{"foo", "foo"}}).ok());
   EXPECT_FALSE(sp_invalid.LoadFromMap({{"foo", "bar"}, {"foo", "baz"}}).ok());
 }
@@ -525,7 +525,6 @@ TEST(SentencePieceTrainerTest, NormalizerConflictTest) {
 
   EXPECT_OK(train_with_kwargs("character_coverage", "0.99"));
 }
-
 
 }  // namespace
 }  // namespace sentencepiece

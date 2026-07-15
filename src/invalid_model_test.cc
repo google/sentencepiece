@@ -16,19 +16,19 @@
 #include <cstring>
 #include <fstream>
 #include <ios>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
+#include "sentencepiece_model.pb.h"
+#include "sentencepiece_processor.h"
 #include "testharness.h"
 #include "third_party/absl/base/internal/endian.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
-#include "sentencepiece_model.pb.h"
-#include "sentencepiece_processor.h"
-#include "util.h"
 #include "unigram_model.h"
+#include "util.h"
 
 namespace sentencepiece {
 namespace {
@@ -211,8 +211,6 @@ TEST(SentencePieceProcessorTest, RejectModelWithOOBCharsmapValue) {
   EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
   EXPECT_EQ(status.message(), "precompiled_charsmap is invalid.");
 }
-
-
 
 }  // namespace
 }  // namespace sentencepiece

@@ -277,8 +277,6 @@ float Lattice::PopulateMarginal(float freq,
   return freq * Z;
 }
 
-
-
 namespace {
 
 // The node structure to support A* algorithm in Lattice::NBest()
@@ -728,8 +726,6 @@ EncodeResult Model::SampleEncode(absl::string_view normalized,
   return results;
 }
 
-
-
 bool Model::VerifyOutputsEquivalent(absl::string_view expected,
                                     absl::string_view actual) const {
   auto compute_unigram_model_score =
@@ -882,7 +878,8 @@ EncodeResult Model::EncodeOptimized(absl::string_view normalized) const {
       }
     }
     if (!has_single_node) {
-      max_frontier = std::max(max_frontier, starts_at + static_cast<size_t>(mblen));
+      max_frontier =
+          std::max(max_frontier, starts_at + static_cast<size_t>(mblen));
       auto &target_node = best_path_ends_at[starts_at + mblen];
       const auto candidate_best_path_score =
           unk_score + best_path_score_till_here;

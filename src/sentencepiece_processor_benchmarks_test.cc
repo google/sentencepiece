@@ -212,26 +212,26 @@ BENCHMARK(BM_OSSModel_Parallel);
 
 void BM_DecodeBotchan_Ids(benchmark::State& state) {
   BM_Decode<DecodeInputMode::kIds>(state, "botchan_1000_bpe.model",
-                                    "botchan.txt");
+                                   "botchan.txt");
 }
 BENCHMARK(BM_DecodeBotchan_Ids);
 
 void BM_DecodeBotchan_Pieces(benchmark::State& state) {
   BM_Decode<DecodeInputMode::kPieces>(state, "botchan_1000_bpe.model",
-                                       "botchan.txt");
+                                      "botchan.txt");
 }
 BENCHMARK(BM_DecodeBotchan_Pieces);
 
 void BM_DecodeWagahaiwaNekodearu_Ids(benchmark::State& state) {
-  BM_Decode<DecodeInputMode::kIds>(
-      state, "wagahaiwa_nekodearu_2000_bpe_byte.model",
-      "wagahaiwa_nekodearu.txt");
+  BM_Decode<DecodeInputMode::kIds>(state,
+                                   "wagahaiwa_nekodearu_2000_bpe_byte.model",
+                                   "wagahaiwa_nekodearu.txt");
 }
 BENCHMARK(BM_DecodeWagahaiwaNekodearu_Ids);
 
 void BM_DecodeOSSModel_Ids(benchmark::State& state) {
   BM_Decode<DecodeInputMode::kIds>(state, "test_oss_model.model",
-                                    "botchan.txt");
+                                   "botchan.txt");
 }
 BENCHMARK(BM_DecodeOSSModel_Ids);
 
