@@ -22,6 +22,7 @@
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
 #include "third_party/absl/flags/flag.h"
+#include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_split.h"
 #include "util.h"
 
@@ -61,25 +62,28 @@ int main(int argc, char *argv[]) {
 
   std::string detok, line;
   sentencepiece::SentencePieceText spt;
-  std::function<void(const std::vector<std::string> &pieces)> process;
+  std::function<void(absl::Span<const absl::string_view> pieces)> process;
 
-  auto ToIds = [&](const std::vector<std::string> &pieces) {
+  auto ToIds = [&](absl::Span<const absl::string_view> pieces) {
     std::vector<int> ids;
     ids.reserve(pieces.size());
     for (const auto &s : pieces) {
-      ids.push_back(atoi(s.c_str()));
+      int id;
+      if (absl::SimpleAtoi(s, &id)) {
+        ids.push_back(id);
+      }
     }
     return ids;
   };
 
   if (absl::GetFlag(FLAGS_input_format) == "piece") {
     if (absl::GetFlag(FLAGS_output_format) == "string") {
-      process = [&](const std::vector<std::string> &pieces) {
+      process = [&](absl::Span<const absl::string_view> pieces) {
         QCHECK_OK(sp.Decode(pieces, &detok));
         output->WriteLine(detok);
       };
     } else if (absl::GetFlag(FLAGS_output_format) == "proto") {
-      process = [&](const std::vector<std::string> &pieces) {
+      process = [&](absl::Span<const absl::string_view> pieces) {
         QCHECK_OK(sp.Decode(pieces, &spt));
       };
     } else {
@@ -88,12 +92,12 @@ int main(int argc, char *argv[]) {
     }
   } else if (absl::GetFlag(FLAGS_input_format) == "id") {
     if (absl::GetFlag(FLAGS_output_format) == "string") {
-      process = [&](const std::vector<std::string> &pieces) {
+      process = [&](absl::Span<const absl::string_view> pieces) {
         QCHECK_OK(sp.Decode(ToIds(pieces), &detok));
         output->WriteLine(detok);
       };
     } else if (absl::GetFlag(FLAGS_output_format) == "proto") {
-      process = [&](const std::vector<std::string> &pieces) {
+      process = [&](absl::Span<const absl::string_view> pieces) {
         QCHECK_OK(sp.Decode(ToIds(pieces), &spt));
       };
     } else {
@@ -108,7 +112,7 @@ int main(int argc, char *argv[]) {
     auto input = sentencepiece::filesystem::NewReadableFile(filename);
     QCHECK_OK(input->status());
     while (input->ReadLine(&line)) {
-      const auto pieces = absl::StrSplit(line, " ");
+      const std::vector<absl::string_view> pieces = absl::StrSplit(line, " ");
       process(pieces);
     }
   }

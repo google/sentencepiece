@@ -121,16 +121,7 @@ _NBEST = (
     "emit_unk_piece: bool | None = ..., nbest_size: int | None = ..., "
     "out_type: _OutType | None = ...) -> Any"
 )
-_SAMPLE_SCORE = (
-    "(self, input: str | bytes | Sequence[str] | Sequence[bytes], return_type: _OutType | None = ..., "
-    "add_bos: bool | None = ..., add_eos: bool | None = ..., reverse: bool | None = ..., "
-    "emit_unk_piece: bool | None = ..., num_samples: int | None = ..., alpha: float | None = ..., "
-    "wor: bool | None = ..., include_best: bool | None = ..., out_type: _OutType | None = ...) -> Any"
-)
-_SAMPLE_SCORE_AS = (
-    "(self, input: str | bytes | Sequence[str] | Sequence[bytes], num_samples: int | None = ..., "
-    "alpha: float | None = ..., **kwargs: Any) -> Any"
-)
+
 _DECODE_PIECES = (
     "(self, input: str | bytes | Sequence[str] | Sequence[bytes] | Sequence[Sequence[str]] | Sequence[Sequence[bytes]], "
     "return_type: _DecodeOutType = ..., out_type: _DecodeOutType = ..., **kwargs: Any) -> Any"
@@ -176,10 +167,7 @@ METHOD_SIGS = {
         "LoadFromSerializedProto": "(self, serialized: bytes) -> bool",
         "SetEncodeExtraOptions": "(self, extra_option: str) -> bool",
         "SetDecodeExtraOptions": "(self, extra_option: str) -> bool",
-        "SetVocabulary": "(self, valid_vocab: Sequence[str]) -> bool",
-        "ResetVocabulary": "(self) -> bool",
-        "LoadVocabulary": "(self, filename: str, threshold: int) -> bool",
-        "OverrideNormalizerSpec": "(self, **kwargs: object) -> bool",
+
         "serialized_model_proto": "(self) -> bytes",
         "GetPieceSize": "(self) -> int",
         # The batch overload uses list[...] (not Sequence[...]) because the
@@ -221,48 +209,41 @@ METHOD_SIGS = {
         "EncodeAsPieces": _INPUT_KWARGS,
         "EncodeAsIds": _INPUT_KWARGS,
         "EncodeAsNumpy": _INPUT_KWARGS,
-        "EncodeAsSerializedProto": _INPUT_KWARGS,
+
         "EncodeAsProto": _INPUT_KWARGS,
         "EncodeAsOffsetMapping": _INPUT_KWARGS,
-        "EncodeAsImmutableProto": _INPUT_KWARGS,
+
         "ParallelEncode": _PARALLEL_ENCODE,
         "ParallelEncodeAsPieces": _INPUT_KWARGS,
         "ParallelEncodeAsIds": _INPUT_KWARGS,
         "ParallelEncodeAsNumpy": _INPUT_KWARGS,
-        "ParallelEncodeAsSerializedProto": _INPUT_KWARGS,
+
         "ParallelEncodeAsProto": _INPUT_KWARGS,
-        "ParallelEncodeAsImmutableProto": _INPUT_KWARGS,
+
         "SampleEncodeAsPieces": _SAMPLE_AS,
         "SampleEncodeAsIds": _SAMPLE_AS,
         "SampleEncodeAsNumpy": _SAMPLE_AS,
-        "SampleEncodeAsSerializedProto": _SAMPLE_AS,
+
         "SampleEncodeAsProto": _SAMPLE_AS,
-        "SampleEncodeAsImmutableProto": _SAMPLE_AS,
+
         "NBestEncode": _NBEST,
         "NBestEncodeAsPieces": _NBEST_AS,
         "NBestEncodeAsIds": _NBEST_AS,
         "NBestEncodeAsNumpy": _NBEST_AS,
-        "NBestEncodeAsSerializedProto": _NBEST_AS,
+
         "NBestEncodeAsProto": _NBEST_AS,
-        "NBestEncodeAsImmutableProto": _NBEST_AS,
-        "SampleEncodeAndScore": _SAMPLE_SCORE,
-        "SampleEncodeAndScoreAsPieces": _SAMPLE_SCORE_AS,
-        "SampleEncodeAndScoreAsIds": _SAMPLE_SCORE_AS,
-        "SampleEncodeAndScoreAsSerializedProto": _SAMPLE_SCORE_AS,
-        "SampleEncodeAndScoreAsProto": _SAMPLE_SCORE_AS,
-        "SampleEncodeAndScoreAsImmutableProto": _SAMPLE_SCORE_AS,
+
+
         "Decode": _DECODE,
         "DecodePieces": _DECODE_PIECES,
         "DecodeIds": _DECODE_IDS,
-        "DecodePiecesAsSerializedProto": _DECODE_PIECES_SER,
-        "DecodeIdsAsSerializedProto": _DECODE_IDS_SER,
+
         "DecodePiecesAsProto": _DECODE_PIECES_PROTO,
         "DecodeIdsAsProto": _DECODE_IDS_PROTO,
-        "DecodePiecesAsImmutableProto": _DECODE_PIECES_PROTO,
-        "DecodeIdsAsImmutableProto": _DECODE_IDS_PROTO,
+
         "from_file": "(cls, model_file: str, return_type: _OutType | None = ..., **kwargs: Any) -> SentencePieceProcessor",
         "from_proto": "(cls, model_proto: bytes, return_type: _OutType | None = ..., **kwargs: Any) -> SentencePieceProcessor",
-        "CalculateEntropy": "(self, input: str | Sequence[str], alpha: float, num_threads: int | None = ...) -> float | list[float]",
+
         "Normalize": _NORMALIZE,
         "Tokenize": _ENCODE,
         "Detokenize": _DECODE,

@@ -156,10 +156,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
           self.sp_.decode_ids(self.sp_.sample_encode_as_ids(text, -1, 0.5)),
       )
 
-    self.assertEqual(
-        self.sp_.calculate_entropy(text, 0.1),
-        self.sp_.CalculateEntropy(text, 0.1),
-    )
+
 
   def test_ja_load(self):
     self.assertEqual(8000, self.jasp_.GetPieceSize())
@@ -228,10 +225,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
           ),
       )
 
-      self.assertEqual(
-          self.jasp_.calculate_entropy(text, 0.1),
-          self.jasp_.CalculateEntropy(text, 0.1),
-      )
+
 
   def test_train(self):
     tid = threading.get_native_id()
@@ -377,18 +371,6 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
   def test_serialized_proto(self):
     text = 'I saw a girl with a telescope.'
-    s1 = self.sp_.EncodeAsSerializedProto(text)
-    s2 = self.sp_.SampleEncodeAsSerializedProto(text, 10, 0.2)
-    s3 = self.sp_.NBestEncodeAsSerializedProto(text, 10)
-    s4 = self.sp_.DecodePiecesAsSerializedProto(['foo', 'bar'])
-    s5 = self.sp_.DecodeIdsAsSerializedProto([20, 30])
-
-    t1 = self.sp_.encode_as_serialized_proto(text)
-    t2 = self.sp_.sample_encode_as_serialized_proto(text, 10, 0.2)
-    t3 = self.sp_.nbest_encode_as_serialized_proto(text, 10)
-    t4 = self.sp_.decode_pieces_as_serialized_proto(['foo', 'bar'])
-    t5 = self.sp_.decode_ids_as_serialized_proto([20, 30])
-
     y1 = self.sp_.encode(text, return_type='serialized_proto')
     y2 = self.sp_.encode(
         text, enable_sampling=True, return_type='serialized_proto'
@@ -397,27 +379,17 @@ class TestSentencepieceProcessor(unittest.TestCase):
     y4 = self.sp_.decode(['foo', 'bar'], return_type='serialized_proto')
     y5 = self.sp_.decode([20, 30], return_type='serialized_proto')
 
-    self.assertEqual(type(s1), bytes)
-    self.assertEqual(type(s2), bytes)
-    self.assertEqual(type(t2), bytes)
-    self.assertEqual(type(s3), bytes)
-    self.assertEqual(type(s4), bytes)
-    self.assertEqual(type(s5), bytes)
-
-    self.assertEqual(s1, t1)
-    self.assertEqual(s3, t3)
-    self.assertEqual(s4, t4)
-    self.assertEqual(s5, t5)
-    self.assertEqual(s1, y1)
-    self.assertEqual(s3, y3)
-    self.assertEqual(s4, y4)
-    self.assertEqual(s5, y5)
+    self.assertEqual(type(y1), bytes)
+    self.assertEqual(type(y2), bytes)
+    self.assertEqual(type(y3), bytes)
+    self.assertEqual(type(y4), bytes)
+    self.assertEqual(type(y5), bytes)
 
     ids = self.jasp_.EncodeAsIds(text)
     pieces = self.jasp_.EncodeAsPieces(text)
-    s1 = self.jasp_.EncodeAsSerializedProto(text)
-    s2 = self.jasp_.DecodeIdsAsSerializedProto(ids)
-    s3 = self.jasp_.DecodePiecesAsSerializedProto(ids)
+    s1 = self.jasp_.encode(text, return_type='serialized_proto')
+    s2 = self.jasp_.decode(ids, return_type='serialized_proto')
+    s3 = self.jasp_.decode(pieces, return_type='serialized_proto')
     self.assertEqual(s2, s1)
     self.assertEqual(s3, s1)
 
@@ -460,7 +432,6 @@ class TestSentencepieceProcessor(unittest.TestCase):
     s3 = self.sp_.NBestEncodeAsProto(text, 10)
     s4 = self.sp_.DecodePiecesAsProto(['foo', 'bar'])
     s5 = self.sp_.DecodeIdsAsProto([20, 30])
-    s6 = self.sp_.SampleEncodeAndScoreAsProto(text, 10)
     s7 = self.sp_.ParallelEncodeAsProto(text, chunk_len=5, num_threads=2)
 
     t1 = self.sp_.encode_as_proto(text)
@@ -468,7 +439,6 @@ class TestSentencepieceProcessor(unittest.TestCase):
     t3 = self.sp_.nbest_encode_as_proto(text, 10)
     t4 = self.sp_.decode_pieces_as_proto(['foo', 'bar'])
     t5 = self.sp_.decode_ids_as_proto([20, 30])
-    t6 = self.sp_.sample_encode_and_score_as_proto(text, 10)
     t7 = self.sp_.parallel_encode_as_proto(text, chunk_len=5, num_threads=2)
 
     y1 = self.sp_.encode(text, return_type='proto')
@@ -476,7 +446,6 @@ class TestSentencepieceProcessor(unittest.TestCase):
     y3 = self.sp_.nbest_encode(text, return_type='proto', nbest_size=10)
     y4 = self.sp_.decode(['foo', 'bar'], return_type='proto')
     y5 = self.sp_.decode([20, 30], return_type='proto')
-    y6 = self.sp_.sample_encode_and_score(text, num_samples=10, return_type='proto')
     y7 = self.sp_.parallel_encode(text, chunk_len=5, num_threads=2, return_type='proto')
 
     self.assertIsInstance(s1, sentencepiece_pb2.SentencePieceText)
@@ -484,14 +453,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertIsInstance(s3, sentencepiece_pb2.NBestSentencePieceText)
     self.assertIsInstance(s4, sentencepiece_pb2.SentencePieceText)
     self.assertIsInstance(s5, sentencepiece_pb2.SentencePieceText)
-    self.assertIsInstance(s6, sentencepiece_pb2.NBestSentencePieceText)
-    self.assertIsInstance(t6, sentencepiece_pb2.NBestSentencePieceText)
-    self.assertIsInstance(y6, sentencepiece_pb2.NBestSentencePieceText)
     self.assertIsInstance(s7, sentencepiece_pb2.SentencePieceText)
-
-    self.assertEqual(len(s6.nbests), 10)
-    self.assertEqual(len(t6.nbests), 10)
-    self.assertEqual(len(y6.nbests), 10)
 
     self.assertEqual(s1, t1)
     self.assertEqual(s3, t3)
@@ -504,19 +466,17 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual(s5, y5)
     self.assertEqual(s7, y7)
 
-    x1 = self.sp_.encode_as_serialized_proto(text)
-    x2 = self.sp_.sample_encode_as_serialized_proto(text, 10, 0.2)
-    x3 = self.sp_.nbest_encode_as_serialized_proto(text, 10)
-    x4 = self.sp_.decode_pieces_as_serialized_proto(['foo', 'bar'])
-    x5 = self.sp_.decode_ids_as_serialized_proto([20, 30])
-    x7 = self.sp_.ParallelEncodeAsSerializedProto(text, chunk_len=5, num_threads=2)
-    tx7 = self.sp_.parallel_encode_as_serialized_proto(text, chunk_len=5, num_threads=2)
+    x1 = self.sp_.encode(text, return_type='serialized_proto')
+    x2 = self.sp_.encode(text, enable_sampling=True, return_type='serialized_proto')
+    x3 = self.sp_.nbest_encode(text, return_type='serialized_proto', nbest_size=10)
+    x4 = self.sp_.decode(['foo', 'bar'], return_type='serialized_proto')
+    x5 = self.sp_.decode([20, 30], return_type='serialized_proto')
+    x7 = self.sp_.parallel_encode(text, chunk_len=5, num_threads=2, return_type='serialized_proto')
 
     self.assertEqual(x1, t1.SerializeToString())
     self.assertEqual(x3, t3.SerializeToString())
     self.assertEqual(x4, t4.SerializeToString())
     self.assertEqual(x5, t5.SerializeToString())
-    self.assertEqual(x7, tx7)
     self.assertEqual(x7, s7.SerializeToString())
 
     v1 = self.sp_.EncodeAsIds(text)
@@ -553,20 +513,6 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
     # Verify immutable_proto raises ValueError
     with self.assertRaises(ValueError):
-      self.sp_.EncodeAsImmutableProto(text)
-    with self.assertRaises(ValueError):
-      self.sp_.SampleEncodeAsImmutableProto(text, 10, 0.2)
-    with self.assertRaises(ValueError):
-      self.sp_.NBestEncodeAsImmutableProto(text, 10)
-    with self.assertRaises(ValueError):
-      self.sp_.SampleEncodeAndScoreAsImmutableProto(text, 10)
-    with self.assertRaises(ValueError):
-      self.sp_.ParallelEncodeAsImmutableProto(text, chunk_len=5, num_threads=2)
-    with self.assertRaises(ValueError):
-      self.sp_.DecodePiecesAsImmutableProto(['foo', 'bar'])
-    with self.assertRaises(ValueError):
-      self.sp_.DecodeIdsAsImmutableProto([20, 30])
-    with self.assertRaises(ValueError):
       self.sp_.encode(text, return_type='immutable_proto')
     with self.assertRaises(ValueError):
       self.sp_.decode([20, 30], return_type='immutable_proto')
@@ -581,8 +527,8 @@ class TestSentencepieceProcessor(unittest.TestCase):
     ids2 = self.sp_.EncodeAsIds(text2)
     pieces = self.sp_.EncodeAsPieces(text)
     pieces2 = self.sp_.EncodeAsPieces(text2)
-    sprotos = self.sp_.EncodeAsSerializedProto(text)
-    sproto2 = self.sp_.EncodeAsSerializedProto(text2)
+    sprotos = self.sp_.encode(text, return_type='serialized_proto')
+    sproto2 = self.sp_.encode(text2, return_type='serialized_proto')
 
 
     self.assertEqual(sp.encode(text, return_type=int), ids)
@@ -843,10 +789,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
         sp.nbest_encode(text, nbest_size=10, return_type=int),
         sp.nbest_encode_as_ids(text, nbest_size=10),
     )
-    self.assertEqual(
-        sp.nbest_encode(text, nbest_size=10, return_type='serialized_proto'),
-        sp.nbest_encode_as_serialized_proto(text, nbest_size=10),
-    )
+
     if has_protobuf:
       self.assertEqual(
           sp.nbest_encode(text, nbest_size=10, return_type='proto'),
@@ -882,40 +825,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual(len(results_timeout2), 1)
     spm.set_nbest_timeout(0)
 
-  def test_sample_and_score(self):
-    sp = self.sp_
-    text = 'hello world'
-    text2 = 'I have a pen.'
-    for return_type in TESTED_RETURN_TYPES:
-      results = sp.sample_encode_and_score(
-          text, wor=True, num_samples=10, return_type=return_type
-      )
-      results = sp.SampleEncodeAndScore(
-          text, wor=False, num_samples=10, return_type=return_type
-      )
 
-      if return_type in [str, int]:
-        for n in results:
-          self.assertEqual(sp.decode(n[0]), text)
-
-      results = sp.sample_encode_and_score(
-          [text, text2], wor=True, num_samples=10, return_type=return_type
-      )
-      results = sp.SampleEncodeAndScore(
-          [text, text2], wor=True, num_samples=10, return_type=return_type
-      )
-
-      if return_type in [str, int]:
-        for n in results[0]:
-          self.assertEqual(sp.decode(n[0]), text)
-        for n in results[1]:
-          self.assertEqual(sp.decode(n[0]), text2)
-
-    sp.sample_encode_and_score_as_pieces(text, 10)
-    sp.sample_encode_and_score_as_ids(text, 10)
-    if has_protobuf:
-      sp.sample_encode_and_score_as_proto(text, 10)
-    sp.sample_encode_and_score_as_serialized_proto(text, 10)
 
   def test_valid_range(self):
     size = self.sp_.piece_size()
@@ -927,7 +837,6 @@ class TestSentencepieceProcessor(unittest.TestCase):
         'IsUnused',
         'IsByte',
         'DecodeIds',
-        'DecodeIdsAsSerializedProto',
     ]
     for m in funcs:
       getattr(self.sp_, m)([10, 20, 30])
@@ -1196,22 +1105,6 @@ class TestSentencepieceProcessor(unittest.TestCase):
           add_dummy_prefix=True
       )
 
-  def test_override_normalize_spec(self):
-    sp = spm.SentencePieceProcessor(
-        model_file=os.path.join(HERE, 'test_model.model')
-    )
-
-    self.assertEqual(
-        sp.EncodeAsPieces(' hello  world '), ['▁he', 'll', 'o', '▁world']
-    )
-
-    sp.override_normalizer_spec(add_dummy_prefix=False)
-    sp.override_normalizer_spec(remove_extra_whitespaces=False)
-    sp.override_normalizer_spec(escape_whitespaces=False)
-    self.assertEqual(
-        sp.EncodeAsPieces(' hello  world '),
-        [' ', 'he', 'll', 'o', '  ', 'w', 'or', 'l', 'd', ' '],
-    )
 
   def test_offset_mapping(self):
     sp = self.sp_

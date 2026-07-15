@@ -144,7 +144,7 @@ class TestSentencePieceProcessorClean(unittest.TestCase):
     # return_type=serialized_proto
     proto_serialized = sp.encode(text, return_type='serialized_proto')
     self.assertIsInstance(proto_serialized, bytes)
-    self.assertEqual(proto_serialized, sp.encode_as_serialized_proto(text))
+
 
     # return_type=proto
     if has_protobuf:
@@ -204,8 +204,8 @@ class TestSentencePieceProcessorClean(unittest.TestCase):
     # Helper Decode calls
     self.assertEqual(sp.DecodePieces(pieces), text)
     self.assertEqual(sp.DecodeIds(ids), text)
-    self.assertIsInstance(sp.DecodePiecesAsSerializedProto(pieces), bytes)
-    self.assertIsInstance(sp.DecodeIdsAsSerializedProto(ids), bytes)
+    self.assertIsInstance(sp.decode(pieces, return_type='serialized_proto'), bytes)
+    self.assertIsInstance(sp.decode(ids, return_type='serialized_proto'), bytes)
     if has_protobuf:
       self.assertIsInstance(sp.DecodePiecesAsProto(pieces), sentencepiece_pb2.SentencePieceText)
       self.assertIsInstance(sp.DecodeIdsAsProto(ids), sentencepiece_pb2.SentencePieceText)
@@ -224,13 +224,7 @@ class TestSentencePieceProcessorClean(unittest.TestCase):
     with self.assertRaises(TypeError):
       sp.decode(ids, num_threads='invalid')
 
-    # Deprecated immutable_proto helpers
-    with self.assertRaises(ValueError):
-      sp.EncodeAsImmutableProto(text)
-    with self.assertRaises(ValueError):
-      sp.DecodePiecesAsImmutableProto(pieces)
-    with self.assertRaises(ValueError):
-      sp.DecodeIdsAsImmutableProto(ids)
+
 
   def test_encode_decode_batch(self):
     sp = spm.SentencePieceProcessor(model_file=MODEL_PATH)
@@ -339,13 +333,11 @@ class TestSentencePieceProcessorClean(unittest.TestCase):
     sp.sample_encode_as_ids(text, nbest_size=-1, alpha=0.1)
     sp.sample_encode_as_pieces(text, nbest_size=-1, alpha=0.1)
     sp.sample_encode_as_numpy(text, nbest_size=-1, alpha=0.1)
-    sp.sample_encode_as_serialized_proto(text, nbest_size=-1, alpha=0.1)
+
     if has_protobuf:
       sp.sample_encode_as_proto(text, nbest_size=-1, alpha=0.1)
 
-    # Deprecated helpers
-    with self.assertRaises(ValueError):
-      sp.SampleEncodeAsImmutableProto(text, nbest_size=-1, alpha=0.1)
+
 
   def test_nbest_encode(self):
     sp = spm.SentencePieceProcessor(model_file=MODEL_PATH)
@@ -391,67 +383,13 @@ class TestSentencePieceProcessorClean(unittest.TestCase):
     sp.nbest_encode_as_ids(text, nbest_size=3)
     sp.nbest_encode_as_pieces(text, nbest_size=3)
     sp.nbest_encode_as_numpy(text, nbest_size=3)
-    sp.nbest_encode_as_serialized_proto(text, nbest_size=3)
+
     if has_protobuf:
       sp.nbest_encode_as_proto(text, nbest_size=3)
 
-    # Deprecated helpers
-    with self.assertRaises(ValueError):
-      sp.NBestEncodeAsImmutableProto(text, nbest_size=3)
 
-  def test_sample_encode_and_score(self):
-    sp = spm.SentencePieceProcessor(model_file=MODEL_PATH)
-    text = "This is a test."
 
-    # Default num_samples
-    samples_default = sp.sample_encode_and_score(text, alpha=0.1, return_type=int)
-    self.assertEqual(len(samples_default), 1)
-
-    samples_ids = sp.sample_encode_and_score(text, num_samples=5, alpha=0.1, return_type=int)
-    self.assertIsInstance(samples_ids, list)
-    self.assertEqual(len(samples_ids), 5)
-    self.assertIsInstance(samples_ids[0], tuple)
-    self.assertIsInstance(samples_ids[0][0], list)
-    self.assertIsInstance(samples_ids[0][1], float)
-
-    samples_pieces = sp.sample_encode_and_score(text, num_samples=5, alpha=0.1, return_type=str)
-    self.assertEqual(len(samples_pieces), 5)
-    self.assertIsInstance(samples_pieces[0][0], list)
-    self.assertIsInstance(samples_pieces[0][0][0], str)
-
-    samples_bytes = sp.sample_encode_and_score(text, num_samples=5, alpha=0.1, return_type=bytes)
-
-    samples_serialized = sp.sample_encode_and_score(text, num_samples=5, alpha=0.1, return_type='serialized_proto')
-
-    if has_protobuf:
-      samples_proto = sp.sample_encode_and_score(text, num_samples=5, alpha=0.1, return_type='proto')
-      self.assertIsInstance(samples_proto, sentencepiece_pb2.NBestSentencePieceText)
-
-    # Batch SampleEncodeAndScore
-    batch_samples = sp.sample_encode_and_score([text, text], num_samples=5, alpha=0.1, return_type=int)
-    self.assertEqual(len(batch_samples), 2)
-    self.assertEqual(len(batch_samples[0]), 5)
-
-    # Error cases
-    with self.assertRaises(ValueError):
-      sp.sample_encode_and_score(text, num_samples=-1)
-    with self.assertRaises(ValueError):
-      sp.sample_encode_and_score(text, num_samples=5, include_best=True, wor=False)
-    with self.assertRaises(ValueError):
-      sp.sample_encode_and_score(text, num_samples=5, return_type='numpy')
-    with self.assertRaises(ValueError):
-      sp.sample_encode_and_score(text, num_samples=5, alpha=0.1, return_type='offset_mapping')
-
-    # Helpers
-    sp.sample_encode_and_score_as_ids(text, num_samples=3, alpha=0.1)
-    sp.sample_encode_and_score_as_pieces(text, num_samples=3, alpha=0.1)
-    sp.sample_encode_and_score_as_serialized_proto(text, num_samples=3, alpha=0.1)
-    if has_protobuf:
-      sp.sample_encode_and_score_as_proto(text, num_samples=3, alpha=0.1)
-
-    # Deprecated helpers
-    with self.assertRaises(ValueError):
-      sp.SampleEncodeAndScoreAsImmutableProto(text, num_samples=3, alpha=0.1)
+  
 
   def test_parallel_encode(self):
     sp = spm.SentencePieceProcessor(model_file=MODEL_PATH)
@@ -492,13 +430,11 @@ class TestSentencePieceProcessorClean(unittest.TestCase):
     sp.parallel_encode_as_ids(text, chunk_len=50, thread_pool=pool)
     sp.parallel_encode_as_pieces(text, chunk_len=50, thread_pool=pool)
     sp.parallel_encode_as_numpy(text, chunk_len=50, thread_pool=pool)
-    sp.parallel_encode_as_serialized_proto(text, chunk_len=50, thread_pool=pool)
+
     if has_protobuf:
       sp.parallel_encode_as_proto(text, chunk_len=50, thread_pool=pool)
 
-    # Deprecated helpers
-    with self.assertRaises(ValueError):
-      sp.ParallelEncodeAsImmutableProto(text, chunk_len=50, thread_pool=pool)
+
 
   def test_normalization_and_entropy(self):
     sp = spm.SentencePieceProcessor(model_file=MODEL_PATH)
@@ -519,16 +455,9 @@ class TestSentencePieceProcessorClean(unittest.TestCase):
     norms_with_offsets = sp.normalize([text, text], with_offsets=True)
     self.assertEqual(len(norms_with_offsets), 2)
 
-    # CalculateEntropy
-    entropy = sp.calculate_entropy(text, alpha=1.0)
-    self.assertIsInstance(entropy, float)
 
-    entropies = sp.calculate_entropy([text, text], alpha=1.0)
-    self.assertEqual(len(entropies), 2)
 
-    # OverrideNormalizerSpec
-    sp_temp = spm.SentencePieceProcessor(model_file=MODEL_PATH)
-    sp_temp.override_normalizer_spec(escape_whitespaces=False)
+
 
   def test_vocab_metadata(self):
     sp = spm.SentencePieceProcessor(model_file=MODEL_PATH)

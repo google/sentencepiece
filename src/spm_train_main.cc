@@ -151,18 +151,6 @@ ABSL_FLAG(bool, train_extremely_large_corpus,
 ABSL_FLAG(uint32_t, random_seed, std::numeric_limits<uint32_t>::max(),
           "Seed value for random generator.");
 
-// DP related.
-ABSL_FLAG(bool, enable_differential_privacy, false,
-          "Whether to add DP while training. Currently supported only by "
-          "UNIGRAM model.");
-
-ABSL_FLAG(float, differential_privacy_noise_level, 0.0f,
-          "Amount of noise to add for"
-          " DP");
-ABSL_FLAG(std::uint64_t, differential_privacy_clipping_threshold, 0,
-          "Threshold for"
-          " clipping the counts for DP");
-
 int main(int argc, char* argv[]) {
   sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
@@ -258,11 +246,6 @@ int main(int argc, char* argv[]) {
   SetRepeatedTrainerSpecFromFlag(control_symbols);
   SetRepeatedTrainerSpecFromFlag(user_defined_symbols);
   SetTrainerSpecFromFlag(train_extremely_large_corpus);
-  // DP related.
-  SetTrainerSpecFromFlag(enable_differential_privacy);
-  SetTrainerSpecFromFlag(differential_privacy_noise_level);
-  SetTrainerSpecFromFlag(differential_privacy_clipping_threshold);
-
   SetRepeatedTrainerSpecFromFile(control_symbols);
   SetRepeatedTrainerSpecFromFile(user_defined_symbols);
 

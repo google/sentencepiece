@@ -83,3 +83,4 @@ python/test/sp_*.pickle
 third_party/absl
 
 test_tmp
+build_cpp/
