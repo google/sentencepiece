@@ -84,3 +84,4 @@ python/build
 third_party/absl
 
 test_tmp
+build_cpp/

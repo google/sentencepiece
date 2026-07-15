@@ -317,21 +317,6 @@ bool TrainerInterface::IsValidSentencePiece(
   return true;
 }
 
-template <typename T>
-void AddDPNoise(const TrainerSpec& trainer_spec, absl::BitGen* generator,
-                T* to_update) {
-  if (trainer_spec.differential_privacy_noise_level() > 0) {
-    const float random_num = absl::Gaussian<float>(
-        *generator, 0.0F, trainer_spec.differential_privacy_noise_level());
-    *to_update =
-        std::round(std::max(0.F, random_num + static_cast<float>(*to_update)));
-  }
-  // Clip anything below the clipping threshold to 0.
-  if (*to_update < trainer_spec.differential_privacy_clipping_threshold()) {
-    *to_update = 0;
-  }
-}
-
 absl::Status TrainerInterface::LoadSentences() {
   RETURN_IF_ERROR(status());
   RET_CHECK(sentences_.empty());
@@ -467,54 +452,6 @@ END:
         sentences_.resize(sentences_.size() - 1);
       }
     }
-  }
-
-  // If DP is required, add the noise/clip the input.
-  if (trainer_spec_.enable_differential_privacy()) {
-    LOG(WARNING) << "Differential privacy feature will be deprecated in v0.2.3";
-    if (trainer_spec_.input_format() != "tsv") {
-      LOG(ERROR)
-          << "Dp version will not work correctly with text input format.";
-    }
-    if (trainer_spec_.differential_privacy_noise_level() <= 0) {
-      LOG(WARNING) << "Private version with <=0 noise level will give "
-                      "infinity epsilon guarantees.";
-    }
-    if (trainer_spec_.differential_privacy_clipping_threshold() <= 0) {
-      LOG(WARNING) << "Private version with <=0 clipping threshold will give "
-                      "infinity epsilon guarantees.";
-    }
-
-    // Add noise to all the sentences via threadpool.
-
-    // This line is mainly for tests with small num of sentences.
-    const auto num_workers =
-        std::min<uint64_t>(trainer_spec_.num_threads(), sentences_.size() - 1);
-
-    {
-      auto pool = std::make_unique<ThreadPool>(num_workers);
-      for (size_t n = 0; n < num_workers; ++n) {
-        pool->Schedule([&, n] {
-          // One per thread generator.
-          auto* generator = random::GetRandomGenerator();
-          for (size_t i = n; i < sentences_.size(); i += num_workers) {
-            AddDPNoise<int64_t>(trainer_spec_, generator,
-                                &sentences_[i].second);
-          }
-        });
-      }
-    }
-
-    // Remove zero freq elements.
-    const auto before_size = sentences_.size();
-    auto it = std::remove_if(sentences_.begin(), sentences_.end(),
-                             [](const Sentence& s) { return s.second <= 0; });
-    const auto new_size = std::distance(sentences_.begin(), it);
-    const int num_erased = before_size - new_size;
-    sentences_.erase(it, sentences_.end());
-
-    LOG(INFO) << "DP noise resulted in " << 1.0 * num_erased / before_size
-              << " fraction of sentences removed.";
   }
 
   // Count character frequencies.

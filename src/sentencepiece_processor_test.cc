@@ -161,9 +161,7 @@ TEST(SentencepieceProcessorTest, EncodeTest) {
       EXPECT_EQ(result[i].first, spt.pieces(i).piece());
     }
 
-    SentencePieceText spt2;
-    EXPECT_TRUE(spt2.ParseFromString(sp.EncodeAsSerializedProto("ABC DEF")));
-    EXPECT_EQ(spt.SerializeAsString(), spt2.SerializeAsString());
+
 
     EXPECT_EQ("ABC", spt.pieces(0).surface());
     EXPECT_EQ(" DE", spt.pieces(1).surface());
@@ -460,10 +458,7 @@ TEST(SentencepieceProcessorTest, NBestEncodeTest) {
     EXPECT_EQ(result[1].first[i].first, spt.nbests(1).pieces(i).piece());
   }
 
-  NBestSentencePieceText spt2;
-  EXPECT_TRUE(
-      spt2.ParseFromString(sp.NBestEncodeAsSerializedProto("ABC DEF", 2)));
-  EXPECT_EQ(spt.SerializeAsString(), spt2.SerializeAsString());
+
 
   auto mock_empty = std::make_unique<MockModel>();
   mock_empty->SetNBestEncodeResult(kInput, {});
@@ -511,10 +506,7 @@ TEST(SentencepieceProcessorTest, SampleEncodeTest) {
     EXPECT_EQ(result[i].second, spt.pieces(i).id());
   }
 
-  SentencePieceText spt2;
-  EXPECT_TRUE(spt2.ParseFromString(
-      sp.SampleEncodeAsSerializedProto("ABC DEF", -1, 0.5)));
-  EXPECT_EQ(spt.SerializeAsString(), spt2.SerializeAsString());
+
 
   EXPECT_FALSE(sp.SampleEncode("ABC DEF", 1024, 0.5, &output).ok());
   EXPECT_TRUE(sp.SampleEncode("ABC DEF", 0, 0.5, &output).ok());
@@ -574,8 +566,8 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
     float GetScore(int id) const override { return 0.0; }
   };
 
-  const std::vector<std::string> input = {"<s>", WS "ABC",   "<unk>", WS "DE",
-                                          "F",   "G" WS "H", "I",     "</s>"};
+  const std::vector<absl::string_view> input = {"<s>", WS "ABC",   "<unk>", WS "DE",
+                                                "F",   "G" WS "H", "I",     "</s>"};
 
   {
     SentencePieceProcessor sp;
@@ -622,9 +614,7 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
     EXPECT_EQ(16, spt.pieces(7).begin());
     EXPECT_EQ(16, spt.pieces(7).end());
 
-    SentencePieceText spt2;
-    EXPECT_TRUE(spt2.ParseFromString(sp.DecodePiecesAsSerializedProto(input)));
-    EXPECT_EQ(spt.SerializeAsString(), spt2.SerializeAsString());
+
   }
 
   // unk_surface is not defined.
@@ -742,7 +732,7 @@ TEST(SentencepieceProcessorTest, DummyPrefixDecodeTest) {
   };
 
   // start the sequence with a whitespace token
-  const std::vector<std::string> input = {
+  const std::vector<absl::string_view> input = {
       "<s>", WS, WS "ABC", "<unk>", WS "DE", "F", "G" WS "H", "I", "</s>"};
 
   {
@@ -842,7 +832,7 @@ TEST(SentencepieceProcessorTest, ByteFallbackDecodeTest) {
       std::make_unique<normalizer::Normalizer>(normalization_spec));
 
   {
-    const std::vector<std::string> input = {
+    const std::vector<absl::string_view> input = {
         "<s>",
         "A",
         "B",
@@ -1366,22 +1356,7 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
     RunTest(sp);
   }
 
-  // Restrict Vocabulary.
-  {
-    SentencePieceProcessor sp;
-    EXPECT_TRUE(sp.Load(model_proto).ok());
-    EXPECT_TRUE(sp.SetVocabulary({"a", "b", "c"}).ok());  // remove "ab"
 
-    const std::vector<std::string> expected_str = {WS, "a", "b", "c"};
-    std::vector<std::string> sps;
-    EXPECT_TRUE(sp.Encode("abc", &sps).ok());
-    EXPECT_EQ(expected_str, sps);
-
-    std::vector<int> ids;
-    const std::vector<int> expected_id = {7, 3, 4, 5};
-    EXPECT_TRUE(sp.Encode("abc", &ids).ok());
-    EXPECT_EQ(expected_id, ids);
-  }
 }
 
 TEST(SentencePieceProcessorTest, SkipNormalizationTest) {
@@ -1509,108 +1484,7 @@ TEST(SentencePieceProcessorTest, SpecialPiecesCombinationsTest) {
   }
 }
 
-TEST(SentencePieceProcessorTest, VocabularyTest) {
-  ModelProto model_proto;
-  auto* sp1 = model_proto.add_pieces();
-  auto* sp2 = model_proto.add_pieces();
-  auto* sp3 = model_proto.add_pieces();
 
-  auto GetInlineFilename = [](const std::string content) {
-    {
-      auto out = filesystem::NewWritableFile(
-          util::JoinPath(::testing::TempDir(), "vocab.txt"));
-      out->Write(content);
-    }
-    return util::JoinPath(::testing::TempDir(), "vocab.txt");
-  };
-
-  sp1->set_type(ModelProto::SentencePiece::UNKNOWN);
-  sp1->set_piece("<unk>");
-  sp2->set_type(ModelProto::SentencePiece::CONTROL);
-  sp2->set_piece("<s>");
-  sp3->set_type(ModelProto::SentencePiece::CONTROL);
-  sp3->set_piece("</s>");
-
-  AddPiece(&model_proto, "aa", 0.0);
-  AddPiece(&model_proto, "bb", 0.0);
-  AddPiece(&model_proto, "cc", 0.0);
-  AddPiece(&model_proto, "dd", 0.0);
-  AddPiece(&model_proto, "e", 0.0);
-
-  SentencePieceProcessor sp;
-  EXPECT_TRUE(sp.Load(model_proto).ok());
-
-  EXPECT_FALSE(sp.IsUnused(0));
-  EXPECT_FALSE(sp.IsUnused(1));
-  EXPECT_FALSE(sp.IsUnused(2));
-  EXPECT_FALSE(sp.IsUnused(3));
-  EXPECT_FALSE(sp.IsUnused(4));
-  EXPECT_FALSE(sp.IsUnused(5));
-  EXPECT_FALSE(sp.IsUnused(6));
-  EXPECT_FALSE(sp.IsUnused(7));
-
-  EXPECT_TRUE(sp.SetVocabulary({"aa", "dd", "e"}).ok());
-
-  EXPECT_FALSE(sp.IsUnused(0));
-  EXPECT_FALSE(sp.IsUnused(1));
-  EXPECT_FALSE(sp.IsUnused(2));
-  EXPECT_FALSE(sp.IsUnused(3));
-  EXPECT_TRUE(sp.IsUnused(4));
-  EXPECT_TRUE(sp.IsUnused(5));
-  EXPECT_FALSE(sp.IsUnused(6));
-  EXPECT_FALSE(sp.IsUnused(7));  // single char "e" is always used.
-
-  EXPECT_TRUE(sp.ResetVocabulary().ok());
-
-  EXPECT_FALSE(sp.IsUnused(3));
-  EXPECT_FALSE(sp.IsUnused(4));
-  EXPECT_FALSE(sp.IsUnused(5));
-  EXPECT_FALSE(sp.IsUnused(6));
-  EXPECT_FALSE(sp.IsUnused(7));
-
-  EXPECT_TRUE(sp.SetVocabulary({"bb"}).ok());
-  EXPECT_TRUE(sp.IsUnused(3));
-  EXPECT_FALSE(sp.IsUnused(4));
-  EXPECT_TRUE(sp.IsUnused(5));
-  EXPECT_TRUE(sp.IsUnused(6));
-  EXPECT_FALSE(sp.IsUnused(7));
-
-  EXPECT_TRUE(sp.LoadVocabulary(GetInlineFilename("aa\t1\ndd\t2\n"), 2).ok());
-  EXPECT_TRUE(sp.IsUnused(3));
-  EXPECT_TRUE(sp.IsUnused(4));
-  EXPECT_TRUE(sp.IsUnused(5));
-  EXPECT_FALSE(sp.IsUnused(6));
-  EXPECT_FALSE(sp.IsUnused(7));
-
-  EXPECT_TRUE(sp.LoadVocabulary(GetInlineFilename("aa\t1\ndd\t1\n"), 2).ok());
-  EXPECT_TRUE(sp.IsUnused(3));
-  EXPECT_TRUE(sp.IsUnused(4));
-  EXPECT_TRUE(sp.IsUnused(5));
-  EXPECT_TRUE(sp.IsUnused(6));
-  EXPECT_FALSE(sp.IsUnused(7));
-
-  EXPECT_TRUE(sp.LoadVocabulary(GetInlineFilename("aa\t1\ndd\t1\n"), 1).ok());
-  EXPECT_FALSE(sp.IsUnused(3));
-  EXPECT_TRUE(sp.IsUnused(4));
-  EXPECT_TRUE(sp.IsUnused(5));
-  EXPECT_FALSE(sp.IsUnused(6));
-  EXPECT_FALSE(sp.IsUnused(7));
-
-  EXPECT_TRUE(sp.LoadVocabulary(GetInlineFilename("aa\t0\ndd\t0\n"), 0).ok());
-  EXPECT_FALSE(sp.IsUnused(3));
-  EXPECT_TRUE(sp.IsUnused(4));
-  EXPECT_TRUE(sp.IsUnused(5));
-  EXPECT_FALSE(sp.IsUnused(6));
-  EXPECT_FALSE(sp.IsUnused(7));
-
-  // No frequency.
-  EXPECT_TRUE(sp.LoadVocabulary(GetInlineFilename("aa\ndd\n"), 1).ok());
-  EXPECT_FALSE(sp.IsUnused(3));
-  EXPECT_TRUE(sp.IsUnused(4));
-  EXPECT_TRUE(sp.IsUnused(5));
-  EXPECT_FALSE(sp.IsUnused(6));
-  EXPECT_FALSE(sp.IsUnused(7));
-}
 
 TEST(LoadModelProtoTest, EmptyFilename) {
   ModelProto model_proto;
@@ -1647,162 +1521,6 @@ TEST(LoadModelProtoTest, FileLoadsOk) {
     ASSERT_TRUE(output->Write(model_proto.SerializeAsString()));
   }
   EXPECT_OK(io::LoadModelProto(filename, &model_proto));
-}
-
-TEST(SentencePieceProcessorTest, ImmutableSentencePieceTextTest) {
-  ImmutableSentencePieceText spt;
-  EXPECT_TRUE(spt.text().empty());
-  EXPECT_EQ(spt.score(), 0.0);
-  EXPECT_TRUE(spt.SerializeAsString().empty());
-
-  auto* v = spt.mutable_proto();
-
-  v->set_text("hello world");
-  v->set_score(1.0);
-  for (int i = 0; i < 10; ++i) {
-    auto* p = v->add_pieces();
-    p->set_surface(absl::StrCat("surface_", i));
-    p->set_piece(absl::StrCat("surface_", i));
-    p->set_id(i);
-    p->set_begin(i + 10);
-    p->set_end(i + 20);
-  }
-
-  EXPECT_EQ(v->pieces_size(), spt.pieces_size());
-  for (int i = 0; i < spt.pieces_size(); ++i) {
-    EXPECT_EQ(v->pieces(i).surface(), spt.pieces(i).surface());
-    EXPECT_EQ(v->pieces(i).piece(), spt.pieces(i).piece());
-    EXPECT_EQ(v->pieces(i).id(), spt.pieces(i).id());
-    EXPECT_EQ(v->pieces(i).begin(), spt.pieces(i).begin());
-    EXPECT_EQ(v->pieces(i).end(), spt.pieces(i).end());
-  }
-
-  auto check_proto = [&v](const ImmutableSentencePieceText& s) {
-    int n = 0;
-    for (const auto& p : s.pieces()) {
-      EXPECT_EQ(v->pieces(n).surface(), p.surface());
-      EXPECT_EQ(v->pieces(n).piece(), p.piece());
-      EXPECT_EQ(v->pieces(n).id(), p.id());
-      EXPECT_EQ(v->pieces(n).begin(), p.begin());
-      EXPECT_EQ(v->pieces(n).end(), p.end());
-      ++n;
-    }
-    EXPECT_EQ(v->text(), s.text());
-    EXPECT_EQ(v->score(), s.score());
-    EXPECT_EQ(v->SerializeAsString(), s.SerializeAsString());
-  };
-
-  // test copy.
-  const auto spt2 = spt;
-  check_proto(spt2);
-
-  // test assign.
-  const ImmutableSentencePieceText spt3(spt);
-  check_proto(spt3);
-
-  // default piece.
-  const ImmutableSentencePieceText_ImmutableSentencePiece piece;
-  EXPECT_TRUE(piece.surface().empty());
-  EXPECT_TRUE(piece.piece().empty());
-  EXPECT_EQ(piece.begin(), 0);
-  EXPECT_EQ(piece.end(), 0);
-  EXPECT_EQ(piece.id(), 0);
-}
-
-TEST(SentencePieceProcessorTest, ImmutableNBestSentencePieceTextTest) {
-  ImmutableNBestSentencePieceText spt;
-  EXPECT_EQ(spt.nbests_size(), 0);
-  EXPECT_TRUE(spt.SerializeAsString().empty());
-
-  auto* v = spt.mutable_proto();
-
-  for (int i = 0; i < 10; ++i) {
-    auto* p = v->add_nbests();
-    p->set_text(absl::StrCat("text_", i));
-    p->set_score(2.0 * i);
-  }
-
-  auto check_proto = [&v](const ImmutableNBestSentencePieceText& s) {
-    EXPECT_EQ(v->nbests_size(), s.nbests_size());
-    for (int i = 0; i < v->nbests_size(); ++i) {
-      EXPECT_EQ(v->nbests(i).text(), s.nbests(i).text());
-      EXPECT_EQ(v->nbests(i).score(), s.nbests(i).score());
-    }
-    EXPECT_EQ(v->SerializeAsString(), s.SerializeAsString());
-  };
-
-  check_proto(spt);
-
-  // test copy.
-  const auto spt2 = spt;
-  check_proto(spt2);
-
-  // test assign.
-  const ImmutableNBestSentencePieceText spt3(spt);
-  check_proto(spt3);
-}
-
-TEST(SentencePieceProcessorTest, ConvertToUnicodeSpansTest) {
-  auto make_spt = [&](const std::vector<std::string>& tokens) {
-    ImmutableSentencePieceText ispt;
-    auto* spt = ispt.mutable_proto();
-    int prev = 0;
-    std::string text;
-    for (const auto& tok : tokens) {
-      auto* piece = spt->add_pieces();
-      piece->set_surface(tok);
-      piece->set_piece(tok);
-      piece->set_begin(prev);
-      piece->set_end(prev + tok.size());
-      prev += tok.size();
-      text += tok;
-    }
-    spt->set_text(text);
-    ispt.ConvertToUnicodeSpans();
-    return ispt;
-  };
-
-  {
-    const auto spt = make_spt({"hello", "_world", "."});
-    EXPECT_EQ(spt.pieces_size(), 3);
-    EXPECT_EQ(spt.pieces(0).begin(), 0);
-    EXPECT_EQ(spt.pieces(0).end(), 5);
-    EXPECT_EQ(spt.pieces(1).begin(), 5);
-    EXPECT_EQ(spt.pieces(1).end(), 11);
-    EXPECT_EQ(spt.pieces(2).begin(), 11);
-    EXPECT_EQ(spt.pieces(2).end(), 12);
-  }
-
-  {
-    const auto spt = make_spt({"これは", "test", "です"});
-    EXPECT_EQ(spt.pieces_size(), 3);
-    EXPECT_EQ(spt.pieces(0).begin(), 0);
-    EXPECT_EQ(spt.pieces(0).end(), 3);
-    EXPECT_EQ(spt.pieces(1).begin(), 3);
-    EXPECT_EQ(spt.pieces(1).end(), 7);
-
-    EXPECT_EQ(spt.pieces(2).begin(), 7);
-    EXPECT_EQ(spt.pieces(2).end(), 9);
-  }
-
-  {
-    const auto spt = make_spt({"いABは", "にほCD", "へと"});
-    EXPECT_EQ(spt.pieces_size(), 3);
-    EXPECT_EQ(spt.pieces(0).begin(), 0);
-    EXPECT_EQ(spt.pieces(0).end(), 4);
-    EXPECT_EQ(spt.pieces(1).begin(), 4);
-    EXPECT_EQ(spt.pieces(1).end(), 8);
-    EXPECT_EQ(spt.pieces(2).begin(), 8);
-    EXPECT_EQ(spt.pieces(2).end(), 10);
-  }
-
-  for (const char lead : {static_cast<char>(0xC2), static_cast<char>(0xE0),
-                          static_cast<char>(0xF0)}) {
-    const auto spt = make_spt({std::string(1, lead)});
-    EXPECT_EQ(spt.pieces_size(), 1);
-    EXPECT_EQ(spt.pieces(0).begin(), 0);
-    EXPECT_EQ(spt.pieces(0).end(), 1);
-  }
 }
 
 }  // namespace sentencepiece

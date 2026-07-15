@@ -1390,67 +1390,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
            })
 
       // Sample and Score APIs
-      .def("_SampleEncodeAndScoreAsIds",
-           [](const sentencepiece::SentencePieceProcessor& self,
-              const py::object& input, int num_samples, float alpha, bool wor,
-              bool include_best, bool add_bos, bool add_eos, bool reverse) {
-             PyInputStringView in(input);
-             std::vector<std::pair<std::vector<int>, float>> idss;
-             {
-               py::gil_scoped_release release;
-               auto status = self.SampleEncodeAndScore(
-                   in.value, num_samples, alpha, wor, include_best, &idss);
-               if (!status.ok()) throw status;
-               for (auto& ids : idss) {
-                 RewriteIdsThrowException(self, &ids.first, add_bos, add_eos,
-                                          reverse);
-               }
-             }
-             return idss;
-           })
-      .def("_SampleEncodeAndScoreAsPieces",
-           [](const sentencepiece::SentencePieceProcessor& self,
-              const py::object& input, int num_samples, float alpha, bool wor,
-              bool include_best, bool add_bos, bool add_eos, bool reverse,
-              bool emit_unk_piece, bool return_bytes) {
-             PyInputStringView in(input);
-             std::vector<std::pair<std::vector<std::string>, float>> piecess;
-             {
-               py::gil_scoped_release release;
-               auto status = self.SampleEncodeAndScore(
-                   in.value, num_samples, alpha, wor, include_best, &piecess);
-               if (!status.ok()) throw status;
-               for (auto& pieces : piecess) {
-                 RewriteIdsThrowException(self, &pieces.first, add_bos, add_eos,
-                                          reverse, emit_unk_piece);
-               }
-             }
-             py::list py_outs(piecess.size());
-             for (size_t i = 0; i < piecess.size(); ++i) {
-               py_outs[i] = py::make_tuple(
-                   ToPyStringList(piecess[i].first, return_bytes),
-                   piecess[i].second);
-             }
-             return py_outs;
-           })
-      .def("_SampleEncodeAndScoreAsSerializedProto",
-           [](const sentencepiece::SentencePieceProcessor& self,
-              const py::object& input, int num_samples, float alpha, bool wor,
-              bool include_best, bool add_bos, bool add_eos, bool reverse,
-              bool emit_unk_piece) {
-             CheckProtoArgsThrowException(add_bos, add_eos, reverse,
-                                          emit_unk_piece);
-             PyInputStringView in(input);
-             sentencepiece::NBestSentencePieceText samples_spt;
-             {
-               py::gil_scoped_release release;
-               auto status =
-                   self.SampleEncodeAndScore(in.value, num_samples, alpha, wor,
-                                             include_best, &samples_spt);
-               if (!status.ok()) throw status;
-             }
-             return py::bytes(samples_spt.SerializeAsString());
-           })
+
 
       // Parallel Encode APIs
       .def(
@@ -1554,31 +1494,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              return py::make_tuple(ToPyString(norm, in.is_bytes), offsets);
            })
 
-      // Entropy API
-      .def("_CalculateEntropy",
-           [](const sentencepiece::SentencePieceProcessor& self,
-              const py::object& input, float alpha) {
-             PyInputStringView in(input);
-             float entropy = 0.0;
-             {
-               py::gil_scoped_release release;
-               auto status = self.CalculateEntropy(in.value, alpha, &entropy);
-               if (!status.ok()) throw status;
-             }
-             return entropy;
-           })
-
-      // Normalizer Spec Override
-      .def("_OverrideNormalizerSpec",
-           [](sentencepiece::SentencePieceProcessor& self,
-              const std::unordered_map<std::string, std::string>& args) {
-             absl::Status status;
-             for (const auto& [key, value] : args) {
-               status = sentencepiece::SentencePieceTrainer::SetProtoField(
-                   key, value, self.mutable_normalizer_spec());
-               if (!status.ok()) throw status;
-             }
-           })
+      
 
       // Vocab management
       .def("GetPieceSize", &sentencepiece::SentencePieceProcessor::GetPieceSize)

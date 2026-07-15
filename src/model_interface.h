@@ -98,27 +98,7 @@ class ModelInterface {
     return {};
   }
 
-  // Sample `samples` many tokenisations from the segmentation lattice
-  // If `wor` is true, the samples are taken without replacement, and the scores
-  // are the inclusion probabilities of the elements in the sample; otherwise
-  // the samples are taken with replacement and the scores are the log-probs of
-  // sample elements
-  // If `include_best` is true, the best tokenisation is always included in the
-  // sample, and the remaining elements are sampled excluding the best.
-  [[nodiscard]] virtual NBestEncodeResult SampleEncodeAndScore(
-      absl::string_view normalized, float alpha, int samples, bool wor,
-      bool include_best) const {
-    LOG(ERROR) << "Not implemented.";
-    return {{EncodeResult(), 0.0}};
-  }
 
-  // Calculates the entropy of the segmentation lattice with inverse temperature
-  // `alpha`. Uses a novel dynamic program to calculate the entropy.
-  [[nodiscard]] virtual float CalculateEntropy(absl::string_view normalized,
-                                               float alpha) const {
-    LOG(ERROR) << "Not implemented.";
-    return 0.0;
-  }
 
   // Return true if SampleEncode returns a valid result.
   [[nodiscard]] virtual bool IsSampleEncodeAvailable() const { return false; }
@@ -126,15 +106,7 @@ class ModelInterface {
   // Return true if NBestEncode returns a valid result.
   [[nodiscard]] virtual bool IsNBestEncodeAvailable() const { return false; }
 
-  // Return true if SampleEncodeAndScore returns a valid result.
-  [[nodiscard]] virtual bool IsSampleEncodeAndScoreAvailable() const {
-    return false;
-  }
 
-  // Return true if CalculateEntropy returns a valid result.
-  [[nodiscard]] virtual bool IsCalculateEntropyAvailable() const {
-    return false;
-  }
 
   // Returns the vocab id of `piece`.
   // both `pieces_` and `reserved_id_map_` are checked.

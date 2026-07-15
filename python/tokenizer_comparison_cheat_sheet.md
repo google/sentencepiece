@@ -10,7 +10,7 @@ This cheat sheet compares the capabilities, API designs, and performance feature
 
 | Feature / Capability | SentencePiece | Hugging Face `tokenizers` | tiktoken |
 | :--- | :--- | :--- | :--- |
-| **Compared Version** | `v0.2.2` (New pybind11 API) | `v0.23.1` | `v0.13.0` |
+| **Compared Version** | `>=v0.2.2` | `v0.23.1` | `v0.13.0` |
 | **Native Backend** | C++ / pybind11 | Rust / PyO3 | Rust / PyO3 |
 | **Supported Algorithms** | BPE, Unigram, Char, Word | BPE, WordPiece, Unigram, WordLevel | BPE |
 | **OOV / Unknown Handling** | `<unk>` token, `byte_fallback` | `<unk>` token, `byte_fallback` (BPE/Unigram), or Byte-level BPE (no `<unk>`) | Byte-level BPE (no `<unk>` token) |
