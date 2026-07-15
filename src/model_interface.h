@@ -98,15 +98,11 @@ class ModelInterface {
     return {};
   }
 
-
-
   // Return true if SampleEncode returns a valid result.
   [[nodiscard]] virtual bool IsSampleEncodeAvailable() const { return false; }
 
   // Return true if NBestEncode returns a valid result.
   [[nodiscard]] virtual bool IsNBestEncodeAvailable() const { return false; }
-
-
 
   // Returns the vocab id of `piece`.
   // both `pieces_` and `reserved_id_map_` are checked.

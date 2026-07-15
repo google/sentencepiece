@@ -79,7 +79,7 @@ char32_t DecodeUTF8(const char* begin, const char* end, size_t* mblen) {
     }
   } else if (len >= 3 && (begin[0] & 0xF0) == 0xE0) {
     const char32_t cp = (((begin[0] & 0x0F) << 12) | ((begin[1] & 0x3F) << 6) |
-                       ((begin[2] & 0x3F)));
+                         ((begin[2] & 0x3F)));
     if (IsTrailByte(begin[1]) && IsTrailByte(begin[2]) && cp >= 0x0800 &&
         IsValidCodepoint(cp)) {
       *mblen = 3;
@@ -87,7 +87,7 @@ char32_t DecodeUTF8(const char* begin, const char* end, size_t* mblen) {
     }
   } else if (len >= 4 && (begin[0] & 0xf8) == 0xF0) {
     const char32_t cp = (((begin[0] & 0x07) << 18) | ((begin[1] & 0x3F) << 12) |
-                       ((begin[2] & 0x3F) << 6) | ((begin[3] & 0x3F)));
+                         ((begin[2] & 0x3F) << 6) | ((begin[3] & 0x3F)));
     if (IsTrailByte(begin[1]) && IsTrailByte(begin[2]) &&
         IsTrailByte(begin[3]) && cp >= 0x10000 && IsValidCodepoint(cp)) {
       *mblen = 4;

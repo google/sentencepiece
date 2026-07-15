@@ -170,7 +170,6 @@ inline std::string PrintProto(const TrainerSpec& message,
   PRINT_PARAM(pad_piece);
   PRINT_PARAM(unk_surface);
 
-
   os << "}\n";
 
   return os.str();
@@ -247,7 +246,6 @@ absl::Status SentencePieceTrainer::SetProtoField(absl::string_view name,
   PARSE_STRING(eos_piece);
   PARSE_STRING(pad_piece);
   PARSE_STRING(unk_surface);
-
 
   return absl::StatusBuilder(absl::StatusCode::kNotFound)
          << "unknown field name \"" << name << "\" in TrainerSpec.";

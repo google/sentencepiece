@@ -72,11 +72,7 @@ constexpr absl::string_view kReplacementCharacter = "\xef\xbf\xbd";
 // maximum nbest or sampling size.
 constexpr int kMaxNBestSize = 512;
 
-
-
 }  // namespace
-
-
 
 SentencePieceProcessor::SentencePieceProcessor() {}
 SentencePieceProcessor::~SentencePieceProcessor() {}
@@ -176,8 +172,6 @@ absl::Status SentencePieceProcessor::status() const {
   RETURN_IF_ERROR(normalizer_->status());
   return absl::OkStatus();
 }
-
-
 
 #define RET_CHECK_STATUS_STL(container)               \
   RETURN_IF_ERROR(status());                          \
@@ -288,10 +282,6 @@ absl::Status SentencePieceProcessor::SampleEncode(absl::string_view input,
 
   return absl::OkStatus();
 }
-
-
-
-
 
 absl::Status SentencePieceProcessor::PopulateSentencePieceText(
     absl::string_view input, absl::string_view normalized,
@@ -480,12 +470,6 @@ absl::Status SentencePieceProcessor::SampleEncode(
 
   return absl::OkStatus();
 }
-
-
-
-
-
-
 
 absl::Status SentencePieceProcessor::Decode(
     absl::Span<const absl::string_view> pieces, SentencePieceText* spt) const {
@@ -1256,8 +1240,6 @@ const ModelProto& SentencePieceProcessor::model_proto() const {
 std::string SentencePieceProcessor::serialized_model_proto() const {
   return model_proto_ ? model_proto_->SerializeAsString() : "";
 }
-
-
 
 // Set seed value of random generator.
 // Do not set static_cast<unique_int>(-1),

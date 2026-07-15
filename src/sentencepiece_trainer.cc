@@ -40,12 +40,8 @@ static constexpr char kSerializedNormalizerSpecKey[] =
     "_serialized_normalizer_spec";
 
 static constexpr const char* kNormalizerKeys[] = {
-    "normalization_rule_name",
-    "normalization_rule_tsv",
-    "add_dummy_prefix",
-    "escape_whitespaces",
-    "remove_extra_whitespaces",
-    "name",
+    "normalization_rule_name", "normalization_rule_tsv",   "add_dummy_prefix",
+    "escape_whitespaces",      "remove_extra_whitespaces", "name",
     "precompiled_charsmap",
 };
 
@@ -167,9 +163,9 @@ absl::Status SentencePieceTrainer::MergeSpecsFromArgs(
   if (has_serialized_normalizer) {
     std::string conflicting_key;
     if (ContainsNormalizerKeys(kwargs, &conflicting_key)) {
-      return absl::InvalidArgumentError(absl::StrCat(
-          "Cannot specify both ", kSerializedNormalizerSpecKey,
-          " and normalizer-specific argument: ", conflicting_key));
+      return absl::InvalidArgumentError(
+          absl::StrCat("Cannot specify both ", kSerializedNormalizerSpecKey,
+                       " and normalizer-specific argument: ", conflicting_key));
     }
   }
 
@@ -401,7 +397,7 @@ absl::Status SentencePieceNormalizer::LoadFromRuleName(absl::string_view name) {
 absl::Status SentencePieceNormalizer::LoadFromMap(
     absl::Span<const std::pair<std::string, std::string>> norm_map) {
   normalizer::Builder::CharsMap chars_map;
-  for (const auto &[src, trg] : norm_map) {
+  for (const auto& [src, trg] : norm_map) {
     if (!string_util::IsStructurallyValid(src)) {
       return absl::InvalidArgumentError(
           absl::StrCat("Invalid UTF-8 sequence in source: ", src));
@@ -425,14 +421,14 @@ absl::Status SentencePieceNormalizer::LoadFromMap(
 }
 
 absl::Status SentencePieceNormalizer::Decompile(
-    std::vector<std::pair<std::string, std::string>> *norm_map) const {
+    std::vector<std::pair<std::string, std::string>>* norm_map) const {
   RET_CHECK(normalizer_spec_);
-  const auto &blob = normalizer_spec_->precompiled_charsmap();
+  const auto& blob = normalizer_spec_->precompiled_charsmap();
   RET_CHECK(!blob.empty()) << "No precompiled charsmap found in model.";
   normalizer::Builder::CharsMap chars_map;
   RETURN_IF_ERROR(normalizer::Builder::DecompileCharsMap(blob, &chars_map));
   norm_map->clear();
-  for (const auto &[key, val] : chars_map) {
+  for (const auto& [key, val] : chars_map) {
     std::string src = string_util::UnicodeTextToUTF8(key);
     std::string trg = string_util::UnicodeTextToUTF8(val);
     norm_map->emplace_back(std::move(src), std::move(trg));

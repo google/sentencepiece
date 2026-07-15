@@ -161,8 +161,6 @@ TEST(SentencepieceProcessorTest, EncodeTest) {
       EXPECT_EQ(result[i].first, spt.pieces(i).piece());
     }
 
-
-
     EXPECT_EQ("ABC", spt.pieces(0).surface());
     EXPECT_EQ(" DE", spt.pieces(1).surface());
     EXPECT_EQ("F", spt.pieces(2).surface());
@@ -458,8 +456,6 @@ TEST(SentencepieceProcessorTest, NBestEncodeTest) {
     EXPECT_EQ(result[1].first[i].first, spt.nbests(1).pieces(i).piece());
   }
 
-
-
   auto mock_empty = std::make_unique<MockModel>();
   mock_empty->SetNBestEncodeResult(kInput, {});
   sp.SetModel(std::move(mock_empty));
@@ -505,8 +501,6 @@ TEST(SentencepieceProcessorTest, SampleEncodeTest) {
     EXPECT_EQ(result[i].first, spt.pieces(i).piece());
     EXPECT_EQ(result[i].second, spt.pieces(i).id());
   }
-
-
 
   EXPECT_FALSE(sp.SampleEncode("ABC DEF", 1024, 0.5, &output).ok());
   EXPECT_TRUE(sp.SampleEncode("ABC DEF", 0, 0.5, &output).ok());
@@ -566,8 +560,8 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
     float GetScore(int id) const override { return 0.0; }
   };
 
-  const std::vector<absl::string_view> input = {"<s>", WS "ABC",   "<unk>", WS "DE",
-                                                "F",   "G" WS "H", "I",     "</s>"};
+  const std::vector<absl::string_view> input = {
+      "<s>", WS "ABC", "<unk>", WS "DE", "F", "G" WS "H", "I", "</s>"};
 
   {
     SentencePieceProcessor sp;
@@ -613,8 +607,6 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
     EXPECT_EQ(16, spt.pieces(6).end());
     EXPECT_EQ(16, spt.pieces(7).begin());
     EXPECT_EQ(16, spt.pieces(7).end());
-
-
   }
 
   // unk_surface is not defined.
@@ -1355,8 +1347,6 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
     EXPECT_EQ(moved_ptr, &sp.model_proto());
     RunTest(sp);
   }
-
-
 }
 
 TEST(SentencePieceProcessorTest, SkipNormalizationTest) {
@@ -1426,7 +1416,8 @@ TEST(SentencePieceProcessorTest, OverrideSpecialPieceTest) {
 }
 
 TEST(SentencePieceProcessorTest, SpecialPiecesCombinationsTest) {
-  auto test_with_model = [](ModelProto::SentencePiece::Type type, bool expect_ok) {
+  auto test_with_model = [](ModelProto::SentencePiece::Type type,
+                            bool expect_ok) {
     ModelProto model_proto;
     auto* sp1 = model_proto.add_pieces();
     auto* sp2 = model_proto.add_pieces();
@@ -1484,8 +1475,6 @@ TEST(SentencePieceProcessorTest, SpecialPiecesCombinationsTest) {
   }
 }
 
-
-
 TEST(LoadModelProtoTest, EmptyFilename) {
   ModelProto model_proto;
   const auto status = io::LoadModelProto("", &model_proto);
@@ -1522,7 +1511,5 @@ TEST(LoadModelProtoTest, FileLoadsOk) {
   }
   EXPECT_OK(io::LoadModelProto(filename, &model_proto));
 }
-
-
 
 }  // namespace sentencepiece

@@ -320,8 +320,6 @@ TEST(LatticeTest, NBestSampleTest) {
   }
 }
 
-
-
 TEST(LatticeTest, ForwardAlgorithmTest) {
   Lattice lattice;
   lattice.SetSentence("ABC");
@@ -468,8 +466,6 @@ TEST(UnigramModelTest, SetUnigramModelTest) {
   EXPECT_EQ(model_proto.SerializeAsString(),
             model.model_proto().SerializeAsString());
 }
-
-
 
 TEST(UnigramModelTest, PieceToIdTest) {
   ModelProto model_proto = MakeBaseModelProto();

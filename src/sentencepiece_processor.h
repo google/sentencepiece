@@ -205,8 +205,6 @@ class SentencePieceProcessor {
   virtual absl::Status Decode(absl::Span<const int> ids,
                               std::string* detokenized) const;
 
-
-
   //////////////////////////////////////////////////////////////
   // NBest API.
   //
@@ -265,17 +263,11 @@ class SentencePieceProcessor {
   virtual absl::Status SampleEncode(absl::string_view input, int nbest_size,
                                     float alpha, SentencePieceText* spt) const;
 
-
-
-
-
   virtual absl::Status Decode(absl::Span<const absl::string_view> pieces,
                               SentencePieceText* spt) const;
 
   virtual absl::Status Decode(absl::Span<const int> ids,
                               SentencePieceText* spt) const;
-
-
 
   //////////////////////////////////////////////////////////////
   // API methods for encoding sequences in parallel.
@@ -300,8 +292,6 @@ class SentencePieceProcessor {
   OutType output;                                           \
   const auto status = FuncName(__VA_ARGS__, &output);       \
   return output;
-
-
 
   //////////////////////////////////////////////////////////////
   // Handy methods that return the result directly.
@@ -340,8 +330,6 @@ class SentencePieceProcessor {
                                 nbest_size, alpha);
   }
 
-
-
   virtual std::vector<std::string> ParallelEncodeAsPieces(
       absl::string_view input, int chunk_len, ThreadPool& therad_pool) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(ParallelEncode, std::vector<std::string>, input,
@@ -355,8 +343,6 @@ class SentencePieceProcessor {
                                 chunk_len, therad_pool);
   }
 
-
-
   [[nodiscard]] virtual std::string DecodePieces(
       const std::vector<absl::string_view>& pieces) const {
     DEFINE_SPP_DIRECT_FUNC_IMPL(Decode, std::string, pieces);
@@ -367,11 +353,7 @@ class SentencePieceProcessor {
     DEFINE_SPP_DIRECT_FUNC_IMPL(Decode, std::string, ids);
   }
 
-
-
-
-
-  #undef DEFINE_SPP_DIRECT_FUNC_IMPL
+#undef DEFINE_SPP_DIRECT_FUNC_IMPL
 
   //////////////////////////////////////////////////////////////
   // Normalization methods.
@@ -464,7 +446,6 @@ class SentencePieceProcessor {
   // returns immutable model proto as std::string.
   // Useful to save the state of this instance via Python's pickle object.
   [[nodiscard]] util::bytes serialized_model_proto() const;
-
 
  private:
   enum ExtraOption { REVERSE, BOS, EOS, UNK_PIECE };
