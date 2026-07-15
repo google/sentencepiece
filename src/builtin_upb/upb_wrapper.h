@@ -33,7 +33,7 @@
 // Include the upb generated headers
 #include "sentencepiece.upb.h"
 #include "sentencepiece_model.upb.h"
-#include "builtin_upb/upb_message_wrapper.h"
+#include "upb_message_wrapper.h"
 
 namespace sentencepiece {
 
@@ -330,6 +330,23 @@ class SelfTestData_SampleWrapper {
   std::function<void(const sentencepiece_SelfTestData_Sample*)> on_change_;
 };
 
+class SelfTestDataSamplesRepeatedWrapper : public ::sentencepiece::upb_internal::ConstRepeatedWrapperBase<
+    SelfTestDataSamplesRepeatedWrapper, SelfTestData_SampleWrapper> {
+ public:
+  SelfTestDataSamplesRepeatedWrapper(
+      const sentencepiece_SelfTestData_Sample* const* elements, size_t count)
+      : elements_(elements), count_(count) {}
+
+  SelfTestData_SampleWrapper Get(int index) const {
+    return SelfTestData_SampleWrapper(elements_[index]);
+  }
+  int Size() const { return count_; }
+
+ private:
+  const sentencepiece_SelfTestData_Sample* const* elements_;
+  size_t count_;
+};
+
 class SelfTestDataWrapper {
  public:
   explicit SelfTestDataWrapper(const sentencepiece_SelfTestData* msg)
@@ -337,67 +354,16 @@ class SelfTestDataWrapper {
   SelfTestDataWrapper(sentencepiece_SelfTestData* msg, upb_Arena* arena)
       : holder_(msg, arena, false) {}
 
-  class SamplesRepeatedWrapper {
-   public:
-    SamplesRepeatedWrapper(
-        const sentencepiece_SelfTestData_Sample* const* elements, size_t count)
-        : elements_(elements), count_(count) {}
-    class Iterator {
-     public:
-      using iterator_category = std::forward_iterator_tag;
-      using value_type = SelfTestData_SampleWrapper;
-      using difference_type = std::ptrdiff_t;
-      using pointer = SelfTestData_SampleWrapper*;
-      using reference = SelfTestData_SampleWrapper;
+  using SamplesRepeatedWrapper = SelfTestDataSamplesRepeatedWrapper;
 
-      Iterator(const sentencepiece_SelfTestData_Sample* const* elements,
-               size_t index)
-          : elements_(elements), index_(index) {}
-      Iterator& operator++() {
-        ++index_;
-        return *this;
-      }
-      Iterator operator++(int) {
-        Iterator tmp = *this;
-        ++index_;
-        return tmp;
-      }
-      bool operator==(const Iterator& other) const {
-        return index_ == other.index_;
-      }
-      bool operator!=(const Iterator& other) const {
-        return index_ != other.index_;
-      }
-      SelfTestData_SampleWrapper operator*() const {
-        return SelfTestData_SampleWrapper(elements_[index_]);
-      }
-
-     private:
-      const sentencepiece_SelfTestData_Sample* const* elements_;
-      size_t index_;
-    };
-
-    Iterator begin() const { return Iterator(elements_, 0); }
-    Iterator end() const { return Iterator(elements_, count_); }
-    size_t size() const { return count_; }
-    bool empty() const { return count_ == 0; }
-    SelfTestData_SampleWrapper operator[](size_t index) const {
-      return SelfTestData_SampleWrapper(elements_[index]);
-    }
-
-   private:
-    const sentencepiece_SelfTestData_Sample* const* elements_;
-    size_t count_;
-  };
-
-  SamplesRepeatedWrapper samples() const {
+  SelfTestDataSamplesRepeatedWrapper samples() const {
     size_t size = 0;
     const sentencepiece_SelfTestData_Sample* const* elements = nullptr;
     const auto* m = static_cast<const sentencepiece_SelfTestData*>(holder_.msg());
     if (m) {
       elements = sentencepiece_SelfTestData_samples(m, &size);
     }
-    return SamplesRepeatedWrapper(elements, size);
+    return SelfTestDataSamplesRepeatedWrapper(elements, size);
   }
   int samples_size() const { return samples().size(); }
   SelfTestData_SampleWrapper* add_samples() {
@@ -423,22 +389,17 @@ class SelfTestDataWrapper {
       sample_wrappers_;
 };
 
+class ModelProtoPiecesRepeatedWrapper;
+class ModelProtoMutablePiecesRepeatedWrapper;
+
 class ModelProtoWrapper {
  public:
-  ModelProtoWrapper() {
-    upb_Arena* arena = upb_Arena_New();
-    holder_.Reset(sentencepiece_ModelProto_new(arena), arena, true);
-    normalizer_spec_cache_ = std::make_unique<NormalizerSpec>(
-        sentencepiece_ModelProto_normalizer_spec(static_cast<const sentencepiece_ModelProto*>(holder_.msg())), holder_.arena());
-    denormalizer_spec_cache_ = std::make_unique<NormalizerSpec>(
-        sentencepiece_ModelProto_denormalizer_spec(static_cast<const sentencepiece_ModelProto*>(holder_.msg())), holder_.arena());
-  }
+  ModelProtoWrapper();
 
   explicit ModelProtoWrapper(const sentencepiece_ModelProto* msg,
-                             upb_Arena* arena)
-      : holder_(const_cast<sentencepiece_ModelProto*>(msg), arena, false) {}
+                             upb_Arena* arena);
 
-  virtual ~ModelProtoWrapper() = default;
+  virtual ~ModelProtoWrapper();
 
   ModelProtoWrapper(const ModelProtoWrapper& other) : ModelProtoWrapper() {
     CopyFrom(other);
@@ -492,148 +453,8 @@ class ModelProtoWrapper {
     return ::sentencepiece::ModelProto_SentencePiece(this, index);
   }
 
-  class PiecesRepeatedWrapper {
-   public:
-    PiecesRepeatedWrapper(const ModelProtoWrapper* parent) : parent_(parent) {}
-    class Iterator {
-     public:
-      using iterator_category = std::forward_iterator_tag;
-      using value_type = ModelProto_SentencePiece;
-      using difference_type = std::ptrdiff_t;
-      using pointer = ModelProto_SentencePiece*;
-      using reference = ModelProto_SentencePiece;
-
-      Iterator(const ModelProtoWrapper* parent, int index)
-          : parent_(parent), index_(index) {}
-      ModelProto_SentencePiece operator*() const {
-        return ModelProto_SentencePiece(const_cast<ModelProtoWrapper*>(parent_),
-                                        index_);
-      }
-      Iterator& operator++() {
-        ++index_;
-        return *this;
-      }
-      bool operator!=(const Iterator& other) const {
-        return index_ != other.index_;
-      }
-
-     private:
-      const ModelProtoWrapper* parent_;
-      int index_;
-    };
-    Iterator begin() const { return Iterator(parent_, 0); }
-    Iterator end() const { return Iterator(parent_, parent_->pieces_size()); }
-    int size() const { return parent_->pieces_size(); }
-
-   private:
-    const ModelProtoWrapper* parent_;
-  };
-
-  PiecesRepeatedWrapper pieces() const { return PiecesRepeatedWrapper(this); }
-
-  class MutablePiecesRepeatedWrapper {
-   public:
-    MutablePiecesRepeatedWrapper(ModelProtoWrapper* parent) : parent_(parent) {}
-    class Iterator {
-     public:
-      using iterator_category = std::random_access_iterator_tag;
-      using value_type = ModelProto_SentencePiece;
-      using difference_type = std::ptrdiff_t;
-      using pointer = ModelProto_SentencePiece*;
-      using reference = ModelProto_SentencePiece&;
-
-      Iterator(ModelProtoWrapper* parent, int index)
-          : parent_(parent), index_(index) {}
-      ModelProto_SentencePiece& operator*() const {
-        return *(parent_->mutable_pieces(index_));
-      }
-      Iterator& operator++() {
-        ++index_;
-        return *this;
-      }
-      Iterator operator++(int) {
-        Iterator tmp = *this;
-        ++index_;
-        return tmp;
-      }
-      Iterator& operator--() {
-        --index_;
-        return *this;
-      }
-      Iterator operator--(int) {
-        Iterator tmp = *this;
-        --index_;
-        return tmp;
-      }
-
-      Iterator& operator+=(difference_type n) {
-        index_ += n;
-        return *this;
-      }
-      Iterator& operator-=(difference_type n) {
-        index_ -= n;
-        return *this;
-      }
-
-      friend Iterator operator+(Iterator it, difference_type n) {
-        it += n;
-        return it;
-      }
-      friend Iterator operator+(difference_type n, Iterator it) {
-        it += n;
-        return it;
-      }
-      friend Iterator operator-(Iterator it, difference_type n) {
-        it -= n;
-        return it;
-      }
-      friend difference_type operator-(const Iterator& a, const Iterator& b) {
-        return a.index_ - b.index_;
-      }
-
-      ModelProto_SentencePiece& operator[](difference_type n) const {
-        return *(parent_->mutable_pieces(index_ + n));
-      }
-
-      bool operator==(const Iterator& other) const {
-        return index_ == other.index_ && parent_ == other.parent_;
-      }
-      bool operator!=(const Iterator& other) const { return !(*this == other); }
-      bool operator<(const Iterator& other) const {
-        return index_ < other.index_;
-      }
-      bool operator>(const Iterator& other) const {
-        return index_ > other.index_;
-      }
-      bool operator<=(const Iterator& other) const {
-        return index_ <= other.index_;
-      }
-      bool operator>=(const Iterator& other) const {
-        return index_ >= other.index_;
-      }
-
-     private:
-      ModelProtoWrapper* parent_;
-      int index_;
-    };
-    Iterator begin() { return Iterator(parent_, 0); }
-    Iterator end() { return Iterator(parent_, parent_->pieces_size()); }
-    int size() const { return parent_->pieces_size(); }
-    ModelProto_SentencePiece* Mutable(int index) {
-      return parent_->mutable_pieces(index);
-    }
-
-   private:
-    ModelProtoWrapper* parent_;
-  };
-
-  MutablePiecesRepeatedWrapper* mutable_pieces() {
-    if (!mutable_pieces_wrapper_) {
-      mutable_pieces_wrapper_ =
-          std::make_unique<MutablePiecesRepeatedWrapper>(this);
-    }
-    return mutable_pieces_wrapper_.get();
-  }
+  ModelProtoPiecesRepeatedWrapper pieces() const;
+  ModelProtoMutablePiecesRepeatedWrapper* mutable_pieces();
 
   inline ModelProto_SentencePiece* mutable_pieces(int index) {
     UPB_WRAPPER_RET_VAL_IF_OOB(index, pieces_size(), nullptr);
@@ -738,7 +559,7 @@ class ModelProtoWrapper {
   mutable sentencepiece::upb_internal::UpbMessageHolder<sentencepiece_ModelProto> holder_;
 
   std::vector<std::unique_ptr<ModelProto_SentencePiece>> piece_wrappers_;
-  std::unique_ptr<MutablePiecesRepeatedWrapper> mutable_pieces_wrapper_;
+  std::unique_ptr<ModelProtoMutablePiecesRepeatedWrapper> mutable_pieces_wrapper_;
   mutable std::unique_ptr<NormalizerSpec> mutable_normalizer_spec_;
   mutable std::unique_ptr<TrainerSpec> mutable_trainer_spec_;
   mutable std::unique_ptr<NormalizerSpec> normalizer_spec_cache_;
@@ -781,20 +602,53 @@ class ModelProtoWrapper {
   }
 
   void LazyInitPieceWrappersCache() {
-    upb_internal::LazyInitCache(piece_wrappers_, this, pieces_size());
+    ::sentencepiece::upb_internal::LazyInitCache(piece_wrappers_, this, pieces_size());
   }
+
 };
+
+class ModelProtoPiecesRepeatedWrapper : public ::sentencepiece::upb_internal::ConstRepeatedWrapperBase<
+    ModelProtoPiecesRepeatedWrapper, ModelProto_SentencePiece> {
+ public:
+  ModelProtoPiecesRepeatedWrapper(const ModelProtoWrapper* parent) : parent_(parent) {}
+  ModelProto_SentencePiece Get(int index) const { return parent_->pieces(index); }
+  int Size() const { return parent_->pieces_size(); }
+ private:
+  const ModelProtoWrapper* parent_;
+};
+
+class ModelProtoMutablePiecesRepeatedWrapper : public ::sentencepiece::upb_internal::MutableRepeatedWrapperBase<
+    ModelProtoMutablePiecesRepeatedWrapper, ModelProto_SentencePiece> {
+ public:
+  ModelProtoMutablePiecesRepeatedWrapper(ModelProtoWrapper* parent) : parent_(parent) {}
+  ModelProto_SentencePiece* GetMutable(int index) { return parent_->mutable_pieces(index); }
+  int Size() const { return parent_->pieces_size(); }
+ private:
+  ModelProtoWrapper* parent_;
+};
+
+inline ModelProtoPiecesRepeatedWrapper ModelProtoWrapper::pieces() const {
+  return ModelProtoPiecesRepeatedWrapper(this);
+}
+
+inline ModelProtoMutablePiecesRepeatedWrapper*
+ModelProtoWrapper::mutable_pieces() {
+  if (!mutable_pieces_wrapper_) {
+    mutable_pieces_wrapper_ =
+        std::make_unique<ModelProtoMutablePiecesRepeatedWrapper>(this);
+  }
+  return mutable_pieces_wrapper_.get();
+}
+
+class SentencePieceTextPiecesRepeatedWrapper;
+class SentencePieceTextMutablePiecesRepeatedWrapper;
 
 class SentencePieceTextWrapper {
  public:
-  SentencePieceTextWrapper() {
-    upb_Arena* arena = upb_Arena_New();
-    holder_.Reset(sentencepiece_SentencePieceText_new(arena), arena, true);
-  }
-  explicit SentencePieceTextWrapper(std::nullptr_t)
-      : holder_(nullptr, nullptr, false) {}
+  SentencePieceTextWrapper();
+  explicit SentencePieceTextWrapper(std::nullptr_t);
 
-  virtual ~SentencePieceTextWrapper() = default;
+  virtual ~SentencePieceTextWrapper();
 
   SentencePieceTextWrapper(const SentencePieceTextWrapper& other)
       : SentencePieceTextWrapper() {
@@ -867,6 +721,7 @@ class SentencePieceTextWrapper {
   }
 
   const SentencePieceText_SentencePiece& pieces(int index) const {
+    LazyInitPieceWrappersCache();
     UPB_WRAPPER_RET_VAL_IF_OOB(index, piece_wrappers_.size(),
                                SentencePieceText_SentencePiece::default_instance());
     return *piece_wrappers_[index];
@@ -897,158 +752,10 @@ class SentencePieceTextWrapper {
     return ptr;
   }
 
-  class ConstPiecesRepeatedWrapper {
-   public:
-    ConstPiecesRepeatedWrapper(const SentencePieceTextWrapper* parent)
-        : parent_(parent) {}
-    class Iterator {
-     public:
-      using iterator_category = std::forward_iterator_tag;
-      using value_type = SentencePieceText_SentencePiece;
-      using difference_type = std::ptrdiff_t;
-      using pointer = SentencePieceText_SentencePiece*;
-      using reference = SentencePieceText_SentencePiece&;
+  SentencePieceTextPiecesRepeatedWrapper pieces() const;
+  SentencePieceTextMutablePiecesRepeatedWrapper* mutable_pieces();
 
-      Iterator(const SentencePieceTextWrapper* parent, int index)
-          : parent_(parent), index_(index) {}
-      SentencePieceText_SentencePiece& operator*() const {
-        return *(const_cast<SentencePieceTextWrapper*>(parent_)->mutable_pieces(
-            index_));
-      }
-      Iterator& operator++() {
-        ++index_;
-        return *this;
-      }
-      bool operator!=(const Iterator& other) const {
-        return index_ != other.index_;
-      }
 
-     private:
-      const SentencePieceTextWrapper* parent_;
-      int index_;
-    };
-    Iterator begin() const { return Iterator(parent_, 0); }
-    Iterator end() const { return Iterator(parent_, parent_->pieces_size()); }
-    int size() const { return parent_->pieces_size(); }
-
-   private:
-    const SentencePieceTextWrapper* parent_;
-  };
-
-  ConstPiecesRepeatedWrapper pieces() const {
-    return ConstPiecesRepeatedWrapper(this);
-  }
-
-  class MutablePiecesRepeatedWrapper {
-   public:
-    MutablePiecesRepeatedWrapper(SentencePieceTextWrapper* parent)
-        : parent_(parent) {}
-    class Iterator {
-     public:
-      using iterator_category = std::random_access_iterator_tag;
-      using value_type = SentencePieceText_SentencePiece;
-      using difference_type = std::ptrdiff_t;
-      using pointer = SentencePieceText_SentencePiece*;
-      using reference = SentencePieceText_SentencePiece&;
-
-      Iterator(SentencePieceTextWrapper* parent, int index)
-          : parent_(parent), index_(index) {}
-      Iterator() : parent_(nullptr), index_(-1) {}
-
-      SentencePieceText_SentencePiece& operator*() const {
-        return *(parent_->mutable_pieces(index_));
-      }
-      Iterator& operator++() {
-        ++index_;
-        return *this;
-      }
-      Iterator operator++(int) {
-        Iterator tmp = *this;
-        ++index_;
-        return tmp;
-      }
-      Iterator& operator--() {
-        --index_;
-        return *this;
-      }
-      Iterator operator--(int) {
-        Iterator tmp = *this;
-        --index_;
-        return tmp;
-      }
-
-      Iterator& operator+=(difference_type n) {
-        index_ += n;
-        return *this;
-      }
-      Iterator& operator-=(difference_type n) {
-        index_ -= n;
-        return *this;
-      }
-
-      friend Iterator operator+(Iterator it, difference_type n) {
-        it += n;
-        return it;
-      }
-      friend Iterator operator+(difference_type n, Iterator it) {
-        it += n;
-        return it;
-      }
-      friend Iterator operator-(Iterator it, difference_type n) {
-        it -= n;
-        return it;
-      }
-      friend difference_type operator-(const Iterator& a, const Iterator& b) {
-        return a.index_ - b.index_;
-      }
-
-      SentencePieceText_SentencePiece& operator[](difference_type n) const {
-        return *(parent_->mutable_pieces(index_ + n));
-      }
-
-      bool operator==(const Iterator& other) const {
-        return index_ == other.index_ && parent_ == other.parent_;
-      }
-      bool operator!=(const Iterator& other) const { return !(*this == other); }
-      bool operator<(const Iterator& other) const {
-        return index_ < other.index_;
-      }
-      bool operator>(const Iterator& other) const {
-        return index_ > other.index_;
-      }
-      bool operator<=(const Iterator& other) const {
-        return index_ <= other.index_;
-      }
-      bool operator>=(const Iterator& other) const {
-        return index_ >= other.index_;
-      }
-
-     private:
-      SentencePieceTextWrapper* parent_;
-      int index_;
-    };
-    Iterator begin() { return Iterator(parent_, 0); }
-    Iterator end() { return Iterator(parent_, parent_->pieces_size()); }
-    int size() const { return parent_->pieces_size(); }
-
-    SentencePieceText_SentencePiece* Add() { return parent_->add_pieces(); }
-    void SwapElements(int i, int j) { parent_->SwapElementsData(i, j); }
-    void Reserve(int size) { parent_->ReservePieces(size); }
-    SentencePieceText_SentencePiece* Mutable(int index) {
-      return parent_->mutable_pieces(index);
-    }
-
-   private:
-    SentencePieceTextWrapper* parent_;
-  };
-
-  MutablePiecesRepeatedWrapper* mutable_pieces() {
-    if (!mutable_pieces_wrapper_) {
-      mutable_pieces_wrapper_ =
-          std::make_unique<MutablePiecesRepeatedWrapper>(this);
-    }
-    return mutable_pieces_wrapper_.get();
-  }
 
   SentencePieceText_SentencePiece* mutable_pieces(int index) {
     if (index < 0 || index >= pieces_size()) return nullptr;
@@ -1144,7 +851,7 @@ class SentencePieceTextWrapper {
   }
 
   void LazyInitPieceWrappersCache() const {
-    upb_internal::LazyInitCache(
+    ::sentencepiece::upb_internal::LazyInitCache(
         piece_wrappers_, const_cast<SentencePieceTextWrapper*>(this),
         pieces_size());
   }
@@ -1154,8 +861,13 @@ class SentencePieceTextWrapper {
 
   mutable std::vector<std::unique_ptr<SentencePieceText_SentencePiece>>
       piece_wrappers_;
-  std::unique_ptr<MutablePiecesRepeatedWrapper> mutable_pieces_wrapper_;
+  std::unique_ptr<SentencePieceTextMutablePiecesRepeatedWrapper> mutable_pieces_wrapper_;
 };
+
+
+
+class NBestSentencePieceTextConstNbestsRepeatedWrapper;
+class NBestSentencePieceTextMutableNbestsRepeatedWrapper;
 
 class NBestSentencePieceTextWrapper {
  public:
@@ -1214,47 +926,11 @@ class NBestSentencePieceTextWrapper {
   inline NBestSentencePieceText_Sub* add_nbests();
   inline const NBestSentencePieceText_Sub& nbests(int index) const;
 
-  class ConstNbestsRepeatedWrapper {
-   public:
-    ConstNbestsRepeatedWrapper(const NBestSentencePieceTextWrapper* parent)
-        : parent_(parent) {}
-    class Iterator {
-     public:
-      using iterator_category = std::forward_iterator_tag;
-      using value_type = NBestSentencePieceText_Sub;
-      using difference_type = std::ptrdiff_t;
-      using pointer = const NBestSentencePieceText_Sub*;
-      using reference = const NBestSentencePieceText_Sub&;
+  NBestSentencePieceTextConstNbestsRepeatedWrapper nbests() const;
 
-      Iterator(const NBestSentencePieceTextWrapper* parent, int index)
-          : parent_(parent), index_(index) {}
-      inline const NBestSentencePieceText_Sub& operator*() const;
-      Iterator& operator++() {
-        ++index_;
-        return *this;
-      }
-      bool operator!=(const Iterator& other) const {
-        return index_ != other.index_;
-      }
-
-     private:
-      const NBestSentencePieceTextWrapper* parent_;
-      int index_;
-    };
-    Iterator begin() const { return Iterator(parent_, 0); }
-    Iterator end() const { return Iterator(parent_, parent_->nbests_size()); }
-    int size() const { return parent_->nbests_size(); }
-
-   private:
-    const NBestSentencePieceTextWrapper* parent_;
-  };
-
-  ConstNbestsRepeatedWrapper nbests() const {
-    return ConstNbestsRepeatedWrapper(this);
-  }
 
   void LazyInitNbestWrappersCache() const {
-    upb_internal::LazyInitCache(
+    ::sentencepiece::upb_internal::LazyInitCache(
         nbest_wrappers_, const_cast<NBestSentencePieceTextWrapper*>(this),
         nbests_size());
   }
@@ -1267,6 +943,8 @@ class NBestSentencePieceTextWrapper {
 
  private:
 };
+
+
 
 }  // namespace upb
 
@@ -1319,6 +997,34 @@ class ModelProto : public sentencepiece::upb::ModelProtoWrapper {
   }
 };
 
+class NBestSentencePieceText;
+
+class NBestSentencePieceText
+    : public sentencepiece::upb::NBestSentencePieceTextWrapper {
+ public:
+  using NBestSentencePieceTextWrapper::nbests;
+  using NBestSentencePieceTextWrapper::NBestSentencePieceTextWrapper;
+  using SentencePieceTextWrapperSub = ::sentencepiece::NBestSentencePieceText_Sub;
+
+  upb::NBestSentencePieceTextMutableNbestsRepeatedWrapper* mutable_nbests();
+  inline ::sentencepiece::NBestSentencePieceText_Sub* mutable_nbests_at(int index);
+
+  inline const ::sentencepiece::NBestSentencePieceText_Sub& nbests(int index) const;
+  inline ::sentencepiece::NBestSentencePieceText_Sub* add_nbests();
+
+  static const NBestSentencePieceText& default_instance() {
+    static NBestSentencePieceText instance;
+    return instance;
+  }
+
+ private:
+  std::unique_ptr<upb::NBestSentencePieceTextMutableNbestsRepeatedWrapper> mutable_nbests_wrapper_;
+};
+
+
+
+// --- SentencePieceText public classes (namespace sentencepiece) ---
+
 class SentencePieceText : public sentencepiece::upb::SentencePieceTextWrapper {
  public:
   using SentencePieceTextWrapper::SentencePieceTextWrapper;
@@ -1329,8 +1035,6 @@ class SentencePieceText : public sentencepiece::upb::SentencePieceTextWrapper {
     return instance;
   }
 };
-
-class NBestSentencePieceText;
 
 class NBestSentencePieceText_Sub : public SentencePieceText {
  public:
@@ -1348,75 +1052,85 @@ class NBestSentencePieceText_Sub : public SentencePieceText {
   int index_;
 };
 
-class NBestSentencePieceText
-    : public sentencepiece::upb::NBestSentencePieceTextWrapper {
+
+// --- repeated wrappers and inline implementations (namespace sentencepiece::upb) ---
+namespace upb {
+
+class SentencePieceTextPiecesRepeatedWrapper : public ::sentencepiece::upb_internal::ConstRepeatedWrapperBase<
+    SentencePieceTextPiecesRepeatedWrapper, SentencePieceText_SentencePiece> {
  public:
-  using NBestSentencePieceTextWrapper::nbests;
-  using NBestSentencePieceTextWrapper::NBestSentencePieceTextWrapper;
-  using SentencePieceTextWrapperSub = NBestSentencePieceText_Sub;
-
-  inline const NBestSentencePieceText_Sub& nbests(int index) const;
-  inline NBestSentencePieceText_Sub* add_nbests();
-
-  class MutableNbestsRepeatedWrapper {
-   public:
-    MutableNbestsRepeatedWrapper(NBestSentencePieceText* parent)
-        : parent_(parent) {}
-
-    class Iterator {
-     public:
-      using iterator_category = std::forward_iterator_tag;
-      using value_type = NBestSentencePieceText_Sub;
-      using difference_type = std::ptrdiff_t;
-      using pointer = NBestSentencePieceText_Sub*;
-      using reference = NBestSentencePieceText_Sub&;
-
-      Iterator(NBestSentencePieceText* parent, int index)
-          : parent_(parent), index_(index) {}
-      inline NBestSentencePieceText_Sub& operator*() const {
-        return *(parent_->mutable_nbests_at(index_));
-      }
-      Iterator& operator++() {
-        ++index_;
-        return *this;
-      }
-      bool operator!=(const Iterator& other) const {
-        return index_ != other.index_;
-      }
-
-     private:
-      NBestSentencePieceText* parent_;
-      int index_;
-    };
-
-    Iterator begin() { return Iterator(parent_, 0); }
-    Iterator end() { return Iterator(parent_, parent_->nbests_size()); }
-    int size() const { return parent_->nbests_size(); }
-
-    NBestSentencePieceText_Sub* Add() { return parent_->add_nbests(); }
-
-   private:
-    NBestSentencePieceText* parent_;
-  };
-
-  MutableNbestsRepeatedWrapper* mutable_nbests() {
-    if (!mutable_nbests_wrapper_) {
-      mutable_nbests_wrapper_ =
-          std::make_unique<MutableNbestsRepeatedWrapper>(this);
-    }
-    return mutable_nbests_wrapper_.get();
-  }
-
-  inline NBestSentencePieceText_Sub* mutable_nbests_at(int index);
-
-  static const NBestSentencePieceText& default_instance() {
-    static NBestSentencePieceText instance;
-    return instance;
-  }
-
+  SentencePieceTextPiecesRepeatedWrapper(const SentencePieceTextWrapper* parent) : parent_(parent) {}
+  SentencePieceText_SentencePiece Get(int index) const { return parent_->pieces(index); }
+  int Size() const { return parent_->pieces_size(); }
  private:
-  std::unique_ptr<MutableNbestsRepeatedWrapper> mutable_nbests_wrapper_;
+  const SentencePieceTextWrapper* parent_;
 };
+
+class SentencePieceTextMutablePiecesRepeatedWrapper : public ::sentencepiece::upb_internal::MutableRepeatedWrapperBase<
+    SentencePieceTextMutablePiecesRepeatedWrapper, SentencePieceText_SentencePiece> {
+ public:
+  SentencePieceTextMutablePiecesRepeatedWrapper(SentencePieceTextWrapper* parent) : parent_(parent) {}
+  SentencePieceText_SentencePiece* GetMutable(int index) { return parent_->mutable_pieces(index); }
+  int Size() const { return parent_->pieces_size(); }
+
+  SentencePieceText_SentencePiece* Add() { return parent_->add_pieces(); }
+  void SwapElements(int i, int j) { parent_->SwapElementsData(i, j); }
+  void Reserve(int size) { parent_->ReservePieces(size); }
+ private:
+  SentencePieceTextWrapper* parent_;
+};
+
+class NBestSentencePieceTextConstNbestsRepeatedWrapper : public ::sentencepiece::upb_internal::ConstRepeatedWrapperBase<
+    NBestSentencePieceTextConstNbestsRepeatedWrapper, ::sentencepiece::NBestSentencePieceText_Sub> {
+ public:
+  NBestSentencePieceTextConstNbestsRepeatedWrapper(const NBestSentencePieceTextWrapper* parent) : parent_(parent) {}
+  ::sentencepiece::NBestSentencePieceText_Sub Get(int index) const { return parent_->nbests(index); }
+  int Size() const { return parent_->nbests_size(); }
+ private:
+  const NBestSentencePieceTextWrapper* parent_;
+};
+
+class NBestSentencePieceTextMutableNbestsRepeatedWrapper : public ::sentencepiece::upb_internal::MutableRepeatedWrapperBase<
+    NBestSentencePieceTextMutableNbestsRepeatedWrapper, ::sentencepiece::NBestSentencePieceText_Sub> {
+ public:
+  NBestSentencePieceTextMutableNbestsRepeatedWrapper(NBestSentencePieceText* parent) : parent_(parent) {}
+  ::sentencepiece::NBestSentencePieceText_Sub* GetMutable(int index) { return parent_->mutable_nbests_at(index); }
+  int Size() const { return parent_->nbests_size(); }
+
+  ::sentencepiece::NBestSentencePieceText_Sub* Add() { return parent_->add_nbests(); }
+ private:
+  NBestSentencePieceText* parent_;
+};
+
+// Inline getters for SentencePieceTextWrapper
+inline SentencePieceTextPiecesRepeatedWrapper SentencePieceTextWrapper::pieces() const {
+  return SentencePieceTextPiecesRepeatedWrapper(this);
+}
+
+inline SentencePieceTextMutablePiecesRepeatedWrapper*
+SentencePieceTextWrapper::mutable_pieces() {
+  if (!mutable_pieces_wrapper_) {
+    mutable_pieces_wrapper_ =
+        std::make_unique<SentencePieceTextMutablePiecesRepeatedWrapper>(this);
+  }
+  return mutable_pieces_wrapper_.get();
+}
+
+// Inline getters for NBestSentencePieceTextWrapper
+inline NBestSentencePieceTextConstNbestsRepeatedWrapper NBestSentencePieceTextWrapper::nbests() const {
+  return NBestSentencePieceTextConstNbestsRepeatedWrapper(this);
+}
+
+}  // namespace upb
+
+inline upb::NBestSentencePieceTextMutableNbestsRepeatedWrapper*
+NBestSentencePieceText::mutable_nbests() {
+  if (!mutable_nbests_wrapper_) {
+    mutable_nbests_wrapper_ =
+        std::make_unique<upb::NBestSentencePieceTextMutableNbestsRepeatedWrapper>(this);
+  }
+  return mutable_nbests_wrapper_.get();
+}
 
 inline ProtoStr ModelProto_SentencePiece::piece() const {
   return parent_ ? parent_->piece_at(index_) : "";
@@ -1473,15 +1187,12 @@ upb::NBestSentencePieceTextWrapper::add_nbests() {
 
 inline const NBestSentencePieceText_Sub&
 upb::NBestSentencePieceTextWrapper::nbests(int index) const {
+  LazyInitNbestWrappersCache();
   static const NBestSentencePieceText_Sub default_sub(nullptr, -1);
   UPB_WRAPPER_RET_VAL_IF_OOB(index, nbest_wrappers_.size(), default_sub);
   return *nbest_wrappers_[index];
 }
 
-inline const NBestSentencePieceText_Sub& upb::NBestSentencePieceTextWrapper::
-    ConstNbestsRepeatedWrapper::Iterator::operator*() const {
-  return parent_->nbests(index_);
-}
 
 inline sentencepiece_SentencePieceText*
 NBestSentencePieceText_Sub::mutable_msg() {
@@ -1563,14 +1274,14 @@ inline void swap(SentencePieceText_SentencePiece a,
   a.parent_->SwapElementsData(a.index_, b.index_);
 }
 
-inline const NBestSentencePieceText_Sub& NBestSentencePieceText::nbests(
+inline const ::sentencepiece::NBestSentencePieceText_Sub& NBestSentencePieceText::nbests(
     int index) const {
   return NBestSentencePieceTextWrapper::nbests(index);
 }
-inline NBestSentencePieceText_Sub* NBestSentencePieceText::add_nbests() {
+inline ::sentencepiece::NBestSentencePieceText_Sub* NBestSentencePieceText::add_nbests() {
   return NBestSentencePieceTextWrapper::add_nbests();
 }
-inline NBestSentencePieceText_Sub* NBestSentencePieceText::mutable_nbests_at(
+inline ::sentencepiece::NBestSentencePieceText_Sub* NBestSentencePieceText::mutable_nbests_at(
     int index) {
   UPB_WRAPPER_RET_VAL_IF_OOB(index, nbests_size(), nullptr);
   LazyInitNbestWrappersCache();
@@ -1678,6 +1389,29 @@ inline void ModelProto_SentencePiece::set_piece(absl::string_view piece) {
 inline void ModelProto_SentencePiece::set_score(float score) {
   parent_->set_score_at(index_, score);
 }
+
+// ModelProtoWrapper implementations
+inline upb::ModelProtoWrapper::ModelProtoWrapper() {
+  upb_Arena* arena = upb_Arena_New();
+  holder_.Reset(sentencepiece_ModelProto_new(arena), arena, true);
+  normalizer_spec_cache_ = std::make_unique<NormalizerSpec>(
+      sentencepiece_ModelProto_normalizer_spec(static_cast<const sentencepiece_ModelProto*>(holder_.msg())), holder_.arena());
+  denormalizer_spec_cache_ = std::make_unique<NormalizerSpec>(
+      sentencepiece_ModelProto_denormalizer_spec(static_cast<const sentencepiece_ModelProto*>(holder_.msg())), holder_.arena());
+}
+inline upb::ModelProtoWrapper::ModelProtoWrapper(const sentencepiece_ModelProto* msg,
+                                                 upb_Arena* arena)
+    : holder_(const_cast<sentencepiece_ModelProto*>(msg), arena, false) {}
+inline upb::ModelProtoWrapper::~ModelProtoWrapper() = default;
+
+// SentencePieceTextWrapper implementations
+inline upb::SentencePieceTextWrapper::SentencePieceTextWrapper() {
+  upb_Arena* arena = upb_Arena_New();
+  holder_.Reset(sentencepiece_SentencePieceText_new(arena), arena, true);
+}
+inline upb::SentencePieceTextWrapper::SentencePieceTextWrapper(std::nullptr_t)
+    : holder_(nullptr, nullptr, false) {}
+inline upb::SentencePieceTextWrapper::~SentencePieceTextWrapper() = default;
 
 }  // namespace sentencepiece
 

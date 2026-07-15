@@ -464,6 +464,160 @@ namespace upb {
   }
 
 }  // namespace upb
+namespace upb_internal {
+
+
+// Generic const repeated field wrapper (ForwardIterator)
+// Generic const repeated field wrapper (ForwardIterator)
+template <typename Derived, typename ElementWrapperType>
+class ConstRepeatedWrapperBase {
+ public:
+  class Iterator {
+   public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = ElementWrapperType;
+    using difference_type = std::ptrdiff_t;
+    using pointer = ElementWrapperType*;
+    using reference = ElementWrapperType;
+
+    Iterator(const ConstRepeatedWrapperBase* container, int index)
+        : container_(container), index_(index) {}
+
+    Iterator& operator++() {
+      ++index_;
+      return *this;
+    }
+    Iterator operator++(int) {
+      Iterator tmp = *this;
+      ++index_;
+      return tmp;
+    }
+    bool operator==(const Iterator& other) const {
+      return index_ == other.index_;
+    }
+    bool operator!=(const Iterator& other) const {
+      return index_ != other.index_;
+    }
+
+    ElementWrapperType operator*() const {
+      return static_cast<const Derived*>(container_)->Get(index_);
+    }
+
+   private:
+    const ConstRepeatedWrapperBase* container_;
+    int index_;
+  };
+
+  Iterator begin() const { return Iterator(this, 0); }
+  Iterator end() const { return Iterator(this, Size()); }
+  int size() const { return Size(); }
+  bool empty() const { return size() == 0; }
+  ElementWrapperType operator[](int index) const {
+    return static_cast<const Derived*>(this)->Get(index);
+  }
+
+ private:
+  int Size() const {
+    return static_cast<const Derived*>(this)->Size();
+  }
+};
+
+// Generic mutable repeated field wrapper (RandomAccessIterator)
+template <typename Derived, typename ElementWrapperType>
+class MutableRepeatedWrapperBase {
+ public:
+  class Iterator {
+   public:
+    using iterator_category = std::random_access_iterator_tag;
+    using value_type = ElementWrapperType;
+    using difference_type = std::ptrdiff_t;
+    using pointer = ElementWrapperType*;
+    using reference = ElementWrapperType&;
+
+    Iterator(MutableRepeatedWrapperBase* container, int index)
+        : container_(container), index_(index) {}
+
+    ElementWrapperType& operator*() const {
+      return *static_cast<Derived*>(container_)->GetMutable(index_);
+    }
+
+    Iterator& operator++() {
+      ++index_;
+      return *this;
+    }
+    Iterator operator++(int) {
+      Iterator tmp = *this;
+      ++index_;
+      return tmp;
+    }
+    Iterator& operator--() {
+      --index_;
+      return *this;
+    }
+    Iterator operator--(int) {
+      Iterator tmp = *this;
+      --index_;
+      return tmp;
+    }
+
+    Iterator& operator+=(difference_type n) {
+      index_ += n;
+      return *this;
+    }
+    Iterator& operator-=(difference_type n) {
+      index_ -= n;
+      return *this;
+    }
+
+    friend Iterator operator+(Iterator it, difference_type n) {
+      it += n;
+      return it;
+    }
+    friend Iterator operator+(difference_type n, Iterator it) {
+      it += n;
+      return it;
+    }
+    friend Iterator operator-(Iterator it, difference_type n) {
+      it -= n;
+      return it;
+    }
+    friend difference_type operator-(const Iterator& a, const Iterator& b) {
+      return a.index_ - b.index_;
+    }
+
+    ElementWrapperType& operator[](difference_type n) const {
+      return *static_cast<Derived*>(container_)->GetMutable(index_ + n);
+    }
+
+    bool operator==(const Iterator& other) const {
+      return index_ == other.index_ && container_ == other.container_;
+    }
+    bool operator!=(const Iterator& other) const { return !(*this == other); }
+    bool operator<(const Iterator& other) const { return index_ < other.index_; }
+    bool operator>(const Iterator& other) const { return index_ > other.index_; }
+    bool operator<=(const Iterator& other) const { return index_ <= other.index_; }
+    bool operator>=(const Iterator& other) const { return index_ >= other.index_; }
+
+   private:
+    MutableRepeatedWrapperBase* container_;
+    int index_;
+  };
+
+  Iterator begin() { return Iterator(this, 0); }
+  Iterator end() { return Iterator(this, Size()); }
+  int size() const { return Size(); }
+  bool empty() const { return size() == 0; }
+  ElementWrapperType* Mutable(int index) {
+    return static_cast<Derived*>(this)->GetMutable(index);
+  }
+
+ private:
+  int Size() const {
+    return static_cast<const Derived*>(this)->Size();
+  }
+};
+
+}  // namespace upb_internal
 }  // namespace sentencepiece
 
 #endif  // CORE_UPB_MESSAGE_WRAPPER_H_

@@ -111,7 +111,7 @@ std::vector<int> GetIdVec(const EncodeResult& pieces) {
 
 std::vector<std::string> GetSpVec(const SentencePieceText& spt) {
   std::vector<std::string> sps;
-  for (auto& sp : spt.pieces()) {
+  for (const auto& sp : spt.pieces()) {
     sps.emplace_back(sp.piece());
   }
   return sps;
@@ -1679,7 +1679,7 @@ TEST(SentencePieceProcessorTest, ImmutableSentencePieceTextTest) {
 
   auto check_proto = [&v](const ImmutableSentencePieceText& s) {
     int n = 0;
-    for (auto& p : s.pieces()) {
+    for (const auto& p : s.pieces()) {
       EXPECT_EQ(v->pieces(n).surface(), p.surface());
       EXPECT_EQ(v->pieces(n).piece(), p.piece());
       EXPECT_EQ(v->pieces(n).id(), p.id());
