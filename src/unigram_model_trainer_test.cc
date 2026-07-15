@@ -44,9 +44,7 @@ struct TrainerResult {
   std::vector<std::pair<std::string, float>> seed_pieces_and_probs;
 };
 
-TrainerResult RunTrainer(const std::vector<std::string>& input, int size,
-                         const bool use_dp = false, const float dp_noise = 0.0,
-                         const uint32_t dp_clip = 0) {
+TrainerResult RunTrainer(const std::vector<std::string>& input, int size) {
   const std::string input_file = util::JoinPath(::testing::TempDir(), "input");
   const std::string model_prefix =
       util::JoinPath(::testing::TempDir(), "model");
@@ -63,10 +61,6 @@ TrainerResult RunTrainer(const std::vector<std::string>& input, int size,
   trainer_spec.add_input(input_file);
   trainer_spec.set_vocab_size(size - 3);  // remove <unk>, <s>, </s>
   trainer_spec.set_model_prefix(model_prefix);
-
-  trainer_spec.set_enable_differential_privacy(use_dp);
-  trainer_spec.set_differential_privacy_noise_level(dp_noise);
-  trainer_spec.set_differential_privacy_clipping_threshold(dp_clip);
 
   NormalizerSpec normalizer_spec;
   normalizer_spec.set_name("identity");
@@ -124,29 +118,6 @@ TEST(UnigramTrainerTest, BasicTest) {
       "A O Overly P Pineapple a b d e g h i l le m magnanimity n p r t v y ▁ "
       "▁an",
       res.sentence_pieces);
-}
-
-TEST(UnigramTrainerTest, BasicDPTest) {
-  // no noise, clipping.
-  {
-    const auto& res = RunTrainer(
-        {"magnanimity \t 5", "Pineapple \t 6", "i have an apple and a pen \t 1",
-         "Overly \t 6", "Available \t 5"},
-        22, true /*use_dp*/, 0 /*dp_noise*/, 4 /*dp_clipping*/);
-
-    // Got 38 instead of 27 seeds.
-    EXPECT_EQ(38, res.seed_pieces_and_probs.size());
-
-    // And they are equiv to if the last sentence was not there.
-    const auto& res_nodp = RunTrainer(
-        {"magnanimity \t 5", "Pineapple \t 6", "Overly \t 6", "Available \t 5"},
-        22);
-
-    EXPECT_EQ(res.seed_pieces_and_probs, res_nodp.seed_pieces_and_probs);
-
-    // Check final pieces.
-    EXPECT_EQ(res.sentence_pieces, res_nodp.sentence_pieces);
-  }
 }
 
 namespace {

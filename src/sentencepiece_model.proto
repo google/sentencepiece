@@ -65,13 +65,13 @@ message TrainerSpec {
 
   // Whether to use DP version of sentencepiece. Use it with TSV input format
   // (requires precomputed word tab counts to work).
-  optional bool enable_differential_privacy = 50 [default = false];
+  optional bool enable_differential_privacy = 50 [default = false, deprecated = true];
   // Set these parameters if you need DP version of sentencepiece.
   // std of noise to add.
-  optional float differential_privacy_noise_level = 51 [default = 0.0];
+  optional float differential_privacy_noise_level = 51 [default = 0.0, deprecated = true];
   // Clipping threshold to apply after adding noise. All the words with
   // frequency less than this value are dropped.
-  optional uint64 differential_privacy_clipping_threshold = 52 [default = 0];
+  optional uint64 differential_privacy_clipping_threshold = 52 [default = 0, deprecated = true];
 
   ///////////////////////////////////////////////////////////////////
   // Training parameters.

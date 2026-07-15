@@ -324,8 +324,7 @@ class SentencePieceProcessor:
     def EncodeAsNumpy(self, input, **kwargs):
         return self.Encode(input=input, return_type='numpy', **kwargs)
 
-    def EncodeAsSerializedProto(self, input, **kwargs):
-        return self.Encode(input=input, return_type='serialized_proto', **kwargs)
+
 
     def EncodeAsProto(self, input, **kwargs):
         return self.Encode(input=input, return_type='proto', **kwargs)
@@ -333,8 +332,7 @@ class SentencePieceProcessor:
     def EncodeAsOffsetMapping(self, input, **kwargs):
         return self.Encode(input=input, return_type='offset_mapping', **kwargs)
 
-    def EncodeAsImmutableProto(self, input, **kwargs):
-        raise ValueError("immutable_proto is deprecated and no longer supported. Use return_type='proto' instead.")
+
 
     def SampleEncodeAsPieces(self, input, nbest_size=None, alpha=None, **kwargs):
         return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
@@ -348,16 +346,13 @@ class SentencePieceProcessor:
         return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
                            return_type='numpy', enable_sampling=True, **kwargs)
 
-    def SampleEncodeAsSerializedProto(self, input, nbest_size=None, alpha=None, **kwargs):
-        return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
-                           return_type='serialized_proto', enable_sampling=True, **kwargs)
+
 
     def SampleEncodeAsProto(self, input, nbest_size=None, alpha=None, **kwargs):
         return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
                            return_type='proto', enable_sampling=True, **kwargs)
 
-    def SampleEncodeAsImmutableProto(self, input, nbest_size=None, alpha=None, **kwargs):
-        raise ValueError("immutable_proto is deprecated and no longer supported. Use return_type='proto' instead.")
+
 
     def NBestEncode(self,
                     input,
@@ -425,88 +420,14 @@ class SentencePieceProcessor:
     def NBestEncodeAsNumpy(self, input, nbest_size=None, **kwargs):
         return self.NBestEncode(input=input, nbest_size=nbest_size, return_type='numpy', **kwargs)
 
-    def NBestEncodeAsSerializedProto(self, input, nbest_size=None, **kwargs):
-        return self.NBestEncode(input=input, nbest_size=nbest_size, return_type='serialized_proto', **kwargs)
+
 
     def NBestEncodeAsProto(self, input, nbest_size=None, **kwargs):
         return self.NBestEncode(input=input, nbest_size=nbest_size, return_type='proto', **kwargs)
 
-    def NBestEncodeAsImmutableProto(self, input, nbest_size=None, **kwargs):
-        raise ValueError("immutable_proto is deprecated and no longer supported. Use return_type='proto' instead.")
 
-    def SampleEncodeAndScore(self,
-                             input,
-                             add_bos=None,
-                             add_eos=None,
-                             reverse=None,
-                             emit_unk_piece=None,
-                             num_samples=None,
-                             alpha=None,
-                             wor=None,
-                             include_best=None,
-                             return_type=None,
-                             out_type=None):
-        return_type = self._resolve_return_type(return_type, out_type)
-        if add_bos is None:
-            add_bos = self._add_bos
-        if add_eos is None:
-            add_eos = self._add_eos
-        if reverse is None:
-            reverse = self._reverse
-        if emit_unk_piece is None:
-            emit_unk_piece = self._emit_unk_piece
-        if num_samples is None:
-            num_samples = 1
-        if alpha is None:
-            alpha = 1.
-        if wor is None:
-            wor = False
-        if include_best is None:
-            include_best = False
 
-        if num_samples <= 0:
-            raise ValueError('num_samples must be positive')
-        if include_best and not wor:
-            raise ValueError('When include_best is True, We must specify "wor = True".')
 
-        if return_type == 'numpy':
-            raise ValueError("numpy return_type is not supported in SampleEncodeAndScore")
-
-        def _encode(text):
-            if return_type is int:
-                return self._processor._SampleEncodeAndScoreAsIds(
-                    text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse)
-            if return_type is str or return_type is bytes:
-                return_bytes = (return_type is bytes)
-                return self._processor._SampleEncodeAndScoreAsPieces(
-                    text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece, return_bytes)
-            if return_type == 'serialized_proto':
-                return self._processor._SampleEncodeAndScoreAsSerializedProto(
-                    text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
-            if return_type == 'proto':
-                serialized = self._processor._SampleEncodeAndScoreAsSerializedProto(
-                    text, num_samples, alpha, wor, include_best, add_bos, add_eos, reverse, emit_unk_piece)
-                return _to_nbest_spt(serialized)
-            raise ValueError('unknown return_type={}'.format(return_type))
-
-        if isinstance(input, list):
-            return [_encode(n) for n in input]
-        return _encode(input)
-
-    def SampleEncodeAndScoreAsPieces(self, input, num_samples=None, alpha=None, **kwargs):
-        return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha, return_type=str, **kwargs)
-
-    def SampleEncodeAndScoreAsIds(self, input, num_samples=None, alpha=None, **kwargs):
-        return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha, return_type=int, **kwargs)
-
-    def SampleEncodeAndScoreAsSerializedProto(self, input, num_samples=None, alpha=None, **kwargs):
-        return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha, return_type='serialized_proto', **kwargs)
-
-    def SampleEncodeAndScoreAsProto(self, input, num_samples=None, alpha=None, **kwargs):
-        return self.SampleEncodeAndScore(input=input, num_samples=num_samples, alpha=alpha, return_type='proto', **kwargs)
-
-    def SampleEncodeAndScoreAsImmutableProto(self, input, num_samples=None, alpha=None, **kwargs):
-        raise ValueError("immutable_proto is deprecated and no longer supported. Use return_type='proto' instead.")
 
     def ParallelEncode(self,
                        input,
@@ -578,14 +499,12 @@ class SentencePieceProcessor:
     def ParallelEncodeAsNumpy(self, input, **kwargs):
         return self.ParallelEncode(input=input, return_type='numpy', **kwargs)
 
-    def ParallelEncodeAsSerializedProto(self, input, **kwargs):
-        return self.ParallelEncode(input=input, return_type='serialized_proto', **kwargs)
+
 
     def ParallelEncodeAsProto(self, input, **kwargs):
         return self.ParallelEncode(input=input, return_type='proto', **kwargs)
 
-    def ParallelEncodeAsImmutableProto(self, input, **kwargs):
-        raise ValueError("immutable_proto is deprecated and no longer supported. Use return_type='proto' instead.")
+
 
     def Decode(self, input, return_type=None, out_type=None, num_threads=None, thread_pool=None, return_bytes=None):
         return_type = self._resolve_return_type(return_type, out_type, default=str)
@@ -665,11 +584,7 @@ class SentencePieceProcessor:
     def DecodeIds(self, input, return_type=str, **kwargs):
         return self.Decode(input=input, return_type=return_type, **kwargs)
 
-    def DecodePiecesAsSerializedProto(self, input, return_type='serialized_proto', **kwargs):
-        return self.Decode(input=input, return_type=return_type, **kwargs)
 
-    def DecodeIdsAsSerializedProto(self, input, return_type='serialized_proto', **kwargs):
-        return self.Decode(input=input, return_type=return_type, **kwargs)
 
     def DecodePiecesAsProto(self, input, **kwargs):
         return self.Decode(input=input, return_type='proto', **kwargs)
@@ -677,16 +592,9 @@ class SentencePieceProcessor:
     def DecodeIdsAsProto(self, input, **kwargs):
         return self.Decode(input=input, return_type='proto', **kwargs)
 
-    def DecodePiecesAsImmutableProto(self, input, **kwargs):
-        raise ValueError("immutable_proto is deprecated and no longer supported. Use return_type='proto' instead.")
 
-    def DecodeIdsAsImmutableProto(self, input, **kwargs):
-        raise ValueError("immutable_proto is deprecated and no longer supported. Use return_type='proto' instead.")
 
-    def CalculateEntropy(self, input, alpha):
-        if isinstance(input, list):
-            return [self._processor._CalculateEntropy(x, alpha) for x in input]
-        return self._processor._CalculateEntropy(input, alpha)
+
 
     def Normalize(self, input, with_offsets=None):
         if isinstance(input, list):
@@ -697,9 +605,7 @@ class SentencePieceProcessor:
             return self._processor._NormalizeWithOffsets(input)
         return self._processor._Normalize(input)
 
-    def OverrideNormalizerSpec(self, **kwargs):
-        new_kwargs = {key: str(value) for key, value in kwargs.items()}
-        return self._processor._OverrideNormalizerSpec(new_kwargs)
+
 
     def GetPieceSize(self):
         return self._processor.GetPieceSize()
