@@ -1,10 +1,14 @@
+#include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <sentencepiece.pb.h>
 #include <sentencepiece_processor.h>
 #include <sentencepiece_trainer.h>
+#include "third_party/absl/status/statusor.h"
+#include "third_party/absl/strings/str_cat.h"
 
 #include <algorithm>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -1543,14 +1547,59 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                     if (!status.ok()) throw status;
                     return true;
                   })
-      .def_static("_TrainFromMap",
-                  [](const std::unordered_map<std::string, std::string>& args) {
-                    py::gil_scoped_release release;
-                    auto status =
-                        sentencepiece::SentencePieceTrainer::Train(args);
-                    if (!status.ok()) throw status;
-                    return true;
-                  })
+      .def_static(
+          "_TrainFromMap",
+          [](const std::unordered_map<std::string, std::string>& args,
+             py::object sentence_iterator, py::object pretokenizer,
+             bool allow_inconsistent_pretokenization,
+             bool return_model_proto) -> py::object {
+            sentencepiece::TrainerComponents components;
+            components.allow_inconsistent_pretokenization =
+                allow_inconsistent_pretokenization;
+            std::unique_ptr<PySentenceIterator> py_iter;
+            if (!sentence_iterator.is_none()) {
+              py_iter = std::make_unique<PySentenceIterator>(
+                  sentence_iterator.cast<py::iterator>());
+              components.sentence_iterator = py_iter.get();
+            }
+            if (!pretokenizer.is_none()) {
+              components.pretokenizer =
+                  [pretokenizer](
+                      absl::string_view text) -> std::vector<std::string> {
+                py::gil_scoped_acquire acquire;
+                try {
+                  py::object py_text = py::str(text.data(), text.size());
+                  py::object result = pretokenizer(py_text);
+                  std::vector<std::string> chunks;
+                  for (auto item : result.cast<py::sequence>()) {
+                    chunks.push_back(item.cast<std::string>());
+                  }
+                  return chunks;
+                } catch (const std::exception& e) {
+                  std::cerr << "Pretokenizer failed: " << e.what() << "\n";
+                  return {};
+                }
+              };
+            }
+
+            std::string model_proto;
+            {
+              py::gil_scoped_release release;
+              auto status = sentencepiece::SentencePieceTrainer::Train(
+                  args, components,
+                  return_model_proto ? &model_proto : nullptr);
+              if (!status.ok()) throw status;
+            }
+
+            if (return_model_proto) {
+              return py::bytes(model_proto);
+            }
+            return py::none();
+          },
+          py::arg("args"), py::arg("sentence_iterator") = py::none(),
+          py::arg("pretokenizer") = nullptr,
+          py::arg("allow_inconsistent_pretokenization") = false,
+          py::arg("return_model_proto") = false)
       .def_static("_TrainFromMap2",
                   [](const std::unordered_map<std::string, std::string>& args,
                      py::iterator iter) {

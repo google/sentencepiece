@@ -26,7 +26,6 @@
 
 #include "filesystem.h"
 #include "normalizer.h"
-#include "pretokenizer_for_training.h"
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/status/status.h"
@@ -177,32 +176,21 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesInternal() {
 
   // Pretokenizer applied only in training time.
   // Pretokenizer is used as a constraint of piece extractions.
-  const auto* pretokenizer = SentencePieceTrainer::GetPretokenizerForTraining();
+  const auto& pretokenizer = components_.pretokenizer;
 
   auto pretokenize_or_rewrite = [&](std::pair<std::string, int64_t>* w) {
-    if (pretokenizer) {
+    if (pretokenizer != nullptr ||
+        !trainer_spec_.pretokenization_delimiter().empty()) {
       std::vector<char32_t> chars;
-      for (const auto& w : pretokenizer->PreTokenize(w->first)) {
-        for (const auto& c : string_util::UTF8ToUnicodeText(w)) {
+      for (const auto& chunk : absl::StrSplit(
+               w->first, TrainerInterface::kPretokenizationBoundaryStr)) {
+        for (const auto& c : string_util::UTF8ToUnicodeText(chunk)) {
           chars.push_back(c);
         }
         chars.push_back(kSentenceBoundary);
       }
-      return chars;
-    } else if (!trainer_spec_.pretokenization_delimiter().empty()) {
-      // When delimiter is specified, tokenize the input with the delimiter.
-      // For EM training, we assume that the delimiter doesn't exist and
-      // rewrite the original sentence.
-      std::vector<char32_t> chars;
-      absl::string_view delimiter = trainer_spec_.pretokenization_delimiter();
-      for (const auto& w : absl::StrSplit(w->first, delimiter)) {
-        for (const auto& c : string_util::UTF8ToUnicodeText(w)) {
-          chars.push_back(c);
-        }
-        chars.push_back(kSentenceBoundary);
-      }
-      // Removes the delimiter.
-      w->first = absl::StrReplaceAll(w->first, {{delimiter, ""}});
+      w->first = absl::StrReplaceAll(
+          w->first, {{TrainerInterface::kPretokenizationBoundaryStr, ""}});
       return chars;
     }
     return string_util::UTF8ToUnicodeText(w->first);

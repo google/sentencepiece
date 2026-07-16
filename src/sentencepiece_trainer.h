@@ -15,6 +15,7 @@
 #ifndef SENTENCEPIECE_TRAINER_H_
 #define SENTENCEPIECE_TRAINER_H_
 
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -30,10 +31,6 @@ namespace sentencepiece {
 class TrainerSpec;
 class NormalizerSpec;
 class ModelProto;
-
-namespace pretokenizer {
-class PretokenizerForTrainingInterface;
-}  // namespace pretokenizer
 
 namespace normalizer {
 class Normalizer;
@@ -59,11 +56,58 @@ class SentenceIterator {
   virtual absl::Status status() const = 0;
 };
 
+// Container for C++ objects passed to Trainer.
+struct TrainerComponents {
+  SentenceIterator* sentence_iterator = nullptr;
+  using Pretokenizer =
+      std::function<std::vector<std::string>(absl::string_view)>;
+  Pretokenizer pretokenizer = nullptr;
+  bool allow_inconsistent_pretokenization = false;
+
+  TrainerComponents();
+  ~TrainerComponents();
+  TrainerComponents(const TrainerComponents& other);
+  TrainerComponents(TrainerComponents&& other) noexcept;
+  TrainerComponents& operator=(const TrainerComponents& other);
+  TrainerComponents& operator=(TrainerComponents&& other) noexcept;
+
+  // Accessors for spec Protobuf messages (Pimpl)
+  TrainerSpec* mutable_trainer_spec();
+  const TrainerSpec& trainer_spec() const;
+
+  NormalizerSpec* mutable_normalizer_spec();
+  const NormalizerSpec& normalizer_spec() const;
+
+  NormalizerSpec* mutable_denormalizer_spec();
+  const NormalizerSpec& denormalizer_spec() const;
+
+ private:
+  struct Impl;
+  std::unique_ptr<Impl> impl_;
+};
+
 class SentencePieceTrainer {
  public:
+  // Trains SentencePiece model with `components`.
+  static absl::Status Train(const TrainerComponents& components,
+                            std::string* serialized_model_proto = nullptr);
+
+  // Trains SentencePiece model with command-line string in `args` and
+  // `components`.
+  static absl::Status Train(absl::string_view args,
+                            const TrainerComponents& components,
+                            std::string* serialized_model_proto = nullptr);
+
+  // Trains SentencePiece model with `kwargs` map and `components`.
+  static absl::Status Train(
+      const std::unordered_map<std::string, std::string>& kwargs,
+      const TrainerComponents& components,
+      std::string* serialized_model_proto = nullptr);
+
   // Trains SentencePiece model with `trainer_spec`.
   // Default `normalizer_spec` is used.
   // When `sentence_iterator` is passed, load sentences from the iterator.
+  [[deprecated("Use Train(const TrainerComponents&, ...) instead.")]]
   static absl::Status Train(const TrainerSpec& trainer_spec,
                             SentenceIterator* sentence_iterator = nullptr,
                             std::string* serialized_model_proto = nullptr);
@@ -71,6 +115,7 @@ class SentencePieceTrainer {
   // Trains SentencePiece model with `trainer_spec` and
   // `normalizer_spec`.
   // When `sentence_iterator` is passed, load sentences from the iterator.
+  [[deprecated("Use Train(const TrainerComponents&, ...) instead.")]]
   static absl::Status Train(const TrainerSpec& trainer_spec,
                             const NormalizerSpec& normalizer_spec,
                             SentenceIterator* sentence_iterator = nullptr,
@@ -79,6 +124,7 @@ class SentencePieceTrainer {
   // Trains SentencePiece model with `trainer_spec`, `normalizer_spec`
   // and `denormalizer_spec`.
   // When `sentence_iterator` is passed, load sentences from the iterator.
+  [[deprecated("Use Train(const TrainerComponents&, ...) instead.")]]
   static absl::Status Train(const TrainerSpec& trainer_spec,
                             const NormalizerSpec& normalizer_spec,
                             const NormalizerSpec& denormalizer_spec,
@@ -88,23 +134,33 @@ class SentencePieceTrainer {
   // e.g.,
   // '--input=data --model_prefix=m --vocab_size=8192 model_type=unigram'
   // When `sentence_iterator` is passed, load sentences from the iterator.
+  [[deprecated(
+      "Use Train(absl::string_view, const TrainerComponents&, ...) instead.")]]
   static absl::Status Train(absl::string_view args,
                             SentenceIterator* sentence_iterator = nullptr,
                             std::string* serialized_model_proto = nullptr);
 
   // Trains SentencePiece model with mapin `kwargs`.
   // e.g., {{"input", "data"}, {"model_prefix, "m"}, {"vocab_size", "8192"}...}
+  [[deprecated(
+      "Use Train(const std::unordered_map<std::string, std::string>&, const "
+      "TrainerComponents&, ...) instead.")]]
   static absl::Status Train(
       const std::unordered_map<std::string, std::string>& kwargs,
       SentenceIterator* sentence_iterator = nullptr,
       std::string* serialized_model_proto = nullptr);
 
   // The same as above, but passes the list of sentences.
+  [[deprecated(
+      "Use Train(absl::string_view, const TrainerComponents&, ...) instead.")]]
   static absl::Status Train(absl::string_view args,
                             const std::vector<std::string>& sentences,
                             std::string* serialized_model_proto = nullptr);
 
   // The same as above, but passes the list of sentences.
+  [[deprecated(
+      "Use Train(const std::unordered_map<std::string, std::string>&, const "
+      "TrainerComponents&, ...) instead.")]]
   static absl::Status Train(
       const std::unordered_map<std::string, std::string>& kwargs,
       const std::vector<std::string>& sentences,
@@ -121,11 +177,15 @@ class SentencePieceTrainer {
                                              bool is_denormalizer = false);
 
   // Overrides `trainer_spec`, `normalizer_spec`, `denormalizer_spec` with the
-  // std::unordered_map in `kargs`.
+  // std::unordered_map in `kwargs`.
   static absl::Status MergeSpecsFromArgs(
       const std::unordered_map<std::string, std::string>& kwargs,
       TrainerSpec* trainer_spec, NormalizerSpec* normalizer_spec,
       NormalizerSpec* denormalizer_spec);
+
+  static absl::Status MergeSpecsFromArgs(
+      const std::unordered_map<std::string, std::string>& kwargs,
+      TrainerComponents* components);
 
   // Overrides `trainer_spec`, `normalizer_spec`, `denormalizer_spec` with the
   // command line flags in `args`.
@@ -134,16 +194,8 @@ class SentencePieceTrainer {
                                          NormalizerSpec* normalizer_spec,
                                          NormalizerSpec* denormalizer_spec);
 
-  // Injects global pre-tokenizer that are applied in training time.
-  // Pretokenizer is only used for extracting pieces.
-  // TODO(taku): It would be better to inject per `trainer_spec`.
-  static absl::Status SetPretokenizerForTraining(
-      const pretokenizer::PretokenizerForTrainingInterface* pretokenizer);
-
-  // Returns the current pretokenizer. if no pretokenizer is defined, returns
-  // nullptr.
-  static const pretokenizer::PretokenizerForTrainingInterface*
-  GetPretokenizerForTraining();
+  static absl::Status MergeSpecsFromArgs(absl::string_view args,
+                                         TrainerComponents* components);
 
   // Helper function to set `field_name=value` in `message`.
   // When `field_name` is repeated, multiple values can be passed

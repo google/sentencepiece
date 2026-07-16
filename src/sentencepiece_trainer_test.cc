@@ -19,6 +19,7 @@
 #include "testharness.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/str_cat.h"
+#include "third_party/absl/strings/str_split.h"
 #include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
@@ -524,6 +525,113 @@ TEST(SentencePieceTrainerTest, NormalizerConflictTest) {
   EXPECT_FALSE(train_with_kwargs("remove_extra_whitespaces", "true").ok());
 
   EXPECT_OK(train_with_kwargs("character_coverage", "0.99"));
+}
+
+TEST(SentencePieceTrainerTest, TrainWithTrainerComponentsTest) {
+  const std::string input = util::JoinPath(::testing::SrcDir(), kTestData);
+  const std::string model =
+      util::JoinPath(::testing::TempDir(), "m_components");
+
+  TrainerComponents components;
+  components.pretokenizer =
+      [](absl::string_view text) -> std::vector<std::string> {
+    return absl::StrSplit(text, ' ');
+  };
+
+  ASSERT_TRUE(SentencePieceTrainer::Train(
+                  absl::StrCat("--input=", input, " --model_prefix=", model,
+                               " --vocab_size=1000 --model_type=unigram"),
+                  components)
+                  .ok());
+  CheckVocab(model + ".model", 1000);
+}
+
+TEST(SentencePieceTrainerTest, InconsistentPretokenizerTest) {
+  const std::string input = util::JoinPath(::testing::SrcDir(), kTestData);
+  const std::string model =
+      util::JoinPath(::testing::TempDir(), "m_inconsistent");
+
+  TrainerComponents components;
+  // Dropping characters causes mismatch.
+  components.pretokenizer =
+      [](absl::string_view text) -> std::vector<std::string> {
+    return {"hello"};
+  };
+
+  // Default allow_inconsistent_pretokenization = false, must fail.
+  EXPECT_FALSE(SentencePieceTrainer::Train(
+                   absl::StrCat("--input=", input, " --model_prefix=", model,
+                                " --vocab_size=1000 --model_type=unigram "
+                                "--hard_vocab_limit=false"),
+                   components)
+                   .ok());
+
+  // Set allow_inconsistent_pretokenization = true, must succeed.
+  components.allow_inconsistent_pretokenization = true;
+  EXPECT_OK(SentencePieceTrainer::Train(
+      absl::StrCat(
+          "--input=", input, " --model_prefix=", model,
+          " --vocab_size=1000 --model_type=unigram --hard_vocab_limit=false"),
+      components));
+}
+
+TEST(SentencePieceTrainerTest, PretokenizerAndDelimiterMutuallyExclusiveTest) {
+  const std::string input = util::JoinPath(::testing::SrcDir(), kTestData);
+  const std::string model = util::JoinPath(::testing::TempDir(), "m_exclusive");
+
+  TrainerComponents components;
+  components.pretokenizer =
+      [](absl::string_view text) -> std::vector<std::string> {
+    return absl::StrSplit(text, ' ');
+  };
+
+  // Specifying pretokenizer AND pretokenization_delimiter must return error.
+  EXPECT_FALSE(SentencePieceTrainer::Train(
+                   absl::StrCat("--input=", input, " --model_prefix=", model,
+                                " --vocab_size=1000 --model_type=unigram "
+                                "--pretokenization_delimiter=||||"),
+                   components)
+                   .ok());
+}
+
+TEST(SentencePieceTrainerTest, ComplexPretokenizerTest) {
+  const std::string input = util::JoinPath(::testing::SrcDir(), kTestData);
+  const std::string model = util::JoinPath(::testing::TempDir(), "m_complex");
+
+  // Complex pretokenizer splitting by space ' ', punctuation ',', '.', and
+  // digits. Pretokenization Examples:
+  //   "Hello, world 123" -> ["Hello", ",", " ", "world", " ", "1", "2", "3"]
+  //   "foo.bar"          -> ["foo", ".", "bar"]
+  TrainerComponents components;
+  components.pretokenizer =
+      [](absl::string_view text) -> std::vector<std::string> {
+    std::vector<std::string> chunks;
+    std::string current;
+    for (char c : text) {
+      if (c == ' ' || c == ',' || c == '.' || (c >= '0' && c <= '9')) {
+        if (!current.empty()) {
+          chunks.push_back(current);
+          current.clear();
+        }
+        chunks.push_back(std::string(1, c));
+      } else {
+        current.push_back(c);
+      }
+    }
+    if (!current.empty()) {
+      chunks.push_back(current);
+    }
+    return chunks;
+  };
+
+  EXPECT_OK(SentencePieceTrainer::Train(
+      absl::StrCat("--input=", input, " --model_prefix=", model,
+                   " --vocab_size=1000 --model_type=unigram"),
+      components));
+
+  SentencePieceProcessor sp;
+  EXPECT_OK(sp.Load(model + ".model"));
+  EXPECT_EQ(1000, sp.GetPieceSize());
 }
 
 }  // namespace

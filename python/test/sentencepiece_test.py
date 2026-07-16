@@ -20,6 +20,7 @@ import glob
 import io
 import os
 import pickle
+import re
 import sys
 import tempfile
 import threading
@@ -843,7 +844,111 @@ class TestSentencepieceProcessor(unittest.TestCase):
     spm.set_nbest_timeout(1)
     results_timeout2 = sp.nbest_encode(long_input, nbest_size=10, return_type=str)
     self.assertEqual(len(results_timeout2), 1)
+
+  def test_train_with_pretokenizer(self):
+    model_prefix = 'm_pretok'
+    spm.SentencePieceTrainer.train(
+        input=os.path.join(HERE, 'botchan.txt'),
+        model_prefix=model_prefix,
+        vocab_size=1000,
+        model_type='unigram',
+        pretokenizer=lambda text: text.split(' ')
+    )
+    sp = spm.SentencePieceProcessor(model_file=model_prefix + '.model')
+    self.assertEqual(sp.vocab_size(), 1000)
     spm.set_nbest_timeout(0)
+
+  def test_inconsistent_pretokenizer(self):
+    model_prefix = 'm_inconsistent'
+    # Default allow_inconsistent_pretokenization=False raises ValueError/RuntimeError.
+    with self.assertRaises((RuntimeError, ValueError)):
+      spm.SentencePieceTrainer.train(
+          input=os.path.join(HERE, 'botchan.txt'),
+          model_prefix=model_prefix,
+          vocab_size=1000,
+          model_type='unigram',
+          hard_vocab_limit=False,
+          pretokenizer=lambda text: ['hello']
+      )
+
+    # Setting allow_inconsistent_pretokenization=True succeeds.
+    spm.SentencePieceTrainer.train(
+        input=os.path.join(HERE, 'botchan.txt'),
+        model_prefix=model_prefix,
+        vocab_size=1000,
+        model_type='unigram',
+        hard_vocab_limit=False,
+        pretokenizer=lambda text: ['hello'],
+        allow_inconsistent_pretokenization=True
+    )
+
+  def test_pretokenizer_exception(self):
+    def throwing_pretokenizer(text):
+      raise RuntimeError("Pretokenizer failed")
+
+    with self.assertRaises((ValueError, RuntimeError)):
+      spm.SentencePieceTrainer.train(
+          input=os.path.join(HERE, 'botchan.txt'),
+          model_prefix='m_exception',
+          vocab_size=1000,
+          model_type='unigram',
+          pretokenizer=throwing_pretokenizer,
+      )
+
+  def test_pretokenizer_and_delimiter_mutually_exclusive(self):
+    model_prefix = 'm_exclusive'
+    with self.assertRaises((ValueError, RuntimeError)):
+      spm.SentencePieceTrainer.train(
+          input=os.path.join(HERE, 'botchan.txt'),
+          model_prefix=model_prefix,
+          vocab_size=1000,
+          model_type='unigram',
+          pretokenizer=lambda text: text.split(' '),
+          pretokenization_delimiter='||||'
+      )
+
+  def test_complex_regex_pretokenizer(self):
+    model_prefix = 'm_complex_regex'
+
+    # Combined complex regex: Contractions + CamelCase + 3-digit chunks + CJK + Punct + Spaces
+    # Pretokenization Examples:
+    #   "▁CamelCaseWord" -> ["▁", "Camel", "Case", "Word"]
+    #   "▁XMLHttpRequest" -> ["▁", "XML", "Http", "Request"]
+    #   "▁Don't"        -> ["▁", "Don", "'t"]
+    #   "▁12345"        -> ["▁", "123", "45"]
+    #   "▁形態素解析"    -> ["▁", "形態素解析"]
+    #   "▁Hello,▁world!" -> ["▁", "Hello", ",", "▁", "world", "!"]
+    pat_combined = re.compile(
+        r"'[a-zA-Z]+|"
+        r"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|"
+        r"[\u3040-\u30ff\u4e00-\u9faf]+|"
+        r"\d{1,3}|"
+        r"[^\w\s]|"
+        r"▁+|\s+"
+    )
+
+    spm.SentencePieceTrainer.train(
+        input=os.path.join(HERE, 'botchan.txt'),
+        model_prefix=model_prefix,
+        vocab_size=1000,
+        model_type='unigram',
+        pretokenizer=pat_combined.findall,
+    )
+
+    sp = spm.SentencePieceProcessor(model_file=model_prefix + '.model')
+    self.assertEqual(sp.vocab_size(), 1000)
+
+    # Verify that every extracted vocabulary piece strictly obeys pretokenization boundaries.
+    for i in range(sp.vocab_size()):
+      if sp.is_control(i) or sp.is_unknown(i) or sp.is_unused(i):
+        continue
+      piece = sp.id_to_piece(i)
+      matched = pat_combined.findall(piece)
+      self.assertEqual(
+          len(matched),
+          1,
+          f'Piece {piece!r} crosses pretokenizer boundary: matched={matched}',
+      )
 
 
 

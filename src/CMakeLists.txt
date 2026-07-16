@@ -125,7 +125,6 @@ set(SPM_TRAIN_SRCS
   char_model_trainer.h
   bpe_model_trainer.h
   sentencepiece_trainer.h
-  pretokenizer_for_training.h
   builder.cc
   unicode_script.cc
   trainer_factory.cc
@@ -134,8 +133,7 @@ set(SPM_TRAIN_SRCS
   word_model_trainer.cc
   char_model_trainer.cc
   bpe_model_trainer.cc
-  sentencepiece_trainer.cc
-  pretokenizer_for_training.cc)
+  sentencepiece_trainer.cc)
 
 set(SPM_TEST_SRCS
   ${SPM_PROTO_HDRS}
@@ -163,8 +161,7 @@ set(SPM_TEST_SRCS
   unigram_model_trainer_test.cc
   util_test.cc
   word_model_test.cc
-  word_model_trainer_test.cc
-  pretokenizer_for_training_test.cc)
+  word_model_trainer_test.cc)
 
 if (SPM_NLCODEC_BPE)
   set(NLCODEC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/nlcodec)

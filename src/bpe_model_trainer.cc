@@ -19,7 +19,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include "pretokenizer_for_training.h"
 #include "third_party/absl/container/flat_hash_set.h"
 #include "third_party/absl/flags/flag.h"
 #include "third_party/absl/hash/hash.h"
@@ -222,25 +221,6 @@ absl::Status Trainer::Train() {
 
   if (trainer_spec_.split_by_whitespace()) {
     SplitSentencesByWhitespace();
-  }
-
-  // Pretokenizer applied only in training time.
-  // Pretokenizer is used as a constraint of piece extractions.
-  const auto* pretokenizer = SentencePieceTrainer::GetPretokenizerForTraining();
-
-  if ((pretokenizer != nullptr) ||
-      !trainer_spec_.pretokenization_delimiter().empty()) {
-    absl::string_view delimiter = trainer_spec_.pretokenization_delimiter();
-    LOG(INFO) << "Preprocessing with pretokenizer...";
-    for (auto& w : sentences_) {
-      if (pretokenizer != nullptr) {
-        w.first = absl::StrJoin(pretokenizer->PreTokenize(w.first),
-                                TrainerInterface::kUPPBoundaryStr);
-      } else if (!delimiter.empty()) {
-        w.first = absl::StrReplaceAll(
-            w.first, {{delimiter, TrainerInterface::kUPPBoundaryStr}});
-      }
-    }
   }
 
   // Initializes symbols_. symbols_[sid][i] stores an unary symbol.

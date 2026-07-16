@@ -27,32 +27,106 @@ The following table describes the flags that control whether a candidate subword
 | **`split_by_whitespace`** | `true` | Prevents pieces from crossing whitespace boundaries. Whitespace (represented by the meta-symbol `▁`) can only appear at the boundary (prefix or suffix). | If `true`, `foo▁bar` is invalid. If `false`, `foo▁bar` (representing "foo bar") can be a single piece. |
 | **`treat_whitespace_as_suffix`** | `false` | Controls the position of the whitespace meta-symbol. If `false`, whitespace must appear as a prefix. If `true`, whitespace must appear as a suffix. | If `false` (prefix): `▁hello` is valid, `hello▁` is invalid. <br>If `true` (suffix): `hello▁` is valid, `▁hello` is invalid. |
 | **`allow_whitespace_only_pieces`** | `false` | Allows pieces that consist entirely of whitespace characters. | If `false`, `▁▁` is invalid (though a single `▁` is allowed). If `true`, `▁▁` is a valid piece. |
-| **`pretokenization_delimiter`** | (empty string) | Defines a pre-tokenization delimiter. When specified, pieces crossing this delimiter cannot be included in the vocabulary. The delimiter itself is removed from the text during training, but it acts as a hard boundary. *(Unigram model only)* | (See detailed section below) |
+| **`pretokenization_delimiter`** | (empty string) | Defines a pre-tokenization delimiter. When specified, pieces crossing this delimiter cannot be included in the vocabulary. The delimiter itself is removed from the text during training, but it acts as a hard boundary. Supported in both Unigram and BPE models. | (See detailed section below) |
+| **`pretokenizer`** | `nullptr` / `None` | Runtime callback function (`Callable[[str], List[str]]` in Python or `std::function<vector<string>(string_view)>` in C++) that receives normalized text and returns a list of pretokenized token chunks. *(Python support available in v0.2.3+)* | (See detailed section below) |
+| **`allow_inconsistent_pretokenization`** | `false` | When `false` (default), SentencePiece verifies that reassembling the pretokenized chunks (`"".join(chunks)`) matches the input normalized sentence. If characters are dropped or modified, training fails with an error. When `true`, this check is bypassed (at user's own risk). *(Python support available in v0.2.3+)* | `pretokenizer=..., allow_inconsistent_pretokenization=True` |
 
 ---
 
-## Pre-tokenization Delimiter
-The `pretokenization_delimiter` flag (available only in `unigram` mode) is the most general way to introduce arbitrary segmentation boundaries or control constraints into a SentencePiece model. It allows you to enforce hard boundaries based on external pre-tokenization (e.g., word segmenters like MeCab, syntax parsers, or custom rules) without requiring those tools at inference time.
+## Pre-tokenization Delimiter and Callback Functions
 
-#### How it Works
+> [!WARNING]
+> Pre-tokenization constraints apply **ONLY during model training** to prevent vocabulary pieces from crossing split boundaries. They are **NOT executed during inference (`encode`)**, nor are external splitters required at runtime.
+>
+> **Consistency Requirement**: Boundaries must be applied 100% consistently across the entire corpus. If two tokens remain concatenated even once, that cross-boundary subword can still be extracted into the vocabulary.
 
-When you specify a delimiter (e.g., `pretokenization_delimiter="||||"`):
-1.  **Preparation**: You pre-tokenize your training corpus using an external tool and insert the delimiter between tokens (e.g., `Sentence||||Piece||||is||||cool`).
-2.  **Splitting**: During training, SentencePiece splits the input at each occurrence of the delimiter.
-3.  **Boundary Insertion**: It inserts an internal boundary marker at the split points, preventing any vocabulary candidate from crossing the delimiter location.
-4.  **Removal**: The delimiter character itself is removed from the text before subwords are learned.
+SentencePiece supports two mechanisms to enforce segmentation boundaries during subword extraction (supported in both Unigram and BPE):
+1. **`pretokenization_delimiter`**: A static delimiter string (e.g., `||||`) in pre-segmented text files.
+2. **`pretokenizer`**: A dynamic Python/C++ callback (`Callable[[str], List[str]]`) called on **normalized text**. *(Python support available in v0.2.3+)*
 
-#### Example Use Case: Mimicking Word Boundaries
+Both mechanisms convert split points into internal markers (`0x001F`) during training to forbid cross-boundary subword candidates. `pretokenization_delimiter` and `pretokenizer` are mutually exclusive.
 
-A common use case is training a model that respects morphological (word) boundaries for languages like Japanese or Chinese, without needing a morphological analyzer during inference.
+### Custom Pretokenizer Callbacks (Python)
 
-1.  Tokenize your training data with a morphological analyzer (e.g., MeCab) and join with `||||`:
-    `形態素||||の||||一般||||的||||な||||性質`
-2.  Train with `--pretokenization_delimiter="||||"`.
-3.  The model learns subwords that never cross these morphological boundaries.
-4.  During inference, you can feed raw text (e.g., `形態素の一般的な性質`) to the model. The tokenizer will naturally split at the learned boundaries, mimicking the morphological analyzer's behavior.
+> [!NOTE]
+> Custom Python `pretokenizer` callbacks are available in SentencePiece **v0.2.3 and later**.
 
-For a detailed walkthrough of this approach, see the article: [Making SentencePiece Segmentation MeCab-like (in Japanese)](https://qiita.com/taku910/items/fbaeab4684665952d5a9).
+Passed via `pretokenizer` in `SentencePieceTrainer.train()`:
+
+- **Input**: Normalized string (where spaces are converted to `▁` U+2581).
+- **Output**: List of string chunks (`List[str]`).
+
+```python
+import re
+import sentencepiece as spm
+
+# Note: Callback receives normalized text (spaces are '▁' U+2581)
+spm.SentencePieceTrainer.train(
+    input='corpus.txt',
+    model_prefix='m_pretok',
+    vocab_size=8000,
+    pretokenizer=lambda text: text.split('▁')
+)
+```
+
+#### Reassembly Check and `allow_inconsistent_pretokenization`
+
+By default, SentencePiece verifies `"".join(chunks) == normalized_input`. If characters are dropped or modified, training fails:
+
+```
+RuntimeError: Pretokenized output mismatch: joined='hello', original='▁hello▁world'.
+Set allow_inconsistent_pretokenization=true in TrainerComponents to bypass.
+```
+
+To intentionally filter/modify text during pre-tokenization, set `allow_inconsistent_pretokenization=True` (at user's own risk).
+
+#### Common Python Pretokenizer Regex Patterns
+
+You can pass standard `def` functions, `lambda` expressions, or a compiled regex's `.findall` method directly as `pretokenizer`. All patterns must preserve 100% character coverage (`"".join(pretokenizer(text)) == text`):
+
+```python
+import re
+
+# 1. Whitespace Splitter
+def whitespace_pretokenizer(text: str) -> list[str]:
+    return [c for c in re.split(r'(▁+|\s+)', text) if c]
+
+# 2. Word & Punctuation Splitter
+PAT_WORD_PUNCT = re.compile(r'\w+|[^\w\s]|▁+|\s+')
+# Usage: pretokenizer=PAT_WORD_PUNCT.findall
+
+# 3. LLaMA / Qwen-style Contraction & Digit Splitter (Max 3 digits)
+PAT_LLAMA = re.compile(r"'[a-zA-Z]+|\w+|\d{1,3}|[^\w\s]|▁+|\s+")
+# Usage: pretokenizer=PAT_LLAMA.findall
+
+# 4. CamelCase Splitter (e.g. "CamelCase" -> ["Camel", "Case"])
+PAT_CAMEL = re.compile(r"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\d+|[^\w\s]|▁+|\s+")
+# Usage: pretokenizer=PAT_CAMEL.findall
+
+# 5. CJK & Multilingual Script Splitter
+PAT_CJK = re.compile(r'[\u3040-\u30ff\u4e00-\u9faf]+|[a-zA-Z]+|\d+|[^\w\s]|▁+|\s+')
+# Usage: pretokenizer=PAT_CJK.findall
+
+# 6. Combined All-in-One Splitter (Contractions + CamelCase + Digits <=3 + CJK + Punctuation)
+PAT_COMBINED = re.compile(
+    r"'[a-zA-Z]+|[A-Z]?[a-z]+|[A-Z]+(?![a-z])|[\u3040-\u30ff\u4e00-\u9faf]+|\d{1,3}|[^\w\s]|▁+|\s+"
+)
+# Usage: pretokenizer=PAT_COMBINED.findall
+```
+
+---
+
+## Offline Delimiter Example
+
+Pre-tokenize training corpus offline with an external tool (e.g., MeCab) using a delimiter such as `||||`:
+
+```
+形態素||||の||||一般||||的||||な||||性質
+```
+
+> **Note**: Choose a delimiter string (such as `||||`) that is sufficiently unique and invariant under text normalization so that it will not be altered, converted, or stripped by the normalizer (e.g. NFKC normalization).
+
+Train with `--pretokenization_delimiter="||||"`. The model learns subwords that never cross morphological boundaries without needing MeCab at inference time.
 
 ---
 
@@ -70,21 +144,27 @@ spm_train \
   --model_prefix=my_model \
   --vocab_size=8000 \
   --split_by_unicode_script=true \
-  --split_digits=true
+  --split_digits=true \
+  --pretokenization_delimiter="||||"
 ```
 
 ### Python API
 
-Specify the flags as keyword arguments in `SentencePieceTrainer.train()`:
+Specify the flags or components as keyword arguments in `SentencePieceTrainer.train()`:
 
 ```python
+import re
 import sentencepiece as spm
+
+# LLaMA / Qwen-style pre-tokenization regex pattern
+PAT_LLAMA = re.compile(r"'[a-zA-Z]+|\w+|\d{1,3}|[^\w\s]|▁+|\s+")
 
 spm.SentencePieceTrainer.train(
     input='corpus.txt',
-    model_prefix='my_model',
-    vocab_size=8000,
-    split_by_unicode_script=True,
-    split_digits=True
+    model_prefix='my_llama_model',
+    vocab_size=32000,
+    model_type='bpe',
+    split_digits=True,
+    pretokenizer=PAT_LLAMA.findall  # Pass pattern.findall directly as pretokenizer
 )
 ```

@@ -79,21 +79,30 @@ class TrainerInterface {
 
   static const char32_t kWSChar;
   static const char32_t kUNKChar;
-  static const char32_t kUPPBoundaryChar;
+  static const char32_t kPretokenizationBoundaryChar;
   static const char kWSStr[];
   static const char kUNKStr[];
-  static const char kUPPBoundaryStr[];
+  static const char kPretokenizationBoundaryStr[];
 
   TrainerInterface(TrainerSpec trainer_spec, NormalizerSpec normalizer_spec,
                    NormalizerSpec denormalizer_spec);
 
   virtual ~TrainerInterface();
 
+  // Loads sentence from `components` and stores the model
+  // to `output_model_proto`.
+  virtual absl::Status Train(const TrainerComponents& components,
+                             ModelProto* output_model_proto) {
+    components_ = components;
+    output_model_proto_ = output_model_proto;
+    return Train();
+  }
+
   // Loads sentence from `sentence_iterator` and stores the model
   // to `output_model_proto`.
   virtual absl::Status Train(SentenceIterator* sentence_iterator,
                              ModelProto* output_model_proto) {
-    sentence_iterator_ = sentence_iterator;
+    components_.sentence_iterator = sentence_iterator;
     output_model_proto_ = output_model_proto;
     return Train();
   }
@@ -155,8 +164,8 @@ class TrainerInterface {
   // Detect errors on initialization.
   absl::Status status_;
 
-  // Loads sentences from SentenceIterator if not null.
-  SentenceIterator* sentence_iterator_ = nullptr;
+  // Components passed to Trainer.
+  TrainerComponents components_;
 
   // Emits model to this proto instead of file.
   ModelProto* output_model_proto_ = nullptr;
