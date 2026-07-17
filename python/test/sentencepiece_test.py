@@ -102,6 +102,26 @@ class TestSentencepieceProcessor(unittest.TestCase):
     with self.assertRaises(IndexError):
       self.sp_.DecodeIds([10000])
 
+  def test_decode_empty_input(self):
+    # Empty input must return a value typed according to return_type,
+    # matching the non-empty code path.
+    for empty in ([], None):
+      self.assertEqual(self.sp_.decode(empty, return_type=str), '')
+      self.assertEqual(self.sp_.decode(empty, return_type=bytes), b'')
+      serialized = self.sp_.decode(empty, return_type='serialized_proto')
+      self.assertEqual(type(serialized), bytes)
+      offsets = self.sp_.decode(empty, return_type='offset_mapping')
+      self.assertIsInstance(offsets, dict)
+      self.assertEqual(offsets['text'], '')
+      self.assertEqual(offsets['ids'], [])
+      self.assertEqual(offsets['pieces'], [])
+      self.assertEqual(offsets['offsets'], [])
+      if has_protobuf:
+        proto = self.sp_.decode(empty, return_type='proto')
+        self.assertIsInstance(proto, sentencepiece_pb2.SentencePieceText)
+        self.assertEqual(proto.text, '')
+        self.assertEqual(len(proto.pieces), 0)
+
   def test_roundtrip(self):
     text = 'I saw a girl with a telescope.'
     ids = self.sp_.EncodeAsIds(text)

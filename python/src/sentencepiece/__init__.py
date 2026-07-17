@@ -526,13 +526,14 @@ class SentencePieceProcessor:
         return raw_val
 
     def _decode_raw(self, input, return_type, num_threads, thread_pool, return_bytes=False):
+        # Normalize empty input to an empty id sequence and fall through to the
+        # regular dispatch below, so that the result comes from the C++ method
+        # and is typed according to return_type (e.g. bytes for
+        # return_type=bytes or 'serialized_proto'), matching non-empty inputs.
         if input is None:
-            return ''
-        if _is_sequence(input):
-            if len(input) == 0:
-                return ''
+            input = []
         elif isinstance(input, (str, bytes)) and len(input) == 0:
-            return ''
+            input = []
 
         # Helper to determine if a sequence contains pieces (str/bytes)
         def _is_pieces(seq):
@@ -551,7 +552,7 @@ class SentencePieceProcessor:
         if hasattr(input, 'ndim'):
             is_batch = input.ndim > 1
         else:
-            is_batch = _is_sequence(input[0])
+            is_batch = len(input) > 0 and _is_sequence(input[0])
 
         # Determine if input contains pieces (str/bytes)
         if is_batch:
