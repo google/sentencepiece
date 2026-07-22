@@ -76,7 +76,9 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_FALSE(IsValid("1A2"));
   EXPECT_TRUE(IsValid("$10"));  // $ and 1 are both "common" script.
   EXPECT_FALSE(IsValid("$ABC"));
-  EXPECT_FALSE(IsValid("ab\tbc"));  // "\t" is UPP boundary.
+  EXPECT_FALSE(
+      IsValid("ab\x1f"
+              "bc"));  // "\x1f" is pretokenization boundary.
   EXPECT_FALSE(IsValid("ab cd"));
   EXPECT_FALSE(IsValid("\0\0"));
   EXPECT_FALSE(IsValid("\0"));

@@ -60,37 +60,83 @@ bool ContainsNormalizerKeys(
 }
 }  // namespace
 
-// static
-absl::Status SentencePieceTrainer::Train(const TrainerSpec& trainer_spec,
-                                         SentenceIterator* sentence_iterator,
-                                         std::string* serialized_model_proto) {
+struct TrainerComponents::Impl {
+  TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
-  return Train(trainer_spec, normalizer_spec, sentence_iterator,
-               serialized_model_proto);
+  NormalizerSpec denormalizer_spec;
+};
+
+TrainerComponents::TrainerComponents() : impl_(std::make_unique<Impl>()) {}
+
+TrainerComponents::~TrainerComponents() = default;
+
+TrainerComponents::TrainerComponents(const TrainerComponents& other)
+    : sentence_iterator(other.sentence_iterator),
+      pretokenizer(other.pretokenizer),
+      allow_inconsistent_pretokenization(
+          other.allow_inconsistent_pretokenization),
+      impl_(other.impl_ ? std::make_unique<Impl>(*other.impl_)
+                        : std::make_unique<Impl>()) {}
+
+TrainerComponents::TrainerComponents(TrainerComponents&& other) noexcept =
+    default;
+
+TrainerComponents& TrainerComponents::operator=(
+    const TrainerComponents& other) {
+  if (this != &other) {
+    if (other.impl_) {
+      if (!impl_) impl_ = std::make_unique<Impl>();
+      *impl_ = *other.impl_;
+    } else {
+      impl_ = std::make_unique<Impl>();
+    }
+    sentence_iterator = other.sentence_iterator;
+    pretokenizer = other.pretokenizer;
+    allow_inconsistent_pretokenization =
+        other.allow_inconsistent_pretokenization;
+  }
+  return *this;
 }
 
-absl::Status SentencePieceTrainer::Train(const TrainerSpec& trainer_spec,
-                                         const NormalizerSpec& normalizer_spec,
-                                         SentenceIterator* sentence_iterator,
-                                         std::string* serialized_model_proto) {
-  NormalizerSpec denormalizer_spec;
-  return Train(trainer_spec, normalizer_spec, denormalizer_spec,
-               sentence_iterator, serialized_model_proto);
+TrainerComponents& TrainerComponents::operator=(
+    TrainerComponents&& other) noexcept = default;
+
+TrainerSpec* TrainerComponents::mutable_trainer_spec() {
+  return &impl_->trainer_spec;
+}
+
+const TrainerSpec& TrainerComponents::trainer_spec() const {
+  return impl_->trainer_spec;
+}
+
+NormalizerSpec* TrainerComponents::mutable_normalizer_spec() {
+  return &impl_->normalizer_spec;
+}
+
+const NormalizerSpec& TrainerComponents::normalizer_spec() const {
+  return impl_->normalizer_spec;
+}
+
+NormalizerSpec* TrainerComponents::mutable_denormalizer_spec() {
+  return &impl_->denormalizer_spec;
+}
+
+const NormalizerSpec& TrainerComponents::denormalizer_spec() const {
+  return impl_->denormalizer_spec;
 }
 
 // static
-absl::Status SentencePieceTrainer::Train(
-    const TrainerSpec& trainer_spec, const NormalizerSpec& normalizer_spec,
-    const NormalizerSpec& denormalizer_spec,
-    SentenceIterator* sentence_iterator, std::string* serialized_model_proto) {
-  auto copied_normalizer_spec = normalizer_spec;
+absl::Status SentencePieceTrainer::Train(const TrainerComponents& components,
+                                         std::string* serialized_model_proto) {
+  auto copied_normalizer_spec = components.normalizer_spec();
   RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_normalizer_spec, false));
-  auto copied_denormalizer_spec = denormalizer_spec;
+  auto copied_denormalizer_spec = components.denormalizer_spec();
   RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_denormalizer_spec, true));
-  auto trainer = TrainerFactory::Create(trainer_spec, copied_normalizer_spec,
-                                        copied_denormalizer_spec);
+  auto trainer =
+      TrainerFactory::Create(components.trainer_spec(), copied_normalizer_spec,
+                             copied_denormalizer_spec);
   std::string info =
-      absl::StrCat(PrintProto(trainer_spec, "trainer_spec"),
+      absl::StrCat(PrintProto(components.trainer_spec(), "trainer_spec"),
                    PrintProto(copied_normalizer_spec, "normalizer_spec"));
   if (!copied_denormalizer_spec.precompiled_charsmap().empty()) {
     info += PrintProto(copied_denormalizer_spec, "denormalizer_spec");
@@ -102,13 +148,84 @@ absl::Status SentencePieceTrainer::Train(
 
   if (serialized_model_proto) {
     ModelProto model_proto;
-    RETURN_IF_ERROR(trainer->Train(sentence_iterator, &model_proto));
+    RETURN_IF_ERROR(trainer->Train(components, &model_proto));
     *serialized_model_proto = model_proto.SerializeAsString();
   } else {
-    RETURN_IF_ERROR(trainer->Train(sentence_iterator, nullptr));
+    RETURN_IF_ERROR(trainer->Train(components, nullptr));
   }
 
   return absl::OkStatus();
+}
+
+// static
+absl::Status SentencePieceTrainer::Train(absl::string_view args,
+                                         const TrainerComponents& components,
+                                         std::string* serialized_model_proto) {
+  LOG(INFO) << "Running command: " << args.data();
+  TrainerComponents copied_components = components;
+  RETURN_IF_ERROR(MergeSpecsFromArgs(args, &copied_components));
+  return Train(copied_components, serialized_model_proto);
+}
+
+// static
+absl::Status SentencePieceTrainer::Train(
+    const std::unordered_map<std::string, std::string>& kwargs,
+    const TrainerComponents& components, std::string* serialized_model_proto) {
+  TrainerComponents copied_components = components;
+  RETURN_IF_ERROR(MergeSpecsFromArgs(kwargs, &copied_components));
+  return Train(copied_components, serialized_model_proto);
+}
+
+// static
+absl::Status SentencePieceTrainer::Train(const TrainerSpec& trainer_spec,
+                                         SentenceIterator* sentence_iterator,
+                                         std::string* serialized_model_proto) {
+  TrainerComponents components;
+  *components.mutable_trainer_spec() = trainer_spec;
+  components.sentence_iterator = sentence_iterator;
+  return Train(components, serialized_model_proto);
+}
+
+absl::Status SentencePieceTrainer::Train(const TrainerSpec& trainer_spec,
+                                         const NormalizerSpec& normalizer_spec,
+                                         SentenceIterator* sentence_iterator,
+                                         std::string* serialized_model_proto) {
+  TrainerComponents components;
+  *components.mutable_trainer_spec() = trainer_spec;
+  *components.mutable_normalizer_spec() = normalizer_spec;
+  components.sentence_iterator = sentence_iterator;
+  return Train(components, serialized_model_proto);
+}
+
+// static
+absl::Status SentencePieceTrainer::Train(
+    const TrainerSpec& trainer_spec, const NormalizerSpec& normalizer_spec,
+    const NormalizerSpec& denormalizer_spec,
+    SentenceIterator* sentence_iterator, std::string* serialized_model_proto) {
+  TrainerComponents components;
+  *components.mutable_trainer_spec() = trainer_spec;
+  *components.mutable_normalizer_spec() = normalizer_spec;
+  *components.mutable_denormalizer_spec() = denormalizer_spec;
+  components.sentence_iterator = sentence_iterator;
+  return Train(components, serialized_model_proto);
+}
+
+// static
+absl::Status SentencePieceTrainer::Train(absl::string_view args,
+                                         SentenceIterator* sentence_iterator,
+                                         std::string* serialized_model_proto) {
+  TrainerComponents components;
+  components.sentence_iterator = sentence_iterator;
+  return Train(args, components, serialized_model_proto);
+}
+
+// static
+absl::Status SentencePieceTrainer::Train(
+    const std::unordered_map<std::string, std::string>& kwargs,
+    SentenceIterator* sentence_iterator, std::string* serialized_model_proto) {
+  TrainerComponents components;
+  components.sentence_iterator = sentence_iterator;
+  return Train(kwargs, components, serialized_model_proto);
 }
 
 // static
@@ -217,30 +334,22 @@ absl::Status SentencePieceTrainer::MergeSpecsFromArgs(
 }
 
 // static
-absl::Status SentencePieceTrainer::Train(absl::string_view args,
-                                         SentenceIterator* sentence_iterator,
-                                         std::string* serialized_model_proto) {
-  LOG(INFO) << "Running command: " << args.data();
-  TrainerSpec trainer_spec;
-  NormalizerSpec normalizer_spec;
-  NormalizerSpec denormalizer_spec;
-  RETURN_IF_ERROR(MergeSpecsFromArgs(args, &trainer_spec, &normalizer_spec,
-                                     &denormalizer_spec));
-  return Train(trainer_spec, normalizer_spec, denormalizer_spec,
-               sentence_iterator, serialized_model_proto);
+absl::Status SentencePieceTrainer::MergeSpecsFromArgs(
+    const std::unordered_map<std::string, std::string>& kwargs,
+    TrainerComponents* components) {
+  RET_CHECK(components) << "`components` must not be null.";
+  return MergeSpecsFromArgs(kwargs, components->mutable_trainer_spec(),
+                            components->mutable_normalizer_spec(),
+                            components->mutable_denormalizer_spec());
 }
 
 // static
-absl::Status SentencePieceTrainer::Train(
-    const std::unordered_map<std::string, std::string>& kwargs,
-    SentenceIterator* sentence_iterator, std::string* serialized_model_proto) {
-  TrainerSpec trainer_spec;
-  NormalizerSpec normalizer_spec;
-  NormalizerSpec denormalizer_spec;
-  RETURN_IF_ERROR(MergeSpecsFromArgs(kwargs, &trainer_spec, &normalizer_spec,
-                                     &denormalizer_spec));
-  return Train(trainer_spec, normalizer_spec, denormalizer_spec,
-               sentence_iterator, serialized_model_proto);
+absl::Status SentencePieceTrainer::MergeSpecsFromArgs(
+    absl::string_view args, TrainerComponents* components) {
+  RET_CHECK(components) << "`components` must not be null.";
+  return MergeSpecsFromArgs(args, components->mutable_trainer_spec(),
+                            components->mutable_normalizer_spec(),
+                            components->mutable_denormalizer_spec());
 }
 
 namespace {
@@ -321,23 +430,6 @@ absl::Status SentencePieceTrainer::PopulateModelTypeFromString(
 
   return absl::StatusBuilder(absl::StatusCode::kInternal)
          << "\"" << type << "\" is not found in TrainerSpec";
-}
-
-namespace {
-const pretokenizer::PretokenizerForTrainingInterface* g_pretokenizer = nullptr;
-}  // namespace
-
-// static
-absl::Status SentencePieceTrainer::SetPretokenizerForTraining(
-    const pretokenizer::PretokenizerForTrainingInterface* pretokenizer) {
-  g_pretokenizer = pretokenizer;
-  return absl::OkStatus();
-}
-
-// static
-const pretokenizer::PretokenizerForTrainingInterface*
-SentencePieceTrainer::GetPretokenizerForTraining() {
-  return g_pretokenizer;
 }
 
 SentencePieceNormalizer::SentencePieceNormalizer()

@@ -38,6 +38,7 @@
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_format.h"
 #include "third_party/absl/strings/str_join.h"
+#include "third_party/absl/strings/str_replace.h"
 #include "third_party/absl/strings/str_split.h"
 #include "third_party/absl/strings/string_view.h"
 #include "unicode_script.h"
@@ -51,11 +52,12 @@ const char TrainerInterface::kWSStr[] = "\xe2\x96\x81";
 const char32_t TrainerInterface::kUNKChar = L'\u2585';
 const char TrainerInterface::kUNKStr[] = "\xe2\x96\x85";
 
-const char32_t TrainerInterface::kUPPBoundaryChar = L'\u0009';
-const char TrainerInterface::kUPPBoundaryStr[] = "\t";
+const char32_t TrainerInterface::kPretokenizationBoundaryChar = L'\u001f';
+const char TrainerInterface::kPretokenizationBoundaryStr[] = "\x1f";
 
 namespace {
-absl::Status VerifySpec(const TrainerSpec& trainer_spec) {
+absl::Status VerifySpec(const TrainerSpec& trainer_spec,
+                        const TrainerComponents& components) {
   RET_CHECK_GT(trainer_spec.vocab_size(), 0);
 
   if (trainer_spec.model_type() == TrainerSpec::UNIGRAM ||
@@ -89,11 +91,15 @@ absl::Status VerifySpec(const TrainerSpec& trainer_spec) {
   RET_CHECK(!trainer_spec.eos_piece().empty());
   RET_CHECK(!trainer_spec.pad_piece().empty());
 
-  if ((SentencePieceTrainer::GetPretokenizerForTraining() != nullptr) ||
+  if (components.pretokenizer != nullptr ||
       !trainer_spec.pretokenization_delimiter().empty()) {
     RET_CHECK(trainer_spec.model_type() == TrainerSpec::UNIGRAM ||
               trainer_spec.model_type() == TrainerSpec::BPE)
         << "PretokenizerForTraining is only supported in UNIGRAM or BPE mode.";
+    RET_CHECK(components.pretokenizer == nullptr ||
+              trainer_spec.pretokenization_delimiter().empty())
+        << "pretokenizer callback and pretokenization_delimiter cannot be set "
+           "simultaneously.";
   }
 
   return absl::OkStatus();
@@ -211,7 +217,7 @@ TrainerInterface::TrainerInterface(TrainerSpec trainer_spec,
     : trainer_spec_(std::move(trainer_spec)),
       normalizer_spec_(std::move(normalizer_spec)),
       denormalizer_spec_(std::move(denormalizer_spec)) {
-  status_ = VerifySpec(trainer_spec_);
+  status_ = VerifySpec(trainer_spec_, components_);
   if (status_.ok()) {
     status_ = InitMetaPieces();
   }
@@ -244,8 +250,8 @@ bool TrainerInterface::IsValidSentencePiece(
     if (c == 0x0000) {  // NULL is not allowed for Darts (TRIE).
       return false;
     }
-    // kUPPBoundaryChar is included when split_by_upp_for_training is true.
-    if (c == kUPPBoundaryChar) {
+    // kPretokenizationBoundaryChar is included when pretokenizer is set.
+    if (c == kPretokenizationBoundaryChar) {
       return false;
     }
     if (c == 0x0020) {
@@ -319,6 +325,7 @@ bool TrainerInterface::IsValidSentencePiece(
 
 absl::Status TrainerInterface::LoadSentences() {
   RETURN_IF_ERROR(status());
+  RETURN_IF_ERROR(VerifySpec(trainer_spec_, components_));
   RET_CHECK(sentences_.empty());
   RET_CHECK(required_chars_.empty());
   RET_CHECK(trainer_spec_.input_format().empty() ||
@@ -326,8 +333,11 @@ absl::Status TrainerInterface::LoadSentences() {
             trainer_spec_.input_format() == "tsv")
       << "Supported formats are 'text' and 'tsv'.";
 
-  RET_CHECK((sentence_iterator_ != nullptr && trainer_spec_.input().empty()) ||
-            (sentence_iterator_ == nullptr && !trainer_spec_.input().empty()))
+  RET_CHECK(
+      (components_.sentence_iterator != nullptr &&
+       trainer_spec_.input().empty()) ||
+      (components_.sentence_iterator == nullptr &&
+       !trainer_spec_.input().empty()))
       << "SentenceIterator and trainer_spec.input() must be exclusive.";
 
   RET_CHECK(
@@ -345,18 +355,19 @@ absl::Status TrainerInterface::LoadSentences() {
   int too_long_lines = 0;
 
   std::unique_ptr<SentenceIterator> sentence_iterator_impl;
-  if (sentence_iterator_ == nullptr) {
+  if (components_.sentence_iterator == nullptr) {
     LOG(INFO) << "SentenceIterator is not specified. Using "
                  "MultiFileSentenceIterator.";
     sentence_iterator_impl =
         std::make_unique<MultiFileSentenceIterator>(std::vector<std::string>(
             trainer_spec_.input().begin(), trainer_spec_.input().end()));
-    sentence_iterator_ = sentence_iterator_impl.get();
+    components_.sentence_iterator = sentence_iterator_impl.get();
   }
 
-  for (; !sentence_iterator_->done(); sentence_iterator_->Next()) {
+  for (; !components_.sentence_iterator->done();
+       components_.sentence_iterator->Next()) {
     int64_t freq = 1;
-    std::string sentence = sentence_iterator_->value();
+    std::string sentence = components_.sentence_iterator->value();
 
     if (is_tsv) {
       const std::vector<std::string> v = absl::StrSplit(sentence, '\t');
@@ -397,7 +408,7 @@ absl::Status TrainerInterface::LoadSentences() {
     }
   }
 
-  RETURN_IF_ERROR(sentence_iterator_->status());
+  RETURN_IF_ERROR(components_.sentence_iterator->status());
 
 END:
   // Emits error message if any.
@@ -429,19 +440,35 @@ END:
 
     LOG(INFO) << "Normalizing sentences...";
     RET_CHECK(!sentences_.empty());
-    {
-      auto pool = std::make_unique<ThreadPool>(trainer_spec_.num_threads());
-      for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
-        pool->Schedule([&, n] {
-          for (size_t i = n; i < sentences_.size();
-               i += trainer_spec_.num_threads()) {
-            auto* s = &sentences_[i].first;
-            *s = meta_pieces_matcher.GlobalReplace(normalizer.Normalize(*s),
-                                                   kUPPBoundaryStr);
+
+    ThreadPool pool(trainer_spec_.num_threads());
+    RETURN_IF_ERROR(RunBatch(
+        sentences_.size(),
+        [&](size_t i) -> absl::Status {
+          auto* s = &sentences_[i].first;
+          *s = meta_pieces_matcher.GlobalReplace(normalizer.Normalize(*s),
+                                                 kPretokenizationBoundaryStr);
+          if (components_.pretokenizer) {
+            const auto chunks = components_.pretokenizer(*s);
+            if (!components_.allow_inconsistent_pretokenization) {
+              const std::string joined = absl::StrJoin(chunks, "");
+              if (joined != *s) {
+                return absl::InvalidArgumentError(absl::StrCat(
+                    "Pretokenized output mismatch at sample ", i,
+                    ": joined='", joined, "', original='", *s,
+                    "'. Set allow_inconsistent_pretokenization=true in "
+                    "TrainerComponents to bypass."));
+              }
+            }
+            *s = absl::StrJoin(chunks, kPretokenizationBoundaryStr);
+          } else if (!trainer_spec_.pretokenization_delimiter().empty()) {
+            *s = absl::StrReplaceAll(
+                *s, {{trainer_spec_.pretokenization_delimiter(),
+                      kPretokenizationBoundaryStr}});
           }
-        });
-      }
-    }
+          return absl::OkStatus();
+        },
+        pool));
 
     for (size_t i = 0; i < sentences_.size(); ++i) {
       auto* s = &sentences_[i].first;
@@ -506,8 +533,8 @@ END:
     accumulated_chars_count += w.second.second;
     RET_CHECK_NE(w.first, 0x0020)
         << "space must not be included in normalized string.";
-    if (w.first == kUPPBoundaryChar) {
-      continue;  // Tab is not included.
+    if (w.first == kPretokenizationBoundaryChar) {
+      continue;  // Boundary character is not included.
     }
     required_chars_.emplace(w.first, w.second.second);
   }

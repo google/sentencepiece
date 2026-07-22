@@ -702,12 +702,18 @@ class SentencePieceTrainer:
                 return str(value)
 
         sentence_iterator = None
+        pretokenizer = None
+        allow_inconsistent_pretokenization = False
         model_writer = None
         normalizer = None
         new_kwargs = {}
         for key, value in kwargs.items():
             if key in ['sentence_iterator', 'sentence_reader']:
                 sentence_iterator = value
+            elif key == 'pretokenizer':
+                pretokenizer = value
+            elif key == 'allow_inconsistent_pretokenization':
+                allow_inconsistent_pretokenization = bool(value)
             elif key in ['model_writer']:
                 model_writer = value
             elif key in ['normalizer']:
@@ -718,17 +724,16 @@ class SentencePieceTrainer:
         if normalizer:
             new_kwargs['_serialized_normalizer_spec'] = normalizer.serialized_normalizer_spec()
 
-        if model_writer:
-            if sentence_iterator:
-                model_proto = _sentencepiece.SentencePieceTrainer._TrainFromMap4(new_kwargs, sentence_iterator)
-            else:
-                model_proto = _sentencepiece.SentencePieceTrainer._TrainFromMap3(new_kwargs)
-            model_writer.write(model_proto)
-        else:
-            if sentence_iterator:
-                return _sentencepiece.SentencePieceTrainer._TrainFromMap2(new_kwargs, sentence_iterator)
-            else:
-                return _sentencepiece.SentencePieceTrainer._TrainFromMap(new_kwargs)
+        res = _sentencepiece.SentencePieceTrainer._TrainFromMap(
+            new_kwargs,
+            sentence_iterator=sentence_iterator,
+            pretokenizer=pretokenizer,
+            allow_inconsistent_pretokenization=allow_inconsistent_pretokenization,
+            return_model_proto=(model_writer is not None)
+        )
+        if model_writer and res is not None:
+            model_writer.write(res)
+            return None
         return None
 
     @staticmethod
