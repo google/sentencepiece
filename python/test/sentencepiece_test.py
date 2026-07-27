@@ -829,7 +829,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
         model_type='unigram',
     )
     sp = spm.SentencePieceProcessor(model_file=model_prefix + '.model')
-    long_input = 'the' * 1000
+    long_input = 'the' * 20000
     results = sp.nbest_encode(long_input, nbest_size=10, return_type=str)
     self.assertEqual(len(results), 10)
 

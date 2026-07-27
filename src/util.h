@@ -117,6 +117,15 @@ inline size_t OneCharLen(const char* src) {
 // Since trail bytes are always in [0x80, 0xBF], we can optimize:
 inline bool IsTrailByte(char x) { return static_cast<signed char>(x) < -0x40; }
 
+// Return the character length of a UTF-8 string without heap allocation.
+inline size_t UTF8Len(absl::string_view str) {
+  size_t len = 0;
+  for (char c : str) {
+    if (!IsTrailByte(c)) ++len;
+  }
+  return len;
+}
+
 inline bool IsValidCodepoint(char32_t c) {
   return (static_cast<uint32_t>(c) < 0xD800) || (c >= 0xE000 && c <= 0x10FFFF);
 }

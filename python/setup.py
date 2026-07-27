@@ -131,6 +131,7 @@ class build_ext_unix(_build_ext):
       # GNU linker
       libs.append('-Wl,--start-group')
       libs.extend(abseil_libs)
+      libs.append('-lgomp')
       libs.append('-Wl,--end-group')
       libs.append('-Wl,--gc-sections')
       libs.append('-Wl,--version-script=exports.txt')
@@ -143,6 +144,9 @@ class build_ext_unix(_build_ext):
 
     if sys.platform == 'linux':
       libs.append('-Wl,-Bsymbolic')
+      libs.append('-fopenmp')
+      libs.append('-lgomp')
+      cflags.append('-fopenmp')
 
     if is_gil_disabled():
       cflags.append('-DPy_GIL_DISABLED')

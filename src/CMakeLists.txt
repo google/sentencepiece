@@ -79,6 +79,13 @@ endif()
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 
+find_package(OpenMP)
+if (OpenMP_FOUND)
+  add_compile_definitions(LIBSAIS_OPENMP)
+  string(APPEND CMAKE_C_FLAGS " ${OpenMP_C_FLAGS}")
+  string(APPEND CMAKE_CXX_FLAGS " ${OpenMP_CXX_FLAGS}")
+endif()
+
 set(SPM_SRCS
   ${PROTOBUF_LITE_SRCS}
   ${SPM_PROTO_HDRS}
@@ -133,7 +140,8 @@ set(SPM_TRAIN_SRCS
   word_model_trainer.cc
   char_model_trainer.cc
   bpe_model_trainer.cc
-  sentencepiece_trainer.cc)
+  sentencepiece_trainer.cc
+  ../third_party/libsais/libsais.c)
 
 set(SPM_TEST_SRCS
   ${SPM_PROTO_HDRS}

@@ -28,11 +28,22 @@
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/container/flat_hash_map.h"
+#include "third_party/absl/flags/declare.h"
+#include "third_party/absl/flags/flag.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
+ABSL_DECLARE_FLAG(bool, use_sparse_pruning);
+ABSL_DECLARE_FLAG(bool, auto_character_coverage);
+ABSL_DECLARE_FLAG(float, fixed_sparse_lambda);
+ABSL_DECLARE_FLAG(bool, post_l1_debias);
+
 namespace sentencepiece {
+
+namespace string_util {
+using UnicodeText = std::vector<char32_t>;
+}  // namespace string_util
 
 template <typename K, typename V>
 std::vector<std::pair<K, V>> Sorted(const std::vector<std::pair<K, V>>& m) {
@@ -185,9 +196,6 @@ class TrainerInterface {
 
   // Initializes `meta_pieces_` from TrainerSpec.
   absl::Status InitMetaPieces();
-
-  // Randomly sampled raw sentences for self-testing.
-  std::vector<std::string> self_test_samples_;
 };
 }  // namespace sentencepiece
 #endif  // TRAINER_INTERFACE_H_

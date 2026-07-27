@@ -111,12 +111,12 @@ TEST(UnigramTrainerTest, BasicTest) {
       30);
 
   // Check seed pieces.
-  EXPECT_EQ(56, res.seed_pieces_and_probs.size());
+  EXPECT_EQ(53, res.seed_pieces_and_probs.size());
 
   // Check final pieces.
   EXPECT_EQ(
-      "A O Overly P Pineapple a b d e g h i l le m magnanimity n p r t v y ▁ "
-      "▁an",
+      "A Available O Overly P Pineapple a b d e g h i l m magnanimity n p r t v "
+      "y ▁ ▁an",
       res.sentence_pieces);
 }
 
@@ -164,9 +164,9 @@ TEST(UnigramTrainerTest, EndToEndTest) {
   LOG(INFO) << "[" << absl::StrJoin(tok, " ") << std::endl;
   EXPECT_EQ(
       WS
-      " 吾輩 《 わが はい 》 は猫である 。 名前はまだ 無 い 。 どこ で 生 れた "
-      "か とん と 見当 《 けん とう 》 が つか ぬ 。 何でも 薄 暗 い じめ じめ "
-      "した 所で ニャーニャー 泣 い ていた 事 だけは 記憶 している 。",
+      " 吾輩 《 わが はい 》 は猫である 。 名前はまだ 無い 。 どこで 生れ た "
+      "か とんと 見当 《 け ん とう 》 が つかぬ 。 何でも 薄 暗 いじめ じめ "
+      "した 所で ニャーニャー 泣 いていた 事 だけは 記憶 している 。",
       absl::StrJoin(tok, " "));
 #endif
 }
