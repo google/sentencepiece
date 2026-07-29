@@ -22,6 +22,8 @@ endif()
 
 project(sentencepiece VERSION ${SPM_VERSION} LANGUAGES C CXX)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 option(SPM_ENABLE_NFKC_COMPILE "Enables NFKC compile" OFF)
 option(SPM_ENABLE_SHARED "Builds shared libaries in addition to static libraries." ON)
 option(SPM_BUILD_TEST "Builds test binaries." OFF)
@@ -229,7 +231,7 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
   )
   FetchContent_MakeAvailable(protobuf)
   if (TARGET utf8_validity)
-    target_compile_options(utf8_validity PRIVATE -include cstring)
+    target_compile_options(utf8_validity PRIVATE -include string.h)
   endif()
   FetchContent_GetProperties(protobuf SOURCE_DIR protobuf_SOURCE_DIR)
 endif()

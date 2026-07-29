@@ -42,16 +42,23 @@ def is_gil_disabled():
 
 
 def find_abseil_lib(search_root):
-  print('## searching abseil {}'.format(search_root))
+  print('## searching abseil and protobuf {}'.format(search_root))
   absl_libs = []
   ext = '.lib' if os.name == 'nt' else '.a'
+  valid_prefixes = (
+      'libabsl',
+      'absl',
+      'libprotobuf-lite',
+      'protobuf-lite',
+      'libutf8_validity',
+      'utf8_validity',
+  )
   for root, dirs, files in os.walk(search_root):
     for file in files:
-      if (
-          file.startswith('libabsl') or file.startswith('absl')
-      ) and file.endswith(ext):
+      if file.startswith(valid_prefixes) and file.endswith(ext):
         full_path = os.path.join(root, file)
-        absl_libs.append(full_path)
+        if full_path not in absl_libs:
+          absl_libs.append(full_path)
 
   print('## absl_libs={}'.format(' '.join(absl_libs)))
   return absl_libs
@@ -60,58 +67,57 @@ def find_abseil_lib(search_root):
 def get_protobuf_includes():
   prefix = '/I' if os.name == 'nt' else '-I'
   paths = [
-      '../src/builtin_pb',
-      './sentencepiece/src/builtin_pb',
-      '../third_party/protobuf-lite',
-      './sentencepiece/third_party/protobuf-lite',
+      '../build/_deps/protobuf-src/src',
+      './build/_deps/protobuf-src/src',
+      '../src',
+      './sentencepiece/src',
   ]
   return [prefix + os.path.normpath(p) for p in paths]
 
 
 def get_cflags_and_libs(root):
   cflags = [
-      '-std=c++17',
+      '-std=c++20',
+      '-I..',
+      '-I../src',
       '-I' + os.path.normpath(os.path.join(root, 'include')),
+      '-I' + os.path.normpath(os.path.join(root, 'src')),
   ] + get_protobuf_includes()
   libs = []
-  if os.path.exists(os.path.join(root, 'lib/libsentencepiece.a')):
-    libs = [
-        os.path.join(root, 'lib/libsentencepiece.a'),
-        os.path.join(root, 'lib/libsentencepiece_train.a'),
-    ]
-  elif os.path.exists(os.path.join(root, 'lib64/libsentencepiece.a')):
-    libs = [
-        os.path.join(root, 'lib64/libsentencepiece.a'),
-        os.path.join(root, 'lib64/libsentencepiece_train.a'),
-    ]
+  for lib_name in ['libsentencepiece.a', 'libsentencepiece_train.a']:
+    for sub in ['lib', 'lib64', 'src', '']:
+      p = os.path.join(root, sub, lib_name)
+      if os.path.exists(p) and p not in libs:
+        libs.append(p)
+        break
   return cflags, libs
 
 
 def find_absl_include(is_msvc=True):
-  paths = []
-  if os.path.exists(os.path.join('..', 'third_party', 'abseil-cpp')):
-    paths.append(os.path.join('..', 'third_party', 'abseil-cpp'))
-    paths.append('..')
-  if os.path.exists(os.path.join('.', 'sentencepiece', 'third_party', 'abseil-cpp')):
-    paths.append(os.path.join('.', 'sentencepiece', 'third_party', 'abseil-cpp'))
-    paths.append(os.path.join('.', 'sentencepiece'))
-
+  paths = [
+      '../build/_deps/abseil-cpp-src',
+      './build/_deps/abseil-cpp-src',
+      '../third_party/abseil-cpp',
+      '..',
+      './sentencepiece/third_party/abseil-cpp',
+      './sentencepiece',
+  ]
   prefix = '/I' if is_msvc else '-I'
-  return [prefix + os.path.normpath(p) for p in paths]
+  return [prefix + os.path.normpath(p) for p in paths if os.path.exists(p)]
 
 
 class build_ext_unix(_build_ext):
   """Override build_extension to run cmake."""
 
   def build_extension(self, ext):
-    cflags, libs = get_cflags_and_libs('../build/root')
-    abseil_libs = find_abseil_lib('../build/third_party')
+    cflags, libs = get_cflags_and_libs('../build')
+    abseil_libs = find_abseil_lib('../build')
     cflags.extend(find_absl_include(is_msvc=False))
 
     if len(libs) == 0:
       subprocess.check_call(['./build_bundled.sh', __version__])
-      cflags, libs = get_cflags_and_libs('./build/root')
-      abseil_libs = find_abseil_lib('./build/third_party')
+      cflags, libs = get_cflags_and_libs('./build')
+      abseil_libs = find_abseil_lib('./build')
       cflags.extend(find_absl_include(is_msvc=False))
 
     # Fix compile on some versions of Mac OSX

@@ -85,3 +85,4 @@ third_party/absl
 
 test_tmp
 build_cpp/
+build_test_clean/
