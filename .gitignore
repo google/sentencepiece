@@ -74,6 +74,7 @@ python/bundled
 _sentencepiece.*.so
 third_party/abseil-cpp
 third_party/benchmark
+third_party/protobuf
 
 python/sentencepiece
 python/test/m_*.model

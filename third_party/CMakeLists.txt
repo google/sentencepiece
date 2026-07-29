@@ -1,1 +1,1 @@
-include_directories(darts_clone esaxx protobuf-lite)
+include_directories(darts_clone esaxx)

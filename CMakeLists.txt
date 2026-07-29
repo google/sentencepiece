@@ -35,8 +35,8 @@ option(SPM_NLCODEC_BPE
        "Build the NLCodec fast BPE trainer from contrib/nlcodec (adds --nlcodec_bpe flag)."
        OFF)
 
-set(SPM_PROTOBUF_PROVIDER "internal" CACHE STRING "Provider of protobuf library")
-set_property(CACHE SPM_PROTOBUF_PROVIDER PROPERTY STRINGS "internal" "package")
+set(SPM_PROTOBUF_PROVIDER "module" CACHE STRING "Provider of protobuf library")
+set_property(CACHE SPM_PROTOBUF_PROVIDER PROPERTY STRINGS "module" "package")
 set(SPM_ABSL_PROVIDER "module" CACHE STRING "Provider of absl library")
 set_property(CACHE SPM_ABSL_PROVIDER PROPERTY STRINGS "module" "package")
 
@@ -63,7 +63,7 @@ if(WIN32)
   set(SPM_ENABLE_SHARED OFF)
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND
@@ -103,10 +103,10 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
 add_definitions(-D_FREEBSD)
 endif()
 
-if (SPM_USE_BUILTIN_PROTOBUF)
-  set(libprotobuf_lite "")
-else()
+if (SPM_PROTOBUF_PROVIDER STREQUAL "module" OR SPM_PROTOBUF_PROVIDER STREQUAL "package")
   set(libprotobuf_lite "protobuf-lite")
+else()
+  set(libprotobuf_lite "")
 endif()
 
 if (MSVC)
@@ -187,15 +187,17 @@ endif()
 
 if (SPM_ABSL_PROVIDER STREQUAL "module")
   include(FetchContent)
-  FetchContent_Populate(abseil-cpp
-        GIT_REPOSITORY  https://github.com/abseil/abseil-cpp.git
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/abseil-cpp
-        GIT_PROGRESS TRUE
-        GIT_TAG 20260526.0)
-  add_subdirectory(third_party/abseil-cpp)
+  FetchContent_Declare(
+    abseil-cpp
+    GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
+    GIT_TAG 20260526.0
+    GIT_SHALLOW TRUE
+  )
+  FetchContent_MakeAvailable(abseil-cpp)
+  FetchContent_GetProperties(abseil-cpp SOURCE_DIR abseil_SOURCE_DIR)
   if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
     file(CREATE_LINK
-         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/abseil-cpp/absl
+         ${abseil_SOURCE_DIR}/absl
          ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl
          SYMBOLIC)
   endif()
@@ -211,22 +213,40 @@ elseif (SPM_ABSL_PROVIDER STREQUAL "package")
   include_directories(${ABSL_INCLUDE_DIRS})
 endif()
 
+if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
+  include(FetchContent)
+  set(protobuf_BUILD_TESTS OFF CACHE BOOL "Disable protobuf tests" FORCE)
+  set(protobuf_BUILD_PROTOC_BINARIES ON CACHE BOOL "Enable protoc binary" FORCE)
+  set(protobuf_BUILD_LIBPROTOC ON CACHE BOOL "Enable libprotoc" FORCE)
+  set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "Disable protobuf examples" FORCE)
+  set(protobuf_INSTALL OFF CACHE BOOL "Disable protobuf install" FORCE)
+  set(utf8_range_ENABLE_INSTALL OFF CACHE BOOL "Disable utf8_range install" FORCE)
+  FetchContent_Declare(
+    protobuf
+    GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
+    GIT_TAG v25.6
+    GIT_SHALLOW TRUE
+  )
+  FetchContent_MakeAvailable(protobuf)
+  if (TARGET utf8_validity)
+    target_compile_options(utf8_validity PRIVATE -include cstring)
+  endif()
+  FetchContent_GetProperties(protobuf SOURCE_DIR protobuf_SOURCE_DIR)
+endif()
+
 if(SPM_ENABLE_BENCHMARK)
   include(FetchContent)
-  FetchContent_Populate(
-      google_benchmark
-      GIT_REPOSITORY https://github.com/google/benchmark.git
-      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/benchmark
-      GIT_PROGRESS TRUE
-      GIT_TAG v1.9.5
-   )
-
   set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "Disable benchmark gtest" FORCE)
   set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "Disable benchmark testing" FORCE)
-
-  add_subdirectory(third_party/benchmark)
-  
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/benchmark/include)
+  FetchContent_Declare(
+    google_benchmark
+    GIT_REPOSITORY https://github.com/google/benchmark.git
+    GIT_TAG v1.9.5
+    GIT_SHALLOW TRUE
+  )
+  FetchContent_MakeAvailable(google_benchmark)
+  FetchContent_GetProperties(google_benchmark SOURCE_DIR benchmark_SOURCE_DIR)
+  include_directories(${benchmark_SOURCE_DIR}/include)
 endif()
 
 add_subdirectory(src)

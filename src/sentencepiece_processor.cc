@@ -47,11 +47,7 @@
 #include "unigram_model.h"
 #include "util.h"
 
-#ifdef _USE_EXTERNAL_PROTOBUF
 #include "google/protobuf/arena.h"
-#else
-#include "third_party/protobuf-lite/google/protobuf/arena.h"
-#endif
 
 using ::google::protobuf::Arena;
 

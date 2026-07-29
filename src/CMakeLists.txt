@@ -23,49 +23,15 @@ list(APPEND SPM_LIBS absl::check)
 list(APPEND SPM_LIBS absl::random_random)
 list(APPEND SPM_LIBS absl::time)
 
-if (SPM_PROTOBUF_PROVIDER STREQUAL "internal")
-  set(SPM_PROTO_HDRS builtin_pb/sentencepiece.pb.h)
-  set(SPM_PROTO_SRCS builtin_pb/sentencepiece.pb.cc)
-  set(SPM_MODEL_PROTO_HDRS builtin_pb/sentencepiece_model.pb.h)
-  set(SPM_MODEL_PROTO_SRCS builtin_pb/sentencepiece_model.pb.cc)
-  set(PROTOBUF_LITE_LIBRARY "")
-  set(PROTOBUF_LITE_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/arena.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/arenastring.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/bytestream.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/coded_stream.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/common.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/extension_set.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/generated_enum_util.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/generated_message_table_driven_lite.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/generated_message_util.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/implicit_weak_message.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/int128.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/io_win32.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/message_lite.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/parse_context.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/repeated_field.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/status.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/statusor.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/stringpiece.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/stringprintf.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/structurally_valid.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/strutil.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/time.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/wire_format_lite.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/zero_copy_stream.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/zero_copy_stream_impl.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite/zero_copy_stream_impl_lite.cc)
-  if (MSVC)
-    add_definitions("/DHAVE_PTHREAD /wd4018 /wd4514")
-  elseif (WIN32)
-    # Windows but not cl.exe (e.g. Clang targeting *-pc-windows-msvc, MinGW).
-    add_definitions("-DHAVE_PTHREAD=1 -Wno-sign-compare -Wno-deprecated-declarations")
-  else()
-    add_definitions("-pthread -DHAVE_PTHREAD=1 -Wno-sign-compare -Wno-deprecated-declarations")
-  endif()
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/protobuf-lite)
-  include_directories(builtin_pb)
+if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
+  FetchContent_GetProperties(protobuf SOURCE_DIR protobuf_SOURCE_DIR)
+  include(${protobuf_SOURCE_DIR}/cmake/protobuf-generate.cmake)
+  set(PROTOBUF_LITE_LIBRARY protobuf::libprotobuf-lite)
+  protobuf_generate(OUT_VAR SPM_PROTO_SRCS PROTOS sentencepiece.proto)
+  protobuf_generate(OUT_VAR SPM_MODEL_PROTO_SRCS PROTOS sentencepiece_model.proto)
+  set(PROTOBUF_LITE_SRCS "")
+  include_directories(${protobuf_SOURCE_DIR}/src)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR})
 elseif (SPM_PROTOBUF_PROVIDER STREQUAL "package")
   find_package(Protobuf REQUIRED)
   include_directories(${Protobuf_INCLUDE_DIRS})
@@ -73,7 +39,6 @@ elseif (SPM_PROTOBUF_PROVIDER STREQUAL "package")
   protobuf_generate_cpp(SPM_MODEL_PROTO_SRCS SPM_MODEL_PROTO_HDRS sentencepiece_model.proto)
   set(PROTOBUF_LITE_SRCS "")
   include_directories(${PROTOBUF_INCLUDE_DIR})
-  add_compile_definitions(_USE_EXTERNAL_PROTOBUF)
 endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -231,10 +196,12 @@ add_library(sentencepiece_train-static STATIC ${SPM_TRAIN_SRCS})
 
 target_link_libraries(sentencepiece-static INTERFACE ${SPM_LIBS})
 target_link_libraries(sentencepiece_train-static INTERFACE sentencepiece-static ${SPM_LIBS})
+add_dependencies(sentencepiece_train-static sentencepiece-static)
 
 if (SPM_ENABLE_SHARED)
   target_link_libraries(sentencepiece PUBLIC ${SPM_LIBS})
   target_link_libraries(sentencepiece_train PUBLIC ${SPM_LIBS} sentencepiece)
+  add_dependencies(sentencepiece_train sentencepiece)
   set(SPM_INSTALLTARGETS sentencepiece sentencepiece_train sentencepiece-static sentencepiece_train-static)
   set_target_properties(sentencepiece sentencepiece_train PROPERTIES SOVERSION 0 VERSION 0.0.0)
   set_target_properties(sentencepiece PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
