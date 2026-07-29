@@ -237,7 +237,13 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
     GIT_TAG v25.6
     GIT_SHALLOW TRUE
   )
+  if (MSVC)
+    set(CMAKE_CXX_STANDARD 17)
+  endif()
   FetchContent_MakeAvailable(protobuf)
+  if (MSVC)
+    set(CMAKE_CXX_STANDARD 20)
+  endif()
 
   if (SPM_PROTOC_EXECUTABLE OR CMAKE_CROSSCOMPILING)
     if (SPM_PROTOC_EXECUTABLE)
