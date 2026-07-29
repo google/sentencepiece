@@ -66,7 +66,14 @@ if(WIN32)
   set(SPM_ENABLE_SHARED OFF)
 endif()
 
-set(CMAKE_CXX_STANDARD 20)
+# MSVC C++20 STL has a bug with Protobuf v25.6's UntypedMessage in
+# std::variant (error C2139). Use C++17 under MSVC for Abseil and Protobuf.
+# See: https://github.com/protocolbuffers/protobuf/issues/21310
+if (MSVC)
+  set(CMAKE_CXX_STANDARD 17)
+else()
+  set(CMAKE_CXX_STANDARD 20)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND
@@ -237,22 +244,7 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
     GIT_TAG v25.6
     GIT_SHALLOW TRUE
   )
-  # MSVC's C++20 STL triggers error C2139 on Protobuf v25.6's
-  # UntypedMessage (incomplete type in std::variant). Use C++17 for
-  # Protobuf build under MSVC to avoid this known issue.
-  # See: https://github.com/protocolbuffers/protobuf/issues/21310
-  if (MSVC)
-    set(CMAKE_CXX_STANDARD 17)
-  endif()
   FetchContent_MakeAvailable(protobuf)
-  if (MSVC)
-    set(CMAKE_CXX_STANDARD 20)
-    foreach(target libprotobuf libprotobuf-lite libprotoc protoc)
-      if (TARGET ${target})
-        set_target_properties(${target} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
-      endif()
-    endforeach()
-  endif()
 
   if (SPM_PROTOC_EXECUTABLE AND NOT TARGET protobuf::protoc)
     add_executable(protobuf::protoc IMPORTED GLOBAL)
