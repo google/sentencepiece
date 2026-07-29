@@ -197,6 +197,13 @@ endif()
 
 if (SPM_ABSL_PROVIDER STREQUAL "module")
   include(FetchContent)
+  if (MSVC)
+    if (SPM_ENABLE_MSVC_MT_BUILD)
+      set(ABSL_MSVC_STATIC_RUNTIME ON CACHE BOOL "Use static MSVC runtime for abseil" FORCE)
+    else()
+      set(ABSL_MSVC_STATIC_RUNTIME OFF CACHE BOOL "Use static MSVC runtime for abseil" FORCE)
+    endif()
+  endif()
   FetchContent_Declare(
     abseil-cpp
     GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
@@ -229,6 +236,13 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
   set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "Disable protobuf examples" FORCE)
   set(protobuf_INSTALL OFF CACHE BOOL "Disable protobuf install" FORCE)
   set(utf8_range_ENABLE_INSTALL OFF CACHE BOOL "Disable utf8_range install" FORCE)
+  if (MSVC)
+    if (SPM_ENABLE_MSVC_MT_BUILD)
+      set(protobuf_MSVC_STATIC_RUNTIME ON CACHE BOOL "Link static runtime libraries for protobuf" FORCE)
+    else()
+      set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "Link static runtime libraries for protobuf" FORCE)
+    endif()
+  endif()
 
   if (SPM_PROTOC_EXECUTABLE)
     set(protobuf_BUILD_PROTOC_BINARIES OFF CACHE BOOL "Disable protoc binary as SPM_PROTOC_EXECUTABLE is set" FORCE)
