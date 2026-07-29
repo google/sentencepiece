@@ -25,17 +25,37 @@ list(APPEND SPM_LIBS absl::time)
 
 if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
   FetchContent_GetProperties(protobuf SOURCE_DIR protobuf_SOURCE_DIR)
-  include(${protobuf_SOURCE_DIR}/cmake/protobuf-generate.cmake)
-  if (NOT TARGET protobuf::protoc AND TARGET protoc)
-    add_executable(protobuf::protoc ALIAS protoc)
-  endif()
   set(PROTOBUF_LITE_LIBRARY protobuf::libprotobuf-lite)
   list(APPEND SPM_LIBS ${PROTOBUF_LITE_LIBRARY})
-  protobuf_generate(OUT_VAR SPM_PROTO_SRCS PROTOS sentencepiece.proto)
-  protobuf_generate(OUT_VAR SPM_MODEL_PROTO_SRCS PROTOS sentencepiece_model.proto)
   set(PROTOBUF_LITE_SRCS "")
   include_directories(${protobuf_SOURCE_DIR}/src)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+  if (SPM_PROTOC_EXECUTABLE)
+    set(PROTOC_CMD "${SPM_PROTOC_EXECUTABLE}")
+    set(PROTOC_DEP "")
+  else()
+    set(PROTOC_CMD protoc)
+    set(PROTOC_DEP protoc)
+  endif()
+
+  set(SPM_PROTO_SRCS "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece.pb.cc" "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece.pb.h")
+  add_custom_command(
+    OUTPUT ${SPM_PROTO_SRCS}
+    COMMAND ${PROTOC_CMD} --cpp_out=${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece.proto
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece.proto ${PROTOC_DEP}
+    COMMENT "Running cpp protocol buffer compiler on sentencepiece.proto"
+    VERBATIM
+  )
+
+  set(SPM_MODEL_PROTO_SRCS "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece_model.pb.cc" "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece_model.pb.h")
+  add_custom_command(
+    OUTPUT ${SPM_MODEL_PROTO_SRCS}
+    COMMAND ${PROTOC_CMD} --cpp_out=${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece_model.proto
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece_model.proto ${PROTOC_DEP}
+    COMMENT "Running cpp protocol buffer compiler on sentencepiece_model.proto"
+    VERBATIM
+  )
 elseif (SPM_PROTOBUF_PROVIDER STREQUAL "package")
   find_package(Protobuf REQUIRED)
   include_directories(${Protobuf_INCLUDE_DIRS})
