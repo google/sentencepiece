@@ -35,7 +35,7 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
     set(PROTOC_CMD "${SPM_PROTOC_EXECUTABLE}")
     set(PROTOC_DEP "")
   else()
-    set(PROTOC_CMD protoc)
+    set(PROTOC_CMD $<TARGET_FILE:protoc>)
     set(PROTOC_DEP protoc)
   endif()
 
