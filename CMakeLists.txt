@@ -237,6 +237,10 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
     GIT_TAG v25.6
     GIT_SHALLOW TRUE
   )
+  # MSVC's C++20 STL triggers error C2139 on Protobuf v25.6's
+  # UntypedMessage (incomplete type in std::variant). Use C++17 for
+  # Protobuf build under MSVC to avoid this known issue.
+  # See: https://github.com/protocolbuffers/protobuf/issues/21310
   if (MSVC)
     set(CMAKE_CXX_STANDARD 17)
   endif()
