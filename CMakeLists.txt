@@ -218,11 +218,18 @@ endif()
 if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
   include(FetchContent)
   set(protobuf_BUILD_TESTS OFF CACHE BOOL "Disable protobuf tests" FORCE)
-  set(protobuf_BUILD_PROTOC_BINARIES ON CACHE BOOL "Enable protoc binary" FORCE)
-  set(protobuf_BUILD_LIBPROTOC ON CACHE BOOL "Enable libprotoc" FORCE)
   set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "Disable protobuf examples" FORCE)
   set(protobuf_INSTALL OFF CACHE BOOL "Disable protobuf install" FORCE)
   set(utf8_range_ENABLE_INSTALL OFF CACHE BOOL "Disable utf8_range install" FORCE)
+
+  if (SPM_PROTOC_EXECUTABLE OR CMAKE_CROSSCOMPILING)
+    set(protobuf_BUILD_PROTOC_BINARIES OFF CACHE BOOL "Disable protoc binary for cross-compilation" FORCE)
+    set(protobuf_BUILD_LIBPROTOC OFF CACHE BOOL "Disable libprotoc for cross-compilation" FORCE)
+  else()
+    set(protobuf_BUILD_PROTOC_BINARIES ON CACHE BOOL "Enable protoc binary" FORCE)
+    set(protobuf_BUILD_LIBPROTOC ON CACHE BOOL "Enable libprotoc" FORCE)
+  endif()
+
   FetchContent_Declare(
     protobuf
     GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
@@ -230,6 +237,19 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
     GIT_SHALLOW TRUE
   )
   FetchContent_MakeAvailable(protobuf)
+
+  if (SPM_PROTOC_EXECUTABLE OR CMAKE_CROSSCOMPILING)
+    if (SPM_PROTOC_EXECUTABLE)
+      set(PROTOC_HOST_EXE "${SPM_PROTOC_EXECUTABLE}")
+    else()
+      find_program(PROTOC_HOST_EXE protoc REQUIRED)
+    endif()
+    if (NOT TARGET protobuf::protoc)
+      add_executable(protobuf::protoc IMPORTED GLOBAL)
+      set_target_properties(protobuf::protoc PROPERTIES IMPORTED_LOCATION "${PROTOC_HOST_EXE}")
+    endif()
+  endif()
+
   if (TARGET utf8_validity)
     if (MSVC)
       target_compile_options(utf8_validity PRIVATE /FIstring.h)
