@@ -37,10 +37,6 @@ jobs:
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-    - name: Install protoc for Windows
-      if: runner.os == 'Windows'
-      run: choco install protoc -y
-
     - name: Config for Windows
       if: runner.os == 'Windows'
       run: cmake -A ${{ matrix.arch }} -B build -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=build/root
