@@ -36,16 +36,20 @@ jobs:
         sudo ln -sf /usr/arm-linux-gnueabihf /usr/arm-linux-gnu
 
     - name: Build
+      env:
+        ARCH: ${{ matrix.arch }}
       run: |
         mkdir -p build
         cd build
-        qemu_arch=`echo ${{matrix.arch}} | sed -e s/powerpc/ppc/ -e s/686/386/`
-        env CXX=/usr/bin/${{matrix.arch}}-linux-gnu-g++-10 CC=/usr/bin/${{matrix.arch}}-linux-gnu-gcc-10 cmake .. -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_FIND_ROOT_PATH=/usr/${{matrix.arch}}-linux-gnu -DSPM_CROSS_SYSTEM_PROCESSOR=${{matrix.arch}} -DCMAKE_CROSSCOMPILING_EMULATOR="qemu-${qemu_arch};-L;/usr/${{matrix.arch}}-linux-gnu"
+        qemu_arch=`echo "$ARCH" | sed -e s/powerpc/ppc/ -e s/686/386/`
+        env CXX=/usr/bin/${ARCH}-linux-gnu-g++-10 CC=/usr/bin/${ARCH}-linux-gnu-gcc-10 cmake .. -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_FIND_ROOT_PATH=/usr/${ARCH}-linux-gnu -DSPM_CROSS_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_CROSSCOMPILING_EMULATOR="qemu-${qemu_arch};-L;/usr/${ARCH}-linux-gnu"
         make -j$(nproc)
 
     - name: Test on QEMU
       if: matrix.arch != 'sparc64' && matrix.arch != 'm68k' && matrix.arch != 'sh4'
+      env:
+        ARCH: ${{ matrix.arch }}
       run: |
         cd build
-        qemu_arch=`echo ${{matrix.arch}} | sed -e s/powerpc/ppc/ -e s/686/386/`
-        qemu-${qemu_arch} -L /usr/${{matrix.arch}}-linux-gnu src/spm_test
+        qemu_arch=`echo "$ARCH" | sed -e s/powerpc/ppc/ -e s/686/386/`
+        qemu-${qemu_arch} -L /usr/${ARCH}-linux-gnu src/spm_test
