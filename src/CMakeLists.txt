@@ -145,7 +145,6 @@ set(SPM_TEST_SRCS
   sentencepiece_processor_parallel_test.cc
   sentencepiece_trainer_test.cc
   test_main.cc
-  testharness.cc
   trainer_factory_test.cc
   trainer_interface_test.cc
   unicode_script_test.cc
@@ -345,9 +344,9 @@ endif()
 
 if (SPM_ENABLE_BENCHMARK)
   add_executable(sentencepiece_processor_benchmarks_test
-        sentencepiece_processor_benchmarks_test.cc testharness.cc)
+        sentencepiece_processor_benchmarks_test.cc)
   target_link_libraries(sentencepiece_processor_benchmarks_test
-        sentencepiece sentencepiece_train benchmark::benchmark)
+        sentencepiece sentencepiece_train benchmark::benchmark gtest)
 endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
