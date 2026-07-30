@@ -334,7 +334,7 @@ if (SPM_BUILD_TEST)
   enable_testing()
   add_executable(spm_test test_main.cc ${SPM_TEST_SRCS})
 
-  target_link_libraries(spm_test sentencepiece sentencepiece_train)
+  target_link_libraries(spm_test sentencepiece sentencepiece_train gtest gmock)
 
   set(MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --show-leak-kinds=definite,possible --error-exitcode=1")
   find_program(CTEST_MEMORYCHECK_COMMAND NAMES valgrind)

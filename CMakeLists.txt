@@ -187,6 +187,21 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 
 if (SPM_BUILD_TEST)
   enable_testing()
+  include(FetchContent)
+  if (MSVC)
+    if (SPM_ENABLE_MSVC_MT_BUILD)
+      set(gtest_force_shared_crt OFF CACHE BOOL "Disable shared CRT for gtest" FORCE)
+    else()
+      set(gtest_force_shared_crt ON CACHE BOOL "Enable shared CRT for gtest" FORCE)
+    endif()
+  endif()
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.15.2
+    GIT_SHALLOW TRUE
+  )
+  FetchContent_MakeAvailable(googletest)
 endif()
 
 if (SPM_DISABLE_EMBEDDED_DATA)

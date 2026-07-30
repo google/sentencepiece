@@ -38,7 +38,9 @@
 #include <windows.h>
 #endif
 
-#define FRIEND_TEST(a, b) friend class a##_Test_##b;
+#ifndef FRIEND_TEST
+#define FRIEND_TEST(a, b) friend class a##_##b##_Test;
+#endif
 
 #ifndef RETURN_IF_ERROR
 #define RETURN_IF_ERROR(...) ABSL_RETURN_IF_ERROR(__VA_ARGS__)
