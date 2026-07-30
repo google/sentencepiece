@@ -23,6 +23,8 @@ ABSL_FLAG(std::string, test_tmpdir, "test_tmp", "Temporary directory.");
 int main(int argc, char **argv) {
   sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
+  // Set TEST_SRCDIR environment variable so GoogleTest's native
+  // testing::SrcDir() can locate test data files when --test_srcdir is passed.
 #ifdef OS_WIN
   _putenv_s("TEST_SRCDIR", absl::GetFlag(FLAGS_test_srcdir).c_str());
 #else
