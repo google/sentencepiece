@@ -23,7 +23,7 @@ jobs:
         arch: [ i686, arm, aarch64, riscv64, powerpc, powerpc64, powerpc64le, s390x, sparc64, m68k, sh4, alpha ]
 
     steps:
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       with:
         persist-credentials: false
 
