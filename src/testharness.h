@@ -30,13 +30,7 @@ namespace testing {
 inline std::string SrcDir() { return absl::GetFlag(FLAGS_test_srcdir); }
 }  // namespace testing
 
-namespace sentencepiece {
-namespace test {
-inline int RunAllTests() {
-  return RUN_ALL_TESTS();
-}
-}  // namespace test
-}  // namespace sentencepiece
+
 
 #ifndef EXPECT_OK
 #define EXPECT_OK(c) EXPECT_TRUE((c).ok())
