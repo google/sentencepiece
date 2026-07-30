@@ -37,7 +37,8 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        env CXX=/usr/bin/${{matrix.arch}}-linux-gnu-g++-10 CC=/usr/bin/${{matrix.arch}}-linux-gnu-gcc-10 cmake .. -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_FIND_ROOT_PATH=/usr/${{matrix.arch}}-linux-gnu -DSPM_CROSS_SYSTEM_PROCESSOR=${{matrix.arch}}
+        qemu_arch=`echo ${{matrix.arch}} | sed -e s/powerpc/ppc/ -e s/686/386/`
+        env CXX=/usr/bin/${{matrix.arch}}-linux-gnu-g++-10 CC=/usr/bin/${{matrix.arch}}-linux-gnu-gcc-10 cmake .. -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_FIND_ROOT_PATH=/usr/${{matrix.arch}}-linux-gnu -DSPM_CROSS_SYSTEM_PROCESSOR=${{matrix.arch}} -DCMAKE_CROSSCOMPILING_EMULATOR="qemu-${qemu_arch};-L;/usr/${{matrix.arch}}-linux-gnu"
         make -j$(nproc)
 
     - name: Test on QEMU
