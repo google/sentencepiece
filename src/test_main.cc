@@ -23,6 +23,11 @@ ABSL_FLAG(std::string, test_tmpdir, "test_tmp", "Temporary directory.");
 int main(int argc, char **argv) {
   sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
+#ifdef OS_WIN
+  _putenv_s("TEST_SRCDIR", absl::GetFlag(FLAGS_test_srcdir).c_str());
+#else
+  setenv("TEST_SRCDIR", absl::GetFlag(FLAGS_test_srcdir).c_str(), 0);
+#endif
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
