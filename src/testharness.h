@@ -35,14 +35,8 @@ inline std::string SrcDir() { return absl::GetFlag(FLAGS_test_srcdir); }
 #ifndef EXPECT_OK
 #define EXPECT_OK(c) EXPECT_TRUE((c).ok())
 #endif
-#ifndef EXPECT_NOT_OK
-#define EXPECT_NOT_OK(c) EXPECT_FALSE((c).ok())
-#endif
 #ifndef ASSERT_OK
 #define ASSERT_OK(c) ASSERT_TRUE((c).ok())
-#endif
-#ifndef ASSERT_NOT_OK
-#define ASSERT_NOT_OK(c) ASSERT_FALSE((c).ok())
 #endif
 
 #endif  // TESTHARNESS_H_
