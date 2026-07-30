@@ -101,10 +101,25 @@ class BoundedPriorityQueue {
 
     std::vector<ItemScore> items;
     items.reserve(data_.size());
+    const float power = absl::GetFlag(FLAGS_seed_piece_length_power);
+
+    auto calc_score = [power](uint64_t freq, double len) -> double {
+      if (power == 1.0f) {
+        return static_cast<double>(freq) * len;
+      } else if (power == 0.5f) {
+        return static_cast<double>(freq) * std::sqrt(len);
+      } else if (power == 0.0f) {
+        return static_cast<double>(freq);
+      }
+      return static_cast<double>(freq) * std::pow(len, static_cast<double>(power));
+    };
+
     for (const auto& [key, freq] : data_) {
       if (freq < 2) continue;
       const UnicodeText pw = string_util::UTF8ToUnicodeText(key);
-      items.push_back({&key, freq * pw.size()});
+      const double len = static_cast<double>(pw.size());
+      const double score = calc_score(freq, len);
+      items.push_back({&key, static_cast<uint64_t>(score)});
     }
 
     std::sort(
@@ -124,11 +139,11 @@ class BoundedPriorityQueue {
     return results;
   }
 
- private:
+  private:
   void Gc() {
-    LOG(INFO) << "Running Pure-Frequency QuickSelect GC (current_size="
+    LOG(INFO) << "Running Score-Based QuickSelect GC (current_size="
               << data_.size() << ", keeping top " << gc_keep_capacity_
-              << " highest-frequency items)...";
+              << " highest-scoring items)...";
     using MapPair = std::pair<const std::string, uint64_t>;
     std::vector<const MapPair*> tmp;
     tmp.reserve(data_.size());
@@ -136,13 +151,29 @@ class BoundedPriorityQueue {
       tmp.push_back(&kv);
     }
 
+    const float power = absl::GetFlag(FLAGS_seed_piece_length_power);
+
+    auto get_score = [power](const MapPair* item) -> double {
+      const UnicodeText pw = string_util::UTF8ToUnicodeText(item->first);
+      const double len = static_cast<double>(pw.size());
+      const uint64_t freq = item->second;
+      if (power == 1.0f) {
+        return static_cast<double>(freq) * len;
+      } else if (power == 0.5f) {
+        return static_cast<double>(freq) * std::sqrt(len);
+      } else if (power == 0.0f) {
+        return static_cast<double>(freq);
+      }
+      return static_cast<double>(freq) * std::pow(len, static_cast<double>(power));
+    };
+
     const size_t keep = std::min(tmp.size(), gc_keep_capacity_);
     std::nth_element(tmp.begin(), tmp.begin() + keep, tmp.end(),
-                     [](const MapPair* lhs, const MapPair* rhs) {
+                     [&](const MapPair* lhs, const MapPair* rhs) {
                        return std::forward_as_tuple(
-                                  rhs->second, rhs->first.size(), lhs->first) <
+                                  get_score(rhs), rhs->first.size(), lhs->first) <
                               std::forward_as_tuple(
-                                  lhs->second, lhs->first.size(), rhs->first);
+                                  get_score(lhs), lhs->first.size(), rhs->first);
                      });
 
     absl::flat_hash_map<std::string, uint64_t> new_data;
@@ -279,16 +310,14 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
 
   size_t effective_seed_size =
       static_cast<size_t>(trainer_spec_.seed_sentencepiece_size());
-  // If user left default seed_sentencepiece_size (1,000,000) or unset (0),
-  // dynamically scale initial seed vocabulary size to 8x target vocab_size K
-  // (minimum 100,000) to balance initial candidate quality and performance.
-  // Explicit user flag overrides are respected.
-  const size_t vocab_size = trainer_spec_.vocab_size();
-  if (effective_seed_size == 1000000 || effective_seed_size == 0) {
+  if (effective_seed_size == 0) {
+    const size_t vocab_size = trainer_spec_.vocab_size();
     effective_seed_size = std::max<size_t>(100000, vocab_size * 8);
     LOG(INFO) << "Dynamically scaled seed_sentencepiece_size to "
               << effective_seed_size << " (8x target_vocab_size=" << vocab_size
               << ")";
+  } else {
+    LOG(INFO) << "Using explicit seed_sentencepiece_size=" << effective_seed_size;
   }
 
   constexpr size_t kMaxChunkBytes = 500 * 1024 * 1024;  // 500 MB per chunk
@@ -327,27 +356,21 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
     chunk_id++;
 
     // Analytical dynamic minimum frequency floor derived from Zipf law:
-    // min_freq = max(2, kAlpha * N / (K * ln(K)))
+    // min_freq = max(2, alpha * N / (K * ln(K)))
     // where:
     //   N = current chunk byte size (n32)
     //   K = target vocabulary size (vocab_size)
-    //   kAlpha = conservative safety factor (0.1)
-    //
-    // Guidelines for K = 32,000 (K * ln(K) ~ 331,840):
-    //   N = 1 MB   -> min_freq = 2 (clamped floor)
-    //   N = 10 MB  -> min_freq = 3
-    //   N = 100 MB -> min_freq = 30
-    //   N = 500 MB -> min_freq = 150
-    constexpr double kAlpha = 0.1;
+    //   alpha = min_freq_alpha flag (default 0.0 -> min_freq = 2)
+    const float alpha = absl::GetFlag(FLAGS_min_freq_alpha);
     const double vocab_size =
         static_cast<double>(std::max<int>(1, trainer_spec_.vocab_size()));
     const double k_log_k = vocab_size * std::log(vocab_size);
     const uint64_t min_freq = std::max<uint64_t>(
-        1ULL, static_cast<uint64_t>(kAlpha * static_cast<double>(n32) /
+        2ULL, static_cast<uint64_t>(static_cast<double>(alpha) * static_cast<double>(n32) /
                                     std::max(1.0, k_log_k)));
 
     LOG(INFO) << "[Chunk #" << chunk_id << "] Start processing " << n32
-              << " bytes (min_freq=" << min_freq << ")...";
+              << " bytes (base_min_freq=" << min_freq << ")...";
 
     const uint8_t* u_bytes =
         reinterpret_cast<const uint8_t*>(chunk_bytes.data());
@@ -414,7 +437,11 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
         auto process_interval = [&]() {
           const uint64_t freq = static_cast<uint64_t>(r - l + 1);
           // Skip single characters or pieces below minimum frequency threshold.
-          if (depth <= 1 || freq < min_freq) return;
+          // Candidate A: Length-clamped adaptive min_freq
+          // Short subwords (depth <= 3 bytes) use min_freq = 2 to preserve grammar/morphemes.
+          // Longer subwords (depth > 3 bytes) use base_min_freq to prune long noise.
+          const uint64_t eff_min_freq = (depth <= 3) ? 2ULL : min_freq;
+          if (depth <= 1 || freq < eff_min_freq) return;
 
           const int32_t offset = SA32[l];
           // Skip invalid array range offsets.

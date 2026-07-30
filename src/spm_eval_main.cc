@@ -93,9 +93,16 @@ int main(int argc, char* argv[]) {
   const double byte_w_ppl = std::exp(-nats_per_byte);
   const double standard_ppl = std::exp(-nats_per_token);
 
+  const double empirical_nats_per_byte = safe_div(empirical_log_likelihood, total_bytes);
+  const double empirical_byte_w_ppl = std::exp(-empirical_nats_per_byte);
+
   const double bytes_per_token = safe_div(total_bytes, total_tokens);
   const double tokens_per_byte = safe_div(total_tokens, total_bytes);
   const double compression_ratio_pct = tokens_per_byte * 100.0;
+
+  const size_t model_vocab_size = sp.GetPieceSize();
+  const size_t unique_vocab_used = token_counts.size();
+  const double vocab_coverage_pct = safe_div(unique_vocab_used * 100.0, model_vocab_size);
 
   std::cout << "=======================================================\n";
   std::cout << "RAW LOG-LIKELIHOOD & COMPRESSION REPORT\n";
@@ -105,6 +112,10 @@ int main(int argc, char* argv[]) {
   std::cout << "Total Sentences                  : " << sentence_count << "\n";
   std::cout << "Total Bytes                      : " << total_bytes << "\n";
   std::cout << "Total Tokens                     : " << total_tokens << "\n";
+  std::cout << "Model Vocab Size (K)             : " << model_vocab_size << "\n";
+  std::cout << "Unique Vocab Used                : " << unique_vocab_used << "\n";
+  std::cout << "Vocab Coverage (%)               : "
+            << absl::StrFormat("%.2f%%", vocab_coverage_pct) << "\n";
   std::cout << "-------------------------------------------------------\n";
   std::cout << "COMPRESSION DENSITY & RATIO\n";
   std::cout << "Compression Density (Bytes/Tok)  : "
@@ -119,7 +130,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Viterbi Log-Likelihood (Nats)    : "
               << absl::StrFormat("%.6f", total_viterbi_log_likelihood) << "\n";
   }
-  std::cout << "Log-Likelihood (Nats)            : "
+  std::cout << "Empirical Log-Likelihood (Nats)  : "
             << absl::StrFormat("%.6f", empirical_log_likelihood) << "\n";
   std::cout << "Log-Likelihood / Byte (Nats)     : "
             << absl::StrFormat("%.6f", nats_per_byte) << "\n";
@@ -127,6 +138,8 @@ int main(int argc, char* argv[]) {
             << absl::StrFormat("%.6f", standard_ppl) << "\n";
   std::cout << "Byte-Weighted Perplexity (PPL)   : "
             << absl::StrFormat("%.6f", byte_w_ppl) << "\n";
+  std::cout << "Empirical Byte-W PPL (All Models): "
+            << absl::StrFormat("%.6f", empirical_byte_w_ppl) << "\n";
   std::cout << "=======================================================\n";
 
   return 0;

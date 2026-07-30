@@ -60,6 +60,10 @@ ABSL_FLAG(
     bool, post_l1_debias, true,
     "When true (default), resets lambda penalty and re-estimates pure Unigram "
     "MLE probabilities on the selected vocabulary (Post-Lasso Debiased Mode).");
+ABSL_FLAG(float, seed_piece_length_power, 1.0f,
+          "power exponent beta for seed sentencepiece length weighting: score = freq * len^beta (default=1.0)");
+ABSL_FLAG(float, min_freq_alpha, 0.0f,
+          "dynamic minimum frequency factor alpha derived from Zipf law: min_freq = max(2, alpha * N / (K * ln(K))) (default=0.0)");
 
 namespace sentencepiece {
 

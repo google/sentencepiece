@@ -38,6 +38,8 @@ ABSL_DECLARE_FLAG(bool, use_sparse_pruning);
 ABSL_DECLARE_FLAG(bool, auto_character_coverage);
 ABSL_DECLARE_FLAG(float, fixed_sparse_lambda);
 ABSL_DECLARE_FLAG(bool, post_l1_debias);
+ABSL_DECLARE_FLAG(float, seed_piece_length_power);
+ABSL_DECLARE_FLAG(float, min_freq_alpha);
 
 namespace sentencepiece {
 
