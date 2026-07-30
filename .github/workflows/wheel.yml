@@ -90,7 +90,9 @@ jobs:
           files: python/dist/*.tar.gz
 
       - name: Build wheel from sdist
-        run: python -m pip wheel "${{ steps.sdist.outputs.paths }}" --verbose
+        env:
+          SDIST_PATHS: ${{ steps.sdist.outputs.paths }}
+        run: python -m pip wheel "$SDIST_PATHS" --verbose
 
       - name: Copy sdist
         working-directory: python
@@ -105,7 +107,7 @@ jobs:
           twine check --strict python/wheelhouse/*
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: artifacts-${{ matrix.os }}
           path: python/wheelhouse/*
@@ -194,7 +196,7 @@ jobs:
       actions: read   # To read the workflow path.
       id-token: write # To sign the provenance.
       contents: write # To add assets to a release.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@f7dd8c54c2067bafc12ca7a55595d5ee9b75204a # v2.1.0
     with:
       base64-subjects: "${{ needs.gather-digests.outputs.digests }}"
       upload-assets: true # Optional: Upload to a new release
