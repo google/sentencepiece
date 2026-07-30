@@ -14,6 +14,7 @@
 
 #include "init.h"
 #include "testharness.h"
+#include "third_party/absl/flags/flag.h"
 #include "util.h"
 
 ABSL_FLAG(std::string, test_srcdir, sentencepiece::util::JoinPath("..", "data"),
