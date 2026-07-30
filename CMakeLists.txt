@@ -120,7 +120,7 @@ else()
 endif()
 
 if (MSVC)
-  add_definitions("/wd4267 /wd4244 /wd4305 /Zc:strictStrings /utf-8")
+  add_definitions("/wd4267 /wd4244 /wd4305 /wd4996 /Zc:strictStrings /utf-8")
   if (SPM_ENABLE_MSVC_MT_BUILD)
     string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_DEBUG          ${CMAKE_CXX_FLAGS_DEBUG})
     string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_MINSIZEREL     ${CMAKE_CXX_FLAGS_MINSIZEREL})
@@ -179,8 +179,7 @@ configure_file("${PROJECT_SOURCE_DIR}/config.h.in" "config.h")
 configure_file("${PROJECT_SOURCE_DIR}/sentencepiece.pc.in" "sentencepiece.pc" @ONLY)
 
 if (NOT MSVC)
-  # suppress warning for C++11 features.
-  # add_definitions("-Wno-deprecated-declarations -Wno-deprecated-enum-enum-conversion")
+  add_compile_options("-Wno-deprecated-declarations")
   install(FILES "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece.pc" DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
 
