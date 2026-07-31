@@ -23,6 +23,7 @@
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
 #include "testharness.h"
+#include "third_party/absl/flags/flag.h"
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/flags.h"
 #include "third_party/absl/status/status.h"

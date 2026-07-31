@@ -14,6 +14,7 @@
 
 #include "init.h"
 #include "testharness.h"
+#include "third_party/absl/flags/flag.h"
 #include "util.h"
 
 ABSL_FLAG(std::string, test_srcdir, sentencepiece::util::JoinPath("..", "data"),
@@ -23,6 +24,13 @@ ABSL_FLAG(std::string, test_tmpdir, "test_tmp", "Temporary directory.");
 int main(int argc, char **argv) {
   sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
-  sentencepiece::test::RunAllTests();
-  return 0;
+  // Set TEST_SRCDIR environment variable so GoogleTest's native
+  // testing::SrcDir() can locate test data files when --test_srcdir is passed.
+#ifdef OS_WIN
+  _putenv_s("TEST_SRCDIR", absl::GetFlag(FLAGS_test_srcdir).c_str());
+#else
+  setenv("TEST_SRCDIR", absl::GetFlag(FLAGS_test_srcdir).c_str(), 0);
+#endif
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

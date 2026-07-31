@@ -17,6 +17,7 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest ]
         arch: [ x64, arm64 ]
@@ -34,11 +35,15 @@ jobs:
       contents: write # svenstaro/upload-release-action
 
     steps:
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        persist-credentials: false
 
     - name: Config for Windows
       if: runner.os == 'Windows'
-      run: cmake -A ${{ matrix.arch }} -B build -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=build/root
+      env:
+        ARCH: ${{ matrix.arch }}
+      run: cmake -A "$ARCH" -B build -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=build/root
     - name: Config for Linux/MacOSX
       if: runner.os != 'Windows'
       run: cmake -B build -DSPM_BUILD_TEST=ON -DCMAKE_INSTALL_PREFIX=build/root
@@ -57,7 +62,7 @@ jobs:
       run: cpack
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: artifacts-${{ matrix.os }}-${{ matrix.arch }}
         path: ./build/*.7z
@@ -65,7 +70,7 @@ jobs:
 
     - name: Upload Release Assets
       if: startsWith(github.ref, 'refs/tags/')
-      uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2.11.5
+      uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: ./build/*.7z
