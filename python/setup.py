@@ -64,35 +64,32 @@ def find_abseil_lib(search_root):
   return absl_libs
 
 
-def get_protobuf_includes():
-  prefix = '/I' if os.name == 'nt' else '-I'
-  paths = [
-      '../build/_deps/protobuf-src/src',
-      './build/_deps/protobuf-src/src',
-      '../build_amd64/_deps/protobuf-src/src',
-      './build_amd64/_deps/protobuf-src/src',
-      '../build_arm64/_deps/protobuf-src/src',
-      './build_arm64/_deps/protobuf-src/src',
-      '../build/src',
-      '../build_amd64/src',
-      '../build_arm64/src',
-      './build/src',
-      './build_amd64/src',
-      './build_arm64/src',
+def get_build_includes(build_dir, is_msvc=True):
+  prefix = '/I' if is_msvc else '-I'
+  candidates = [
+      os.path.join(build_dir, 'root', 'include'),
+      os.path.join(build_dir, 'src'),
+      os.path.join(build_dir, '_deps', 'protobuf-src', 'src'),
+      os.path.join(build_dir, '_deps', 'abseil-cpp-src'),
       '../src',
       './sentencepiece/src',
+      '../third_party/abseil-cpp',
+      './sentencepiece/third_party/abseil-cpp',
+      '..',
+      './sentencepiece',
   ]
-  return [prefix + os.path.normpath(p) for p in paths]
+  includes = []
+  seen = set()
+  for p in candidates:
+    norm = os.path.normpath(p)
+    if norm not in seen and os.path.exists(norm):
+      seen.add(norm)
+      includes.append(prefix + norm)
+  return includes
 
 
 def get_cflags_and_libs(root):
-  cflags = [
-      '-std=c++20',
-      '-I..',
-      '-I../src',
-      '-I' + os.path.normpath(os.path.join(root, 'include')),
-      '-I' + os.path.normpath(os.path.join(root, 'src')),
-  ] + get_protobuf_includes()
+  cflags = ['-std=c++20'] + get_build_includes(root, is_msvc=False)
   libs = []
   for lib_name in ['libsentencepiece.a', 'libsentencepiece_train.a']:
     for sub in ['lib', 'lib64', 'src', '']:
@@ -103,36 +100,17 @@ def get_cflags_and_libs(root):
   return cflags, libs
 
 
-def find_absl_include(is_msvc=True):
-  paths = [
-      '../build/_deps/abseil-cpp-src',
-      './build/_deps/abseil-cpp-src',
-      '../build_amd64/_deps/abseil-cpp-src',
-      './build_amd64/_deps/abseil-cpp-src',
-      '../build_arm64/_deps/abseil-cpp-src',
-      './build_arm64/_deps/abseil-cpp-src',
-      '../third_party/abseil-cpp',
-      '..',
-      './sentencepiece/third_party/abseil-cpp',
-      './sentencepiece',
-  ]
-  prefix = '/I' if is_msvc else '-I'
-  return [prefix + os.path.normpath(p) for p in paths if os.path.exists(p)]
-
-
 class build_ext_unix(_build_ext):
   """Override build_extension to run cmake."""
 
   def build_extension(self, ext):
     cflags, libs = get_cflags_and_libs('../build')
     abseil_libs = find_abseil_lib('../build')
-    cflags.extend(find_absl_include(is_msvc=False))
 
     if len(libs) == 0:
       subprocess.check_call(['./build_bundled.sh', __version__])
       cflags, libs = get_cflags_and_libs('./build')
       abseil_libs = find_abseil_lib('./build')
-      cflags.extend(find_absl_include(is_msvc=False))
 
     # Fix compile on some versions of Mac OSX
     # See: https://github.com/neulab/xnmt/issues/199
@@ -184,25 +162,9 @@ class build_ext_win(_build_ext):
     arch = get_win_arch()
 
     if os.path.exists('..\\build_{}\\root\\lib'.format(arch)):
-      cflags = [
-          '/std:c++17',
-          '/I' + os.path.normpath('..\\build_{}\\root\\include'.format(arch)),
-      ] + get_protobuf_includes()
-      libs = [
-          '..\\build_{}\\root\\lib\\sentencepiece.lib'.format(arch),
-          '..\\build_{}\\root\\lib\\sentencepiece_train.lib'.format(arch),
-      ]
-      libs.extend(find_abseil_lib('..\\build_{}\\third_party'.format(arch)))
+      build_dir = '..\\build_{}'.format(arch)
     elif os.path.exists('..\\build\\root\\lib'):
-      cflags = [
-          '/std:c++17',
-          '/I' + os.path.normpath('..\\build\\root\\include'),
-      ] + get_protobuf_includes()
-      libs = [
-          '..\\build\\root\\lib\\sentencepiece.lib',
-          '..\\build\\root\\lib\\sentencepiece_train.lib',
-      ]
-      libs.extend(find_abseil_lib('..\\build\\third_party'))
+      build_dir = '..\\build'
     else:
       # build library locally with cmake and vc++.
       if arch == 'amd64':
@@ -234,17 +196,14 @@ class build_ext_win(_build_ext):
           '--parallel',
           '8',
       ])
-      cflags = [
-          '/std:c++17',
-          '/I' + os.path.normpath('.\\build\\root\\include'),
-      ] + get_protobuf_includes()
-      libs = [
-          '.\\build\\root\\lib\\sentencepiece.lib',
-          '.\\build\\root\\lib\\sentencepiece_train.lib',
-      ]
-      libs.extend(find_abseil_lib('.\\build\\third_party'))
+      build_dir = '.\\build'
 
-    cflags.extend(find_absl_include(is_msvc=True))
+    cflags = ['/std:c++17'] + get_build_includes(build_dir, is_msvc=True)
+    libs = [
+        os.path.join(build_dir, 'root', 'lib', 'sentencepiece.lib'),
+        os.path.join(build_dir, 'root', 'lib', 'sentencepiece_train.lib'),
+    ]
+    libs.extend(find_abseil_lib(build_dir))
 
     # on Windows, GIL flag is not set automatically.
     # https://docs.python.org/3/howto/free-threading-python.html
