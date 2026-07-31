@@ -69,6 +69,10 @@ def get_protobuf_includes():
   paths = [
       '../build/_deps/protobuf-src/src',
       './build/_deps/protobuf-src/src',
+      '../build/src',
+      '../build_amd64/src',
+      '../build_arm64/src',
+      './build/src',
       '../src',
       './sentencepiece/src',
   ]

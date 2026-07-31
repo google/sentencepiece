@@ -42,7 +42,8 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
     set(PROTOC_DEP protoc)
   endif()
 
-  set(SPM_PROTO_SRCS "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece.pb.cc" "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece.pb.h")
+  set(SPM_PROTO_HDRS "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece.pb.h")
+  set(SPM_PROTO_SRCS "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece.pb.cc" "${SPM_PROTO_HDRS}")
   add_custom_command(
     OUTPUT ${SPM_PROTO_SRCS}
     COMMAND ${PROTOC_CMD} --cpp_out=${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece.proto
@@ -51,7 +52,8 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
     VERBATIM
   )
 
-  set(SPM_MODEL_PROTO_SRCS "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece_model.pb.cc" "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece_model.pb.h")
+  set(SPM_MODEL_PROTO_HDRS "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece_model.pb.h")
+  set(SPM_MODEL_PROTO_SRCS "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece_model.pb.cc" "${SPM_MODEL_PROTO_HDRS}")
   add_custom_command(
     OUTPUT ${SPM_MODEL_PROTO_SRCS}
     COMMAND ${PROTOC_CMD} --cpp_out=${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece_model.proto
@@ -324,7 +326,7 @@ add_custom_target(generate_installed_headers ALL
 install(FILES "${GENERATED_HEADERS_DIR}/sentencepiece_trainer.h" "${GENERATED_HEADERS_DIR}/sentencepiece_processor.h"
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 if (NOT SPM_PROTOBUF_PROVIDER STREQUAL "internal")
-  install(FILES ${SPM_PROTO_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  install(FILES ${SPM_PROTO_HDRS} ${SPM_MODEL_PROTO_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endif()
 
 file(TO_NATIVE_PATH "${PROJECT_SOURCE_DIR}/data" data_dir)
