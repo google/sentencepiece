@@ -69,10 +69,16 @@ def get_protobuf_includes():
   paths = [
       '../build/_deps/protobuf-src/src',
       './build/_deps/protobuf-src/src',
+      '../build_amd64/_deps/protobuf-src/src',
+      './build_amd64/_deps/protobuf-src/src',
+      '../build_arm64/_deps/protobuf-src/src',
+      './build_arm64/_deps/protobuf-src/src',
       '../build/src',
       '../build_amd64/src',
       '../build_arm64/src',
       './build/src',
+      './build_amd64/src',
+      './build_arm64/src',
       '../src',
       './sentencepiece/src',
   ]
@@ -101,6 +107,10 @@ def find_absl_include(is_msvc=True):
   paths = [
       '../build/_deps/abseil-cpp-src',
       './build/_deps/abseil-cpp-src',
+      '../build_amd64/_deps/abseil-cpp-src',
+      './build_amd64/_deps/abseil-cpp-src',
+      '../build_arm64/_deps/abseil-cpp-src',
+      './build_arm64/_deps/abseil-cpp-src',
       '../third_party/abseil-cpp',
       '..',
       './sentencepiece/third_party/abseil-cpp',
