@@ -10,20 +10,20 @@ jobs:
     steps:
     - name: Build Fuzzers
       id: build
-      uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@master
+      uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@c73e4ccf50c0634081e3255d40858e79a7f30c26
       with:
         oss-fuzz-project-name: 'sentencepiece'
         dry-run: false
         language: c++
     - name: Run Fuzzers
-      uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@master
+      uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@c73e4ccf50c0634081e3255d40858e79a7f30c26
       with:
         oss-fuzz-project-name: 'sentencepiece'
         fuzz-seconds: 300
         dry-run: false
         language: c++
     - name: Upload Crash
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       if: failure() && steps.build.outcome == 'success'
       with:
         name: artifacts

@@ -24,11 +24,7 @@
 #include "third_party/absl/strings/str_cat.h"
 #include "util.h"
 
-#ifdef _USE_EXTERNAL_PROTOBUF
 #include "google/protobuf/message_lite.h"
-#else
-#include "third_party/protobuf-lite/google/protobuf/message_lite.h"
-#endif
 
 ABSL_FLAG(bool, quiet, false, "Suppress logging message.");
 
