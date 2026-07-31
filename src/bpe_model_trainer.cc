@@ -218,7 +218,6 @@ absl::Status Trainer::Train() {
 
   // Load all sentences
   RETURN_IF_ERROR(LoadSentences());
-
   if (trainer_spec_.split_by_whitespace()) {
     SplitSentencesByWhitespace();
   }
@@ -335,10 +334,7 @@ absl::Status Trainer::TrainFast() {
   RET_CHECK_EQ(TrainerSpec::BPE, trainer_spec_.model_type());
 
   RETURN_IF_ERROR(LoadSentences());
-
-  if (trainer_spec_.split_by_whitespace()) {
-    SplitSentencesByWhitespace();
-  }
+  PretokenizeSentences();
 
   const int vocab_size =
       trainer_spec_.vocab_size() - meta_pieces_.size() - required_chars_.size();
