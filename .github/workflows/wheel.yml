@@ -23,9 +23,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-latest]
+        include:
+          - os: ubuntu-latest
+            cibw_arch: auto
+          - os: ubuntu-24.04-arm
+            cibw_arch: auto
+          - os: windows-latest
+            cibw_arch: auto
+          - os: windows-11-arm
+            cibw_arch: auto
+          - os: macos-latest
+            cibw_arch: x86_64
+          - os: macos-latest
+            cibw_arch: arm64
     runs-on: ${{ matrix.os }}
-    name: Build wheels on ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.os }} (${{ matrix.cibw_arch }})
 
     permissions:
       contents: write # svenstaro/upload-release-action
@@ -57,7 +69,7 @@ jobs:
           cmake --build build --config Release --target install --parallel 8
         env:
           MACOSX_DEPLOYMENT_TARGET: 10.13
-          CMAKE_OSX_ARCHITECTURES: arm64;x86_64
+          CMAKE_OSX_ARCHITECTURES: ${{ matrix.cibw_arch }}
 
       - name: Install cibuildwheel
         working-directory: python
@@ -73,7 +85,7 @@ jobs:
           python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_ARCHS_LINUX: auto
-          CIBW_ARCHS_MACOS: x86_64 universal2 arm64
+          CIBW_ARCHS_MACOS: ${{ matrix.cibw_arch }}
           CIBW_ARCHS_WINDOWS: auto
           CIBW_SKIP: "*-musllinux_* *-win32"
           CIBW_ENVIRONMENT: "CMAKE_BUILD_PARALLEL_LEVEL=8"
@@ -81,27 +93,31 @@ jobs:
           CIBW_ENABLE: cpython-freethreading
 
       - name: Build sdist archive
+        if: matrix.os == 'ubuntu-latest'
         working-directory: python
         run: |
           sh build_sdist.sh
 
       - name: Fetch sdist archive
+        if: matrix.os == 'ubuntu-latest'
         uses: tj-actions/glob@2deae40528141fc53131606d56b4e4ce2a486b29 # v22.0.2
         id: sdist
         with:
           files: python/dist/*.tar.gz
 
       - name: Build wheel from sdist
+        if: matrix.os == 'ubuntu-latest'
         env:
           SDIST_PATHS: ${{ steps.sdist.outputs.paths }}
         run: python -m pip wheel "$SDIST_PATHS" --verbose
 
       - name: Copy sdist
         working-directory: python
-        if: runner.os == 'macOS'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           mkdir -p wheelhouse
           cp -f dist/*.tar.gz wheelhouse/
+
 
       - name: Validate artifact
         run: |
