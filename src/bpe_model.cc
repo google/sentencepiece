@@ -93,7 +93,7 @@ class SymbolPairComparator {
 
 struct Symbol {
   int prev;     // prev index of this symbol. -1 for BOS.
-  int next;     // next index of tihs symbol. -1 for EOS.
+  int next;     // next index of this symbol. -1 for EOS.
   bool freeze;  // this symbol is never be merged.
   absl::string_view piece;
 };
