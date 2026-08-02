@@ -90,7 +90,6 @@ jobs:
           CIBW_SKIP: "*-musllinux_* *-win32"
           CIBW_ENVIRONMENT: "CMAKE_BUILD_PARALLEL_LEVEL=8"
           CIBW_BUILD_VERBOSITY: 1
-          CIBW_ENABLE: cpython-freethreading
 
       - name: Build sdist archive
         if: matrix.os == 'ubuntu-latest'

@@ -219,21 +219,19 @@ if (SPM_ABSL_PROVIDER STREQUAL "module")
   )
   FetchContent_MakeAvailable(abseil-cpp)
   FetchContent_GetProperties(abseil-cpp SOURCE_DIR abseil_SOURCE_DIR)
-  if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
-    file(CREATE_LINK
-         ${abseil_SOURCE_DIR}/absl
-         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl
-         SYMBOLIC)
-  endif()
+  file(REMOVE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
+  file(CREATE_LINK
+       ${abseil_SOURCE_DIR}/absl
+       ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl
+       SYMBOLIC)
 elseif (SPM_ABSL_PROVIDER STREQUAL "package")
   find_package(absl REQUIRED)
   get_target_property(ABSL_INCLUDE_DIRS absl::base INTERFACE_INCLUDE_DIRECTORIES)
-  if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
-    file(CREATE_LINK
-         ${ABSL_INCLUDE_DIRS}/absl
-         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl
-         SYMBOLIC)
-  endif()
+  file(REMOVE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
+  file(CREATE_LINK
+       ${ABSL_INCLUDE_DIRS}/absl
+       ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl
+       SYMBOLIC)
   include_directories(${ABSL_INCLUDE_DIRS})
 endif()
 

@@ -39,6 +39,33 @@ TEST(UnigramTrainerTest, TrainerModelTest) {
   EXPECT_EQ(EncodeResult(), model.Encode("test"));
 }
 
+TEST(UnigramTrainerTest, PruneUnreachableSentencePiecesTest) {
+  TrainerSpec trainer_spec;
+  NormalizerSpec normalizer_spec;
+  NormalizerSpec denormalizer_spec;
+
+  TrainerModel model(trainer_spec, normalizer_spec);
+  // "a": -1.0, "b": -2.0
+  // "ab": -4.0 (shadowed by "a" + "b" = -3.0 -> unreachable)
+  // "c": -1.0, "d": -1.0
+  // "cd": -1.5 (better than "c" + "d" = -2.0 -> reachable)
+  TrainerModel::SentencePieces pieces = {
+      {"a", -1.0f}, {"b", -2.0f}, {"ab", -4.0f},
+      {"c", -1.0f}, {"d", -1.0f}, {"cd", -1.5f}};
+  EXPECT_TRUE(model.SetSentencePieces(std::move(pieces)).ok());
+
+  Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  auto pruned = trainer.PruneUnreachableSentencePieces(model);
+
+  std::vector<std::string> pruned_names;
+  for (const auto& p : pruned) {
+    pruned_names.push_back(p.first);
+  }
+
+  std::vector<std::string> expected = {"a", "b", "c", "d", "cd"};
+  EXPECT_EQ(expected, pruned_names);
+}
+
 struct TrainerResult {
   std::string sentence_pieces;
   std::vector<std::pair<std::string, float>> seed_pieces_and_probs;

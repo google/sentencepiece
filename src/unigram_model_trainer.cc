@@ -103,22 +103,9 @@ class BoundedPriorityQueue {
     items.reserve(data_.size());
     const float power = absl::GetFlag(FLAGS_seed_piece_length_power);
 
-    auto calc_score = [power](uint64_t freq, double len) -> double {
-      if (power == 1.0f) {
-        return static_cast<double>(freq) * len;
-      } else if (power == 0.5f) {
-        return static_cast<double>(freq) * std::sqrt(len);
-      } else if (power == 0.0f) {
-        return static_cast<double>(freq);
-      }
-      return static_cast<double>(freq) * std::pow(len, static_cast<double>(power));
-    };
-
     for (const auto& [key, freq] : data_) {
       if (freq < 2) continue;
-      const UnicodeText pw = string_util::UTF8ToUnicodeText(key);
-      const double len = static_cast<double>(pw.size());
-      const double score = calc_score(freq, len);
+      const double score = CalculatePieceScore(key, freq, power);
       items.push_back({&key, static_cast<uint64_t>(score)});
     }
 
@@ -140,6 +127,22 @@ class BoundedPriorityQueue {
   }
 
   private:
+  static double CalculateScore(uint64_t freq, double len, float power) {
+    if (power == 1.0f) {
+      return static_cast<double>(freq) * len;
+    } else if (power == 0.5f) {
+      return static_cast<double>(freq) * std::sqrt(len);
+    } else if (power == 0.0f) {
+      return static_cast<double>(freq);
+    }
+    return static_cast<double>(freq) * std::pow(len, static_cast<double>(power));
+  }
+
+  static double CalculatePieceScore(absl::string_view key, uint64_t freq, float power) {
+    const UnicodeText pw = string_util::UTF8ToUnicodeText(key);
+    return CalculateScore(freq, static_cast<double>(pw.size()), power);
+  }
+
   void Gc() {
     LOG(INFO) << "Running Score-Based QuickSelect GC (current_size="
               << data_.size() << ", keeping top " << gc_keep_capacity_
@@ -153,28 +156,15 @@ class BoundedPriorityQueue {
 
     const float power = absl::GetFlag(FLAGS_seed_piece_length_power);
 
-    auto get_score = [power](const MapPair* item) -> double {
-      const UnicodeText pw = string_util::UTF8ToUnicodeText(item->first);
-      const double len = static_cast<double>(pw.size());
-      const uint64_t freq = item->second;
-      if (power == 1.0f) {
-        return static_cast<double>(freq) * len;
-      } else if (power == 0.5f) {
-        return static_cast<double>(freq) * std::sqrt(len);
-      } else if (power == 0.0f) {
-        return static_cast<double>(freq);
-      }
-      return static_cast<double>(freq) * std::pow(len, static_cast<double>(power));
-    };
-
     const size_t keep = std::min(tmp.size(), gc_keep_capacity_);
-    std::nth_element(tmp.begin(), tmp.begin() + keep, tmp.end(),
-                     [&](const MapPair* lhs, const MapPair* rhs) {
-                       return std::forward_as_tuple(
-                                  get_score(rhs), rhs->first.size(), lhs->first) <
-                              std::forward_as_tuple(
-                                  get_score(lhs), lhs->first.size(), rhs->first);
-                     });
+    std::nth_element(
+        tmp.begin(), tmp.begin() + keep, tmp.end(),
+        [power](const MapPair* lhs, const MapPair* rhs) {
+          const double lhs_score = CalculatePieceScore(lhs->first, lhs->second, power);
+          const double rhs_score = CalculatePieceScore(rhs->first, rhs->second, power);
+          return std::forward_as_tuple(rhs_score, rhs->first.size(), lhs->first) <
+                 std::forward_as_tuple(lhs_score, lhs->first.size(), rhs->first);
+        });
 
     absl::flat_hash_map<std::string, uint64_t> new_data;
     new_data.reserve(keep);
@@ -718,6 +708,59 @@ TrainerModel::SentencePieces Trainer::PruneSentencePieces(
     }
     new_sentencepieces.emplace_back(sentencepieces[w.first]);
   }
+
+  return new_sentencepieces;
+}
+
+TrainerModel::SentencePieces Trainer::PruneUnreachableSentencePieces(
+    const TrainerModel& model) const {
+  const auto& sentencepieces = model.GetSentencePieces();
+  TrainerModel::SentencePieces new_sentencepieces;
+
+  Lattice lattice;
+  int unreachable_count = 0;
+
+  for (size_t i = 0; i < sentencepieces.size(); ++i) {
+    const auto& w = sentencepieces[i];
+    lattice.SetSentence(w.first);
+    model.PopulateNodes(&lattice);
+
+    // Find the self-node covering the entire length of the sentencepiece.
+    Lattice::Node* self_node = nullptr;
+    for (Lattice::Node* node : lattice.begin_nodes(0)) {
+      if (node->id == static_cast<int>(i) &&
+          node->length == static_cast<uint32_t>(lattice.size())) {
+        self_node = node;
+        break;
+      }
+    }
+
+    CHECK(self_node);
+    const float original_score = self_node->score;
+
+    // Temporarily disable the self_node to force Viterbi to find an alternative path.
+    self_node->score = -std::numeric_limits<float>::infinity();
+
+    const auto alt_path = lattice.Viterbi();
+
+    // Restore original score.
+    self_node->score = original_score;
+
+    // If an alternative path exists and its score is strictly higher than original_score,
+    // then the piece is shadowed by its decomposition and unreachable in Viterbi.
+    if (!alt_path.first.empty() && alt_path.second > original_score) {
+      ++unreachable_count;
+      LOG(INFO) << "Pruned unreachable piece: ID=" << i << " piece='" << w.first
+                << "' (score=" << original_score
+                << " vs alt_score=" << alt_path.second << ")";
+      continue;
+    }
+
+    new_sentencepieces.push_back(w);
+  }
+
+  LOG(INFO) << "PruneUnreachableSentencePieces pruned " << unreachable_count
+            << " unreachable pieces out of " << sentencepieces.size();
 
   return new_sentencepieces;
 }

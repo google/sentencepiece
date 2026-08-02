@@ -77,6 +77,7 @@ class Trainer : public TrainerInterface {
 
  private:
   FRIEND_TEST(TrainerTest, IsValidSentencePieceTest);
+  FRIEND_TEST(UnigramTrainerTest, PruneUnreachableSentencePiecesTest);
 
   // Loads and returns seed sentencepieces from external TSV file specified in
   // seed_sentencepieces_file.
@@ -104,6 +105,11 @@ class Trainer : public TrainerInterface {
   // Heuristically prunes the current pieces.
   // This is called after each EM sub-iteration.
   TrainerModel::SentencePieces PruneSentencePieces(
+      const TrainerModel& model) const;
+
+  // Prunes unreachable sentencepieces whose score is strictly lower than
+  // their alternative decomposition (Viterbi score inversion).
+  TrainerModel::SentencePieces PruneUnreachableSentencePieces(
       const TrainerModel& model) const;
 
   // Runs classic discrete pruning EM loop (shrinking_factor per epoch).
