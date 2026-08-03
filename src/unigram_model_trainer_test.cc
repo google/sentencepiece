@@ -49,9 +49,9 @@ TEST(UnigramTrainerTest, PruneUnreachableSentencePiecesTest) {
   // "ab": -4.0 (shadowed by "a" + "b" = -3.0 -> unreachable)
   // "c": -1.0, "d": -1.0
   // "cd": -1.5 (better than "c" + "d" = -2.0 -> reachable)
-  TrainerModel::SentencePieces pieces = {
-      {"a", -1.0f}, {"b", -2.0f}, {"ab", -4.0f},
-      {"c", -1.0f}, {"d", -1.0f}, {"cd", -1.5f}};
+  TrainerModel::SentencePieces pieces = {{"a", -1.0f},  {"b", -2.0f},
+                                         {"ab", -4.0f}, {"c", -1.0f},
+                                         {"d", -1.0f},  {"cd", -1.5f}};
   EXPECT_TRUE(model.SetSentencePieces(std::move(pieces)).ok());
 
   Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
@@ -142,7 +142,8 @@ TEST(UnigramTrainerTest, BasicTest) {
 
   // Check final pieces.
   EXPECT_EQ(
-      "A Available O Overly P Pineapple a b d e g h i l m magnanimity n p r t v "
+      "A Available O Overly P Pineapple a b d e g h i l m magnanimity n p r t "
+      "v "
       "y ▁ ▁an",
       res.sentence_pieces);
 }

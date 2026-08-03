@@ -105,7 +105,7 @@ class BoundedPriorityQueue {
 
     for (const auto& [key, freq] : data_) {
       if (freq < 2) continue;
-      const double score = CalculatePieceScore(key, freq, power);
+      const float score = CalculatePieceScore(key, freq, power);
       items.push_back({&key, static_cast<uint64_t>(score)});
     }
 
@@ -126,21 +126,22 @@ class BoundedPriorityQueue {
     return results;
   }
 
-  private:
-  static double CalculateScore(uint64_t freq, double len, float power) {
+ private:
+  static float CalculateScore(uint64_t freq, float len, float power) {
     if (power == 1.0f) {
-      return static_cast<double>(freq) * len;
+      return static_cast<float>(freq) * len;
     } else if (power == 0.5f) {
-      return static_cast<double>(freq) * std::sqrt(len);
+      return static_cast<float>(freq) * std::sqrt(len);
     } else if (power == 0.0f) {
-      return static_cast<double>(freq);
+      return static_cast<float>(freq);
     }
-    return static_cast<double>(freq) * std::pow(len, static_cast<double>(power));
+    return static_cast<float>(freq) * std::pow(len, power);
   }
 
-  static double CalculatePieceScore(absl::string_view key, uint64_t freq, float power) {
+  static float CalculatePieceScore(absl::string_view key, uint64_t freq,
+                                   float power) {
     const UnicodeText pw = string_util::UTF8ToUnicodeText(key);
-    return CalculateScore(freq, static_cast<double>(pw.size()), power);
+    return CalculateScore(freq, static_cast<float>(pw.size()), power);
   }
 
   void Gc() {
@@ -157,14 +158,17 @@ class BoundedPriorityQueue {
     const float power = absl::GetFlag(FLAGS_seed_piece_length_power);
 
     const size_t keep = std::min(tmp.size(), gc_keep_capacity_);
-    std::nth_element(
-        tmp.begin(), tmp.begin() + keep, tmp.end(),
-        [power](const MapPair* lhs, const MapPair* rhs) {
-          const double lhs_score = CalculatePieceScore(lhs->first, lhs->second, power);
-          const double rhs_score = CalculatePieceScore(rhs->first, rhs->second, power);
-          return std::forward_as_tuple(rhs_score, rhs->first.size(), lhs->first) <
-                 std::forward_as_tuple(lhs_score, lhs->first.size(), rhs->first);
-        });
+    std::nth_element(tmp.begin(), tmp.begin() + keep, tmp.end(),
+                     [power](const MapPair* lhs, const MapPair* rhs) {
+                       const float lhs_score =
+                           CalculatePieceScore(lhs->first, lhs->second, power);
+                       const float rhs_score =
+                           CalculatePieceScore(rhs->first, rhs->second, power);
+                       return std::forward_as_tuple(
+                                  rhs_score, rhs->first.size(), lhs->first) <
+                              std::forward_as_tuple(
+                                  lhs_score, lhs->first.size(), rhs->first);
+                     });
 
     absl::flat_hash_map<std::string, uint64_t> new_data;
     new_data.reserve(keep);
@@ -307,7 +311,8 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
               << effective_seed_size << " (8x target_vocab_size=" << vocab_size
               << ")";
   } else {
-    LOG(INFO) << "Using explicit seed_sentencepiece_size=" << effective_seed_size;
+    LOG(INFO) << "Using explicit seed_sentencepiece_size="
+              << effective_seed_size;
   }
 
   constexpr size_t kMaxChunkBytes = 500 * 1024 * 1024;  // 500 MB per chunk
@@ -352,12 +357,12 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
     //   K = target vocabulary size (vocab_size)
     //   alpha = min_freq_alpha flag (default 0.0 -> min_freq = 2)
     const float alpha = absl::GetFlag(FLAGS_min_freq_alpha);
-    const double vocab_size =
-        static_cast<double>(std::max<int>(1, trainer_spec_.vocab_size()));
-    const double k_log_k = vocab_size * std::log(vocab_size);
+    const float vocab_size =
+        static_cast<float>(std::max<int>(1, trainer_spec_.vocab_size()));
+    const float k_log_k = vocab_size * std::log(vocab_size);
     const uint64_t min_freq = std::max<uint64_t>(
-        2ULL, static_cast<uint64_t>(static_cast<double>(alpha) * static_cast<double>(n32) /
-                                    std::max(1.0, k_log_k)));
+        2ULL, static_cast<uint64_t>(alpha * static_cast<float>(n32) /
+                                    std::max(1.0f, k_log_k)));
 
     LOG(INFO) << "[Chunk #" << chunk_id << "] Start processing " << n32
               << " bytes (base_min_freq=" << min_freq << ")...";
@@ -428,8 +433,9 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
           const uint64_t freq = static_cast<uint64_t>(r - l + 1);
           // Skip single characters or pieces below minimum frequency threshold.
           // Candidate A: Length-clamped adaptive min_freq
-          // Short subwords (depth <= 3 bytes) use min_freq = 2 to preserve grammar/morphemes.
-          // Longer subwords (depth > 3 bytes) use base_min_freq to prune long noise.
+          // Short subwords (depth <= 3 bytes) use min_freq = 2 to preserve
+          // grammar/morphemes. Longer subwords (depth > 3 bytes) use
+          // base_min_freq to prune long noise.
           const uint64_t eff_min_freq = (depth <= 3) ? 2ULL : min_freq;
           if (depth <= 1 || freq < eff_min_freq) return;
 
@@ -453,7 +459,8 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
           while (!piece.empty() && piece.back() == '\0') {
             piece.remove_suffix(1);
           }
-          // Skip candidate pieces crossing internal sentence boundary null bytes ('\0').
+          // Skip candidate pieces crossing internal sentence boundary null
+          // bytes ('\0').
           if (piece.find('\0') != absl::string_view::npos) return;
 
           // Fast zero-allocation character length validation using
@@ -738,7 +745,8 @@ TrainerModel::SentencePieces Trainer::PruneUnreachableSentencePieces(
     CHECK(self_node);
     const float original_score = self_node->score;
 
-    // Temporarily disable the self_node to force Viterbi to find an alternative path.
+    // Temporarily disable the self_node to force Viterbi to find an alternative
+    // path.
     self_node->score = -std::numeric_limits<float>::infinity();
 
     const auto alt_path = lattice.Viterbi();
@@ -746,8 +754,9 @@ TrainerModel::SentencePieces Trainer::PruneUnreachableSentencePieces(
     // Restore original score.
     self_node->score = original_score;
 
-    // If an alternative path exists and its score is strictly higher than original_score,
-    // then the piece is shadowed by its decomposition and unreachable in Viterbi.
+    // If an alternative path exists and its score is strictly higher than
+    // original_score, then the piece is shadowed by its decomposition and
+    // unreachable in Viterbi.
     if (!alt_path.first.empty() && alt_path.second > original_score) {
       ++unreachable_count;
       LOG(INFO) << "Pruned unreachable piece: ID=" << i << " piece='" << w.first
@@ -838,6 +847,9 @@ absl::Status Trainer::Train() {
     RETURN_IF_ERROR(TrainDiscretePruning(&model));
   }
 
+  auto reachable_pieces = PruneUnreachableSentencePieces(model);
+  RETURN_IF_ERROR(model.SetSentencePieces(std::move(reachable_pieces)));
+
   // Finally, adjusts the size of sentencepices to be |vocab_size|.
   final_pieces_ = FinalizeSentencePieces(model);
 
@@ -849,9 +861,9 @@ absl::Status Trainer::TrainDiscretePruning(TrainerModel* model) {
   for (const auto& w : sentences_) {
     total_corpus_bytes += w.first.size() * w.second;
   }
-  auto calc_bytes_per_tok = [&](int64_t tokens) -> double {
-    return (tokens > 0) ? static_cast<double>(total_corpus_bytes) / tokens
-                        : 0.0;
+  auto calc_bytes_per_tok = [&](int64_t tokens) -> float {
+    return (tokens > 0) ? static_cast<float>(total_corpus_bytes) / tokens
+                        : 0.0f;
   };
   while (true) {
     // Sub-EM iteration.
@@ -870,15 +882,16 @@ absl::Status Trainer::TrainDiscretePruning(TrainerModel* model) {
                 << " bytes/tok=" << calc_bytes_per_tok(num_tokens);
     }  // end of Sub EM iteration
 
+    // Prunes pieces (eliminates unreachable/zero-frequency pieces created in
+    // M-step).
+    auto new_sentencepieces = PruneSentencePieces(*model);
+    RETURN_IF_ERROR(model->SetSentencePieces(std::move(new_sentencepieces)));
+
     // Stops the iteration when the size of sentences reaches to the
     // desired symbol size.
     if (model->GetPieceSize() <= desired_vocab_size_) {
       break;
     }
-
-    // Prunes pieces.
-    auto new_sentencepieces = PruneSentencePieces(*model);
-    RETURN_IF_ERROR(model->SetSentencePieces(std::move(new_sentencepieces)));
   }  // end of EM iteration
 
   return absl::OkStatus();
@@ -889,9 +902,9 @@ absl::Status Trainer::TrainSparsePruning(TrainerModel* model) {
   for (const auto& w : sentences_) {
     total_corpus_bytes += w.first.size() * w.second;
   }
-  auto calc_bytes_per_tok = [&](int64_t tokens) -> double {
-    return (tokens > 0) ? static_cast<double>(total_corpus_bytes) / tokens
-                        : 0.0;
+  auto calc_bytes_per_tok = [&](int64_t tokens) -> float {
+    return (tokens > 0) ? static_cast<float>(total_corpus_bytes) / tokens
+                        : 0.0f;
   };
   const float fixed_sparse_lambda = absl::GetFlag(FLAGS_fixed_sparse_lambda);
   const bool is_fixed_lambda = (fixed_sparse_lambda > 0.0f);
