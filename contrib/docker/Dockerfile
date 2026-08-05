@@ -29,5 +29,6 @@ ENV PATH="/usr/local/bin:${PATH}"
 COPY --from=build /usr/local /usr/local
 
 # Add runtime dependencies.
-RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/ \
+RUN apk add --no-cache libgomp && \
+    apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/ \
     gperftools-dev tcmalloc
