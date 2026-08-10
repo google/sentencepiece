@@ -198,7 +198,7 @@ if (SPM_BUILD_TEST)
   FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.15.2
+    GIT_TAG v1.18.0
     GIT_SHALLOW TRUE
   )
   FetchContent_MakeAvailable(googletest)
@@ -253,7 +253,7 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
   FetchContent_Declare(
     protobuf
     GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-    GIT_TAG v25.6
+    GIT_TAG v35.1
     GIT_SHALLOW TRUE
   )
   FetchContent_MakeAvailable(protobuf)
