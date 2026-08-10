@@ -28,7 +28,7 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
   set(PROTOBUF_LITE_LIBRARY protobuf::libprotobuf-lite)
   list(APPEND SPM_LIBS ${PROTOBUF_LITE_LIBRARY})
   set(PROTOBUF_LITE_SRCS "")
-  include_directories(${protobuf_SOURCE_DIR}/src)
+  include_directories(${protobuf_SOURCE_DIR}/src ${protobuf_SOURCE_DIR}/third_party/utf8_range)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
   if (SPM_PROTOC_EXECUTABLE)

@@ -70,6 +70,7 @@ def get_build_includes(build_dir, is_msvc=True):
       os.path.join(build_dir, 'root', 'include'),
       os.path.join(build_dir, 'src'),
       os.path.join(build_dir, '_deps', 'protobuf-src', 'src'),
+      os.path.join(build_dir, '_deps', 'protobuf-src', 'third_party', 'utf8_range'),
       os.path.join(build_dir, '_deps', 'abseil-cpp-src'),
       '../src',
       './sentencepiece/src',
