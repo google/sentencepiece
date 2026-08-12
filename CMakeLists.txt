@@ -277,7 +277,6 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
     endif()
   endif()
   FetchContent_GetProperties(protobuf SOURCE_DIR protobuf_SOURCE_DIR)
-  include_directories(${protobuf_SOURCE_DIR}/src ${protobuf_SOURCE_DIR}/third_party/utf8_range)
 endif()
 
 if(SPM_ENABLE_BENCHMARK)
