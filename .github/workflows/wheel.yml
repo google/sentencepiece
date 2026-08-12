@@ -82,6 +82,7 @@ jobs:
         run: |
           mkdir -p src/sentencepiece/package_data
           cp ../data/*.bin src/sentencepiece/package_data
+          python build_sdist.py
           python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_ARCHS_LINUX: auto
@@ -89,13 +90,14 @@ jobs:
           CIBW_ARCHS_WINDOWS: auto
           CIBW_SKIP: "*-musllinux_* *-win32"
           CIBW_ENVIRONMENT: "CMAKE_BUILD_PARALLEL_LEVEL=8"
+          CIBW_BEFORE_ALL_LINUX: "sh build_bundled.sh"
           CIBW_BUILD_VERBOSITY: 1
 
       - name: Build sdist archive
         if: matrix.os == 'ubuntu-latest'
         working-directory: python
         run: |
-          sh build_sdist.sh
+          python build_sdist.py
 
       - name: Fetch sdist archive
         if: matrix.os == 'ubuntu-latest'

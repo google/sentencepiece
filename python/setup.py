@@ -109,7 +109,11 @@ class build_ext_unix(_build_ext):
     abseil_libs = find_abseil_lib('../build')
 
     if len(libs) == 0:
-      subprocess.check_call(['./build_bundled.sh', __version__])
+      cflags, libs = get_cflags_and_libs('./build')
+      abseil_libs = find_abseil_lib('./build')
+
+    if len(libs) == 0:
+      subprocess.check_call(['./build_bundled.sh'])
       cflags, libs = get_cflags_and_libs('./build')
       abseil_libs = find_abseil_lib('./build')
 
@@ -170,6 +174,8 @@ class build_ext_win(_build_ext):
       build_dir = '..\\build_{}'.format(arch)
     elif os.path.exists('..\\build\\root\\lib'):
       build_dir = '..\\build'
+    elif os.path.exists('.\\build\\root\\lib'):
+      build_dir = '.\\build'
     else:
       # build library locally with cmake and vc++.
       if arch == 'amd64':
@@ -244,6 +250,7 @@ def copy_package_data():
       '../build/root/share/sentencepiece',
       './build/root/share/sentencepiece',
       '../data',
+      './sentencepiece/data',
   ])
 
   for filename in data:

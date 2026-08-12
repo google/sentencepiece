@@ -30,9 +30,9 @@ jobs:
     - name: Install cross tools
       run: |
         sudo apt-get update
-        sudo apt-get install -y sudo qemu-user gdb zstd dwarfdump {gcc,g++}-10-{i686,aarch64,riscv64,powerpc,powerpc64,powerpc64le,s390x,sparc64,m68k,sh4,alpha}-linux-gnu {gcc,g++}-10-arm-linux-gnueabihf
-        sudo ln -sf /usr/bin/arm-linux-gnueabihf-gcc-10 /usr/bin/arm-linux-gnu-gcc-10
-        sudo ln -sf /usr/bin/arm-linux-gnueabihf-g++-10 /usr/bin/arm-linux-gnu-g++-10
+        sudo apt-get install -y sudo qemu-user gdb zstd dwarfdump {gcc,g++}-14-{i686,aarch64,riscv64,powerpc,powerpc64,powerpc64le,s390x,sparc64,m68k,sh4,alpha}-linux-gnu {gcc,g++}-14-arm-linux-gnueabihf
+        sudo ln -sf /usr/bin/arm-linux-gnueabihf-gcc-14 /usr/bin/arm-linux-gnu-gcc-14
+        sudo ln -sf /usr/bin/arm-linux-gnueabihf-g++-14 /usr/bin/arm-linux-gnu-g++-14
         sudo ln -sf /usr/arm-linux-gnueabihf /usr/arm-linux-gnu
 
     - name: Build
@@ -42,7 +42,7 @@ jobs:
         mkdir -p build
         cd build
         qemu_arch=`echo "$ARCH" | sed -e s/powerpc/ppc/ -e s/686/386/`
-        env CXX=/usr/bin/${ARCH}-linux-gnu-g++-10 CC=/usr/bin/${ARCH}-linux-gnu-gcc-10 cmake .. -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_FIND_ROOT_PATH=/usr/${ARCH}-linux-gnu -DSPM_CROSS_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_CROSSCOMPILING_EMULATOR="qemu-${qemu_arch};-L;/usr/${ARCH}-linux-gnu"
+        env CXX=/usr/bin/${ARCH}-linux-gnu-g++-14 CC=/usr/bin/${ARCH}-linux-gnu-gcc-14 cmake .. -DSPM_BUILD_TEST=ON -DSPM_ENABLE_SHARED=OFF -DCMAKE_FIND_ROOT_PATH=/usr/${ARCH}-linux-gnu -DSPM_CROSS_SYSTEM_PROCESSOR=${ARCH} -DCMAKE_CROSSCOMPILING_EMULATOR="qemu-${qemu_arch};-L;/usr/${ARCH}-linux-gnu"
         make -j$(nproc)
 
     - name: Test on QEMU
