@@ -16,7 +16,7 @@ First, ensure you have `protobuf` installed. The `sentencepiece` Python package 
 
 ```python
 import sentencepiece as spm
-import sentencepiece_model_pb2 as spm_pb2
+from sentencepiece import sentencepiece_model_pb2 as spm_pb2
 
 # Load the serialized proto bytes from a file
 with open("path/to/model.model", "rb") as f:
@@ -84,7 +84,7 @@ Now you can import your extension and use it to read/write metadata:
 
 ```python
 import sentencepiece as spm
-import sentencepiece_model_pb2 as spm_pb2
+from sentencepiece import sentencepiece_model_pb2 as spm_pb2
 import my_metadata_pb2
 
 # 1. Load model and write custom metadata using extensions

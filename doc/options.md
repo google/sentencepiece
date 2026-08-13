@@ -120,7 +120,11 @@ These options apply training-time constraints to control what constitutes a vali
 *   **`split_by_whitespace`** (bool, default: `true`)
     *   Prevents a single subword piece from crossing whitespace boundaries.
 *   **`pretokenization_delimiter`** (string, default: `""`)
-    *   *(Unigram only)* The most general way to introduce arbitrary segmentation boundaries. During training, input is split at this delimiter, and the delimiter itself is removed, preventing subwords from crossing the boundary.
+    *   The most general way to introduce arbitrary segmentation boundaries using a static delimiter string (supported in both Unigram and BPE models). During training, input is split at this delimiter, and the delimiter itself is removed, preventing subwords from crossing the boundary.
+*   **`pretokenizer`** (callable / function pointer, default: `None` / `nullptr`)
+    *   *(Python / C++ API, v0.2.3+)* Dynamic runtime callback (`Callable[[str], List[str]]` in Python or `std::function<vector<string>(string_view)>` in C++) called on normalized text to produce pretokenized token chunks before subword extraction. Supported in both Unigram and BPE. Mutually exclusive with `pretokenization_delimiter`.
+*   **`allow_inconsistent_pretokenization`** (bool, default: `false`)
+    *   *(Python / C++ API, v0.2.3+)* When `false` (default), verifies that concatenating pretokenized chunks (`"".join(chunks)`) exactly matches the input normalized sentence. Set `true` to bypass this check if chunks intentionally drop or modify characters.
 *   **`treat_whitespace_as_suffix`** (bool, default: `false`)
     *   Attaches the whitespace marker `▁` as a suffix instead of a prefix (e.g., `world▁` instead of `▁world`).
 *   **`allow_whitespace_only_pieces`** (bool, default: `false`)

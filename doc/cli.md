@@ -10,8 +10,8 @@ This document describes how to build and install the SentencePiece C++ libraries
 
 The following tools and libraries are required to build SentencePiece:
 
-- **CMake** (3.1 or later)
-- **C++11 compiler** (e.g., gcc 4.8+ or clang 3.3+)
+- **CMake** (3.14 or later)
+- **C++20 compiler** (e.g., GCC 11+, Clang 13+, or MSVC 2019+ with C++17)
 - **gperftools** library (optional, provides a 10-40% performance improvement)
 
 ### Building from Source (Linux/macOS)
@@ -25,11 +25,9 @@ Then, clone the repository and build the command line tools:
 ```bash
 git clone https://github.com/google/sentencepiece.git
 cd sentencepiece
-mkdir build
-cd build
-cmake ..
-make -j $(nproc)
-sudo make install
+cmake -B build
+cmake --build build --config Release --parallel $(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+sudo cmake --build build --target install
 sudo ldconfig -v
 ```
 
