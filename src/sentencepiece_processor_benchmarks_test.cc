@@ -169,69 +169,69 @@ void BM_Decode(benchmark::State& state, absl::string_view model_filename,
 }
 
 void BM_EncodeBotchan_Sequential(benchmark::State& state) {
-  BM_Encode<BenchmarkMode::kSequential>(state, "botchan_1000_bpe.model",
+  BM_Encode<BenchmarkMode::kSequential>(state, "botchan_en_bpe_1000.model",
                                         "botchan.txt");
 }
 BENCHMARK(BM_EncodeBotchan_Sequential);
 
 void BM_EncodeBotchan_Parallel(benchmark::State& state) {
-  BM_Encode<BenchmarkMode::kParallel>(state, "botchan_1000_bpe.model",
+  BM_Encode<BenchmarkMode::kParallel>(state, "botchan_en_bpe_1000.model",
                                       "botchan.txt");
 }
 BENCHMARK(BM_EncodeBotchan_Parallel);
 
 void BM_EncodeBotchan_ShortLines(benchmark::State& state) {
-  BM_Encode_ShortLines(state, "botchan_1000_bpe.model", "botchan.txt");
+  BM_Encode_ShortLines(state, "botchan_en_bpe_1000.model", "botchan.txt");
 }
 BENCHMARK(BM_EncodeBotchan_ShortLines);
 
 void BM_EncodeWagahaiwaNekodearu_Sequential(benchmark::State& state) {
   BM_Encode<BenchmarkMode::kSequential>(
-      state, "wagahaiwa_nekodearu_2000_bpe_byte.model",
+      state, "wagahaiwa_nekodearu_ja_bpe_byte_2000.model",
       "wagahaiwa_nekodearu.txt");
 }
 BENCHMARK(BM_EncodeWagahaiwaNekodearu_Sequential);
 
 void BM_EncodeWagahaiwaNekodearu_Parallel(benchmark::State& state) {
-  BM_Encode<BenchmarkMode::kParallel>(state,
-                                      "wagahaiwa_nekodearu_2000_bpe_byte.model",
-                                      "wagahaiwa_nekodearu.txt");
+  BM_Encode<BenchmarkMode::kParallel>(
+      state, "wagahaiwa_nekodearu_ja_bpe_byte_2000.model",
+      "wagahaiwa_nekodearu.txt");
 }
 BENCHMARK(BM_EncodeWagahaiwaNekodearu_Parallel);
 
 void BM_OSSModel_Sequential(benchmark::State& state) {
-  BM_Encode<BenchmarkMode::kSequential>(state, "test_oss_model.model",
+  BM_Encode<BenchmarkMode::kSequential>(state, "botchan_en_unigram_1000.model",
                                         "botchan.txt");
 }
 BENCHMARK(BM_OSSModel_Sequential);
 
 void BM_OSSModel_Parallel(benchmark::State& state) {
-  BM_Encode<BenchmarkMode::kParallel>(state, "test_oss_model.model",
+  BM_Encode<BenchmarkMode::kParallel>(state, "botchan_en_unigram_1000.model",
                                       "botchan.txt");
 }
 BENCHMARK(BM_OSSModel_Parallel);
 
 void BM_DecodeBotchan_Ids(benchmark::State& state) {
-  BM_Decode<DecodeInputMode::kIds>(state, "botchan_1000_bpe.model",
+  BM_Decode<DecodeInputMode::kIds>(state, "botchan_en_bpe_1000.model",
                                    "botchan.txt");
 }
 BENCHMARK(BM_DecodeBotchan_Ids);
 
 void BM_DecodeBotchan_Pieces(benchmark::State& state) {
-  BM_Decode<DecodeInputMode::kPieces>(state, "botchan_1000_bpe.model",
+  BM_Decode<DecodeInputMode::kPieces>(state, "botchan_en_bpe_1000.model",
                                       "botchan.txt");
 }
 BENCHMARK(BM_DecodeBotchan_Pieces);
 
 void BM_DecodeWagahaiwaNekodearu_Ids(benchmark::State& state) {
   BM_Decode<DecodeInputMode::kIds>(state,
-                                   "wagahaiwa_nekodearu_2000_bpe_byte.model",
+                                   "wagahaiwa_nekodearu_ja_bpe_byte_2000.model",
                                    "wagahaiwa_nekodearu.txt");
 }
 BENCHMARK(BM_DecodeWagahaiwaNekodearu_Ids);
 
 void BM_DecodeOSSModel_Ids(benchmark::State& state) {
-  BM_Decode<DecodeInputMode::kIds>(state, "test_oss_model.model",
+  BM_Decode<DecodeInputMode::kIds>(state, "botchan_en_unigram_1000.model",
                                    "botchan.txt");
 }
 BENCHMARK(BM_DecodeOSSModel_Ids);

@@ -11,7 +11,7 @@ except ImportError:
 @unittest.skipIf(not has_numpy, "numpy is not installed")
 class TestNumpyIntegration(unittest.TestCase):
     def setUp(self):
-        self.model_path = os.path.join(os.path.dirname(__file__), 'test_model.model')
+        self.model_path = os.path.join(os.path.dirname(__file__), 'botchan_en_unigram_1000.model')
         self.sp = spm.SentencePieceProcessor(model_file=self.model_path)
 
     def test_encode_numpy_single(self):

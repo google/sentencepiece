@@ -53,11 +53,11 @@ class TestSentencepieceProcessor(unittest.TestCase):
   def setUp(self):
     self.sp_ = spm.SentencePieceProcessor()
     self.jasp_ = spm.SentencePieceProcessor()
-    self.assertTrue(self.sp_.Load(os.path.join(HERE, 'test_model.model')))
-    self.assertTrue(self.jasp_.Load(os.path.join(HERE, 'test_ja_model.model')))
-    with open(os.path.join(HERE, 'test_model.model'), 'rb') as f:
+    self.assertTrue(self.sp_.Load(os.path.join(HERE, 'botchan_en_unigram_1000.model')))
+    self.assertTrue(self.jasp_.Load(os.path.join(HERE, 'kyoto_ja_unigram_8000.model')))
+    with open(os.path.join(HERE, 'botchan_en_unigram_1000.model'), 'rb') as f:
       self.assertTrue(self.sp_.LoadFromSerializedProto(f.read()))
-    with open(os.path.join(HERE, 'test_ja_model.model'), 'rb') as f:
+    with open(os.path.join(HERE, 'kyoto_ja_unigram_8000.model'), 'rb') as f:
       self.assertTrue(self.jasp_.LoadFromSerializedProto(f.read()))
 
   def test_load(self):
@@ -556,7 +556,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
   def test_new_api(self):
     sp = spm.SentencePieceProcessor(
-        model_file=os.path.join(HERE, 'test_model.model')
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model')
     )
     text = 'hello world'
     text2 = 'Tokyo'
@@ -628,7 +628,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
   @unittest.skipUnless(has_protobuf, 'protobuf is not installed')
   def test_new_api_proto(self):
     sp = spm.SentencePieceProcessor(
-        model_file=os.path.join(HERE, 'test_model.model')
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model')
     )
     text = 'hello world'
     text2 = 'Tokyo'
@@ -668,7 +668,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
   def test_new_api_init(self):
     sp = spm.SentencePieceProcessor(
-        model_file=os.path.join(HERE, 'test_model.model'),
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model'),
         add_bos=True,
         add_eos=True,
         return_type=str,
@@ -681,7 +681,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual(pieces, sp.encode(text, add_bos=False, add_eos=True))
 
   def test_classmethod_factories(self):
-    model_path = os.path.join(HERE, 'test_model.model')
+    model_path = os.path.join(HERE, 'botchan_en_unigram_1000.model')
 
     # 1. Test loading via from_file
     sp_file = spm.SentencePieceProcessor.from_file(
@@ -1009,7 +1009,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
   def test_batch(self):
     sp = spm.SentencePieceProcessor(
-        model_file=os.path.join(HERE, 'test_model.model')
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model')
     )
     with open(os.path.join(data_dir, 'botchan.txt'), 'r') as file:
       texts = file.readlines()
@@ -1046,7 +1046,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
   def test_parallel(self):
     sp = spm.SentencePieceProcessor(
-        model_file=os.path.join(HERE, 'test_bpe_model.model')
+        model_file=os.path.join(HERE, 'botchan_en_bpe_1000.model')
     )
     with open(os.path.join(data_dir, 'botchan.txt'), 'r') as file:
       texts = file.readlines()
@@ -1092,7 +1092,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
   def test_normalize(self):
     sp = spm.SentencePieceProcessor(
-        model_file=os.path.join(HERE, 'test_model.model')
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model')
     )
 
     self.assertEqual('▁KADOKAWAABC', sp.normalize('ＫＡＤＯＫＡＷＡABC'))
@@ -1135,7 +1135,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
   def test_normalizer(self):
     sp = spm.SentencePieceNormalizer(
-        model_file=os.path.join(HERE, 'test_model.model')
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model')
     )
 
     self.assertEqual('KADOKAWAABC', sp.normalize('ＫＡＤＯＫＡＷＡABC'))
@@ -1172,7 +1172,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual([0, 0, 1], x[1][1])
 
     sp = spm.SentencePieceNormalizer(
-        model_file=os.path.join(HERE, 'test_model.model'),
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model'),
         add_dummy_prefix=True,
         escape_whitespaces=True,
         remove_extra_whitespaces=False,
@@ -1180,7 +1180,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual('▁hello▁▁world', sp.normalize('hello  world'))
 
     sp = spm.SentencePieceNormalizer(
-        model_file=os.path.join(HERE, 'test_model.model'),
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model'),
         add_dummy_prefix=True,
         escape_whitespaces=True,
         remove_extra_whitespaces=True,
@@ -1188,7 +1188,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual('▁hello▁world', sp.normalize('  hello  world  '))
 
     sp = spm.SentencePieceNormalizer(
-        model_file=os.path.join(HERE, 'test_model.model'),
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model'),
         add_dummy_prefix=False,
         escape_whitespaces=False,
         remove_extra_whitespaces=True,
@@ -1535,7 +1535,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
       os.unlink(tsv_path)
 
   def test_normalizer_model_proto(self):
-    model_path = os.path.join(HERE, 'test_model.model')
+    model_path = os.path.join(HERE, 'botchan_en_unigram_1000.model')
     with open(model_path, 'rb') as f:
       model_proto = f.read()
 

@@ -13,8 +13,8 @@ except ImportError:
   has_protobuf = False
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(HERE, 'test_model.model')
-JA_MODEL_PATH = os.path.join(HERE, 'test_ja_model.model')
+MODEL_PATH = os.path.join(HERE, 'botchan_en_unigram_1000.model')
+JA_MODEL_PATH = os.path.join(HERE, 'kyoto_ja_unigram_8000.model')
 
 import threading
 import time

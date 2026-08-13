@@ -49,7 +49,7 @@ absl::Status LoadModelWithModifiedCharsmap(const ModelProto& base_model,
 // Test for GitHub issue #1269 (Out-of-bounds read in Darts trie validation)
 TEST(SentencePieceProcessorTest, RejectCorruptedModel1269) {
   // 1. Read base model
-  std::string model_path = GetTestDataPath("test_oss_model.model");
+  std::string model_path = GetTestDataPath("botchan_en_unigram_1000.model");
   std::ifstream ifs(model_path, std::ios::binary);
   ModelProto model_proto;
   ASSERT_TRUE(model_proto.ParseFromIstream(&ifs));
@@ -114,7 +114,7 @@ TEST(SentencePieceProcessorTest, ReproduceIssue1263) {
 
 TEST(SentencePieceProcessorTest, CharsmapValidationTests) {
   // Read base model once
-  std::string model_path = GetTestDataPath("test_oss_model.model");
+  std::string model_path = GetTestDataPath("botchan_en_unigram_1000.model");
   std::ifstream ifs(model_path, std::ios::binary);
   ModelProto base_model;
   ASSERT_TRUE(base_model.ParseFromIstream(&ifs));
@@ -178,7 +178,7 @@ TEST(SentencePieceProcessorTest, CharsmapValidationTests) {
 }
 
 TEST(SentencePieceProcessorTest, RejectModelWithOOBCharsmapValue) {
-  std::string model_path = GetTestDataPath("test_oss_model.model");
+  std::string model_path = GetTestDataPath("botchan_en_unigram_1000.model");
   std::ifstream ifs(model_path, std::ios::binary);
   ModelProto model_proto;
   ASSERT_TRUE(model_proto.ParseFromIstream(&ifs));

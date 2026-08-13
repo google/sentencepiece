@@ -98,7 +98,7 @@ def test_gil_release():
       "Hello, world! Testing SentencePiece GIL release behavior. " * 20000
   )
 
-  model_path = "test_model.model"
+  model_path = "botchan_en_unigram_1000.model"
   sp = spm.SentencePieceProcessor(model_file=os.path.join(HERE, model_path))
 
   # 1. Test Encode

@@ -65,7 +65,7 @@ std::string LoadTestData(const std::string& filename, int num_lines) {
 
 TEST(SentencepieceProcessorTest, ParallelEncodeTestEmptyString) {
   const std::string test_model_file =
-      util::JoinPath(::testing::SrcDir(), "test_oss_model.model");
+      util::JoinPath(::testing::SrcDir(), "botchan_en_unigram_1000.model");
 
   SentencePieceProcessor sp;
   CHECK_OK(sp.Load(test_model_file));
@@ -88,7 +88,7 @@ TEST(SentencepieceProcessorTest, ParallelEncodeTestEmptyString) {
 
 TEST(SentencepieceProcessorTest, ParallelEncodeTestEn) {
   const std::string test_model_file =
-      util::JoinPath(::testing::SrcDir(), "test_oss_model.model");
+      util::JoinPath(::testing::SrcDir(), "botchan_en_unigram_1000.model");
 
   SentencePieceProcessor sp;
   CHECK_OK(sp.Load(test_model_file));
@@ -113,7 +113,7 @@ TEST(SentencepieceProcessorTest, ParallelEncodeTestEn) {
 TEST(SentencepieceProcessorTest, ParallelEncodeTestJaWithUNK) {
   // Check Japanese tokenized correctly in parallel
   const std::string test_model_file =
-      util::JoinPath(::testing::SrcDir(), "botchan_1000_bpe.model");
+      util::JoinPath(::testing::SrcDir(), "botchan_en_bpe_1000.model");
 
   SentencePieceProcessor sp;
   CHECK_OK(sp.Load(test_model_file));
@@ -139,7 +139,7 @@ TEST(SentencepieceProcessorTest, ParallelEncodeTestJaWithUNK) {
 TEST(SentencepieceProcessorTest, ParallelEncodeTestJaWithByte) {
   // Check Japanese tokenized correctly in parallel
   const std::string test_model_file = util::JoinPath(
-      ::testing::SrcDir(), "wagahaiwa_nekodearu_2000_bpe_byte.model");
+      ::testing::SrcDir(), "wagahaiwa_nekodearu_ja_bpe_byte_2000.model");
 
   SentencePieceProcessor sp;
   CHECK_OK(sp.Load(test_model_file));
@@ -165,7 +165,7 @@ TEST(SentencepieceProcessorTest, ParallelEncodeTestJaWithByte) {
 TEST(SentencepieceProcessorTest, ParallelEncodeTestJaWithByteIntoSPTZeroLoops) {
   // Check Japanese tokenized correctly in parallel
   const std::string test_model_file = util::JoinPath(
-      ::testing::SrcDir(), "wagahaiwa_nekodearu_2000_bpe_byte.model");
+      ::testing::SrcDir(), "wagahaiwa_nekodearu_ja_bpe_byte_2000.model");
 
   SentencePieceProcessorMaxLoops sp(0);
   CHECK_OK(sp.Load(test_model_file));
@@ -192,7 +192,7 @@ TEST(SentencepieceProcessorTest, ParallelEncodeTestJaWithByteIntoSPTZeroLoops) {
 TEST(SentencepieceProcessorTest, ParallelEncodeTestJaWithByteIntoSPTOneLoop) {
   // Check Japanese tokenized correctly in parallel
   const std::string test_model_file = util::JoinPath(
-      ::testing::SrcDir(), "wagahaiwa_nekodearu_2000_bpe_byte.model");
+      ::testing::SrcDir(), "wagahaiwa_nekodearu_ja_bpe_byte_2000.model");
 
   SentencePieceProcessorMaxLoops sp(1);
   CHECK_OK(sp.Load(test_model_file));
@@ -217,7 +217,7 @@ TEST(SentencepieceProcessorTest, ParallelEncodeTestJaWithByteIntoSPTOneLoop) {
 TEST(SentencepieceProcessorTest, ParallelEncodeTestJaWithByteIntoSPT) {
   // Check Japanese tokenized correctly in parallel
   std::string test_model_file = util::JoinPath(
-      ::testing::SrcDir(), "wagahaiwa_nekodearu_2000_bpe_byte.model");
+      ::testing::SrcDir(), "wagahaiwa_nekodearu_ja_bpe_byte_2000.model");
 
   SentencePieceProcessor sp;
   CHECK_OK(sp.Load(test_model_file));
@@ -241,7 +241,7 @@ TEST(SentencepieceProcessorTest, ParallelEncodeTestJaWithByteIntoSPT) {
 
 TEST(SentencepieceProcessorTest, ParallelEncodeTestBotchan) {
   std::string test_model_file =
-      util::JoinPath(::testing::SrcDir(), "botchan_1000_bpe.model");
+      util::JoinPath(::testing::SrcDir(), "botchan_en_bpe_1000.model");
   SentencePieceProcessor sp;
   CHECK_OK(sp.Load(test_model_file));
 

@@ -32,7 +32,7 @@ import sentencepiece as spm
 import numpy as np
 
 # Load the model
-sp = spm.SentencePieceProcessor(model_file='test/test_model.model')
+sp = spm.SentencePieceProcessor(model_file='test/botchan_en_unigram_1000.model')
 
 # Encode text to IDs (default return_type is int)
 print(sp.encode('This is a test'))
@@ -193,7 +193,7 @@ By default, using `return_type='offset_mapping'` returns **Unicode character off
 ```python
 import sentencepiece as spm
 
-sp = spm.SentencePieceProcessor(model_file='test/test_model.model')
+sp = spm.SentencePieceProcessor(model_file='test/botchan_en_unigram_1000.model')
 
 text = "吾輩は猫である。"
 
@@ -281,7 +281,7 @@ To slice the original text using these offsets, you must first encode the string
 ```python
 import sentencepiece as spm
 
-sp = spm.SentencePieceProcessor(model_file='test/test_model.model')
+sp = spm.SentencePieceProcessor(model_file='test/botchan_en_unigram_1000.model')
 
 text = "吾輩は猫である。"
 proto = sp.encode(text, return_type='proto')
@@ -308,7 +308,7 @@ To speed up batch tokenization, you can specify `num_threads=N` to parallelize p
 ```python
 import sentencepiece as spm
 
-sp = spm.SentencePieceProcessor(model_file='test/test_model.model')
+sp = spm.SentencePieceProcessor(model_file='test/botchan_en_unigram_1000.model')
 
 # A large batch of sentences
 sentences = ["This is a test sentence."] * 10000
@@ -346,7 +346,7 @@ To use it efficiently, you should create and reuse a `ThreadPool`, and specify a
 ```python
 import sentencepiece as spm
 
-sp = spm.SentencePieceProcessor(model_file='test/test_model.model')
+sp = spm.SentencePieceProcessor(model_file='test/botchan_en_unigram_1000.model')
 
 # 1. Create a ThreadPool to reuse threads (prevents thread recreation overhead)
 pool = spm.ThreadPool(num_threads=4)
@@ -367,7 +367,7 @@ You can normalize text using the normalization rules defined inside the model, o
 ```python
 import sentencepiece as spm
 
-sp = spm.SentencePieceProcessor(model_file='test/test_model.model')
+sp = spm.SentencePieceProcessor(model_file='test/botchan_en_unigram_1000.model')
 
 # Standard normalization (e.g. NFKC and space replacement)
 print(sp.normalize("Hello  World."))  # Double space
@@ -387,7 +387,7 @@ You can also use `SentencePieceNormalizer` to run normalization independently of
 ```python
 # Replicate processor's exact normalization behavior:
 normalizer = spm.SentencePieceNormalizer(
-    model_file='test/test_model.model',
+    model_file='test/botchan_en_unigram_1000.model',
     add_dummy_prefix=True,
     escape_whitespaces=True,
     remove_extra_whitespaces=True
