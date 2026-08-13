@@ -80,8 +80,6 @@ jobs:
       - name: Build wheels
         working-directory: python
         run: |
-          mkdir -p src/sentencepiece/package_data
-          cp ../data/*.bin src/sentencepiece/package_data
           python build_sdist.py
           python -m cibuildwheel --output-dir wheelhouse
         env:
@@ -92,12 +90,6 @@ jobs:
           CIBW_ENVIRONMENT: "CMAKE_BUILD_PARALLEL_LEVEL=8"
           CIBW_BEFORE_ALL_LINUX: "sh build_bundled.sh"
           CIBW_BUILD_VERBOSITY: 1
-
-      - name: Build sdist archive
-        if: matrix.os == 'ubuntu-latest'
-        working-directory: python
-        run: |
-          python build_sdist.py
 
       - name: Fetch sdist archive
         if: matrix.os == 'ubuntu-latest'

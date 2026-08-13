@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
-import codecs
 import glob
 import os
 import platform
@@ -28,8 +27,6 @@ try:
   from pybind11.setup_helpers import Pybind11Extension
 except ImportError:
   Pybind11Extension = None
-
-sys.path.append(os.path.join('.', 'test'))
 
 
 with open('src/sentencepiece/_version.py') as f:
@@ -193,7 +190,6 @@ class build_ext_win(_build_ext):
           '-B',
           'build',
           '-DSPM_ENABLE_SHARED=OFF',
-          #          '-DCMAKE_SHARED_LINKER_FLAGS="/OPT:REF /OPT:ICF /LTCG"',
           '-DCMAKE_INSTALL_PREFIX=build\\root',
       ])
       subprocess.check_call([
