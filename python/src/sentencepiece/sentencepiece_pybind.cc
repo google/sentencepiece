@@ -1538,8 +1538,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
       .def_static("_TrainFromString",
                   [](const std::string& arg) {
                     py::gil_scoped_release release;
-                    auto status =
-                        sentencepiece::SentencePieceTrainer::Train(arg);
+                    auto status = sentencepiece::SentencePieceTrainer::Train(
+                        arg, sentencepiece::TrainerComponents{});
                     if (!status.ok()) throw status;
                     return true;
                   })
@@ -1595,43 +1595,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
           py::arg("args"), py::arg("sentence_iterator") = py::none(),
           py::arg("pretokenizer") = nullptr,
           py::arg("allow_inconsistent_pretokenization") = false,
-          py::arg("return_model_proto") = false)
-      .def_static("_TrainFromMap2",
-                  [](const std::unordered_map<std::string, std::string>& args,
-                     py::iterator iter) {
-                    PySentenceIterator py_iter(std::move(iter));
-                    {
-                      py::gil_scoped_release release;
-                      auto status = sentencepiece::SentencePieceTrainer::Train(
-                          args, &py_iter);
-                      if (!status.ok()) throw status;
-                    }
-                    return true;
-                  })
-      .def_static("_TrainFromMap3",
-                  [](const std::unordered_map<std::string, std::string>& args) {
-                    std::string model_proto;
-                    {
-                      py::gil_scoped_release release;
-                      auto status = sentencepiece::SentencePieceTrainer::Train(
-                          args, nullptr, &model_proto);
-                      if (!status.ok()) throw status;
-                    }
-                    return py::bytes(model_proto);
-                  })
-      .def_static("_TrainFromMap4",
-                  [](const std::unordered_map<std::string, std::string>& args,
-                     py::iterator iter) {
-                    std::string model_proto;
-                    PySentenceIterator py_iter(std::move(iter));
-                    {
-                      py::gil_scoped_release release;
-                      auto status = sentencepiece::SentencePieceTrainer::Train(
-                          args, &py_iter, &model_proto);
-                      if (!status.ok()) throw status;
-                    }
-                    return py::bytes(model_proto);
-                  });
+          py::arg("return_model_proto") = false);
 
   // Bind Normalizer
   py::class_<sentencepiece::SentencePieceNormalizer>(m,
