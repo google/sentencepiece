@@ -149,8 +149,8 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
 
   // Lookup all bigrams.
   if (symbols.size() > 1) {
-    int left = 0;
-    int right = 1;
+    size_t left = 0;
+    size_t right = 1;
     Symbol* symbol_left = &symbols[left];
     Symbol* symbol_right = &symbols[right];
     for (; right < symbols.size();

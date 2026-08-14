@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
+# ==============================================================================
+# 1. Project Initialization & Policies
+# ==============================================================================
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 file(STRINGS "VERSION.txt" SPM_VERSION)
 message(STATUS "VERSION: ${SPM_VERSION}")
@@ -21,29 +24,6 @@ if(POLICY CMP0091)
 endif()
 
 project(sentencepiece VERSION ${SPM_VERSION} LANGUAGES C CXX)
-
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-if(WIN32)
-  option(SPM_ENABLE_SHARED "Builds shared libraries in addition to static libraries." OFF)
-else()
-  option(SPM_ENABLE_SHARED "Builds shared libraries in addition to static libraries." ON)
-endif()
-option(SPM_BUILD_TEST "Builds test binaries." OFF)
-option(SPM_ENABLE_TCMALLOC "Enable TCMalloc if available." ON)
-option(SPM_TCMALLOC_STATIC "Link static library of TCMALLOC." OFF)
-option(SPM_ENABLE_MSVC_MT_BUILD, "Use /MT flag in MSVC build" OFF)
-option(SPM_CROSS_SYSTEM_PROCESSOR, "Override system processor" "")
-option(SPM_DISABLE_EMBEDDED_DATA, "Disable to embed pre-compiled data." OFF)
-option(SPM_ENABLE_BENCHMARK "Build benchmark programs" OFF)
-option(SPM_NLCODEC_BPE
-       "Build the NLCodec fast BPE trainer from contrib/nlcodec (adds --nlcodec_bpe flag)."
-       OFF)
-
-set(SPM_PROTOBUF_PROVIDER "module" CACHE STRING "Provider of protobuf library")
-set_property(CACHE SPM_PROTOBUF_PROVIDER PROPERTY STRINGS "module" "package")
-set(SPM_ABSL_PROVIDER "module" CACHE STRING "Provider of absl library")
-set_property(CACHE SPM_ABSL_PROVIDER PROPERTY STRINGS "module" "package")
 
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   set(SPM_IS_TOP_LEVEL TRUE)
@@ -55,22 +35,36 @@ if(SPM_IS_TOP_LEVEL AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
 endif()
 
-add_compile_definitions($<$<CONFIG:Release>:NDEBUG>)
-
-if (SPM_ENABLE_SHARED AND NOT WIN32)
- set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# ==============================================================================
+# 2. Build Options & Provider Cache Variables
+# ==============================================================================
+if(WIN32)
+  option(SPM_ENABLE_SHARED "Builds shared libraries in addition to static libraries." OFF)
+else()
+  option(SPM_ENABLE_SHARED "Builds shared libraries in addition to static libraries." ON)
 endif()
+option(SPM_BUILD_TEST "Builds test binaries." OFF)
+option(SPM_ENABLE_BENCHMARK "Build benchmark programs" OFF)
+option(SPM_ENABLE_TCMALLOC "Enable TCMalloc if available." ON)
+option(SPM_TCMALLOC_STATIC "Link static library of TCMALLOC." OFF)
+option(SPM_ENABLE_NFKC_COMPILE "Compile NFKC tables using ICU" OFF)
+option(SPM_ENABLE_MSVC_MT_BUILD "Use /MT flag in MSVC build" OFF)
+option(SPM_DISABLE_EMBEDDED_DATA "Disable to embed pre-compiled data." OFF)
+option(SPM_NLCODEC_BPE "Build the NLCodec fast BPE trainer from contrib/nlcodec (adds --nlcodec_bpe flag)." OFF)
+option(SPM_CROSS_SYSTEM_PROCESSOR "Override system processor" "")
 
-# Includes processor name to avoid conflicts.
-set(CPACK_PACKAGE_FILE_NAME
-    "sentencepiece-${SPM_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+set(SPM_ABSL_PROVIDER "module" CACHE STRING "Provider of absl library")
+set_property(CACHE SPM_ABSL_PROVIDER PROPERTY STRINGS "module" "package")
 
-if (SPM_CROSS_SYSTEM_PROCESSOR)
- set(CMAKE_SYSTEM_PROCESSOR ${SPM_CROSS_SYSTEM_PROCESSOR})
- set(CMAKE_CROSSCOMPILING TRUE)
-endif()
+set(SPM_PROTOBUF_PROVIDER "module" CACHE STRING "Provider of protobuf library")
+set_property(CACHE SPM_PROTOBUF_PROVIDER PROPERTY STRINGS "module" "package")
 
-# MSVC C++20 STL has a bug with Protobuf v25.6's UntypedMessage in
+# ==============================================================================
+# 3. Compiler Flags, C++ Standard & Platform Configurations
+# ==============================================================================
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# MSVC C++20 STL has an issue with Protobuf v25.6's UntypedMessage in
 # std::variant (error C2139). Use C++17 under MSVC for Abseil and Protobuf.
 # See: https://github.com/protocolbuffers/protobuf/issues/21310
 if (MSVC)
@@ -80,6 +74,8 @@ else()
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_compile_definitions($<$<CONFIG:Release>:NDEBUG>)
+
 if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND
      CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 10.0) OR
    (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND
@@ -87,40 +83,8 @@ if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND
   string(APPEND CMAKE_CXX_FLAGS " -fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=''")
 endif()
 
-if (NOT DEFINED CMAKE_INSTALL_BINDIR)
-  set(CMAKE_INSTALL_BINDIR bin)
-endif()
-
-if (NOT DEFINED CMAKE_INSTALL_LIBDIR)
-  set(CMAKE_INSTALL_LIBDIR lib)
-endif()
-
-if (NOT DEFINED CMAKE_INSTALL_INCLUDEDIR)
-  set(CMAKE_INSTALL_INCLUDEDIR include)
-endif()
-
-if (UNIX)
-  include(GNUInstallDirs)
-  set(prefix ${CMAKE_INSTALL_PREFIX})
-  set(exec_prefix "\${prefix}")
-  set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
-  set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
-else()
-  set(prefix ${CMAKE_INSTALL_PREFIX})
-  set(exec_prefix "\${prefix}")
-  set(libdir "\${exec_prefix}/lib")
-  set(includedir "\${prefix}/include")
-endif()
-set(GNUCXX_STD_SUPPORT_VERSION "4.3")
-
-if(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
-add_definitions(-D_FREEBSD)
-endif()
-
-if (SPM_PROTOBUF_PROVIDER STREQUAL "module" OR SPM_PROTOBUF_PROVIDER STREQUAL "package")
-  set(libprotobuf_lite "protobuf-lite")
-else()
-  set(libprotobuf_lite "")
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  add_definitions(-D_FREEBSD)
 endif()
 
 if (MSVC)
@@ -140,6 +104,10 @@ if (MSVC)
   endif()
 endif()
 
+if (NOT MSVC)
+  add_compile_options("-Wno-deprecated-declarations")
+endif()
+
 if (APPLE)
   set(CMAKE_MACOSX_RPATH ON)
   set(CMAKE_SKIP_BUILD_RPATH FALSE)
@@ -152,68 +120,67 @@ if (APPLE)
   endif()
 endif()
 
-# Add -latomic on riscv64
-if (CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv64")
-  string(APPEND CMAKE_C_STANDARD_LIBRARIES " -latomic")
-  string(APPEND CMAKE_CXX_STANDARD_LIBRARIES " -latomic")
-endif()
-
-# SPDX-License-Identifier: (MIT OR CC0-1.0)
-# Copyright 2020 Jan Tojnar
-# https://github.com/jtojnar/cmake-snips
-#
-# Modelled after Python’s os.path.join
-# https://docs.python.org/3.7/library/os.path.html#os.path.join
-# Windows not supported
-function(join_paths joined_path first_path_segment)
-    set(temp_path "${first_path_segment}")
-    foreach(current_segment IN LISTS ARGN)
-        if(NOT ("${current_segment}" STREQUAL ""))
-            if(IS_ABSOLUTE "${current_segment}")
-                set(temp_path "${current_segment}")
-            else()
-                set(temp_path "${temp_path}/${current_segment}")
-            endif()
-        endif()
-    endforeach()
-    set(${joined_path} "${temp_path}" PARENT_SCOPE)
-endfunction()
-
-join_paths(libdir_for_pc_file "\${exec_prefix}" "${CMAKE_INSTALL_LIBDIR}")
-join_paths(includedir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
-join_paths(datadir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_DATADIR}" "sentencepiece")
-
-join_paths(datadir_for_config_file "${prefix}" "${CMAKE_INSTALL_DATADIR}" "sentencepiece")
-set(INSTALL_DATADIR ${datadir_for_config_file})
-
-configure_file("${PROJECT_SOURCE_DIR}/config.h.in" "config.h")
-configure_file("${PROJECT_SOURCE_DIR}/sentencepiece.pc.in" "sentencepiece.pc" @ONLY)
-
-if (NOT MSVC)
-  add_compile_options("-Wno-deprecated-declarations")
-  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece.pc" DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-endif()
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
-
-if (SPM_BUILD_TEST)
-  enable_testing()
-  set(INSTALL_GTEST OFF CACHE BOOL "Disable installation of googletest" FORCE)
-  include(FetchContent)
-  FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.18.0
-    GIT_SHALLOW TRUE
-  )
-  FetchContent_MakeAvailable(googletest)
+if (SPM_CROSS_SYSTEM_PROCESSOR)
+  set(CMAKE_SYSTEM_PROCESSOR ${SPM_CROSS_SYSTEM_PROCESSOR})
+  set(CMAKE_CROSSCOMPILING TRUE)
 endif()
 
 if (SPM_DISABLE_EMBEDDED_DATA)
- file(GLOB EMBEDDED_DATA_FILES "${CMAKE_CURRENT_SOURCE_DIR}/data/*.bin")
- install(FILES ${EMBEDDED_DATA_FILES} DESTINATION ${INSTALL_DATADIR})
+  add_compile_definitions(DISABLE_EMBEDDED_DATA)
 endif()
 
+# ==============================================================================
+# 4. External Dependencies & Third-Party Packages
+# ==============================================================================
+
+# Threads
+find_package(Threads REQUIRED)
+
+# OpenMP
+find_package(OpenMP)
+if (OpenMP_FOUND)
+  add_compile_definitions(LIBSAIS_OPENMP)
+endif()
+
+# ICU (for NFKC character table compilation)
+if (SPM_ENABLE_NFKC_COMPILE)
+  find_package(ICU 4.4 COMPONENTS i18n data uc REQUIRED)
+  add_compile_definitions(ENABLE_NFKC_COMPILE)
+endif()
+
+# TCMalloc
+if (SPM_ENABLE_TCMALLOC)
+  if (SPM_TCMALLOC_STATIC)
+    find_library(TCMALLOC_LIB NAMES libtcmalloc_minimal.a)
+  else()
+    find_library(TCMALLOC_LIB NAMES tcmalloc_minimal)
+  endif()
+  if (TCMALLOC_LIB)
+    message(STATUS "Found TCMalloc: ${TCMALLOC_LIB}")
+    add_compile_options(-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free)
+  else()
+    message(STATUS "Not Found TCMalloc: ${TCMALLOC_LIB}")
+  endif()
+endif()
+
+# Atomic Library (RISC-V, ARM, MIPS, etc.)
+if (CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv64")
+  string(APPEND CMAKE_C_STANDARD_LIBRARIES " -latomic")
+  string(APPEND CMAKE_CXX_STANDARD_LIBRARIES " -latomic")
+elseif ((${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") OR
+        (${CMAKE_SYSTEM_PROCESSOR} MATCHES "mips") OR
+        (${CMAKE_SYSTEM_PROCESSOR} MATCHES "m68k") OR
+        (${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc") OR
+        (${CMAKE_SYSTEM_PROCESSOR} MATCHES "powerpc") OR
+        (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch") OR
+        (${CMAKE_SYSTEM_PROCESSOR} MATCHES "sh4"))
+  find_library(ATOMIC_LIB NAMES atomic libatomic.so libatomic.so.1)
+  if (ATOMIC_LIB)
+    message(STATUS "Found atomic: ${ATOMIC_LIB}")
+  endif()
+endif()
+
+# Abseil-cpp
 if (SPM_ABSL_PROVIDER STREQUAL "module")
   include(FetchContent)
   set(ABSL_ENABLE_INSTALL ON CACHE BOOL "Enable abseil install" FORCE)
@@ -242,6 +209,7 @@ elseif (SPM_ABSL_PROVIDER STREQUAL "package")
   include_directories(${ABSL_INCLUDE_DIRS})
 endif()
 
+# Protobuf
 if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
   include(FetchContent)
   set(protobuf_BUILD_TESTS OFF CACHE BOOL "Disable protobuf tests" FORCE)
@@ -284,8 +252,27 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
     endif()
   endif()
   FetchContent_GetProperties(protobuf SOURCE_DIR protobuf_SOURCE_DIR)
+  set(PROTOBUF_LITE_LIBRARY protobuf::libprotobuf-lite)
+elseif (SPM_PROTOBUF_PROVIDER STREQUAL "package")
+  find_package(Protobuf REQUIRED)
+  set(PROTOBUF_LITE_LIBRARY protobuf::libprotobuf-lite)
 endif()
 
+# Googletest (Testing)
+if (SPM_BUILD_TEST)
+  enable_testing()
+  set(INSTALL_GTEST OFF CACHE BOOL "Disable installation of googletest" FORCE)
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.18.0
+    GIT_SHALLOW TRUE
+  )
+  FetchContent_MakeAvailable(googletest)
+endif()
+
+# Google Benchmark
 if(SPM_ENABLE_BENCHMARK)
   include(FetchContent)
   set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "Disable benchmark gtest" FORCE)
@@ -301,10 +288,87 @@ if(SPM_ENABLE_BENCHMARK)
   include_directories(${benchmark_SOURCE_DIR}/include)
 endif()
 
+# ==============================================================================
+# 5. Installation Paths & Packaging Configuration (pkg-config, config.h)
+# ==============================================================================
+if (NOT DEFINED CMAKE_INSTALL_BINDIR)
+  set(CMAKE_INSTALL_BINDIR bin)
+endif()
+
+if (NOT DEFINED CMAKE_INSTALL_LIBDIR)
+  set(CMAKE_INSTALL_LIBDIR lib)
+endif()
+
+if (NOT DEFINED CMAKE_INSTALL_INCLUDEDIR)
+  set(CMAKE_INSTALL_INCLUDEDIR include)
+endif()
+
+if (UNIX)
+  include(GNUInstallDirs)
+  set(prefix ${CMAKE_INSTALL_PREFIX})
+  set(exec_prefix "\${prefix}")
+  set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
+  set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+else()
+  set(prefix ${CMAKE_INSTALL_PREFIX})
+  set(exec_prefix "\${prefix}")
+  set(libdir "\${exec_prefix}/lib")
+  set(includedir "\${prefix}/include")
+endif()
+
+# Helper function for path concatenation
+function(join_paths joined_path first_path_segment)
+  set(temp_path "${first_path_segment}")
+  foreach(current_segment IN LISTS ARGN)
+    if(NOT ("${current_segment}" STREQUAL ""))
+      if(IS_ABSOLUTE "${current_segment}")
+        set(temp_path "${current_segment}")
+      else()
+        set(temp_path "${temp_path}/${current_segment}")
+      endif()
+    endif()
+  endforeach()
+  set(${joined_path} "${temp_path}" PARENT_SCOPE)
+endfunction()
+
+join_paths(libdir_for_pc_file "\${exec_prefix}" "${CMAKE_INSTALL_LIBDIR}")
+join_paths(includedir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
+join_paths(datadir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_DATADIR}" "sentencepiece")
+join_paths(datadir_for_config_file "${prefix}" "${CMAKE_INSTALL_DATADIR}" "sentencepiece")
+set(INSTALL_DATADIR ${datadir_for_config_file})
+
+if (SPM_PROTOBUF_PROVIDER STREQUAL "module" OR SPM_PROTOBUF_PROVIDER STREQUAL "package")
+  set(libprotobuf_lite "protobuf-lite")
+else()
+  set(libprotobuf_lite "")
+endif()
+
+configure_file("${PROJECT_SOURCE_DIR}/config.h.in" "config.h")
+configure_file("${PROJECT_SOURCE_DIR}/sentencepiece.pc.in" "sentencepiece.pc" @ONLY)
+
+if (NOT MSVC)
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece.pc" DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+endif()
+
+if (SPM_DISABLE_EMBEDDED_DATA)
+  file(GLOB EMBEDDED_DATA_FILES "${CMAKE_CURRENT_SOURCE_DIR}/data/*.bin")
+  install(FILES ${EMBEDDED_DATA_FILES} DESTINATION ${INSTALL_DATADIR})
+endif()
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
+
+# ==============================================================================
+# 6. Subdirectories
+# ==============================================================================
 add_subdirectory(src)
 add_subdirectory(third_party)
 
+# ==============================================================================
+# 7. CPack Packaging
+# ==============================================================================
 if (SPM_IS_TOP_LEVEL)
+  set(CPACK_PACKAGE_FILE_NAME
+      "sentencepiece-${SPM_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
   set(CPACK_SOURCE_GENERATOR "TXZ")
   set(CPACK_GENERATOR "7Z")
   set(CPACK_PACKAGE_VERSION "${SPM_VERSION}")

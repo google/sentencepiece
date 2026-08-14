@@ -57,7 +57,7 @@ inline float LogSumExp(float x, float y, bool init_mode) {
   if (vmax > vmin + kMinusLogEpsilon) {
     return vmax;
   } else {
-    return vmax + log(std::exp(static_cast<double>(vmin - vmax)) + 1.0);
+    return vmax + std::log1p(std::exp(static_cast<double>(vmin - vmax)));
   }
 }
 
@@ -674,7 +674,7 @@ Model::Model(const ModelProto &model_proto) {
   BuildTrie(&pieces);
 }
 
-Model::~Model() {}
+Model::~Model() = default;
 
 EncodeResult Model::Encode(absl::string_view normalized) const {
   return EncodeOptimized(normalized);

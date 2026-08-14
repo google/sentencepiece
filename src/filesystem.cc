@@ -19,6 +19,7 @@
 #include <memory>
 
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
@@ -43,8 +44,8 @@ class PosixReadableFile : public ReadableFile {
       is_ = &file_;
     }
     if (!*is_ || ((is_->peek() != 0) && is_->fail())) {
-      status_ = absl::StatusBuilder(absl::StatusCode::kNotFound)
-                << "\"" << filename.data() << "\": " << util::StrError(errno);
+      status_ =
+          absl::ErrnoToStatus(errno, absl::StrCat("\"", filename, "\""));
     }
   }
 
@@ -84,8 +85,8 @@ class PosixWritableFile : public WritableFile {
       os_ = &file_;
     }
     if (!*os_) {
-      status_ = absl::StatusBuilder(absl::StatusCode::kPermissionDenied)
-                << "\"" << filename.data() << "\": " << util::StrError(errno);
+      status_ =
+          absl::ErrnoToStatus(errno, absl::StrCat("\"", filename, "\""));
     }
   }
 

@@ -24,13 +24,9 @@
 #include <utility>
 #include <vector>
 
+#include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/types/span.h"
-namespace absl {
-using std::string_view;
-}  // namespace absl
-
-#include "third_party/absl/status/status.h"
 
 namespace sentencepiece {
 

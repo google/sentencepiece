@@ -501,7 +501,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
                "pieces...";
 
   for (auto& [w, score] : queue.Get()) {
-    CHECK(!port::ContainsKey(all_chars, w));
+    CHECK(!all_chars.contains(w));
     seed_sentencepieces.emplace_back(std::move(w), score);
   }
 
@@ -788,8 +788,8 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
     constexpr float kMinScorePenaltyDelta = 0.0001;
     for (const auto& w : Sorted(required_chars_)) {
       const std::string s = string_util::UnicodeCharToUTF8(w.first);
-      if (port::ContainsKey(sp, s)) {
-        final_sentencepieces[s] = sp[s];
+      if (const auto it = sp.find(s); it != sp.end()) {
+        final_sentencepieces[s] = it->second;
       } else {
         // Add penalty to avoid required pieces from having the same score.
         // Since the required_chars_ is sorted, frequent pieces have
@@ -805,7 +805,7 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
 
   // Then keeps sentencepieces with higher scores.
   for (const auto& w : Sorted(sentencepieces)) {
-    if (port::ContainsKey(final_sentencepieces, w.first)) {
+    if (final_sentencepieces.contains(w.first)) {
       continue;
     }
     if (static_cast<size_t>(vocab_size_size) == final_sentencepieces.size()) {

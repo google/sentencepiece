@@ -542,7 +542,8 @@ TEST(SentencepieceProcessorTest, DecodeTest) {
       static absl::flat_hash_map<absl::string_view, int> kMap = {
           {"<unk>", 0}, {"<s>", 1}, {"</s>", 2},    {WS "ABC", 3},
           {WS "DE", 4}, {"F", 5},   {"G" WS "H", 6}};
-      return port::FindWithDefault(kMap, piece, 0);
+      const auto it = kMap.find(piece);
+      return it != kMap.end() ? it->second : 0;
     }
 
     const std::string& IdToPiece(int id) const override {
@@ -705,7 +706,8 @@ TEST(SentencepieceProcessorTest, DummyPrefixDecodeTest) {
       static absl::flat_hash_map<absl::string_view, int> kMap = {
           {"<unk>", 0}, {"<s>", 1}, {"</s>", 2},     {WS "ABC", 3},
           {WS "DE", 4}, {"F", 5},   {"G" WS "H", 6}, {WS, 7}};
-      return port::FindWithDefault(kMap, piece, 0);
+      const auto it = kMap.find(piece);
+      return it != kMap.end() ? it->second : 0;
     }
 
     const std::string& IdToPiece(int id) const override {
@@ -790,7 +792,8 @@ TEST(SentencepieceProcessorTest, ByteFallbackDecodeTest) {
         }
         return m;
       }();
-      return port::FindWithDefault(kMap, std::string(piece), 0);
+      const auto it = kMap.find(piece);
+      return it != kMap.end() ? it->second : 0;
     }
 
     const std::string& IdToPiece(int id) const override {

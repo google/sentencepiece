@@ -61,7 +61,6 @@ int main(int argc, char *argv[]) {
   NormalizerSpec spec;
 
   if (!absl::GetFlag(FLAGS_model).empty()) {
-    ModelProto model_proto;
     SentencePieceProcessor sp;
     QCHECK_OK(sp.Load(absl::GetFlag(FLAGS_model)));
     spec = sp.model_proto().normalizer_spec();
