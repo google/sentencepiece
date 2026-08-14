@@ -16,12 +16,12 @@
 #define COMMON_H_
 
 #include <cstdint>
-#include <iostream>
 
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/globals.h"
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/status/status_builder.h"
 #include "third_party/absl/status/status_macros.h"
 #include "third_party/absl/strings/string_view.h"
 
@@ -44,6 +44,32 @@
 
 #ifndef RETURN_IF_ERROR
 #define RETURN_IF_ERROR(...) ABSL_RETURN_IF_ERROR(__VA_ARGS__)
+#endif
+
+#ifndef ASSIGN_OR_RETURN
+#define ASSIGN_OR_RETURN(...) ABSL_ASSIGN_OR_RETURN(__VA_ARGS__)
+#endif
+
+#ifndef RET_CHECK
+#define RET_CHECK(condition)                                  \
+  if (condition) {                                            \
+  } else /* NOLINT */                                         \
+    return absl::StatusBuilder(::absl::StatusCode::kInternal) \
+           << __FILE__ << "(" << __LINE__ << ") [" << #condition << "] "
+
+#define RET_CHECK_EQ(a, b) RET_CHECK((a) == (b))
+#define RET_CHECK_NE(a, b) RET_CHECK((a) != (b))
+#define RET_CHECK_GE(a, b) RET_CHECK((a) >= (b))
+#define RET_CHECK_LE(a, b) RET_CHECK((a) <= (b))
+#define RET_CHECK_GT(a, b) RET_CHECK((a) > (b))
+#define RET_CHECK_LT(a, b) RET_CHECK((a) < (b))
+
+#define RET_QCHECK_EQ(a, b) RET_CHECK_EQ(a, b)
+#define RET_QCHECK_NE(a, b) RET_CHECK_NE(a, b)
+#define RET_QCHECK_GE(a, b) RET_CHECK_GE(a, b)
+#define RET_QCHECK_LE(a, b) RET_CHECK_LE(a, b)
+#define RET_QCHECK_GT(a, b) RET_CHECK_GT(a, b)
+#define RET_QCHECK_LT(a, b) RET_CHECK_LT(a, b)
 #endif
 
 #endif  // COMMON_H_

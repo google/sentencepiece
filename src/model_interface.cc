@@ -17,6 +17,7 @@
 #include <algorithm>
 
 #include "sentencepiece_model.pb.h"
+#include "third_party/absl/base/no_destructor.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_format.h"
 #include "third_party/absl/strings/string_view.h"
@@ -26,7 +27,7 @@ namespace sentencepiece {
 
 ModelInterface::ModelInterface(const ModelProto& model_proto)
     : model_proto_(&model_proto), status_(absl::OkStatus()) {}
-ModelInterface::~ModelInterface() {}
+ModelInterface::~ModelInterface() = default;
 
 #define RETURN_PIECE(name, default_value)                                \
   if (model_proto_->trainer_spec().name().empty()) return default_value; \
@@ -109,13 +110,13 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
           (sp.type() == ModelProto::SentencePiece::NORMAL ||
            sp.type() == ModelProto::SentencePiece::USER_DEFINED ||
            sp.type() == ModelProto::SentencePiece::UNUSED);
-      if (!port::InsertIfNotPresent(
-              is_normal_piece ? &pieces_ : &reserved_id_map_, sp.piece(), i)) {
+      auto* target_map = is_normal_piece ? &pieces_ : &reserved_id_map_;
+      if (!target_map->emplace(sp.piece(), i).second) {
         status_ = absl::InternalError(
             absl::StrCat(sp.piece(), " is already defined."));
         return;
       }
-    } else if (!port::InsertIfNotPresent(&pieces_, sp.piece(), i)) {
+    } else if (!pieces_.emplace(sp.piece(), i).second) {
       status_ =
           absl::InternalError(absl::StrCat(sp.piece(), " is already defined."));
       return;
@@ -234,25 +235,25 @@ std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
 }
 
 const std::string& ByteToPiece(unsigned char c) {
-  static const std::vector<std::string>* const kBytePieces = [] {
-    auto* v = new std::vector<std::string>(256);
+  static const absl::NoDestructor<std::vector<std::string>> kBytePieces([] {
+    std::vector<std::string> v(256);
     for (int i = 0; i < 256; ++i) {
-      (*v)[i] = absl::StrFormat("<0x%02X>", i);
+      v[i] = absl::StrFormat("<0x%02X>", i);
     }
     return v;
-  }();
+  }());
   return (*kBytePieces)[c];
 }
 
 int PieceToByte(absl::string_view piece) {
   using PieceToByteMap = absl::flat_hash_map<absl::string_view, unsigned char>;
-  static const auto* const kMap = []() -> PieceToByteMap* {
-    auto* m = new PieceToByteMap();
+  static const absl::NoDestructor<PieceToByteMap> kMap([] {
+    PieceToByteMap m;
     for (int i = 0; i < 256; ++i) {
-      (*m)[ByteToPiece(i)] = i;
+      m[ByteToPiece(i)] = i;
     }
     return m;
-  }();
+  }());
 
   if (const auto it = kMap->find(piece); it != kMap->end()) {
     return it->second;

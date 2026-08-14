@@ -24,7 +24,6 @@
 #include "third_party/absl/flags/flag.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_split.h"
-#include "util.h"
 
 ABSL_FLAG(std::string, model, "", "model file name");
 ABSL_FLAG(std::string, input, "", "input filename");

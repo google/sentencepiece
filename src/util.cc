@@ -17,6 +17,7 @@
 #include <atomic>
 #include <cstddef>
 #include <memory>
+#include <queue>
 
 #include "third_party/absl/random/random.h"
 #include "third_party/absl/status/status.h"
@@ -151,7 +152,9 @@ size_t EncodeUTF8(char32_t c, char* output) {
 }
 
 std::string UnicodeCharToUTF8(const char32_t c) {
-  return UnicodeTextToUTF8({c});
+  char buf[8];
+  const size_t mblen = EncodeUTF8(c, buf);
+  return std::string(buf, mblen);
 }
 
 UnicodeText UTF8ToUnicodeText(absl::string_view utf8) {
@@ -212,22 +215,6 @@ absl::BitGen* GetRandomGenerator() {
 }  // namespace random
 
 namespace util {
-
-std::string StrError(int errnum) {
-  constexpr int kStrErrorSize = 1024;
-  char buffer[kStrErrorSize];
-  char* str = nullptr;
-#if defined(__GLIBC__) && defined(_GNU_SOURCE)
-  str = strerror_r(errnum, buffer, kStrErrorSize - 1);
-#elif defined(_WIN32)
-  strerror_s(buffer, kStrErrorSize - 1, errnum);
-  str = buffer;
-#else
-  strerror_r(errnum, buffer, kStrErrorSize - 1);
-  str = buffer;
-#endif
-  return absl::StrCat(str, " Error #", errnum);
-}
 
 std::vector<std::string> StrSplitAsCSV(absl::string_view text) {
   std::string buf = std::string(text);
@@ -399,7 +386,7 @@ double LogSum(const std::vector<double>& xs) {
     }
     return xb + std::log1p(std::exp(xa - xb));
   };
-  for (int i = 1; i < xs.size(); ++i) {
+  for (size_t i = 1; i < xs.size(); ++i) {
     sum = log_add(sum, xs[i]);
   }
   return sum;

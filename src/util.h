@@ -15,15 +15,13 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 #include <functional>
 #include <memory>
-#include <queue>
 #include <random>
-#include <sstream>
 #include <string>
 #include <thread>
 #include <utility>
@@ -38,25 +36,17 @@
 #include "third_party/absl/numeric/bits.h"
 #include "third_party/absl/random/random.h"
 #include "third_party/absl/status/status.h"
-#include "third_party/absl/status/status_builder.h"
 #include "third_party/absl/strings/ascii.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_format.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/strings/strip.h"
 #include "third_party/absl/synchronization/mutex.h"
 
 static constexpr uint32_t kUnicodeError = 0xFFFD;
 
 namespace sentencepiece {
-
-template <typename T>
-std::ostream& operator<<(std::ostream& out, const std::vector<T>& v) {
-  out << absl::StrJoin(v, " ");
-  return out;
-}
 
 uint32_t GetRandomGeneratorSeed();
 int GetNBestTimeout();
@@ -89,23 +79,12 @@ inline std::string EncodePOD(const T& value) {
 }
 
 template <typename T>
-inline std::string IntToHex(T value) {
-  return absl::StrFormat("%X", value);
-}
-
-template <typename T>
 inline T HexToInt(absl::string_view value) {
-  absl::ConsumePrefix(&value, "0x");
   T n = 0;
-  if (!absl::numbers_internal::safe_strtoi_base(value, &n, 16)) {
+  if (!absl::SimpleHexAtoi(value, &n)) {
     return 0;
   }
   return n;
-}
-
-template <typename T>
-inline std::string SimpleItoa(T val) {
-  return absl::StrCat(val);
 }
 
 // Return length of a single UTF-8 source character
@@ -166,60 +145,6 @@ UnicodeTextAndOffsets UTF8ToUnicodeTextAndOffsets(absl::string_view utf8);
 
 }  // namespace string_util
 
-// other map/ptr utilties
-namespace port {
-
-template <class Collection, class Key>
-bool ContainsKey(const Collection& collection, const Key& key) {
-  return collection.find(key) != collection.end();
-}
-
-template <class Collection>
-const typename Collection::value_type::second_type& FindOrDie(
-    const Collection& collection,
-    const typename Collection::value_type::first_type& key) {
-  const auto it = collection.find(key);
-  //  if (it == collection.end()) {
-  //    LOG(FATAL) << "Map key not found: " << key;
-  //  }
-  return it->second;
-}
-
-template <class Collection>
-const typename Collection::value_type::second_type& FindWithDefault(
-    const Collection& collection,
-    const typename Collection::value_type::first_type& key,
-    const typename Collection::value_type::second_type& value) {
-  if (const auto it = collection.find(key); it != collection.end()) {
-    return it->second;
-  }
-  return value;
-}
-
-template <class Collection>
-bool InsertIfNotPresent(Collection* const collection,
-                        const typename Collection::value_type& vt) {
-  return collection->insert(vt).second;
-}
-
-template <class Collection>
-bool InsertIfNotPresent(
-    Collection* const collection,
-    const typename Collection::value_type::first_type& key,
-    const typename Collection::value_type::second_type& value) {
-  return InsertIfNotPresent(collection,
-                            typename Collection::value_type(key, value));
-}
-
-template <class Collection>
-void InsertOrDie(Collection* const collection,
-                 const typename Collection::value_type::first_type& key,
-                 const typename Collection::value_type::second_type& data) {
-  CHECK(InsertIfNotPresent(collection, key, data)) << "duplicate key";
-}
-
-}  // namespace port
-
 namespace random {
 
 absl::BitGen* GetRandomGenerator();
@@ -263,12 +188,6 @@ class ReservoirSampler {
 
 namespace util {
 
-constexpr bool is_bigendian() {
-  return absl::endian::native == absl::endian::big;
-}
-
-inline uint32_t Swap32(uint32_t x) { return absl::gbswap_32(x); }
-
 inline std::string JoinPath(absl::string_view path) {
   return {path.data(), path.size()};
 }
@@ -282,33 +201,11 @@ inline std::string JoinPath(absl::string_view first, const T&... rest) {
 #endif
 }
 
-std::string StrError(int errnum);
-
 std::vector<std::string> StrSplitAsCSV(absl::string_view text);
 
 #ifdef OS_WIN
-std::wstring Utf8ToWide(const absl::string_view input);
+std::wstring Utf8ToWide(absl::string_view input);
 #endif
-
-#define RET_CHECK(condition)                                  \
-  if (condition) {                                            \
-  } else /* NOLINT */                                         \
-    return absl::StatusBuilder(::absl::StatusCode::kInternal) \
-           << __FILE__ << "(" << __LINE__ << ") [" << #condition << "] "
-
-#define RET_CHECK_EQ(a, b) RET_CHECK((a) == (b))
-#define RET_CHECK_NE(a, b) RET_CHECK((a) != (b))
-#define RET_CHECK_GE(a, b) RET_CHECK((a) >= (b))
-#define RET_CHECK_LE(a, b) RET_CHECK((a) <= (b))
-#define RET_CHECK_GT(a, b) RET_CHECK((a) > (b))
-#define RET_CHECK_LT(a, b) RET_CHECK((a) < (b))
-
-#define RET_QCHECK_EQ(a, b) RET_CHECK_EQ(a, b)
-#define RET_QCHECK_NE(a, b) RET_CHECK_NE(a, b)
-#define RET_QCHECK_GE(a, b) RET_CHECK_GE(a, b)
-#define RET_QCHECK_LE(a, b) RET_CHECK_LE(a, b)
-#define RET_QCHECK_GT(a, b) RET_CHECK_GT(a, b)
-#define RET_QCHECK_LT(a, b) RET_CHECK_LT(a, b)
 
 }  // namespace util
 

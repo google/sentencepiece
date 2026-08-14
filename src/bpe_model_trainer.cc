@@ -40,8 +40,10 @@ std::string Trainer::Symbol::ToString() const {
 }
 
 Trainer::Symbol* Trainer::GetCharSymbol(char32_t c) {
-  const uint64_t freq = port::FindWithDefault(required_chars_, c, 1);
-  CHECK_GT(freq, 0);
+  const auto req_it = required_chars_.find(c);
+  const uint64_t freq =
+      (req_it != required_chars_.end()) ? req_it->second : 1;
+  CHECK_GT(freq, uint64_t{0});
   const auto it = symbols_cache_.find(c);
   if (it != symbols_cache_.end()) {
     return it->second;
@@ -51,7 +53,7 @@ Trainer::Symbol* Trainer::GetCharSymbol(char32_t c) {
   s->fp = c;
   s->chars.push_back(c);
   s->freq = freq;
-  port::InsertOrDie(&symbols_cache_, s->fp, s.get());
+  symbols_cache_.emplace(s->fp, s.get());
   Symbol* s_ptr = s.get();
   allocated_.push_back(std::move(s));
   return s_ptr;
@@ -89,7 +91,7 @@ Trainer::Symbol* Trainer::GetPairSymbol(const Symbol* left,
   s->left = left;
   s->right = right;
   s->chars = ut;
-  port::InsertOrDie(&symbols_cache_, s->fp, s.get());
+  symbols_cache_.emplace(s->fp, s.get());
   Symbol* s_ptr = s.get();
   allocated_.push_back(std::move(s));
   return s_ptr;

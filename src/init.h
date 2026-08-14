@@ -26,7 +26,7 @@ void ShutdownLibrary();
 
 class ScopedResourceDestructor {
  public:
-  ScopedResourceDestructor() {}
+  ScopedResourceDestructor() = default;
   ~ScopedResourceDestructor() { ShutdownLibrary(); }
 };
 

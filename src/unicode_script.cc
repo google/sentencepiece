@@ -16,7 +16,6 @@
 
 #include "third_party/absl/container/flat_hash_map.h"
 #include "unicode_script_map.h"
-#include "util.h"
 
 namespace sentencepiece {
 namespace unicode_script {
@@ -26,7 +25,8 @@ class GetScriptInternal {
   GetScriptInternal() { InitTable(&smap_); }
 
   ScriptType GetScript(char32_t c) const {
-    return port::FindWithDefault(smap_, c, ScriptType::U_Common);
+    const auto it = smap_.find(c);
+    return it != smap_.end() ? it->second : ScriptType::U_Common;
   }
 
  private:

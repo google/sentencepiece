@@ -15,7 +15,6 @@
 #include "word_model.h"
 
 #include "third_party/absl/strings/string_view.h"
-#include "util.h"
 
 namespace sentencepiece {
 namespace word {
@@ -25,7 +24,7 @@ Model::Model(const ModelProto& model_proto) {
   InitializePieces(/* use_reserved_id_map= */ true);
 }
 
-Model::~Model() {}
+Model::~Model() = default;
 
 EncodeResult Model::Encode(absl::string_view normalized) const {
   if (!status().ok() || normalized.empty()) {

@@ -67,13 +67,13 @@ ABSL_FLAG(float, min_freq_alpha, 0.0f,
 
 namespace sentencepiece {
 
-const char32_t TrainerInterface::kWSChar = L'\u2581';
+const char32_t TrainerInterface::kWSChar = U'\u2581';
 const char TrainerInterface::kWSStr[] = "\xe2\x96\x81";
 
-const char32_t TrainerInterface::kUNKChar = L'\u2585';
+const char32_t TrainerInterface::kUNKChar = U'\u2585';
 const char TrainerInterface::kUNKStr[] = "\xe2\x96\x85";
 
-const char32_t TrainerInterface::kPretokenizationBoundaryChar = L'\u001f';
+const char32_t TrainerInterface::kPretokenizationBoundaryChar = U'\u001f';
 const char TrainerInterface::kPretokenizationBoundaryStr[] = "\x1f";
 
 namespace {
@@ -572,14 +572,14 @@ END:
     LOG(INFO) << "Final character coverage="
               << 1.0 * accumulated_chars_count / all_chars_count;
 
-    RET_CHECK(!port::ContainsKey(required_chars_, kUNKChar));
+    RET_CHECK(!required_chars_.contains(kUNKChar));
 
     // Replaces rare characters (characters not included in required_chars_)
     // with kUNKChar.
     for (auto& w : sentences_) {
       string_util::UnicodeText uw2;
       for (const char32_t c : string_util::UTF8ToUnicodeText(w.first)) {
-        if (port::ContainsKey(required_chars_, c)) {
+        if (required_chars_.contains(c)) {
           uw2.push_back(c);
         } else {
           uw2.push_back(kUNKChar);

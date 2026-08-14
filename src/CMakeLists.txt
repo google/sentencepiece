@@ -12,24 +12,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.!
 
-list(APPEND SPM_LIBS absl::status)
-list(APPEND SPM_LIBS absl::status_builder)
-list(APPEND SPM_LIBS absl::strings)
-list(APPEND SPM_LIBS absl::flags)
-list(APPEND SPM_LIBS absl::flags_parse)
-list(APPEND SPM_LIBS absl::log)
-list(APPEND SPM_LIBS absl::log_initialize)
-list(APPEND SPM_LIBS absl::check)
-list(APPEND SPM_LIBS absl::random_random)
-list(APPEND SPM_LIBS absl::time)
+# ==============================================================================
+# 1. Target Dependency Libraries (SPM_LIBS)
+# ==============================================================================
+list(APPEND SPM_LIBS
+  absl::status
+  absl::status_builder
+  absl::strings
+  absl::flags
+  absl::flags_parse
+  absl::log
+  absl::log_initialize
+  absl::check
+  absl::random_random
+  absl::time
+  Threads::Threads
+  ${PROTOBUF_LITE_LIBRARY}
+)
 
+if (TARGET utf8_validity)
+  list(APPEND SPM_LIBS utf8_validity)
+endif()
+if (OpenMP_FOUND)
+  list(APPEND SPM_LIBS OpenMP::OpenMP_CXX)
+endif()
+if (SPM_ENABLE_NFKC_COMPILE)
+  list(APPEND SPM_LIBS ICU::i18n ICU::data ICU::uc)
+endif()
+if (TCMALLOC_LIB)
+  list(APPEND SPM_LIBS ${TCMALLOC_LIB})
+endif()
+if (ATOMIC_LIB)
+  list(APPEND SPM_LIBS ${ATOMIC_LIB})
+endif()
+
+# ==============================================================================
+# 2. Protocol Buffers Code Generation
+# ==============================================================================
 if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
   FetchContent_GetProperties(protobuf SOURCE_DIR protobuf_SOURCE_DIR)
-  set(PROTOBUF_LITE_LIBRARY protobuf::libprotobuf-lite)
-  list(APPEND SPM_LIBS ${PROTOBUF_LITE_LIBRARY})
-  if (TARGET utf8_validity)
-    list(APPEND SPM_LIBS utf8_validity)
-  endif()
   set(PROTOBUF_LITE_SRCS "")
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
   include_directories(${protobuf_SOURCE_DIR}/src)
@@ -66,24 +87,17 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
     VERBATIM
   )
 elseif (SPM_PROTOBUF_PROVIDER STREQUAL "package")
-  find_package(Protobuf REQUIRED)
-  include_directories(${Protobuf_INCLUDE_DIRS})
   protobuf_generate_cpp(SPM_PROTO_SRCS SPM_PROTO_HDRS sentencepiece.proto)
   protobuf_generate_cpp(SPM_MODEL_PROTO_SRCS SPM_MODEL_PROTO_HDRS sentencepiece_model.proto)
   set(PROTOBUF_LITE_SRCS "")
-  include_directories(${PROTOBUF_INCLUDE_DIR})
 endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 
-find_package(OpenMP)
-if (OpenMP_FOUND)
-  add_compile_definitions(LIBSAIS_OPENMP)
-  string(APPEND CMAKE_C_FLAGS " ${OpenMP_C_FLAGS}")
-  string(APPEND CMAKE_CXX_FLAGS " ${OpenMP_CXX_FLAGS}")
-endif()
-
+# ==============================================================================
+# 3. Source File Definitions
+# ==============================================================================
 set(SPM_SRCS
   ${PROTOBUF_LITE_SRCS}
   ${SPM_PROTO_HDRS}
@@ -177,51 +191,9 @@ if (SPM_NLCODEC_BPE)
   list(APPEND SPM_TEST_SRCS ${NLCODEC_DIR}/bpe_model_trainer_nlcodec_test.cc)
 endif()
 
-find_package(Threads REQUIRED)
-
-list(APPEND SPM_LIBS ${PROTOBUF_LITE_LIBRARY} Threads::Threads)
-
-if (SPM_ENABLE_NFKC_COMPILE)
-  find_package(ICU 4.4 COMPONENTS i18n data uc REQUIRED)
-  include_directories(${ICU_INCLUDE_DIRS})
-  add_compile_definitions(ENABLE_NFKC_COMPILE)
-  list(APPEND SPM_LIBS ICU::i18n ICU::data ICU::uc)
-endif()
-
-if (SPM_DISABLE_EMBEDDED_DATA)
-  add_compile_definitions(DISABLE_EMBEDDED_DATA)
-endif()
-
-if (SPM_ENABLE_TCMALLOC)
-  if (SPM_TCMALLOC_STATIC)
-    find_library(TCMALLOC_LIB NAMES libtcmalloc_minimal.a)
-  else()
-    find_library(TCMALLOC_LIB NAMES tcmalloc_minimal)
-  endif()
-  if (TCMALLOC_LIB)
-    message(STATUS "Found TCMalloc: ${TCMALLOC_LIB}")
-    list(APPEND SPM_LIBS ${TCMALLOC_LIB})
-    add_definitions(-fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free)
-  else()
-    message(STATUS "Not Found TCMalloc: ${TCMALLOC_LIB}")
-  endif()
-endif()
-
-if ((${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") OR
-    (${CMAKE_SYSTEM_PROCESSOR} MATCHES "mips") OR
-    (${CMAKE_SYSTEM_PROCESSOR} MATCHES "m68k") OR
-    (${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc") OR
-    (${CMAKE_SYSTEM_PROCESSOR} MATCHES "powerpc") OR
-    (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch") OR
-    (${CMAKE_SYSTEM_PROCESSOR} MATCHES "sh4"))
-  find_library(ATOMIC_LIB NAMES atomic libatomic.so libatomic.so.1)
-  if (ATOMIC_LIB)
-    message(STATUS "Found atomic: ${ATOMIC_LIB}")
-    list(APPEND SPM_LIBS "atomic")
-  endif()
-endif()
-
-
+# ==============================================================================
+# 4. Library Targets (sentencepiece, sentencepiece_train)
+# ==============================================================================
 if (SPM_ENABLE_SHARED)
   add_library(sentencepiece SHARED ${SPM_SRCS})
   add_library(sentencepiece_train SHARED ${SPM_TRAIN_SRCS})
@@ -325,6 +297,9 @@ if (NOT WIN32)
   endif()
 endif()
 
+# ==============================================================================
+# 5. Executable Targets (CLI Tools)
+# ==============================================================================
 add_executable(spm_encode spm_encode_main.cc)
 add_executable(spm_decode spm_decode_main.cc)
 add_executable(spm_normalize spm_normalize_main.cc)
@@ -344,6 +319,9 @@ if (SPM_ENABLE_NFKC_COMPILE)
   target_link_libraries(compile_charsmap sentencepiece sentencepiece_train ${SPM_LIBS})
 endif()
 
+# ==============================================================================
+# 6. Installation & CMake Package Configuration Export
+# ==============================================================================
 if (SPM_ENABLE_SHARED)
   set(SPM_LIB_TARGETS sentencepiece sentencepiece_train)
   set(SPM_EXTRA_INSTALL_LIBS sentencepiece-static sentencepiece_train-static)
@@ -393,7 +371,6 @@ else()
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
-# CMake Package Export & Config
 if (SPM_LIB_TARGETS)
   include(CMakePackageConfigHelpers)
   set(SPM_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/sentencepiece")
@@ -423,7 +400,9 @@ if (SPM_LIB_TARGETS)
   )
 endif()
 
-# Generate modified headers for installation
+# ==============================================================================
+# 7. Header Generation & Installation
+# ==============================================================================
 set(GENERATED_HEADERS_DIR "${CMAKE_CURRENT_BINARY_DIR}/installed_headers")
 set(MODIFIER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modify_headers.cmake")
 
@@ -456,10 +435,12 @@ if (NOT SPM_PROTOBUF_PROVIDER STREQUAL "internal")
   install(FILES ${SPM_PROTO_HDRS} ${SPM_MODEL_PROTO_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endif()
 
+# ==============================================================================
+# 8. Testing & Benchmarks
+# ==============================================================================
 file(TO_NATIVE_PATH "${PROJECT_SOURCE_DIR}/data" data_dir)
 
 if (SPM_BUILD_TEST)
-  enable_testing()
   add_executable(spm_test test_main.cc ${SPM_TEST_SRCS})
 
   target_link_libraries(spm_test sentencepiece sentencepiece_train ${SPM_LIBS} gtest gmock)

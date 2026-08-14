@@ -108,11 +108,11 @@ std::vector<Builder::Chars> ExpandUnnormalized(
         norm2orig) {
   CHECK(!nfkd.empty());
   std::vector<Builder::Chars> results;
-  for (const auto c : port::FindOrDie(norm2orig, nfkd[0])) {
+  for (const auto c : norm2orig.at(nfkd[0])) {
     results.push_back({c});
   }
   for (size_t i = 1; i < nfkd.size(); ++i) {
-    const auto& orig = port::FindOrDie(norm2orig, nfkd[i]);
+    const auto& orig = norm2orig.at(nfkd[i]);
     std::vector<Builder::Chars> new_results;
     for (const auto& r : results) {
       for (const auto c : orig) {
@@ -208,7 +208,7 @@ absl::Status Builder::CompileCharsMap(const CharsMap& chars_map,
     const std::string utf8_in = string_util::UnicodeTextToUTF8(p.first);
     RET_CHECK(!utf8_in.empty());
     RET_CHECK(string_util::IsStructurallyValid(utf8_in));
-    kv.emplace_back(utf8_in, port::FindOrDie(normalized2pos, p.second));
+    kv.emplace_back(utf8_in, normalized2pos.at(p.second));
   }
 
   std::sort(kv.begin(), kv.end());
@@ -686,7 +686,7 @@ absl::Status Builder::LoadCharsMap(absl::string_view filename,
   while (input->ReadLine(&line)) {
     std::vector<std::string> fields =
         absl::StrSplit(line, '\t', absl::AllowEmpty());
-    CHECK_GE(fields.size(), 1);
+    CHECK(!fields.empty());
     if (fields.size() == 1) {
       fields.emplace_back("");  // Deletion rule.
     }
@@ -725,11 +725,11 @@ absl::Status Builder::SaveCharsMap(absl::string_view filename,
     string_util::UnicodeText srcu;
     string_util::UnicodeText trgu;
     for (char32_t v : c.first) {
-      src.push_back(string_util::IntToHex(v));
+      src.push_back(absl::StrFormat("%X", v));
       srcu.push_back(v);
     }
     for (char32_t v : c.second) {
-      trg.push_back(string_util::IntToHex(v));
+      trg.push_back(absl::StrFormat("%X", v));
       trgu.push_back(v);
     }
     std::string line = absl::StrJoin(src, " ") + "\t" +

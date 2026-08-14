@@ -22,7 +22,6 @@
 #include "third_party/absl/flags/usage_config.h"
 #include "third_party/absl/log/initialize.h"
 #include "third_party/absl/strings/str_cat.h"
-#include "util.h"
 
 #include "google/protobuf/message_lite.h"
 
