@@ -24,8 +24,11 @@ project(sentencepiece VERSION ${SPM_VERSION} LANGUAGES C CXX)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-option(SPM_ENABLE_NFKC_COMPILE "Enables NFKC compile" OFF)
-option(SPM_ENABLE_SHARED "Builds shared libaries in addition to static libraries." ON)
+if(WIN32)
+  option(SPM_ENABLE_SHARED "Builds shared libraries in addition to static libraries." OFF)
+else()
+  option(SPM_ENABLE_SHARED "Builds shared libraries in addition to static libraries." ON)
+endif()
 option(SPM_BUILD_TEST "Builds test binaries." OFF)
 option(SPM_ENABLE_TCMALLOC "Enable TCMalloc if available." ON)
 option(SPM_TCMALLOC_STATIC "Link static library of TCMALLOC." OFF)
@@ -42,7 +45,13 @@ set_property(CACHE SPM_PROTOBUF_PROVIDER PROPERTY STRINGS "module" "package")
 set(SPM_ABSL_PROVIDER "module" CACHE STRING "Provider of absl library")
 set_property(CACHE SPM_ABSL_PROVIDER PROPERTY STRINGS "module" "package")
 
-if(NOT CMAKE_BUILD_TYPE)
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+  set(SPM_IS_TOP_LEVEL TRUE)
+else()
+  set(SPM_IS_TOP_LEVEL FALSE)
+endif()
+
+if(SPM_IS_TOP_LEVEL AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
 endif()
 
@@ -59,11 +68,6 @@ set(CPACK_PACKAGE_FILE_NAME
 if (SPM_CROSS_SYSTEM_PROCESSOR)
  set(CMAKE_SYSTEM_PROCESSOR ${SPM_CROSS_SYSTEM_PROCESSOR})
  set(CMAKE_CROSSCOMPILING TRUE)
-endif()
-
-# Disable shared build on windows
-if(WIN32)
-  set(SPM_ENABLE_SHARED OFF)
 endif()
 
 # MSVC C++20 STL has a bug with Protobuf v25.6's UntypedMessage in
@@ -194,6 +198,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 
 if (SPM_BUILD_TEST)
   enable_testing()
+  set(INSTALL_GTEST OFF CACHE BOOL "Disable installation of googletest" FORCE)
   include(FetchContent)
   FetchContent_Declare(
     googletest
@@ -211,6 +216,8 @@ endif()
 
 if (SPM_ABSL_PROVIDER STREQUAL "module")
   include(FetchContent)
+  set(ABSL_ENABLE_INSTALL ON CACHE BOOL "Enable abseil install" FORCE)
+  set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "Propagate CXX std for abseil" FORCE)
   FetchContent_Declare(
     abseil-cpp
     GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
@@ -297,13 +304,15 @@ endif()
 add_subdirectory(src)
 add_subdirectory(third_party)
 
-set(CPACK_SOURCE_GENERATOR "TXZ")
-set(CPACK_GENERATOR "7Z")
-set(CPACK_PACKAGE_VERSION "${SPM_VERSION}")
-set(CPACK_STRIP_FILES TRUE)
-set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE")
-set(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README.md")
-set(CPACK_PACKAGE_CONTACT "taku@google.com")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Taku Kudo")
-set(CPACK_SOURCE_IGNORE_FILES "/build/;/.git/;/dist/;/sdist/;~$;${CPACK_SOURCE_IGNORE_FILES}")
-include(CPack)
+if (SPM_IS_TOP_LEVEL)
+  set(CPACK_SOURCE_GENERATOR "TXZ")
+  set(CPACK_GENERATOR "7Z")
+  set(CPACK_PACKAGE_VERSION "${SPM_VERSION}")
+  set(CPACK_STRIP_FILES TRUE)
+  set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE")
+  set(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README.md")
+  set(CPACK_PACKAGE_CONTACT "taku@google.com")
+  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Taku Kudo")
+  set(CPACK_SOURCE_IGNORE_FILES "/build/;/.git/;/dist/;/sdist/;~$;${CPACK_SOURCE_IGNORE_FILES}")
+  include(CPack)
+endif()

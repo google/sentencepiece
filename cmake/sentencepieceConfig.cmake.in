@@ -1,0 +1,29 @@
+# sentencepieceConfig.cmake
+# Config file for the sentencepiece package
+# It defines the following targets:
+#   sentencepiece::sentencepiece
+#   sentencepiece::sentencepiece_train
+#   sentencepiece::sentencepiece-static (if static build is enabled)
+#   sentencepiece::sentencepiece_train-static (if static build is enabled)
+
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(Threads)
+
+if ("@SPM_PROTOBUF_PROVIDER@" STREQUAL "package")
+  find_dependency(Protobuf)
+endif()
+
+if ("@SPM_ABSL_PROVIDER@" STREQUAL "package")
+  find_dependency(absl)
+endif()
+
+if ("@SPM_ENABLE_NFKC_COMPILE@" AND "@ICU_FOUND@")
+  find_dependency(ICU 4.4 COMPONENTS i18n data uc)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/sentencepieceTargets.cmake")
+
+check_required_components(sentencepiece)
