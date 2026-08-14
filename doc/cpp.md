@@ -1,8 +1,67 @@
-# SentencePieceProcessor C++ API
+# SentencePiece C++ API and CMake Integration
+
+## Integrating with CMake (version >= 0.2.3)
+
+SentencePiece provides official CMake targets (`sentencepiece::sentencepiece` and `sentencepiece::sentencepiece_train`). Header search paths, dependencies, and required C++ standards are automatically propagated to your targets.
+
+### 1. Using `find_package` (Installed Package)
+When SentencePiece is installed on your system or in a custom prefix:
+
+```cmake
+cmake_minimum_required(VERSION 3.15)
+project(my_project CXX)
+
+# Find installed sentencepiece package
+find_package(sentencepiece CONFIG REQUIRED)
+
+add_executable(my_app main.cc)
+
+# Link inference library
+target_link_libraries(my_app PRIVATE sentencepiece::sentencepiece)
+
+# Or link trainer library (if using SentencePieceTrainer)
+# target_link_libraries(my_app PRIVATE sentencepiece::sentencepiece_train)
+```
+
+If SentencePiece is installed in a custom directory, pass `-DCMAKE_PREFIX_PATH`:
+```bash
+cmake -B build -DCMAKE_PREFIX_PATH=/path/to/sentencepiece_install
+```
+
+### 2. Using `FetchContent` (Direct from Git)
+To build SentencePiece automatically as part of your project without manual installation:
+
+```cmake
+cmake_minimum_required(VERSION 3.15)
+project(my_project CXX)
+
+include(FetchContent)
+FetchContent_Declare(
+  sentencepiece
+  GIT_REPOSITORY https://github.com/google/sentencepiece.git
+  GIT_TAG        v0.2.3
+)
+FetchContent_MakeAvailable(sentencepiece)
+
+add_executable(my_app main.cc)
+target_link_libraries(my_app PRIVATE sentencepiece::sentencepiece)
+```
+
+### 3. Using `add_subdirectory`
+If you include SentencePiece as a git submodule or in-tree vendored directory (e.g. `third_party/sentencepiece`):
+
+```cmake
+add_subdirectory(third_party/sentencepiece)
+
+add_executable(my_app main.cc)
+target_link_libraries(my_app PRIVATE sentencepiece::sentencepiece)
+```
+
+---
 
 ## Load SentencePiece model
-To start working with the SentencePiece model, you will want to include the `sentencepiece_processor.h` header file.
-Then instantiate the `sentencepiece::SentencePieceProcessor` class and call the `Load` method to load the model using a file path or `std::istream`.
+To start working with the SentencePiece model, include the `sentencepiece_processor.h` header file.
+Instantiate the `sentencepiece::SentencePieceProcessor` class and call the `Load` method to load the model using a file path or `std::istream`.
 
 ```C++
 #include <sentencepiece_processor.h>
