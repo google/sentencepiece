@@ -14,13 +14,29 @@
 
 #include "util.h"
 
+#include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <limits>
 #include <memory>
 #include <queue>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
+#include "config.h"
+#include "sentencepiece_processor.h"
+#include "third_party/absl/base/internal/endian.h"
+#include "third_party/absl/log/check.h"
+#include "third_party/absl/log/globals.h"
 #include "third_party/absl/random/random.h"
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/strings/str_cat.h"
+#include "third_party/absl/strings/str_split.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/synchronization/blocking_counter.h"
 #include "third_party/absl/synchronization/mutex.h"
@@ -248,20 +264,6 @@ std::vector<std::string> StrSplitAsCSV(absl::string_view text) {
   return result;
 }
 
-#ifdef OS_WIN
-std::wstring Utf8ToWide(absl::string_view input) {
-  const int output_length = ::MultiByteToWideChar(
-      CP_UTF8, 0, input.data(), static_cast<int>(input.size()), nullptr, 0);
-  if (output_length == 0) {
-    return L"";
-  }
-  std::wstring output(output_length, 0);
-  const int result = ::MultiByteToWideChar(CP_UTF8, 0, input.data(),
-                                           static_cast<int>(input.size()),
-                                           output.data(), output.size());
-  return result == output_length ? output : L"";
-}
-#endif
 }  // namespace util
 
 class ThreadPool::Impl {

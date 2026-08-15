@@ -188,7 +188,7 @@ TEST(UnigramTrainerTest, EndToEndTest) {
                         &tok)
                   .ok());
   // TODO(taku): Temporally disable this test on Windows.
-#ifndef OS_WIN
+#if !defined(_WIN32) || defined(__CYGWIN__)
   LOG(INFO) << "[" << absl::StrJoin(tok, " ") << std::endl;
   EXPECT_EQ(
       WS

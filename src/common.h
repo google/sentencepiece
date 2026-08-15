@@ -15,28 +15,9 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
-#include <cstdint>
-
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/globals.h"
-#include "third_party/absl/log/log.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/status/status_builder.h"
 #include "third_party/absl/status/status_macros.h"
-#include "third_party/absl/strings/string_view.h"
-
-#if defined(_WIN32) && !defined(__CYGWIN__)
-#define OS_WIN
-#else
-#define OS_UNIX
-#endif
-
-#ifdef OS_WIN
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#include <windows.h>
-#endif
 
 #ifndef FRIEND_TEST
 #define FRIEND_TEST(a, b) friend class a##_##b##_Test;

@@ -14,8 +14,8 @@
 
 #include "unicode_script.h"
 
-#include "common.h"
 #include "testharness.h"
+#include "third_party/absl/log/check.h"
 #include "third_party/absl/strings/string_view.h"
 #include "util.h"
 

@@ -15,10 +15,15 @@
 #ifndef SPEC_PARSER_H_
 #define SPEC_PARSER_H_
 
+#include <cstdint>
+#include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
+#include "common.h"
 #include "sentencepiece_processor.h"
+#include "sentencepiece_trainer.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/status/status_builder.h"
 #include "third_party/absl/strings/ascii.h"

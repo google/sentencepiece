@@ -16,18 +16,29 @@
 
 #include <algorithm>
 #include <functional>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "filesystem.h"
+#include "normalizer.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/container/flat_hash_set.h"
+#include "third_party/absl/log/check.h"
+#include "third_party/absl/log/log.h"
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_replace.h"
 #include "third_party/absl/strings/str_split.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/strings/strip.h"
+#include "third_party/darts_clone/darts.h"
+#include "util.h"
 
 #ifdef ENABLE_NFKC_COMPILE
 #include <unicode/errorcode.h>
@@ -37,12 +48,6 @@
 #include <unicode/rbnf.h>
 #include <unicode/utypes.h>
 #endif  // ENABLE_NFKC_COMPILE
-
-#include <set>
-
-#include "normalizer.h"
-#include "third_party/darts_clone/darts.h"
-#include "util.h"
 
 #ifndef DISABLE_EMBEDDED_DATA
 #include "normalization_rule.h"

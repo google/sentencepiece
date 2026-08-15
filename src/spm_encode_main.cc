@@ -12,18 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <string>
 #include <vector>
 
-#include "common.h"
 #include "filesystem.h"
 #include "init.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/flags/flag.h"
+#include "third_party/absl/log/check.h"
+#include "third_party/absl/log/log.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/string_view.h"

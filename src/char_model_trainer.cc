@@ -15,8 +15,11 @@
 #include "char_model_trainer.h"
 
 #include <cmath>
+#include <cstdint>
+#include <string>
+#include <vector>
 
-#include "char_model.h"
+#include "common.h"
 #include "third_party/absl/status/status.h"
 #include "util.h"
 

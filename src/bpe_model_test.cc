@@ -14,11 +14,12 @@
 
 #include "bpe_model.h"
 
-#include <cstdio>
 #include <string>
+#include <vector>
 
-#include "model_interface.h"
+#include "sentencepiece_model.pb.h"
 #include "testharness.h"
+#include "util.h"
 
 namespace sentencepiece {
 namespace bpe {
@@ -26,9 +27,9 @@ namespace {
 
 ModelProto MakeBaseModelProto() {
   ModelProto model_proto;
-  auto *sp1 = model_proto.add_pieces();
-  auto *sp2 = model_proto.add_pieces();
-  auto *sp3 = model_proto.add_pieces();
+  auto* sp1 = model_proto.add_pieces();
+  auto* sp2 = model_proto.add_pieces();
+  auto* sp3 = model_proto.add_pieces();
 
   sp1->set_type(ModelProto::SentencePiece::UNKNOWN);
   sp1->set_piece("<unk>");
@@ -40,9 +41,9 @@ ModelProto MakeBaseModelProto() {
   return model_proto;
 }
 
-void AddPiece(ModelProto *model_proto, const std::string &piece,
+void AddPiece(ModelProto* model_proto, const std::string& piece,
               float score = 0.0) {
-  auto *sp = model_proto->add_pieces();
+  auto* sp = model_proto->add_pieces();
   sp->set_piece(piece);
   sp->set_score(score);
 }
@@ -267,9 +268,9 @@ TEST(SampleModelTest, EncodeTest) {
   }
 
   {
-    auto get_tokens = [](const EncodeResult &result) {
+    auto get_tokens = [](const EncodeResult& result) {
       std::string out;
-      for (const auto &r : result) {
+      for (const auto& r : result) {
         if (!result.empty()) out += ' ';
         out += std::string(r.first);
       }
@@ -289,7 +290,7 @@ TEST(SampleModelTest, EncodeTest) {
         EXPECT_EQ(1, freq.size());
       else
         EXPECT_GT(freq.size(), 1);
-      for (const auto &it : freq) num += it.second;
+      for (const auto& it : freq) num += it.second;
       EXPECT_EQ(num, kTrial);
     }
   }
@@ -327,7 +328,7 @@ TEST(BPEModelTest, EncodeWithDeepUnusedMergeChainTest) {
   const Model model(model_proto);
 
   std::string input;
-  for (const auto &c : chars) {
+  for (const auto& c : chars) {
     input += c;
   }
 
@@ -376,10 +377,10 @@ TEST(BPEModelTest, ControlSymbolsNoMergeTest) {
 
 TEST(BPEModelTest, ControlTokenMergeTest) {
   ModelProto model_proto;
-  auto AddPieceWithType = [](ModelProto *proto, const std::string &piece,
+  auto AddPieceWithType = [](ModelProto* proto, const std::string& piece,
                              float score,
                              ModelProto::SentencePiece::Type type) {
-    auto *sp = proto->add_pieces();
+    auto* sp = proto->add_pieces();
     sp->set_piece(piece);
     sp->set_score(score);
     sp->set_type(type);
@@ -414,7 +415,7 @@ TEST(BPEModelTest, SpecialSymbolsNoSegmentTest) {
 
   // Add 256 byte pieces to satisfy InitializePieces check.
   for (int i = 0; i < 256; ++i) {
-    auto *sp = model_proto.add_pieces();
+    auto* sp = model_proto.add_pieces();
     sp->set_piece(ByteToPiece(i));
     sp->set_type(ModelProto::SentencePiece::BYTE);
   }
@@ -468,7 +469,7 @@ TEST(BPEModelTest, SpecialSymbolsNoSegmentTest) {
   {
     auto result = model.Encode("<unk>");
     EXPECT_GT(result.size(), 1);
-    for (const auto &part : result) {
+    for (const auto& part : result) {
       EXPECT_NE("<unk>", part.first);
     }
   }
@@ -489,7 +490,7 @@ TEST(BPEModelTest, SpecialSymbolsNoSegmentTest) {
     std::string byte_piece = ByteToPiece(10);
     auto result = model.Encode(byte_piece);
     EXPECT_GT(result.size(), 1);
-    for (const auto &part : result) {
+    for (const auto& part : result) {
       EXPECT_NE(byte_piece, part.first);
     }
   }

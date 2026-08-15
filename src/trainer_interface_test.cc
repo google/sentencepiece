@@ -14,7 +14,9 @@
 
 #include "trainer_interface.h"
 
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "filesystem.h"
 #include "testharness.h"

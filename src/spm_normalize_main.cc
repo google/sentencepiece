@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include <string>
+
 #include "builder.h"
-#include "common.h"
 #include "filesystem.h"
 #include "init.h"
 #include "normalizer.h"
@@ -22,6 +23,8 @@
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/flags/flag.h"
+#include "third_party/absl/log/check.h"
+#include "third_party/absl/log/log.h"
 
 ABSL_FLAG(std::string, model, "", "Model file name");
 ABSL_FLAG(bool, use_internal_normalization, false,
@@ -45,7 +48,7 @@ using sentencepiece::SentencePieceTrainer;
 using sentencepiece::normalizer::Builder;
 using sentencepiece::normalizer::Normalizer;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
   std::vector<std::string> rest_args;
@@ -100,7 +103,7 @@ int main(int argc, char *argv[]) {
     }
 
     std::string line;
-    for (const auto &filename : rest_args) {
+    for (const auto& filename : rest_args) {
       auto input = sentencepiece::filesystem::NewReadableFile(filename);
       QCHECK_OK(input->status());
       while (input->ReadLine(&line)) {

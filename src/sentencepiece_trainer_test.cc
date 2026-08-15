@@ -17,6 +17,7 @@
 #include "filesystem.h"
 #include "sentencepiece_model.pb.h"
 #include "testharness.h"
+#include "third_party/absl/log/check.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_split.h"

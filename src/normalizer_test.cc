@@ -21,6 +21,7 @@
 #include "builder.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
+#include "third_party/absl/log/log.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"

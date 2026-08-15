@@ -18,7 +18,6 @@
 
 #include "sentencepiece_model.pb.h"
 #include "testharness.h"
-#include "util.h"
 
 namespace sentencepiece {
 namespace word {
@@ -29,9 +28,9 @@ namespace {
 
 ModelProto MakeBaseModelProto() {
   ModelProto model_proto;
-  auto *sp1 = model_proto.add_pieces();
-  auto *sp2 = model_proto.add_pieces();
-  auto *sp3 = model_proto.add_pieces();
+  auto* sp1 = model_proto.add_pieces();
+  auto* sp2 = model_proto.add_pieces();
+  auto* sp3 = model_proto.add_pieces();
 
   sp1->set_type(ModelProto::SentencePiece::UNKNOWN);
   sp1->set_piece("<unk>");
@@ -43,9 +42,9 @@ ModelProto MakeBaseModelProto() {
   return model_proto;
 }
 
-void AddPiece(ModelProto *model_proto, const std::string &piece,
+void AddPiece(ModelProto* model_proto, const std::string& piece,
               float score = 0.0) {
-  auto *sp = model_proto->add_pieces();
+  auto* sp = model_proto->add_pieces();
   sp->set_piece(piece);
   sp->set_score(score);
 }

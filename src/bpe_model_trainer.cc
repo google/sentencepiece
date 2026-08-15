@@ -15,14 +15,18 @@
 #include "bpe_model_trainer.h"
 
 #include <algorithm>
+#include <memory>
 #include <string>
-#include <unordered_set>
 #include <vector>
 
+#include "common.h"
 #include "third_party/absl/container/flat_hash_set.h"
 #include "third_party/absl/flags/flag.h"
 #include "third_party/absl/hash/hash.h"
+#include "third_party/absl/log/check.h"
+#include "third_party/absl/log/log.h"
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_replace.h"
 #include "third_party/absl/strings/string_view.h"
@@ -41,8 +45,7 @@ std::string Trainer::Symbol::ToString() const {
 
 Trainer::Symbol* Trainer::GetCharSymbol(char32_t c) {
   const auto req_it = required_chars_.find(c);
-  const uint64_t freq =
-      (req_it != required_chars_.end()) ? req_it->second : 1;
+  const uint64_t freq = (req_it != required_chars_.end()) ? req_it->second : 1;
   CHECK_GT(freq, uint64_t{0});
   const auto it = symbols_cache_.find(c);
   if (it != symbols_cache_.end()) {

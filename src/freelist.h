@@ -15,9 +15,11 @@
 #ifndef FREELIST_H_
 #define FREELIST_H_
 
+#include <cstddef>
 #include <cstring>
-
 #include <memory>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace sentencepiece {

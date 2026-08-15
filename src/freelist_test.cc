@@ -14,6 +14,8 @@
 
 #include "freelist.h"
 
+#include <cstddef>
+
 #include "testharness.h"
 
 namespace sentencepiece {
@@ -26,7 +28,7 @@ TEST(FreeListTest, BasicTest) {
   constexpr size_t kSize = 32;
 
   for (size_t i = 0; i < kSize; ++i) {
-    int *n = l.Allocate();
+    int* n = l.Allocate();
     EXPECT_EQ(0, *n);
     *n = i;
   }
@@ -44,7 +46,7 @@ TEST(FreeListTest, BasicTest) {
 
   // Zero-initialized after `Free`.
   for (size_t i = 0; i < kSize; ++i) {
-    int *n = l2.Allocate();
+    int* n = l2.Allocate();
     EXPECT_EQ(0, *n);
   }
 }

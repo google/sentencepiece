@@ -12,13 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include <cstdint>
 #include <map>
+#include <string>
+#include <vector>
 
 #include "filesystem.h"
 #include "init.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_trainer.h"
 #include "third_party/absl/flags/flag.h"
+#include "third_party/absl/log/check.h"
+#include "third_party/absl/log/log.h"
 #include "third_party/absl/strings/ascii.h"
 #include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/str_split.h"

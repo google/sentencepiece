@@ -14,7 +14,9 @@
 
 #include "sentencepiece_processor.h"
 
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "builder.h"
 #include "filesystem.h"

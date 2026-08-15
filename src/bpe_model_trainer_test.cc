@@ -33,14 +33,14 @@ namespace {
 #define WS "\xe2\x96\x81"
 
 std::string RunTrainer(
-    const std::vector<std::string> &input, int size,
-    const std::vector<std::string> &user_defined_symbols = {}) {
+    const std::vector<std::string>& input, int size,
+    const std::vector<std::string>& user_defined_symbols = {}) {
   const std::string input_file = util::JoinPath(::testing::TempDir(), "input");
   const std::string model_prefix =
       util::JoinPath(::testing::TempDir(), "model");
   {
     auto output = filesystem::NewWritableFile(input_file);
-    for (const auto &line : input) {
+    for (const auto& line : input) {
       output->WriteLine(line);
     }
   }
@@ -57,7 +57,7 @@ std::string RunTrainer(
 
   NormalizerSpec denormalizer_spec;
 
-  for (const auto &w : user_defined_symbols) {
+  for (const auto& w : user_defined_symbols) {
     trainer_spec.add_user_defined_symbols(w);
   }
 
@@ -67,7 +67,7 @@ std::string RunTrainer(
   SentencePieceProcessor processor;
   EXPECT_TRUE(processor.Load(model_prefix + ".model").ok());
 
-  const auto &model = processor.model_proto();
+  const auto& model = processor.model_proto();
   std::vector<std::string> pieces;
 
   // remove <unk>, <s>, </s>

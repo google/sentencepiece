@@ -16,11 +16,9 @@
 #define SENTENCEPIECE_PROCESSOR_H_
 
 #include <cstdint>
-#include <cstring>
 #include <functional>
 #include <memory>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
