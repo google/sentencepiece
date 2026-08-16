@@ -26,6 +26,7 @@
 
 #include "common.h"
 #include "filesystem.h"
+#include "google/protobuf/arena.h"
 #include "model_factory.h"
 #include "model_interface.h"
 #include "normalizer.h"
@@ -34,6 +35,8 @@
 #include "third_party/absl/container/fixed_array.h"
 #include "third_party/absl/container/flat_hash_set.h"
 #include "third_party/absl/functional/function_ref.h"
+#include "third_party/absl/log/check.h"
+#include "third_party/absl/log/log.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -46,8 +49,6 @@
 #include "third_party/absl/synchronization/mutex.h"
 #include "unigram_model.h"
 #include "util.h"
-
-#include "google/protobuf/arena.h"
 
 using ::google::protobuf::Arena;
 

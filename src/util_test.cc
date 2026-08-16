@@ -14,12 +14,19 @@
 
 #include "util.h"
 
+#include <cstdint>
 #include <map>
+#include <string>
+#include <vector>
 
+#include "config.h"
 #include "filesystem.h"
+#include "sentencepiece_processor.h"
 #include "testharness.h"
+#include "third_party/absl/log/check.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/str_cat.h"
+#include "third_party/absl/strings/str_format.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/time/clock.h"
 #include "third_party/absl/time/time.h"
@@ -323,7 +330,7 @@ TEST(UtilTest, StatusTest) {
 }
 
 TEST(UtilTest, JoinPathTest) {
-#ifdef OS_WIN
+#if defined(_WIN32) && !defined(__CYGWIN__)
   EXPECT_EQ("foo\\bar\\buz", util::JoinPath("foo", "bar", "buz"));
   EXPECT_EQ("foo\\\\buz", util::JoinPath("foo", "", "buz"));
 #else

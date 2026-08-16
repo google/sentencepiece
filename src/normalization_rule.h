@@ -5,9 +5,9 @@ namespace sentencepiece {
 namespace {
 
 struct BinaryBlob {
-  const char *name;
+  const char* name;
   size_t size;
-  const char *data;
+  const char* data;
 };
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
@@ -40614,13 +40614,13 @@ constexpr unsigned long long int kNormalizationRules_blob_uint64_t[] = {
 
 const BinaryBlob kNormalizationRules_blob[] = {
     {"nfkc", 240008,
-     reinterpret_cast<const char *>(kNormalizationRules_blob_uint64_t + 0)},
+     reinterpret_cast<const char*>(kNormalizationRules_blob_uint64_t + 0)},
     {"nmt_nfkc", 240007,
-     reinterpret_cast<const char *>(kNormalizationRules_blob_uint64_t + 30001)},
+     reinterpret_cast<const char*>(kNormalizationRules_blob_uint64_t + 30001)},
     {"nfkc_cf", 247165,
-     reinterpret_cast<const char *>(kNormalizationRules_blob_uint64_t + 60002)},
+     reinterpret_cast<const char*>(kNormalizationRules_blob_uint64_t + 60002)},
     {"nmt_nfkc_cf", 247164,
-     reinterpret_cast<const char *>(kNormalizationRules_blob_uint64_t + 90898)},
+     reinterpret_cast<const char*>(kNormalizationRules_blob_uint64_t + 90898)},
 };
 #else
 constexpr BinaryBlob kNormalizationRules_blob[] = {

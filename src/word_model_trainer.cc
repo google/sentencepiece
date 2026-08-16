@@ -15,13 +15,15 @@
 #include "word_model_trainer.h"
 
 #include <cmath>
+#include <cstdint>
 #include <string>
+#include <vector>
 
+#include "common.h"
+#include "model_interface.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/string_view.h"
-#include "util.h"
-#include "word_model.h"
 
 namespace sentencepiece {
 namespace word {

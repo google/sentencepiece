@@ -14,21 +14,22 @@
 
 #include "init.h"
 
-#include "common.h"
+#include <algorithm>
+
 #include "config.h"
+#include "google/protobuf/message_lite.h"
 #include "third_party/absl/flags/flag.h"
 #include "third_party/absl/flags/parse.h"
 #include "third_party/absl/flags/usage.h"
 #include "third_party/absl/flags/usage_config.h"
+#include "third_party/absl/log/globals.h"
 #include "third_party/absl/log/initialize.h"
 #include "third_party/absl/strings/str_cat.h"
-
-#include "google/protobuf/message_lite.h"
 
 ABSL_FLAG(bool, quiet, false, "Suppress logging message.");
 
 namespace sentencepiece {
-void ParseCommandLineFlags(const char *usage, int *argc, char ***argv,
+void ParseCommandLineFlags(const char* usage, int* argc, char*** argv,
                            bool remove_arg) {
   absl::InitializeLog();
   absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
@@ -45,7 +46,7 @@ void ParseCommandLineFlags(const char *usage, int *argc, char ***argv,
   const auto unused_args = absl::ParseCommandLine(*argc, *argv);
 
   if (remove_arg) {
-    char **argv_val = *argv;
+    char** argv_val = *argv;
     *argv = argv_val = argv_val + *argc - unused_args.size();
     std::copy(unused_args.begin(), unused_args.end(), argv_val);
     *argc = static_cast<int>(unused_args.size());

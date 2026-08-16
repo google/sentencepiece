@@ -25,6 +25,7 @@
 #include "sentencepiece_model.pb.h"
 #include "third_party/absl/container/btree_set.h"
 #include "third_party/absl/container/flat_hash_map.h"
+#include "third_party/absl/log/check.h"
 #include "third_party/absl/status/status.h"
 #include "trainer_interface.h"
 

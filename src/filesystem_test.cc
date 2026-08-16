@@ -14,8 +14,10 @@
 
 #include "filesystem.h"
 
+#include <string>
+#include <vector>
+
 #include "testharness.h"
-#include "third_party/absl/strings/str_cat.h"
 #include "util.h"
 
 namespace sentencepiece {

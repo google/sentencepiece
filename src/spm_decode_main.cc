@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#include <functional>
 #include <string>
 #include <vector>
 
-#include "common.h"
 #include "filesystem.h"
 #include "init.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
 #include "third_party/absl/flags/flag.h"
+#include "third_party/absl/log/check.h"
+#include "third_party/absl/log/log.h"
 #include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_split.h"
+#include "third_party/absl/types/span.h"
 
 ABSL_FLAG(std::string, model, "", "model file name");
 ABSL_FLAG(std::string, input, "", "input filename");
@@ -33,7 +34,7 @@ ABSL_FLAG(std::string, output_format, "string", "choose from string or proto");
 ABSL_FLAG(std::string, extra_options, "",
           "':' separated encoder extra options, e.g., \"reverse:bos:eos\"");
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
   std::vector<std::string> rest_args;
@@ -66,7 +67,7 @@ int main(int argc, char *argv[]) {
   auto ToIds = [&](absl::Span<const absl::string_view> pieces) {
     std::vector<int> ids;
     ids.reserve(pieces.size());
-    for (const auto &s : pieces) {
+    for (const auto& s : pieces) {
       int id;
       if (absl::SimpleAtoi(s, &id)) {
         ids.push_back(id);
@@ -107,7 +108,7 @@ int main(int argc, char *argv[]) {
     LOG(FATAL) << "Unknown input format: " << absl::GetFlag(FLAGS_input_format);
   }
 
-  for (const auto &filename : rest_args) {
+  for (const auto& filename : rest_args) {
     auto input = sentencepiece::filesystem::NewReadableFile(filename);
     QCHECK_OK(input->status());
     while (input->ReadLine(&line)) {

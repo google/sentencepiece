@@ -32,6 +32,8 @@
 #include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/container/flat_hash_set.h"
 #include "third_party/absl/flags/flag.h"
+#include "third_party/absl/log/check.h"
+#include "third_party/absl/log/log.h"
 #include "third_party/absl/random/random.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/match.h"
@@ -43,6 +45,7 @@
 #include "third_party/absl/strings/str_split.h"
 #include "third_party/absl/strings/string_view.h"
 #include "unicode_script.h"
+#include "util.h"
 
 // NOTE: The following flags are experimental options for new L1 sparse Unigram
 // training. They will eventually be migrated to TrainerSpec
@@ -61,9 +64,11 @@ ABSL_FLAG(
     "When true (default), resets lambda penalty and re-estimates pure Unigram "
     "MLE probabilities on the selected vocabulary (Post-Lasso Debiased Mode).");
 ABSL_FLAG(float, seed_piece_length_power, 1.0f,
-          "power exponent beta for seed sentencepiece length weighting: score = freq * len^beta (default=1.0)");
+          "power exponent beta for seed sentencepiece length weighting: score "
+          "= freq * len^beta (default=1.0)");
 ABSL_FLAG(float, min_freq_alpha, 0.0f,
-          "dynamic minimum frequency factor alpha derived from Zipf law: min_freq = max(2, alpha * N / (K * ln(K))) (default=0.0)");
+          "dynamic minimum frequency factor alpha derived from Zipf law: "
+          "min_freq = max(2, alpha * N / (K * ln(K))) (default=0.0)");
 
 namespace sentencepiece {
 

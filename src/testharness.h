@@ -18,8 +18,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "common.h"
-
 #ifndef EXPECT_OK
 #define EXPECT_OK(c) EXPECT_TRUE((c).ok())
 #endif

@@ -14,11 +14,10 @@
 
 #include "bpe_model.h"
 
+#include <algorithm>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <queue>
-#include <random>
 #include <utility>
 #include <vector>
 

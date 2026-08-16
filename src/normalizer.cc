@@ -14,13 +14,19 @@
 
 #include "normalizer.h"
 
+#include <algorithm>
 #include <cstddef>
+#include <memory>
+#include <set>
+#include <string>
 #include <utility>
 #include <vector>
 
-#include "common.h"
+#include "third_party/absl/log/check.h"
+#include "third_party/absl/log/log.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/match.h"
+#include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/strings/strip.h"
 #include "third_party/darts_clone/darts.h"
@@ -270,7 +276,8 @@ std::string Normalizer::EncodePrecompiledCharsMap(
 
   if constexpr (absl::endian::native == absl::endian::big) {
     uint32_t* data = reinterpret_cast<uint32_t*>(blob.data());
-    for (int i = 0; i < blob.size() / 4; ++i) data[i] = absl::gbswap_32(data[i]);
+    for (int i = 0; i < blob.size() / 4; ++i)
+      data[i] = absl::gbswap_32(data[i]);
   }
 
   blob.append(normalized.data(), normalized.size());

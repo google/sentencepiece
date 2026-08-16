@@ -83,6 +83,10 @@ if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND
   string(APPEND CMAKE_CXX_FLAGS " -fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=''")
 endif()
 
+if(WIN32)
+  add_compile_definitions(NOMINMAX)
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   add_definitions(-D_FREEBSD)
 endif()

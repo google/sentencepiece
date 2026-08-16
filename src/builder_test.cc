@@ -14,11 +14,11 @@
 
 #include "builder.h"
 
-#include "common.h"
 #include "filesystem.h"
 #include "normalizer.h"
 #include "sentencepiece_trainer.h"
 #include "testharness.h"
+#include "third_party/absl/log/check.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/string_view.h"
 #include "util.h"

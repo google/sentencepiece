@@ -14,8 +14,11 @@
 
 #include "trainer_factory.h"
 
+#include <memory>
+
 #include "bpe_model_trainer.h"
 #include "char_model_trainer.h"
+#include "third_party/absl/log/log.h"
 #include "unigram_model_trainer.h"
 #include "word_model_trainer.h"
 
@@ -23,8 +26,8 @@ namespace sentencepiece {
 
 // Instantiate Trainer instance from trainer_spec and normalization_spec
 std::unique_ptr<TrainerInterface> TrainerFactory::Create(
-    const TrainerSpec &trainer_spec, const NormalizerSpec &normalizer_spec,
-    const NormalizerSpec &denormalizer_spec) {
+    const TrainerSpec& trainer_spec, const NormalizerSpec& normalizer_spec,
+    const NormalizerSpec& denormalizer_spec) {
   switch (trainer_spec.model_type()) {
     case TrainerSpec::UNIGRAM:
       return std::make_unique<unigram::Trainer>(trainer_spec, normalizer_spec,

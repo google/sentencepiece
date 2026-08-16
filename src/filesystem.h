@@ -15,14 +15,9 @@
 #ifndef FILESYSTEM_H_
 #define FILESYSTEM_H_
 
-#include <stdio.h>
-
-#include <fstream>
 #include <memory>
 #include <string>
 
-#include "common.h"
-#include "sentencepiece_processor.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/string_view.h"
 

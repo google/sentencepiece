@@ -1,6 +1,7 @@
 // Evaluates exact Raw Log-Likelihood of test corpus given a SentencePiece
 // Unigram model.
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -93,7 +94,8 @@ int main(int argc, char* argv[]) {
   const double byte_w_ppl = std::exp(-nats_per_byte);
   const double standard_ppl = std::exp(-nats_per_token);
 
-  const double empirical_nats_per_byte = safe_div(empirical_log_likelihood, total_bytes);
+  const double empirical_nats_per_byte =
+      safe_div(empirical_log_likelihood, total_bytes);
   const double empirical_byte_w_ppl = std::exp(-empirical_nats_per_byte);
 
   const double bytes_per_token = safe_div(total_bytes, total_tokens);
@@ -102,7 +104,8 @@ int main(int argc, char* argv[]) {
 
   const size_t model_vocab_size = sp.GetPieceSize();
   const size_t unique_vocab_used = token_counts.size();
-  const double vocab_coverage_pct = safe_div(unique_vocab_used * 100.0, model_vocab_size);
+  const double vocab_coverage_pct =
+      safe_div(unique_vocab_used * 100.0, model_vocab_size);
 
   std::cout << "=======================================================\n";
   std::cout << "RAW LOG-LIKELIHOOD & COMPRESSION REPORT\n";
@@ -112,8 +115,10 @@ int main(int argc, char* argv[]) {
   std::cout << "Total Sentences                  : " << sentence_count << "\n";
   std::cout << "Total Bytes                      : " << total_bytes << "\n";
   std::cout << "Total Tokens                     : " << total_tokens << "\n";
-  std::cout << "Model Vocab Size (K)             : " << model_vocab_size << "\n";
-  std::cout << "Unique Vocab Used                : " << unique_vocab_used << "\n";
+  std::cout << "Model Vocab Size (K)             : " << model_vocab_size
+            << "\n";
+  std::cout << "Unique Vocab Used                : " << unique_vocab_used
+            << "\n";
   std::cout << "Vocab Coverage (%)               : "
             << absl::StrFormat("%.2f%%", vocab_coverage_pct) << "\n";
   std::cout << "-------------------------------------------------------\n";
