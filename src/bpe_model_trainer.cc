@@ -32,11 +32,6 @@
 #include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
-#ifdef SPM_NLCODEC_BPE
-#include "contrib/nlcodec/bpe_model_trainer_nlcodec.h"
-ABSL_DECLARE_FLAG(bool, nlcodec_bpe);
-#endif  // SPM_NLCODEC_BPE
-
 namespace sentencepiece::bpe {
 
 std::string Trainer::Symbol::ToString() const {
@@ -206,12 +201,6 @@ absl::Status Trainer::AcceptSymbol(Symbol* symbol) {
 absl::Status Trainer::Train() {
   RETURN_IF_ERROR(status());
 
-#ifdef SPM_NLCODEC_BPE
-  if (absl::GetFlag(FLAGS_nlcodec_bpe)) {
-    return TrainFast();
-  }
-#endif  // SPM_NLCODEC_BPE
-
   RET_CHECK(normalizer_spec_.escape_whitespaces());
   RET_CHECK_EQ(TrainerSpec::BPE, trainer_spec_.model_type());
 
@@ -333,36 +322,4 @@ absl::Status Trainer::Train() {
   return Save();
 }
 
-#ifdef SPM_NLCODEC_BPE
-absl::Status Trainer::TrainFast() {
-  RET_CHECK(normalizer_spec_.escape_whitespaces());
-  RET_CHECK_EQ(TrainerSpec::BPE, trainer_spec_.model_type());
-
-  RETURN_IF_ERROR(LoadSentences());
-  PretokenizeSentences();
-
-  const int vocab_size =
-      trainer_spec_.vocab_size() - meta_pieces_.size() - required_chars_.size();
-  RET_CHECK_GE(vocab_size, 0);
-  RET_CHECK(final_pieces_.empty());
-
-  RETURN_IF_ERROR(
-      nlcodec::RunFastBPEMerges(sentences_, vocab_size, &final_pieces_,
-                                [this](const string_util::UnicodeText& ut) {
-                                  return IsValidSentencePiece(ut);
-                                }));
-
-  // Add required_chars_
-  for (const auto& w : Sorted(required_chars_)) {
-    const Symbol* symbol = GetCharSymbol(w.first);
-    final_pieces_.emplace_back(symbol->ToString(),
-                               -static_cast<float>(final_pieces_.size()));
-  }
-
-  allocated_.clear();
-  symbols_cache_.clear();
-
-  return Save();
-}
-#endif  // SPM_NLCODEC_BPE
 }  // namespace sentencepiece::bpe

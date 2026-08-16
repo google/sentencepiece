@@ -42,14 +42,6 @@ class Trainer : public TrainerInterface {
 
   absl::Status Train() override;
 
-#ifdef SPM_NLCODEC_BPE
-  // Fast BPE training using nlcodec's max-heap + linked-list algorithm.
-  // Based on nlcodec by Thamme Gowda (https://github.com/isi-nlp/nlcodec)
-  // "Many-to-English Machine Translation Tools, Data, and Pretrained Models"
-  // Gowda et al., ACL 2021. https://arxiv.org/abs/2104.00290v2
-  absl::Status TrainFast();
-#endif  // SPM_NLCODEC_BPE
-
  private:
   // Symbol represents a character or symbol bigram.
   struct Symbol {
