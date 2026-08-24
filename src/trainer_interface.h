@@ -22,16 +22,16 @@
 #include <utility>
 #include <vector>
 
-#include "common.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+#include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "filesystem.h"
+#include "gtest_prod.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/flags/declare.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
 ABSL_DECLARE_FLAG(bool, use_sparse_pruning);

@@ -22,17 +22,17 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/no_destructor.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/strings/ascii.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "normalizer.h"
 #include "sentencepiece_model.pb.h"
-#include "third_party/absl/base/no_destructor.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/log/log.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/ascii.h"
-#include "third_party/absl/strings/numbers.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_format.h"
-#include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
 #include "util.h"
 

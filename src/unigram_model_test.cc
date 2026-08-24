@@ -14,18 +14,19 @@
 
 #include "unigram_model.h"
 
+#include <gtest/gtest.h>
+
 #include <cmath>
 #include <limits>
 #include <map>
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "testharness.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
 namespace sentencepiece {

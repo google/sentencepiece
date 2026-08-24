@@ -21,10 +21,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/status/status.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/types/span.h"
 
 namespace sentencepiece {
 
@@ -42,7 +42,7 @@ class Normalizer;
 // for (; !it.done(); it.Next()) {
 //    const std::string &s = it.value();
 // }
-// RETURN_IF_ERROR(it.status());
+// ABSL_RETURN_IF_ERROR(it.status());
 //
 class SentenceIterator {
  public:

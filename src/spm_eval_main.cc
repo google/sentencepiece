@@ -7,18 +7,17 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/flags/flag.h"
+#include "absl/strings/str_format.h"
 #include "init.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/strings/str_format.h"
 
 ABSL_FLAG(std::string, model, "", "model file name");
 ABSL_FLAG(std::string, input, "", "input filename");
 
 int main(int argc, char* argv[]) {
-  sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
 
   const std::string model_file = absl::GetFlag(FLAGS_model);

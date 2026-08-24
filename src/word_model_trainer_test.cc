@@ -14,13 +14,14 @@
 
 #include "word_model_trainer.h"
 
+#include <gtest/gtest.h>
+
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_join.h"
 #include "filesystem.h"
 #include "sentencepiece_processor.h"
-#include "testharness.h"
-#include "third_party/absl/strings/str_join.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -31,9 +32,10 @@ namespace {
 #define WS "\xE2\x96\x81"
 
 std::string RunTrainer(const std::vector<std::string>& input, int size) {
-  const std::string input_file = util::JoinPath(::testing::TempDir(), "input");
+  const std::string input_file =
+      filesystem::JoinPath(::testing::TempDir(), "input");
   const std::string model_prefix =
-      util::JoinPath(::testing::TempDir(), "model");
+      filesystem::JoinPath(::testing::TempDir(), "model");
   {
     auto output = filesystem::NewWritableFile(input_file);
     for (const auto& line : input) {
@@ -77,9 +79,10 @@ TEST(TrainerTest, BasicTest) {
 }
 
 TEST(TrainerTest, UserDefinedSymbolsAreTokenizedInWordModel) {
-  const std::string input_file = util::JoinPath(::testing::TempDir(), "input");
+  const std::string input_file =
+      filesystem::JoinPath(::testing::TempDir(), "input");
   const std::string model_prefix =
-      util::JoinPath(::testing::TempDir(), "word_user_defined");
+      filesystem::JoinPath(::testing::TempDir(), "word_user_defined");
   {
     auto output = filesystem::NewWritableFile(input_file);
     output->WriteLine("hello . world");

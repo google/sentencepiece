@@ -15,13 +15,13 @@
 #include <sstream>
 #include <string>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "filesystem.h"
 #include "init.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/log.h"
 
 ABSL_FLAG(std::string, output, "", "Output filename");
 ABSL_FLAG(std::string, model, "", "input model file name");
@@ -30,7 +30,6 @@ ABSL_FLAG(std::string, output_format, "vocab",
           "and scores, syms outputs pieces and indices.");
 
 int main(int argc, char* argv[]) {
-  sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
 
   sentencepiece::SentencePieceProcessor sp;

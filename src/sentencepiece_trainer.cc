@@ -17,21 +17,22 @@
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/status_macros.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
 #include "builder.h"
-#include "common.h"
 #include "normalizer.h"
+#include "ret_check.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
 #include "spec_parser.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/log.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/numbers.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_split.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/strings/strip.h"
 #include "trainer_factory.h"
 #include "util.h"
 
@@ -131,9 +132,9 @@ const NormalizerSpec& TrainerComponents::denormalizer_spec() const {
 absl::Status SentencePieceTrainer::Train(const TrainerComponents& components,
                                          std::string* serialized_model_proto) {
   auto copied_normalizer_spec = components.normalizer_spec();
-  RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_normalizer_spec, false));
+  ABSL_RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_normalizer_spec, false));
   auto copied_denormalizer_spec = components.denormalizer_spec();
-  RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_denormalizer_spec, true));
+  ABSL_RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_denormalizer_spec, true));
   auto trainer =
       TrainerFactory::Create(components.trainer_spec(), copied_normalizer_spec,
                              copied_denormalizer_spec);
@@ -150,10 +151,10 @@ absl::Status SentencePieceTrainer::Train(const TrainerComponents& components,
 
   if (serialized_model_proto) {
     ModelProto model_proto;
-    RETURN_IF_ERROR(trainer->Train(components, &model_proto));
+    ABSL_RETURN_IF_ERROR(trainer->Train(components, &model_proto));
     *serialized_model_proto = model_proto.SerializeAsString();
   } else {
-    RETURN_IF_ERROR(trainer->Train(components, nullptr));
+    ABSL_RETURN_IF_ERROR(trainer->Train(components, nullptr));
   }
 
   return absl::OkStatus();
@@ -165,7 +166,7 @@ absl::Status SentencePieceTrainer::Train(absl::string_view args,
                                          std::string* serialized_model_proto) {
   LOG(INFO) << "Running command: " << args.data();
   TrainerComponents copied_components = components;
-  RETURN_IF_ERROR(MergeSpecsFromArgs(args, &copied_components));
+  ABSL_RETURN_IF_ERROR(MergeSpecsFromArgs(args, &copied_components));
   return Train(copied_components, serialized_model_proto);
 }
 
@@ -174,7 +175,7 @@ absl::Status SentencePieceTrainer::Train(
     const std::unordered_map<std::string, std::string>& kwargs,
     const TrainerComponents& components, std::string* serialized_model_proto) {
   TrainerComponents copied_components = components;
-  RETURN_IF_ERROR(MergeSpecsFromArgs(kwargs, &copied_components));
+  ABSL_RETURN_IF_ERROR(MergeSpecsFromArgs(kwargs, &copied_components));
   return Train(copied_components, serialized_model_proto);
 }
 
@@ -397,9 +398,9 @@ absl::Status SentencePieceTrainer::PopulateNormalizerSpec(
     RET_CHECK(normalizer_spec->precompiled_charsmap().empty())
         << "precompiled_charsmap is already defined.";
     normalizer::Builder::CharsMap chars_map;
-    RETURN_IF_ERROR(normalizer::Builder::LoadCharsMap(
+    ABSL_RETURN_IF_ERROR(normalizer::Builder::LoadCharsMap(
         normalizer_spec->normalization_rule_tsv(), &chars_map));
-    RETURN_IF_ERROR(normalizer::Builder::CompileCharsMap(
+    ABSL_RETURN_IF_ERROR(normalizer::Builder::CompileCharsMap(
         chars_map, normalizer_spec->mutable_precompiled_charsmap()));
     normalizer_spec->set_name("user_defined");
   } else if (!is_denormalizer) {
@@ -407,7 +408,7 @@ absl::Status SentencePieceTrainer::PopulateNormalizerSpec(
       normalizer_spec->set_name(kDefaultNormalizerName);
     }
     if (normalizer_spec->precompiled_charsmap().empty()) {
-      RETURN_IF_ERROR(normalizer::Builder::GetPrecompiledCharsMap(
+      ABSL_RETURN_IF_ERROR(normalizer::Builder::GetPrecompiledCharsMap(
           normalizer_spec->name(),
           normalizer_spec->mutable_precompiled_charsmap()));
     }
@@ -455,7 +456,7 @@ absl::Status SentencePieceNormalizer::Load(
 
 absl::Status SentencePieceNormalizer::Load(absl::string_view filename) {
   auto model_proto = std::make_unique<ModelProto>();
-  RETURN_IF_ERROR(io::LoadModelProto(filename, model_proto.get()));
+  ABSL_RETURN_IF_ERROR(io::LoadModelProto(filename, model_proto.get()));
   return Load(std::move(model_proto));
 }
 
@@ -477,14 +478,16 @@ absl::Status SentencePieceNormalizer::LoadFromRuleTSV(
     absl::string_view filename) {
   auto spec = std::make_unique<NormalizerSpec>();
   spec->set_normalization_rule_tsv(filename.data(), filename.size());
-  RETURN_IF_ERROR(SentencePieceTrainer::PopulateNormalizerSpec(spec.get()));
+  ABSL_RETURN_IF_ERROR(
+      SentencePieceTrainer::PopulateNormalizerSpec(spec.get()));
   return Load(std::move(spec));
 }
 
 absl::Status SentencePieceNormalizer::LoadFromRuleName(absl::string_view name) {
   auto spec = std::make_unique<NormalizerSpec>();
   spec->set_name(name.data(), name.size());
-  RETURN_IF_ERROR(SentencePieceTrainer::PopulateNormalizerSpec(spec.get()));
+  ABSL_RETURN_IF_ERROR(
+      SentencePieceTrainer::PopulateNormalizerSpec(spec.get()));
   return Load(std::move(spec));
 }
 
@@ -508,7 +511,7 @@ absl::Status SentencePieceNormalizer::LoadFromMap(
     }
   }
   std::string blob;
-  RETURN_IF_ERROR(normalizer::Builder::CompileCharsMap(chars_map, &blob));
+  ABSL_RETURN_IF_ERROR(normalizer::Builder::CompileCharsMap(chars_map, &blob));
   auto spec = std::make_unique<NormalizerSpec>();
   spec->set_precompiled_charsmap(blob);
   return Load(std::move(spec));
@@ -520,7 +523,8 @@ absl::Status SentencePieceNormalizer::Decompile(
   const auto& blob = normalizer_spec_->precompiled_charsmap();
   RET_CHECK(!blob.empty()) << "No precompiled charsmap found in model.";
   normalizer::Builder::CharsMap chars_map;
-  RETURN_IF_ERROR(normalizer::Builder::DecompileCharsMap(blob, &chars_map));
+  ABSL_RETURN_IF_ERROR(
+      normalizer::Builder::DecompileCharsMap(blob, &chars_map));
   norm_map->clear();
   for (const auto& [key, val] : chars_map) {
     std::string src = string_util::UnicodeTextToUTF8(key);

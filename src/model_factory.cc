@@ -16,9 +16,9 @@
 
 #include <memory>
 
+#include "absl/log/log.h"
 #include "bpe_model.h"
 #include "char_model.h"
-#include "third_party/absl/log/log.h"
 #include "unigram_model.h"
 #include "word_model.h"
 

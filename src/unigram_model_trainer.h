@@ -20,10 +20,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "sentencepiece_model.pb.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/string_view.h"
 #include "trainer_interface.h"
 #include "unigram_model.h"
 #include "util.h"

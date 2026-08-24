@@ -15,14 +15,30 @@
 #ifndef FILESYSTEM_H_
 #define FILESYSTEM_H_
 
+#include <initializer_list>
 #include <memory>
 #include <string>
 
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 
 namespace sentencepiece {
 namespace filesystem {
+
+#if defined(_WIN32) && !defined(__CYGWIN__)
+inline constexpr absl::string_view kPathSeparator = "\\";
+#else
+inline constexpr absl::string_view kPathSeparator = "/";
+#endif
+
+template <typename... Args>
+inline std::string JoinPath(const Args&... args) {
+  return absl::StrJoin(
+      std::initializer_list<absl::string_view>{absl::string_view(args)...},
+      kPathSeparator);
+}
+
 class ReadableFile {
  public:
   ReadableFile() = default;

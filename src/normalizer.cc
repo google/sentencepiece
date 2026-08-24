@@ -22,13 +22,15 @@
 #include <utility>
 #include <vector>
 
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/log.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/match.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/strings/strip.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/status_macros.h"
+#include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
+#include "ret_check.h"
 #include "third_party/darts_clone/darts.h"
 #include "util.h"
 
@@ -93,7 +95,7 @@ absl::Status Normalizer::Normalize(absl::string_view input,
     return absl::OkStatus();
   }
 
-  RETURN_IF_ERROR(status());
+  ABSL_RETURN_IF_ERROR(status());
 
   size_t consumed = 0;
 

@@ -14,8 +14,9 @@
 
 #include "model_factory.h"
 
+#include <gtest/gtest.h>
+
 #include "sentencepiece_model.pb.h"
-#include "testharness.h"
 
 namespace sentencepiece {
 

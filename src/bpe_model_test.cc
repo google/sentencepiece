@@ -14,11 +14,12 @@
 
 #include "bpe_model.h"
 
+#include <gtest/gtest.h>
+
 #include <string>
 #include <vector>
 
 #include "sentencepiece_model.pb.h"
-#include "testharness.h"
 #include "util.h"
 
 namespace sentencepiece {

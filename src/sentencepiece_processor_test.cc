@@ -14,10 +14,18 @@
 
 #include "sentencepiece_processor.h"
 
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/status/status_matchers.h"
+#include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "builder.h"
 #include "filesystem.h"
 #include "model_interface.h"
@@ -25,11 +33,6 @@
 #include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_trainer.h"
-#include "testharness.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/strings/match.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -983,12 +986,13 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
 
   {
     auto output = filesystem::NewWritableFile(
-        util::JoinPath(::testing::TempDir(), "model"), true);
+        filesystem::JoinPath(::testing::TempDir(), "model"), true);
     output->Write(model_proto.SerializeAsString());
   }
 
   SentencePieceProcessor sp;
-  EXPECT_TRUE(sp.Load(util::JoinPath(::testing::TempDir(), "model")).ok());
+  EXPECT_TRUE(
+      sp.Load(filesystem::JoinPath(::testing::TempDir(), "model")).ok());
 
   EXPECT_EQ(model_proto.SerializeAsString(),
             sp.model_proto().SerializeAsString());
@@ -1490,7 +1494,8 @@ TEST(LoadModelProtoTest, EmptyFilename) {
 
 TEST(LoadModelProtoTest, FileNotParseableAsModelProto) {
   ModelProto model_proto;
-  const std::string filename = util::JoinPath(::testing::TempDir(), "file");
+  const std::string filename =
+      filesystem::JoinPath(::testing::TempDir(), "file");
   {
     auto output = filesystem::NewWritableFile(filename, true);
     ASSERT_TRUE(output->Write("12345"));
@@ -1509,12 +1514,13 @@ TEST(LoadModelProtoTest, FileLoadsOk) {
   AddPiece(&model_proto, "b", 0.3);
   AddPiece(&model_proto, "c", 0.2);
 
-  const std::string filename = util::JoinPath(::testing::TempDir(), "file");
+  const std::string filename =
+      filesystem::JoinPath(::testing::TempDir(), "file");
   {
     auto output = filesystem::NewWritableFile(filename, true);
     ASSERT_TRUE(output->Write(model_proto.SerializeAsString()));
   }
-  EXPECT_OK(io::LoadModelProto(filename, &model_proto));
+  ABSL_EXPECT_OK(io::LoadModelProto(filename, &model_proto));
 }
 
 }  // namespace sentencepiece

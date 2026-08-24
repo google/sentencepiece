@@ -22,9 +22,9 @@
 #include <utility>
 #include <vector>
 
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/types/span.h"
+#include "absl/status/status.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 
 namespace sentencepiece {
 

@@ -28,18 +28,18 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/internal/endian.h"
+#include "absl/log/check.h"
+#include "absl/log/globals.h"
+#include "absl/random/random.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "absl/synchronization/blocking_counter.h"
+#include "absl/synchronization/mutex.h"
 #include "config.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/base/internal/endian.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/globals.h"
-#include "third_party/absl/random/random.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_split.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/synchronization/blocking_counter.h"
-#include "third_party/absl/synchronization/mutex.h"
 
 namespace sentencepiece {
 

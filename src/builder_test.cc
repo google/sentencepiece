@@ -14,13 +14,14 @@
 
 #include "builder.h"
 
+#include <gtest/gtest.h>
+
+#include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "filesystem.h"
 #include "normalizer.h"
 #include "sentencepiece_trainer.h"
-#include "testharness.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -187,8 +188,8 @@ static constexpr char kTestInputData[] = "nfkc.tsv";
 TEST(BuilderTest, LoadCharsMapTest) {
   Builder::CharsMap chars_map;
   ASSERT_TRUE(
-      Builder::LoadCharsMap(util::JoinPath(::testing::SrcDir(), kTestInputData),
-                            &chars_map)
+      Builder::LoadCharsMap(
+          filesystem::JoinPath(::testing::SrcDir(), kTestInputData), &chars_map)
           .ok());
 
   std::string precompiled, expected;
@@ -200,15 +201,16 @@ TEST(BuilderTest, LoadCharsMapTest) {
       Builder::DecompileCharsMap(precompiled, &decompiled_chars_map).ok());
   EXPECT_EQ(chars_map, decompiled_chars_map);
 
-  ASSERT_TRUE(Builder::SaveCharsMap(
-                  util::JoinPath(::testing::TempDir(), "output.tsv"), chars_map)
-                  .ok());
+  ASSERT_TRUE(
+      Builder::SaveCharsMap(
+          filesystem::JoinPath(::testing::TempDir(), "output.tsv"), chars_map)
+          .ok());
 
   Builder::CharsMap saved_chars_map;
-  ASSERT_TRUE(
-      Builder::LoadCharsMap(util::JoinPath(::testing::TempDir(), "output.tsv"),
-                            &saved_chars_map)
-          .ok());
+  ASSERT_TRUE(Builder::LoadCharsMap(
+                  filesystem::JoinPath(::testing::TempDir(), "output.tsv"),
+                  &saved_chars_map)
+                  .ok());
   EXPECT_EQ(chars_map, saved_chars_map);
 
 #ifdef ENABLE_NFKC_COMPILE
@@ -221,16 +223,17 @@ TEST(BuilderTest, LoadCharsMapTest) {
 TEST(BuilderTest, LoadCharsMapWithEmptyeTest) {
   {
     auto output = filesystem::NewWritableFile(
-        util::JoinPath(::testing::TempDir(), "test.tsv"));
+        filesystem::JoinPath(::testing::TempDir(), "test.tsv"));
     output->WriteLine("0061\t0041");
     output->WriteLine("0062");
     output->WriteLine("0063\t\t#foo=>bar");
   }
 
   Builder::CharsMap chars_map;
-  EXPECT_TRUE(Builder::LoadCharsMap(
-                  util::JoinPath(::testing::TempDir(), "test.tsv"), &chars_map)
-                  .ok());
+  EXPECT_TRUE(
+      Builder::LoadCharsMap(
+          filesystem::JoinPath(::testing::TempDir(), "test.tsv"), &chars_map)
+          .ok());
 
   EXPECT_EQ(3, chars_map.size());
   EXPECT_EQ(std::vector<char32_t>({0x0041}), chars_map[{0x0061}]);
@@ -239,14 +242,14 @@ TEST(BuilderTest, LoadCharsMapWithEmptyeTest) {
 
   EXPECT_TRUE(
       Builder::SaveCharsMap(
-          util::JoinPath(::testing::TempDir(), "test_out.tsv"), chars_map)
+          filesystem::JoinPath(::testing::TempDir(), "test_out.tsv"), chars_map)
           .ok());
 
   Builder::CharsMap new_chars_map;
-  EXPECT_TRUE(
-      Builder::LoadCharsMap(
-          util::JoinPath(::testing::TempDir(), "test_out.tsv"), &new_chars_map)
-          .ok());
+  EXPECT_TRUE(Builder::LoadCharsMap(
+                  filesystem::JoinPath(::testing::TempDir(), "test_out.tsv"),
+                  &new_chars_map)
+                  .ok());
   EXPECT_EQ(chars_map, new_chars_map);
 }
 

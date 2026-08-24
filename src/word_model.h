@@ -15,9 +15,9 @@
 #ifndef WORD_MODEL_H_
 #define WORD_MODEL_H_
 
+#include "absl/strings/string_view.h"
 #include "model_interface.h"
 #include "sentencepiece_model.pb.h"
-#include "third_party/absl/strings/string_view.h"
 
 namespace sentencepiece {
 namespace word {

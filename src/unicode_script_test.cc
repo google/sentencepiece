@@ -14,9 +14,10 @@
 
 #include "unicode_script.h"
 
-#include "testharness.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/strings/string_view.h"
+#include <gtest/gtest.h>
+
+#include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 #include "util.h"
 
 namespace sentencepiece {

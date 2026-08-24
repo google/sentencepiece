@@ -18,17 +18,17 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "filesystem.h"
 #include "init.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/log.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/string_view.h"
 #include "trainer_interface.h"
 
 ABSL_FLAG(std::string, model, "", "model file name");
@@ -49,7 +49,6 @@ ABSL_FLAG(bool, generate_vocabulary, false,
           "Generates vocabulary file instead of segmentation");
 
 int main(int argc, char* argv[]) {
-  sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
   std::vector<std::string> rest_args;
 

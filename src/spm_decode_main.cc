@@ -15,16 +15,16 @@
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_split.h"
+#include "absl/types/span.h"
 #include "filesystem.h"
 #include "init.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/log.h"
-#include "third_party/absl/strings/numbers.h"
-#include "third_party/absl/strings/str_split.h"
-#include "third_party/absl/types/span.h"
 
 ABSL_FLAG(std::string, model, "", "model file name");
 ABSL_FLAG(std::string, input, "", "input filename");
@@ -35,7 +35,6 @@ ABSL_FLAG(std::string, extra_options, "",
           "':' separated encoder extra options, e.g., \"reverse:bos:eos\"");
 
 int main(int argc, char* argv[]) {
-  sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
   std::vector<std::string> rest_args;
 

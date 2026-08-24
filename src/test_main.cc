@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include <gtest/gtest.h>
+
 #include <cstdlib>
 #include <string>
 
-#include "common.h"
+#include "absl/flags/flag.h"
+#include "filesystem.h"
 #include "init.h"
-#include "testharness.h"
-#include "third_party/absl/flags/flag.h"
-#include "util.h"
 
-ABSL_FLAG(std::string, test_srcdir, sentencepiece::util::JoinPath("..", "data"),
-          "Data directory.");
+ABSL_FLAG(std::string, test_srcdir,
+          sentencepiece::filesystem::JoinPath("..", "data"), "Data directory.");
 ABSL_FLAG(std::string, test_tmpdir, "test_tmp", "Temporary directory.");
 
 int main(int argc, char** argv) {
-  sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
   // Set TEST_SRCDIR environment variable so GoogleTest's native
   // testing::SrcDir() can locate test data files when --test_srcdir is passed.

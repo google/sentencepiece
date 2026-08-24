@@ -14,14 +14,15 @@
 
 #include "model_interface.h"
 
+#include <gtest/gtest.h>
+
 #include <cstdlib>
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "model_factory.h"
 #include "sentencepiece_model.pb.h"
-#include "testharness.h"
-#include "third_party/absl/container/flat_hash_map.h"
 
 namespace sentencepiece {
 namespace {

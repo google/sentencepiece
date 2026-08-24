@@ -22,14 +22,14 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "normalizer.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/log.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/string_view.h"
 #include "third_party/darts_clone/darts.h"
 
 namespace sentencepiece {

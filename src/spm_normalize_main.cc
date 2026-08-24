@@ -14,6 +14,9 @@
 
 #include <string>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "builder.h"
 #include "filesystem.h"
 #include "init.h"
@@ -22,9 +25,6 @@
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/log.h"
 
 ABSL_FLAG(std::string, model, "", "Model file name");
 ABSL_FLAG(bool, use_internal_normalization, false,
@@ -49,7 +49,6 @@ using sentencepiece::normalizer::Builder;
 using sentencepiece::normalizer::Normalizer;
 
 int main(int argc, char* argv[]) {
-  sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
   std::vector<std::string> rest_args;
 

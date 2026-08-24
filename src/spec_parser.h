@@ -21,15 +21,15 @@
 #include <string>
 #include <vector>
 
-#include "common.h"
+#include "absl/status/status.h"
+#include "absl/status/status_builder.h"
+#include "absl/strings/ascii.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "ret_check.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/status/status_builder.h"
-#include "third_party/absl/strings/ascii.h"
-#include "third_party/absl/strings/numbers.h"
-#include "third_party/absl/strings/str_split.h"
-#include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
 namespace sentencepiece {

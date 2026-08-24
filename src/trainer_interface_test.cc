@@ -14,15 +14,18 @@
 
 #include "trainer_interface.h"
 
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/status/status_matchers.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "filesystem.h"
-#include "testharness.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_format.h"
-#include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -497,7 +500,8 @@ TEST(TrainerInterfaceTest, SerializeTest) {
 }
 
 TEST(TrainerInterfaceTest, CharactersTest) {
-  const std::string input_file = util::JoinPath(::testing::TempDir(), "input");
+  const std::string input_file =
+      filesystem::JoinPath(::testing::TempDir(), "input");
   {
     auto output = filesystem::NewWritableFile(input_file);
     // Make a single line with 50 "a", 49 "あ", and 1 "b".
@@ -524,7 +528,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   using E = absl::flat_hash_map<char32_t, int64_t>;
   {
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    EXPECT_OK(trainer.LoadSentences());
+    ABSL_EXPECT_OK(trainer.LoadSentences());
     // Because --character_coverage=0.98, "a" and "あ" are chosen, but "b" is
     // dropped.
     EXPECT_EQ(trainer.required_chars_,
@@ -533,7 +537,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   {
     trainer_spec.set_required_chars("漢字");
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    EXPECT_OK(trainer.LoadSentences());
+    ABSL_EXPECT_OK(trainer.LoadSentences());
     // 漢 and 字 do not occur in the line, but they are added.
     EXPECT_EQ(trainer.required_chars_, E({{ToChar32("a"), 50},
                                           {ToChar32("あ"), 49},
@@ -543,7 +547,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   {
     trainer_spec.set_required_chars("aあ");
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    EXPECT_OK(trainer.LoadSentences());
+    ABSL_EXPECT_OK(trainer.LoadSentences());
     // Adding characters that frequently occur do not change the result.
     EXPECT_EQ(trainer.required_chars_,
               E({{ToChar32("a"), 50}, {ToChar32("あ"), 49}}));
@@ -551,7 +555,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   {
     trainer_spec.set_required_chars("b");
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    EXPECT_OK(trainer.LoadSentences());
+    ABSL_EXPECT_OK(trainer.LoadSentences());
     // "b" is added with the correct frequency.
     EXPECT_EQ(
         trainer.required_chars_,
@@ -564,7 +568,7 @@ TEST(TrainerInterfaceTest, MultiFileSentenceIteratorTest) {
   std::vector<std::string> expected;
   for (int i = 0; i < 10; ++i) {
     const std::string file =
-        util::JoinPath(::testing::TempDir(), absl::StrCat("input", i));
+        filesystem::JoinPath(::testing::TempDir(), absl::StrCat("input", i));
     auto output = filesystem::NewWritableFile(file);
     int num_line = (rand() % 100) + 1;
     for (int n = 0; n < num_line; ++n) {
@@ -578,15 +582,15 @@ TEST(TrainerInterfaceTest, MultiFileSentenceIteratorTest) {
   std::vector<std::string> results;
   MultiFileSentenceIterator it(files);
   for (; !it.done(); it.Next()) results.emplace_back(it.value());
-  EXPECT_OK(it.status());
+  ABSL_EXPECT_OK(it.status());
   EXPECT_EQ(expected, results);
 }
 
 TEST(TrainerInterfaceTest, MultiFileSentenceIteratorErrorTest) {
   std::vector<std::string> files;
   for (int i = 0; i < 10; ++i) {
-    const std::string file = util::JoinPath(::testing::TempDir(),
-                                            absl::StrCat("input_not_exist", i));
+    const std::string file = filesystem::JoinPath(
+        ::testing::TempDir(), absl::StrCat("input_not_exist", i));
     files.push_back(file);
   }
 

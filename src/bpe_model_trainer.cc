@@ -19,17 +19,18 @@
 #include <string>
 #include <vector>
 
-#include "common.h"
-#include "third_party/absl/container/flat_hash_set.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/hash/hash.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/log.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_replace.h"
-#include "third_party/absl/strings/string_view.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
+#include "absl/hash/hash.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/status_macros.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_replace.h"
+#include "absl/strings/string_view.h"
+#include "ret_check.h"
 #include "util.h"
 
 namespace sentencepiece::bpe {
@@ -199,7 +200,7 @@ absl::Status Trainer::AcceptSymbol(Symbol* symbol) {
 }
 
 absl::Status Trainer::Train() {
-  RETURN_IF_ERROR(status());
+  ABSL_RETURN_IF_ERROR(status());
 
   RET_CHECK(normalizer_spec_.escape_whitespaces());
   RET_CHECK_EQ(TrainerSpec::BPE, trainer_spec_.model_type());
@@ -211,7 +212,7 @@ absl::Status Trainer::Train() {
   pending_queue_.clear();
 
   // Load all sentences
-  RETURN_IF_ERROR(LoadSentences());
+  ABSL_RETURN_IF_ERROR(LoadSentences());
   if (trainer_spec_.split_by_whitespace()) {
     SplitSentencesByWhitespace();
   }
@@ -297,7 +298,7 @@ absl::Status Trainer::Train() {
                 << " piece=" << best_symbol->ToString();
     }
 
-    RETURN_IF_ERROR(AcceptSymbol(best_symbol));
+    ABSL_RETURN_IF_ERROR(AcceptSymbol(best_symbol));
 
     for (Symbol* symbol : pending_queue_) {
       symbol->pending = false;

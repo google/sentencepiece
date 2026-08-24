@@ -12,24 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <gtest/gtest.h>
+
 #include <cstdint>
 #include <fstream>
 #include <ios>
 #include <string>
 
+#include "absl/base/internal/endian.h"
+#include "absl/status/status.h"
+#include "absl/strings/string_view.h"
+#include "filesystem.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "testharness.h"
-#include "third_party/absl/base/internal/endian.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/string_view.h"
-#include "util.h"
 
 namespace sentencepiece {
 namespace {
 
 std::string GetTestDataPath(absl::string_view filename) {
-  return util::JoinPath(::testing::SrcDir(), filename);
+  return filesystem::JoinPath(::testing::SrcDir(), filename);
 }
 
 absl::Status LoadModelWithModifiedCharsmap(const ModelProto& base_model,

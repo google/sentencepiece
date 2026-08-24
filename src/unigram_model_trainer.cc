@@ -26,21 +26,22 @@
 #include <utility>
 #include <vector>
 
-#include "common.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/status_macros.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_replace.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "filesystem.h"
 #include "normalizer.h"
+#include "ret_check.h"
 #include "sentencepiece_trainer.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/log.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/numbers.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_format.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_replace.h"
-#include "third_party/absl/strings/str_split.h"
-#include "third_party/absl/strings/string_view.h"
 #include "third_party/libsais/libsais.h"
 #include "trainer_interface.h"
 #include "unicode_script.h"
@@ -825,15 +826,15 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
 }
 
 absl::Status Trainer::Train() {
-  RETURN_IF_ERROR(status());
+  ABSL_RETURN_IF_ERROR(status());
 
   RET_CHECK_EQ(TrainerSpec::UNIGRAM, trainer_spec_.model_type());
   RET_CHECK(normalizer_spec_.escape_whitespaces());
 
   TrainerModel model(trainer_spec_, normalizer_spec_);
 
-  RETURN_IF_ERROR(model.status());
-  RETURN_IF_ERROR(LoadSentences());
+  ABSL_RETURN_IF_ERROR(model.status());
+  ABSL_RETURN_IF_ERROR(LoadSentences());
   if (!absl::GetFlag(FLAGS_auto_character_coverage)) {
     RET_CHECK(!required_chars_.empty());
   }
@@ -841,7 +842,7 @@ absl::Status Trainer::Train() {
   auto seed_sentencepieces = MakeSeedSentencePieces();
   RET_CHECK(!seed_sentencepieces.empty());
 
-  RETURN_IF_ERROR(model.SetSentencePieces(std::move(seed_sentencepieces)));
+  ABSL_RETURN_IF_ERROR(model.SetSentencePieces(std::move(seed_sentencepieces)));
 
   LOG(INFO) << "Using " << sentences_.size() << " sentences for EM training";
 
@@ -849,13 +850,13 @@ absl::Status Trainer::Train() {
 
   const bool use_sparse = absl::GetFlag(FLAGS_use_sparse_pruning);
   if (use_sparse) {
-    RETURN_IF_ERROR(TrainSparsePruning(&model));
+    ABSL_RETURN_IF_ERROR(TrainSparsePruning(&model));
   } else {
-    RETURN_IF_ERROR(TrainDiscretePruning(&model));
+    ABSL_RETURN_IF_ERROR(TrainDiscretePruning(&model));
   }
 
   auto reachable_pieces = PruneUnreachableSentencePieces(model);
-  RETURN_IF_ERROR(model.SetSentencePieces(std::move(reachable_pieces)));
+  ABSL_RETURN_IF_ERROR(model.SetSentencePieces(std::move(reachable_pieces)));
 
   // Finally, adjusts the size of sentencepices to be |vocab_size|.
   final_pieces_ = FinalizeSentencePieces(model);
@@ -882,7 +883,8 @@ absl::Status Trainer::TrainDiscretePruning(TrainerModel* model) {
 
       // Executes M step.
       auto new_sentencepieces = RunMStep(*model, expected);
-      RETURN_IF_ERROR(model->SetSentencePieces(std::move(new_sentencepieces)));
+      ABSL_RETURN_IF_ERROR(
+          model->SetSentencePieces(std::move(new_sentencepieces)));
 
       LOG(INFO) << "EM sub_iter=" << iter << " size=" << model->GetPieceSize()
                 << " obj=" << objective << " num_tokens=" << num_tokens
@@ -892,7 +894,8 @@ absl::Status Trainer::TrainDiscretePruning(TrainerModel* model) {
     // Prunes pieces (eliminates unreachable/zero-frequency pieces created in
     // M-step).
     auto new_sentencepieces = PruneSentencePieces(*model);
-    RETURN_IF_ERROR(model->SetSentencePieces(std::move(new_sentencepieces)));
+    ABSL_RETURN_IF_ERROR(
+        model->SetSentencePieces(std::move(new_sentencepieces)));
 
     // Stops the iteration when the size of sentences reaches to the
     // desired symbol size.
@@ -967,7 +970,7 @@ absl::Status Trainer::TrainSparsePruning(TrainerModel* model) {
       }
     }
     ToLogProb(new_pieces.begin(), new_pieces.end());
-    RETURN_IF_ERROR(model->SetSentencePieces(std::move(new_pieces)));
+    ABSL_RETURN_IF_ERROR(model->SetSentencePieces(std::move(new_pieces)));
 
     // Step 4: Convergence check (fixed lambda stability, dynamic target
     // reached, or max epochs).
@@ -1004,7 +1007,7 @@ absl::Status Trainer::TrainSparsePruning(TrainerModel* model) {
                                 std::max(1e-4f, post_expected[i]));
     }
     ToLogProb(refit_pieces.begin(), refit_pieces.end());
-    RETURN_IF_ERROR(model->SetSentencePieces(std::move(refit_pieces)));
+    ABSL_RETURN_IF_ERROR(model->SetSentencePieces(std::move(refit_pieces)));
     LOG(INFO) << "Post-Lasso Refit Done: size=" << model->GetPieceSize()
               << " obj=" << post_obj << " |w|=" << post_tokens
               << " bytes/tok=" << calc_bytes_per_tok(post_tokens);

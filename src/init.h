@@ -20,14 +20,6 @@ namespace sentencepiece {
 void ParseCommandLineFlags(const char* usage, int* argc, char*** argv,
                            bool remove_arg = true);
 
-void ShutdownLibrary();
-
-class ScopedResourceDestructor {
- public:
-  ScopedResourceDestructor() = default;
-  ~ScopedResourceDestructor() { ShutdownLibrary(); }
-};
-
 }  // namespace sentencepiece
 
 #endif  // INIT_H_

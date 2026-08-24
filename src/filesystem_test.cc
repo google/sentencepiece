@@ -14,15 +14,15 @@
 
 #include "filesystem.h"
 
+#include <gtest/gtest.h>
+
 #include <string>
 #include <vector>
 
-#include "testharness.h"
-#include "util.h"
-
 namespace sentencepiece {
+namespace filesystem {
 
-TEST(UtilTest, FilesystemTest) {
+TEST(FilesystemTest, FilesystemTest) {
   const std::vector<std::string> kData = {
       "This"
       "is"
@@ -30,16 +30,14 @@ TEST(UtilTest, FilesystemTest) {
       "test"};
 
   {
-    auto output = filesystem::NewWritableFile(
-        util::JoinPath(::testing::TempDir(), "test_file"));
+    auto output = NewWritableFile(JoinPath(::testing::TempDir(), "test_file"));
     for (size_t i = 0; i < kData.size(); ++i) {
       output->WriteLine(kData[i]);
     }
   }
 
   {
-    auto input = filesystem::NewReadableFile(
-        util::JoinPath(::testing::TempDir(), "test_file"));
+    auto input = NewReadableFile(JoinPath(::testing::TempDir(), "test_file"));
     std::string line;
     for (size_t i = 0; i < kData.size(); ++i) {
       EXPECT_TRUE(input->ReadLine(&line));
@@ -49,9 +47,22 @@ TEST(UtilTest, FilesystemTest) {
   }
 }
 
-TEST(UtilTest, FilesystemInvalidFileTest) {
-  auto input = filesystem::NewReadableFile("__UNKNOWN__FILE__");
+TEST(FilesystemTest, FilesystemInvalidFileTest) {
+  auto input = NewReadableFile("__UNKNOWN__FILE__");
   EXPECT_FALSE(input->status().ok());
 }
 
+TEST(FilesystemTest, JoinPathTest) {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+  EXPECT_EQ("foo\\bar\\buz", JoinPath("foo", "bar", "buz"));
+  EXPECT_EQ("foo\\\\buz", JoinPath("foo", "", "buz"));
+#else
+  EXPECT_EQ("foo/bar/buz", JoinPath("foo", "bar", "buz"));
+  EXPECT_EQ("foo//buz", JoinPath("foo", "", "buz"));
+#endif
+  EXPECT_EQ("foo", JoinPath("foo"));
+  EXPECT_EQ("", JoinPath(""));
+}
+
+}  // namespace filesystem
 }  // namespace sentencepiece

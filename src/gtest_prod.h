@@ -12,17 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#ifndef TESTHARNESS_H_
-#define TESTHARNESS_H_
+#ifndef GTEST_PROD_H_
+#define GTEST_PROD_H_
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-
-#ifndef EXPECT_OK
-#define EXPECT_OK(c) EXPECT_TRUE((c).ok())
-#endif
-#ifndef ASSERT_OK
-#define ASSERT_OK(c) ASSERT_TRUE((c).ok())
+#ifndef FRIEND_TEST
+#define FRIEND_TEST(a, b) friend class a##_##b##_Test;
 #endif
 
-#endif  // TESTHARNESS_H_
+#endif  // GTEST_PROD_H_

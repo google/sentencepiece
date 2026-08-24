@@ -16,15 +16,14 @@
 
 #include <algorithm>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
+#include "absl/flags/usage_config.h"
+#include "absl/log/globals.h"
+#include "absl/log/initialize.h"
+#include "absl/strings/str_cat.h"
 #include "config.h"
-#include "google/protobuf/message_lite.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/flags/parse.h"
-#include "third_party/absl/flags/usage.h"
-#include "third_party/absl/flags/usage_config.h"
-#include "third_party/absl/log/globals.h"
-#include "third_party/absl/log/initialize.h"
-#include "third_party/absl/strings/str_cat.h"
 
 ABSL_FLAG(bool, quiet, false, "Suppress logging message.");
 
@@ -56,7 +55,5 @@ void ParseCommandLineFlags(const char* usage, int* argc, char*** argv,
     absl::SetMinLogLevel(static_cast<absl::LogSeverityAtLeast>(100));
   }
 }
-
-void ShutdownLibrary() { google::protobuf::ShutdownProtobufLibrary(); }
 
 }  // namespace sentencepiece

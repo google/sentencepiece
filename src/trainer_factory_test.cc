@@ -14,7 +14,7 @@
 
 #include "trainer_factory.h"
 
-#include "testharness.h"
+#include <gtest/gtest.h>
 
 namespace sentencepiece {
 

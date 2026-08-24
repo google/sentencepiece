@@ -14,11 +14,12 @@
 
 #include "char_model.h"
 
+#include <gtest/gtest.h>
+
 #include <string>
 #include <vector>
 
 #include "sentencepiece_model.pb.h"
-#include "testharness.h"
 
 namespace sentencepiece {
 namespace character {

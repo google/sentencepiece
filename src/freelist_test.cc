@@ -14,9 +14,9 @@
 
 #include "freelist.h"
 
-#include <cstddef>
+#include <gtest/gtest.h>
 
-#include "testharness.h"
+#include <cstddef>
 
 namespace sentencepiece {
 namespace model {

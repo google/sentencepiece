@@ -12,24 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-#ifndef COMMON_H_
-#define COMMON_H_
+#ifndef RET_CHECK_H_
+#define RET_CHECK_H_
 
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/status/status_builder.h"
-#include "third_party/absl/status/status_macros.h"
-
-#ifndef FRIEND_TEST
-#define FRIEND_TEST(a, b) friend class a##_##b##_Test;
-#endif
-
-#ifndef RETURN_IF_ERROR
-#define RETURN_IF_ERROR(...) ABSL_RETURN_IF_ERROR(__VA_ARGS__)
-#endif
-
-#ifndef ASSIGN_OR_RETURN
-#define ASSIGN_OR_RETURN(...) ABSL_ASSIGN_OR_RETURN(__VA_ARGS__)
-#endif
+#include "absl/status/status.h"
+#include "absl/status/status_builder.h"
 
 #ifndef RET_CHECK
 #define RET_CHECK(condition)                                  \
@@ -53,4 +40,4 @@
 #define RET_QCHECK_LT(a, b) RET_CHECK_LT(a, b)
 #endif
 
-#endif  // COMMON_H_
+#endif  // RET_CHECK_H_

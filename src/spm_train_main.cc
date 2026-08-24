@@ -17,17 +17,17 @@
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/strings/ascii.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "filesystem.h"
 #include "init.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_trainer.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/log.h"
-#include "third_party/absl/strings/ascii.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_split.h"
-#include "third_party/absl/strings/string_view.h"
 #include "util.h"
 
 using sentencepiece::NormalizerSpec;
@@ -157,7 +157,6 @@ ABSL_FLAG(uint32_t, random_seed, std::numeric_limits<uint32_t>::max(),
           "Seed value for random generator.");
 
 int main(int argc, char* argv[]) {
-  sentencepiece::ScopedResourceDestructor cleaner;
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
 
   sentencepiece::TrainerSpec trainer_spec;

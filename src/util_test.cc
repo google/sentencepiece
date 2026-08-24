@@ -14,37 +14,26 @@
 
 #include "util.h"
 
+#include <gtest/gtest.h>
+
 #include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
 #include "config.h"
-#include "filesystem.h"
 #include "sentencepiece_processor.h"
-#include "testharness.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_format.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/time/clock.h"
-#include "third_party/absl/time/time.h"
 
 namespace sentencepiece {
 namespace {
 constexpr int kMaxUnicode = 0x10FFFF;
-}
-
-TEST(UtilTest, Hex) {
-  for (char32_t a = 0; a < 100000; ++a) {
-    const std::string s = absl::StrFormat("%X", a);
-    CHECK_EQ(a, string_util::HexToInt<char32_t>(s));
-  }
-  const int n = 151414;
-  CHECK_EQ("24F76", absl::StrFormat("%X", n));
-  CHECK_EQ(n, string_util::HexToInt<int>("24F76"));
-  CHECK_EQ(n, string_util::HexToInt<int>("0x24F76"));
 }
 
 TEST(UtilTest, StringViewTest) {
@@ -270,38 +259,6 @@ TEST(UtilTest, UnicodeTextToUTF8Test) {
   EXPECT_EQ("これはtest", string_util::UnicodeTextToUTF8(ut));
 }
 
-TEST(UtilTest, InputOutputBufferTest) {
-  const std::vector<std::string> kData = {
-      "This"
-      "is"
-      "a"
-      "test"};
-
-  {
-    auto output = filesystem::NewWritableFile(
-        util::JoinPath(::testing::TempDir(), "test_file"));
-    for (size_t i = 0; i < kData.size(); ++i) {
-      output->WriteLine(kData[i]);
-    }
-  }
-
-  {
-    auto input = filesystem::NewReadableFile(
-        util::JoinPath(::testing::TempDir(), "test_file"));
-    std::string line;
-    for (size_t i = 0; i < kData.size(); ++i) {
-      EXPECT_TRUE(input->ReadLine(&line));
-      EXPECT_EQ(kData[i], line);
-    }
-    EXPECT_FALSE(input->ReadLine(&line));
-  }
-}
-
-TEST(UtilTest, InputOutputBufferInvalidFileTest) {
-  auto input = filesystem::NewReadableFile("__UNKNOWN__FILE__");
-  EXPECT_FALSE(input->status().ok());
-}
-
 TEST(UtilTest, StatusTest) {
   const absl::Status ok;
   EXPECT_TRUE(ok.ok());
@@ -327,18 +284,6 @@ TEST(UtilTest, StatusTest) {
     EXPECT_TRUE(s.ToString().find("message") != std::string::npos)
         << s.ToString();
   }
-}
-
-TEST(UtilTest, JoinPathTest) {
-#if defined(_WIN32) && !defined(__CYGWIN__)
-  EXPECT_EQ("foo\\bar\\buz", util::JoinPath("foo", "bar", "buz"));
-  EXPECT_EQ("foo\\\\buz", util::JoinPath("foo", "", "buz"));
-#else
-  EXPECT_EQ("foo/bar/buz", util::JoinPath("foo", "bar", "buz"));
-  EXPECT_EQ("foo//buz", util::JoinPath("foo", "", "buz"));
-#endif
-  EXPECT_EQ("foo", util::JoinPath("foo"));
-  EXPECT_EQ("", util::JoinPath(""));
 }
 
 TEST(UtilTest, ReservoirSamplerTest) {

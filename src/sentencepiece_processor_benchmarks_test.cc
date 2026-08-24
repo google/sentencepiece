@@ -12,27 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
+#include <gtest/gtest.h>
+
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/flags.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "filesystem.h"
 #include "model_factory.h"
 #include "model_interface.h"
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
-#include "testharness.h"
-#include "third_party/absl/flags/flag.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/flags.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/str_split.h"
-#include "third_party/absl/strings/string_view.h"
 #include "third_party/benchmark/include/benchmark/benchmark.h"
 #include "util.h"
 
-ABSL_FLAG(std::string, test_srcdir, sentencepiece::util::JoinPath("..", "data"),
-          "Data directory.");
+ABSL_FLAG(std::string, test_srcdir,
+          sentencepiece::filesystem::JoinPath("..", "data"), "Data directory.");
 ABSL_FLAG(std::string, test_tmpdir, "test_tmp", "Temporary directory.");
 
 namespace sentencepiece {
@@ -69,13 +70,13 @@ template <BenchmarkMode kMode>
 void BM_Encode(benchmark::State& state, absl::string_view model_filename,
                absl::string_view input_filename) {
   const std::string model_fullpath =
-      util::JoinPath(testing::SrcDir(), model_filename);
+      filesystem::JoinPath(testing::SrcDir(), model_filename);
   const ModelProto model_proto = LoadModelProto(model_fullpath);
   SentencePieceProcessor processor;
   CHECK_OK(processor.Load(model_proto));
 
   const std::string input_fullpath =
-      util::JoinPath(testing::SrcDir(), input_filename);
+      filesystem::JoinPath(testing::SrcDir(), input_filename);
   std::string input = LoadInput(input_fullpath);
   std::vector<int> ids;
   ThreadPool thread_pool(kNumThreads);
@@ -103,13 +104,13 @@ void BM_Encode_ShortLines(benchmark::State& state,
                           absl::string_view model_filename,
                           absl::string_view input_filename) {
   const std::string model_fullpath =
-      util::JoinPath(testing::SrcDir(), model_filename);
+      filesystem::JoinPath(testing::SrcDir(), model_filename);
   const ModelProto model_proto = LoadModelProto(model_fullpath);
   SentencePieceProcessor processor;
   CHECK_OK(processor.Load(model_proto));
 
   const std::string input_fullpath =
-      util::JoinPath(testing::SrcDir(), input_filename);
+      filesystem::JoinPath(testing::SrcDir(), input_filename);
   std::string input = LoadInput(input_fullpath);
   std::vector<absl::string_view> lines = absl::StrSplit(input, '\n');
   std::vector<int> ids;
@@ -134,13 +135,13 @@ template <DecodeInputMode kInputMode>
 void BM_Decode(benchmark::State& state, absl::string_view model_filename,
                absl::string_view input_filename) {
   const std::string model_fullpath =
-      util::JoinPath(testing::SrcDir(), model_filename);
+      filesystem::JoinPath(testing::SrcDir(), model_filename);
   const ModelProto model_proto = LoadModelProto(model_fullpath);
   SentencePieceProcessor processor;
   CHECK_OK(processor.Load(model_proto));
 
   const std::string input_fullpath =
-      util::JoinPath(testing::SrcDir(), input_filename);
+      filesystem::JoinPath(testing::SrcDir(), input_filename);
   std::string input = LoadInput(input_fullpath);
 
   std::vector<int> ids;

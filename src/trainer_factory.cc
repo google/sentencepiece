@@ -16,9 +16,9 @@
 
 #include <memory>
 
+#include "absl/log/log.h"
 #include "bpe_model_trainer.h"
 #include "char_model_trainer.h"
-#include "third_party/absl/log/log.h"
 #include "unigram_model_trainer.h"
 #include "word_model_trainer.h"
 

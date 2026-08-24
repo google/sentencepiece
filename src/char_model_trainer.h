@@ -15,8 +15,8 @@
 #ifndef CHAR_MODEL_TRAINER_H_
 #define CHAR_MODEL_TRAINER_H_
 
+#include "absl/status/status.h"
 #include "sentencepiece_model.pb.h"
-#include "third_party/absl/status/status.h"
 #include "trainer_interface.h"
 
 namespace sentencepiece {

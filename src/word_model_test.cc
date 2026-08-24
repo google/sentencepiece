@@ -14,10 +14,11 @@
 
 #include "word_model.h"
 
+#include <gtest/gtest.h>
+
 #include <string>
 
 #include "sentencepiece_model.pb.h"
-#include "testharness.h"
 
 namespace sentencepiece {
 namespace word {

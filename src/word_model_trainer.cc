@@ -19,22 +19,23 @@
 #include <string>
 #include <vector>
 
-#include "common.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/status/status.h"
+#include "absl/status/status_macros.h"
+#include "absl/strings/string_view.h"
 #include "model_interface.h"
-#include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/string_view.h"
+#include "ret_check.h"
 
 namespace sentencepiece {
 namespace word {
 
 absl::Status Trainer::Train() {
-  RETURN_IF_ERROR(status());
+  ABSL_RETURN_IF_ERROR(status());
 
   RET_CHECK(normalizer_spec_.escape_whitespaces());
   RET_CHECK_EQ(TrainerSpec::WORD, trainer_spec_.model_type());
 
-  RETURN_IF_ERROR(LoadSentences());
+  ABSL_RETURN_IF_ERROR(LoadSentences());
 
   absl::flat_hash_map<std::string, uint64_t> freq;
   for (const auto& it : sentences_) {

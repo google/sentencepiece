@@ -14,16 +14,19 @@
 
 #include "unigram_model_trainer.h"
 
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include <string>
 #include <vector>
 
+#include "absl/status/status_matchers.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "filesystem.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
-#include "testharness.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_join.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -72,9 +75,10 @@ struct TrainerResult {
 };
 
 TrainerResult RunTrainer(const std::vector<std::string>& input, int size) {
-  const std::string input_file = util::JoinPath(::testing::TempDir(), "input");
+  const std::string input_file =
+      filesystem::JoinPath(::testing::TempDir(), "input");
   const std::string model_prefix =
-      util::JoinPath(::testing::TempDir(), "model");
+      filesystem::JoinPath(::testing::TempDir(), "model");
   {
     auto output = filesystem::NewWritableFile(input_file);
     for (const auto& line : input) {
@@ -99,7 +103,7 @@ TrainerResult RunTrainer(const std::vector<std::string>& input, int size) {
 
   {
     Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    EXPECT_OK(trainer.LoadSentences());
+    ABSL_EXPECT_OK(trainer.LoadSentences());
     TrainerModel::SentencePieces res = trainer.MakeSeedSentencePieces();
 
     for (const auto& piece : res) {
@@ -153,12 +157,13 @@ namespace {
 static constexpr char kTestInputData[] = "wagahaiwa_nekodearu.txt";
 
 TEST(UnigramTrainerTest, EndToEndTest) {
-  const std::string input = util::JoinPath(::testing::SrcDir(), kTestInputData);
+  const std::string input =
+      filesystem::JoinPath(::testing::SrcDir(), kTestInputData);
 
   ASSERT_TRUE(
       SentencePieceTrainer::Train(
           absl::StrCat("--model_prefix=",
-                       util::JoinPath(::testing::TempDir(), "tmp_model"),
+                       filesystem::JoinPath(::testing::TempDir(), "tmp_model"),
                        " --input=", input,
                        " --vocab_size=8000 --normalization_rule_name=identity",
                        " --model_type=unigram --user_defined_symbols=<user>",
@@ -167,7 +172,8 @@ TEST(UnigramTrainerTest, EndToEndTest) {
 
   SentencePieceProcessor sp;
   EXPECT_TRUE(
-      sp.Load(util::JoinPath(::testing::TempDir(), "tmp_model.model")).ok());
+      sp.Load(filesystem::JoinPath(::testing::TempDir(), "tmp_model.model"))
+          .ok());
   EXPECT_EQ(8000, sp.GetPieceSize());
 
   const int cid = sp.PieceToId("<ctrl>");

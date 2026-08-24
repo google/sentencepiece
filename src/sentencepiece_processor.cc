@@ -24,29 +24,30 @@
 #include <utility>
 #include <vector>
 
-#include "common.h"
+#include "absl/cleanup/cleanup.h"
+#include "absl/container/fixed_array.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/functional/function_ref.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/status_macros.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_replace.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "absl/strings/strip.h"
+#include "absl/synchronization/blocking_counter.h"
+#include "absl/synchronization/mutex.h"
 #include "filesystem.h"
 #include "google/protobuf/arena.h"
 #include "model_factory.h"
 #include "model_interface.h"
 #include "normalizer.h"
+#include "ret_check.h"
 #include "sentencepiece.pb.h"
-#include "third_party/absl/cleanup/cleanup.h"
-#include "third_party/absl/container/fixed_array.h"
-#include "third_party/absl/container/flat_hash_set.h"
-#include "third_party/absl/functional/function_ref.h"
-#include "third_party/absl/log/check.h"
-#include "third_party/absl/log/log.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/strings/numbers.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_replace.h"
-#include "third_party/absl/strings/str_split.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/strings/strip.h"
-#include "third_party/absl/synchronization/blocking_counter.h"
-#include "third_party/absl/synchronization/mutex.h"
 #include "unigram_model.h"
 #include "util.h"
 
@@ -76,7 +77,7 @@ SentencePieceProcessor::~SentencePieceProcessor() {}
 
 absl::Status SentencePieceProcessor::Load(absl::string_view filename) {
   auto model_proto = std::make_unique<ModelProto>();
-  RETURN_IF_ERROR(io::LoadModelProto(filename, model_proto.get()));
+  ABSL_RETURN_IF_ERROR(io::LoadModelProto(filename, model_proto.get()));
   return Load(std::move(model_proto));
 }
 
@@ -112,7 +113,7 @@ absl::Status SentencePieceProcessor::Load(
   // Escapes user-defined-symbols in normalizer.
   normalizer_->SetPrefixMatcher(model_->prefix_matcher());
 
-  RETURN_IF_ERROR(status());
+  ABSL_RETURN_IF_ERROR(status());
 
   // Precomputes and caches special token IDs.
   // Note that these IDs are not always the same as the IDs in TrainerSpec.
@@ -131,7 +132,7 @@ absl::Status SentencePieceProcessor::Load(
   // Running self-testing.
   std::vector<std::string> errors, sps;
   for (const auto& s : model_proto_->self_test_data().samples()) {
-    RETURN_IF_ERROR(Encode(s.input(), &sps));
+    ABSL_RETURN_IF_ERROR(Encode(s.input(), &sps));
     const std::string result = absl::StrJoin(sps, " ");
     if (!model_->VerifyOutputsEquivalent(s.expected(), result)) {
       errors.emplace_back(
@@ -165,18 +166,18 @@ absl::Status SentencePieceProcessor::SetDecodeExtraOptions(
 absl::Status SentencePieceProcessor::status() const {
   RET_CHECK(model_) << "Model is not initialized.";
   RET_CHECK(normalizer_) << "Normalizer is not initialized.";
-  RETURN_IF_ERROR(model_->status());
-  RETURN_IF_ERROR(normalizer_->status());
+  ABSL_RETURN_IF_ERROR(model_->status());
+  ABSL_RETURN_IF_ERROR(normalizer_->status());
   return absl::OkStatus();
 }
 
 #define RET_CHECK_STATUS_STL(container)               \
-  RETURN_IF_ERROR(status());                          \
+  ABSL_RETURN_IF_ERROR(status());                     \
   RET_CHECK(container) << "output container is null"; \
   container->clear();
 
 #define RET_CHECK_STATUS_PROTO(proto)         \
-  RETURN_IF_ERROR(status());                  \
+  ABSL_RETURN_IF_ERROR(status());             \
   RET_CHECK(proto) << "output proto is null"; \
   proto->Clear();
 
@@ -216,7 +217,7 @@ absl::Status SentencePieceProcessor::NBestEncode(
 
   Arena arena;
   auto* spt = Arena::Create<NBestSentencePieceText>(&arena);
-  RETURN_IF_ERROR(NBestEncode(input, nbest_size, spt));
+  ABSL_RETURN_IF_ERROR(NBestEncode(input, nbest_size, spt));
   pieces->reserve(spt->nbests().size());
   for (const auto& nbest : spt->nbests()) {
     std::vector<std::string>& result = pieces->emplace_back();
@@ -236,7 +237,7 @@ absl::Status SentencePieceProcessor::NBestEncode(
 
   Arena arena;
   auto* spt = Arena::Create<NBestSentencePieceText>(&arena);
-  RETURN_IF_ERROR(NBestEncode(input, nbest_size, spt));
+  ABSL_RETURN_IF_ERROR(NBestEncode(input, nbest_size, spt));
   ids->reserve(spt->nbests().size());
   for (const auto& nbest : spt->nbests()) {
     std::vector<int>& result = ids->emplace_back();
@@ -256,7 +257,7 @@ absl::Status SentencePieceProcessor::SampleEncode(
 
   Arena arena;
   auto* spt = Arena::Create<SentencePieceText>(&arena);
-  RETURN_IF_ERROR(SampleEncode(input, nbest_size, alpha, spt));
+  ABSL_RETURN_IF_ERROR(SampleEncode(input, nbest_size, alpha, spt));
   pieces->reserve(spt->pieces().size());
   for (const auto& sp : spt->pieces()) {
     pieces->emplace_back(sp.piece());
@@ -272,7 +273,7 @@ absl::Status SentencePieceProcessor::SampleEncode(absl::string_view input,
 
   Arena arena;
   auto* spt = Arena::Create<SentencePieceText>(&arena);
-  RETURN_IF_ERROR(SampleEncode(input, nbest_size, alpha, spt));
+  ABSL_RETURN_IF_ERROR(SampleEncode(input, nbest_size, alpha, spt));
   for (const auto& sp : spt->pieces()) {
     ids->emplace_back(sp.id());
   }
@@ -371,7 +372,7 @@ absl::Status SentencePieceProcessor::PopulateSentencePieceText(
 
   spt->set_text(input.data(), input.size());
 
-  RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, spt));
+  ABSL_RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, spt));
 
   return absl::OkStatus();
 }  // namespace sentencepiece
@@ -382,10 +383,11 @@ absl::Status SentencePieceProcessor::Encode(absl::string_view input,
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+  ABSL_RETURN_IF_ERROR(
+      normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
   const auto result = model_->Encode(normalized);
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       PopulateSentencePieceText(input, normalized, norm_to_orig, result, spt));
 
   return absl::OkStatus();
@@ -401,7 +403,8 @@ absl::Status SentencePieceProcessor::NBestEncode(
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+  ABSL_RETURN_IF_ERROR(
+      normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
   RET_CHECK(model_->IsNBestEncodeAvailable())
       << "NBestEncode is not available for the current model.";
@@ -412,8 +415,8 @@ absl::Status SentencePieceProcessor::NBestEncode(
   for (const auto& result : nbests) {
     auto* spt = nbest_spt->add_nbests();
     spt->set_score(result.second);
-    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
-                                              result.first, spt));
+    ABSL_RETURN_IF_ERROR(PopulateSentencePieceText(
+        input, normalized, norm_to_orig, result.first, spt));
   }
 
   return absl::OkStatus();
@@ -431,18 +434,19 @@ absl::Status SentencePieceProcessor::SampleEncode(
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+  ABSL_RETURN_IF_ERROR(
+      normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
   if (!model_->IsNBestEncodeAvailable() || nbest_size < 0) {
     RET_CHECK(model_->IsSampleEncodeAvailable())
         << "SampleEncode is not available for the current model.";
     const auto result = model_->SampleEncode(normalized, alpha);
-    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
-                                              result, spt));
+    ABSL_RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized,
+                                                   norm_to_orig, result, spt));
   } else if (nbest_size == 1 || nbest_size == 0) {
     const auto result = model_->Encode(normalized);
-    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
-                                              result, spt));
+    ABSL_RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized,
+                                                   norm_to_orig, result, spt));
   } else if (nbest_size > 1) {
     const auto nbests = model_->NBestEncode(normalized, nbest_size);
     RET_CHECK(!nbests.empty()) << "NBestEncode returns empty result.";
@@ -461,8 +465,8 @@ absl::Status SentencePieceProcessor::SampleEncode(
 
     auto* mt = random::GetRandomGenerator();
     std::discrete_distribution<int> dist(probs.begin(), probs.end());
-    RETURN_IF_ERROR(PopulateSentencePieceText(input, normalized, norm_to_orig,
-                                              nbests[dist(*mt)].first, spt));
+    ABSL_RETURN_IF_ERROR(PopulateSentencePieceText(
+        input, normalized, norm_to_orig, nbests[dist(*mt)].first, spt));
   }
 
   return absl::OkStatus();
@@ -521,7 +525,7 @@ absl::Status SentencePieceProcessor::Decode(
     sp->set_id(PieceToId(w));
   }
 
-  RETURN_IF_ERROR(ApplyExtraOptions(decode_extra_options_, spt));
+  ABSL_RETURN_IF_ERROR(ApplyExtraOptions(decode_extra_options_, spt));
 
   std::string* text = spt->mutable_text();
   auto SetSurface = [&](int index, absl::string_view surface) {
@@ -593,7 +597,7 @@ absl::Status SentencePieceProcessor::Decode(
   for (int i = 0; i < spt->pieces_size(); ++i) {
     const auto& sp = spt->pieces(i);
     if (!IsByte(sp.id())) {
-      RETURN_IF_ERROR(ProcessBytePieces(byte_start, i));
+      ABSL_RETURN_IF_ERROR(ProcessBytePieces(byte_start, i));
 
       // if we have seen a bos_ws token or any non-empty token
       if (bos_ws_seen || !text->empty()) is_bos_ws = false;
@@ -605,7 +609,7 @@ absl::Status SentencePieceProcessor::Decode(
       SetSurface(i, decoded);
     }
   }
-  RETURN_IF_ERROR(ProcessBytePieces(byte_start, spt->pieces_size()));
+  ABSL_RETURN_IF_ERROR(ProcessBytePieces(byte_start, spt->pieces_size()));
 
   if (denormalizer_) {
     *text = denormalizer_->Normalize(*text);
@@ -770,7 +774,7 @@ ABSL_ATTRIBUTE_COLD absl::Status ReparseBadRanges(
                     input_chunk, normalized_chunk, norm_to_orig_chunk);
     auto encode_result = model.Encode(normalized_chunk);
     auto* new_chunk = arena.Create<SentencePieceText>(&arena);
-    RETURN_IF_ERROR(populate_sentence_piece_text(
+    ABSL_RETURN_IF_ERROR(populate_sentence_piece_text(
         input_chunk, normalized_chunk, norm_to_orig_chunk, encode_result,
         new_chunk, std::get<0>(new_boundaries)));
 
@@ -822,7 +826,8 @@ absl::Status SentencePieceProcessor::ParallelEncodeInternal(
 
   std::string normalized;
   std::vector<size_t> norm_to_orig;
-  RETURN_IF_ERROR(normalizer_->Normalize(input, &normalized, &norm_to_orig));
+  ABSL_RETURN_IF_ERROR(
+      normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
   // Set the overlap to be 2x the maximum piece length.
   size_t overlap = model_proto().trainer_spec().max_sentencepiece_length() * 2;
@@ -893,7 +898,7 @@ absl::Status SentencePieceProcessor::ParallelEncodeInternal(
     barrier.Wait();
     // Note: This needs to be after the barrier.Wait() call resolves, since the
     // threads may still be running (and updating the status).
-    RETURN_IF_ERROR(encoding_status);
+    ABSL_RETURN_IF_ERROR(encoding_status);
   }
 
   // Now stitch the chunks together.
@@ -974,7 +979,7 @@ absl::Status SentencePieceProcessor::ParallelEncodeInternal(
       bad_joins.clear();
     }
 
-    RETURN_IF_ERROR(ReparseBadRanges(
+    ABSL_RETURN_IF_ERROR(ReparseBadRanges(
         bad_joins, input, normalized, norm_to_orig, arena, *model_,
         [this](absl::string_view input, absl::string_view normalized,
                absl::Span<const size_t> norm_to_orig,
@@ -1195,7 +1200,7 @@ absl::Status SentencePieceProcessor::ParseExtraOptions(
   extra_options->clear();
   if (extra_option.empty()) return absl::OkStatus();
 
-  RETURN_IF_ERROR(status());
+  ABSL_RETURN_IF_ERROR(status());
 
   static std::map<absl::string_view, SentencePieceProcessor::ExtraOption>
       extra_option_map = {{"bos", SentencePieceProcessor::BOS},
@@ -1255,7 +1260,7 @@ absl::Status SentencePieceProcessor::EncodeOptimized(
   }
 
   std::string normalized;
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       normalizer_->Normalize(input, &normalized, /*norm_to_orig=*/nullptr));
   const EncodeResult result = model_->Encode(normalized);
   const bool byte_fallback_enabled = model_->ByteFallbackEnabled();
@@ -1333,7 +1338,7 @@ absl::Status SentencePieceProcessor::DecodeOptimized(
 
   if (!decode_extra_options_.empty()) {
     work_input.assign(input.begin(), input.end());
-    RETURN_IF_ERROR(ApplyExtraOptions(decode_extra_options_, &work_input));
+    ABSL_RETURN_IF_ERROR(ApplyExtraOptions(decode_extra_options_, &work_input));
     active_input = work_input;
   }
 
@@ -1386,7 +1391,7 @@ absl::Status SentencePieceProcessor::DecodeOptimized(
       RET_CHECK_LE(0, byte);
       byte_queue.append(1, byte);
     } else {
-      RETURN_IF_ERROR(ProcessByteQueue());
+      ABSL_RETURN_IF_ERROR(ProcessByteQueue());
       if (!detokenized->empty()) {
         is_bos_ws = false;
       }
@@ -1425,7 +1430,7 @@ absl::Status SentencePieceProcessor::DecodeOptimized(
       }
     }
   }
-  RETURN_IF_ERROR(ProcessByteQueue());
+  ABSL_RETURN_IF_ERROR(ProcessByteQueue());
 
   if (denormalizer_) {
     *detokenized = denormalizer_->Normalize(*detokenized);
@@ -1442,7 +1447,7 @@ absl::Status LoadModelProto(absl::string_view filename,
   }
 
   auto input = filesystem::NewReadableFile(filename, true);
-  RETURN_IF_ERROR(input->status());
+  ABSL_RETURN_IF_ERROR(input->status());
   std::string serialized;
   if (!input->ReadAll(&serialized)) {
     return absl::InternalError(absl::StrCat("could not read ", filename));
@@ -1461,7 +1466,7 @@ absl::Status SaveModelProto(absl::string_view filename,
     return absl::NotFoundError("model file path should not be empty.");
   }
   auto output = filesystem::NewWritableFile(filename, true);
-  RETURN_IF_ERROR(output->status());
+  ABSL_RETURN_IF_ERROR(output->status());
   RET_CHECK(output->Write(model_proto.SerializeAsString()));
 
   return absl::OkStatus();
