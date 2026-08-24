@@ -191,7 +191,7 @@ if (SPM_ABSL_PROVIDER STREQUAL "module")
   FetchContent_Declare(
     abseil-cpp
     GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
-    GIT_TAG 20260526.0
+    GIT_TAG 20260817.0
     GIT_SHALLOW TRUE
   )
   FetchContent_MakeAvailable(abseil-cpp)
@@ -231,7 +231,7 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
   FetchContent_Declare(
     protobuf
     GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-    GIT_TAG v35.1
+    GIT_TAG v36.0
     GIT_SHALLOW TRUE
   )
   FetchContent_MakeAvailable(protobuf)
