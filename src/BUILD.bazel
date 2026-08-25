@@ -1,0 +1,362 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+
+package(default_visibility = ["//visibility:private"])
+
+# Protocol buffers
+proto_library(
+    name = "sentencepiece_proto",
+    srcs = ["sentencepiece.proto"],
+    visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "sentencepiece_cc_proto",
+    deps = [":sentencepiece_proto"],
+    visibility = ["//visibility:public"],
+)
+
+proto_library(
+    name = "sentencepiece_model_proto",
+    srcs = ["sentencepiece_model.proto"],
+    visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "sentencepiece_model_cc_proto",
+    deps = [":sentencepiece_model_proto"],
+    visibility = ["//visibility:public"],
+)
+
+# Config header generation (internal)
+genrule(
+    name = "config_h",
+    srcs = [
+        "//:VERSION.txt",
+        "//:config.h.in",
+    ],
+    outs = ["config.h"],
+    cmd = """
+VERSION=$$(cat $(location //:VERSION.txt))
+sed -e "s/@PROJECT_VERSION@/$$VERSION/g" \
+    -e "s/@PROJECT_NAME@/sentencepiece/g" \
+    -e "s|@INSTALL_DATADIR@||g" \
+    $(location //:config.h.in) > $@
+""",
+)
+
+cc_library(
+    name = "config",
+    hdrs = [":config.h"],
+    includes = ["."],
+)
+
+# Core SentencePiece processor library (public)
+cc_library(
+    name = "sentencepiece_processor",
+    srcs = [
+        "bpe_model.cc",
+        "char_model.cc",
+        "filesystem.cc",
+        "init.cc",
+        "model_factory.cc",
+        "model_interface.cc",
+        "normalizer.cc",
+        "sentencepiece_processor.cc",
+        "unigram_model.cc",
+        "util.cc",
+        "word_model.cc",
+    ],
+    hdrs = [
+        "bpe_model.h",
+        "char_model.h",
+        "filesystem.h",
+        "freelist.h",
+        "gtest_prod.h",
+        "init.h",
+        "model_factory.h",
+        "model_interface.h",
+        "normalizer.h",
+        "ret_check.h",
+        "sentencepiece_processor.h",
+        "unigram_model.h",
+        "util.h",
+        "word_model.h",
+    ],
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":config",
+        ":sentencepiece_cc_proto",
+        ":sentencepiece_model_cc_proto",
+        "//third_party:darts_clone",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/base:no_destructor",
+        "@com_google_absl//absl/cleanup",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/functional:any_invocable",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:flags",
+        "@com_google_absl//absl/log:initialize",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:status_builder",
+        "@com_google_absl//absl/status:status_macros",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
+        "@com_google_protobuf//:protobuf_lite",
+    ],
+)
+
+# SentencePiece trainer library (public)
+cc_library(
+    name = "sentencepiece_trainer",
+    srcs = [
+        "bpe_model_trainer.cc",
+        "builder.cc",
+        "char_model_trainer.cc",
+        "sentencepiece_trainer.cc",
+        "trainer_factory.cc",
+        "trainer_interface.cc",
+        "unicode_script.cc",
+        "unigram_model_trainer.cc",
+        "word_model_trainer.cc",
+    ],
+    hdrs = [
+        "bpe_model_trainer.h",
+        "builder.h",
+        "char_model_trainer.h",
+        "normalization_rule.h",
+        "sentencepiece_trainer.h",
+        "spec_parser.h",
+        "trainer_factory.h",
+        "trainer_interface.h",
+        "unicode_script.h",
+        "unicode_script_map.h",
+        "unigram_model_trainer.h",
+        "word_model_trainer.h",
+    ],
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sentencepiece_processor",
+        "//third_party:darts_clone",
+        "//third_party:libsais",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/container:fixed_array",
+    ],
+)
+
+# Aliases matching root target names (public)
+alias(
+    name = "sentencepiece",
+    actual = ":sentencepiece_processor",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "sentencepiece_train",
+    actual = ":sentencepiece_trainer",
+    visibility = ["//visibility:public"],
+)
+
+# Shared library (.so) targets (public)
+cc_binary(
+    name = "libsentencepiece.so",
+    linkshared = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sentencepiece_processor",
+    ],
+)
+
+cc_binary(
+    name = "libsentencepiece_train.so",
+    linkshared = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sentencepiece_processor",
+        ":sentencepiece_trainer",
+    ],
+)
+
+# Executables (public)
+cc_binary(
+    name = "spm_encode",
+    srcs = ["spm_encode_main.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sentencepiece_processor",
+        ":sentencepiece_trainer",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+    ],
+)
+
+cc_binary(
+    name = "spm_decode",
+    srcs = ["spm_decode_main.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sentencepiece_processor",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+    ],
+)
+
+cc_binary(
+    name = "spm_normalize",
+    srcs = ["spm_normalize_main.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sentencepiece_processor",
+        ":sentencepiece_trainer",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+    ],
+)
+
+cc_binary(
+    name = "spm_train",
+    srcs = ["spm_train_main.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sentencepiece_processor",
+        ":sentencepiece_trainer",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+    ],
+)
+
+cc_binary(
+    name = "spm_export_vocab",
+    srcs = ["spm_export_vocab_main.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sentencepiece_processor",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+    ],
+)
+
+cc_binary(
+    name = "spm_eval",
+    srcs = ["spm_eval_main.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sentencepiece_processor",
+        ":sentencepiece_trainer",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+    ],
+)
+
+cc_binary(
+    name = "compile_charsmap",
+    srcs = ["compile_charsmap_main.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sentencepiece_processor",
+        ":sentencepiece_trainer",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+    ],
+)
+
+# Test runner library (internal)
+cc_library(
+    name = "test_main",
+    testonly = True,
+    srcs = ["test_main.cc"],
+    deps = [
+        ":sentencepiece_processor",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+# Common test dependencies (internal)
+TEST_DEPS = [
+    ":sentencepiece_processor",
+    ":sentencepiece_trainer",
+    ":test_main",
+    "@com_google_absl//absl/status:status_matchers",
+    "@com_google_googletest//:gtest",
+]
+
+# All-in-one test target matching CMake's spm_test (internal)
+cc_test(
+    name = "spm_test",
+    srcs = [
+        "bpe_model_test.cc",
+        "bpe_model_trainer_test.cc",
+        "builder_test.cc",
+        "char_model_test.cc",
+        "char_model_trainer_test.cc",
+        "filesystem_test.cc",
+        "invalid_model_test.cc",
+        "model_factory_test.cc",
+        "model_interface_test.cc",
+        "normalizer_test.cc",
+        "sentencepiece_processor_parallel_test.cc",
+        "sentencepiece_processor_test.cc",
+        "sentencepiece_trainer_test.cc",
+        "trainer_factory_test.cc",
+        "trainer_interface_test.cc",
+        "unicode_script_test.cc",
+        "unigram_model_test.cc",
+        "unigram_model_trainer_test.cc",
+        "util_test.cc",
+        "word_model_test.cc",
+        "word_model_trainer_test.cc",
+    ],
+    args = ["--test_srcdir=data"],
+    data = ["//data:test_data"],
+    deps = TEST_DEPS,
+)
+
+# Individual unit tests for fast incremental execution (internal)
+TEST_NAMES = [
+    "bpe_model",
+    "bpe_model_trainer",
+    "builder",
+    "char_model",
+    "char_model_trainer",
+    "filesystem",
+    "invalid_model",
+    "model_factory",
+    "model_interface",
+    "normalizer",
+    "sentencepiece_processor_parallel",
+    "sentencepiece_processor",
+    "sentencepiece_trainer",
+    "trainer_factory",
+    "trainer_interface",
+    "unicode_script",
+    "unigram_model",
+    "unigram_model_trainer",
+    "util",
+    "word_model",
+    "word_model_trainer",
+]
+
+[
+    cc_test(
+        name = name + "_test",
+        srcs = [name + "_test.cc"],
+        args = ["--test_srcdir=data"],
+        data = ["//data:test_data"],
+        deps = TEST_DEPS,
+    )
+    for name in TEST_NAMES
+]

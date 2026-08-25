@@ -1,0 +1,69 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(
+    [
+        "VERSION.txt",
+        "config.h.in",
+    ],
+    visibility = ["//src:__pkg__"],
+)
+
+exports_files(["LICENSE"])
+
+# Public alias targets
+alias(
+    name = "sentencepiece",
+    actual = "//src:sentencepiece",
+)
+
+alias(
+    name = "sentencepiece_train",
+    actual = "//src:sentencepiece_train",
+)
+
+alias(
+    name = "sentencepiece_processor",
+    actual = "//src:sentencepiece_processor",
+)
+
+alias(
+    name = "sentencepiece_trainer",
+    actual = "//src:sentencepiece_trainer",
+)
+
+alias(
+    name = "spm_encode",
+    actual = "//src:spm_encode",
+)
+
+alias(
+    name = "spm_decode",
+    actual = "//src:spm_decode",
+)
+
+alias(
+    name = "spm_normalize",
+    actual = "//src:spm_normalize",
+)
+
+alias(
+    name = "spm_train",
+    actual = "//src:spm_train",
+)
+
+alias(
+    name = "spm_export_vocab",
+    actual = "//src:spm_export_vocab",
+)
+
+alias(
+    name = "spm_eval",
+    actual = "//src:spm_eval",
+)
+
+alias(
+    name = "compile_charsmap",
+    actual = "//src:compile_charsmap",
+)

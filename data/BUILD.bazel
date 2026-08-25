@@ -1,0 +1,11 @@
+package(default_visibility = ["//src:__pkg__"])
+
+filegroup(
+    name = "test_data",
+    srcs = glob([
+        "*.txt",
+        "*.model",
+        "*.tsv",
+        "*.bin",
+    ]),
+)

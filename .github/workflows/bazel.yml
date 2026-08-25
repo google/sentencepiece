@@ -1,0 +1,137 @@
+name: CI for Bazel build
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+  release:
+    types: [ created ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & Test (${{ matrix.os }} - ${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux (x86_64 & ARM64)
+          - os: ubuntu-latest
+            arch: x64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+          # macOS (Apple Silicon ARM64)
+          - os: macos-latest
+            arch: arm64
+          # Windows (x86_64 & ARM64)
+          - os: windows-latest
+            arch: x64
+          - os: windows-11-arm
+            arch: arm64
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
+    env:
+      MSYS_NO_PATHCONV: "1"
+      MSYS2_ARG_CONV_EXCL: "*"
+
+    permissions:
+      contents: write # for svenstaro/upload-release-action
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Mount Bazel caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/bazel-disk
+            ~/.cache/bazel-repo
+          key: bazel-${{ matrix.os }}-${{ matrix.arch }}-${{ hashFiles('MODULE.bazel', '.bazelrc', '.bazelversion') }}
+          restore-keys: |
+            bazel-${{ matrix.os }}-${{ matrix.arch }}-
+
+      - name: Configure Bazel
+        shell: bash
+        run: |
+          home="$HOME"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            home="$(cygpath -m "$HOME")"
+            echo "startup --output_user_root=C:/bzl" >> "$HOME/.bazelrc"
+            echo "build --enable_runfiles" >> "$HOME/.bazelrc"
+            if [[ -z "${BAZEL_SH:-}" ]]; then
+              echo 'BAZEL_SH=C:\Program Files\Git\bin\bash.exe' >> "$GITHUB_ENV"
+            fi
+          fi
+          echo "build --disk_cache=$home/.cache/bazel-disk" >> "$HOME/.bazelrc"
+          echo "build --repository_cache=$home/.cache/bazel-repo" >> "$HOME/.bazelrc"
+
+      - name: Build all targets
+        shell: bash
+        run: bazel build //...
+
+      - name: Run all tests
+        shell: bash
+        run: bazel test //... --test_output=errors
+
+      - name: Package artifacts (Linux / macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p build/root/bin build/root/include build/root/lib
+          for bin in spm_encode spm_decode spm_normalize spm_train spm_export_vocab spm_eval compile_charsmap; do
+            if [ -f "bazel-bin/src/$bin" ]; then
+              cp "bazel-bin/src/$bin" build/root/bin/
+              chmod +x "build/root/bin/$bin"
+            fi
+          done
+          cp bazel-bin/src/libsentencepiece*.so build/root/lib/ 2>/dev/null || cp bazel-bin/src/libsentencepiece*.dylib build/root/lib/ 2>/dev/null || true
+          cp src/sentencepiece_processor.h src/sentencepiece_trainer.h build/root/include/
+          cp LICENSE build/root/
+          cd build && 7z a "sentencepiece-bazel-${{ matrix.os }}-${{ matrix.arch }}.7z" ./root/*
+
+      - name: Package artifacts (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build/root/bin, build/root/include, build/root/lib
+          $bins = @("spm_encode.exe", "spm_decode.exe", "spm_normalize.exe", "spm_train.exe", "spm_export_vocab.exe", "spm_eval.exe", "compile_charsmap.exe")
+          foreach ($bin in $bins) {
+            if (Test-Path "bazel-bin/src/$bin") {
+              Copy-Item "bazel-bin/src/$bin" build/root/bin/
+            }
+          }
+          Copy-Item "bazel-bin/src/*.dll" build/root/bin/ -ErrorAction SilentlyContinue
+          Copy-Item "bazel-bin/src/*.lib" build/root/lib/ -ErrorAction SilentlyContinue
+          Copy-Item "src/sentencepiece_processor.h", "src/sentencepiece_trainer.h" build/root/include/
+          Copy-Item "LICENSE" build/root/
+          cd build; 7z a "sentencepiece-bazel-${{ matrix.os }}-${{ matrix.arch }}.7z" ./root/*
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentencepiece-bazel-${{ matrix.os }}-${{ matrix.arch }}
+          path: ./build/*.7z
+          overwrite: false
+
+      - name: Upload Release Assets
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./build/*.7z
+          tag: ${{ github.ref }}
+          overwrite: true
+          prerelease: true
+          file_glob: true
+          body: "SentencePiece Release (Built with Bazel)"

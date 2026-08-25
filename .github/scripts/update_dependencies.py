@@ -24,6 +24,8 @@ from pathlib import Path
 # .github/scripts/ -> repository root
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CMAKELISTS_PATH = REPO_ROOT / "CMakeLists.txt"
+MODULE_BAZEL_PATH = REPO_ROOT / "MODULE.bazel"
+VERSION_TXT_PATH = REPO_ROOT / "VERSION.txt"
 
 # Security & sanity regex patterns
 VALID_TAG_PATTERN = re.compile(r"^[a-zA-Z0-9_.\-]+$")
@@ -97,6 +99,7 @@ def update_cmake_content(content: str):
     )
 
     updates = []
+    latest_tags_map = {}
 
     def replace_block(match):
         full_block = match.group(0)
@@ -122,6 +125,8 @@ def update_cmake_content(content: str):
             print(f"  -> Could not determine latest valid tag for {repo_path}. Keeping current.")
             return full_block
 
+        latest_tags_map[target_name] = latest_tag
+
         if current_tag != latest_tag:
             print(f"  -> Updating {target_name}: {current_tag} -> {latest_tag}")
             updates.append(f"{target_name}: {current_tag} -> {latest_tag}")
@@ -138,27 +143,71 @@ def update_cmake_content(content: str):
             return full_block
 
     new_content = pattern.sub(replace_block, content)
+    return new_content, updates, latest_tags_map
+
+
+def update_module_bazel_content(content: str, latest_tags_map: dict):
+    updates = []
+    new_content = content
+
+    # 1. Synchronize version with VERSION.txt
+    if VERSION_TXT_PATH.exists():
+        version_val = VERSION_TXT_PATH.read_text(encoding="utf-8").strip()
+        ver_pattern = re.compile(
+            r'(module\s*\(\s*name\s*=\s*"sentencepiece"\s*,\s*version\s*=\s*)"([^"]+)"',
+            re.MULTILINE,
+        )
+        match = ver_pattern.search(new_content)
+        if match and match.group(2) != version_val:
+            current_ver = match.group(2)
+            new_content = ver_pattern.sub(rf'\g<1>"{version_val}"', new_content, count=1)
+            updates.append(f"MODULE.bazel version: {current_ver} -> {version_val}")
+
+    # 2. Update abseil-cpp git_override tag if present
+    absl_tag = latest_tags_map.get("abseil-cpp")
+    if absl_tag:
+        pattern = re.compile(
+            r'(git_override\s*\(\s*module_name\s*=\s*"abseil-cpp"[\s\S]*?tag\s*=\s*)"([^"]+)"',
+            re.MULTILINE,
+        )
+        match = pattern.search(new_content)
+        if match:
+            current_tag = match.group(2)
+            if current_tag != absl_tag:
+                new_content = pattern.sub(rf'\g<1>"{absl_tag}"', new_content, count=1)
+                updates.append(f"MODULE.bazel abseil-cpp: {current_tag} -> {absl_tag}")
+
     return new_content, updates
 
 
 def main():
-    if not CMAKELISTS_PATH.exists():
-        print(f"Error: {CMAKELISTS_PATH} not found.", file=sys.stderr)
-        sys.exit(1)
+    all_updates = []
 
-    content = CMAKELISTS_PATH.read_text(encoding="utf-8")
-    new_content, updates = update_cmake_content(content)
+    if CMAKELISTS_PATH.exists():
+        cmake_content = CMAKELISTS_PATH.read_text(encoding="utf-8")
+        new_cmake, cmake_updates, latest_tags_map = update_cmake_content(cmake_content)
+        if cmake_updates:
+            CMAKELISTS_PATH.write_text(new_cmake, encoding="utf-8")
+            all_updates.extend(cmake_updates)
+    else:
+        latest_tags_map = {}
 
-    if updates:
-        CMAKELISTS_PATH.write_text(new_content, encoding="utf-8")
-        print("\nSuccessfully updated CMakeLists.txt with:")
-        for u in updates:
+    if MODULE_BAZEL_PATH.exists():
+        bazel_content = MODULE_BAZEL_PATH.read_text(encoding="utf-8")
+        new_bazel, bazel_updates = update_module_bazel_content(bazel_content, latest_tags_map)
+        if bazel_updates:
+            MODULE_BAZEL_PATH.write_text(new_bazel, encoding="utf-8")
+            all_updates.extend(bazel_updates)
+
+    if all_updates:
+        print("\nSuccessfully updated dependencies:")
+        for u in all_updates:
             print(f"  * {u}")
         summary_file = os.getenv("GITHUB_STEP_SUMMARY_PATH", "/tmp/update_summary.txt")
         with open(summary_file, "w", encoding="utf-8") as f:
-            f.write(", ".join(updates))
+            f.write(", ".join(all_updates))
     else:
-        print("\nAll FetchContent dependencies in CMakeLists.txt are already up to date.")
+        print("\nAll dependencies in CMakeLists.txt and MODULE.bazel are up to date.")
 
 
 if __name__ == "__main__":

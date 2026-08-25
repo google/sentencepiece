@@ -1,0 +1,17 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+cc_library(
+    name = "darts_clone",
+    hdrs = ["darts_clone/darts.h"],
+    includes = ["."],
+)
+
+cc_library(
+    name = "libsais",
+    srcs = ["libsais/libsais.c"],
+    hdrs = ["libsais/libsais.h"],
+    includes = ["."],
+    copts = ["-O3"],
+)

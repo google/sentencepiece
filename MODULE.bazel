@@ -1,0 +1,24 @@
+module(
+    name = "sentencepiece",
+    version = "0.2.3",
+)
+
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "bazel_skylib", version = "1.9.2")
+bazel_dep(name = "rules_cc", version = "0.2.22")
+bazel_dep(name = "rules_proto", version = "7.1.0")
+bazel_dep(name = "protobuf", version = "35.0", repo_name = "com_google_protobuf")
+bazel_dep(name = "abseil-cpp", version = "20250814.1", repo_name = "com_google_absl")
+bazel_dep(name = "googletest", version = "1.16.0", repo_name = "com_google_googletest")
+
+git_override(
+    module_name = "abseil-cpp",
+    remote = "https://github.com/abseil/abseil-cpp.git",
+    tag = "20260817.0",
+)
+
+git_override(
+    module_name = "googletest",
+    remote = "https://github.com/google/googletest.git",
+    branch = "main",
+)
