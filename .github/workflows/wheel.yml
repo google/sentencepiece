@@ -33,8 +33,6 @@ jobs:
           - os: windows-11-arm
             cibw_arch: auto
           - os: macos-latest
-            cibw_arch: x86_64
-          - os: macos-latest
             cibw_arch: arm64
     runs-on: ${{ matrix.os }}
     name: Build wheels on ${{ matrix.os }} (${{ matrix.cibw_arch }})

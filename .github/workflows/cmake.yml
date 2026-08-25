@@ -19,9 +19,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest ]
-        arch: [ x64, arm64 ]
         include:
+          - os: ubuntu-latest
+            arch: x64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+          - os: macos-latest
+            arch: arm64
           - os: windows-latest
             arch: Win32
           - os: windows-latest
@@ -48,7 +52,7 @@ jobs:
       if: runner.os != 'Windows'
       run: cmake -B build -DSPM_BUILD_TEST=ON -DCMAKE_INSTALL_PREFIX=build/root
       env:
-        CMAKE_OSX_ARCHITECTURES: arm64;x86_64
+        CMAKE_OSX_ARCHITECTURES: arm64
 
     - name: Build
       run: cmake --build build --config Release --target install --parallel 32
