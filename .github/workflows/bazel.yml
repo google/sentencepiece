@@ -47,12 +47,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Mount Bazel caches
-        uses: actions/cache@v4
+        # zizmor: ignore[cache-poisoning]
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         with:
           path: |
             ~/.cache/bazel-disk
@@ -118,7 +119,7 @@ jobs:
           cd build; 7z a "sentencepiece-bazel-${{ matrix.os }}-${{ matrix.arch }}.7z" ./root/*
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: sentencepiece-bazel-${{ matrix.os }}-${{ matrix.arch }}
           path: ./build/*.7z
@@ -126,7 +127,7 @@ jobs:
 
       - name: Upload Release Assets
         if: startsWith(github.ref, 'refs/tags/')
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ./build/*.7z
