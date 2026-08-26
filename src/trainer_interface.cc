@@ -106,7 +106,6 @@ absl::Status VerifySpec(const TrainerSpec& trainer_spec,
   CHECK_RANGE(trainer_spec.max_sentencepiece_length(), 1, 512);
   CHECK_RANGE(trainer_spec.num_sub_iterations(), 1, 10);
   CHECK_RANGE(trainer_spec.num_threads(), 1, 1024);
-  CHECK_RANGE(trainer_spec.self_test_sample_size(), 0, 1000);
   CHECK_RANGE(trainer_spec.shrinking_factor(), 0.5, 0.95);
   CHECK_RANGE(trainer_spec.max_sentence_length(), 10, 1073741824);
 #undef CHECK_RANGE

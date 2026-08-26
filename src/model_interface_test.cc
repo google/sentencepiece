@@ -487,22 +487,6 @@ TEST(ModelInterfaceTest, PieceToByteTest) {
   EXPECT_EQ(PieceToByte("a"), -1);
 }
 
-TEST(ModelInterfaceTest, VerifyOutputsEquivalent) {
-  for (const auto type : kModelTypes) {
-    ModelProto model_proto = MakeBaseModelProto(type);
-    AddPiece(&model_proto, "a", 1.0);
-    AddPiece(&model_proto, "b", 2.0);
-    auto model = ModelFactory::Create(model_proto);
-
-    // Equivalent outputs.
-    EXPECT_TRUE(model->VerifyOutputsEquivalent("", ""));
-    EXPECT_TRUE(model->VerifyOutputsEquivalent("a b", "a b"));
-
-    // Inequivalent outputs.
-    EXPECT_FALSE(model->VerifyOutputsEquivalent("a", "a b"));
-  }
-}
-
 TEST(ModelInterfaceTest, TooLongPieceModelTest) {
   ModelProto model_proto;
   auto* sp = model_proto.add_pieces();

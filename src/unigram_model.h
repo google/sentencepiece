@@ -152,10 +152,6 @@ class Model : public ModelInterface {
   // Returns a vocab id of |piece|.
   int PieceToId(absl::string_view piece) const override;
 
-  // Verifies if two outputs are equivalent by comparing their scores.
-  bool VerifyOutputsEquivalent(absl::string_view expected,
-                               absl::string_view actual) const override;
-
  protected:
   // Builds a Trie index.
   void BuildTrie(std::vector<std::pair<absl::string_view, int>>* pieces);

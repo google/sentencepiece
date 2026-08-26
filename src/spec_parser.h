@@ -139,7 +139,6 @@ inline std::string PrintProto(const TrainerSpec& message,
   PRINT_ENUM(model_type, kModelType_Map);
   PRINT_PARAM(vocab_size);
   PRINT_REPEATED_STRING(accept_language);
-  PRINT_PARAM(self_test_sample_size);
   PRINT_PARAM(character_coverage);
   PRINT_PARAM(input_sentence_size);
   PRINT_PARAM(shuffle_input_sentence);
@@ -216,7 +215,6 @@ absl::Status SentencePieceTrainer::SetProtoField(absl::string_view name,
   PARSE_ENUM(model_type, kModelType_Map);
   PARSE_INT32(vocab_size);
   PARSE_REPEATED_STRING(accept_language);
-  PARSE_INT32(self_test_sample_size);
   PARSE_DOUBLE(character_coverage);
   PARSE_UINT64(input_sentence_size);
   PARSE_BOOL(shuffle_input_sentence);

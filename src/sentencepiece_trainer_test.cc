@@ -67,13 +67,6 @@ TEST(SentencePieceTrainerTest, TrainFromArgsTest) {
                   .ok());
   CheckVocab(model + ".model", 1000);
 
-  ASSERT_TRUE(
-      SentencePieceTrainer::Train(
-          absl::StrCat("--input=", input, " --model_prefix=", model,
-                       " --vocab_size=1000 --self_test_sample_size=100"))
-          .ok());
-  CheckVocab(model + ".model", 1000);
-
   ASSERT_TRUE(SentencePieceTrainer::Train(
                   absl::StrCat("--input=", input, " --model_prefix=", model,
                                " --vocab_size=1000 ", "--model_type=bpe"))

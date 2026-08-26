@@ -186,16 +186,6 @@ class ModelInterface {
            model_proto_->trainer_spec().byte_fallback();
   }
 
-  // Verifies if the `expected` and `actual` outputs are equivalent. `expected`
-  // and `actual` are sentence pieces joined by space (` `). Normally it means
-  // that the two strings are identical. In some model, due to float rounding
-  // errors, the strings may not be identical, but they may be still equivalent
-  // provided their scores are close enough (by some espilon).
-  [[nodiscard]] virtual bool VerifyOutputsEquivalent(
-      absl::string_view expected, absl::string_view actual) const {
-    return expected == actual;
-  }
-
  protected:
   // Initializes pieces_ and reserved_id_map_.
   // Control/special symbols (type CONTROL, UNKNOWN, BYTE) are stored in

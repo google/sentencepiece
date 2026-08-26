@@ -129,27 +129,6 @@ absl::Status SentencePieceProcessor::Load(
   pad_id_ = PieceToId(model_->pad_piece());
   if (!IsControl(pad_id_)) pad_id_ = -1;
 
-  // Running self-testing.
-  std::vector<std::string> errors, sps;
-  for (const auto& s : model_proto_->self_test_data().samples()) {
-    ABSL_RETURN_IF_ERROR(Encode(s.input(), &sps));
-    const std::string result = absl::StrJoin(sps, " ");
-    if (!model_->VerifyOutputsEquivalent(s.expected(), result)) {
-      errors.emplace_back(
-          absl::StrCat(s.input(), "\t", s.expected(), "\t", result));
-    }
-  }
-
-  if (!errors.empty()) {
-    LOG(INFO) << errors.size() << "/"
-              << model_proto_->self_test_data().samples_size()
-              << " samples did not pass the test.";
-    for (const auto& e : errors) {
-      LOG(INFO) << e;
-    }
-    return absl::InternalError("Self-test failures. See LOG(INFO).");
-  }
-
   return absl::OkStatus();
 }
 

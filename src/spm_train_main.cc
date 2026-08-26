@@ -48,9 +48,6 @@ ABSL_FLAG(int32_t, vocab_size, kDefaultTrainerSpec.vocab_size(),
           "vocabulary size");
 ABSL_FLAG(std::string, accept_language, "",
           "comma-separated list of languages this model can accept");
-ABSL_FLAG(int32_t, self_test_sample_size,
-          kDefaultTrainerSpec.self_test_sample_size(),
-          "the size of self test samples");
 ABSL_FLAG(double, character_coverage, kDefaultTrainerSpec.character_coverage(),
           "character coverage to determine the minimum symbols");
 ABSL_FLAG(std::uint64_t, input_sentence_size,
@@ -213,7 +210,6 @@ int main(int argc, char* argv[]) {
   SetTrainerSpecFromFlag(input_format);
   SetTrainerSpecFromFlag(model_prefix);
   SetTrainerSpecFromFlag(vocab_size);
-  SetTrainerSpecFromFlag(self_test_sample_size);
   SetTrainerSpecFromFlag(character_coverage);
   SetTrainerSpecFromFlag(input_sentence_size);
   SetTrainerSpecFromFlag(shuffle_input_sentence);

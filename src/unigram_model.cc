@@ -729,38 +729,6 @@ EncodeResult Model::SampleEncode(absl::string_view normalized,
   return results;
 }
 
-bool Model::VerifyOutputsEquivalent(absl::string_view expected,
-                                    absl::string_view actual) const {
-  auto compute_unigram_model_score =
-      [this](std::vector<absl::string_view> output_pieces) {
-        float total_score = 0;
-        const float unk_score = min_score() - kUnkPenalty;
-        for (const auto p : output_pieces) {
-          const auto id = PieceToId(p);
-          if (id == unk_id_) {
-            total_score += unk_score;
-          } else {
-            const int length = p.size();
-            total_score += IsUserDefinedInlined(id)
-                               ? GetUserDefinedScore(length)
-                               : GetScoreInlined(id);
-          }
-        }
-        return total_score;
-      };
-  const auto expected_score =
-      compute_unigram_model_score(absl::StrSplit(expected, ' '));
-  const auto actual_score =
-      compute_unigram_model_score(absl::StrSplit(actual, ' '));
-  if (std::abs(expected_score - actual_score) > kEpsilon) {
-    LOG(WARNING) << "Two sentence piece sequences are not equivalent! Left: "
-                 << expected << ", Score: " << expected_score
-                 << ". Right: " << actual << ", Score: " << actual_score << ".";
-    return false;
-  }
-  return true;
-}
-
 EncodeResult Model::EncodeOptimized(absl::string_view normalized) const {
   // An optimized Viterbi algorithm for unigram language models. Benchmarking
   // results show that it generates almost identical outputs and achieves 2.1x
