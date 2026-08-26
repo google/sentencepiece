@@ -134,7 +134,8 @@ To run these benchmarks yourself, see the [reproduction instructions and scripts
 
 For detailed guides, API references, and advanced usage, please refer to the following resources:
 
-*   [Command Line Interface (CLI) & Build Guide](doc/cli.md)
+*   [Command Line Interface (CLI) & Build Guide (CMake)](doc/cli.md)
+*   [Building with Bazel](doc/bazel.md)
 *   [C++ API Reference](doc/cpp.md)
 *   [Python API Reference](python/README.md) & [Python Module Directory](python/)
 *   [Python Tokenizer Comparison Cheat Sheet](python/tokenizer_comparison_cheat_sheet.md)
@@ -146,7 +147,6 @@ For detailed guides, API references, and advanced usage, please refer to the fol
 *   [Vocabulary Piece Constraints](doc/piece_constraints.md)
 *   [Model Protobuf Schema](doc/model_proto.md)
 *   [Docker Deployment Guide](contrib/docker/README.md)
-*   [NLCodec BPE Trainer (Contrib)](contrib/nlcodec/README.md)
 
 ---
 

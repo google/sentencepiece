@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
 #if defined(_WIN32) && !defined(__CYGWIN__)
   _putenv_s("TEST_SRCDIR", absl::GetFlag(FLAGS_test_srcdir).c_str());
 #else
-  setenv("TEST_SRCDIR", absl::GetFlag(FLAGS_test_srcdir).c_str(), 0);
+  setenv("TEST_SRCDIR", absl::GetFlag(FLAGS_test_srcdir).c_str(), 1);
 #endif
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

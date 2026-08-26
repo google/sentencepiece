@@ -52,3 +52,6 @@ m.vocab
 *.swo
 .DS_Store
 test_tmp
+
+# Bazel outputs
+bazel-*
