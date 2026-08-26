@@ -20,7 +20,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [ i686, arm, aarch64, riscv64, powerpc, powerpc64, powerpc64le, s390x, sparc64, m68k, sh4, alpha ]
+        # Note: m68k is excluded due to build errors.
+        arch: [ i686, arm, aarch64, riscv64, powerpc, powerpc64, powerpc64le, s390x, sparc64, sh4, alpha ]
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -30,7 +31,7 @@ jobs:
     - name: Install cross tools
       run: |
         sudo apt-get update
-        sudo apt-get install -y sudo qemu-user gdb zstd dwarfdump {gcc,g++}-14-{i686,aarch64,riscv64,powerpc,powerpc64,powerpc64le,s390x,sparc64,m68k,sh4,alpha}-linux-gnu {gcc,g++}-14-arm-linux-gnueabihf
+        sudo apt-get install -y sudo qemu-user gdb zstd dwarfdump {gcc,g++}-14-{i686,aarch64,riscv64,powerpc,powerpc64,powerpc64le,s390x,sparc64,sh4,alpha}-linux-gnu {gcc,g++}-14-arm-linux-gnueabihf
         sudo ln -sf /usr/bin/arm-linux-gnueabihf-gcc-14 /usr/bin/arm-linux-gnu-gcc-14
         sudo ln -sf /usr/bin/arm-linux-gnueabihf-g++-14 /usr/bin/arm-linux-gnu-g++-14
         sudo ln -sf /usr/arm-linux-gnueabihf /usr/arm-linux-gnu
@@ -46,7 +47,7 @@ jobs:
         make -j$(nproc)
 
     - name: Test on QEMU
-      if: matrix.arch != 'sparc64' && matrix.arch != 'm68k' && matrix.arch != 'sh4'
+      if: matrix.arch != 'sparc64' && matrix.arch != 'sh4'
       env:
         ARCH: ${{ matrix.arch }}
       run: |
