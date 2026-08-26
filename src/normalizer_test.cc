@@ -25,7 +25,7 @@
 #include "absl/strings/string_view.h"
 #include "builder.h"
 #include "sentencepiece_trainer.h"
-#include "third_party/darts_clone/darts.h"
+#include "darts.h"
 #include "util.h"
 
 namespace sentencepiece {

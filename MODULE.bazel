@@ -5,6 +5,13 @@ module(
 
 bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "bazel_skylib", version = "1.9.2")
+
+# darts-clone is header-only. The Bazel build takes it from the Bazel Central
+# Registry; 0.32h.bcr.1 is upstream v0.32h plus the copy_array()/validate()
+# helpers that third_party/darts_clone/darts.h carries, so the API SentencePiece
+# uses is identical. The vendored copy is still what the CMake build compiles.
+bazel_dep(name = "darts-clone", version = "0.32h.bcr.1")
+
 # libsais is compiled from C sources. The Bazel build takes it from the Bazel
 # Central Registry; 2.10.4 is the same upstream release the vendored
 # third_party/libsais copy is a reformatted snapshot of. The vendored copy is

@@ -39,7 +39,7 @@
 #include "filesystem.h"
 #include "normalizer.h"
 #include "ret_check.h"
-#include "third_party/darts_clone/darts.h"
+#include "darts.h"
 #include "util.h"
 
 #ifdef ENABLE_NFKC_COMPILE
