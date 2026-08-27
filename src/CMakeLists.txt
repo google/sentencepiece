@@ -94,6 +94,9 @@ endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
+# libsais.h is included unqualified so that the Bazel build can serve it from
+# the libsais module; the CMake build keeps compiling the vendored copy.
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/libsais)
 
 # ==============================================================================
 # 3. Source File Definitions

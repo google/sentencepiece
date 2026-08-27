@@ -42,7 +42,7 @@
 #include "normalizer.h"
 #include "ret_check.h"
 #include "sentencepiece_trainer.h"
-#include "third_party/libsais/libsais.h"
+#include "libsais.h"
 #include "trainer_interface.h"
 #include "unicode_script.h"
 #include "util.h"
