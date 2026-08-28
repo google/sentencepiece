@@ -36,17 +36,24 @@ jobs:
             echo "UPDATED=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Update MODULE.bazel.lock
+        if: steps.update.outputs.UPDATED == 'true'
+        run: |
+          if command -v bazel &> /dev/null; then
+            bazel mod deps || true
+          fi
+
       - name: Create Pull Request
         if: steps.update.outputs.UPDATED == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
-          commit-message: "build: update FetchContent dependencies (${{ steps.update.outputs.SUMMARY }})"
+          commit-message: "build: update dependencies (${{ steps.update.outputs.SUMMARY }})"
           branch: "auto-update-dependencies"
           delete-branch: true
-          title: "build: update FetchContent dependencies"
+          title: "build: update dependencies"
           body: |
-            Automated weekly update for FetchContent dependencies in `CMakeLists.txt`:
+            Automated weekly update for dependencies in `CMakeLists.txt` and `MODULE.bazel`:
 
             ${{ steps.update.outputs.SUMMARY }}
 

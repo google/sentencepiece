@@ -1,6 +1,7 @@
 # Directories populated by CMake or Python builds
 # Note: Bazel's .bazelignore does NOT support wildcards/globs (*).
 build
+build_spm
 build_amd64
 build_arm64
 build_x64

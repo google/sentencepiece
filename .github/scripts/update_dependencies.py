@@ -91,6 +91,40 @@ def get_latest_github_tag(repo_path: str) -> str:
     return ""
 
 
+def get_latest_bcr_version(module_name: str) -> str:
+    """Fetch the latest non-yanked version from Bazel Central Registry (BCR)."""
+    token = os.getenv("GITHUB_TOKEN")
+    headers = {
+        "User-Agent": "SentencePiece-Dependency-Updater",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    bcr_url = f"https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/{module_name}/metadata.json"
+    req = urllib.request.Request(bcr_url, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            versions = data.get("versions", [])
+            yanked = data.get("yanked_versions", {})
+            # Filter out yanked versions and pre-releases
+            valid_versions = [
+                v
+                for v in versions
+                if v not in yanked and not PRERELEASE_PATTERN.search(v)
+            ]
+            if valid_versions:
+                return valid_versions[-1]
+            elif versions:
+                non_yanked = [v for v in versions if v not in yanked]
+                if non_yanked:
+                    return non_yanked[-1]
+    except Exception as e:
+        print(f"Warning: Error fetching BCR metadata for {module_name}: {e}")
+
+    return ""
+
+
 def update_cmake_content(content: str):
     # Match FetchContent_Declare blocks
     pattern = re.compile(
@@ -99,7 +133,6 @@ def update_cmake_content(content: str):
     )
 
     updates = []
-    latest_tags_map = {}
 
     def replace_block(match):
         full_block = match.group(0)
@@ -118,18 +151,16 @@ def update_cmake_content(content: str):
         repo_path = repo_match.group(1)
         current_tag = tag_match.group(1)
 
-        print(f"Found dependency: {target_name} ({repo_path}) @ {current_tag}")
+        print(f"Found CMake dependency: {target_name} ({repo_path}) @ {current_tag}")
         latest_tag = get_latest_github_tag(repo_path)
 
         if not latest_tag:
             print(f"  -> Could not determine latest valid tag for {repo_path}. Keeping current.")
             return full_block
 
-        latest_tags_map[target_name] = latest_tag
-
         if current_tag != latest_tag:
             print(f"  -> Updating {target_name}: {current_tag} -> {latest_tag}")
-            updates.append(f"{target_name}: {current_tag} -> {latest_tag}")
+            updates.append(f"CMake {target_name}: {current_tag} -> {latest_tag}")
             # Replace only the GIT_TAG in this specific block, preserving original formatting
             new_block = re.sub(
                 r"(GIT_TAG\s+)" + re.escape(current_tag),
@@ -143,10 +174,10 @@ def update_cmake_content(content: str):
             return full_block
 
     new_content = pattern.sub(replace_block, content)
-    return new_content, updates, latest_tags_map
+    return new_content, updates
 
 
-def update_module_bazel_content(content: str, latest_tags_map: dict):
+def update_module_bazel_content(content: str):
     updates = []
     new_content = content
 
@@ -163,20 +194,33 @@ def update_module_bazel_content(content: str, latest_tags_map: dict):
             new_content = ver_pattern.sub(rf'\g<1>"{version_val}"', new_content, count=1)
             updates.append(f"MODULE.bazel version: {current_ver} -> {version_val}")
 
-    # 2. Update abseil-cpp git_override tag if present
-    absl_tag = latest_tags_map.get("abseil-cpp")
-    if absl_tag:
-        pattern = re.compile(
-            r'(git_override\s*\(\s*module_name\s*=\s*"abseil-cpp"[\s\S]*?tag\s*=\s*)"([^"]+)"',
-            re.MULTILINE,
-        )
-        match = pattern.search(new_content)
-        if match:
-            current_tag = match.group(2)
-            if current_tag != absl_tag:
-                new_content = pattern.sub(rf'\g<1>"{absl_tag}"', new_content, count=1)
-                updates.append(f"MODULE.bazel abseil-cpp: {current_tag} -> {absl_tag}")
+    # 2. Update all bazel_dep declarations from BCR
+    dep_pattern = re.compile(
+        r'(bazel_dep\s*\(\s*name\s*=\s*"([a-zA-Z0-9_\-]+)"\s*,\s*version\s*=\s*)"([^"]+)"',
+        re.MULTILINE,
+    )
 
+    def replace_dep(match):
+        prefix = match.group(1)
+        mod_name = match.group(2)
+        current_ver = match.group(3)
+
+        print(f"Found Bazel dependency: {mod_name} @ {current_ver}")
+        latest_ver = get_latest_bcr_version(mod_name)
+
+        if not latest_ver:
+            print(f"  -> Could not determine latest valid BCR version for {mod_name}. Keeping current.")
+            return match.group(0)
+
+        if current_ver != latest_ver:
+            print(f"  -> Updating bazel_dep {mod_name}: {current_ver} -> {latest_ver}")
+            updates.append(f"bazel_dep {mod_name}: {current_ver} -> {latest_ver}")
+            return f'{prefix}"{latest_ver}"'
+        else:
+            print(f"  -> bazel_dep {mod_name} is already up to date ({current_ver}).")
+            return match.group(0)
+
+    new_content = dep_pattern.sub(replace_dep, new_content)
     return new_content, updates
 
 
@@ -185,16 +229,14 @@ def main():
 
     if CMAKELISTS_PATH.exists():
         cmake_content = CMAKELISTS_PATH.read_text(encoding="utf-8")
-        new_cmake, cmake_updates, latest_tags_map = update_cmake_content(cmake_content)
+        new_cmake, cmake_updates = update_cmake_content(cmake_content)
         if cmake_updates:
             CMAKELISTS_PATH.write_text(new_cmake, encoding="utf-8")
             all_updates.extend(cmake_updates)
-    else:
-        latest_tags_map = {}
 
     if MODULE_BAZEL_PATH.exists():
         bazel_content = MODULE_BAZEL_PATH.read_text(encoding="utf-8")
-        new_bazel, bazel_updates = update_module_bazel_content(bazel_content, latest_tags_map)
+        new_bazel, bazel_updates = update_module_bazel_content(bazel_content)
         if bazel_updates:
             MODULE_BAZEL_PATH.write_text(new_bazel, encoding="utf-8")
             all_updates.extend(bazel_updates)
@@ -204,8 +246,11 @@ def main():
         for u in all_updates:
             print(f"  * {u}")
         summary_file = os.getenv("GITHUB_STEP_SUMMARY_PATH", "/tmp/update_summary.txt")
-        with open(summary_file, "w", encoding="utf-8") as f:
-            f.write(", ".join(all_updates))
+        try:
+            with open(summary_file, "w", encoding="utf-8") as f:
+                f.write(", ".join(all_updates))
+        except Exception as e:
+            print(f"Warning: Could not write summary file: {e}")
     else:
         print("\nAll dependencies in CMakeLists.txt and MODULE.bazel are up to date.")
 
