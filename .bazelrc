@@ -1,6 +1,10 @@
 # Common C++ settings
 build --cxxopt=-std=c++17
 
+# Opt-in config for benchmarking: match CMake Release's -O3 (GCC/Clang only)
+build:bench --compilation_mode=opt
+build:bench --copt=-O3
+
 # Linux / GCC / Clang
 build:linux --copt=-Wall
 build:linux --copt=-Wno-deprecated-declarations
