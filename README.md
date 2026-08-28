@@ -78,7 +78,7 @@ original_text = "".join(pieces).replace("▁", " ")
 ```
 
 ### 2. Purely Data-Driven & Language-Independent
-SentencePiece trains tokenization and detokenization models directly from raw sentences. It does **not** require language-specific pre-tokenizers (such as Moses, MeCab, or KyTea). This makes it highly effective for languages without explicit word boundaries, such as Chinese, Japanese, and Korean.
+SentencePiece trains tokenization and detokenization models directly from raw sentences. It does **not** require language-specific pre-tokenizers (such as Moses, MeCab, or KyTea). This makes it highly effective for languages without explicit word boundaries, such as Chinese, Japanese, and Thai.
 
 ### 3. Subword Regularization & BPE-Dropout
 To improve the robustness and accuracy of translation and language models, SentencePiece supports on-the-fly subword sampling during training. By sampling different segmentations for the same input text (Subword Regularization for Unigram, BPE-Dropout for BPE), it virtually augments your training data and makes the model more resilient to spelling variations and noise.
