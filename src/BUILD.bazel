@@ -360,3 +360,27 @@ TEST_NAMES = [
     )
     for name in TEST_NAMES
 ]
+
+# Benchmarks matching CMake's sentencepiece_processor_benchmarks_test,
+# gated behind SPM_ENABLE_BENCHMARK there; tagged "manual" here so it is
+# excluded from wildcard builds and only runs when requested explicitly.
+cc_test(
+    name = "sentencepiece_processor_benchmarks_test",
+    srcs = ["sentencepiece_processor_benchmarks_test.cc"],
+    args = ["--test_srcdir=data"],
+    data = ["//data:test_data"],
+    tags = [
+        "benchmark",
+        "manual",
+    ],
+    deps = [
+        ":sentencepiece_processor",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/log:flags",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest",
+        "@google_benchmark//:benchmark",
+    ],
+)
