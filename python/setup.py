@@ -205,7 +205,7 @@ class build_ext_win(_build_ext):
       ])
       build_dir = '.\\build'
 
-    cflags = ['/std:c++17'] + get_build_includes(build_dir, is_msvc=True)
+    cflags = ['/std:c++20'] + get_build_includes(build_dir, is_msvc=True)
     libs = [
         os.path.join(build_dir, 'root', 'lib', 'sentencepiece.lib'),
         os.path.join(build_dir, 'root', 'lib', 'sentencepiece_train.lib'),

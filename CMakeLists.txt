@@ -63,14 +63,7 @@ set_property(CACHE SPM_PROTOBUF_PROVIDER PROPERTY STRINGS "module" "package")
 # ==============================================================================
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# MSVC C++20 STL has an issue with Protobuf v25.6's UntypedMessage in
-# std::variant (error C2139). Use C++17 under MSVC for Abseil and Protobuf.
-# See: https://github.com/protocolbuffers/protobuf/issues/21310
-if (MSVC)
-  set(CMAKE_CXX_STANDARD 17)
-else()
-  set(CMAKE_CXX_STANDARD 20)
-endif()
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_definitions($<$<CONFIG:Release>:NDEBUG>)
@@ -234,7 +227,16 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
     GIT_TAG v36.0
     GIT_SHALLOW TRUE
   )
+  # MSVC C++20 STL has an issue with Protobuf's UntypedMessage in
+  # std::variant (error C2139). Scope C++17 under MSVC specifically to Protobuf.
+  # See: https://github.com/protocolbuffers/protobuf/issues/21310
+  if (MSVC)
+    set(CMAKE_CXX_STANDARD 17)
+  endif()
   FetchContent_MakeAvailable(protobuf)
+  if (MSVC)
+    set(CMAKE_CXX_STANDARD 20)
+  endif()
 
   if (SPM_PROTOC_EXECUTABLE)
     if (NOT TARGET protobuf::protoc)

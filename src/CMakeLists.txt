@@ -217,11 +217,7 @@ target_include_directories(sentencepiece_train-static PUBLIC
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-if (MSVC)
-  set(SPM_CXX_STANDARD_FEATURE cxx_std_17)
-else()
-  set(SPM_CXX_STANDARD_FEATURE cxx_std_20)
-endif()
+set(SPM_CXX_STANDARD_FEATURE cxx_std_20)
 
 target_compile_features(sentencepiece-static PUBLIC ${SPM_CXX_STANDARD_FEATURE})
 target_compile_features(sentencepiece_train-static PUBLIC ${SPM_CXX_STANDARD_FEATURE})
