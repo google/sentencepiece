@@ -11,7 +11,7 @@ This document describes how to build and install the SentencePiece C++ libraries
 The following tools and libraries are required to build SentencePiece:
 
 - **CMake** (3.14 or later)
-- **C++20 compiler** (e.g., GCC 11+, Clang 13+, or MSVC 2019+ with C++17)
+- **C++20 compiler** (e.g., GCC 11+, Clang 13+, or MSVC 2019+ with C++20)
 - **gperftools** library (optional, provides a 10-40% performance improvement)
 
 ### Building from Source (Linux/macOS)

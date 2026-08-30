@@ -5,7 +5,7 @@ In addition to the [CMake build](cli.md), SentencePiece can be built with [Bazel
 ## Prerequisites
 
 - [Bazel](https://bazel.build) 7.2.1 or later (Bazel 7, 8, 9 supported; installing via [Bazelisk](https://github.com/bazelbuild/bazelisk) is recommended)
-- A C++17 compatible compiler (GCC, Clang, or MSVC)
+- A C++20 compatible compiler (GCC, Clang, or MSVC)
 
 ## Building
 
