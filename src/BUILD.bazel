@@ -151,7 +151,7 @@ cc_library(
     deps = [
         ":sentencepiece_processor",
         "//third_party:darts_clone",
-        "//third_party:libsais",
+        "@libsais",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:fixed_array",
     ],
