@@ -1288,6 +1288,15 @@ class TestSentencepieceProcessor(unittest.TestCase):
             add_dummy_prefix=True,
         )
 
+  def test_offset_mapping_empty_batch(self):
+    sp = spm.SentencePieceProcessor()
+    sp.Load(os.path.join(data_dir, 'botchan_en_bpe_1000.model'))
+    # Every other return_type gives [] for an empty batch. offset_mapping used to
+    # leak the empty list into a bool parameter and raise TypeError.
+    self.assertEqual(sp.encode([], return_type='offset_mapping'), [])
+    self.assertEqual(sp.encode([], return_type=int), [])
+    self.assertEqual(sp.encode([], return_type=str), [])
+
   def test_offset_mapping(self):
     sp = self.sp_
 
