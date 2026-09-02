@@ -4,7 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sentencepiece"
-version = "0.2.3"
+# The version is read from ../VERSION.txt by setup.py (see read_version()).
+dynamic = ["version"]
 authors = [
   { name="Taku Kudo", email="taku@google.com" },
 ]
