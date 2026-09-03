@@ -554,9 +554,18 @@ class SentencePieceProcessor:
         else:
             is_batch = len(input) > 0 and _is_sequence(input[0])
 
-        # Determine if input contains pieces (str/bytes)
+        # Determine if input contains pieces (str/bytes).
+        # An empty sequence (no ids / no pieces) is ambiguous, so for a batch we
+        # infer the element type from the first non-empty inner sequence.
+        # Without this, a piece batch that starts with an empty sentence (e.g.
+        # produced by encoding an empty string) is mistaken for an id batch and
+        # decode() fails with an unrelated TypeError.
         if is_batch:
-            input_is_pieces = _is_pieces(input[0])
+            input_is_pieces = False
+            for item in input:
+                if _is_sequence(item) and len(item) > 0:
+                    input_is_pieces = _is_pieces(item)
+                    break
         else:
             input_is_pieces = _is_pieces(input)
 

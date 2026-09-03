@@ -1138,9 +1138,6 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
            [](const sentencepiece::SentencePieceProcessor& self,
               const py::list& ins, int num_threads, py::object thread_pool) {
              if (ins.empty()) return py::list();
-             py::list sublist0 = ins[0].cast<py::list>();
-             if (sublist0.empty()) return py::list();
-             bool is_bytes = py::isinstance<py::bytes>(sublist0[0]);
 
              std::vector<PyListStringViewVector> C_ins_wrappers;
              C_ins_wrappers.reserve(ins.size());
@@ -1159,6 +1156,18 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                    *pool.get());
                if (!status.ok()) throw status;
              }
+
+             // Empty sequences (e.g. a sentence that encoded to no pieces) are
+             // valid and decode to an empty string, so where they appear in the
+             // batch must not change the result. Determine the output element
+             // type (str/bytes) from the first non-empty sequence.
+             bool is_bytes = false;
+             for (size_t i = 0; i < ins.size(); ++i) {
+               if (C_ins[i].empty()) continue;
+               is_bytes = py::isinstance<py::bytes>(ins[i].cast<py::list>()[0]);
+               break;
+             }
+
              py::list py_outs(outs.size());
              for (size_t i = 0; i < outs.size(); ++i) {
                py_outs[i] = ToPyString(outs[i], is_bytes);
@@ -1251,21 +1260,27 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              bool is_pieces_batch = false;
              bool detected_bytes = false;
 
-             if (!py_ins.empty()) {
-               py::object first_seq = py_ins[0];
-               if (py::isinstance<py::list>(first_seq) ||
-                   py::isinstance<py::tuple>(first_seq)) {
-                 py::sequence inner_seq = first_seq;
-                 if (!inner_seq.empty()) {
-                   py::object first_item = inner_seq[0];
-                   if (py::isinstance<py::str>(first_item)) {
-                     is_pieces_batch = true;
-                   } else if (py::isinstance<py::bytes>(first_item)) {
-                     is_pieces_batch = true;
-                     detected_bytes = true;
-                   }
-                 }
+             // A batch may start with empty sequences (e.g. a sentence that
+             // encoded to no pieces / no ids). Empty sequences carry no type
+             // information, so infer the element type from the first non-empty
+             // inner sequence; otherwise a piece batch that starts with an empty
+             // sequence would be decoded as an id batch.
+             for (size_t i = 0; i < py_ins.size(); ++i) {
+               py::object seq = py_ins[i];
+               if (!py::isinstance<py::list>(seq) &&
+                   !py::isinstance<py::tuple>(seq)) {
+                 continue;
                }
+               py::sequence inner_seq = seq;
+               if (inner_seq.empty()) continue;
+               py::object first_item = inner_seq[0];
+               if (py::isinstance<py::str>(first_item)) {
+                 is_pieces_batch = true;
+               } else if (py::isinstance<py::bytes>(first_item)) {
+                 is_pieces_batch = true;
+                 detected_bytes = true;
+               }
+               break;
              }
 
              if (is_pieces_batch) {
