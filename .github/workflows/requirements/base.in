@@ -4,4 +4,4 @@ wheel
 twine
 pytest
 build
-packaging >= 26.2
+packaging >= 26.3
