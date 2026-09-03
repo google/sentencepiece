@@ -12,12 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.!
 
-// Guards against the project version drifting between its sources of truth.
+// Guards against the project version drifting between VERSION.txt and the
+// version the active build system declares for the sentencepiece module.
 //
-// VERSION (from config.h) is generated from VERSION.txt by both CMake and the
-// Bazel //src:config_h genrule. Bazel's module(version = ...) in MODULE.bazel
-// cannot read a file, so it is a hand-maintained literal; the build passes it
-// in as SPM_BAZEL_MODULE_VERSION via module_version() so this test can compare them.
+// VERSION (from config.h) is generated from VERSION.txt by both build systems.
+// SPM_BUILD_SYSTEM_MODULE_VERSION is whatever the build system declares on its
+// own, and each one supplies its own value:
+//
+//   * Bazel: module(version = ...) in MODULE.bazel, which Bazel requires to be
+//     a literal and therefore cannot derive from VERSION.txt. This is the copy
+//     that can genuinely drift.
+//   * CMake: PROJECT_VERSION, as parsed by project(VERSION ...).
+//
+// The define is absent when a build system supplies no version of its own, in
+// which case the comparison is skipped.
 
 #include <string>
 
@@ -30,12 +38,14 @@ TEST(VersionTest, ConfigVersionIsNotEmpty) {
   EXPECT_FALSE(std::string(VERSION).empty());
 }
 
-#ifdef SPM_BAZEL_MODULE_VERSION
-TEST(VersionTest, BazelModuleVersionMatchesVersionTxt) {
-  EXPECT_EQ(std::string(SPM_BAZEL_MODULE_VERSION), std::string(VERSION))
-      << "MODULE.bazel declares module(version = \"" << SPM_BAZEL_MODULE_VERSION
-      << "\") but VERSION.txt contains \"" << VERSION
-      << "\". Update MODULE.bazel to match VERSION.txt.";
+#ifdef SPM_BUILD_SYSTEM_MODULE_VERSION
+TEST(VersionTest, BuildSystemModuleVersionMatchesVersionTxt) {
+  EXPECT_EQ(std::string(SPM_BUILD_SYSTEM_MODULE_VERSION), std::string(VERSION))
+      << "The build system declares version \""
+      << SPM_BUILD_SYSTEM_MODULE_VERSION << "\" but VERSION.txt contains \""
+      << VERSION << "\". Update the build system's version to match "
+      << "VERSION.txt (for Bazel, the module(version = ...) literal in "
+      << "MODULE.bazel).";
 }
 #endif
 

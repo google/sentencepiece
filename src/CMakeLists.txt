@@ -440,14 +440,11 @@ file(TO_NATIVE_PATH "${PROJECT_SOURCE_DIR}/data" data_dir)
 if (SPM_BUILD_TEST)
   add_executable(spm_test test_main.cc ${SPM_TEST_SRCS})
 
-  # Lets version_test compare MODULE.bazel against VERSION.txt, exactly as the
-  # Bazel build does through local_defines in //src:version_test. The define is
-  # omitted when MODULE.bazel is unavailable (e.g. in the Python sdist), and
-  # version_test guards the comparison with #ifdef accordingly.
-  if (SPM_BAZEL_MODULE_VERSION)
-    set_source_files_properties(version_test.cc PROPERTIES COMPILE_DEFINITIONS
-      "SPM_BAZEL_MODULE_VERSION=\"${SPM_BAZEL_MODULE_VERSION}\"")
-  endif()
+  # Lets version_test check the version CMake declares for the project against
+  # the VERSION.txt value compiled into config.h. The Bazel build supplies the
+  # same define from module_version() in //src:version_test.
+  set_source_files_properties(version_test.cc PROPERTIES COMPILE_DEFINITIONS
+    "SPM_BUILD_SYSTEM_MODULE_VERSION=\"${PROJECT_VERSION}\"")
 
   target_link_libraries(spm_test sentencepiece sentencepiece_train ${SPM_LIBS} gtest gmock)
 
