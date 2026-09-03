@@ -648,7 +648,7 @@ Get-ChildItem .\dist\sentencepiece*.whl | ForEach-Object { pip install $_.FullNa
 
 ### Versioning
 
-The Python package version is not stored in `pyproject.toml`. `setup.py` reads it from `VERSION.txt` at the repository root (the same file used by CMake and Bazel) and generates `src/sentencepiece/_version.py` at build time, so `sentencepiece.__version__` always matches the C++ library. To release a new version, edit `VERSION.txt` only; CI fails if `MODULE.bazel` or the docs disagree with it.
+The Python package version is not stored in `pyproject.toml`. `setup.py` reads it from `VERSION.txt` at the repository root (the same file used by CMake and Bazel) and generates `src/sentencepiece/_version.py` at build time, so `sentencepiece.__version__` always matches the C++ library. To release a new version, edit `VERSION.txt` and the `module(version = ...)` literal in `MODULE.bazel` (Bazel cannot read a file there). Everything else is derived: CI runs `.github/scripts/check_version.py`, the Bazel test `//src:version_test`, and the CMake test `sentencepiece_version_test` to fail the build if any copy drifts.
 
 ## Migration Notes (New pybind11 API)
 

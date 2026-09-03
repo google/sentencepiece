@@ -446,6 +446,12 @@ if (SPM_BUILD_TEST)
 
   add_test(NAME sentencepiece_test
     COMMAND $<TARGET_FILE:spm_test> --test_srcdir=${data_dir})
+
+  # The binaries must report the version from VERSION.txt.
+  add_test(NAME sentencepiece_version_test
+    COMMAND $<TARGET_FILE:spm_encode> --version)
+  set_tests_properties(sentencepiece_version_test PROPERTIES
+    PASS_REGULAR_EXPRESSION "sentencepiece ${SPM_VERSION}")
 endif()
 
 if (SPM_ENABLE_BENCHMARK)
