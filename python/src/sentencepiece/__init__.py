@@ -290,7 +290,9 @@ class SentencePieceProcessor:
         elif return_type == 'offset_mapping':
             if return_bytes is None:
                 # Default to matching input type
-                return_bytes_val = isinstance(input, bytes) or (isinstance(input, list) and input and isinstance(input[0], bytes))
+                return_bytes_val = isinstance(input, bytes) or bool(
+                    isinstance(input, list) and input and isinstance(input[0], bytes)
+                )
             else:
                 return_bytes_val = return_bytes
             args.append(return_bytes_val)
