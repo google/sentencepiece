@@ -184,6 +184,7 @@ set(SPM_TEST_SRCS
   unigram_model_test.cc
   unigram_model_trainer_test.cc
   util_test.cc
+  version_test.cc
   word_model_test.cc
   word_model_trainer_test.cc)
 
@@ -439,6 +440,12 @@ file(TO_NATIVE_PATH "${PROJECT_SOURCE_DIR}/data" data_dir)
 if (SPM_BUILD_TEST)
   add_executable(spm_test test_main.cc ${SPM_TEST_SRCS})
 
+  # Lets version_test check the version CMake declares for the project against
+  # the VERSION.txt value compiled into config.h. The Bazel build supplies the
+  # same define from module_version() in //src:version_test.
+  set_source_files_properties(version_test.cc PROPERTIES COMPILE_DEFINITIONS
+    "SPM_BUILD_SYSTEM_MODULE_VERSION=\"${PROJECT_VERSION}\"")
+
   target_link_libraries(spm_test sentencepiece sentencepiece_train ${SPM_LIBS} gtest gmock)
 
   set(MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --show-leak-kinds=definite,possible --error-exitcode=1")
@@ -446,6 +453,12 @@ if (SPM_BUILD_TEST)
 
   add_test(NAME sentencepiece_test
     COMMAND $<TARGET_FILE:spm_test> --test_srcdir=${data_dir})
+
+  # The binaries must report the version from VERSION.txt.
+  add_test(NAME sentencepiece_version_test
+    COMMAND $<TARGET_FILE:spm_encode> --version)
+  set_tests_properties(sentencepiece_version_test PROPERTIES
+    PASS_REGULAR_EXPRESSION "sentencepiece ${SPM_VERSION}")
 endif()
 
 if (SPM_ENABLE_BENCHMARK)
