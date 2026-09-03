@@ -19,6 +19,24 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 file(STRINGS "VERSION.txt" SPM_VERSION)
 message(STATUS "VERSION: ${SPM_VERSION}")
 
+# MODULE.bazel cannot read VERSION.txt (Bazel requires a literal version there),
+# so its version is hand-maintained. Extract it and let version_test compare the
+# two, matching what the Bazel build does via module_version(). MODULE.bazel is
+# absent from the Python source distribution, in which case the check is skipped.
+set(SPM_BAZEL_MODULE_VERSION "")
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/MODULE.bazel")
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/MODULE.bazel" SPM_MODULE_BAZEL_CONTENT)
+  string(REGEX MATCH
+    "module\\([ \t\r\n]*name[ \t]*=[ \t]*\"sentencepiece\"[ \t]*,[ \t\r\n]*version[ \t]*=[ \t]*\"([^\"]+)\""
+    SPM_MODULE_BAZEL_MATCH "${SPM_MODULE_BAZEL_CONTENT}")
+  if (CMAKE_MATCH_1)
+    set(SPM_BAZEL_MODULE_VERSION "${CMAKE_MATCH_1}")
+    message(STATUS "MODULE.bazel version: ${SPM_BAZEL_MODULE_VERSION}")
+  else()
+    message(WARNING "Could not parse module(version = ...) from MODULE.bazel")
+  endif()
+endif()
+
 if(POLICY CMP0091)
   cmake_policy(SET CMP0091 NEW)
 endif()

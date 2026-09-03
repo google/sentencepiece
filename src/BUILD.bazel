@@ -390,7 +390,7 @@ cc_test(
     name = "version_test",
     size = "small",
     srcs = ["version_test.cc"],
-    local_defines = ['SPM_MODULE_VERSION=\\"%s\\"' % module_version()],
+    local_defines = ['SPM_BAZEL_MODULE_VERSION=\\"%s\\"' % module_version()],
     deps = [
         ":config",
         ":test_main",

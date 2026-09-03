@@ -17,7 +17,7 @@
 // VERSION (from config.h) is generated from VERSION.txt by both CMake and the
 // Bazel //src:config_h genrule. Bazel's module(version = ...) in MODULE.bazel
 // cannot read a file, so it is a hand-maintained literal; the build passes it
-// in as SPM_MODULE_VERSION via module_version() so this test can compare them.
+// in as SPM_BAZEL_MODULE_VERSION via module_version() so this test can compare them.
 
 #include <string>
 
@@ -30,10 +30,10 @@ TEST(VersionTest, ConfigVersionIsNotEmpty) {
   EXPECT_FALSE(std::string(VERSION).empty());
 }
 
-#ifdef SPM_MODULE_VERSION
+#ifdef SPM_BAZEL_MODULE_VERSION
 TEST(VersionTest, BazelModuleVersionMatchesVersionTxt) {
-  EXPECT_EQ(std::string(SPM_MODULE_VERSION), std::string(VERSION))
-      << "MODULE.bazel declares module(version = \"" << SPM_MODULE_VERSION
+  EXPECT_EQ(std::string(SPM_BAZEL_MODULE_VERSION), std::string(VERSION))
+      << "MODULE.bazel declares module(version = \"" << SPM_BAZEL_MODULE_VERSION
       << "\") but VERSION.txt contains \"" << VERSION
       << "\". Update MODULE.bazel to match VERSION.txt.";
 }
