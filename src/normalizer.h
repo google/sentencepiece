@@ -26,7 +26,7 @@
 #include "gtest_prod.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "third_party/darts_clone/darts.h"
+#include "darts.h"
 
 namespace sentencepiece::normalizer {
 

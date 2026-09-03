@@ -90,7 +90,7 @@ cc_library(
         ":config",
         ":sentencepiece_cc_proto",
         ":sentencepiece_model_cc_proto",
-        "//third_party:darts_clone",
+        "@darts-clone//:darts-clone",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/cleanup",
@@ -150,7 +150,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":sentencepiece_processor",
-        "//third_party:darts_clone",
+        "@darts-clone//:darts-clone",
         "@libsais",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/container:fixed_array",

@@ -94,6 +94,9 @@ endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
+# darts.h is included unqualified so that the Bazel build can serve it from the
+# darts-clone module; the CMake build keeps compiling the vendored copy.
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/darts_clone)
 # libsais.h is included unqualified so that the Bazel build can serve it from
 # the libsais module; the CMake build keeps compiling the vendored copy.
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/libsais)
@@ -209,6 +212,7 @@ target_include_directories(sentencepiece-static PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/darts_clone>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_include_directories(sentencepiece_train-static PUBLIC
@@ -217,6 +221,7 @@ target_include_directories(sentencepiece_train-static PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/darts_clone>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
@@ -237,6 +242,7 @@ if (SPM_ENABLE_SHARED)
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/darts_clone>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
   target_include_directories(sentencepiece_train PUBLIC
@@ -245,6 +251,7 @@ if (SPM_ENABLE_SHARED)
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/darts_clone>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
   add_library(sentencepiece::sentencepiece ALIAS sentencepiece)
