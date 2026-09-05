@@ -1048,6 +1048,16 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
   EXPECT_EQ(2, sp.eos_id());
   EXPECT_EQ(-1, sp.pad_id());
 
+  // Out-of-range ids must not read past the piece array.
+  for (const int id : {-1, sp.GetPieceSize(), sp.GetPieceSize() + 100}) {
+    EXPECT_EQ("", sp.IdToPiece(id));
+    EXPECT_NEAR(0.0, sp.GetScore(id), 0.001);
+    EXPECT_FALSE(sp.IsUnknown(id));
+    EXPECT_FALSE(sp.IsControl(id));
+    EXPECT_FALSE(sp.IsUnused(id));
+    EXPECT_FALSE(sp.IsByte(id));
+  }
+
   {
     std::vector<std::string> sps;
     const std::vector<std::string> expected_str = {WS, "ab", "c"};

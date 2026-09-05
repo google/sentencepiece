@@ -1039,6 +1039,9 @@ int SentencePieceProcessor::PieceToId(absl::string_view piece) const {
 const std::string& SentencePieceProcessor::IdToPiece(int id) const {
   static const std::string* kEmptyString = new std::string;
   RET_CHECK_OR_RETURN_DEFAULT(*kEmptyString);
+  if (id < 0 || id >= model_->GetPieceSize()) {
+    return *kEmptyString;
+  }
   return model_->IdToPiece(id);
 }
 
@@ -1053,26 +1056,41 @@ bool SentencePieceProcessor::SafeIdToPiece(int id, std::string* piece) const {
 
 float SentencePieceProcessor::GetScore(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(0.0);
+  if (id < 0 || id >= model_->GetPieceSize()) {
+    return 0.0;
+  }
   return model_->GetScore(id);
 }
 
 bool SentencePieceProcessor::IsControl(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(0);
+  if (id < 0 || id >= model_->GetPieceSize()) {
+    return false;
+  }
   return model_->IsControl(id);
 }
 
 bool SentencePieceProcessor::IsUnknown(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(0);
+  if (id < 0 || id >= model_->GetPieceSize()) {
+    return false;
+  }
   return model_->IsUnknown(id);
 }
 
 bool SentencePieceProcessor::IsUnused(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(false);
+  if (id < 0 || id >= model_->GetPieceSize()) {
+    return false;
+  }
   return model_->IsUnused(id);
 }
 
 bool SentencePieceProcessor::IsByte(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(false);
+  if (id < 0 || id >= model_->GetPieceSize()) {
+    return false;
+  }
   return model_->IsByte(id);
 }
 
