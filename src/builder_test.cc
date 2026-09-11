@@ -251,6 +251,23 @@ TEST(BuilderTest, DecompileMalformedCharsMapTest) {
                      make_blob(units, std::string("x\0", 2)), &chars_map)
                      .ok());
   }
+
+  // A leaf unit whose value points at or past normalized.size() must be
+  // rejected by trie validation.
+  {
+    std::vector<uint32_t> units(256, 0);
+    units[0] = (1u << 10);
+    units[96] = static_cast<uint32_t>('a') | 0x100 | (2u << 10);
+    const std::string normalized("abc\0", 4);
+    units[98] = 0x80000000u | static_cast<uint32_t>(normalized.size());
+    Builder::CharsMap chars_map;
+    absl::Status status =
+        Builder::DecompileCharsMap(make_blob(units, normalized), &chars_map);
+    EXPECT_FALSE(status.ok());
+    EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
+    EXPECT_EQ(status.message(),
+              "Trie data contains out-of-bounds node references.");
+  }
 }
 
 static constexpr char kTestInputData[] = "nfkc.tsv";
