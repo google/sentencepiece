@@ -16,6 +16,7 @@
 
 #include <gtest/gtest.h>
 
+#include "absl/base/internal/endian.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -214,14 +215,21 @@ TEST(BuilderTest, CompileCharsMap) {
 
 TEST(BuilderTest, DecompileMalformedCharsMapTest) {
   // Assembles a precompiled charsmap from raw darts units and a normalized
-  // block, matching the on-disk <size><trie><normalized> layout.
+  // block in little-endian wire format so the test works on big-endian hosts.
   auto make_blob = [](const std::vector<uint32_t>& units,
                       absl::string_view normalized) {
     std::string trie_blob;
-    for (const uint32_t u : units)
-      trie_blob += string_util::EncodePOD<uint32_t>(u);
-    std::string blob = string_util::EncodePOD<uint32_t>(
-        static_cast<uint32_t>(trie_blob.size()));
+    trie_blob.reserve(units.size() * sizeof(uint32_t));
+    for (const uint32_t u : units) {
+      char buf[sizeof(uint32_t)];
+      absl::little_endian::Store32(buf, u);
+      trie_blob.append(buf, sizeof(buf));
+    }
+    std::string blob;
+    char size_buf[sizeof(uint32_t)];
+    absl::little_endian::Store32(size_buf,
+                                 static_cast<uint32_t>(trie_blob.size()));
+    blob.append(size_buf, sizeof(size_buf));
     blob += trie_blob;
     blob.append(normalized.data(), normalized.size());
     return blob;
