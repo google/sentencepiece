@@ -277,6 +277,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
           ),
       )
 
+  @pytest.mark.thread_unsafe
   def test_train(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
       model_prefix = os.path.join(tmp_dir, 'm')
@@ -292,6 +293,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
           sp.DecodePieces(sp.EncodeAsPieces(line))
           sp.DecodeIds(sp.EncodeAsIds(line))
 
+  @pytest.mark.thread_unsafe
   def test_special_tokens_combinations(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
       # 1. CONTROL (default)
@@ -363,6 +365,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
       with self.assertRaises(ValueError):
         sp.encode('a', add_eos=True, return_type=str)
 
+  @pytest.mark.thread_unsafe
   def test_train_iterator(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
       model_prefix = os.path.join(tmp_dir, 'm')
@@ -413,6 +416,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
           [sp2.id_to_piece(i) for i in range(sp2.get_piece_size())],
       )
 
+  @pytest.mark.thread_unsafe
   def test_train_kwargs(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
       model_prefix = os.path.join(tmp_dir, 'm')
@@ -790,6 +794,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
       )
       self.assertEqual(len(out), 2)
 
+  @pytest.mark.thread_unsafe
   def test_word_model_user_defined_symbol(self):
     with tempfile.TemporaryDirectory() as work_dir:
       input_file = os.path.join(work_dir, 'input.txt')
@@ -912,6 +917,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
       )
       self.assertEqual(len(results_timeout2), 1)
 
+  @pytest.mark.thread_unsafe
   def test_train_with_pretokenizer(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
       model_prefix = os.path.join(tmp_dir, 'm_pretok')
@@ -926,6 +932,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
       self.assertEqual(sp.vocab_size(), 1000)
       spm.set_nbest_timeout(0)
 
+  @pytest.mark.thread_unsafe
   def test_inconsistent_pretokenizer(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
       model_prefix = os.path.join(tmp_dir, 'm_inconsistent')
@@ -951,6 +958,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
           allow_inconsistent_pretokenization=True,
       )
 
+  @pytest.mark.thread_unsafe
   def test_pretokenizer_exception(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
       model_prefix = os.path.join(tmp_dir, 'm_exception')
@@ -967,6 +975,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
             pretokenizer=throwing_pretokenizer,
         )
 
+  @pytest.mark.thread_unsafe
   def test_pretokenizer_and_delimiter_mutually_exclusive(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
       model_prefix = os.path.join(tmp_dir, 'm_exclusive')
@@ -980,6 +989,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
             pretokenization_delimiter='||||',
         )
 
+  @pytest.mark.thread_unsafe
   def test_complex_regex_pretokenizer(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
       model_prefix = os.path.join(tmp_dir, 'm_complex_regex')
@@ -1045,6 +1055,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
       except:
         self.assertTrue(True)
 
+  @pytest.mark.thread_unsafe
   def test_batch(self):
     sp = spm.SentencePieceProcessor(
         model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model')
@@ -1082,6 +1093,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
         self.assertEqual(d1, d5)
         self.assertEqual(d1, d6)
 
+  @pytest.mark.thread_unsafe
   def test_parallel(self):
     sp = spm.SentencePieceProcessor(
         model_file=os.path.join(HERE, 'botchan_en_bpe_1000.model')
@@ -1288,6 +1300,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
         norm_map=[(b'foo', b'bar'), (b'foo', b'baz')],
     )
 
+  @pytest.mark.thread_unsafe
   def test_trainer_with_normalizer(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
       norm_map = [
