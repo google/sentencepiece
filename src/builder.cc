@@ -271,7 +271,7 @@ absl::Status Builder::DecompileCharsMap(absl::string_view blob,
   trie.copy_array(reinterpret_cast<const char*>(trie_blob.data()),
                   trie_blob.size());
 
-  if (!trie.validate()) {
+  if (!trie.validate(normalized.size())) {
     return absl::InternalError(
         "Trie data contains out-of-bounds node references.");
   }
@@ -305,20 +305,26 @@ absl::Status Builder::DecompileCharsMap(absl::string_view blob,
           if (static_cast<size_t>(result) >= normalized.size()) {
             value_out_of_range = true;
           } else {
-            const absl::string_view value = normalized.data() + result;
-            Chars key_chars;
-            Chars value_chars;
-            const auto key_unicode = string_util::UTF8ToUnicodeText(key);
-            key_chars.reserve(key_unicode.size());
-            for (const auto c : key_unicode) {
-              key_chars.push_back(c);
+            const size_t null_pos = normalized.find('\0', result);
+            if (null_pos == absl::string_view::npos) {
+              value_out_of_range = true;
+            } else {
+              const absl::string_view value =
+                  normalized.substr(result, null_pos - result);
+              Chars key_chars;
+              Chars value_chars;
+              const auto key_unicode = string_util::UTF8ToUnicodeText(key);
+              key_chars.reserve(key_unicode.size());
+              for (const auto c : key_unicode) {
+                key_chars.push_back(c);
+              }
+              const auto value_unicode = string_util::UTF8ToUnicodeText(value);
+              value_chars.reserve(value_unicode.size());
+              for (const auto c : value_unicode) {
+                value_chars.push_back(c);
+              }
+              (*chars_map)[key_chars] = value_chars;
             }
-            const auto value_unicode = string_util::UTF8ToUnicodeText(value);
-            value_chars.reserve(value_unicode.size());
-            for (const auto c : value_unicode) {
-              value_chars.push_back(c);
-            }
-            (*chars_map)[key_chars] = value_chars;
           }
         }
         // Recursively traverse.

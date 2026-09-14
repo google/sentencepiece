@@ -22,6 +22,7 @@
 #include "absl/base/internal/endian.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "builder.h"
 #include "filesystem.h"
 #include "model_interface.h"
 #include "sentencepiece_model.pb.h"
@@ -209,6 +210,14 @@ TEST(SentencePieceProcessorTest, RejectModelWithOOBCharsmapValue) {
   EXPECT_FALSE(status.ok());
   EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
   EXPECT_EQ(status.message(), "precompiled_charsmap is invalid.");
+
+  normalizer::Builder::CharsMap chars_map;
+  absl::Status builder_status =
+      normalizer::Builder::DecompileCharsMap(charsmap, &chars_map);
+  EXPECT_FALSE(builder_status.ok());
+  EXPECT_EQ(builder_status.code(), absl::StatusCode::kInternal);
+  EXPECT_EQ(builder_status.message(),
+            "Trie data contains out-of-bounds node references.");
 }
 
 // Test for GitHub issue #1308 (Allow single null-byte piece as UNUSED only when
