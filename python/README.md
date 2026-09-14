@@ -646,6 +646,10 @@ python -m build --wheel
 Get-ChildItem .\dist\sentencepiece*.whl | ForEach-Object { pip install $_.FullName }
 ```
 
+### Versioning
+
+The Python package version is not stored in `pyproject.toml`. `setup.py` reads it from `VERSION.txt` at the repository root (the same file used by CMake and Bazel) and generates `src/sentencepiece/_version.py` at build time, so `sentencepiece.__version__` always matches the C++ library. To release a new version, edit `VERSION.txt`, the `module(version = ...)` literal in `MODULE.bazel` (Bazel cannot read a file there) and the two documentation examples listed in the `.github/scripts/check_version.py` docstring. Everything else is derived: `src/version_test.cc` asserts that the version the active build system declares matches the one compiled into `config.h`, and it runs under both build systems (`bazel test //src:version_test` and the CMake `spm_test`). Bazel supplies the `MODULE.bazel` literal, which is the copy that can genuinely drift. The CMake test `sentencepiece_version_test` additionally checks that `spm_encode --version` reports it, and `.github/scripts/check_version.py` cross-checks `MODULE.bazel` and the documentation examples against `VERSION.txt`.
+
 ## Migration Notes (New pybind11 API)
 
 Since v0.2.2, the SentencePiece Python wrapper has been migrated from SWIG to **pybind11**, introducing optimized NumPy support and robust Free-Threading (NoGIL) execution. 

@@ -384,3 +384,16 @@ cc_test(
         "@google_benchmark//:benchmark",
     ],
 )
+
+# Fails if module(version = ...) in MODULE.bazel drifts from VERSION.txt.
+cc_test(
+    name = "version_test",
+    size = "small",
+    srcs = ["version_test.cc"],
+    local_defines = ['SPM_BUILD_SYSTEM_MODULE_VERSION=\\"%s\\"' % module_version()],
+    deps = [
+        ":config",
+        ":test_main",
+        "@com_google_googletest//:gtest",
+    ],
+)
