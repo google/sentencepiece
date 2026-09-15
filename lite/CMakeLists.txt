@@ -229,6 +229,7 @@ add_library(cached_sentencepiece_lite STATIC
 target_include_directories(cached_sentencepiece_lite PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+  $<BUILD_INTERFACE:${SPM_ROOT_DIR}>
   $<BUILD_INTERFACE:${SPM_ROOT_DIR}/third_party/rapidhash>
 )
 
@@ -263,6 +264,10 @@ target_link_libraries(sentencepiece_lite_fb_converter PUBLIC
   absl::statusor
   absl::strings
 )
+
+if (ATOMIC_LIB)
+  target_link_libraries(sentencepiece_lite_fb_converter PUBLIC ${ATOMIC_LIB})
+endif()
 
 # ------------------------------------------------------------------------------
 # Executables / Tools

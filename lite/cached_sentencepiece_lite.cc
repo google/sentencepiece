@@ -22,22 +22,7 @@
 #include <vector>
 
 #include "sentencepiece_lite.h"
-
-#if defined(SPM_USE_RAPIDHASH) || defined(RAPIDHASH_H)
-#define SPM_EFFECTIVE_RAPIDHASH 1
-#elif __has_include("rapidhash.h")
-#include "rapidhash.h"
-#define SPM_EFFECTIVE_RAPIDHASH 1
-#elif __has_include("third_party/rapidhash/rapidhash.h")
 #include "third_party/rapidhash/rapidhash.h"
-#define SPM_EFFECTIVE_RAPIDHASH 1
-#elif __has_include("third_party/xxhash/xxhash.h")
-#include "third_party/xxhash/xxhash.h"
-#define SPM_USE_XXHASH 1
-#elif __has_include("xxhash.h")
-#include "xxhash.h"
-#define SPM_USE_XXHASH 1
-#endif
 
 namespace sentencepiece::lite {
 namespace {
@@ -51,11 +36,7 @@ inline uint64_t PointerSeed(const void* ptr) {
 }
 
 inline uint64_t FastHash64(std::string_view str, uint64_t seed) {
-#if defined(SPM_EFFECTIVE_RAPIDHASH) || defined(RAPIDHASH_H)
   return rapidhash_withSeed_unrolled(str.data(), str.size(), seed);
-#else
-  return XXH3_64bits_withSeed(str.data(), str.size(), seed);
-#endif
 }
 
 }  // namespace

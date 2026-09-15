@@ -98,7 +98,7 @@ def process_file(
       ):
         continue
       if strip_internal and re.match(
-          r'^#include\s+["<](?:third_party/)?(?:sentencepiece|cached_sentencepiece|flatbuffers|absl|rapidhash|xxhash|utf8|util/utf8|darts).*',
+          r'^#include\s+["<](?:third_party/)?(?:sentencepiece|cached_sentencepiece|flatbuffers|absl|rapidhash|utf8|util/utf8|darts).*',
           s,
       ):
         continue

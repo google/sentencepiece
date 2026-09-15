@@ -334,15 +334,14 @@ absl::StatusOr<std::string> ToFlatbuffer(
     // with zero copy.
     if constexpr (std::endian::native == std::endian::big) {
       if (charsmap.size() >= sizeof(uint32_t)) {
-        uint32_t trie_blob_size = 0;
-        std::memcpy(&trie_blob_size, charsmap.data(), sizeof(uint32_t));
-        trie_blob_size = absl::byteswap(trie_blob_size);
+        uint32_t* words = reinterpret_cast<uint32_t*>(charsmap.data());
+        const uint32_t trie_blob_size = absl::byteswap(words[0]);
+        words[0] = trie_blob_size;
         if (sizeof(uint32_t) + trie_blob_size <= charsmap.size() &&
             (trie_blob_size % sizeof(uint32_t)) == 0) {
-          uint32_t* words = reinterpret_cast<uint32_t*>(charsmap.data());
           const size_t num_words =
               (sizeof(uint32_t) + trie_blob_size) / sizeof(uint32_t);
-          for (size_t i = 0; i < num_words; ++i) {
+          for (size_t i = 1; i < num_words; ++i) {
             words[i] = absl::byteswap(words[i]);
           }
         }

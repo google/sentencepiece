@@ -96,7 +96,8 @@ std::string ReadFile(std::string_view path) {
                      std::istreambuf_iterator<char>());
 }
 
-class SentencePieceLiteTest : public ::testing::TestWithParam<std::string> {
+class SentencePieceLiteTest
+    : public ::testing::TestWithParam<std::string_view> {
  protected:
   void SetUp() override {
     std::string model_path;
@@ -1574,7 +1575,9 @@ TEST(SentencePieceLiteNormalizerTest, InvalidUTF8ReplacementCharacterTest) {
 }
 
 INSTANTIATE_TEST_SUITE_P(UnigramAndBPE, SentencePieceLiteTest,
-                         ::testing::Values("unigram", "bpe", "bpe_byte"));
+                         ::testing::Values(std::string_view("unigram"),
+                                           std::string_view("bpe"),
+                                           std::string_view("bpe_byte")));
 
 TEST(SentencePieceModelConvertersTest, TreatNullByteAsUnused) {
   // Build a test ModelProto with byte_fallback = true and a piece containing

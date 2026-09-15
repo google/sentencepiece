@@ -354,13 +354,16 @@ inline size_t OneCharLen(const char* src) {
   return "\1\1\1\1\1\1\1\1\1\1\1\1\2\2\3\4"[(*src & 0xFF) >> 4];
 }
 
-// Returns the byte offset of the first matched byte within an 8-byte SWAR word.
+inline uint64_t LoadLe64(const void* ptr) {
+  uint64_t val;
+  std::memcpy(&val, ptr, sizeof(uint64_t));
+  return flatbuffers::EndianScalar(val);
+}
+
+// Returns the byte offset of the first matched byte within a little-endian
+// 8-byte SWAR word.
 inline size_t FirstMatchedByteOffset(uint64_t match_mask) {
-  if constexpr (std::endian::native == std::endian::little) {
-    return std::countr_zero(match_mask) >> 3;
-  } else {
-    return std::countl_zero(match_mask) >> 3;
-  }
+  return std::countr_zero(match_mask) >> 3;
 }
 
 // Fast, register-friendly UTF-8 string scanner designed to replace repeated
@@ -411,8 +414,7 @@ class StringScanner {
     // registers, avoiding libc function call overhead for short English words
     // (avg ~5 bytes).
     if (c == ' ' && ptr_ + sizeof(uint64_t) <= end_) {
-      uint64_t word;
-      std::memcpy(&word, ptr_, sizeof(uint64_t));
+      const uint64_t word = LoadLe64(ptr_);
       const uint64_t space_xor = word ^ 0x2020202020202020ULL;
       const uint64_t space_match = (space_xor - 0x0101010101010101ULL) &
                                    ~space_xor & 0x8080808080808080ULL;
@@ -1349,8 +1351,7 @@ StatusCode Model::PretokenizeAtSafeBoundaries(
       // In English documents (e.g., ice_long_doc.txt, 1.91 MB), this
       // accelerates pre-tokenization throughput by ~3.44x (52.5 MB/s -> 180.8
       // MB/s).
-      uint64_t val;
-      std::memcpy(&val, scanner.data(), 8);
+      const uint64_t val = LoadLe64(scanner.data());
       const uint64_t lower = val | 0x2020202020202020ULL;
       const uint64_t sub = lower - 0x6161616161616161ULL;
       const uint64_t bad_mask =
