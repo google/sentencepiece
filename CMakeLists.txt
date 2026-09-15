@@ -174,6 +174,8 @@ elseif ((${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") OR
   find_library(ATOMIC_LIB NAMES atomic libatomic.so libatomic.so.1)
   if (ATOMIC_LIB)
     message(STATUS "Found atomic: ${ATOMIC_LIB}")
+    string(APPEND CMAKE_C_STANDARD_LIBRARIES " ${ATOMIC_LIB}")
+    string(APPEND CMAKE_CXX_STANDARD_LIBRARIES " ${ATOMIC_LIB}")
   endif()
 endif()
 
