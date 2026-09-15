@@ -50,6 +50,14 @@
     if (_status != StatusCode::kOk) return _status; \
   } while (0)
 
+#if defined(_MSC_VER)
+#define SPM_LITE_RESTRICT __restrict
+#elif defined(__GNUC__) || defined(__clang__)
+#define SPM_LITE_RESTRICT __restrict__
+#else
+#define SPM_LITE_RESTRICT
+#endif
+
 namespace sentencepiece::lite {
 namespace {
 
@@ -187,7 +195,7 @@ class DoubleArray {
   // overhead, allowing compilers (Clang/GCC) to perform register allocation and
   // instruction-level parallelization inside hot tokenization loops.
   struct View {
-    const uint32_t* __restrict__ array;
+    const uint32_t* SPM_LITE_RESTRICT array;
     static constexpr uint32_t kInvalidNodePos = ~0U;
 
     static uint32_t ExtractOffset(uint32_t unit) {
@@ -1514,10 +1522,10 @@ struct SymbolPairComparator {
 
 struct Symbol {
   std::string_view piece;
-  int prev;     // prev index of this symbol. -1 for BOS.
-  int next;     // next index of this symbol. -1 for EOS.
-  int id : 31;  // vocab id of this symbol.
-  bool freeze : 1;
+  int prev;             // prev index of this symbol. -1 for BOS.
+  int next;             // next index of this symbol. -1 for EOS.
+  int32_t id : 31;      // vocab id of this symbol.
+  uint32_t freeze : 1;  // Use 32-bit integer type so MSVC packs with `id`.
   // Cached Trie node position for `piece`.
   // Bypasses root-node re-lookups when merging adjacent symbols,
   // enabling direct 1-step Trie transitions from the left symbol's node.

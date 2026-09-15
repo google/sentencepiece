@@ -54,19 +54,36 @@ if (NOT TARGET flatbuffers OR NOT TARGET flatc)
     GIT_REPOSITORY https://github.com/google/flatbuffers.git
     GIT_TAG v25.12.19
     GIT_SHALLOW    TRUE
+    SOURCE_DIR     "${CMAKE_BINARY_DIR}/third_party/flatbuffers-src"
   )
   FetchContent_MakeAvailable(flatbuffers)
+  FetchContent_GetProperties(flatbuffers SOURCE_DIR flatbuffers_SOURCE_DIR)
+  if (flatbuffers_SOURCE_DIR)
+    file(REMOVE_RECURSE "${flatbuffers_SOURCE_DIR}/tests/fuzzer")
+  endif()
 endif()
 
 # FlatBuffers Schema Compilation (flatc -> sentencepiece_lite_generated.h)
 set(LITE_FBS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece_lite.fbs")
 set(LITE_FBS_GEN_HDR "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece_lite_generated.h")
 
+if (SPM_FLATC_EXECUTABLE)
+  set(FLATC_CMD "${SPM_FLATC_EXECUTABLE}")
+  set(FLATC_DEP "")
+elseif (CMAKE_CROSSCOMPILING AND CMAKE_CROSSCOMPILING_EMULATOR)
+  set(FLATC_CMD ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:flatc>)
+  set(FLATC_DEP flatc)
+else()
+  set(FLATC_CMD $<TARGET_FILE:flatc>)
+  set(FLATC_DEP flatc)
+endif()
+
 add_custom_command(
   OUTPUT "${LITE_FBS_GEN_HDR}"
-  COMMAND $<TARGET_FILE:flatc> -c --gen-object-api -o "${CMAKE_CURRENT_BINARY_DIR}" "${LITE_FBS_SRC}"
-  DEPENDS "${LITE_FBS_SRC}" flatc
+  COMMAND ${FLATC_CMD} -c --gen-object-api -o "${CMAKE_CURRENT_BINARY_DIR}" "${LITE_FBS_SRC}"
+  DEPENDS "${LITE_FBS_SRC}" ${FLATC_DEP}
   COMMENT "Generating FlatBuffers C++ header sentencepiece_lite_generated.h"
+  VERBATIM
 )
 
 add_custom_target(generate_sentencepiece_lite_fbs ALL DEPENDS "${LITE_FBS_GEN_HDR}")
@@ -109,10 +126,16 @@ if (NOT TARGET protobuf::libprotobuf-lite AND NOT TARGET protobuf::libprotobuf)
   FetchContent_Declare(
     protobuf
     GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-    GIT_TAG v36.0
+    GIT_TAG v36.1
     GIT_SHALLOW TRUE
   )
+  if (MSVC)
+    set(CMAKE_CXX_STANDARD 17)
+  endif()
   FetchContent_MakeAvailable(protobuf)
+  if (MSVC)
+    set(CMAKE_CXX_STANDARD 20)
+  endif()
   FetchContent_GetProperties(protobuf SOURCE_DIR protobuf_SOURCE_DIR)
   include_directories(${protobuf_SOURCE_DIR}/src ${protobuf_SOURCE_DIR}/third_party/utf8_range)
 
@@ -137,12 +160,22 @@ elseif (TARGET protobuf::libprotobuf)
 endif()
 
 if (NOT SPM_MODEL_PROTO_SRCS)
+  if (SPM_PROTOC_EXECUTABLE)
+    set(LITE_PROTOC_CMD "${SPM_PROTOC_EXECUTABLE}")
+    set(LITE_PROTOC_DEP "")
+  elseif (CMAKE_CROSSCOMPILING AND CMAKE_CROSSCOMPILING_EMULATOR)
+    set(LITE_PROTOC_CMD ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:protobuf::protoc>)
+    set(LITE_PROTOC_DEP protobuf::protoc)
+  else()
+    set(LITE_PROTOC_CMD $<TARGET_FILE:protobuf::protoc>)
+    set(LITE_PROTOC_DEP protobuf::protoc)
+  endif()
   set(SPM_MODEL_PROTO_HDRS "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece_model.pb.h")
   set(SPM_MODEL_PROTO_SRCS "${CMAKE_CURRENT_BINARY_DIR}/sentencepiece_model.pb.cc" "${SPM_MODEL_PROTO_HDRS}")
   add_custom_command(
     OUTPUT ${SPM_MODEL_PROTO_SRCS}
-    COMMAND $<TARGET_FILE:protobuf::protoc> --cpp_out=${CMAKE_CURRENT_BINARY_DIR} -I${SPM_ROOT_DIR}/src ${SPM_ROOT_DIR}/src/sentencepiece_model.proto
-    DEPENDS ${SPM_ROOT_DIR}/src/sentencepiece_model.proto protobuf::protoc
+    COMMAND ${LITE_PROTOC_CMD} --cpp_out=${CMAKE_CURRENT_BINARY_DIR} -I${SPM_ROOT_DIR}/src ${SPM_ROOT_DIR}/src/sentencepiece_model.proto
+    DEPENDS ${SPM_ROOT_DIR}/src/sentencepiece_model.proto ${LITE_PROTOC_DEP}
     COMMENT "Running cpp protocol buffer compiler on sentencepiece_model.proto for lite"
     VERBATIM
   )
