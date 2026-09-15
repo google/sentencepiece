@@ -131,10 +131,30 @@ To run these benchmarks yourself, see the [reproduction instructions and scripts
 
 ---
 
+## SentencePiece Lite (Zero-Dependency C++20 Runtime)
+
+For mobile apps, edge devices, on-device LLM inference, and high-throughput C++ serving environments, this repository includes **SentencePiece Lite** ([`lite/`](lite/README.md)):
+
+*   **Zero Runtime Dependencies**: Written in modern C++20 with zero third-party dependencies (no runtime dependency on Protobuf or Abseil).
+*   **SQLite-Style Standalone Amalgamation**: Can be distributed as a self-contained 2-file bundle (`dist/sentencepiece_lite.h` and `dist/sentencepiece_lite.cc`). Drop them into any C++ project and compile directly with `-std=c++20`.
+*   **Zero-Copy Memory-Mapped Startup**: Operates directly on FlatBuffers binaries (`.spm.fb`) via `mmap`, achieving instantaneous cold-start with only **1.2 KB** heap memory overhead regardless of vocabulary size.
+*   **Compact Binary Footprint**: Core engine is under 2,000 lines of code, compiling to a **~45 KB** stripped static library (`libsentencepiece_lite.a`).
+*   **High-Throughput Token Caching**: Optional L1 cache-line aligned (64B) 2-way set-associative cache (`CachedSentencePieceLite`) delivering up to **30+ MB/s** single-core throughput.
+*   **Safe-Boundary Pre-Tokenization**: Built-in character bigram co-occurrence analysis splits long documents safely for lock-free parallel multi-threaded tokenization.
+*   **Standalone CLI Tools**:
+    *   `spm_to_fb`: Converts existing `.model` files to optimized `.spm.fb` FlatBuffers binaries.
+    *   `spm_lite`: Fast command-line tokenization and detokenization using the Lite runtime.
+*   **Full Canonical Equivalence**: 100% byte-for-byte normalization and token ID equivalence with canonical SentencePiece models (Unigram and BPE).
+
+For details, benchmarks, and C++ integration recipes, see the [SentencePiece Lite Documentation](lite/README.md).
+
+---
+
 ## Documentation & Resources
 
 For detailed guides, API references, and advanced usage, please refer to the following resources:
 
+*   [SentencePiece Lite Runtime Guide](lite/README.md)
 *   [Command Line Interface (CLI) & Build Guide (CMake)](doc/cli.md)
 *   [Building with Bazel](doc/bazel.md)
 *   [C++ API Reference](doc/cpp.md)

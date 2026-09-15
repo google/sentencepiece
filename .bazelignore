@@ -10,4 +10,6 @@ third_party/abseil-cpp
 third_party/absl
 third_party/benchmark
 third_party/protobuf
+lite/build
 python
+

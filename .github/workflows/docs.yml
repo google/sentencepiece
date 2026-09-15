@@ -8,6 +8,7 @@ on:
       - "doc/**"
       - "python/**/*.md"
       - "benchmark/**/*.md"
+      - "lite/**/*.md"
       - "mkdocs.yml"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
@@ -38,15 +39,17 @@ jobs:
 
       - name: Prepare _docs_build directory (preserving all relative links, order & MathJax config)
         run: |
-          mkdir -p _docs_build/doc _docs_build/python _docs_build/benchmark _docs_build/javascripts
+          mkdir -p _docs_build/doc _docs_build/python _docs_build/benchmark _docs_build/lite _docs_build/javascripts
           cp README.md _docs_build/index.md
           cp doc/*.md _docs_build/doc/
           cp python/*.md _docs_build/python/
           cp benchmark/*.md _docs_build/benchmark/ 2>/dev/null || true
+          cp lite/*.md _docs_build/lite/ 2>/dev/null || true
           cat << 'EOF' > _docs_build/.pages
           nav:
             - Overview: index.md
             - Python Module: python
+            - SentencePiece Lite: lite
             - Guides & References: doc
             - Benchmark Suite: benchmark
             - ...

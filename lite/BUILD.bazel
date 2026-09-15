@@ -1,0 +1,178 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+
+package(default_visibility = ["//visibility:public"])
+
+# FlatBuffers schema compilation
+genrule(
+    name = "sentencepiece_lite_fbs_gen",
+    srcs = ["sentencepiece_lite.fbs"],
+    outs = ["sentencepiece_lite_generated.h"],
+    cmd = "$(location @flatbuffers//:flatc) -c --gen-object-api -o $(@D) $(location sentencepiece_lite.fbs)",
+    tools = ["@flatbuffers//:flatc"],
+)
+
+# Core SentencePiece Lite Runtime library (with utf8_range from protobuf)
+cc_library(
+    name = "sentencepiece_lite",
+    srcs = ["sentencepiece_lite.cc"],
+    hdrs = [
+        "sentencepiece_lite.h",
+        ":sentencepiece_lite_fbs_gen",
+    ],
+    defines = [
+        "SENTENCEPIECE_LITE_USE_ABSL",
+        "SENTENCEPIECE_LITE_USE_UTF8_RANGE",
+    ],
+    includes = ["."],
+    deps = [
+        "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/functional:function_ref",
+        "@com_google_absl//absl/types:span",
+        "@com_google_protobuf//third_party/utf8_range:utf8_validity",
+        "@flatbuffers",
+    ],
+)
+
+# Standalone zero-dependency runtime without utf8_range/protobuf/absl
+cc_library(
+    name = "sentencepiece_lite_standalone",
+    srcs = ["sentencepiece_lite.cc"],
+    hdrs = [
+        "sentencepiece_lite.h",
+        ":sentencepiece_lite_fbs_gen",
+    ],
+    includes = ["."],
+    deps = [
+        "@flatbuffers",
+    ],
+)
+
+# High-performance 2-way set-associative token cache
+cc_library(
+    name = "cached_sentencepiece_lite",
+    srcs = ["cached_sentencepiece_lite.cc"],
+    hdrs = ["cached_sentencepiece_lite.h"],
+    includes = ["."],
+    deps = [
+        ":sentencepiece_lite",
+        "//third_party:rapidhash",
+    ],
+)
+
+# Model converters between Protobuf ModelProto and FlatBuffers
+cc_library(
+    name = "sentencepiece_model_converters",
+    srcs = ["sentencepiece_model_converters.cc"],
+    hdrs = ["sentencepiece_model_converters.h"],
+    includes = ["."],
+    deps = [
+        ":sentencepiece_lite",
+        ":sentencepiece_lite_fbs_gen",
+        "//src:sentencepiece_model_cc_proto",
+        "//third_party:darts_clone",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@flatbuffers",
+    ],
+)
+
+# Executables
+cc_binary(
+    name = "spm_lite",
+    srcs = ["spm_lite_main.cc"],
+    deps = [
+        ":sentencepiece_lite",
+        ":sentencepiece_model_converters",
+        "//src:sentencepiece_model_cc_proto",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_binary(
+    name = "spm_to_fb",
+    srcs = ["spm_to_fb_main.cc"],
+    deps = [
+        ":sentencepiece_lite",
+        ":sentencepiece_model_converters",
+        "//src:sentencepiece_model_cc_proto",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+# Unit tests
+cc_test(
+    name = "sentencepiece_lite_test",
+    srcs = ["sentencepiece_lite_test.cc"],
+    data = ["//data:test_data"],
+    deps = [
+        ":sentencepiece_lite",
+        ":sentencepiece_model_converters",
+        "//src:sentencepiece_model_cc_proto",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/status",
+        "@com_google_googletest//:gtest_main",
+        "@flatbuffers",
+    ],
+)
+
+cc_test(
+    name = "cached_sentencepiece_lite_test",
+    srcs = ["cached_sentencepiece_lite_test.cc"],
+    data = ["//data:test_data"],
+    deps = [
+        ":cached_sentencepiece_lite",
+        ":sentencepiece_lite",
+        ":sentencepiece_model_converters",
+        "//src:sentencepiece_model_cc_proto",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "sentencepiece_lite_canonical_test",
+    srcs = ["sentencepiece_lite_canonical_test.cc"],
+    deps = [
+        ":sentencepiece_lite",
+        ":sentencepiece_model_converters",
+        "//src:sentencepiece_model_cc_proto",
+        "//src:sentencepiece_processor",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+# Benchmarks
+cc_binary(
+    name = "sentencepiece_lite_benchmark",
+    srcs = ["sentencepiece_lite_benchmark.cc"],
+    data = ["//data:test_data"],
+    deps = [
+        ":cached_sentencepiece_lite",
+        ":sentencepiece_lite",
+        ":sentencepiece_model_converters",
+        "//src:sentencepiece_model_cc_proto",
+        "@com_google_absl//absl/base:no_destructor",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
+        "@google_benchmark//:benchmark",
+    ],
+)

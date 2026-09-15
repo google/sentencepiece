@@ -53,7 +53,7 @@ jobs:
           delete-branch: true
           title: "build: update dependencies"
           body: |
-            Automated weekly update for dependencies in `CMakeLists.txt` and `MODULE.bazel`:
+            Automated weekly update for dependencies in `CMakeLists.txt`, `lite/CMakeLists.txt`, and `MODULE.bazel`:
 
             ${{ steps.update.outputs.SUMMARY }}
 

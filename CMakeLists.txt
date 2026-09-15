@@ -50,6 +50,7 @@ option(SPM_TCMALLOC_STATIC "Link static library of TCMALLOC." OFF)
 option(SPM_ENABLE_NFKC_COMPILE "Compile NFKC tables using ICU" OFF)
 option(SPM_ENABLE_MSVC_MT_BUILD "Use /MT flag in MSVC build" OFF)
 option(SPM_DISABLE_EMBEDDED_DATA "Disable to embed pre-compiled data." OFF)
+option(SPM_ENABLE_LITE "Builds SentencePiece Lite" ON)
 option(SPM_CROSS_SYSTEM_PROCESSOR "Override system processor" "")
 
 set(SPM_ABSL_PROVIDER "module" CACHE STRING "Provider of absl library")
@@ -369,6 +370,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 # ==============================================================================
 add_subdirectory(src)
 add_subdirectory(third_party)
+if(SPM_ENABLE_LITE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lite/CMakeLists.txt")
+  add_subdirectory(lite)
+endif()
 
 # ==============================================================================
 # 7. CPack Packaging

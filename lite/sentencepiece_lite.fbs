@@ -1,0 +1,137 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Simplified FlatBuffers schema for SentencePiece Lite Runtime.
+//
+// GUIDELINES FOR UPDATING THIS SCHEMA:
+// - Adding fields: Always append new fields at the end of a table declaration
+//   or assign explicit, previously unused IDs with appropriate default values.
+// - Removing fields: Never delete or reorder existing fields, as this breaks
+//   binary backwards compatibility. Instead, deprecate obsolete fields by
+//   marking them with the `(deprecated)` attribute or renaming them (e.g.,
+//   `unused_field:int (deprecated);`).
+
+namespace sentencepiece.lite;
+
+// Corresponds 1-to-1 with `sentencepiece::TrainerSpec::ModelType` in protobuf.
+// Defines the tokenization algorithm used by the model.
+enum ModelType:byte {
+  UNIGRAM = 1,
+  BPE = 2,
+}
+
+// Corresponds 1-to-1 with `sentencepiece::ModelProto::SentencePiece::Type` in
+// protobuf. Represents the semantic category of each vocabulary token.
+enum PieceType:byte {
+  DEFAULT = 0,
+  NORMAL = 1,
+  UNKNOWN = 2,
+  CONTROL = 3,
+  USER_DEFINED = 4,
+  UNUSED = 5,
+  BYTE = 6,
+}
+
+// Corresponds with `sentencepiece::NormalizerSpec` in protobuf.
+// Stores text normalization flags and precompiled character transition tables.
+table NormalizerSpec {
+  name:string;
+  precompiled_charsmap:[ubyte] (force_align: 8);
+  add_dummy_prefix:bool = true;
+  remove_extra_whitespaces:bool = true;
+  escape_whitespaces:bool = true;
+  treat_whitespace_as_suffix:bool = false;
+}
+
+table ModelProto {
+  // 1: Fields corresponding 1-to-1 with sentencepiece::ModelProto
+
+  // Vocabulary token text strings. Corresponds to `ModelProto.pieces.piece`.
+  pieces:[string];
+
+  // Float log-probabilities (populated only for UNIGRAM models).
+  // The size of this array must equal `pieces.length` (`vocab_size`).
+  scores:[float];
+
+  // Integer merge ranks (populated only for BPE models to enable fast integer
+  // comparisons). The size of this array must equal `pieces.length`.
+  int_scores:[int];
+
+  // Piece types corresponding to each vocabulary token.
+  // The size of this array must equal `pieces.length` (`vocab_size`).
+  types:[PieceType];
+
+  // Unknown token ID in the vocabulary.
+  unk_id:int = 0;
+
+  // Surface representation string for unknown tokens (e.g., " \xe2\x81\x87 ").
+  unk_surface:string;
+
+  // Tokenization algorithm specification (UNIGRAM or BPE).
+  model_type:ModelType = UNIGRAM;
+
+  // Text normalization specification and rules.
+  normalizer_spec:NormalizerSpec;
+
+  // 2: Precomputed accelerator fields for FlatBuffers runtime
+
+  // Precompiled double-array trie for vocabulary lookup.
+  // Format: pieces_trie_blob[x] = y, where x is a vocabulary piece string,
+  // and y is its corresponding symbol index ID (0 <= y < vocab_size).
+  pieces_trie_blob:[ubyte] (force_align: 8);
+
+  // Precompiled double-array trie for USER_DEFINED prefix matching.
+  // Format: prefix_matcher_trie_blob[x] = y, where x is a USER_DEFINED prefix,
+  // and y is its corresponding symbol index ID in the vocabulary.
+  prefix_matcher_trie_blob:[ubyte] (force_align: 8);
+
+  // Precompiled double-array trie for safe character bigram boundaries.
+  // Format: char_bigram_trie_blob[x] = y, where x is a valid bigram string,
+  // and y stores the suffix link (failure link) for Aho-Corasick traversal.
+  char_bigram_trie_blob:[ubyte] (force_align: 8);
+
+  // True if the model contains precomputed direct mappings (shortcuts) to
+  // bypass tokenization for safe vocabulary pieces.
+  // Note: For Unigram models, this variable is always false, as direct mapping
+  // has no performance impact in Unigram encoding.
+  has_direct_mappings:bool = false;
+
+  // Vector of flags where is_direct_mapping[id] is 1 if the vocabulary piece
+  // corresponds to a safe direct shortcut, and 0 otherwise.
+  // If has_direct_mappings is true but this vector is null, it indicates that
+  // all vocabulary pieces are direct-mappings.
+  //
+  // Note on BPE serialization behavior:
+  // 1. When BPE merge rules follow a valid merge order, all vocabulary pieces
+  //    are guaranteed to be direct mappings.
+  // 2. This vector is specifically used to store flags for pieces that have
+  //    inconsistent merge rules.
+  // 3. Because inconsistent merge rules are extremely rare in practice, this
+  //    field is almost always serialized as null (saving storage).
+  is_direct_mapping:[ubyte];
+
+  // Beginning of sentence (BOS) token ID in the vocabulary.
+  // Set to -1 if disabled or undefined.
+  bos_id:int = -1;
+
+  // End of sentence (EOS) token ID in the vocabulary.
+  // Set to -1 if disabled or undefined.
+  eos_id:int = -1;
+
+  // Padding (PAD) token ID in the vocabulary.
+  // Set to -1 if disabled or undefined.
+  pad_id:int = -1;
+}
+
+root_type ModelProto;
