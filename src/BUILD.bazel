@@ -12,8 +12,15 @@ proto_library(
 )
 
 cc_proto_library(
-    name = "sentencepiece_cc_proto",
+    name = "_sentencepiece_cc_proto",
     deps = [":sentencepiece_proto"],
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "sentencepiece_cc_proto",
+    includes = ["."],
+    deps = [":_sentencepiece_cc_proto"],
     visibility = ["//visibility:public"],
 )
 
@@ -24,8 +31,15 @@ proto_library(
 )
 
 cc_proto_library(
-    name = "sentencepiece_model_cc_proto",
+    name = "_sentencepiece_model_cc_proto",
     deps = [":sentencepiece_model_proto"],
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "sentencepiece_model_cc_proto",
+    includes = ["."],
+    deps = [":_sentencepiece_model_cc_proto"],
     visibility = ["//visibility:public"],
 )
 

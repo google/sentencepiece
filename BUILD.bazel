@@ -67,3 +67,34 @@ alias(
     name = "compile_charsmap",
     actual = "//src:compile_charsmap",
 )
+
+alias(
+    name = "sentencepiece_lite",
+    actual = "//lite:sentencepiece_lite",
+)
+
+alias(
+    name = "sentencepiece_lite_standalone",
+    actual = "//lite:sentencepiece_lite_standalone",
+)
+
+alias(
+    name = "cached_sentencepiece_lite",
+    actual = "//lite:cached_sentencepiece_lite",
+)
+
+alias(
+    name = "spm_lite",
+    actual = "//lite:spm_lite",
+)
+
+alias(
+    name = "spm_to_fb",
+    actual = "//lite:spm_to_fb",
+)
+
+alias(
+    name = "sentencepiece_lite_benchmark",
+    actual = "//lite:sentencepiece_lite_benchmark",
+)
+

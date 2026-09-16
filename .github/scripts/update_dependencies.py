@@ -23,7 +23,10 @@ from pathlib import Path
 
 # .github/scripts/ -> repository root
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-CMAKELISTS_PATH = REPO_ROOT / "CMakeLists.txt"
+CMAKELISTS_PATHS = [
+    REPO_ROOT / "CMakeLists.txt",
+    REPO_ROOT / "lite" / "CMakeLists.txt",
+]
 MODULE_BAZEL_PATH = REPO_ROOT / "MODULE.bazel"
 VERSION_TXT_PATH = REPO_ROOT / "VERSION.txt"
 
@@ -32,6 +35,8 @@ VALID_TAG_PATTERN = re.compile(r"^[a-zA-Z0-9_.\-]+$")
 PRERELEASE_PATTERN = re.compile(
     r"[-._](rc\d*|alpha\d*|beta\d*|dev\d*|preview\d*|ea\d*)$", re.IGNORECASE
 )
+
+TAG_CACHE = {}
 
 
 def is_valid_tag(tag: str) -> bool:
@@ -51,6 +56,9 @@ def is_valid_tag(tag: str) -> bool:
 
 def get_latest_github_tag(repo_path: str) -> str:
     """Fetch the latest release tag or tag for a GitHub repository."""
+    if repo_path in TAG_CACHE:
+        return TAG_CACHE[repo_path]
+
     token = os.getenv("GITHUB_TOKEN")
     headers = {
         "User-Agent": "SentencePiece-Dependency-Updater",
@@ -59,15 +67,16 @@ def get_latest_github_tag(repo_path: str) -> str:
     if token:
         headers["Authorization"] = f"Bearer {token}"
 
+    tag = ""
     # Try /releases/latest first (skips drafts and pre-releases)
     release_url = f"https://api.github.com/repos/{repo_path}/releases/latest"
     req = urllib.request.Request(release_url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-            tag = data.get("tag_name")
-            if tag and is_valid_tag(tag):
-                return tag
+            candidate = data.get("tag_name")
+            if candidate and is_valid_tag(candidate):
+                tag = candidate
     except urllib.error.HTTPError as e:
         if e.code != 404:
             print(f"Warning: HTTP {e.code} fetching releases for {repo_path}: {e}")
@@ -75,20 +84,24 @@ def get_latest_github_tag(repo_path: str) -> str:
         print(f"Warning: Error fetching release for {repo_path}: {e}")
 
     # Fallback to /tags, iterating to find the first valid non-prerelease tag
-    tags_url = f"https://api.github.com/repos/{repo_path}/tags?per_page=10"
-    req = urllib.request.Request(tags_url, headers=headers)
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            if data and isinstance(data, list):
-                for item in data:
-                    name = item.get("name")
-                    if name and is_valid_tag(name):
-                        return name
-    except Exception as e:
-        print(f"Error fetching tags for {repo_path}: {e}")
+    if not tag:
+        tags_url = f"https://api.github.com/repos/{repo_path}/tags?per_page=10"
+        req = urllib.request.Request(tags_url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                if data and isinstance(data, list):
+                    for item in data:
+                        name = item.get("name")
+                        if name and is_valid_tag(name):
+                            tag = name
+                            break
+        except Exception as e:
+            print(f"Error fetching tags for {repo_path}: {e}")
 
-    return ""
+    if tag:
+        TAG_CACHE[repo_path] = tag
+    return tag
 
 
 def get_latest_bcr_version(module_name: str) -> str:
@@ -125,10 +138,10 @@ def get_latest_bcr_version(module_name: str) -> str:
     return ""
 
 
-def update_cmake_content(content: str):
-    # Match FetchContent_Declare blocks
+def update_cmake_content(content: str, rel_path: str = ""):
+    # Match FetchContent_Declare and FetchContent_Populate blocks
     pattern = re.compile(
-        r"FetchContent_Declare\s*\(\s*([a-zA-Z0-9_\-]+)\s+([\s\S]*?)\)",
+        r"(FetchContent_Declare|FetchContent_Populate)\s*\(\s*([a-zA-Z0-9_\-]+)\s+([\s\S]*?)\)",
         re.MULTILINE,
     )
 
@@ -136,8 +149,9 @@ def update_cmake_content(content: str):
 
     def replace_block(match):
         full_block = match.group(0)
-        target_name = match.group(1)
-        body = match.group(2)
+        command_name = match.group(1)
+        target_name = match.group(2)
+        body = match.group(3)
 
         repo_match = re.search(
             r"GIT_REPOSITORY\s+https://github\.com/([a-zA-Z0-9_\-]+/[a-zA-Z0-9_\-]+?)(?:\.git)?(?:\s|\))",
@@ -151,7 +165,8 @@ def update_cmake_content(content: str):
         repo_path = repo_match.group(1)
         current_tag = tag_match.group(1)
 
-        print(f"Found CMake dependency: {target_name} ({repo_path}) @ {current_tag}")
+        location_str = f" in {rel_path}" if rel_path else ""
+        print(f"Found CMake dependency: {target_name} ({repo_path}) @ {current_tag}{location_str}")
         latest_tag = get_latest_github_tag(repo_path)
 
         if not latest_tag:
@@ -159,8 +174,9 @@ def update_cmake_content(content: str):
             return full_block
 
         if current_tag != latest_tag:
-            print(f"  -> Updating {target_name}: {current_tag} -> {latest_tag}")
-            updates.append(f"CMake {target_name}: {current_tag} -> {latest_tag}")
+            display_name = f"CMake {target_name} ({rel_path})" if rel_path and rel_path != "CMakeLists.txt" else f"CMake {target_name}"
+            print(f"  -> Updating {display_name}: {current_tag} -> {latest_tag}")
+            updates.append(f"{display_name}: {current_tag} -> {latest_tag}")
             # Replace only the GIT_TAG in this specific block, preserving original formatting
             new_block = re.sub(
                 r"(GIT_TAG\s+)" + re.escape(current_tag),
@@ -226,13 +242,18 @@ def update_module_bazel_content(content: str):
 
 def main():
     all_updates = []
+    for cmake_path in CMAKELISTS_PATHS:
+        if not cmake_path.exists():
+            print(f"Warning: {cmake_path} not found.", file=sys.stderr)
+            continue
 
-    if CMAKELISTS_PATH.exists():
-        cmake_content = CMAKELISTS_PATH.read_text(encoding="utf-8")
-        new_cmake, cmake_updates = update_cmake_content(cmake_content)
-        if cmake_updates:
-            CMAKELISTS_PATH.write_text(new_cmake, encoding="utf-8")
-            all_updates.extend(cmake_updates)
+        rel_path = str(cmake_path.relative_to(REPO_ROOT))
+        content = cmake_path.read_text(encoding="utf-8")
+        new_content, updates = update_cmake_content(content, rel_path=rel_path)
+
+        if updates:
+            cmake_path.write_text(new_content, encoding="utf-8")
+            all_updates.extend(updates)
 
     if MODULE_BAZEL_PATH.exists():
         bazel_content = MODULE_BAZEL_PATH.read_text(encoding="utf-8")
@@ -252,7 +273,7 @@ def main():
         except Exception as e:
             print(f"Warning: Could not write summary file: {e}")
     else:
-        print("\nAll dependencies in CMakeLists.txt and MODULE.bazel are up to date.")
+        print("\nAll dependencies in CMakeLists.txt, lite/CMakeLists.txt, and MODULE.bazel are up to date.")
 
 
 if __name__ == "__main__":

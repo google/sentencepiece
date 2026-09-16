@@ -131,10 +131,24 @@ To run these benchmarks yourself, see the [reproduction instructions and scripts
 
 ---
 
+## SentencePiece Lite (Zero-Dependency C++20 Runtime)
+
+For mobile apps, edge devices, on-device LLM inference, and high-throughput C++ serving environments, this repository includes **SentencePiece Lite** ([`lite/`](lite/README.md)):
+
+*   **Zero Runtime Dependencies**: Written in modern C++20 with zero third-party dependencies (no runtime dependency on Protobuf or Abseil).
+*   **Zero-Copy Memory-Mapped Startup**: Operates directly on FlatBuffers binaries (`.spm.fb`) via `mmap`, achieving instantaneous cold-start with only **1.2 KB** heap memory overhead regardless of vocabulary size.
+*   **Compact Binary Footprint**: Core engine is under 2,000 lines of code, compiling to a **~45 KB** stripped static library (`libsentencepiece_lite.a`).
+*   **Full Canonical Equivalence**: 100% byte-for-byte normalization and token ID equivalence with canonical SentencePiece models (Unigram and BPE).
+
+For details, benchmarks, and C++ integration recipes, see the [SentencePiece Lite Documentation](lite/README.md).
+
+---
+
 ## Documentation & Resources
 
 For detailed guides, API references, and advanced usage, please refer to the following resources:
 
+*   [SentencePiece Lite Runtime Guide](lite/README.md)
 *   [Command Line Interface (CLI) & Build Guide (CMake)](doc/cli.md)
 *   [Building with Bazel](doc/bazel.md)
 *   [C++ API Reference](doc/cpp.md)
