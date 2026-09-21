@@ -52,7 +52,7 @@ if (NOT TARGET flatbuffers OR NOT TARGET flatc)
   FetchContent_Declare(
     flatbuffers
     GIT_REPOSITORY https://github.com/google/flatbuffers.git
-    GIT_TAG v25.12.19
+    GIT_TAG v25.12.19-2026-02-06-03fffb2
     GIT_SHALLOW    TRUE
     SOURCE_DIR     "${CMAKE_BINARY_DIR}/third_party/flatbuffers-src"
   )
@@ -126,7 +126,7 @@ if (NOT TARGET protobuf::libprotobuf-lite AND NOT TARGET protobuf::libprotobuf)
   FetchContent_Declare(
     protobuf
     GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-    GIT_TAG v36.1
+    GIT_TAG v36.2
     GIT_SHALLOW TRUE
   )
   if (MSVC)
