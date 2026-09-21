@@ -19,13 +19,13 @@ bazel_dep(name = "darts-clone", version = "0.32h.bcr.1")
 # libsais' own CMake build; enable it with --@libsais//:openmp on a toolchain
 # that supports -fopenmp.
 bazel_dep(name = "libsais", version = "2.10.4.bcr.2")
-bazel_dep(name = "rules_cc", version = "0.2.22")
+bazel_dep(name = "rules_cc", version = "0.2.25")
 bazel_dep(name = "rules_proto", version = "7.1.0")
-bazel_dep(name = "protobuf", version = "36.1.bcr.1", repo_name = "com_google_protobuf")
+bazel_dep(name = "protobuf", version = "36.2", repo_name = "com_google_protobuf")
 bazel_dep(name = "abseil-cpp", version = "20260817.0", repo_name = "com_google_absl")
 bazel_dep(name = "googletest", version = "1.18.0.bcr.1", dev_dependency = True, repo_name = "com_google_googletest")
 bazel_dep(name = "google_benchmark", version = "1.9.5", dev_dependency = True)
-bazel_dep(name = "flatbuffers", version = "25.12.19")
+bazel_dep(name = "flatbuffers", version = "25.12.19.bcr.1")
 
 single_version_override(
     module_name = "aspect_bazel_lib",
