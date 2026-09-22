@@ -524,6 +524,7 @@ absl::Status Builder::MergeNmtMap(Builder::CharsMap* chars_map) {
   (*chars_map)[{0x000A}] = {0x20};  // LINE FEED
   (*chars_map)[{0x000C}] = {0x20};  // FORM FEED
   (*chars_map)[{0x000D}] = {0x20};  // CARRIAGE RETURN
+  (*chars_map)[{0x061C}] = {0x20};  // ARABIC LETTER MARK
   (*chars_map)[{0x1680}] = {0x20};  // OGHAM SPACE MARK
   (*chars_map)[{0x200B}] = {0x20};  // ZERO WIDTH SPACE
   (*chars_map)[{0x200E}] = {0x20};  // LEFT-TO-RIGHT MARK

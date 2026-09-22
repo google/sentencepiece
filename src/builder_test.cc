@@ -144,6 +144,12 @@ TEST(BuilderTest, GetPrecompiledCharsMapTest) {
     EXPECT_EQ(WS "ABC", normalizer.Normalize("ＡＢＣ"));
     EXPECT_EQ(WS "(株)", normalizer.Normalize("㈱"));
     EXPECT_EQ(WS "グーグル", normalizer.Normalize("ｸﾞｰｸﾞﾙ"));
+    EXPECT_EQ(WS "a" WS "b", normalizer.Normalize("a\xe2\x80\x8e"
+                                                  "b"));
+    EXPECT_EQ(WS "a" WS "b", normalizer.Normalize("a\xe2\x80\x8f"
+                                                  "b"));
+    EXPECT_EQ(WS "a" WS "b", normalizer.Normalize("a\xd8\x9c"
+                                                  "b"));
   }
 
   {
@@ -160,6 +166,12 @@ TEST(BuilderTest, GetPrecompiledCharsMapTest) {
     const Normalizer normalizer(spec);
     EXPECT_EQ(WS "abc", normalizer.Normalize("ＡＢＣ"));
     EXPECT_EQ(WS "abc", normalizer.Normalize("ABC"));
+    EXPECT_EQ(WS "a" WS "b", normalizer.Normalize("a\xe2\x80\x8e"
+                                                  "b"));
+    EXPECT_EQ(WS "a" WS "b", normalizer.Normalize("a\xe2\x80\x8f"
+                                                  "b"));
+    EXPECT_EQ(WS "a" WS "b", normalizer.Normalize("a\xd8\x9c"
+                                                  "b"));
   }
 
   {
