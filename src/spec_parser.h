@@ -105,6 +105,12 @@ namespace sentencepiece {
     return absl::OkStatus();                                           \
   }
 
+#define PARSE_DEPRECATED(param_name)                               \
+  if (name == #param_name) {                                       \
+    LOG(WARNING) << "--" << name << " is deprecated and ignored."; \
+    return absl::OkStatus();                                       \
+  }
+
 #define PRINT_PARAM(param_name) \
   os << "  " << #param_name << ": " << message.param_name() << "\n";
 
@@ -138,7 +144,6 @@ inline std::string PrintProto(const TrainerSpec& message,
 
   PRINT_ENUM(model_type, kModelType_Map);
   PRINT_PARAM(vocab_size);
-  PRINT_REPEATED_STRING(accept_language);
   PRINT_PARAM(character_coverage);
   PRINT_PARAM(input_sentence_size);
   PRINT_PARAM(shuffle_input_sentence);
@@ -159,8 +164,8 @@ inline std::string PrintProto(const TrainerSpec& message,
   PRINT_REPEATED_STRING(user_defined_symbols);
   PRINT_PARAM(required_chars);
   PRINT_PARAM(byte_fallback);
+  PRINT_PARAM(auto_character_coverage);
   PRINT_PARAM(vocabulary_output_piece_score);
-  PRINT_PARAM(train_extremely_large_corpus);
   PRINT_PARAM(seed_sentencepieces_file);
   PRINT_PARAM(hard_vocab_limit);
   PRINT_PARAM(use_all_vocab);
@@ -214,7 +219,6 @@ absl::Status SentencePieceTrainer::SetProtoField(absl::string_view name,
 
   PARSE_ENUM(model_type, kModelType_Map);
   PARSE_INT32(vocab_size);
-  PARSE_REPEATED_STRING(accept_language);
   PARSE_DOUBLE(character_coverage);
   PARSE_UINT64(input_sentence_size);
   PARSE_BOOL(shuffle_input_sentence);
@@ -235,9 +239,9 @@ absl::Status SentencePieceTrainer::SetProtoField(absl::string_view name,
   PARSE_REPEATED_STRING(user_defined_symbols);
   PARSE_STRING(required_chars);
   PARSE_BOOL(byte_fallback);
+  PARSE_BOOL(auto_character_coverage);
   PARSE_BOOL(hard_vocab_limit);
   PARSE_BOOL(vocabulary_output_piece_score);
-  PARSE_BOOL(train_extremely_large_corpus);
   PARSE_STRING(seed_sentencepieces_file);
   PARSE_BOOL(use_all_vocab);
   PARSE_INT32(unk_id);
@@ -249,6 +253,16 @@ absl::Status SentencePieceTrainer::SetProtoField(absl::string_view name,
   PARSE_STRING(eos_piece);
   PARSE_STRING(pad_piece);
   PARSE_STRING(unk_surface);
+
+  // Deprecated fields.
+  PARSE_DEPRECATED(accept_language);
+  PARSE_DEPRECATED(self_test_sample_size);
+  PARSE_DEPRECATED(mining_sentence_size);
+  PARSE_DEPRECATED(training_sentence_size);
+  PARSE_DEPRECATED(train_extremely_large_corpus);
+  PARSE_DEPRECATED(enable_differential_privacy);
+  PARSE_DEPRECATED(differential_privacy_noise_level);
+  PARSE_DEPRECATED(differential_privacy_clipping_threshold);
 
   return absl::StatusBuilder(absl::StatusCode::kNotFound)
          << "unknown field name \"" << name << "\" in TrainerSpec.";

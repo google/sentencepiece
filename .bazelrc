@@ -1,21 +1,29 @@
-# Common C++ settings
-build --cxxopt=-std=c++20
+# Enable platform-specific configuration (:linux, :macos, :windows)
+common --enable_platform_specific_config
 
 # Opt-in config for benchmarking: match CMake Release's -O3 (GCC/Clang only)
 build:bench --compilation_mode=opt
 build:bench --copt=-O3
 
 # Linux / GCC / Clang
+build:linux --cxxopt=-std=c++20
+build:linux --host_cxxopt=-std=c++20
 build:linux --copt=-Wall
 build:linux --copt=-Wno-deprecated-declarations
 
 # macOS / Clang
+build:macos --cxxopt=-std=c++20
+build:macos --host_cxxopt=-std=c++20
 build:macos --copt=-Wall
 build:macos --copt=-Wno-deprecated-declarations
 
 # Windows MSVC settings
+build:windows --cxxopt=/std:c++20
+build:windows --host_cxxopt=/std:c++20
 build:windows --copt=/utf-8
+build:windows --host_copt=/utf-8
 build:windows --copt=/DNOMINMAX
+build:windows --host_copt=/DNOMINMAX
 build:windows --copt=/wd4267
 build:windows --copt=/wd4244
 build:windows --copt=/wd4305

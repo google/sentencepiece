@@ -9,6 +9,7 @@
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-brightgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 [![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
+[![Documentation](https://img.shields.io/badge/docs-google.github.io%2Fsentencepiece-blue)](https://google.github.io/sentencepiece/)
 
 SentencePiece is a fast, lightweight, and unsupervised text tokenizer and detokenizer designed for neural network-based text generation systems (such as Large Language Models) where the vocabulary size is fixed prior to training.
 
@@ -130,10 +131,24 @@ To run these benchmarks yourself, see the [reproduction instructions and scripts
 
 ---
 
+## SentencePiece Lite (Zero-Dependency C++20 Runtime)
+
+For mobile apps, edge devices, on-device LLM inference, and high-throughput C++ serving environments, this repository includes **SentencePiece Lite** ([`lite/`](lite/README.md)):
+
+*   **Zero Runtime Dependencies**: Written in modern C++20 with zero third-party dependencies (no runtime dependency on Protobuf or Abseil).
+*   **Zero-Copy Memory-Mapped Startup**: Operates directly on FlatBuffers binaries (`.spm.fb`) via `mmap`, achieving instantaneous cold-start with only **1.2 KB** heap memory overhead regardless of vocabulary size.
+*   **Compact Binary Footprint**: Core engine is under 2,000 lines of code, compiling to a **~45 KB** stripped static library (`libsentencepiece_lite.a`).
+*   **Full Canonical Equivalence**: 100% byte-for-byte normalization and token ID equivalence with canonical SentencePiece models (Unigram and BPE).
+
+For details, benchmarks, and C++ integration recipes, see the [SentencePiece Lite Documentation](lite/README.md).
+
+---
+
 ## Documentation & Resources
 
 For detailed guides, API references, and advanced usage, please refer to the following resources:
 
+*   [SentencePiece Lite Runtime Guide](lite/README.md)
 *   [Command Line Interface (CLI) & Build Guide (CMake)](doc/cli.md)
 *   [Building with Bazel](doc/bazel.md)
 *   [C++ API Reference](doc/cpp.md)
@@ -142,6 +157,7 @@ For detailed guides, API references, and advanced usage, please refer to the fol
 *   [Performance Benchmark Details](doc/performance_benchmark.md)
 *   [Performance Benchmark Code & Reproduction Guide](benchmark/README.md)
 *   [Training Options Reference](doc/options.md)
+*   [Auto-Character Coverage & Byte-Fallback Guide](doc/auto_character_coverage.md)
 *   [Text Normalization & Custom Rules](doc/normalization.md)
 *   [Special Symbols & Control Tokens](doc/special_symbols.md)
 *   [Vocabulary Piece Constraints](doc/piece_constraints.md)

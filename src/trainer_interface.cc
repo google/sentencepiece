@@ -54,13 +54,6 @@
 // (trainer_spec.proto).
 ABSL_FLAG(bool, use_sparse_pruning, false,
           "Use continuous L1 sparse pruning in Unigram EM");
-ABSL_FLAG(bool, auto_character_coverage, false,
-          "When true, disables character_coverage mandatory inclusion and rare "
-          "character UNK replacement in Unigram EM.");
-ABSL_FLAG(float, fixed_sparse_lambda, 0.0f,
-          "Fixed L1 regularization parameter lambda for constant exchange rate "
-          "pruning. When 0.0 (default), dynamic Quantile Annealing "
-          "automatically estimates lambda to match target vocab_size K.");
 ABSL_FLAG(
     bool, post_l1_debias, true,
     "When true (default), resets lambda penalty and re-estimates pure Unigram "
@@ -129,9 +122,16 @@ absl::Status VerifySpec(const TrainerSpec& trainer_spec,
            "simultaneously.";
   }
 
-  if (absl::GetFlag(FLAGS_auto_character_coverage)) {
-    RET_CHECK(trainer_spec.model_type() == TrainerSpec::UNIGRAM)
-        << "--auto_character_coverage is only supported in UNIGRAM model mode.";
+  if (trainer_spec.auto_character_coverage()) {
+    RET_CHECK(trainer_spec.model_type() == TrainerSpec::UNIGRAM ||
+              trainer_spec.model_type() == TrainerSpec::BPE)
+        << "--auto_character_coverage is only supported in UNIGRAM or BPE "
+           "model mode.";
+    if (trainer_spec.model_type() == TrainerSpec::UNIGRAM) {
+      RET_CHECK(absl::GetFlag(FLAGS_use_sparse_pruning))
+          << "--auto_character_coverage in UNIGRAM mode requires "
+             "--use_sparse_pruning=true.";
+    }
     RET_CHECK(trainer_spec.byte_fallback())
         << "--auto_character_coverage requires --byte_fallback=true.";
     RET_CHECK(trainer_spec.required_chars().empty())
@@ -512,7 +512,7 @@ END:
 
   // Generates `required_chars_` with trainer_spec_.character_coverage().
   // required_chars_ are always populated to the final vocab.
-  if (!absl::GetFlag(FLAGS_auto_character_coverage)) {
+  if (!trainer_spec_.auto_character_coverage()) {
     // Count character frequencies.
     int64_t all_chars_count = 0;
     // A map from a character to {is_required_char, character count}.
@@ -764,7 +764,15 @@ absl::Status TrainerInterface::InitMetaPieces() {
   RET_CHECK(insert_id(trainer_spec_.eos_id(), trainer_spec_.eos_piece()));
   RET_CHECK(insert_id(trainer_spec_.pad_id(), trainer_spec_.pad_piece()));
 
-  RET_CHECK(has_unk) << trainer_spec_.unk_piece() << " must be defined.";
+  if (!trainer_spec_.byte_fallback()) {
+    RET_CHECK(has_unk) << trainer_spec_.unk_piece() << " must be defined.";
+  }
+
+  if (trainer_spec_.unk_id() == -1) {
+    LOG(WARNING) << "Setting unk_id = -1 generates a model that cannot be "
+                    "loaded with SentencePiece <= 0.2.2. Please ensure "
+                    "SentencePiece >= 0.2.3 is used for inference.";
+  }
 
   absl::flat_hash_set<std::string> dup;
 

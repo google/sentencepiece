@@ -116,7 +116,7 @@ class Builder {
   // Makes NFKD with Unicode case folding.
   static absl::Status BuildNFKD_CFMap(CharsMap* chars_map);
 
-  // Makes NFKC with Unicode case folding.
+  // Makes NFC with Unicode case folding.
   static absl::Status BuildNFC_CFMap(CharsMap* chars_map);
 
   // Makes NFD with Unicode case folding.

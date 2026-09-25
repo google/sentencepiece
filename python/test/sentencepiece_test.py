@@ -118,6 +118,44 @@ class TestSentencepieceProcessor(unittest.TestCase):
         self.assertEqual(proto.text, '')
         self.assertEqual(len(proto.pieces), 0)
 
+  def test_decode_batch_with_leading_empty_sequence(self):
+    # A batch may contain empty sequences (e.g. an empty sentence encoded to
+    # zero pieces/ids). The batch element type (pieces vs ids) is inferred from
+    # the first non-empty sequence, so a leading empty sequence must not make a
+    # piece batch be decoded as an id batch. Regression test: an empty sequence
+    # at the start used to fail while the same empty sequence at the end worked.
+    sp = self.sp_
+    text = 'hello world'
+    ids = sp.encode(text, return_type=int)
+    pieces = sp.encode(text, return_type=str)
+    pieces_bytes = [p.encode('utf-8') for p in pieces]
+
+    # Empty sequence at the end (already worked).
+    self.assertEqual(sp.decode([ids, []]), [text, ''])
+    self.assertEqual(sp.decode([pieces, []], return_type=str), [text, ''])
+    self.assertEqual(
+        sp.decode([pieces_bytes, []], return_type=bytes), [text.encode(), b'']
+    )
+
+    # Empty id sequence at the start.
+    self.assertEqual(sp.decode([[], ids]), ['', text])
+
+    # Empty piece sequence at the start.
+    self.assertEqual(sp.decode([[], pieces], return_type=str), ['', text])
+    self.assertEqual(
+        sp.decode([[], pieces_bytes], return_type=bytes), [b'', text.encode()]
+    )
+
+    # offset_mapping must produce the same result for both orders.
+    empty_om = sp.decode([], return_type='offset_mapping')
+    text_om = sp.decode(pieces, return_type='offset_mapping')
+    self.assertEqual(
+        sp.decode([pieces, []], return_type='offset_mapping'), [text_om, empty_om]
+    )
+    self.assertEqual(
+        sp.decode([[], pieces], return_type='offset_mapping'), [empty_om, text_om]
+    )
+
   def test_roundtrip(self):
     text = 'I saw a girl with a telescope.'
     ids = self.sp_.EncodeAsIds(text)
@@ -1287,6 +1325,17 @@ class TestSentencepieceProcessor(unittest.TestCase):
             normalizer=normalizer,
             add_dummy_prefix=True,
         )
+
+  def test_offset_mapping_empty_batch(self):
+    sp = self.sp_
+    # Every other return_type gives [] for an empty batch. offset_mapping used to
+    # leak the empty list into a bool parameter and raise TypeError.
+    self.assertEqual(sp.encode([], return_type='offset_mapping'), [])
+    self.assertEqual(sp.encode([], return_type='offset_mapping', return_bytes=True), [])
+    self.assertEqual(sp.encode([], return_type='offset_mapping', return_bytes=False), [])
+    self.assertEqual(sp.encode([], out_type='offset_mapping'), [])
+    self.assertEqual(sp.encode([], return_type=int), [])
+    self.assertEqual(sp.encode([], return_type=str), [])
 
   def test_offset_mapping(self):
     sp = self.sp_

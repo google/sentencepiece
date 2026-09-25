@@ -529,6 +529,28 @@ TEST(UnigramModelTest, PieceToIdTest) {
   EXPECT_TRUE(model.Encode("").empty());
 }
 
+TEST(UnigramModelTest, PieceToIdEmptyPieceTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+
+  AddPiece(&model_proto, "a", 0.1);   // 3
+  AddPiece(&model_proto, "b", 0.2);   // 4
+  AddPiece(&model_proto, "ab", 0.3);  // 5
+
+  Model model(model_proto);
+
+  // A zero-length piece has no id and must resolve to <unk>, like the base
+  // ModelInterface::PieceToId map lookup. A zero-length view whose data()
+  // points at real bytes must not be matched as if it were the underlying
+  // key: exactMatchSearch() reads length 0 as C-string mode and scans forward.
+  EXPECT_EQ(0, model.PieceToId(""));
+  EXPECT_EQ(0, model.PieceToId(absl::string_view("ab", 0)));
+  EXPECT_EQ(0, model.PieceToId(absl::string_view("a", 0)));
+
+  // Non-empty lookups are unaffected.
+  EXPECT_EQ(3, model.PieceToId("a"));
+  EXPECT_EQ(5, model.PieceToId("ab"));
+}
+
 TEST(UnigramModelTest, PopulateNodesAllUnknownsTest) {
   ModelProto model_proto = MakeBaseModelProto();
   AddPiece(&model_proto, "x");

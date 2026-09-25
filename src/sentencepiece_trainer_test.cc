@@ -640,5 +640,57 @@ TEST(SentencePieceTrainerTest, ComplexPretokenizerTest) {
   EXPECT_EQ(1000, sp.GetPieceSize());
 }
 
+TEST(SentencePieceTrainerTest, ByteFallbackWithoutUnkTest) {
+  const std::string input =
+      filesystem::JoinPath(::testing::SrcDir(), kTestData);
+
+  // Without byte_fallback, unk_id = -1 must fail.
+  {
+    const std::string model =
+        filesystem::JoinPath(::testing::TempDir(), "m_fail");
+    EXPECT_FALSE(SentencePieceTrainer::Train(
+                     absl::StrCat("--input=", input, " --model_prefix=", model,
+                                  " --vocab_size=1000 --model_type=bpe "
+                                  "--byte_fallback=false --unk_id=-1"))
+                     .ok());
+  }
+
+  // With byte_fallback, unk_id = -1 succeeds for both BPE and UNIGRAM.
+  for (const char* model_type : {"bpe", "unigram"}) {
+    const std::string model = filesystem::JoinPath(
+        ::testing::TempDir(), absl::StrCat("m_nounk_", model_type));
+    ABSL_EXPECT_OK(SentencePieceTrainer::Train(
+        absl::StrCat("--input=", input, " --model_prefix=", model,
+                     " --vocab_size=1000 --model_type=", model_type,
+                     " --byte_fallback=true --unk_id=-1")));
+
+    SentencePieceProcessor sp;
+    ABSL_EXPECT_OK(sp.Load(model + ".model"));
+    EXPECT_EQ(1000, sp.GetPieceSize());
+    EXPECT_EQ(-1, sp.unk_id());
+    EXPECT_TRUE(sp.IsUnknown(-1));
+    EXPECT_FALSE(sp.IsUnknown(0));
+    EXPECT_EQ(-1, sp.PieceToId("<unk>"));
+
+    // Unknown character (emoji) falls back to bytes.
+    const std::string test_text = "hello 🍕 world";
+    std::vector<std::string> pieces;
+    ABSL_EXPECT_OK(sp.Encode(test_text, &pieces));
+    for (const auto& piece : pieces) {
+      EXPECT_NE("<unk>", piece);
+    }
+
+    std::string detokenized;
+    ABSL_EXPECT_OK(sp.Decode(pieces, &detokenized));
+    EXPECT_EQ(test_text, detokenized);
+
+    std::vector<int> ids;
+    ABSL_EXPECT_OK(sp.Encode(test_text, &ids));
+    for (int id : ids) {
+      EXPECT_GE(id, 0);
+      EXPECT_LT(id, 1000);
+    }
+  }
+}
 }  // namespace
 }  // namespace sentencepiece

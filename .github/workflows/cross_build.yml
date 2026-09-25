@@ -54,3 +54,6 @@ jobs:
         cd build
         qemu_arch=`echo "$ARCH" | sed -e s/powerpc/ppc/ -e s/686/386/`
         qemu-${qemu_arch} -L /usr/${ARCH}-linux-gnu src/spm_test
+        qemu-${qemu_arch} -L /usr/${ARCH}-linux-gnu lite/sentencepiece_lite_test
+        qemu-${qemu_arch} -L /usr/${ARCH}-linux-gnu lite/cached_sentencepiece_lite_test
+        qemu-${qemu_arch} -L /usr/${ARCH}-linux-gnu lite/sentencepiece_lite_canonical_test

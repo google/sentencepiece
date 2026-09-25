@@ -30,7 +30,7 @@ ABSL_FLAG(std::string, model, "", "model file name");
 ABSL_FLAG(std::string, input, "", "input filename");
 ABSL_FLAG(std::string, output, "", "output filename");
 ABSL_FLAG(std::string, input_format, "piece", "choose from piece or id");
-ABSL_FLAG(std::string, output_format, "string", "choose from string or proto");
+ABSL_FLAG(std::string, output_format, "string", "choose from string");
 ABSL_FLAG(std::string, extra_options, "",
           "':' separated encoder extra options, e.g., \"reverse:bos:eos\"");
 
@@ -60,7 +60,6 @@ int main(int argc, char* argv[]) {
   QCHECK_OK(output->status());
 
   std::string detok, line;
-  sentencepiece::SentencePieceText spt;
   std::function<void(absl::Span<const absl::string_view> pieces)> process;
 
   auto ToIds = [&](absl::Span<const absl::string_view> pieces) {
@@ -81,10 +80,6 @@ int main(int argc, char* argv[]) {
         QCHECK_OK(sp.Decode(pieces, &detok));
         output->WriteLine(detok);
       };
-    } else if (absl::GetFlag(FLAGS_output_format) == "proto") {
-      process = [&](absl::Span<const absl::string_view> pieces) {
-        QCHECK_OK(sp.Decode(pieces, &spt));
-      };
     } else {
       LOG(FATAL) << "Unknown output format: "
                  << absl::GetFlag(FLAGS_output_format);
@@ -94,10 +89,6 @@ int main(int argc, char* argv[]) {
       process = [&](absl::Span<const absl::string_view> pieces) {
         QCHECK_OK(sp.Decode(ToIds(pieces), &detok));
         output->WriteLine(detok);
-      };
-    } else if (absl::GetFlag(FLAGS_output_format) == "proto") {
-      process = [&](absl::Span<const absl::string_view> pieces) {
-        QCHECK_OK(sp.Decode(ToIds(pieces), &spt));
       };
     } else {
       LOG(FATAL) << "Unknown output format: "

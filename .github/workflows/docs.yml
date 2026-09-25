@@ -1,0 +1,112 @@
+name: Deploy Documentation to GitHub Pages
+
+on:
+  push:
+    branches: ["master", "main"]
+    paths:
+      - "README.md"
+      - "doc/**"
+      - "python/**/*.md"
+      - "benchmark/**/*.md"
+      - "lite/**/*.md"
+      - "mkdocs.yml"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Install MkDocs Material & Awesome Pages Plugin
+        run: pip install mkdocs-material mkdocs-awesome-pages-plugin
+
+      - name: Prepare _docs_build directory (preserving all relative links, order & MathJax config)
+        run: |
+          mkdir -p _docs_build/doc _docs_build/python _docs_build/benchmark _docs_build/lite _docs_build/javascripts
+          cp README.md _docs_build/index.md
+          cp doc/*.md _docs_build/doc/
+          cp python/*.md _docs_build/python/
+          cp benchmark/*.md _docs_build/benchmark/ 2>/dev/null || true
+          cp lite/*.md _docs_build/lite/ 2>/dev/null || true
+          cat << 'EOF' > _docs_build/.pages
+          nav:
+            - Overview: index.md
+            - Python Module: python
+            - SentencePiece Lite: lite
+            - Guides & References: doc
+            - Benchmark Suite: benchmark
+            - ...
+          EOF
+          cat << 'EOF' > _docs_build/doc/.pages
+          nav:
+            - cli.md
+            - cpp.md
+            - options.md
+            - auto_character_coverage.md
+            - piece_constraints.md
+            - normalization.md
+            - special_symbols.md
+            - model_proto.md
+            - bazel.md
+            - performance_benchmark.md
+            - ...
+          EOF
+          cat << 'EOF' > _docs_build/javascripts/mathjax.js
+          window.MathJax = {
+            tex: {
+              inlineMath: [["\\(", "\\)"]],
+              displayMath: [["\\[", "\\]"]],
+              processEscapes: true,
+              processEnvironments: true
+            },
+            options: {
+              ignoreHtmlClass: ".*|",
+              processHtmlClass: "arithmatex"
+            }
+          };
+          document$.subscribe(() => {
+            MathJax.startup.output.clearCache();
+            MathJax.typesetClear();
+            MathJax.texReset();
+            MathJax.typesetPromise();
+          });
+          EOF
+
+      - name: Build MkDocs site
+        run: mkdocs build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: ./site
+
+  deploy:
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

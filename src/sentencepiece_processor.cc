@@ -70,6 +70,8 @@ constexpr absl::string_view kReplacementCharacter = "\xef\xbf\xbd";
 // maximum nbest or sampling size.
 constexpr int kMaxNBestSize = 512;
 
+constexpr absl::string_view kNullPiece("\0", 1);
+
 }  // namespace
 
 SentencePieceProcessor::SentencePieceProcessor() {}
@@ -101,6 +103,23 @@ absl::Status SentencePieceProcessor::LoadFromSerializedProto(
 absl::Status SentencePieceProcessor::Load(
     std::unique_ptr<ModelProto> model_proto) {
   model_proto_ = std::move(model_proto);
+  // Workaround for https://github.com/google/sentencepiece/issues/1308
+  // Third-party conversion scripts may erroneously insert a raw null-byte
+  // piece ("\0") even when byte_fallback is enabled (where "<0x00>" is
+  // already defined). Mark it as UNUSED so it is excluded from trie building
+  // and encoding.
+  if (model_proto_->trainer_spec().byte_fallback()) {
+    for (int i = 0; i < model_proto_->pieces_size(); ++i) {
+      auto* sp = model_proto_->mutable_pieces(i);
+      if (sp->piece() == kNullPiece) {
+        LOG(WARNING)
+            << "Piece at index " << i
+            << " is a null character (\\0) and byte_fallback is enabled. "
+            << "Treating it as an UNUSED piece.";
+        sp->set_type(ModelProto::SentencePiece::UNUSED);
+      }
+    }
+  }
   model_ = ModelFactory::Create(*model_proto_);
   normalizer_ = std::make_unique<normalizer::Normalizer>(
       model_proto_->normalizer_spec(), model_proto_->trainer_spec());
@@ -118,16 +137,16 @@ absl::Status SentencePieceProcessor::Load(
   // Precomputes and caches special token IDs.
   // Note that these IDs are not always the same as the IDs in TrainerSpec.
   unk_id_ = PieceToId(model_->unk_piece());
-  if (!IsUnknown(unk_id_)) unk_id_ = -1;
+  if (unk_id_ >= 0 && !IsUnknown(unk_id_)) unk_id_ = -1;
 
   bos_id_ = PieceToId(model_->bos_piece());
-  if (!IsControl(bos_id_)) bos_id_ = -1;
+  if (bos_id_ >= 0 && !IsControl(bos_id_)) bos_id_ = -1;
 
   eos_id_ = PieceToId(model_->eos_piece());
-  if (!IsControl(eos_id_)) eos_id_ = -1;
+  if (eos_id_ >= 0 && !IsControl(eos_id_)) eos_id_ = -1;
 
   pad_id_ = PieceToId(model_->pad_piece());
-  if (!IsControl(pad_id_)) pad_id_ = -1;
+  if (pad_id_ >= 0 && !IsControl(pad_id_)) pad_id_ = -1;
 
   return absl::OkStatus();
 }
@@ -469,7 +488,7 @@ absl::Status SentencePieceProcessor::Decode(
     if (IsControl(id)) {                 // <s>, </s>
       return std::make_pair("", false);  // invisible symbol.
     } else if (IsUnknown(id)) {
-      if (IdToPiece(id) == piece) {  // <unk>
+      if (id >= 0 && IdToPiece(id) == piece) {  // <unk>
         return std::make_pair(std::string(unk_surface), false);
       } else {  // return piece when piece is not <unk>.
         return std::make_pair(std::string(piece), false);
@@ -675,7 +694,7 @@ bool FindMatchingToken(const SentencePieceText_SentencePiece& current_piece,
     if ((other_piece.id() == current_piece.id() &&
          other_piece.begin() + chunk_len == current_piece.begin() &&
          other_piece.end() + chunk_len == current_piece.end()) ||
-        (current_piece.id() == static_cast<uint32_t>(unk_id) &&
+        (unk_id >= 0 && current_piece.id() == static_cast<uint32_t>(unk_id) &&
          other_piece.id() == static_cast<uint32_t>(unk_id) &&
          other_piece.begin() <= current_piece.end() - chunk_len &&
          current_piece.end() - chunk_len <= other_piece.end())) {
@@ -1058,12 +1077,12 @@ float SentencePieceProcessor::GetScore(int id) const {
 
 bool SentencePieceProcessor::IsControl(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(0);
-  return model_->IsControl(id);
+  return id >= 0 && model_->IsControl(id);
 }
 
 bool SentencePieceProcessor::IsUnknown(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(0);
-  return model_->IsUnknown(id);
+  return id == unk_id_ || (id >= 0 && model_->IsUnknown(id));
 }
 
 bool SentencePieceProcessor::IsUnused(int id) const {
@@ -1394,7 +1413,7 @@ absl::Status SentencePieceProcessor::DecodeOptimized(
       }
 
       if (IsUnknown(id)) {
-        if (IdToPiece(id) == piece) {
+        if (id >= 0 && IdToPiece(id) == piece) {
           absl::StrAppend(detokenized, unk_surface);
         } else {
           absl::StrAppend(detokenized, piece);

@@ -39,10 +39,10 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "filesystem.h"
+#include "libsais.h"
 #include "normalizer.h"
 #include "ret_check.h"
 #include "sentencepiece_trainer.h"
-#include "libsais.h"
 #include "trainer_interface.h"
 #include "unicode_script.h"
 #include "util.h"
@@ -227,8 +227,8 @@ absl::Status TrainerModel::SetSentencePieces(SentencePieces&& sentencepieces) {
 }
 
 TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() {
-  if (sentences_.empty() || (!absl::GetFlag(FLAGS_auto_character_coverage) &&
-                             required_chars_.empty())) {
+  if (sentences_.empty() ||
+      (!trainer_spec_.auto_character_coverage() && required_chars_.empty())) {
     return {};
   }
 
@@ -791,7 +791,7 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
 
   // required_chars_ must be included in the final sentencepieces ONLY IF
   // auto_character_coverage is false.
-  if (!absl::GetFlag(FLAGS_auto_character_coverage)) {
+  if (!trainer_spec_.auto_character_coverage()) {
     float min_score_penalty = 0.0;
     constexpr float kMinScorePenaltyDelta = 0.0001;
     for (const auto& w : Sorted(required_chars_)) {
@@ -835,8 +835,12 @@ absl::Status Trainer::Train() {
 
   ABSL_RETURN_IF_ERROR(model.status());
   ABSL_RETURN_IF_ERROR(LoadSentences());
-  if (!absl::GetFlag(FLAGS_auto_character_coverage)) {
+  if (!trainer_spec_.auto_character_coverage()) {
     RET_CHECK(!required_chars_.empty());
+  } else {
+    RET_CHECK(absl::GetFlag(FLAGS_use_sparse_pruning))
+        << "--auto_character_coverage in UNIGRAM mode requires "
+           "--use_sparse_pruning=true.";
   }
 
   auto seed_sentencepieces = MakeSeedSentencePieces();
@@ -916,17 +920,10 @@ absl::Status Trainer::TrainSparsePruning(TrainerModel* model) {
     return (tokens > 0) ? static_cast<float>(total_corpus_bytes) / tokens
                         : 0.0f;
   };
-  const float fixed_sparse_lambda = absl::GetFlag(FLAGS_fixed_sparse_lambda);
-  const bool is_fixed_lambda = (fixed_sparse_lambda > 0.0f);
-  float lambda = is_fixed_lambda ? fixed_sparse_lambda : 0.0f;
-  if (is_fixed_lambda) {
-    LOG(INFO) << "Starting Sparse Pruning (fixed lambda=" << lambda << ")";
-  } else {
-    LOG(INFO) << "Starting Sparse Pruning (target K=" << desired_vocab_size_
-              << ")";
-  }
+  float lambda = 0.0f;
+  LOG(INFO) << "Starting Sparse Pruning (target K=" << desired_vocab_size_
+            << ")";
   int epoch = 0;
-  size_t prev_active_count = 0;
   const size_t target_size = desired_vocab_size_;
   std::vector<float> expected;
   while (true) {
@@ -939,7 +936,7 @@ absl::Status Trainer::TrainSparsePruning(TrainerModel* model) {
     // Anneals shadow price (lambda) at a 25% geometric decay rate per epoch
     // (kShrinkingFactor = 0.75f) to find market-clearing exchange rate for
     // budget K.
-    if (!is_fixed_lambda && expected.size() > target_size * 1.05) {
+    if (expected.size() > target_size * 1.05) {
       constexpr float kShrinkingFactor = 0.75f;
       const size_t desired_active = std::max(
           target_size, static_cast<size_t>(expected.size() * kShrinkingFactor));
@@ -972,21 +969,11 @@ absl::Status Trainer::TrainSparsePruning(TrainerModel* model) {
     ToLogProb(new_pieces.begin(), new_pieces.end());
     ABSL_RETURN_IF_ERROR(model->SetSentencePieces(std::move(new_pieces)));
 
-    // Step 4: Convergence check (fixed lambda stability, dynamic target
-    // reached, or max epochs).
-    const size_t diff = (expected.size() > prev_active_count)
-                            ? (expected.size() - prev_active_count)
-                            : (prev_active_count - expected.size());
-    const bool is_fixed_converged =
-        (is_fixed_lambda && epoch >= 3 && diff <= expected.size() * 0.0005);
-    const bool is_non_fixed_converged =
-        (!is_fixed_lambda && expected.size() <= target_size);
-
-    if (is_fixed_converged || is_non_fixed_converged || epoch >= 50) {
+    // Step 4: Convergence check (target reached or max epochs).
+    if (expected.size() <= target_size || epoch >= 50) {
       break;
     }
     epoch++;
-    prev_active_count = expected.size();
   }
 
   // Step 5: Post-Lasso debiased refit (unpenalized lambda=0 MLE).

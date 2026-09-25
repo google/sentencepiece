@@ -56,11 +56,6 @@ message TrainerSpec {
   // Vocabulary size. 8k is the default size.
   optional int32 vocab_size = 4 [default = 8000];
 
-  // List of the languages this model can accept.
-  // Since the model is language-agnostic, this field is used as a reference.
-  repeated string accept_language = 5;
-
-
   ///////////////////////////////////////////////////////////////////
   // Training parameters.
   //
@@ -191,7 +186,7 @@ message TrainerSpec {
   ///////////////////////////////////////////////////////////////////
   // Reserved special meta tokens.
   // * -1 is not used.
-  // * unk_id must not be -1.
+  // * unk_id must not be -1 unless byte_fallback is true.
   // Id must starts with 0 and be contigous.
   optional int32 unk_id = 40 [default = 0];   // <unk>
   optional int32 bos_id = 41 [default = 1];   // <s>
@@ -207,21 +202,28 @@ message TrainerSpec {
   // developer. We can easily figure out that <unk> is emitted.
   optional string unk_surface = 44 [default = " \xE2\x81\x87 "];
 
-  // Increase bit depth to allow unigram model training on large
-  // (>10M sentences) corpora. A Side-effect of enabling this flag
-  // is increased memory usage.
-  optional bool train_extremely_large_corpus = 49 [default = false];
-
- // Path to a seed sentencepieces file, with one tab-separated
+  // Path to a seed sentencepieces file, with one tab-separated
   // seed sentencepiece <tab> frequency per line.
   optional string seed_sentencepieces_file = 54 [default = ""];
 
-  reserved 6;   // Deprecated self_test_sample_size.
-  reserved 12;  // Deprecated mining_sentence_size.
-  reserved 13;  // Deprecated training_sentence_size.
-  reserved 50;  // Deprecated enable_differential_privacy.
-  reserved 51;  // Deprecated differential_privacy_noise_level.
-  reserved 52;  // Deprecated differential_privacy_clipping_threshold.
+  // Automatically determines the allocation between characters and subwords.
+  optional bool auto_character_coverage = 55 [default = false];
+
+  ///////////////////////////////////////////////////////////////////
+  // Deprecated parameters.
+  // These parameters are deprecated and will be removed in the future.
+  repeated string accept_language = 5 [deprecated = true];
+  optional int32 self_test_sample_size = 6 [default = 0, deprecated = true];
+  optional int32 mining_sentence_size = 12 [deprecated = true];
+  optional int32 training_sentence_size = 13 [deprecated = true];
+  optional bool train_extremely_large_corpus = 49
+      [default = false, deprecated = true];
+  optional bool enable_differential_privacy = 50
+      [default = false, deprecated = true];
+  optional float differential_privacy_noise_level = 51
+      [default = 0.0, deprecated = true];
+  optional uint64 differential_privacy_clipping_threshold = 52
+      [default = 0, deprecated = true];
 
   // Customized extensions: the range of field numbers
   // are open to third-party extensions.

@@ -31,12 +31,15 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "darts.h"
 #include "normalizer.h"
 #include "sentencepiece_model.pb.h"
-#include "darts.h"
 #include "util.h"
 
 namespace sentencepiece {
+namespace {
+constexpr absl::string_view kNullPiece("\0", 1);
+}  // namespace
 
 ModelInterface::ModelInterface(const ModelProto& model_proto)
     : model_proto_(&model_proto), status_(absl::OkStatus()) {}
@@ -114,6 +117,10 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
       status_ = absl::InternalError("piece must not be empty.");
       return;
     }
+    if (sp.piece() == kNullPiece &&
+        sp.type() == ModelProto::SentencePiece::UNUSED) {
+      continue;
+    }
     if (sp.piece().find('\0') != absl::string_view::npos) {
       status_ = absl::InternalError("piece must not include null character.");
       return;
@@ -165,7 +172,7 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
     }
   }
 
-  if (unk_id_ == -1) {
+  if (unk_id_ == -1 && !model_proto_->trainer_spec().byte_fallback()) {
     status_ = absl::InternalError("unk is not defined.");
     return;
   }

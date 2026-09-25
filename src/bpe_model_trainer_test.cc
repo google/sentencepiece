@@ -19,11 +19,14 @@
 #include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/reflection.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "filesystem.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
+#include "trainer_interface.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -133,6 +136,121 @@ TEST(BPETrainerTest, EndToEndTest) {
             "何でも 薄 暗 いじ め じ め した 所で ニャー ニャー 泣 いていた "
             "事 だけは 記憶 している 。",
             absl::StrJoin(tok, " "));
+}
+
+TEST(BPETrainerTest, AutoCharacterCoverageTest) {
+  const std::string input_file =
+      filesystem::JoinPath(::testing::TempDir(), "input_auto_bpe");
+  const std::string model_prefix =
+      filesystem::JoinPath(::testing::TempDir(), "model_auto_bpe");
+  {
+    auto output = filesystem::NewWritableFile(input_file);
+    // Repeat some high-frequency words with multibyte characters
+    for (int i = 0; i < 20; ++i) {
+      output->WriteLine("こんにちは世界");
+      output->WriteLine("Hello world");
+    }
+    // Low frequency rare characters
+    output->WriteLine("稀少文字：ゐゑ驫");
+  }
+
+  TrainerSpec trainer_spec;
+  trainer_spec.set_auto_character_coverage(true);
+  trainer_spec.set_model_type(TrainerSpec::BPE);
+  trainer_spec.add_input(input_file);
+  trainer_spec.set_byte_fallback(true);
+  trainer_spec.set_vocab_size(
+      275);  // tight vocab budget to force rare chars to fallback
+  trainer_spec.set_model_prefix(model_prefix);
+
+  NormalizerSpec normalizer_spec;
+  normalizer_spec.set_name("identity");
+  normalizer_spec.set_add_dummy_prefix(false);
+
+  NormalizerSpec denormalizer_spec;
+
+  Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  EXPECT_TRUE(trainer.Train().ok());
+
+  SentencePieceProcessor processor;
+  EXPECT_TRUE(processor.Load(model_prefix + ".model").ok());
+  EXPECT_EQ(275, processor.GetPieceSize());
+
+  const auto& model = processor.model_proto();
+  // 1. Verify that all non-byte pieces are structurally valid UTF-8.
+  for (int i = 0; i < model.pieces_size(); ++i) {
+    const auto& sp = model.pieces(i);
+    if (sp.type() == ModelProto::SentencePiece::BYTE) {
+      continue;
+    }
+    EXPECT_TRUE(string_util::IsStructurallyValid(sp.piece()))
+        << "Piece " << sp.piece() << " is not valid UTF-8!";
+  }
+
+  // 2. High-frequency characters should be intact.
+  std::vector<std::string> pieces;
+  EXPECT_TRUE(processor.Encode("こんにちは", &pieces).ok());
+  for (const auto& p : pieces) {
+    EXPECT_TRUE(string_util::IsStructurallyValid(p));
+  }
+
+  // 3. Rare characters (e.g. "驫" only appeared once, pruned due to budget)
+  // should be byte-fallback. "驫" is UTF-8: 0xE9 0xA9 0xAB.
+  EXPECT_TRUE(processor.Encode("驫", &pieces).ok());
+  EXPECT_EQ(3, pieces.size());
+  EXPECT_EQ("<0xE9>", pieces[0]);
+  EXPECT_EQ("<0xA9>", pieces[1]);
+  EXPECT_EQ("<0xAB>", pieces[2]);
+
+  // 4. Completely unseen characters should also be byte-fallback.
+  // "鬱" is UTF-8: 0xE9 0xAC 0xB1.
+  EXPECT_TRUE(processor.Encode("鬱", &pieces).ok());
+  EXPECT_EQ(3, pieces.size());
+  EXPECT_EQ("<0xE9>", pieces[0]);
+  EXPECT_EQ("<0xAC>", pieces[1]);
+  EXPECT_EQ("<0xB1>", pieces[2]);
+
+  // 5. Decode should perfectly roundtrip.
+  std::string decoded;
+  EXPECT_TRUE(processor.Decode(pieces, &decoded).ok());
+  EXPECT_EQ("鬱", decoded);
+}
+
+TEST(BPETrainerTest, EndToEndTestWithAutoCharacterCoverage) {
+  const std::string input =
+      filesystem::JoinPath(::testing::SrcDir(), kTestInputData);
+  const std::string model_prefix =
+      filesystem::JoinPath(::testing::TempDir(), "tmp_model_auto_bpe");
+
+  ASSERT_TRUE(
+      SentencePieceTrainer::Train(
+          absl::StrCat("--model_prefix=", model_prefix, " --input=", input,
+                       " --vocab_size=8000 --normalization_rule_name=identity"
+                       " --model_type=bpe --byte_fallback=true "
+                       "--auto_character_coverage=true "
+                       "--max_sentence_length=2048"))
+          .ok());
+
+  SentencePieceProcessor sp;
+  ASSERT_TRUE(sp.Load(model_prefix + ".model").ok());
+  EXPECT_EQ(8000, sp.GetPieceSize());
+
+  // Verify all pieces are valid UTF-8 (except byte pieces)
+  const auto& model = sp.model_proto();
+  for (int i = 0; i < model.pieces_size(); ++i) {
+    const auto& piece = model.pieces(i);
+    if (piece.type() == ModelProto::SentencePiece::BYTE) continue;
+    EXPECT_TRUE(string_util::IsStructurallyValid(piece.piece()))
+        << "Invalid piece: " << piece.piece();
+  }
+
+  std::vector<std::string> tok;
+  EXPECT_TRUE(sp.Encode("吾輩は猫である。未知の漢字驫。", &tok).ok());
+  EXPECT_FALSE(tok.empty());
+
+  std::string decoded;
+  EXPECT_TRUE(sp.Decode(tok, &decoded).ok());
+  EXPECT_EQ("吾輩は猫である。未知の漢字驫。", decoded);
 }
 
 }  // namespace

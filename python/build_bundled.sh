@@ -17,6 +17,7 @@ fi
 NPROC=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 cmake ${SRC_DIR} -B ${BUILD_DIR} \
   -DSPM_ENABLE_SHARED=OFF \
+  -DSPM_ENABLE_LITE=OFF \
   -DSPM_DISABLE_EMBEDDED_DATA=ON \
   -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
   -DCMAKE_POSITION_INDEPENDENT_CODE=ON \

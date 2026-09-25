@@ -604,6 +604,13 @@ int Model::PieceToId(absl::string_view piece) const {
   if (it != reserved_id_map_.end()) {
     return it->second;
   }
+  // An empty piece has no id and must resolve to <unk>. exactMatchSearch()
+  // treats length 0 as "key is a zero-terminated C string" and scans
+  // piece.data() forward until a NUL, so forwarding piece.size() == 0 reads
+  // past the (empty) view: for a view over non-terminated bytes it runs off
+  // the buffer, and for a zero-length view over live data it spuriously
+  // matches a following key.
+  if (piece.empty()) return unk_id_;
   int id = 0;
   trie_->exactMatchSearch(piece.data(), id, piece.size());
   return id == -1 ? unk_id_ : id;

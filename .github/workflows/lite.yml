@@ -1,0 +1,64 @@
+name: CI for SentencePiece Lite
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'lite/**'
+      - '.github/workflows/lite.yml'
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'lite/**'
+      - '.github/workflows/lite.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+        arch: [ x64 ]
+        include:
+          - os: windows-latest
+            arch: Win32
+          - os: windows-latest
+            arch: x64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Config for Windows
+      if: runner.os == 'Windows'
+      run: cmake -A ${{ matrix.arch }} -S lite -B lite/build -DSPM_ENABLE_BENCHMARK=ON
+
+    - name: Config for Linux/MacOSX
+      if: runner.os != 'Windows'
+      run: cmake -S lite -B lite/build -DSPM_ENABLE_BENCHMARK=ON
+
+    - name: Build
+      run: cmake --build lite/build --config Release --parallel 32
+
+    - name: Test
+      working-directory: lite/build
+      run: ctest -C Release --output-on-failure
+
+    - name: Benchmark Smoke Test (Linux/MacOSX)
+      if: runner.os != 'Windows'
+      working-directory: lite/build
+      run: ./sentencepiece_lite_benchmark --benchmark_filter=BM_.*_Encode --benchmark_min_time=0.01s
+
+    - name: Benchmark Smoke Test (Windows)
+      if: runner.os == 'Windows'
+      working-directory: lite/build
+      run: .\Release\sentencepiece_lite_benchmark.exe --benchmark_filter=BM_.*_Encode --benchmark_min_time=0.01s

@@ -499,6 +499,10 @@ TEST(NormalizerTest, PrefixMatcherTest) {
   EXPECT_TRUE(found);
   EXPECT_EQ(3, matcher.PrefixMatch("東京大学", &found));
   EXPECT_FALSE(found);
+  EXPECT_EQ(0, matcher.PrefixMatch(absl::string_view("abcd", 0), &found));
+  EXPECT_FALSE(found);
+  EXPECT_EQ(0, matcher.PrefixMatch(absl::string_view(), &found));
+  EXPECT_FALSE(found);
 
   EXPECT_EQ("", matcher.GlobalReplace("", ""));
   EXPECT_EQ("", matcher.GlobalReplace("abc", ""));

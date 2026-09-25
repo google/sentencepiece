@@ -16,6 +16,7 @@
 
 #include <gtest/gtest.h>
 
+#include "absl/base/internal/endian.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -63,6 +64,76 @@ TEST(BuilderTest, BuildNFKCMapTest) {
 #endif
 }
 
+TEST(BuilderTest, BuildNFCMapTest) {
+  Builder::CharsMap chars_map;
+#ifdef ENABLE_NFKC_COMPILE
+  EXPECT_TRUE(Builder::BuildNFCMap(&chars_map).ok());
+  EXPECT_TRUE(!chars_map.empty());
+#else
+  EXPECT_TRUE(Builder::BuildNFCMap(&chars_map).ok());
+#endif
+}
+
+TEST(BuilderTest, BuildNFDMapTest) {
+  Builder::CharsMap chars_map;
+#ifdef ENABLE_NFKC_COMPILE
+  EXPECT_TRUE(Builder::BuildNFDMap(&chars_map).ok());
+  EXPECT_TRUE(!chars_map.empty());
+#else
+  EXPECT_TRUE(Builder::BuildNFDMap(&chars_map).ok());
+#endif
+}
+
+TEST(BuilderTest, BuildNFKDMapTest) {
+  Builder::CharsMap chars_map;
+#ifdef ENABLE_NFKC_COMPILE
+  EXPECT_TRUE(Builder::BuildNFKDMap(&chars_map).ok());
+  EXPECT_TRUE(!chars_map.empty());
+#else
+  EXPECT_TRUE(Builder::BuildNFKDMap(&chars_map).ok());
+#endif
+}
+
+TEST(BuilderTest, BuildNFC_CFMapTest) {
+  Builder::CharsMap chars_map;
+#ifdef ENABLE_NFKC_COMPILE
+  EXPECT_TRUE(Builder::BuildNFC_CFMap(&chars_map).ok());
+  EXPECT_TRUE(!chars_map.empty());
+#else
+  EXPECT_TRUE(Builder::BuildNFC_CFMap(&chars_map).ok());
+#endif
+}
+
+TEST(BuilderTest, BuildNFD_CFMapTest) {
+  Builder::CharsMap chars_map;
+#ifdef ENABLE_NFKC_COMPILE
+  EXPECT_TRUE(Builder::BuildNFD_CFMap(&chars_map).ok());
+  EXPECT_TRUE(!chars_map.empty());
+#else
+  EXPECT_TRUE(Builder::BuildNFD_CFMap(&chars_map).ok());
+#endif
+}
+
+TEST(BuilderTest, BuildNFKD_CFMapTest) {
+  Builder::CharsMap chars_map;
+#ifdef ENABLE_NFKC_COMPILE
+  EXPECT_TRUE(Builder::BuildNFKD_CFMap(&chars_map).ok());
+  EXPECT_TRUE(!chars_map.empty());
+#else
+  EXPECT_TRUE(Builder::BuildNFKD_CFMap(&chars_map).ok());
+#endif
+}
+
+TEST(BuilderTest, BuildNFKC_CFMapTest) {
+  Builder::CharsMap chars_map;
+#ifdef ENABLE_NFKC_COMPILE
+  EXPECT_TRUE(Builder::BuildNFKC_CFMap(&chars_map).ok());
+  EXPECT_TRUE(!chars_map.empty());
+#else
+  EXPECT_TRUE(Builder::BuildNFKC_CFMap(&chars_map).ok());
+#endif
+}
+
 TEST(BuilderTest, GetPrecompiledCharsMapTest) {
   SetDataDir(::testing::SrcDir());
 
@@ -73,6 +144,12 @@ TEST(BuilderTest, GetPrecompiledCharsMapTest) {
     EXPECT_EQ(WS "ABC", normalizer.Normalize("ＡＢＣ"));
     EXPECT_EQ(WS "(株)", normalizer.Normalize("㈱"));
     EXPECT_EQ(WS "グーグル", normalizer.Normalize("ｸﾞｰｸﾞﾙ"));
+    EXPECT_EQ(WS "a" WS "b", normalizer.Normalize("a\xe2\x80\x8e"
+                                                  "b"));
+    EXPECT_EQ(WS "a" WS "b", normalizer.Normalize("a\xe2\x80\x8f"
+                                                  "b"));
+    EXPECT_EQ(WS "a" WS "b", normalizer.Normalize("a\xd8\x9c"
+                                                  "b"));
   }
 
   {
@@ -89,6 +166,12 @@ TEST(BuilderTest, GetPrecompiledCharsMapTest) {
     const Normalizer normalizer(spec);
     EXPECT_EQ(WS "abc", normalizer.Normalize("ＡＢＣ"));
     EXPECT_EQ(WS "abc", normalizer.Normalize("ABC"));
+    EXPECT_EQ(WS "a" WS "b", normalizer.Normalize("a\xe2\x80\x8e"
+                                                  "b"));
+    EXPECT_EQ(WS "a" WS "b", normalizer.Normalize("a\xe2\x80\x8f"
+                                                  "b"));
+    EXPECT_EQ(WS "a" WS "b", normalizer.Normalize("a\xd8\x9c"
+                                                  "b"));
   }
 
   {
@@ -144,14 +227,21 @@ TEST(BuilderTest, CompileCharsMap) {
 
 TEST(BuilderTest, DecompileMalformedCharsMapTest) {
   // Assembles a precompiled charsmap from raw darts units and a normalized
-  // block, matching the on-disk <size><trie><normalized> layout.
+  // block in little-endian wire format so the test works on big-endian hosts.
   auto make_blob = [](const std::vector<uint32_t>& units,
                       absl::string_view normalized) {
     std::string trie_blob;
-    for (const uint32_t u : units)
-      trie_blob += string_util::EncodePOD<uint32_t>(u);
-    std::string blob = string_util::EncodePOD<uint32_t>(
-        static_cast<uint32_t>(trie_blob.size()));
+    trie_blob.reserve(units.size() * sizeof(uint32_t));
+    for (const uint32_t u : units) {
+      char buf[sizeof(uint32_t)];
+      absl::little_endian::Store32(buf, u);
+      trie_blob.append(buf, sizeof(buf));
+    }
+    std::string blob;
+    char size_buf[sizeof(uint32_t)];
+    absl::little_endian::Store32(size_buf,
+                                 static_cast<uint32_t>(trie_blob.size()));
+    blob.append(size_buf, sizeof(size_buf));
     blob += trie_blob;
     blob.append(normalized.data(), normalized.size());
     return blob;
@@ -180,6 +270,23 @@ TEST(BuilderTest, DecompileMalformedCharsMapTest) {
     EXPECT_FALSE(Builder::DecompileCharsMap(
                      make_blob(units, std::string("x\0", 2)), &chars_map)
                      .ok());
+  }
+
+  // A leaf unit whose value points at or past normalized.size() must be
+  // rejected by trie validation.
+  {
+    std::vector<uint32_t> units(256, 0);
+    units[0] = (1u << 10);
+    units[96] = static_cast<uint32_t>('a') | 0x100 | (2u << 10);
+    const std::string normalized("abc\0", 4);
+    units[98] = 0x80000000u | static_cast<uint32_t>(normalized.size());
+    Builder::CharsMap chars_map;
+    absl::Status status =
+        Builder::DecompileCharsMap(make_blob(units, normalized), &chars_map);
+    EXPECT_FALSE(status.ok());
+    EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
+    EXPECT_EQ(status.message(),
+              "Trie data contains out-of-bounds node references.");
   }
 }
 

@@ -52,6 +52,14 @@ m.vocab
 *.swo
 .DS_Store
 test_tmp
+lite/build/
+*.spm.fb
+spm_lite
+spm_to_fb
 
 # Bazel outputs
 bazel-*
+
+# Documentation build outputs
+/_docs_build/
+/site/

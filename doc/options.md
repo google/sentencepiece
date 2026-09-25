@@ -48,11 +48,6 @@ These options control the input/output files, the tokenization algorithm type, a
         *   `char`: Character-level segmentation.
 *   **`vocab_size`** (int32, default: `8000`)
     *   Desired vocabulary size (including special symbols).
-
-*   **`accept_language`** (string or list of strings, default: `""`)
-    *   Comma-separated list of ISO language codes (e.g., `ja,en`).
-    *   *Python Example*: `accept_language=['ja', 'en']`
-    *   *Note*: This option is currently not used by the training logic and does not affect the model behavior. It is kept for backward compatibility and can be used to store language metadata inside the model file.
 *   **`num_threads`** (int32, default: `16`)
     *   Number of threads to use during training.
 *   **`random_seed`** (uint32, default: `4294967295` (max uint32))
@@ -77,8 +72,6 @@ These options control how SentencePiece processes and samples the training corpu
     *   If `true`, randomly samples `input_sentence_size` sentences from the corpus. Only effective when `input_sentence_size > 0`.
 *   **`hard_vocab_limit`** (bool, default: `true`)
     *   If `true`, training will fail with an error if the corpus does not contain enough unique subwords to reach the requested `vocab_size`. If `false`, training will succeed and automatically shrink the vocabulary size in the output model to the maximum possible size.
-*   **`train_extremely_large_corpus`** (bool, default: `false`)
-    *   *(Unigram only)* Enables training on massive corpora containing more than 2 billion characters. It switches the internal suffix array index type from 32-bit to 64-bit integers to support the larger memory footprint.
 
 ---
 

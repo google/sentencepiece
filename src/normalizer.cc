@@ -355,6 +355,11 @@ PrefixMatcher::PrefixMatcher(const std::set<absl::string_view>& dic) {
 }
 
 int PrefixMatcher::PrefixMatch(absl::string_view w, bool* found) const {
+  if (w.empty()) {
+    if (found) *found = false;
+    return 0;
+  }
+
   if (trie_ == nullptr) {
     if (found) *found = false;
     return std::min<int>(w.size(), string_util::OneCharLen(w.data()));

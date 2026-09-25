@@ -36,10 +36,10 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
+#include "darts.h"
 #include "filesystem.h"
 #include "normalizer.h"
 #include "ret_check.h"
-#include "darts.h"
 #include "util.h"
 
 #ifdef ENABLE_NFKC_COMPILE
@@ -271,7 +271,7 @@ absl::Status Builder::DecompileCharsMap(absl::string_view blob,
   trie.copy_array(reinterpret_cast<const char*>(trie_blob.data()),
                   trie_blob.size());
 
-  if (!trie.validate()) {
+  if (!trie.validate(normalized.size())) {
     return absl::InternalError(
         "Trie data contains out-of-bounds node references.");
   }
@@ -305,20 +305,26 @@ absl::Status Builder::DecompileCharsMap(absl::string_view blob,
           if (static_cast<size_t>(result) >= normalized.size()) {
             value_out_of_range = true;
           } else {
-            const absl::string_view value = normalized.data() + result;
-            Chars key_chars;
-            Chars value_chars;
-            const auto key_unicode = string_util::UTF8ToUnicodeText(key);
-            key_chars.reserve(key_unicode.size());
-            for (const auto c : key_unicode) {
-              key_chars.push_back(c);
+            const size_t null_pos = normalized.find('\0', result);
+            if (null_pos == absl::string_view::npos) {
+              value_out_of_range = true;
+            } else {
+              const absl::string_view value =
+                  normalized.substr(result, null_pos - result);
+              Chars key_chars;
+              Chars value_chars;
+              const auto key_unicode = string_util::UTF8ToUnicodeText(key);
+              key_chars.reserve(key_unicode.size());
+              for (const auto c : key_unicode) {
+                key_chars.push_back(c);
+              }
+              const auto value_unicode = string_util::UTF8ToUnicodeText(value);
+              value_chars.reserve(value_unicode.size());
+              for (const auto c : value_unicode) {
+                value_chars.push_back(c);
+              }
+              (*chars_map)[key_chars] = value_chars;
             }
-            const auto value_unicode = string_util::UTF8ToUnicodeText(value);
-            value_chars.reserve(value_unicode.size());
-            for (const auto c : value_unicode) {
-              value_chars.push_back(c);
-            }
-            (*chars_map)[key_chars] = value_chars;
           }
         }
         // Recursively traverse.
@@ -448,23 +454,22 @@ absl::Status BuildMapInternal(
 absl::Status Builder::BuildNFKCMap(CharsMap* chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   LOG(INFO) << "Running BuildNFKCMap";
-  BuildMapInternal(chars_map, ToNFKC, ToNFKD);
+  return BuildMapInternal(chars_map, ToNFKC, ToNFKD);
 #else
   LOG(ERROR) << kCompileError;
-#endif
-
   return absl::OkStatus();
+#endif
 }
 
 // static
 absl::Status Builder::BuildNFCMap(CharsMap* chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   LOG(INFO) << "Running BuildNFCMap";
-  BuildMapInternal(chars_map, ToNFC, ToNFD);
+  return BuildMapInternal(chars_map, ToNFC, ToNFD);
 #else
   LOG(ERROR) << kCompileError;
-#endif
   return absl::OkStatus();
+#endif
 }
 
 absl::Status Builder::BuildNmtNFKCMap(CharsMap* chars_map) {
@@ -519,6 +524,7 @@ absl::Status Builder::MergeNmtMap(Builder::CharsMap* chars_map) {
   (*chars_map)[{0x000A}] = {0x20};  // LINE FEED
   (*chars_map)[{0x000C}] = {0x20};  // FORM FEED
   (*chars_map)[{0x000D}] = {0x20};  // CARRIAGE RETURN
+  (*chars_map)[{0x061C}] = {0x20};  // ARABIC LETTER MARK
   (*chars_map)[{0x1680}] = {0x20};  // OGHAM SPACE MARK
   (*chars_map)[{0x200B}] = {0x20};  // ZERO WIDTH SPACE
   (*chars_map)[{0x200E}] = {0x20};  // LEFT-TO-RIGHT MARK
@@ -656,7 +662,7 @@ absl::Status Builder::BuildNFKD_CFMap(CharsMap* chars_map) {
 absl::Status Builder::BuildNFC_CFMap(CharsMap* chars_map) {
 #ifdef ENABLE_NFKC_COMPILE
   CharsMap nfc_map;
-  ABSL_RETURN_IF_ERROR(Builder::BuildNFKDMap(&nfc_map));
+  ABSL_RETURN_IF_ERROR(Builder::BuildNFCMap(&nfc_map));
   ABSL_RETURN_IF_ERROR(Builder::MergeUnicodeCaseFoldMap(&nfc_map));
   *chars_map = std::move(nfc_map);
 #else

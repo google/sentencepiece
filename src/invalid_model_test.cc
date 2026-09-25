@@ -22,12 +22,16 @@
 #include "absl/base/internal/endian.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "builder.h"
 #include "filesystem.h"
+#include "model_interface.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 
 namespace sentencepiece {
 namespace {
+
+constexpr absl::string_view kNullPiece("\0", 1);
 
 std::string GetTestDataPath(absl::string_view filename) {
   return filesystem::JoinPath(::testing::SrcDir(), filename);
@@ -206,6 +210,86 @@ TEST(SentencePieceProcessorTest, RejectModelWithOOBCharsmapValue) {
   EXPECT_FALSE(status.ok());
   EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
   EXPECT_EQ(status.message(), "precompiled_charsmap is invalid.");
+
+  normalizer::Builder::CharsMap chars_map;
+  absl::Status builder_status =
+      normalizer::Builder::DecompileCharsMap(charsmap, &chars_map);
+  EXPECT_FALSE(builder_status.ok());
+  EXPECT_EQ(builder_status.code(), absl::StatusCode::kInternal);
+  EXPECT_EQ(builder_status.message(),
+            "Trie data contains out-of-bounds node references.");
+}
+
+// Test for GitHub issue #1308 (Allow single null-byte piece as UNUSED only when
+// byte_fallback is enabled)
+TEST(SentencePieceProcessorTest, SanitizeNullBytePiece1308) {
+  std::string model_path = GetTestDataPath("botchan_en_unigram_1000.model");
+  std::ifstream ifs(model_path, std::ios::binary);
+  ModelProto base_proto;
+  ASSERT_TRUE(base_proto.ParseFromIstream(&ifs));
+
+  // 1. When byte_fallback is false, piece == "\0" must be rejected.
+  {
+    ModelProto model_proto = base_proto;
+    model_proto.mutable_trainer_spec()->set_byte_fallback(false);
+    auto* null_piece = model_proto.add_pieces();
+    null_piece->set_piece(std::string(kNullPiece));
+    null_piece->set_score(-5.0);
+    null_piece->set_type(ModelProto::SentencePiece::NORMAL);
+
+    SentencePieceProcessor sp;
+    EXPECT_FALSE(sp.Load(model_proto).ok());
+  }
+
+  // Prepare a model with byte_fallback = true and all 256 byte pieces.
+  ModelProto bf_proto = base_proto;
+  bf_proto.mutable_trainer_spec()->set_byte_fallback(true);
+  for (int c = 0; c < 256; ++c) {
+    auto* bp = bf_proto.add_pieces();
+    bp->set_piece(ByteToPiece(c));
+    bp->set_score(0.0);
+    bp->set_type(ModelProto::SentencePiece::BYTE);
+  }
+
+  // 2. Even with byte_fallback = true, a piece with embedded null ("foo\0bar")
+  // must be rejected.
+  {
+    ModelProto model_proto = bf_proto;
+    auto* bad_piece = model_proto.add_pieces();
+    bad_piece->set_piece(std::string("foo\0bar", 7));
+    bad_piece->set_score(-5.0);
+    bad_piece->set_type(ModelProto::SentencePiece::NORMAL);
+
+    SentencePieceProcessor sp;
+    EXPECT_FALSE(sp.Load(model_proto).ok());
+  }
+
+  // 3. When byte_fallback is true, a single null byte piece (piece == "\0")
+  // is allowed and treated as UNUSED.
+  {
+    ModelProto model_proto = bf_proto;
+    const int null_id = model_proto.pieces_size();
+    auto* null_piece = model_proto.add_pieces();
+    null_piece->set_piece(std::string(kNullPiece));
+    null_piece->set_score(-5.0);
+    null_piece->set_type(ModelProto::SentencePiece::NORMAL);
+
+    SentencePieceProcessor sp;
+    ASSERT_TRUE(sp.Load(model_proto).ok());
+    EXPECT_EQ(null_id + 1, sp.GetPieceSize());
+    EXPECT_TRUE(sp.IsUnused(null_id));
+
+    // Normal encoding and decoding must work without trie corruption or crash.
+    std::vector<int> ids;
+    ASSERT_TRUE(sp.Encode("This is a test sentence.", &ids).ok());
+    EXPECT_FALSE(ids.empty());
+    for (int id : ids) {
+      EXPECT_NE(null_id, id);
+    }
+    std::string decoded;
+    ASSERT_TRUE(sp.Decode(ids, &decoded).ok());
+    EXPECT_EQ("This is a test sentence.", decoded);
+  }
 }
 
 }  // namespace
