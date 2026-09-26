@@ -1638,6 +1638,17 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              if (!status.ok()) throw status;
              return true;
            })
+      .def("LoadFromSerializedNormalizerSpec",
+           [](sentencepiece::SentencePieceNormalizer& self,
+              const py::bytes& serialized) {
+             std::string_view serialized_view =
+                 serialized.cast<std::string_view>();
+             py::gil_scoped_release release;
+             auto status =
+                 self.LoadFromSerializedNormalizerSpec(serialized_view);
+             if (!status.ok()) throw status;
+             return true;
+           })
       .def("LoadFromRuleTSV",
            [](sentencepiece::SentencePieceNormalizer& self,
               const std::string& filename) {
