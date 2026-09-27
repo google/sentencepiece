@@ -1559,6 +1559,11 @@ class TestSentencepieceProcessor(unittest.TestCase):
     # out_type works as alias for return_type
     self.assertEqual(sp.encode(text, out_type=int), ids)
     self.assertEqual(sp.decode(ids, out_type=str), text)
+    pieces = sp.encode(text, out_type=str)
+    self.assertEqual(sp.DecodeIds(ids, out_type=bytes), text.encode('utf-8'))
+    self.assertEqual(
+        sp.decode_pieces(pieces, out_type=bytes), text.encode('utf-8')
+    )
 
     # Cannot specify both
     with self.assertRaises(ValueError):

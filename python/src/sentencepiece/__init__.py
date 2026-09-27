@@ -590,10 +590,10 @@ class SentencePieceProcessor:
             else:
                 return method(input)
 
-    def DecodePieces(self, input, return_type=str, **kwargs):
+    def DecodePieces(self, input, return_type=None, **kwargs):
         return self.Decode(input=input, return_type=return_type, **kwargs)
 
-    def DecodeIds(self, input, return_type=str, **kwargs):
+    def DecodeIds(self, input, return_type=None, **kwargs):
         return self.Decode(input=input, return_type=return_type, **kwargs)
 
 
