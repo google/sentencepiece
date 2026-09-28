@@ -761,9 +761,9 @@ class SentencePieceNormalizer:
                  rule_tsv=None,
                  rule_name=None,
                  norm_map=None,
-                 add_dummy_prefix=False,
-                 escape_whitespaces=False,
-                 remove_extra_whitespaces=False):
+                 add_dummy_prefix=None,
+                 escape_whitespaces=None,
+                 remove_extra_whitespaces=None):
         self._normalizer = _sentencepiece.SentencePieceNormalizer()
 
         if model_file:
@@ -785,9 +785,15 @@ class SentencePieceNormalizer:
         else:
             raise ValueError('no model is specified')
 
-        self._normalizer._SetProtoField('add_dummy_prefix', add_dummy_prefix)
-        self._normalizer._SetProtoField('escape_whitespaces', escape_whitespaces)
-        self._normalizer._SetProtoField('remove_extra_whitespaces', remove_extra_whitespaces)
+        # Only override flags the caller actually passed. Defaults used to be
+        # False and always clobbered values loaded from model/spec (#1334).
+        if add_dummy_prefix is not None:
+            self._normalizer._SetProtoField('add_dummy_prefix', add_dummy_prefix)
+        if escape_whitespaces is not None:
+            self._normalizer._SetProtoField('escape_whitespaces', escape_whitespaces)
+        if remove_extra_whitespaces is not None:
+            self._normalizer._SetProtoField('remove_extra_whitespaces',
+                                           remove_extra_whitespaces)
 
     def Decompile(self):
         return self._normalizer.Decompile()
