@@ -72,6 +72,21 @@ constexpr int kMaxNBestSize = 512;
 
 constexpr absl::string_view kNullPiece("\0", 1);
 
+// Piece-type checks for hot encode/decode loops. Unlike the public
+// SentencePieceProcessor::Is*() accessors, these skip the per-call status()
+// validation, so callers must have validated status() beforehand.
+inline bool IsControlId(const ModelInterface& model, int id) {
+  return id >= 0 && model.IsControl(id);
+}
+
+inline bool IsByteId(const ModelInterface& model, int id) {
+  return id >= 0 && model.IsByte(id);
+}
+
+inline bool IsUnknownId(const ModelInterface& model, int unk_id, int id) {
+  return id == unk_id || (id >= 0 && model.IsUnknown(id));
+}
+
 }  // namespace
 
 SentencePieceProcessor::SentencePieceProcessor() {}
@@ -292,9 +307,9 @@ absl::Status SentencePieceProcessor::PopulateSentencePieceText(
 
     RET_CHECK(!w.empty()) << "Empty piece is not allowed.";
 
-    const bool is_unk = IsUnknown(id);
+    const bool is_unk = IsUnknownId(*model_, unk_id_, id);
 
-    if (IsControl(id)) {
+    if (IsControlId(*model_, id)) {
       // Control symbol has no corresponding source surface, so begin == end.
       auto* sp = spt->add_pieces();
       sp->set_piece(w.data(), w.size());
@@ -485,10 +500,10 @@ absl::Status SentencePieceProcessor::Decode(
   auto DecodeSentencePiece =
       [&](absl::string_view piece, int id,
           bool is_bos_ws) -> std::pair<std::string, bool> {
-    if (IsControl(id)) {                 // <s>, </s>
+    if (IsControlId(*model_, id)) {      // <s>, </s>
       return std::make_pair("", false);  // invisible symbol.
-    } else if (IsUnknown(id)) {
-      if (id >= 0 && IdToPiece(id) == piece) {  // <unk>
+    } else if (IsUnknownId(*model_, unk_id_, id)) {
+      if (id >= 0 && model_->IdToPiece(id) == piece) {  // <unk>
         return std::make_pair(std::string(unk_surface), false);
       } else {  // return piece when piece is not <unk>.
         return std::make_pair(std::string(piece), false);
@@ -520,7 +535,7 @@ absl::Status SentencePieceProcessor::Decode(
   for (absl::string_view w : pieces) {
     auto* sp = spt->add_pieces();
     sp->mutable_piece()->assign(w.data(), w.size());
-    sp->set_id(PieceToId(w));
+    sp->set_id(model_->PieceToId(w));
   }
 
   ABSL_RETURN_IF_ERROR(ApplyExtraOptions(decode_extra_options_, spt));
@@ -594,7 +609,7 @@ absl::Status SentencePieceProcessor::Decode(
 
   for (int i = 0; i < spt->pieces_size(); ++i) {
     const auto& sp = spt->pieces(i);
-    if (!IsByte(sp.id())) {
+    if (!IsByteId(*model_, sp.id())) {
       ABSL_RETURN_IF_ERROR(ProcessBytePieces(byte_start, i));
 
       // if we have seen a bos_ws token or any non-empty token
@@ -618,15 +633,16 @@ absl::Status SentencePieceProcessor::Decode(
 
 absl::Status SentencePieceProcessor::Decode(absl::Span<const int> ids,
                                             SentencePieceText* spt) const {
+  ABSL_RETURN_IF_ERROR(status());
   std::vector<absl::string_view> pieces;
-  const int num_pieces = GetPieceSize();
+  const int num_pieces = model_->GetPieceSize();
   pieces.reserve(ids.size());
   for (const int id : ids) {
     if (id < 0 || id >= num_pieces) {
       return absl::Status(absl::StatusCode::kOutOfRange,
                           absl::StrCat("Invalid id: ", id));
     }
-    pieces.emplace_back(IdToPiece(id));
+    pieces.emplace_back(model_->IdToPiece(id));
   }
   return Decode(pieces, spt);
 }
@@ -802,6 +818,8 @@ absl::Status SentencePieceProcessor::ParallelEncodeInternal(
     absl::string_view input, size_t chunk_len, ThreadPool& thread_pool,
     std::vector<std::string>* pieces, std::vector<int>* ids,
     SentencePieceText* spt) const {
+  ABSL_RETURN_IF_ERROR(status());
+
   if (input.empty()) {
     if (spt != nullptr) {
       spt->Clear();
@@ -940,8 +958,8 @@ absl::Status SentencePieceProcessor::ParallelEncodeInternal(
         //   unknown character. Intermediate byte pieces (begin == end) do not.
         // - Normal pieces (including dummy prefix space) always get their
         // surface.
-        if (!IsControl(piece.id())) {
-          if (!IsByte(piece.id()) || sp->begin() != sp->end()) {
+        if (!IsControlId(*model_, piece.id())) {
+          if (!IsByteId(*model_, piece.id()) || sp->begin() != sp->end()) {
             auto tmp = input.substr(sp->begin(), sp->end() - sp->begin());
             sp->set_surface(tmp.data(), tmp.size());
           }
@@ -1163,7 +1181,7 @@ absl::Status SentencePieceProcessor::ApplyExtraOptions(
         if constexpr (std::is_same_v<T, SentencePieceText>) {
           for (int i = 0; i < output->pieces_size(); ++i) {
             auto* piece = output->mutable_pieces(i);
-            if (IsUnknown(piece->id())) {
+            if (IsUnknownId(*model_, unk_id_, piece->id())) {
               piece->set_piece(model_->unk_piece().data(),
                                model_->unk_piece().size());
             }
@@ -1271,7 +1289,7 @@ absl::Status SentencePieceProcessor::EncodeOptimized(
     const absl::string_view w = piece.first;
     RET_CHECK(!piece.first.empty()) << "Empty piece is not allowed.";
     const int id = piece.second;
-    if (IsControl(id)) {
+    if (IsControlId(*model_, id)) {
       if constexpr (std::is_same_v<T, int>) {
         output->emplace_back(id);
       } else {
@@ -1279,7 +1297,7 @@ absl::Status SentencePieceProcessor::EncodeOptimized(
       }
       is_prev_unk = false;
     } else {
-      const bool is_unk = IsUnknown(id);
+      const bool is_unk = IsUnknownId(*model_, unk_id_, id);
       if (is_unk && byte_fallback_enabled) {
         for (size_t i = 0; i < w.size(); ++i) {
           if constexpr (std::is_same_v<T, int>) {
@@ -1369,22 +1387,23 @@ absl::Status SentencePieceProcessor::DecodeOptimized(
   };
 
   bool is_bos_ws = true;
+  const int num_pieces = model_->GetPieceSize();
   for (const auto& item : active_input) {
     int id = -1;
     absl::string_view piece;
     if constexpr (std::is_same_v<T, int>) {
       id = item;
-      if (id < 0 || id >= GetPieceSize()) {
+      if (id < 0 || id >= num_pieces) {
         return absl::Status(absl::StatusCode::kOutOfRange,
                             absl::StrCat("Invalid id: ", id));
       }
-      piece = IdToPiece(id);
+      piece = model_->IdToPiece(id);
     } else {
       piece = item;
-      id = PieceToId(piece);
+      id = model_->PieceToId(piece);
     }
 
-    if (IsByte(id)) {
+    if (IsByteId(*model_, id)) {
       const int byte = PieceToByte(piece);
       RET_CHECK_LE(0, byte);
       byte_queue.append(1, byte);
@@ -1394,7 +1413,7 @@ absl::Status SentencePieceProcessor::DecodeOptimized(
         is_bos_ws = false;
       }
 
-      if (IsControl(id)) {
+      if (IsControlId(*model_, id)) {
         continue;
       }
 
@@ -1412,8 +1431,8 @@ absl::Status SentencePieceProcessor::DecodeOptimized(
         }
       }
 
-      if (IsUnknown(id)) {
-        if (id >= 0 && IdToPiece(id) == piece) {
+      if (IsUnknownId(*model_, unk_id_, id)) {
+        if (id >= 0 && model_->IdToPiece(id) == piece) {
           absl::StrAppend(detokenized, unk_surface);
         } else {
           absl::StrAppend(detokenized, piece);

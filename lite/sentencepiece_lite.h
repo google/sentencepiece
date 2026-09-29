@@ -66,6 +66,7 @@ enum class StatusCode : int {
   kOk = 0,
   kInvalidArgument = 3,
   kFailedPrecondition = 9,
+  kOutOfRange = 11,
   kInternal = 13,
 };
 

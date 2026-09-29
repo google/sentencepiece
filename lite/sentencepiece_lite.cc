@@ -80,29 +80,16 @@ constexpr size_t kMaxInputLength =
 constexpr size_t kModelBufferAlignment = 4;
 
 // Double-Array Trie (Darts) flat 32-bit integer array representation.
-// It encodes a prefix tree (Trie) into a single 1D array where tree nodes are
-// array indices. Child node positions are computed via XOR arithmetic, enabling
-// O(1) state transitions per character without pointer indirections.
+// Encodes a prefix tree into a 1D array where child transitions are computed
+// via O(1) XOR arithmetic (`node ^ offset ^ byte`) without pointer indirection.
 //
 // Unit Bit Layout (32-bit integer):
 //  - Bits [0..7]:   label (character byte that transitioned here)
 //  - Bit 8:         has_leaf (true if a symbol ends at this node)
-//  - Bits [10..30]: offset (XOR base jump offset to child nodes)
-//  - Bit 31:        leaf flag (0 for internal transition node, 1
-//                             for leaf/value node)
-//  - Leaf node:     when Bit 31 is 1, stores the actual symbol value/ID in bits
-//  [0..30]
-//
-// Pseudo-code for exact lookup:
-//   int node = 0; // root
-//   for (char c : key) {
-//     int next = node ^ unit[node].offset() ^ (unsigned char)c;
-//     if (unit[next].label() != (unsigned char)c) return -1;
-//     node = next;
-//   }
-//   return unit[node].has_leaf()
-//              ? unit[node ^ unit[node].offset()].value()
-//              : -1;
+//  - Bits [10..30]: offset (XOR base jump offset to child nodes; scaled << 8 if
+//                   Bit 9 is set)
+//  - Bit 31:        leaf flag (0 = internal transition node, 1 = leaf value
+//                   node storing symbol ID in bits [0..30])
 class DoubleArray {
  private:
   class DoubleArrayUnit {
@@ -114,11 +101,7 @@ class DoubleArray {
     int value() const { return static_cast<int>(unit_ & ((1U << 31) - 1)); }
     uint32_t label() const { return unit_ & ((1U << 31) | 0xFF); }
     uint32_t offset() const {
-      // ILP & Branchless Optimization:
-      // Instead of variable shift `<< ((unit_ & (1U << 9)) >> 6)` which creates
-      // a serialized data dependency chain and shift-register stall,
-      // compute `base` (>> 10) and `scaled` (>> 2 & ~0xFFU) in parallel across
-      // two ALUs and select in 1 cycle using branchless cmov/csel!
+      // Branchless selection (`cmov`/`csel`) avoids variable shift stalls.
       const uint32_t base = unit_ >> 10;
       const uint32_t scaled = (unit_ >> 2) & ~0xFFU;
       return (unit_ & (1U << 9)) ? scaled : base;
@@ -139,7 +122,7 @@ class DoubleArray {
   bool has_array() const { return array_ != nullptr; }
   const uint32_t* array() const { return array_; }
 
-  // Returns the value associated with `key`.
+  // Returns the value associated with `key`, or -1 if not found.
   int exact_lookup(std::string_view key) const {
     if (array_ == nullptr || key.empty()) return -1;
     uint32_t node_pos = 0;
@@ -190,28 +173,18 @@ class DoubleArray {
     }
   }
 
-  // Non-owning, zero-cost Trie view wrapper with __restrict__ optimization.
-  // Encapsulates raw DoubleArray pointer access without `this->` aliasing
-  // overhead, allowing compilers (Clang/GCC) to perform register allocation and
-  // instruction-level parallelization inside hot tokenization loops.
+  // Non-owning Trie view with __restrict__ pointer for hot loops.
   struct View {
     const uint32_t* SPM_LITE_RESTRICT array;
     static constexpr uint32_t kInvalidNodePos = ~0U;
-
-    static uint32_t ExtractOffset(uint32_t unit) {
-      const uint32_t base = unit >> 10;
-      const uint32_t scaled = (unit >> 2) & ~0xFFU;
-      return (unit & (1U << 9)) ? scaled : base;
-    }
 
     uint32_t transition(uint32_t node_pos, std::string_view key) const {
       if (node_pos == kInvalidNodePos) return kInvalidNodePos;
       uint32_t id = node_pos;
       for (char c : key) {
-        const uint32_t offset = ExtractOffset(array[id]);
-        id ^= offset ^ static_cast<unsigned char>(c);
-        const uint32_t target_unit = array[id];
-        if ((target_unit & ((1U << 31) | 0xFF)) !=
+        id ^=
+            DoubleArrayUnit(array[id]).offset() ^ static_cast<unsigned char>(c);
+        if (DoubleArrayUnit(array[id]).label() !=
             static_cast<unsigned char>(c)) {
           return kInvalidNodePos;
         }
@@ -221,47 +194,27 @@ class DoubleArray {
 
     int leaf_value(uint32_t node_pos) const {
       if (node_pos == kInvalidNodePos) return -1;
-      const uint32_t unit = array[node_pos];
-      if (((unit >> 8) & 1) == 0) return -1;
-      const uint32_t leaf_unit = array[node_pos ^ ExtractOffset(unit)];
-      return static_cast<int>(leaf_unit & ((1U << 31) - 1));
+      const DoubleArrayUnit unit(array[node_pos]);
+      if (!unit.has_leaf()) return -1;
+      return DoubleArrayUnit(array[node_pos ^ unit.offset()]).value();
     }
   };
 
-  // Creates a non-owning View with __restrict__ optimization for
-  // high-performance loops.
   View view() const { return View{array_}; }
 
-  // Performs a trie transition from `node_pos` with `key`.
-  // Returns kInvalidNodePos (~0U) if no valid node exists for the transition.
   uint32_t transition(uint32_t node_pos, std::string_view key) const {
     return view().transition(node_pos, key);
   }
 
-  // Returns the value of `node_pos`.
   int leaf_value(uint32_t node_pos) const {
     return view().leaf_value(node_pos);
   }
 
-  // WARNING: CRITICAL SECURITY AND MEMORY SAFETY BOUNDARY
-  // Runtime trie traversals (`exact_lookup`, `transition`, etc.) deliberately
-  // omit runtime boundary checks in their inner loops to maximize tokenization
-  // performance. Consequently, this validation method serves as the sole
-  // barrier preventing out-of-bounds (OOB) memory accesses, segmentation
-  // faults, and potential security vulnerabilities from untrusted model data.
-  //
-  // Do NOT disable, bypass, or weaken any checks in this method. Any changes to
-  // this logic require maximum scrutiny to ensure that all 256 possible byte
-  // transitions, leaf nodes, and failure links remain strictly confined within
-  // allocated array bounds (`[0, size_)`).
-  //
-  // Detailed Validation Specification:
-  // - Transition safety: Verifies that for every node `i`, all 256 possible
-  //   byte transitions `(i ^ offset) ^ c` land within valid bounds `< size_`.
-  // - `max_value_limit`: If non-negative, guarantees that decoded symbol IDs
-  //   (`unit.value()`) are strictly less than `max_value_limit`.
-  // - `check_suffix_links`: If true, verifies that all internal failure links
-  //   point to valid transition states within the trie bounds.
+  // SECURITY CRITICAL: Runtime trie traversals omit per-step bounds checks for
+  // performance. This method guarantees memory safety by verifying ahead of
+  // time that for every node `i`, all 256 byte transitions `(i ^ offset) ^ c`,
+  // leaf transitions, symbol IDs (`< max_value_limit`), and failure links
+  // strictly reside within `[0, size_)`. Do NOT weaken these checks.
   bool validate(int max_value_limit = -1,
                 bool check_suffix_links = false) const {
     if (size_ == 0 || array_ == nullptr) return false;
@@ -366,20 +319,9 @@ inline size_t FirstMatchedByteOffset(uint64_t match_mask) {
   return std::countr_zero(match_mask) >> 3;
 }
 
-// Fast, register-friendly UTF-8 string scanner designed to replace repeated
-// std::string_view::substr() calls and redundant buffer boundary checks.
-//
-// Motivation:
-// In UTF-8 processing (pretokenization chunking, Trie traversals, and token
-// extraction), characters are at most 4 bytes long. When iterating over long
-// text using standard string_view slices, calling substr(offset) and
-// std::min(OneCharLen(ptr), remaining) on every character incurs redundant
-// pointer arithmetic, length recalculations, and bounds checking branches.
-//
-// StringScanner encapsulates raw pointers (ptr_ and end_) in CPU registers.
-// By checking `if (ptr_ + 4 <= end_)` once, it safely executes 4-byte UTF-8
-// character reads without std::min branches for >99.9% of text processing,
-// reducing ALU instructions and branch overheads in hot encoding loops.
+// Register-friendly UTF-8 string scanner that holds `ptr_` and `end_` in
+// registers and uses `ptr_ + 4 <= end_` to avoid per-character `substr()` and
+// `std::min` bounds checks in hot tokenization loops.
 class StringScanner {
  public:
   explicit StringScanner(std::string_view str)
@@ -410,9 +352,7 @@ class StringScanner {
   std::string_view ConsumeUntil(char c) {
     if (empty()) return {};
     const char* target = nullptr;
-    // Fast-path: 64-bit SWAR scans for ' ' within the next 8 bytes in
-    // registers, avoiding libc function call overhead for short English words
-    // (avg ~5 bytes).
+    // Fast-path: 64-bit SWAR scans for ' ' within the next 8 bytes.
     if (c == ' ' && ptr_ + sizeof(uint64_t) <= end_) {
       const uint64_t word = LoadLe64(ptr_);
       const uint64_t space_xor = word ^ 0x2020202020202020ULL;
@@ -422,8 +362,6 @@ class StringScanner {
         target = ptr_ + FirstMatchedByteOffset(space_match);
       }
     }
-    // Falls back to std::memchr, highly optimized with AVX2/Neon SIMD
-    // instructions.
     if (target == nullptr) {
       const void* p =
           std::memchr(ptr_, static_cast<unsigned char>(c), remaining());
@@ -546,8 +484,7 @@ inline void ReplaceAll(std::string_view s, std::string_view from,
   }
 }
 
-// Formats a raw byte into its SentencePiece byte-fallback token string
-// representation in the format "<0xXX>" (e.g., 0x41 is converted to "<0x41>").
+// Formats a raw byte into its SentencePiece byte-fallback token "<0xXX>".
 std::string ByteToPiece(unsigned char c) {
   static constexpr char kHexDigits[] = "0123456789ABCDEF";
   std::string s = "<0x00>";
@@ -603,8 +540,12 @@ class Normalizer {
     return StatusCode::kOk;
   }
 
-  // Note: Loop-invariant pointer checks (`if (offset != nullptr)`) incur zero
-  // CPU overhead due to 100% branch prediction and superscalar execution.
+  void SetPrefixMatcher(const DoubleArray* prefix_matcher) {
+    prefix_matcher_ = (trie_.has_array() || remove_extra_whitespaces_)
+                          ? prefix_matcher
+                          : nullptr;
+  }
+
   StatusCode Normalize(std::string_view input, std::string* normalized,
                        std::vector<size_t>* offset = nullptr) const {
     if (offset != nullptr) {
@@ -618,8 +559,6 @@ class Normalizer {
     if (spec_ == nullptr) {
       normalized->assign(input.data(), input.size());
       if (offset != nullptr) {
-        // For identity normalization, byte positions map 1:1 (0, 1, ..., N-1),
-        // followed by N as the sentinel.
         offset->resize(input.size() + 1);
         std::iota(offset->begin(), offset->end(), 0);
       }
@@ -701,9 +640,8 @@ class Normalizer {
   bool remove_extra_whitespaces() const { return remove_extra_whitespaces_; }
 
  private:
-  // Ultra-fast path for identity normalization without offsets (empty compiled
-  // map), accelerated with space-pivoted 64-bit SWAR / SIMD memchr and batched
-  // appends.
+  // Fast path for identity normalization without offsets (empty compiled map),
+  // using 64-bit SWAR / SIMD memchr and batched appends.
   void NormalizeIdentityFast(std::string_view input,
                              std::string_view space_symbol, size_t* consumed,
                              std::string* normalized) const {
@@ -794,6 +732,13 @@ class Normalizer {
     std::pair<std::string_view, int> result;
     if (input.empty()) return result;
 
+    if (prefix_matcher_ != nullptr && prefix_matcher_->has_array()) {
+      const auto [id, len] = prefix_matcher_->longest_prefix_lookup(input);
+      if (len > 0) {
+        return {input.substr(0, len), static_cast<int>(len)};
+      }
+    }
+
     size_t longest_length = 0;
     int longest_value = 0;
 
@@ -804,8 +749,6 @@ class Normalizer {
 
     if (longest_length == 0 || longest_length > input.size() ||
         static_cast<size_t>(longest_value) >= normalized_.size()) {
-      // Fast-path for ASCII bytes without normalization rules avoids variable
-      // initialization and function call overhead.
       if (static_cast<unsigned char>(input[0]) < 0x80) {
         result.second = 1;
         result.first = std::string_view(input.data(), 1);
@@ -828,12 +771,11 @@ class Normalizer {
   }
 
   const NormalizerSpec* spec_ = nullptr;
+  const DoubleArray* prefix_matcher_ = nullptr;
   DoubleArray trie_;
   std::string_view normalized_;
 
-  // Caching these specification flags during initialization avoids repetitive
-  // FlatBuffer vtable dereferences inside tight character normalization loops,
-  // improving text normalization performance by ~3.5% to 6.4%.
+  // Cached flags avoid FlatBuffer vtable lookups inside normalization loops.
   bool add_dummy_prefix_ = true;
   bool remove_extra_whitespaces_ = true;
   bool escape_whitespaces_ = true;
@@ -865,19 +807,11 @@ class Model {
     return types_[id] == PieceType_USER_DEFINED;
   }
 
-  // Returns true if `id` corresponds to a non-surface or special vocabulary
-  // token (`UNKNOWN`, `CONTROL`, `UNUSED`, or `BYTE`).
-  // This is used during Unigram lattice construction and BPE symbol merging to
-  // filter out special tokens so regular text substrings cannot be encoded as
-  // control tags or reserved IDs.
+  // Returns true if `id` is a non-surface token (`UNKNOWN`, `CONTROL`,
+  // `UNUSED`, or `BYTE`) that should be excluded from lattice/BPE merges.
   bool IsInvisible(int id) const {
     if (id < 0) return true;
     const auto type = types_[id];
-    // Fast-path inverted check: Over 99.9% of tokens in any vocabulary are
-    // PieceType_NORMAL (1) or PieceType_USER_DEFINED (4). By checking against
-    // these two surface types first, `type != PieceType_NORMAL` immediately
-    // evaluates to false and short-circuits in 1 ALU instruction, avoiding
-    // 4 sequential equality checks against special token types!
     return type != PieceType_NORMAL && type != PieceType_USER_DEFINED;
   }
 
@@ -916,12 +850,8 @@ class Model {
     return model_proto_->has_direct_mappings();
   }
 
-  // Returns true if `id` corresponds to a "direct mapping" token.
-  // In BPE tokenization, a direct mapping indicates that a regular surface
-  // token is mathematically guaranteed to encode as a single standalone token
-  // whenever it appears as an isolated pre-split chunk. When true, the encoder
-  // can bypass the iterative BPE symbol merge loop and emit the ID directly in
-  // O(L) time.
+  // Returns true if `id` is guaranteed to encode as a single standalone token
+  // when appearing as an isolated pre-split chunk, bypassing BPE merges.
   bool IsDirectMapping(int id) const {
     if (id >= vocab_size() || IsInvisible(id)) return false;
     const auto* vector = model_proto_->is_direct_mapping();
@@ -941,7 +871,7 @@ class Model {
   int ByteToId(unsigned char b) const { return byte_to_id_[b]; }
 
   int IdToByte(int id) const {
-    if (byte_fallback_start_id_ == -1) return -1;
+    if (!IsByte(id) || byte_fallback_start_id_ == -1) return -1;
     if (id >= byte_fallback_start_id_ && id < byte_fallback_start_id_ + 256) {
       return id - byte_fallback_start_id_;
     }
@@ -1098,6 +1028,7 @@ StatusCode Model::Initialize(std::string_view model_buffer) {
       InitializeTrie(model_proto_->prefix_matcher_trie_blob(), vocab_size,
                      /*check_suffix_links=*/false, /*is_optional=*/true,
                      &prefix_matcher_trie_));
+  normalizer_.SetPrefixMatcher(&prefix_matcher_trie_);
   LITE_RETURN_IF_ERROR(InitializeTrie(
       model_proto_->char_bigram_trie_blob(), -1,
       /*check_suffix_links=*/true, /*is_optional=*/true, &char_bigram_trie_));
@@ -1127,10 +1058,8 @@ StatusCode Model::Initialize(std::string_view model_buffer) {
   }
 
   if (model_type_ == ModelType_BPE) {
-    // BPE models store merge priority scores as integers.
     int_scores_ = model_proto_->int_scores()->data();
   } else {
-    // Unigram models store scores as floating-point log-probabilities.
     scores_ = model_proto_->scores()->data();
   }
 
@@ -1146,20 +1075,14 @@ StatusCode Model::Initialize(std::string_view model_buffer) {
     return StatusCode::kInternal;
   }
 
-  // Validate that the offline compiled Double-Array Trie is fully consistent
-  // with the FlatBuffers `pieces` vector. Specifically, we verify:
-  // 1. Every piece string is non-null and within valid bounds
-  //    (`kMaxPieceLength`).
-  // 2. Exact lookup of every piece string in `pieces_trie_` returns a valid ID.
-  // 3. The returned trie lookup ID exactly matches the piece index `i`,
-  //    guaranteeing bidirectional 1-to-1 mapping consistency.
+  // Verify 1-to-1 bidirectional consistency between `pieces` and
+  // `pieces_trie_`.
   for (size_t i = 0; i < vocab_size; ++i) {
     const auto* piece_obj = model_proto_->pieces()->Get(i);
     if (piece_obj == nullptr || piece_obj->size() > kMaxPieceLength) {
       return StatusCode::kInternal;
     }
     const std::string_view piece(piece_obj->c_str(), piece_obj->size());
-    // Verify exact lookup returns the expected vocabulary index i.
     const int id = pieces_trie_.exact_lookup(piece);
     if (id < 0 || id >= static_cast<int>(vocab_size) ||
         id != static_cast<int>(i)) {
@@ -1172,10 +1095,8 @@ StatusCode Model::Initialize(std::string_view model_buffer) {
     return StatusCode::kInternal;
   }
 
-  // Calculate unk_score and verify against NaN / Inf score corruption.
-  // Rejecting NaN or Inf during model initialization guarantees that Viterbi
-  // DP operates strictly on valid real numbers, preventing silent arithmetic
-  // corruption.
+  // Compute unk_score and reject NaN/Inf scores so Viterbi DP stays
+  // well-defined.
   float min_score = FLT_MAX;
   if (model_type_ != ModelType_BPE) {
     for (int i = 0; i < static_cast<int>(vocab_size); ++i) {
@@ -1191,11 +1112,8 @@ StatusCode Model::Initialize(std::string_view model_buffer) {
   }
   unk_score_ = min_score - kUnkPenalty;
 
-  // Initialize byte/ID caches.
-  // We dynamically detect if byte fallback is supported by looking up the
-  // first byte piece "<0x00>" in the vocabulary Trie. If present, we populate
-  // the direct mapping cache and verify that all 256 byte pieces are
-  // stored contiguously in the vocabulary.
+  // Detect byte fallback support ("<0x00>" .. "<0xFF>") and verify contiguous
+  // IDs.
   std::fill(std::begin(byte_to_id_), std::end(byte_to_id_), -1);
   const std::string first_byte_piece = ByteToPiece(0);
   const int first_byte_id = pieces_trie_.exact_lookup(first_byte_piece);
@@ -1243,12 +1161,8 @@ void Model::EncodeChunk(std::string_view chunk, std::vector<int>* ids,
                         std::vector<std::string_view>* pieces, float alpha,
                         const FunctionRef<float()>* uniform_sampler) const {
   if (model_type_ == ModelType_BPE) {
-    // Shortcut: If the entire pre-split chunk is already a normal token in the
-    // vocabulary and marked as a direct mapping, we can output its ID directly
-    // and return immediately.
-    // Because the chunk is isolated and BPE is a greedy merge process, this is
-    // mathematically guaranteed to yield a theoretically identical result to
-    // running the full BPE merge loop, but runs in O(L) trie lookup time.
+    // O(L) direct mapping shortcut for isolated chunks guaranteed to encode as
+    // a single token.
     if (uniform_sampler == nullptr) {
       if (const int id = PieceToId(chunk); IsDirectMapping(id)) {
         ids->push_back(id);
@@ -1271,24 +1185,8 @@ void Model::Encode(std::string_view normalized, std::vector<int>* ids,
     return;
   }
 
-  // DESIGN NOTE: We only apply strict character-bigram pre-tokenization for
-  // BPE models.
-  //
-  // 1. BPE Greedy Merging: Using a heap/priority-queue, BPE's merge loop has a
-  //    worst-case O(N log N) complexity on a contiguous string of length N.
-  //    Pre-tokenization splits the input into small independent chunks at safe
-  //    boundaries. Splitting a string of length N into k chunks of length N/k
-  //    reduces the heap operations from O(N log N) to O(N log (N/k)). This
-  //    substantially decreases constant-factor overhead, reduces memory
-  //    footprint, and yields a practical 2x speedup.
-  // 2. Unigram Viterbi DP: Unigram tokenization uses the Viterbi algorithm,
-  //    which is mathematically O(N) where N is the string length. The constant
-  //    overhead of pre-tokenization (allocating and traversing chunks)
-  //    outweighs any DP search-space reduction, making it slower for Unigram.
-  //
-  // Note: The character bigram trie (`char_bigram_trie_`) is still compiled
-  // and loaded unconditionally for all models (including Unigram) to maintain
-  // flatbuffer schema uniformity and support potential future optimizations.
+  // Apply character-bigram pre-tokenization only for BPE (reducing O(N log N)
+  // heap merges to O(N log(N/k))), as Unigram Viterbi DP is already O(N).
   if (model_type_ != ModelType_BPE || !char_bigram_trie_.has_array()) {
     EncodeChunk(normalized, ids, pieces, alpha, uniform_sampler);
     return;
@@ -1307,8 +1205,6 @@ StatusCode Model::Normalize(std::string_view input, std::string* normalized,
   if (!has_normalizer_spec()) {
     normalized->assign(input.data(), input.size());
     if (offset != nullptr) {
-      // For identity normalization, byte positions map 1:1 (0, 1, ..., N-1),
-      // followed by N as the sentinel.
       offset->resize(input.size() + 1);
       std::iota(offset->begin(), offset->end(), 0);
     }
@@ -1344,13 +1240,8 @@ StatusCode Model::PretokenizeAtSafeBoundaries(
 
   while (!scanner.empty()) {
     if (scanner.remaining_view().size() >= 8) {
-      // SWAR (SIMD Within A Register) 64-bit fast-forward for 8 ASCII letters.
-      // Checks 8 contiguous bytes in a single word without data-dependent
-      // branches, replacing the scalar loop:
-      //   while (count < 8 && is_ascii_alpha(scanner.data()[count])) ++count;
-      // In English documents (e.g., ice_long_doc.txt, 1.91 MB), this
-      // accelerates pre-tokenization throughput by ~3.44x (52.5 MB/s -> 180.8
-      // MB/s).
+      // 64-bit SWAR fast-forward for 8 contiguous ASCII letters ('a'-'z',
+      // 'A'-'Z').
       const uint64_t val = LoadLe64(scanner.data());
       const uint64_t lower = val | 0x2020202020202020ULL;
       const uint64_t sub = lower - 0x6161616161616161ULL;
@@ -1403,14 +1294,8 @@ void Model::EncodeUnigram(std::string_view normalized, std::vector<int>* ids,
 
   const bool has_sampler = (uniform_sampler != nullptr);
 
-  // Inline Gumbel-Max noise generator for stochastic Unigram sampling.
-  // When alpha > 0.0f and a non-null sampler is provided, perturb scores with
-  // Gumbel(0, 1) noise scaled by `alpha` temperature: s_new = s + alpha * G.
-  // Zero overhead when alpha <= 0.0f or uniform_sampler is null (standard
-  // Viterbi). Uses std::clamp to prevent log(0) domain errors while
-  // maintaining exact Boltzmann distribution sampling dynamics.
-  // See Gumbel-Max Trick / Gumbel-Softmax (Jang et al. 2016 / Maddison et al.
-  // 2016) (https://arxiv.org/abs/1903.06059) for numerical stability and math.
+  // Perturb scores with Gumbel(0, 1) noise scaled by `alpha` for stochastic
+  // Unigram sampling (`s + alpha * G`), using std::clamp to avoid log(0).
   auto add_gumbel = [alpha, uniform_sampler, has_sampler](float s) {
     if (!has_sampler) return s;
     const float u = std::clamp((*uniform_sampler)(), 1e-6f, 1.0f - 1e-6f);
@@ -1421,14 +1306,8 @@ void Model::EncodeUnigram(std::string_view normalized, std::vector<int>* ids,
   const float unk_penalty_score = unk_score();
   std::vector<BestPathNode> best_path_ends_at(size + 1);
   int starts_at = 0;
-  // Bidirectional threshold-triggered Viterbi score re-centering:
-  // In IEEE 754 single-precision float (24-bit significand, ~7 decimal digits),
-  // accumulating large log-probability or reward scores over long text causes
-  // significand degradation (precision loss), eroding path tiebreaking.
-  // When the accumulated score exceeds kScoreResetThreshold in either
-  // direction (< -100000.0f or > +100000.0f), we subtract the current offset
-  // from all active future path nodes, resetting the accumulator to 0.0f
-  // without altering relative path differences or requiring prior validation.
+  // Re-center accumulated Viterbi scores when exceeding +/-kScoreResetThreshold
+  // to prevent float32 significand precision loss on long inputs.
   const float kScoreResetThreshold = score_reset_threshold_;
   int max_frontier = 0;
   StringScanner scanner(normalized);
@@ -1527,9 +1406,8 @@ struct Symbol {
   int next;             // next index of this symbol. -1 for EOS.
   int32_t id : 31;      // vocab id of this symbol.
   uint32_t freeze : 1;  // Use 32-bit integer type so MSVC packs with `id`.
-  // Cached Trie node position for `piece`.
-  // Bypasses root-node re-lookups when merging adjacent symbols,
-  // enabling direct 1-step Trie transitions from the left symbol's node.
+  // Cached Trie node position for `piece`, enabling direct 1-step Trie
+  // transitions from the left symbol's node when merging adjacent symbols.
   uint32_t trie_node_pos = DoubleArray::View::kInvalidNodePos;
 };
 
@@ -1570,7 +1448,7 @@ void Model::EncodeBPE(std::string_view normalized, std::vector<int>* ids,
       s.piece = std::string_view(scanner.data(), mblen);
       s.trie_node_pos = trie_view.transition(0U, s.piece);
       const int id = trie_view.leaf_value(s.trie_node_pos);
-      s.id = id == -1 ? unk_id_ : id;
+      s.id = (id == -1 || IsInvisible(id)) ? unk_id_ : id;
       s.freeze = false;
     }
     s.prev = index == 0 ? -1 : index - 1;
@@ -1690,9 +1568,7 @@ SentencePieceLiteProcessor::SentencePieceLiteProcessor(
     std::string_view buffer) {
   model_ = std::make_unique<Model>(buffer);
   status_ = model_->status();
-  if (status_ != StatusCode::kOk) {
-    model_.reset();
-  }
+  if (status_ != StatusCode::kOk) model_.reset();
 }
 
 SentencePieceLiteProcessor::SentencePieceLiteProcessor(
@@ -1704,9 +1580,7 @@ SentencePieceLiteProcessor::SentencePieceLiteProcessor(
   }
   model_ = std::make_unique<Model>(*shared_buffer_);
   status_ = model_->status();
-  if (status_ != StatusCode::kOk) {
-    model_.reset();
-  }
+  if (status_ != StatusCode::kOk) model_.reset();
 }
 
 SentencePieceLiteProcessor::~SentencePieceLiteProcessor() = default;
@@ -1864,7 +1738,7 @@ StatusCode SentencePieceLiteProcessor::Decode(
   for (size_t i = 0; i < ids.size(); ++i) {
     const int id = ids[i];
     if (id < 0 || id >= vocab_size) {
-      return StatusCode::kInvalidArgument;
+      return StatusCode::kOutOfRange;
     }
     if (model_->IsUnknown(id)) {
       LITE_RETURN_IF_ERROR(flush_bytes());
@@ -1875,16 +1749,11 @@ StatusCode SentencePieceLiteProcessor::Decode(
       continue;
     }
 
-    const bool is_byte = model_->IsByte(id);
-
-    if (is_byte) {
-      const int byte = model_->IdToByte(id);
-      if (byte >= 0) {
-        if (accumulated_bytes.empty()) {
-          first_byte_index = i;
-        }
-        accumulated_bytes.push_back(static_cast<unsigned char>(byte));
+    if (const int byte = model_->IdToByte(id); byte >= 0) {
+      if (accumulated_bytes.empty()) {
+        first_byte_index = i;
       }
+      accumulated_bytes.push_back(static_cast<unsigned char>(byte));
     } else {
       LITE_RETURN_IF_ERROR(flush_bytes());
 
@@ -1937,59 +1806,44 @@ StatusCode SentencePieceLiteProcessor::Decode(
 }
 
 size_t SentencePieceLiteProcessor::vocab_size() const {
-  if (model_ == nullptr) return 0;
-  return model_->vocab_size();
+  return model_ ? model_->vocab_size() : 0;
 }
 
 int SentencePieceLiteProcessor::PieceToId(std::string_view piece) const {
-  if (model_ == nullptr) return -1;
-  return model_->PieceToId(piece);
+  return model_ ? model_->PieceToId(piece) : -1;
 }
 
 std::string_view SentencePieceLiteProcessor::IdToPiece(int id) const {
   if (model_ == nullptr) return "<unk>";
-  if (id < 0 || id >= static_cast<int>(model_->vocab_size())) {
-    return model_->unk_piece();
-  }
+  if (id < 0 || id >= model_->vocab_size()) return model_->unk_piece();
   return model_->IdToPiece(id);
 }
 
 float SentencePieceLiteProcessor::GetScore(int id) const {
-  if (model_ == nullptr) return 0.0f;
-  if (id < 0 || id >= static_cast<int>(model_->vocab_size())) {
-    return 0.0f;
-  }
-  if (model_->model_type() == ModelType_BPE) {  // BPE
-    return static_cast<float>(model_->GetIntScore(id));
-  }
-  return model_->GetScore(id);
+  if (model_ == nullptr || id < 0 || id >= model_->vocab_size()) return 0.0f;
+  return (model_->model_type() == ModelType_BPE)
+             ? static_cast<float>(model_->GetIntScore(id))
+             : model_->GetScore(id);
 }
 
 int SentencePieceLiteProcessor::unk_id() const {
-  if (model_ == nullptr) return -1;
-  return model_->unk_id();
+  return model_ ? model_->unk_id() : -1;
 }
 
 int SentencePieceLiteProcessor::bos_id() const {
-  if (model_ == nullptr) return -1;
-  return model_->bos_id();
+  return model_ ? model_->bos_id() : -1;
 }
 
 int SentencePieceLiteProcessor::eos_id() const {
-  if (model_ == nullptr) return -1;
-  return model_->eos_id();
+  return model_ ? model_->eos_id() : -1;
 }
 
 int SentencePieceLiteProcessor::pad_id() const {
-  if (model_ == nullptr) return -1;
-  return model_->pad_id();
+  return model_ ? model_->pad_id() : -1;
 }
 
 int SentencePieceLiteProcessor::piece_type(int id) const {
-  if (model_ == nullptr) return -1;
-  if (id < 0 || id >= static_cast<int>(model_->vocab_size())) {
-    return -1;
-  }
+  if (model_ == nullptr || id < 0 || id >= model_->vocab_size()) return -1;
   return model_->piece_type(id);
 }
 
@@ -2000,9 +1854,7 @@ bool SentencePieceLiteProcessor::HasNonNullDirectMappingVectorForTesting()
 
 void SentencePieceLiteProcessor::SetScoreResetThresholdForTesting(
     float threshold) {
-  if (model_) {
-    model_->SetScoreResetThresholdForTesting(threshold);
-  }
+  if (model_) model_->SetScoreResetThresholdForTesting(threshold);
 }
 
 }  // namespace sentencepiece::lite

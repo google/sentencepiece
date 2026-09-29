@@ -15,8 +15,12 @@
 #ifndef SENTENCEPIECE_LITE_SENTENCEPIECE_MODEL_CONVERTERS_H_
 #define SENTENCEPIECE_LITE_SENTENCEPIECE_MODEL_CONVERTERS_H_
 
+#include <bit>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
+#include "absl/numeric/bits.h"
 #include "absl/status/statusor.h"
 #include "sentencepiece_model.pb.h"
 
@@ -106,6 +110,30 @@ struct ConverterOptions {
 absl::StatusOr<std::string> ToFlatbuffer(
     const ::sentencepiece::ModelProto& proto,
     const ConverterOptions& options = {});
+
+// Swaps the 32-bit Darts trie words in `precompiled_charsmap` in-place between
+// little-endian (ModelProto wire format) and big-endian (FlatBuffer format on
+// big-endian hosts). Set `from_little_endian = true` when converting LE -> BE,
+// and `from_little_endian = false` when converting BE -> LE.
+template <typename ByteContainer>
+inline void SwapPrecompiledCharsmapEndian(ByteContainer* charsmap,
+                                          bool from_little_endian = true) {
+  if (charsmap == nullptr || charsmap->size() < sizeof(uint32_t)) {
+    return;
+  }
+  auto* words = reinterpret_cast<uint32_t*>(charsmap->data());
+  const bool need_swap_size =
+      (std::endian::native == std::endian::big) == from_little_endian;
+  const uint32_t trie_blob_size =
+      need_swap_size ? absl::byteswap(words[0]) : words[0];
+  if (sizeof(uint32_t) + trie_blob_size <= charsmap->size() &&
+      (trie_blob_size % sizeof(uint32_t)) == 0) {
+    const size_t num_words = 1 + (trie_blob_size / sizeof(uint32_t));
+    for (size_t i = 0; i < num_words; ++i) {
+      words[i] = absl::byteswap(words[i]);
+    }
+  }
+}
 
 }  // namespace sentencepiece::lite
 

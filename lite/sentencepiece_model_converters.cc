@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <bit>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -25,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/numeric/bits.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -293,7 +295,7 @@ absl::StatusOr<std::string> ToFlatbuffer(
             "Piece at index ", i, " is invalid (contains null byte)."));
       }
     }
-    fbs.pieces.push_back(std::string(piece_view));
+    fbs.pieces.emplace_back(piece_view);
     pieces_to_sort.emplace_back(piece_view, i);
     if (piece_type ==
         ::sentencepiece::ModelProto::SentencePiece::USER_DEFINED) {
@@ -311,7 +313,12 @@ absl::StatusOr<std::string> ToFlatbuffer(
       }
     }
     if (is_bpe) {
-      fbs.int_scores.push_back(static_cast<int32_t>(sp.score()));
+      const float score = sp.score();
+      if (std::isnan(score) || std::abs(score) > 2147483520.0f) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Piece at index ", i, " has an invalid BPE score."));
+      }
+      fbs.int_scores.push_back(static_cast<int32_t>(score));
     } else {
       fbs.scores.push_back(sp.score());
     }
@@ -333,19 +340,7 @@ absl::StatusOr<std::string> ToFlatbuffer(
     // to native Big-Endian so that the runtime can access the trie directly
     // with zero copy.
     if constexpr (std::endian::native == std::endian::big) {
-      if (charsmap.size() >= sizeof(uint32_t)) {
-        uint32_t* words = reinterpret_cast<uint32_t*>(charsmap.data());
-        const uint32_t trie_blob_size = absl::byteswap(words[0]);
-        words[0] = trie_blob_size;
-        if (sizeof(uint32_t) + trie_blob_size <= charsmap.size() &&
-            (trie_blob_size % sizeof(uint32_t)) == 0) {
-          const size_t num_words =
-              (sizeof(uint32_t) + trie_blob_size) / sizeof(uint32_t);
-          for (size_t i = 1; i < num_words; ++i) {
-            words[i] = absl::byteswap(words[i]);
-          }
-        }
-      }
+      SwapPrecompiledCharsmapEndian(&charsmap, /*from_little_endian=*/true);
     }
     fbs.normalizer_spec->precompiled_charsmap = std::move(charsmap);
     fbs.normalizer_spec->add_dummy_prefix = ns.add_dummy_prefix();
@@ -379,7 +374,8 @@ absl::StatusOr<std::string> ToFlatbuffer(
   // When in BPE mode, skip_char_bigrams is ignored and bigrams are always
   // built.
   if (is_bpe || !options.skip_char_bigrams) {
-    std::vector<std::string_view> bigrams_list;
+    absl::flat_hash_set<std::string_view> bigrams_set;
+    bigrams_set.reserve(proto.pieces_size());
     for (int i = 0; i < proto.pieces_size(); ++i) {
       std::string_view piece = proto.pieces(i).piece();
       size_t prev_len = 0;
@@ -388,16 +384,16 @@ absl::StatusOr<std::string> ToFlatbuffer(
         const int mblen = OneCharLen(piece.substr(curr_offset));
         if (mblen == 0) break;
         if (prev_len > 0) {
-          bigrams_list.emplace_back(
+          bigrams_set.insert(
               piece.substr(curr_offset - prev_len, prev_len + mblen));
         }
         prev_len = mblen;
         curr_offset += mblen;
       }
     }
+    std::vector<std::string_view> bigrams_list(bigrams_set.begin(),
+                                               bigrams_set.end());
     std::sort(bigrams_list.begin(), bigrams_list.end());
-    bigrams_list.erase(std::unique(bigrams_list.begin(), bigrams_list.end()),
-                       bigrams_list.end());
     auto char_bigram_trie_blob_or =
         BuildBigramTrieBlob(std::move(bigrams_list));
     if (!char_bigram_trie_blob_or.ok()) {
@@ -409,9 +405,13 @@ absl::StatusOr<std::string> ToFlatbuffer(
   // 7. Precompute direct mappings (shortcuts) in-memory using double-pass
   // serialization (Only needed for BPE models)
   if (is_bpe) {
+    auto saved_normalizer = std::move(fbs.normalizer_spec);
+    auto saved_bigrams = std::move(fbs.char_bigram_trie_blob);
     flatbuffers::FlatBufferBuilder builder;
     auto offset = ::sentencepiece::lite::ModelProto::Pack(builder, &fbs);
     builder.Finish(offset);
+    fbs.normalizer_spec = std::move(saved_normalizer);
+    fbs.char_bigram_trie_blob = std::move(saved_bigrams);
     std::string_view preliminary_bytes(
         reinterpret_cast<const char*>(builder.GetBufferPointer()),
         builder.GetSize());
@@ -432,6 +432,7 @@ absl::StatusOr<std::string> ToFlatbuffer(
     // precomputation.
     std::vector<int> ids;
     ids.reserve(16);
+    constexpr size_t kMaxDirectMappingPieceLength = 128;
     for (int i = 0; i < proto.pieces_size(); ++i) {
       const auto& sp = proto.pieces(i);
       // Invisible pieces (control, unk, unused, byte) are filtered out at
@@ -441,12 +442,15 @@ absl::StatusOr<std::string> ToFlatbuffer(
         direct_mappings[i] = 1;
         continue;
       }
-      // We use EncodeNormalized() here because the vocabulary pieces stored in
-      // the model are already normalized strings. Standard Encode() would run
-      // the normalizer again, which is redundant and can distort special
-      // tokens. This also matches runtime EncodeChunk behavior on normalized
-      // chunks.
-      if (processor.EncodeNormalized(sp.piece(), &ids) == StatusCode::kOk &&
+      const std::string_view piece = sp.piece();
+      if (piece.size() > kMaxDirectMappingPieceLength) {
+        all_are_direct_mappings = false;
+        continue;
+      }
+      // We use EncodeNormalizedChunk() here because the vocabulary pieces
+      // stored in the model are already normalized strings and form single
+      // unbroken chunks.
+      if (processor.EncodeNormalizedChunk(piece, &ids) == StatusCode::kOk &&
           ids.size() == 1 && ids[0] == i) {
         direct_mappings[i] = 1;
         has_any_direct_mapping = true;
