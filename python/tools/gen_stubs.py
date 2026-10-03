@@ -150,8 +150,8 @@ _NORMALIZER_INIT = (
     "normalizer_spec: bytes | None = ..., "
     "rule_tsv: str | None = ..., rule_name: str | None = ..., "
     "norm_map: Sequence[tuple[str, str]] | None = ..., "
-    "add_dummy_prefix: bool = ..., "
-    "escape_whitespaces: bool = ..., remove_extra_whitespaces: bool = ...) -> None"
+    "add_dummy_prefix: bool | None = ..., "
+    "escape_whitespaces: bool | None = ..., remove_extra_whitespaces: bool | None = ...) -> None"
 )
 _NORMALIZE = "(self, input: str | bytes | Sequence[str] | Sequence[bytes], with_offsets: bool | None = ...) -> Any"
 
