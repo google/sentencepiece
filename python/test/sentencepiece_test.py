@@ -46,6 +46,15 @@ print('VERSION={}'.format(spm.__version__))
 
 data_dir = HERE
 
+# SentencePieceNormalizer keeps the flags of the loaded spec unless they are
+# given explicitly. These flags request raw normalization (no whitespace
+# handling), which was the implicit default before 0.3.0.
+RAW_NORMALIZER_FLAGS = dict(
+    add_dummy_prefix=False,
+    escape_whitespaces=False,
+    remove_extra_whitespaces=False,
+)
+
 
 class TestSentencepieceProcessor(unittest.TestCase):
   """Test case for SentencePieceProcessor"""
@@ -1172,8 +1181,10 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual([0, 0, 0, 1], x[1][1])
 
   def test_normalizer(self):
+    # Raw normalization: disable whitespace handling explicitly.
     sp = spm.SentencePieceNormalizer(
-        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model')
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model'),
+        **RAW_NORMALIZER_FLAGS,
     )
 
     self.assertEqual('KADOKAWAABC', sp.normalize('ＫＡＤＯＫＡＷＡABC'))
@@ -1233,11 +1244,68 @@ class TestSentencepieceProcessor(unittest.TestCase):
     )
     self.assertEqual('hello world', sp.normalize('  hello  world  '))
 
+    # Partial override: only add_dummy_prefix is changed; the other flags
+    # keep the model's values.
+    sp = spm.SentencePieceNormalizer(
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model'),
+        add_dummy_prefix=False,
+    )
+    self.assertEqual('hello▁world', sp.normalize('  hello  world  '))
+
+  def test_normalizer_default_flags_follow_spec(self):
+    model_file = os.path.join(HERE, 'botchan_en_unigram_1000.model')
+
+    # Without explicit flags, the normalizer reproduces the model's
+    # normalization, i.e., the same result as SentencePieceProcessor.
+    norm = spm.SentencePieceNormalizer(model_file=model_file)
+    proc = spm.SentencePieceProcessor(model_file=model_file)
+    self.assertEqual('▁hello▁world', norm.normalize('  hello  world  '))
+    for text in ['ＫＡＤＯＫＡＷＡABC', '㍻', '  hello  world  ']:
+      self.assertEqual(proc.normalize(text), norm.normalize(text))
+      self.assertEqual(
+          proc.normalize(text, with_offsets=True),
+          norm.normalize(text, with_offsets=True),
+      )
+
+    # The loaded spec survives a round trip unchanged.
+    with open(model_file, 'rb') as f:
+      m = spm.SentencePieceNormalizer(model_proto=f.read())
+    spec = m.serialized_normalizer_spec()
+    self.assertEqual(
+        spec,
+        spm.SentencePieceNormalizer(
+            normalizer_spec=spec
+        ).serialized_normalizer_spec(),
+    )
+
+    # Explicit flags are written into the spec.
+    raw = spm.SentencePieceNormalizer(
+        normalizer_spec=spec, **RAW_NORMALIZER_FLAGS
+    )
+    self.assertNotEqual(spec, raw.serialized_normalizer_spec())
+    self.assertEqual(
+        raw.serialized_normalizer_spec(),
+        spm.SentencePieceNormalizer(
+            normalizer_spec=raw.serialized_normalizer_spec()
+        ).serialized_normalizer_spec(),
+    )
+
   def test_normalizer_rule(self):
+    # rule_name builds a new spec, so the proto defaults (true) apply.
     sp = spm.SentencePieceNormalizer(rule_name='identity')
-    self.assertEqual('ＡＢＣ', sp.Normalize('ＡＢＣ'))
+    self.assertEqual('▁ＡＢＣ', sp.Normalize('ＡＢＣ'))
 
     sp = spm.SentencePieceNormalizer(rule_name='nfkc_cf')
+    self.assertEqual('▁abc', sp.Normalize('ＡＢＣ'))
+
+    sp = spm.SentencePieceNormalizer(
+        rule_name='identity', **RAW_NORMALIZER_FLAGS
+    )
+    self.assertEqual('ＡＢＣ', sp.Normalize('ＡＢＣ'))
+
+    sp = spm.SentencePieceNormalizer(
+        rule_name='nfkc_cf', **RAW_NORMALIZER_FLAGS
+    )
     self.assertEqual('abc', sp.Normalize('ＡＢＣ'))
 
   def test_normalizer_map(self):
@@ -1246,6 +1314,9 @@ class TestSentencepieceProcessor(unittest.TestCase):
         ('apple', 'orange'),
     ]
     sp = spm.SentencePieceNormalizer(norm_map=norm_map)
+    self.assertEqual('▁bar▁orange', sp.Normalize('  foo  apple '))
+
+    sp = spm.SentencePieceNormalizer(norm_map=norm_map, **RAW_NORMALIZER_FLAGS)
     self.assertEqual('bar', sp.Normalize('foo'))
     self.assertEqual('orange', sp.Normalize('apple'))
     self.assertEqual('banana', sp.Normalize('banana'))
@@ -1315,6 +1386,20 @@ class TestSentencepieceProcessor(unittest.TestCase):
       pieces = sp.EncodeAsPieces('foo')
       self.assertTrue(len(pieces) > 0)
       self.assertNotEqual(pieces[0][0], '\u2581')
+
+      # A normalizer without explicit flags keeps the spec defaults and can
+      # be used for training (it used to fail because escape_whitespaces was
+      # forced to False).
+      spm.SentencePieceTrainer.Train(
+          input=os.path.join(data_dir, 'botchan.txt'),
+          model_prefix=os.path.join(tmp_dir, 'm_default'),
+          vocab_size=100,
+          normalizer=spm.SentencePieceNormalizer(norm_map=norm_map),
+      )
+      sp_norm = spm.SentencePieceNormalizer(
+          model_file=os.path.join(tmp_dir, 'm_default.model')
+      )
+      self.assertEqual('▁bar▁orange', sp_norm.Normalize('foo apple'))
 
       # Test conflict error
       with self.assertRaises(ValueError):
@@ -1583,6 +1668,10 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
     try:
       sp = spm.SentencePieceNormalizer(rule_tsv=tsv_path)
+      self.assertEqual('▁BBB', sp.normalize('AAA'))
+      sp = spm.SentencePieceNormalizer(
+          rule_tsv=tsv_path, **RAW_NORMALIZER_FLAGS
+      )
       self.assertEqual('BBB', sp.normalize('AAA'))
       self.assertEqual('BBB', sp.normalize('ABA'))
     finally:
@@ -1594,12 +1683,23 @@ class TestSentencepieceProcessor(unittest.TestCase):
       model_proto = f.read()
 
     sp = spm.SentencePieceNormalizer(model_proto=model_proto)
+    self.assertEqual('▁KADOKAWAABC', sp.normalize('ＫＡＤＯＫＡＷＡABC'))
+    sp = spm.SentencePieceNormalizer(
+        model_proto=model_proto, **RAW_NORMALIZER_FLAGS
+    )
     self.assertEqual('KADOKAWAABC', sp.normalize('ＫＡＤＯＫＡＷＡABC'))
 
   def test_normalizer_normalizer_spec(self):
     spec = spm.SentencePieceNormalizer(
         rule_name='nfkc_cf').serialized_normalizer_spec()
     sp = spm.SentencePieceNormalizer(normalizer_spec=spec)
+    self.assertEqual('▁abc', sp.normalize('ＡＢＣ'))
+
+    # Flags set on the source normalizer are carried by the spec.
+    raw_spec = spm.SentencePieceNormalizer(
+        rule_name='nfkc_cf', **RAW_NORMALIZER_FLAGS
+    ).serialized_normalizer_spec()
+    sp = spm.SentencePieceNormalizer(normalizer_spec=raw_spec)
     self.assertEqual('abc', sp.normalize('ＡＢＣ'))
 
   def test_encode_return_type_explicit(self):

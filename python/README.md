@@ -385,24 +385,33 @@ print(offsets)
 You can also use `SentencePieceNormalizer` to run normalization independently of a model, or with custom parameters:
 
 ```python
-# Replicate processor's exact normalization behavior:
+# Replicate processor's exact normalization behavior.
+# Unless given explicitly, add_dummy_prefix, escape_whitespaces and
+# remove_extra_whitespaces follow the loaded model/spec.
 normalizer = spm.SentencePieceNormalizer(
-    model_file='test/botchan_en_unigram_1000.model',
-    add_dummy_prefix=True,
-    escape_whitespaces=True,
-    remove_extra_whitespaces=True
-)
+    model_file='test/botchan_en_unigram_1000.model')
 print(normalizer.normalize("Hello  World."))
 # Output: ▁Hello▁World.
 
-# Initialize from mapping list of tuples (source, target)
+# Raw normalization without whitespace handling.
+normalizer = spm.SentencePieceNormalizer(
+    model_file='test/botchan_en_unigram_1000.model',
+    add_dummy_prefix=False,
+    escape_whitespaces=False,
+    remove_extra_whitespaces=False
+)
+print(normalizer.normalize("Hello  World."))
+# Output: Hello  World.
+
+# Initialize from mapping list of tuples (source, target).
+# rule_name, rule_tsv and norm_map use the NormalizerSpec defaults (all true).
 norm_map = [
     ('foo', 'bar'),
     ('apple', 'orange'),
 ]
 normalizer = spm.SentencePieceNormalizer(norm_map=norm_map)
 print(normalizer.normalize("foo apple"))
-# Output: bar orange
+# Output: ▁bar▁orange
 
 # Decompile back to list of tuples
 print(normalizer.decompile())
