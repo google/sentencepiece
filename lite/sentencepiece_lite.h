@@ -177,6 +177,10 @@ class SentencePieceLiteProcessor {
   StatusCode Normalize(std::string_view input, std::string* output,
                        std::vector<size_t>* offset = nullptr) const;
 
+  // Returns true if normalization is a no-op for `input` and can be skipped
+  // without allocating or copying into a temporary buffer.
+  bool CanSkipNormalization(std::string_view input) const;
+
   // Encode text to token IDs
   StatusCode Encode(std::string_view input, std::vector<int>* ids) const;
 

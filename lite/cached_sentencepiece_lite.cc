@@ -56,9 +56,9 @@ TokenCache::TokenCache(uint64_t seed)
 StatusCode CachedSentencePieceLite::Encode(
     const SentencePieceLiteProcessor& processor, TokenCache& cache,
     std::string_view text, std::vector<int>* ids) {
-  if (ids == nullptr) return StatusCode::kInvalidArgument;
-  ids->clear();
-  if (text.empty()) return StatusCode::kOk;
+  if (processor.CanSkipNormalization(text)) {
+    return EncodeNormalized(processor, cache, text, ids);
+  }
 
   std::string normalized_storage;
   StatusCode status = processor.Normalize(text, &normalized_storage);
@@ -70,6 +70,9 @@ StatusCode CachedSentencePieceLite::Encode(
 StatusCode CachedSentencePieceLite::EncodeNormalized(
     const SentencePieceLiteProcessor& processor, TokenCache& cache,
     std::string_view normalized_text, std::vector<int>* ids) {
+  if (processor.status() != StatusCode::kOk) {
+    return StatusCode::kFailedPrecondition;
+  }
   if (ids == nullptr) return StatusCode::kInvalidArgument;
   ids->clear();
   if (normalized_text.empty()) return StatusCode::kOk;

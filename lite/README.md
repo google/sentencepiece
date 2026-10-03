@@ -14,7 +14,7 @@ While currently implemented as a standalone C++ library, we plan to adopt it as 
 *   **Compact Footprint (~50 KB Binary Size, < 2k LOC)**: Implemented in under 2,000 lines of C++ code, compiling into a 45 KB static binary (`libsentencepiece_lite.a` stripped). It can be linked into mobile apps, iOS/Android SDKs, edge devices, and memory-constrained embedded systems.
 *   **Minimal Dependencies**: Depends only on the FlatBuffers runtime library and standard C++20 (no runtime dependency on Protobuf or Abseil).
 *   **Zero-Copy Startup**: Maps the FlatBuffers model binary directly into virtual memory (`mmap`). Vocabulary strings, feature scores, and offline Double-Array Trie (`Darts::DoubleArray`) structures are read in-place without heap allocations.
-*   **Throughput**: Double-Array Trie lookups, bigram pre-tokenization, and zero-copy string views deliver up to 10.8x faster encoding and 9.3x faster decoding compared to the original Protobuf-based runtime.
+*   **Throughput**: Double-Array Trie lookups, bigram pre-tokenization, and zero-copy string views deliver up to 29.4x faster encoding (37.3x with token caching) and 9.4x faster decoding compared to the original Protobuf-based runtime.
 *   **Amalgamation Support (2-File Standalone Distribution)**: Provides a consolidated 2-file distribution (`dist/sentencepiece_lite.h` and `dist/sentencepiece_lite.cc`) with all dependencies (FlatBuffers runtime and rapidhash) inlined. Drop these 2 files into any C++ project and compile directly with `-std=c++20` without external library linking.
 
 ## 3. Performance Evaluation & Resource Footprint
@@ -27,67 +27,67 @@ We evaluated single-thread encoding speed across **FineWeb2** datasets (5.0 MB E
 
 | Engine | Model | Algorithm | Throughput | Tokens |
 | :--- | :--- | :---: | :---: | :---: |
-| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **Gemma 3 (256K)** | **BPE** | **30.64 MB/s** | 1,165,287 |
-| **SentencePiece Lite** | **Gemma 3 (256K)** | **BPE** | **25.16 MB/s** | 1,165,287 |
-| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **PLaMo-13B (64K)** | **Unigram** | **19.22 MB/s** | 1,388,013 |
-| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **LLM-jp-4 (196K)** | **Unigram** | **17.93 MB/s** | 1,189,623 |
-| **Tiktoken (v0.14.0)** | **o200k_base (200K)** | **BPE** | **12.33 MB/s** | 1,119,612 |
-| **SentencePiece Lite** | **PLaMo-13B (64K)** | **Unigram** | **11.28 MB/s** | 1,387,931 |
-| **SentencePiece Lite** | **LLM-jp-4 (196K)** | **Unigram** | **10.19 MB/s** | 1,189,623 |
-| **SentencePiece** | **PLaMo-13B (64K)** | **Unigram** | **9.63 MB/s** | 1,410,863 |
-| **Tiktoken (v0.14.0)** | **cl100k_base (100K)** | **BPE** | **8.42 MB/s** | 1,131,809 |
-| **Tiktoken (v0.14.0)** | **Llama 3 (128K)** | **BPE** | **5.56 MB/s** | 1,131,445 |
-| **SentencePiece** | **LLM-jp-4 (196K)** | **Unigram** | **8.22 MB/s** | 1,189,605 |
-| **Hugging Face Tokenizers (v0.23.1)** | **Gemma 3 (256K)** | **BPE** | **1.37 MB/s** | 1,165,288* |
-| **Hugging Face Tokenizers (v0.23.1)** | **Llama 3 (128K)** | **BPE** | **1.21 MB/s** | 1,131,446 |
-| **Hugging Face Tokenizers (v0.23.1)** | **cl100k_base (100K)** | **BPE** | **1.10 MB/s** | 1,131,809 |
-| **SentencePiece** | **Gemma 3 (256K)** | **BPE** | **1.07 MB/s** | 1,165,287 |
-| **Hugging Face Tokenizers (v0.23.1)** | **PLaMo-13B (64K)** | **Unigram** | **0.97 MB/s** | 2,426,835 |
-| **Hugging Face Tokenizers (v0.23.1)** | **LLM-jp-4 (196K)** | **Unigram** | **0.95 MB/s** | 1,189,542 |
+| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **LLM-jp-4 (196K)** | **Unigram** | **53.01 MB/s** | 1,189,510 |
+| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **Gemma 3 (256K)** | **BPE** | **52.99 MB/s** | 1,165,287 |
+| **SentencePiece Lite** | **Gemma 3 (256K)** | **BPE** | **41.70 MB/s** | 1,165,287 |
+| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **PLaMo-13B (64K)** | **Unigram** | **30.37 MB/s** | 1,410,864 |
+| **SentencePiece Lite** | **LLM-jp-4 (196K)** | **Unigram** | **23.57 MB/s** | 1,189,510 |
+| **SentencePiece Lite** | **PLaMo-13B (64K)** | **Unigram** | **18.81 MB/s** | 1,410,785 |
+| **Tiktoken (v0.14.0)** | **o200k_base (200K)** | **BPE** | **18.54 MB/s** | 1,119,612 |
+| **Tiktoken (v0.14.0)** | **Llama 3 (128K)** | **BPE** | **17.96 MB/s** | 1,131,445 |
+| **SentencePiece** | **PLaMo-13B (64K)** | **Unigram** | **17.47 MB/s** | 1,410,782 |
+| **SentencePiece** | **LLM-jp-4 (196K)** | **Unigram** | **15.98 MB/s** | 1,189,431 |
+| **Tiktoken (v0.14.0)** | **cl100k_base (100K)** | **BPE** | **12.97 MB/s** | 1,131,809 |
+| **Hugging Face Tokenizers (v0.23.1)** | **Llama 3 (128K)** | **BPE** | **2.16 MB/s** | 1,131,446 |
+| **Hugging Face Tokenizers (v0.23.1)** | **cl100k_base (100K)** | **BPE** | **2.10 MB/s** | 1,131,809 |
+| **Hugging Face Tokenizers (v0.23.1)** | **Gemma 3 (256K)** | **BPE** | **2.04 MB/s** | 1,165,288* |
+| **Hugging Face Tokenizers (v0.23.1)** | **PLaMo-13B (64K)** | **Unigram** | **1.71 MB/s** | 2,426,835 |
+| **Hugging Face Tokenizers (v0.23.1)** | **LLM-jp-4 (196K)** | **Unigram** | **1.49 MB/s** | 1,189,542 |
+| **SentencePiece** | **Gemma 3 (256K)** | **BPE** | **1.42 MB/s** | 1,165,287 |
 
 #### (2) FineWeb2 Japanese Corpus (5.0 MB)
 
 | Engine | Model | Algorithm | Throughput | Tokens |
 | :--- | :--- | :---: | :---: | :---: |
-| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **Gemma 3 (256K)** | **BPE** | **23.36 MB/s** | 1,040,163 |
-| **SentencePiece Lite** | **Gemma 3 (256K)** | **BPE** | **21.98 MB/s** | 1,040,163 |
-| **SentencePiece Lite** | **PLaMo-13B (64K)** | **Unigram** | **18.16 MB/s** | 1,001,575 |
-| **SentencePiece Lite** | **LLM-jp-4 (196K)** | **Unigram** | **17.95 MB/s** | 816,103 |
-| **SentencePiece** | **PLaMo-13B (64K)** | **Unigram** | **17.56 MB/s** | 1,005,451 |
-| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **PLaMo-13B (64K)** | **Unigram** | **15.45 MB/s** | 1,001,577 |
-| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **LLM-jp-4 (196K)** | **Unigram** | **14.28 MB/s** | 816,103 |
-| **SentencePiece** | **LLM-jp-4 (196K)** | **Unigram** | **13.42 MB/s** | 816,119 |
-| **Tiktoken (v0.14.0)** | **cl100k_base (100K)** | **BPE** | **6.95 MB/s** | 1,916,377 |
-| **Tiktoken (v0.14.0)** | **o200k_base (200K)** | **BPE** | **6.72 MB/s** | 1,381,640 |
-| **Tiktoken (v0.14.0)** | **Llama 3 (128K)** | **BPE** | **5.95 MB/s** | 1,283,796 |
-| **SentencePiece** | **Gemma 3 (256K)** | **BPE** | **6.07 MB/s** | 1,040,163 |
-| **Hugging Face Tokenizers (v0.23.1)** | **Gemma 3 (256K)** | **BPE** | **2.05 MB/s** | 1,040,163* |
-| **Hugging Face Tokenizers (v0.23.1)** | **PLaMo-13B (64K)** | **Unigram** | **1.79 MB/s** | 1,003,605 |
-| **Hugging Face Tokenizers (v0.23.1)** | **Llama 3 (128K)** | **BPE** | **1.45 MB/s** | 1,283,797 |
-| **Hugging Face Tokenizers (v0.23.1)** | **LLM-jp-4 (196K)** | **Unigram** | **1.42 MB/s** | 816,213 |
-| **Hugging Face Tokenizers (v0.23.1)** | **cl100k_base (100K)** | **BPE** | **1.17 MB/s** | 1,916,377 |
+| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **Gemma 3 (256K)** | **BPE** | **35.55 MB/s** | 1,040,163 |
+| **SentencePiece Lite** | **PLaMo-13B (64K)** | **Unigram** | **33.53 MB/s** | 1,005,446 |
+| **SentencePiece Lite** | **Gemma 3 (256K)** | **BPE** | **31.84 MB/s** | 1,040,163 |
+| **SentencePiece Lite** | **LLM-jp-4 (196K)** | **Unigram** | **31.80 MB/s** | 816,214 |
+| **SentencePiece** | **PLaMo-13B (64K)** | **Unigram** | **29.87 MB/s** | 1,005,432 |
+| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **PLaMo-13B (64K)** | **Unigram** | **29.18 MB/s** | 1,005,449 |
+| **SentencePiece** | **LLM-jp-4 (196K)** | **Unigram** | **26.06 MB/s** | 816,125 |
+| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **LLM-jp-4 (196K)** | **Unigram** | **24.32 MB/s** | 816,214 |
+| **Tiktoken (v0.14.0)** | **Llama 3 (128K)** | **BPE** | **10.97 MB/s** | 1,283,796 |
+| **Tiktoken (v0.14.0)** | **cl100k_base (100K)** | **BPE** | **10.41 MB/s** | 1,916,377 |
+| **Tiktoken (v0.14.0)** | **o200k_base (200K)** | **BPE** | **10.35 MB/s** | 1,381,640 |
+| **SentencePiece** | **Gemma 3 (256K)** | **BPE** | **9.15 MB/s** | 1,040,163 |
+| **Hugging Face Tokenizers (v0.23.1)** | **Gemma 3 (256K)** | **BPE** | **3.11 MB/s** | 1,040,163* |
+| **Hugging Face Tokenizers (v0.23.1)** | **PLaMo-13B (64K)** | **Unigram** | **2.57 MB/s** | 1,003,605 |
+| **Hugging Face Tokenizers (v0.23.1)** | **Llama 3 (128K)** | **BPE** | **2.13 MB/s** | 1,283,797 |
+| **Hugging Face Tokenizers (v0.23.1)** | **LLM-jp-4 (196K)** | **Unigram** | **2.03 MB/s** | 816,213 |
+| **Hugging Face Tokenizers (v0.23.1)** | **cl100k_base (100K)** | **BPE** | **1.88 MB/s** | 1,916,377 |
 
 #### (3) FineWeb2 Multilingual Mixed Corpus (8.9 MB)
 
 | Engine | Model | Algorithm | Throughput | Tokens |
 | :--- | :--- | :---: | :---: | :---: |
-| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **PLaMo-13B (64K)** | **Unigram** | **21.23 MB/s** | 4,599,607 |
-| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **Gemma 3 (256K)** | **BPE** | **20.59 MB/s** | 1,749,723 |
-| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **LLM-jp-4 (196K)** | **Unigram** | **19.25 MB/s** | 3,060,543 |
-| **SentencePiece Lite** | **PLaMo-13B (64K)** | **Unigram** | **18.08 MB/s** | 4,599,631 |
-| **SentencePiece Lite** | **Gemma 3 (256K)** | **BPE** | **17.05 MB/s** | 1,749,723 |
-| **SentencePiece Lite** | **LLM-jp-4 (196K)** | **Unigram** | **16.68 MB/s** | 3,060,464 |
-| **SentencePiece** | **PLaMo-13B (64K)** | **Unigram** | **13.28 MB/s** | 4,618,104 |
-| **SentencePiece** | **LLM-jp-4 (196K)** | **Unigram** | **12.84 MB/s** | 3,061,458 |
-| **Tiktoken (v0.14.0)** | **o200k_base (200K)** | **BPE** | **7.03 MB/s** | 1,818,536 |
-| **Tiktoken (v0.14.0)** | **cl100k_base (100K)** | **BPE** | **6.57 MB/s** | 2,858,926 |
-| **Tiktoken (v0.14.0)** | **Llama 3 (128K)** | **BPE** | **5.32 MB/s** | 2,018,277 |
-| **SentencePiece** | **Gemma 3 (256K)** | **BPE** | **2.01 MB/s** | 1,749,723 |
-| **Hugging Face Tokenizers (v0.23.1)** | **Gemma 3 (256K)** | **BPE** | **1.57 MB/s** | 1,749,724* |
-| **Hugging Face Tokenizers (v0.23.1)** | **Llama 3 (128K)** | **BPE** | **1.05 MB/s** | 2,018,278 |
-| **Hugging Face Tokenizers (v0.23.1)** | **PLaMo-13B (64K)** | **Unigram** | **0.87 MB/s** | 3,611,833 |
-| **Hugging Face Tokenizers (v0.23.1)** | **LLM-jp-4 (196K)** | **Unigram** | **0.81 MB/s** | 3,056,266 |
-| **Hugging Face Tokenizers (v0.23.1)** | **cl100k_base (100K)** | **BPE** | **0.64 MB/s** | 2,858,926 |
+| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **LLM-jp-4 (196K)** | **Unigram** | **47.78 MB/s** | 3,056,263 |
+| **SentencePiece Lite** | **LLM-jp-4 (196K)** | **Unigram** | **40.95 MB/s** | 3,056,184 |
+| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **PLaMo-13B (64K)** | **Unigram** | **31.97 MB/s** | 4,617,972 |
+| [**SentencePiece Lite (Cached)**](#64-token-caching-cachedsentencepiecelite) | **Gemma 3 (256K)** | **BPE** | **31.88 MB/s** | 1,749,723 |
+| **SentencePiece Lite** | **PLaMo-13B (64K)** | **Unigram** | **28.37 MB/s** | 4,617,992 |
+| **SentencePiece Lite** | **Gemma 3 (256K)** | **BPE** | **26.50 MB/s** | 1,749,723 |
+| **SentencePiece** | **LLM-jp-4 (196K)** | **Unigram** | **25.83 MB/s** | 3,055,825 |
+| **SentencePiece** | **PLaMo-13B (64K)** | **Unigram** | **24.92 MB/s** | 4,617,377 |
+| **Tiktoken (v0.14.0)** | **Llama 3 (128K)** | **BPE** | **13.45 MB/s** | 2,018,277 |
+| **Tiktoken (v0.14.0)** | **o200k_base (200K)** | **BPE** | **12.99 MB/s** | 1,818,536 |
+| **Tiktoken (v0.14.0)** | **cl100k_base (100K)** | **BPE** | **10.52 MB/s** | 2,858,926 |
+| **SentencePiece** | **Gemma 3 (256K)** | **BPE** | **2.64 MB/s** | 1,749,723 |
+| **Hugging Face Tokenizers (v0.23.1)** | **Gemma 3 (256K)** | **BPE** | **2.29 MB/s** | 1,749,724* |
+| **Hugging Face Tokenizers (v0.23.1)** | **Llama 3 (128K)** | **BPE** | **1.84 MB/s** | 2,018,278 |
+| **Hugging Face Tokenizers (v0.23.1)** | **PLaMo-13B (64K)** | **Unigram** | **1.81 MB/s** | 3,611,833 |
+| **Hugging Face Tokenizers (v0.23.1)** | **LLM-jp-4 (196K)** | **Unigram** | **1.69 MB/s** | 3,056,266 |
+| **Hugging Face Tokenizers (v0.23.1)** | **cl100k_base (100K)** | **BPE** | **1.56 MB/s** | 2,858,926 |
 
 *\* Note: Hugging Face Tokenizers (v0.23.1) token counts for Gemma 3 are measured with `add_special_tokens=False`.*
 
@@ -245,6 +245,12 @@ for (auto& f : futures) {
 The public API provides boundary-detection capabilities to safely slice long text into independent segments without breaking vocabulary subword boundaries:
 
 ```cpp
+// Zero-allocation callback overload (invokes `receiver` for each safe chunk)
+StatusCode PretokenizeAtSafeBoundaries(
+    std::string_view normalized,
+    FunctionRef<void(std::string_view)> receiver) const;
+
+// Convenience overload that collects chunks into a std::vector
 StatusCode PretokenizeAtSafeBoundaries(
     std::string_view normalized, std::vector<std::string_view>* out) const;
 ```
@@ -257,23 +263,46 @@ StatusCode PretokenizeAtSafeBoundaries(
 
 #### Application Example: Parallel Document Tokenization
 
-Because chunks split at safe boundaries are guaranteed to be independent, callers can tokenize document chunks concurrently across threads:
+Individual safe chunks are typically short (one word or punctuation span). Dispatching threads on every fine-grained chunk incurs scheduling and allocation overhead. Instead, you can use `CanSkipNormalization` and the callback overload of `PretokenizeAtSafeBoundaries` to coalesce adjacent safe chunks into coarse-grained **256 KB – 1 MB blocks** (sized to fit per-core L2/L3 cache and amortize thread dispatch overhead) with zero string copies:
 
 ```cpp
-// Pseudocode: Parallel document encoding via safe pre-tokenization
-std::string normalized;
-processor.Normalize(document, &normalized);
-
-std::vector<std::string_view> chunks;
-processor.PretokenizeAtSafeBoundaries(normalized, &chunks);
-
-// Process independent chunks concurrently
-std::vector<std::vector<int>> chunk_results(chunks.size());
-#pragma omp parallel for
-for (size_t i = 0; i < chunks.size(); ++i) {
-  processor.EncodeNormalized(chunks[i], &chunk_results[i]);
+// 1. Check if normalization can be bypassed (zero-copy fast path)
+std::string normalized_buf;
+std::string_view target = document;
+if (!processor.CanSkipNormalization(document)) {
+  processor.Normalize(document, &normalized_buf);
+  target = normalized_buf;
 }
-// Concatenate chunk_results into final token ID sequence...
+
+// 2. Coalesce fine-grained safe chunks into ~1 MB contiguous blocks (zero-copy)
+constexpr size_t kTargetBlockSize = 1024 * 1024;  // 1 MB (256 KB - 1 MB recommended)
+std::vector<std::string_view> blocks;
+std::string_view current_block;
+
+processor.PretokenizeAtSafeBoundaries(target, [&](std::string_view chunk) {
+  if (current_block.empty()) {
+    current_block = chunk;
+  } else {
+    current_block = std::string_view(
+        current_block.data(),
+        (chunk.data() + chunk.size()) - current_block.data());
+  }
+  if (current_block.size() >= kTargetBlockSize) {
+    blocks.push_back(current_block);
+    current_block = std::string_view();
+  }
+});
+if (!current_block.empty()) {
+  blocks.push_back(current_block);
+}
+
+// 3. Encode independent ~1 MB blocks concurrently across worker threads
+std::vector<std::vector<int>> block_results(blocks.size());
+#pragma omp parallel for schedule(dynamic)
+for (size_t i = 0; i < blocks.size(); ++i) {
+  processor.EncodeNormalized(blocks[i], &block_results[i]);
+}
+// Concatenate block_results into final token ID sequence...
 ```
 
 ### 6.4. Token Caching (`CachedSentencePieceLite`)

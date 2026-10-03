@@ -546,6 +546,19 @@ class Normalizer {
                           : nullptr;
   }
 
+  bool CanSkipNormalization(std::string_view input) const {
+    if (input.empty() || spec_ == nullptr) {
+      return true;
+    }
+    if (trie_.has_array() || add_dummy_prefix_ || remove_extra_whitespaces_) {
+      return false;
+    }
+    if (escape_whitespaces_ && input.find(' ') != std::string_view::npos) {
+      return false;
+    }
+    return utf8::IsStructurallyValid(input);
+  }
+
   StatusCode Normalize(std::string_view input, std::string* normalized,
                        std::vector<size_t>* offset = nullptr) const {
     if (offset != nullptr) {
@@ -844,6 +857,10 @@ class Model {
     return normalizer_.remove_extra_whitespaces();
   }
 
+  bool has_non_leading_space_symbol() const {
+    return has_non_leading_space_symbol_;
+  }
+
   const ModelProto& model_proto() const { return *model_proto_; }
 
   bool has_direct_mappings() const {
@@ -883,6 +900,11 @@ class Model {
       FunctionRef<void(std::string_view)> receiver) const;
   StatusCode Normalize(std::string_view input, std::string* normalized,
                        std::vector<size_t>* offset = nullptr) const;
+  bool CanSkipNormalization(std::string_view input) const {
+    if (status_ != StatusCode::kOk) return false;
+    if (!has_normalizer_spec()) return true;
+    return normalizer_.CanSkipNormalization(input);
+  }
   void EncodeChunk(std::string_view chunk, std::vector<int>* ids,
                    std::vector<std::string_view>* pieces = nullptr,
                    float alpha = 0.0f,
@@ -942,6 +964,7 @@ class Model {
   int pad_id_ = -1;
   bool add_dummy_prefix_ = true;
   bool treat_whitespace_as_suffix_ = false;
+  bool has_non_leading_space_symbol_ = false;
   float unk_score_ = 0.0;
   ModelType model_type_ = ModelType_UNIGRAM;
   const float* scores_ = nullptr;
@@ -1087,6 +1110,15 @@ StatusCode Model::Initialize(std::string_view model_buffer) {
     if (id < 0 || id >= static_cast<int>(vocab_size) ||
         id != static_cast<int>(i)) {
       return StatusCode::kInternal;
+    }
+    if (!has_non_leading_space_symbol_ && !IsControl(i) && !IsUnknown(i)) {
+      std::string_view rem = piece;
+      if (rem.starts_with(kSpaceSymbol)) {
+        rem.remove_prefix(kSpaceSymbol.size());
+      }
+      if (rem.find(kSpaceSymbol) != std::string_view::npos) {
+        has_non_leading_space_symbol_ = true;
+      }
     }
   }
 
@@ -1239,7 +1271,8 @@ StatusCode Model::PretokenizeAtSafeBoundaries(
   uint32_t prev_node_pos = get_root_node_pos(prev_char);
 
   while (!scanner.empty()) {
-    if (scanner.remaining_view().size() >= 8) {
+    if (static_cast<unsigned char>(*scanner.data()) < 0x80 &&
+        scanner.remaining_view().size() >= 8) {
       // 64-bit SWAR fast-forward for 8 contiguous ASCII letters ('a'-'z',
       // 'A'-'Z').
       const uint64_t val = LoadLe64(scanner.data());
@@ -1597,8 +1630,17 @@ StatusCode SentencePieceLiteProcessor::Normalize(
   return model_->Normalize(input, output, offset);
 }
 
+bool SentencePieceLiteProcessor::CanSkipNormalization(
+    std::string_view input) const {
+  return model_ != nullptr && input.size() <= kMaxInputLength &&
+         model_->CanSkipNormalization(input);
+}
+
 StatusCode SentencePieceLiteProcessor::Encode(std::string_view input,
                                               std::vector<int>* ids) const {
+  if (CanSkipNormalization(input)) {
+    return EncodeNormalized(input, ids);
+  }
   std::string normalized;
   LITE_RETURN_IF_ERROR(Normalize(input, &normalized));
   return EncodeNormalized(normalized, ids);
@@ -1673,6 +1715,7 @@ StatusCode SentencePieceLiteProcessor::Decode(
     return StatusCode::kInvalidArgument;
   }
   output->clear();
+  output->reserve(ids.size());
   if (pieces != nullptr) {
     pieces->clear();
     pieces->resize(ids.size(), std::string_view());
@@ -1690,7 +1733,7 @@ StatusCode SentencePieceLiteProcessor::Decode(
     }
   };
 
-  std::vector<unsigned char> accumulated_bytes;
+  InlineVector<unsigned char, 64> accumulated_bytes;
   size_t first_byte_index = 0;
 
   auto flush_bytes = [&]() -> StatusCode {
@@ -1733,6 +1776,7 @@ StatusCode SentencePieceLiteProcessor::Decode(
   bool bos_ws_seen = false;
   const bool add_dummy_prefix = model_->add_dummy_prefix();
   const bool remove_extra_whitespaces = model_->remove_extra_whitespaces();
+  const bool has_internal_space_symbol = model_->has_non_leading_space_symbol();
 
   const int vocab_size = model_->vocab_size();
   for (size_t i = 0; i < ids.size(); ++i) {
@@ -1784,7 +1828,15 @@ StatusCode SentencePieceLiteProcessor::Decode(
       }
 
       const size_t begin_pos = output->size();
-      ReplaceAll(piece_view, kSpaceSymbol, " ", output);
+      if (piece_view.starts_with(kSpaceSymbol)) {
+        output->push_back(' ');
+        piece_view.remove_prefix(kSpaceSymbol.size());
+      }
+      if (!has_internal_space_symbol) {
+        output->append(piece_view.data(), piece_view.size());
+      } else {
+        ReplaceAll(piece_view, kSpaceSymbol, " ", output);
+      }
       set_offset(i, begin_pos, output->size());
     }
   }

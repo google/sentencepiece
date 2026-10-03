@@ -143,10 +143,16 @@ def main():
   fb_dir = find_path([
       os.path.join(build_dir, "_deps/flatbuffers-src/include/flatbuffers"),
       os.path.join(
+          build_dir, "third_party/flatbuffers-src/include/flatbuffers"
+      ),
+      os.path.join(
           repo_root, "lite/build/_deps/flatbuffers-src/include/flatbuffers"
       ),
       os.path.join(
           repo_root, "build/_deps/flatbuffers-src/include/flatbuffers"
+      ),
+      os.path.join(
+          repo_root, "build/third_party/flatbuffers-src/include/flatbuffers"
       ),
       "/usr/include/flatbuffers",
   ])

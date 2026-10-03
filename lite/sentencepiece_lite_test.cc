@@ -913,6 +913,7 @@ TEST(SentencePieceLiteSecurityTest, NullAndCorruptedModelErrorHandling) {
   std::string output;
   std::vector<int> ids;
   std::vector<std::string_view> out_views;
+  EXPECT_FALSE(null_proc.CanSkipNormalization("hello"));
   EXPECT_EQ(null_proc.Normalize("hello", &output),
             ::sentencepiece::lite::StatusCode::kFailedPrecondition);
   EXPECT_EQ(null_proc.Encode("hello", &ids),
@@ -927,6 +928,7 @@ TEST(SentencePieceLiteSecurityTest, NullAndCorruptedModelErrorHandling) {
   auto bad_buffer = std::make_shared<std::string>("corrupted flatbuffer blob");
   ::sentencepiece::lite::SentencePieceLiteProcessor bad_proc(bad_buffer);
   EXPECT_NE(bad_proc.status(), ::sentencepiece::lite::StatusCode::kOk);
+  EXPECT_FALSE(bad_proc.CanSkipNormalization("hello"));
   EXPECT_EQ(bad_proc.Encode("hello", &ids),
             ::sentencepiece::lite::StatusCode::kFailedPrecondition);
 }
@@ -1458,6 +1460,7 @@ TEST(SentencePieceLiteNormalizerTest, All16NormalizerSpecPermutations) {
       "日本語 と English 123 !?",
       "A B C D E F G",
       "  A   B   C  ",
+      "invalid\xff\xfeutf8",
   };
 
   for (int mask = 0; mask < 16; ++mask) {
@@ -1490,6 +1493,26 @@ TEST(SentencePieceLiteNormalizerTest, All16NormalizerSpecPermutations) {
 
       EXPECT_EQ(norm_fast, norm_with_offsets)
           << "Mismatch for mask=" << mask << " input=[" << input << "]";
+
+      const bool expected_can_skip =
+          input.empty() ||
+          (!add_dummy_prefix && !remove_extra_whitespaces &&
+           (!escape_whitespaces || input.find(' ') == std::string_view::npos) &&
+           input != "invalid\xff\xfeutf8");
+      EXPECT_EQ(processor.CanSkipNormalization(input), expected_can_skip)
+          << "CanSkipNormalization mismatch for mask=" << mask << " input=["
+          << input << "]";
+      if (processor.CanSkipNormalization(input)) {
+        EXPECT_EQ(norm_fast, input);
+      }
+
+      std::vector<int> encoded_ids;
+      std::vector<int> expected_ids;
+      ASSERT_EQ(processor.Encode(input, &encoded_ids), StatusCode::kOk);
+      ASSERT_EQ(processor.EncodeNormalized(norm_fast, &expected_ids),
+                StatusCode::kOk);
+      EXPECT_EQ(encoded_ids, expected_ids)
+          << "Encode mismatch for mask=" << mask << " input=[" << input << "]";
 
       if (input.empty() ||
           (remove_extra_whitespaces &&
@@ -1953,6 +1976,91 @@ TEST_P(SentencePieceLiteTest, SwapPrecompiledCharsmapEndianRoundTrip) {
   std::string tiny = "ab";
   SwapPrecompiledCharsmapEndian(&tiny);
   EXPECT_EQ(tiny, "ab");
+}
+
+TEST(SentencePieceLiteTest, DecodeWithAndWithoutNonLeadingSpaceSymbols) {
+  auto add_normal_piece = [](::sentencepiece::ModelProto* proto,
+                             std::string_view piece, float score) {
+    auto* p = proto->add_pieces();
+    p->set_piece(piece);
+    p->set_type(::sentencepiece::ModelProto::SentencePiece::NORMAL);
+    p->set_score(score);
+  };
+
+  // 1. Model without non-leading spaces: every piece has at most a single
+  // leading "▁" (\xe2\x96\x81), exercising the fast-append path in Decode.
+  {
+    ::sentencepiece::ModelProto proto = MinimalUnigramProto();
+    add_normal_piece(&proto, "▁", -1.0f);
+    add_normal_piece(&proto, "▁hello", -2.0f);
+    add_normal_piece(&proto, "▁world", -3.0f);
+    add_normal_piece(&proto, "!", -4.0f);
+
+    auto status_or = ToFlatbuffer(proto);
+    ASSERT_TRUE(status_or.ok()) << status_or.status();
+    SentencePieceLiteProcessor processor(*status_or);
+    ASSERT_EQ(processor.status(), StatusCode::kOk);
+
+    std::string decoded;
+    std::vector<std::string_view> pieces;
+    ASSERT_EQ(processor.Decode({3, 4, 5}, &decoded, &pieces), StatusCode::kOk);
+    EXPECT_EQ(decoded, "hello world!");
+    EXPECT_EQ(pieces, (std::vector<std::string_view>{"hello", " world", "!"}));
+  }
+
+  // 2. Model with consecutive leading spaces ("▁▁") only, decoded with "▁▁" at
+  // BOS (is_bos_ws == true) and after BOS (is_bos_ws == false).
+  {
+    ::sentencepiece::ModelProto proto = MinimalUnigramProto();
+    add_normal_piece(&proto, "▁▁", -1.0f);  // This is two spaces.
+    add_normal_piece(&proto, "▁hello", -2.0f);
+    add_normal_piece(&proto, "▁world", -3.0f);
+
+    auto status_or = ToFlatbuffer(proto);
+    ASSERT_TRUE(status_or.ok()) << status_or.status();
+    SentencePieceLiteProcessor processor(*status_or);
+    ASSERT_EQ(processor.status(), StatusCode::kOk);
+
+    // "▁▁" at BOS (is_bos_ws == true): the first "▁" is stripped as the BOS
+    // dummy prefix and the second "▁" is converted to a leading space ' '.
+    std::string decoded;
+    std::vector<std::string_view> pieces;
+    ASSERT_EQ(processor.Decode({2, 3, 4}, &decoded, &pieces), StatusCode::kOk);
+    EXPECT_EQ(decoded, "  hello world");
+    EXPECT_EQ(pieces, (std::vector<std::string_view>{" ", " hello", " world"}));
+
+    // "▁▁" after BOS (is_bos_ws == false): both "▁" symbols are converted to
+    // spaces.
+    ASSERT_EQ(processor.Decode({3, 2, 4}, &decoded, &pieces), StatusCode::kOk);
+    EXPECT_EQ(decoded, "hello   world");
+    EXPECT_EQ(pieces, (std::vector<std::string_view>{"hello", "  ", " world"}));
+  }
+
+  // 3. Model with trailing ("foo▁") and internal ("a▁b", "▁bar▁baz") space
+  // symbols.
+  {
+    ::sentencepiece::ModelProto proto = MinimalUnigramProto();
+    add_normal_piece(&proto, "foo▁", -1.0f);
+    add_normal_piece(&proto, "a▁b", -2.0f);
+    add_normal_piece(&proto, "▁bar▁baz", -3.0f);
+
+    auto status_or = ToFlatbuffer(proto);
+    ASSERT_TRUE(status_or.ok()) << status_or.status();
+    SentencePieceLiteProcessor processor(*status_or);
+    ASSERT_EQ(processor.status(), StatusCode::kOk);
+
+    std::string decoded;
+    std::vector<std::string_view> pieces;
+    ASSERT_EQ(processor.Decode({4, 2, 3}, &decoded, &pieces), StatusCode::kOk);
+    EXPECT_EQ(decoded, "bar bazfoo a b");
+    EXPECT_EQ(pieces,
+              (std::vector<std::string_view>{"bar baz", "foo ", "a b"}));
+
+    ASSERT_EQ(processor.Decode({2, 4, 3}, &decoded, &pieces), StatusCode::kOk);
+    EXPECT_EQ(decoded, "foo  bar baza b");
+    EXPECT_EQ(pieces,
+              (std::vector<std::string_view>{"foo ", " bar baz", "a b"}));
+  }
 }
 
 }  // namespace
