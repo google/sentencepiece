@@ -63,9 +63,6 @@ class Trainer : public TrainerInterface {
     // See EncodePos/DecodePos.
     absl::btree_set<uint64_t> positions;
 
-    [[nodiscard]] bool IsBigram() const {
-      return left != nullptr && right != nullptr;
-    }
     Symbol() = default;
   };
 

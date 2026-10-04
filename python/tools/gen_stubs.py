@@ -16,9 +16,10 @@
 """Generates ``sentencepiece/__init__.pyi`` from the imported package.
 
 The public Python surface of ``sentencepiece`` is assembled at *import time*
-in ``sentencepiece.i`` (``setattr``, ``_add_snake_case``, ``Tokenize = Encode``
-etc.), so a static parse of the source cannot see it. This script therefore
-imports the built package and introspects the live classes/functions.
+in ``sentencepiece/__init__.py`` (``setattr``, ``_add_snake_case``,
+``Tokenize = Encode``, etc.), so a static parse of the source cannot see it.
+This script therefore imports the built package and introspects the live
+classes/functions.
 
 Two pieces of information are combined:
 
@@ -65,15 +66,12 @@ _MODULE_NAME = "sentencepiece"
 # Dunder methods worth keeping in the stub. All other dunders are skipped.
 ALLOWED_DUNDERS = {"__init__", "__len__", "__getitem__"}
 
-# Class-level attributes that are SWIG/runtime noise.
+# Class-level attributes that are runtime noise.
 SKIP_MEMBERS = {"thisown"}
 
 # Order in which classes are emitted. Discovered classes not listed here are
 # appended afterwards (sorted), so new public classes still show up.
 CLASS_ORDER = [
-    "ImmutableSentencePieceText_ImmutableSentencePiece",
-    "ImmutableSentencePieceText",
-    "ImmutableNBestSentencePieceText",
     "ThreadPool",
     "SentencePieceProcessor",
     "SentencePieceTrainer",
@@ -130,14 +128,6 @@ _DECODE_IDS = (
     "(self, input: int | Sequence[int] | Sequence[Sequence[int]], "
     "return_type: _DecodeOutType = ..., out_type: _DecodeOutType = ..., **kwargs: Any) -> Any"
 )
-_DECODE_PIECES_SER = (
-    "(self, input: str | bytes | Sequence[str] | Sequence[bytes] | Sequence[Sequence[str]] | Sequence[Sequence[bytes]], "
-    "return_type: Literal[\"serialized_proto\"] = ..., out_type: Literal[\"serialized_proto\"] = ..., **kwargs: Any) -> Any"
-)
-_DECODE_IDS_SER = (
-    "(self, input: int | Sequence[int] | Sequence[Sequence[int]], "
-    "return_type: Literal[\"serialized_proto\"] = ..., out_type: Literal[\"serialized_proto\"] = ..., **kwargs: Any) -> Any"
-)
 _DECODE_PIECES_PROTO = (
     "(self, input: str | bytes | Sequence[str] | Sequence[bytes] | Sequence[Sequence[str]] | Sequence[Sequence[bytes]], "
     "**kwargs: Any) -> Any"
@@ -161,12 +151,9 @@ _NORMALIZE = "(self, input: str | bytes | Sequence[str] | Sequence[bytes], with_
 METHOD_SIGS = {
     "SentencePieceProcessor": {
         "__init__": _SPP_INIT,
-        "Init": _SPP_INIT,
         "Load": "(self, model_file: str | None = ..., model_proto: bytes | None = ...) -> bool",
         "LoadFromFile": "(self, arg: str) -> bool",
         "LoadFromSerializedProto": "(self, serialized: bytes) -> bool",
-        "SetEncodeExtraOptions": "(self, extra_option: str) -> bool",
-        "SetDecodeExtraOptions": "(self, extra_option: str) -> bool",
 
         "serialized_model_proto": "(self) -> bytes",
         "GetPieceSize": "(self) -> int",
@@ -209,7 +196,6 @@ METHOD_SIGS = {
         "EncodeAsPieces": _INPUT_KWARGS,
         "EncodeAsIds": _INPUT_KWARGS,
         "EncodeAsNumpy": _INPUT_KWARGS,
-
         "EncodeAsProto": _INPUT_KWARGS,
         "EncodeAsOffsetMapping": _INPUT_KWARGS,
 
@@ -217,27 +203,22 @@ METHOD_SIGS = {
         "ParallelEncodeAsPieces": _INPUT_KWARGS,
         "ParallelEncodeAsIds": _INPUT_KWARGS,
         "ParallelEncodeAsNumpy": _INPUT_KWARGS,
-
         "ParallelEncodeAsProto": _INPUT_KWARGS,
 
         "SampleEncodeAsPieces": _SAMPLE_AS,
         "SampleEncodeAsIds": _SAMPLE_AS,
         "SampleEncodeAsNumpy": _SAMPLE_AS,
-
         "SampleEncodeAsProto": _SAMPLE_AS,
 
         "NBestEncode": _NBEST,
         "NBestEncodeAsPieces": _NBEST_AS,
         "NBestEncodeAsIds": _NBEST_AS,
         "NBestEncodeAsNumpy": _NBEST_AS,
-
         "NBestEncodeAsProto": _NBEST_AS,
-
 
         "Decode": _DECODE,
         "DecodePieces": _DECODE_PIECES,
         "DecodeIds": _DECODE_IDS,
-
         "DecodePiecesAsProto": _DECODE_PIECES_PROTO,
         "DecodeIdsAsProto": _DECODE_IDS_PROTO,
 
@@ -258,7 +239,6 @@ METHOD_SIGS = {
     },
     "SentencePieceNormalizer": {
         "__init__": _NORMALIZER_INIT,
-        "Init": _NORMALIZER_INIT,
         "LoadFromSerializedProto": "(self, serialized: bytes) -> bool",
         "LoadFromSerializedNormalizerSpec": "(self, serialized: bytes) -> bool",
         "LoadFromRuleTSV": "(self, filename: str) -> bool",
@@ -274,35 +254,10 @@ METHOD_SIGS = {
         "__init__": "(self, num_threads: int) -> None",
         "num_threads": "(self) -> int",
     },
-    "ImmutableSentencePieceText": {
-        "SerializeAsString": "(self) -> bytes",
-    },
-    "ImmutableNBestSentencePieceText": {
-        "SerializeAsString": "(self) -> bytes",
-    },
 }
 
 # Property return types, keyed by class name then property name.
-PROPERTY_TYPES = {
-    "ImmutableSentencePieceText_ImmutableSentencePiece": {
-        "piece": "str",
-        "piece_as_bytes": "bytes",
-        "surface": "str",
-        "surface_as_bytes": "bytes",
-        "id": "int",
-        "begin": "int",
-        "end": "int",
-    },
-    "ImmutableSentencePieceText": {
-        "text": "str",
-        "text_as_bytes": "bytes",
-        "score": "float",
-        "pieces": "Sequence[ImmutableSentencePieceText_ImmutableSentencePiece]",
-    },
-    "ImmutableNBestSentencePieceText": {
-        "nbests": "Sequence[ImmutableSentencePieceText]",
-    },
-}
+PROPERTY_TYPES: dict[str, dict[str, str]] = {}
 
 # Methods that are static (no ``self``).
 STATIC_METHODS = {("SentencePieceTrainer", "Train")}

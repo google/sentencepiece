@@ -43,7 +43,6 @@ namespace {
 constexpr size_t kPreallocateLatticeNodeSize = 1024;
 
 constexpr float kUnkPenalty = 10.0;
-constexpr float kEpsilon = 1e-7;
 
 // Returns log(exp(x) + exp(y)).
 // if init_mode is true, returns log(exp(y)) == y.

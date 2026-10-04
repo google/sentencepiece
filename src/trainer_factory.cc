@@ -32,25 +32,20 @@ std::unique_ptr<TrainerInterface> TrainerFactory::Create(
     case TrainerSpec::UNIGRAM:
       return std::make_unique<unigram::Trainer>(trainer_spec, normalizer_spec,
                                                 denormalizer_spec);
-      break;
     case TrainerSpec::BPE:
       return std::make_unique<bpe::Trainer>(trainer_spec, normalizer_spec,
                                             denormalizer_spec);
-      break;
     case TrainerSpec::WORD:
       return std::make_unique<word::Trainer>(trainer_spec, normalizer_spec,
                                              denormalizer_spec);
-      break;
     case TrainerSpec::CHAR:
       return std::make_unique<character::Trainer>(trainer_spec, normalizer_spec,
                                                   denormalizer_spec);
-      break;
     default:
       LOG(FATAL) << "Unknown model_type: " << trainer_spec.model_type();
       break;
   }
 
-  return std::make_unique<unigram::Trainer>(trainer_spec, normalizer_spec,
-                                            denormalizer_spec);
+  return nullptr;
 }
 }  // namespace sentencepiece

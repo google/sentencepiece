@@ -64,8 +64,6 @@ constexpr int kMaxUnicode = 0x10FFFF;
 // bugs (C3493) in DecompileCharsMap.
 constexpr int kMaxDepth = 1000;
 
-constexpr absl::string_view kDefaultNormalizerName = "nfkc";
-
 #ifndef ENABLE_NFKC_COMPILE
 constexpr absl::string_view kCompileError =
     "NFK compile is not enabled. rebuild with -DSPM_ENABLE_NFKC_COMPILE=ON";
@@ -364,8 +362,6 @@ absl::Status Builder::GetPrecompiledCharsMap(absl::string_view name,
     return absl::StatusBuilder(absl::StatusCode::kInvalidArgument)
            << "Invalid charsmap name " << name;
   }
-
-  std::string result;
 
 #ifndef DISABLE_EMBEDDED_DATA
   for (size_t i = 0; i < kNormalizationRules_size; ++i) {

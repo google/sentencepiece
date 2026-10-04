@@ -16,7 +16,6 @@
 # limitations under the License.!
 
 from collections import defaultdict
-import glob
 import io
 import os
 import pickle
@@ -885,8 +884,6 @@ class TestSentencepieceProcessor(unittest.TestCase):
 
   # SetNBestTimeout/set_nbest_timeout modify a global atomic variable in C++.
   # This makes this test thread-unsafe when run in parallel with other tests
-  # SetNBestTimeout/set_nbest_timeout modify a global atomic variable in C++.
-  # This makes this test thread-unsafe when run in parallel with other tests
   # that perform nbest encoding.
   @pytest.mark.thread_unsafe
   def test_nbest_timeout(self):
@@ -1657,8 +1654,6 @@ class TestSentencepieceProcessor(unittest.TestCase):
       sp.decode(ids, return_type=str, out_type=str)
 
   def test_normalizer_rule_tsv(self):
-    import tempfile
-
     with tempfile.NamedTemporaryFile(
         mode='w', delete=False, suffix='.tsv'
     ) as f:

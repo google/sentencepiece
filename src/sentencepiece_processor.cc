@@ -1259,12 +1259,6 @@ std::string SentencePieceProcessor::serialized_model_proto() const {
   return model_proto_ ? model_proto_->SerializeAsString() : "";
 }
 
-// Set seed value of random generator.
-// Do not set static_cast<unique_int>(-1),
-// as this seed is reserved for initializing from
-// std::random_device.
-void SetRandomGeneratorSeed(unsigned int seed);
-
 template <typename T>
 absl::Status SentencePieceProcessor::EncodeOptimized(
     absl::string_view input, std::vector<T>* output) const {

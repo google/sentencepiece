@@ -1,97 +1,48 @@
-# SentencePiece C++ API and CMake Integration
+# SentencePiece C++ API Reference
 
-## Integrating with CMake (version >= 0.2.3)
+This document describes the C++ API for loading models, tokenizing and detokenizing text, normalizing text, inspecting vocabularies, and training new models.
 
-SentencePiece provides official CMake targets (`sentencepiece::sentencepiece` and `sentencepiece::sentencepiece_train`). Header search paths, dependencies, and required C++ standards are automatically propagated to your targets.
+For instructions on building SentencePiece and linking it in your project, see:
+- [Building with CMake](cmake.md)
+- [Building with Bazel](bazel.md)
+- [SentencePiece Lite Runtime Guide](../lite/README.md) (zero-dependency FlatBuffer runtime)
 
-### 1. Using `find_package` (Installed Package)
-When SentencePiece is installed on your system or in a custom prefix:
+---
 
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(my_project CXX)
+## 1. Loading a SentencePiece Model
 
-# Find installed sentencepiece package
-find_package(sentencepiece CONFIG REQUIRED)
+Include `<sentencepiece_processor.h>`, instantiate `sentencepiece::SentencePieceProcessor`, and call `Load()` with a file path or `LoadFromSerializedProto()` with an in-memory binary blob:
 
-add_executable(my_app main.cc)
+```cpp
+#include <sentencepiece_processor.h>
 
-# Link inference library
-target_link_libraries(my_app PRIVATE sentencepiece::sentencepiece)
+sentencepiece::SentencePieceProcessor processor;
+const auto status = processor.Load("/path/to/model.model");
+if (!status.ok()) {
+  std::cerr << status.ToString() << std::endl;
+  // Handle error
+}
 
-# Or link trainer library (if using SentencePieceTrainer)
-# target_link_libraries(my_app PRIVATE sentencepiece::sentencepiece_train)
-```
-
-If SentencePiece is installed in a custom directory, pass `-DCMAKE_PREFIX_PATH`:
-```bash
-cmake -B build -DCMAKE_PREFIX_PATH=/path/to/sentencepiece_install
-```
-
-### 2. Using `FetchContent` (Direct from Git)
-To build SentencePiece automatically as part of your project without manual installation:
-
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(my_project CXX)
-
-include(FetchContent)
-FetchContent_Declare(
-  sentencepiece
-  GIT_REPOSITORY https://github.com/google/sentencepiece.git
-  GIT_TAG        v0.2.3
-)
-FetchContent_MakeAvailable(sentencepiece)
-
-add_executable(my_app main.cc)
-target_link_libraries(my_app PRIVATE sentencepiece::sentencepiece)
-```
-
-### 3. Using `add_subdirectory`
-If you include SentencePiece as a git submodule or in-tree vendored directory (e.g. `third_party/sentencepiece`):
-
-```cmake
-add_subdirectory(third_party/sentencepiece)
-
-add_executable(my_app main.cc)
-target_link_libraries(my_app PRIVATE sentencepiece::sentencepiece)
+// Or load directly from an in-memory serialized ModelProto:
+// absl::string_view serialized_blob = ...;
+// const auto status = processor.LoadFromSerializedProto(serialized_blob);
 ```
 
 ---
 
-## Load SentencePiece model
-To start working with the SentencePiece model, include the `sentencepiece_processor.h` header file.
-Instantiate the `sentencepiece::SentencePieceProcessor` class and call the `Load` method to load the model using a file path or `std::istream`.
+## 2. Tokenizing Text (Encoding)
 
-```C++
-#include <sentencepiece_processor.h>
+Call `SentencePieceProcessor::Encode` to segment raw UTF-8 text into subword pieces (`std::vector<std::string>`) or vocabulary IDs (`std::vector<int>`).
 
-sentencepiece::SentencePieceProcessor processor;
-const auto status = processor.Load("//path/to/model.model");
-if (!status.ok()) {
-   std::cerr << status.ToString() << std::endl;
-   // error
-}
-
-// You can also load a serialized model from std::string.
-// const std::string str = // Load blob contents from a file.
-// auto status = processor.LoadFromSerializedProto(str);
-```
-
-## Tokenize text (preprocessing)
-Call the `SentencePieceProcessor::Encode` method to tokenize text.
-
-```C++
+```cpp
+// Encode into subword pieces
 std::vector<std::string> pieces;
 processor.Encode("This is a test.", &pieces);
 for (const std::string &token : pieces) {
   std::cout << token << std::endl;
 }
-```
 
-You will obtain the sequence of vocabulary IDs as follows:
-
-```C++
+// Encode into vocabulary IDs
 std::vector<int> ids;
 processor.Encode("This is a test.", &ids);
 for (const int id : ids) {
@@ -99,65 +50,168 @@ for (const int id : ids) {
 }
 ```
 
-## Detokenize text (postprocessing)
-Call the `SentencePieceProcessor::Decode` method to detokenize a sequence of pieces or IDs into text. In general, it is guaranteed that the detokenization is an inverse operation of Encode, i.e., `Decode(Encode(Normalize(input))) == Normalize(input)`.
+### Encoding with Byte Offsets (`SentencePieceText`)
 
-```C++
-std::vector<std::string> pieces = { "▁This", "▁is", "▁a", "▁", "te", "st", "." };   // sequence of pieces
+To obtain byte offsets (`begin`, `end`) and surface forms alongside piece strings and IDs, pass a `SentencePieceText` protobuf:
+
+```cpp
+#include "sentencepiece.pb.h"
+
+sentencepiece::SentencePieceText spt;
+processor.Encode("This is a test.", &spt);
+for (const auto &sp : spt.pieces()) {
+  std::cout << "id=" << sp.id()
+            << " piece=" << sp.piece()
+            << " surface=" << sp.surface()
+            << " span=[" << sp.begin() << ", " << sp.end() << ")" << std::endl;
+}
+```
+
+---
+
+## 3. Detokenizing Text (Decoding)
+
+Call `SentencePieceProcessor::Decode` to reconstruct raw text from a sequence of subword pieces (`absl::Span<const std::string>` or `absl::Span<const absl::string_view>`) or vocabulary IDs (`absl::Span<const int>`). In general, detokenization is the exact inverse of encoding on normalized text: `Decode(Encode(Normalize(input))) == Normalize(input)`.
+
+```cpp
+std::vector<std::string> pieces = {"▁This", "▁is", "▁a", "▁", "te", "st", "."};
 std::string text;
 processor.Decode(pieces, &text);
 std::cout << text << std::endl;
 
-std::vector<int> ids = { 451, 26, 20, 3, 158, 128, 12  };   // sequence of ids
+std::vector<int> ids = {451, 26, 20, 3, 158, 128, 12};
 processor.Decode(ids, &text);
 std::cout << text << std::endl;
 ```
 
-## Sampling (subword regularization)
-Call the `SentencePieceProcessor::SampleEncode` method to sample one segmentation.
+You can also pass a `SentencePieceText*` to `Decode` to inspect piece-to-decoded-text byte spans.
 
-```C++
+---
+
+## 4. N-Best Segmentation & Sampling (Subword Regularization)
+
+### N-Best Encoding
+
+Use `NBestEncode` to obtain the top-`nbest_size` segmentations:
+
+```cpp
+std::vector<std::vector<std::string>> nbest_pieces;
+processor.NBestEncode("This is a test.", 5, &nbest_pieces);
+
+std::vector<std::vector<int>> nbest_ids;
+processor.NBestEncode("This is a test.", 5, &nbest_ids);
+```
+
+### Stochastic Sampling (`SampleEncode`)
+
+Use `SampleEncode` for on-the-fly subword regularization (Unigram) or BPE-dropout (BPE):
+
+```cpp
 std::vector<std::string> pieces;
-processor.SampleEncode("This is a test.", &pieces, -1, 0.2);
+processor.SampleEncode("This is a test.", -1, 0.2, &pieces);
 
 std::vector<int> ids;
-processor.SampleEncode("This is a test.", &ids, -1, 0.2);
-```
-SampleEncode has two sampling parameters, `nbest_size` and `alpha`, which correspond to `l` and `alpha` in the [original paper](https://arxiv.org/abs/1804.10959). When `nbest_size` is -1, one segmentation is sampled from all hypotheses with forward-filtering and backward sampling algorithm.
-
-## Training
-Call the `SentencePieceTrainer::Train` function to train a SentencePiece model.
-
-You can pass training parameters as a single command-line-like string:
-
-```C++
-#include <sentencepiece_trainer.h>
-
-sentencepiece::SentencePieceTrainer::Train("--input=test/botchan.txt --model_prefix=m --vocab_size=1000");
+processor.SampleEncode("This is a test.", -1, 0.2, &ids);
 ```
 
-Alternatively, you can pass parameters as a `std::unordered_map<std::string, std::string>`:
+`SampleEncode` takes `nbest_size` and `alpha` (corresponding to $l$ and $\alpha$ in the [Subword Regularization paper](https://arxiv.org/abs/1804.10959), or dropout rate $\alpha$ in [BPE-Dropout](https://arxiv.org/abs/1910.13267)). When `nbest_size` is `-1`, a segmentation is sampled from the full lattice.
 
-```C++
+---
+
+## 5. Extra Options (BOS, EOS, Reverse)
+
+Use `SetEncodeExtraOptions` and `SetDecodeExtraOptions` with colon-separated options (`"bos"`, `"eos"`, `"reverse"`):
+
+```cpp
+processor.SetEncodeExtraOptions("bos:eos");  // Prepend <s> and append </s>
+```
+
+---
+
+## 6. Vocabulary Management
+
+Use the following methods to query vocabulary metadata and convert between pieces and IDs:
+
+```cpp
+int vocab_size = processor.GetPieceSize();     // Total vocabulary size
+int id = processor.PieceToId("▁foo");          // Vocabulary ID of "▁foo"
+std::string piece = std::string(processor.IdToPiece(10));  // Piece string for ID 10
+float score = processor.GetScore(10);          // Log probability / merge score
+
+bool is_unk = processor.IsUnknown(id);         // True if <unk>
+bool is_ctrl = processor.IsControl(id);        // True if control token (e.g., <s>, </s>)
+bool is_unused = processor.IsUnused(id);       // True if unused token
+bool is_byte = processor.IsByte(id);           // True if byte-fallback token (<0x00>..<0xFF>)
+
+int unk_id = processor.unk_id();
+int bos_id = processor.bos_id();
+int eos_id = processor.eos_id();
+int pad_id = processor.pad_id();
+```
+
+---
+
+## 7. Text Normalization
+
+You can normalize text directly via `SentencePieceProcessor::Normalize`, or use the standalone `normalizer::Normalizer` class:
+
+```cpp
+std::string normalized;
+processor.Normalize("ＡＢＣ　１２３", &normalized);
+
+// With character alignment mapping (normalized byte offset -> original byte offset):
+std::vector<size_t> norm_to_orig;
+processor.Normalize("ＡＢＣ　１２３", &normalized, &norm_to_orig);
+```
+
+---
+
+## 8. Training a Model (`SentencePieceTrainer`)
+
+Include `<sentencepiece_trainer.h>` and call `sentencepiece::SentencePieceTrainer::Train` to train a new model.
+
+### Using a Command-Line Flag String
+
+```cpp
 #include <sentencepiece_trainer.h>
 
-sentencepiece::SentencePieceTrainer::Train({
-  {"input", "test/botchan.txt"},
-  {"model_prefix", "m"},
-  {"vocab_size", "1000"}
+const auto status = sentencepiece::SentencePieceTrainer::Train(
+    "--input=data/botchan.txt --model_prefix=m --vocab_size=1000");
+```
+
+### Using a Key-Value Map
+
+```cpp
+#include <sentencepiece_trainer.h>
+
+const auto status = sentencepiece::SentencePieceTrainer::Train({
+    {"input", "data/botchan.txt"},
+    {"model_prefix", "m"},
+    {"vocab_size", "1000"},
+    {"model_type", "unigram"},
 });
 ```
 
+### Using `TrainerSpec` and `TrainerComponents`
 
+For programmatic control—such as streaming sentences via `SentenceIterator`, attaching a custom `PretokenizerForTrainingInterface`, or writing the trained `ModelProto` directly to memory without creating files on disk—use the `TrainerComponents` overload:
 
-## Vocabulary management
-Use the following methods to convert between IDs and pieces.
+```cpp
+#include <sentencepiece_trainer.h>
+#include "sentencepiece_model.pb.h"
 
-```C++
-processor.GetPieceSize();   // returns the vocabulary size.
-processor.PieceToId("foo");  // returns the vocab id of "foo"
-processor.IdToPiece(10);     // returns the string representation of id 10.
-processor.IsUnknown(0);      // returns true if the given id is an unknown token. e.g., <unk>
-processor.IsControl(10);     // returns true if the given id is a control token. e.g., <s>, </s>
+sentencepiece::TrainerSpec trainer_spec;
+trainer_spec.add_input("data/botchan.txt");
+trainer_spec.set_vocab_size(1000);
+trainer_spec.set_model_type(sentencepiece::TrainerSpec::UNIGRAM);
+
+sentencepiece::NormalizerSpec normalizer_spec;
+sentencepiece::SentencePieceTrainer::PopulateNormalizerSpec(&normalizer_spec);
+
+sentencepiece::TrainerComponents components;
+sentencepiece::ModelProto output_model_proto;
+components.output_model_proto = &output_model_proto;
+
+const auto status = sentencepiece::SentencePieceTrainer::Train(
+    trainer_spec, normalizer_spec, components);
 ```
-

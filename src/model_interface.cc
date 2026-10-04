@@ -31,7 +31,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "darts.h"
 #include "normalizer.h"
 #include "sentencepiece_model.pb.h"
 #include "util.h"

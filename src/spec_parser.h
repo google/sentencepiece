@@ -289,9 +289,11 @@ absl::Status SentencePieceTrainer::SetProtoField(absl::string_view name,
 #undef PARSE_BOOL
 #undef PARSE_BYTE
 #undef PARSE_INT32
-#undef PARSE_DUOBLE
+#undef PARSE_UINT64
+#undef PARSE_DOUBLE
 #undef PARSE_ENUM
-#undef PRINT_MAP
+#undef PARSE_DEPRECATED
+#undef PRINT_PARAM
 #undef PRINT_REPEATED_STRING
 #undef PRINT_ENUM
 }  // namespace sentencepiece

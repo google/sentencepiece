@@ -86,7 +86,6 @@ class NBestSentencePieceText;
 class ModelInterface;
 class SentencePieceText;
 class ModelProto;
-class NormalizerSpec;
 
 namespace normalizer {
 class Normalizer;
@@ -137,10 +136,6 @@ absl::Status RunBatch(size_t total_tasks,
 namespace util {
 using bytes = std::string;
 }  // namespace util
-
-class NBestSentencePieceText;
-class ModelInterface;
-class SentencePieceText;
 
 class SentencePieceProcessor {
  public:
@@ -269,9 +264,6 @@ class SentencePieceProcessor {
 
   // chunk_len controls how long each chunk to be tokenized in parallel is.
   // For best results, set this to ~10000.
-
-  // WARNING: ParallelEncode with SentencePieceText * inputs currently does not
-  // copy the UNK surface form correctly. Use at your own risk!
   virtual absl::Status ParallelEncode(absl::string_view input, int chunk_len,
                                       ThreadPool& thread_pool,
                                       std::vector<std::string>* pieces) const;

@@ -16,8 +16,6 @@
 #define SENTENCEPIECE_LITE_CACHED_SENTENCEPIECE_LITE_H_
 
 #include <algorithm>
-#include <array>
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>

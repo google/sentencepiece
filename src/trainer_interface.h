@@ -185,9 +185,6 @@ class TrainerInterface {
   // Serialize final_pieces_ to |model_proto|.
   absl::Status Serialize(ModelProto* model_proto) const;
 
-  // Saves the best sentence split with the current model for debugging.
-  absl::Status SaveSplits(absl::string_view filename) const;
-
   // Saves model file.
   absl::Status SaveModel(absl::string_view filename) const;
 

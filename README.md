@@ -149,7 +149,8 @@ For details, benchmarks, and C++ integration recipes, see the [SentencePiece Lit
 For detailed guides, API references, and advanced usage, please refer to the following resources:
 
 *   [SentencePiece Lite Runtime Guide](lite/README.md)
-*   [Command Line Interface (CLI) & Build Guide (CMake)](doc/cli.md)
+*   [Command Line Interface (CLI) Guide](doc/cli.md)
+*   [Building with CMake](doc/cmake.md)
 *   [Building with Bazel](doc/bazel.md)
 *   [C++ API Reference](doc/cpp.md)
 *   [Python API Reference](python/README.md) & [Python Module Directory](python/)

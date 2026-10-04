@@ -37,7 +37,6 @@ class TrainerModel : public Model {
  public:
   using SentencePieces = std::vector<std::pair<std::string, float>>;
 
-  TrainerModel() {}
   TrainerModel(const ModelProto& model_proto) = delete;
   TrainerModel(const TrainerSpec& trainer_spec,
                const NormalizerSpec& normalizaiton_spec);
@@ -57,8 +56,6 @@ class TrainerModel : public Model {
 
  private:
   SentencePieces sentencepieces_;
-  TrainerSpec trainer_spec_;
-  NormalizerSpec normalizer_spec_;
   ModelProto model_proto_data_;
 };
 
@@ -76,7 +73,6 @@ class Trainer : public TrainerInterface {
   absl::Status Train() override;
 
  private:
-  FRIEND_TEST(TrainerTest, IsValidSentencePieceTest);
   FRIEND_TEST(UnigramTrainerTest, PruneUnreachableSentencePiecesTest);
 
   // Loads and returns seed sentencepieces from external TSV file specified in

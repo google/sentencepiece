@@ -1,6 +1,6 @@
 # Building SentencePiece with Bazel
 
-In addition to the [CMake build](cli.md), SentencePiece can be built with [Bazel](https://bazel.build) (using Bzlmod).
+In addition to the [CMake build](cmake.md), SentencePiece can be built with [Bazel](https://bazel.build) (using Bzlmod). For C++ API usage, see the [C++ API Reference](cpp.md).
 
 ## Prerequisites
 
@@ -23,6 +23,8 @@ bazel build //...
 | `//:sentencepiece_train` (or `//src:sentencepiece_trainer`) | Model training library |
 | `//src:libsentencepiece.so` | Standalone shared library (`.so` / `.dylib` / `.dll`) |
 | `//src:libsentencepiece_train.so` | Standalone trainer shared library |
+| `//:sentencepiece_lite` (or `//lite:sentencepiece_lite`) | SentencePiece Lite FlatBuffer runtime library |
+| `//:sentencepiece_lite_standalone` | Standalone zero-Abseil SentencePiece Lite library |
 | `//:spm_train` | Model trainer CLI |
 | `//:spm_encode` | Encoder CLI |
 | `//:spm_decode` | Decoder CLI |
@@ -30,6 +32,8 @@ bazel build //...
 | `//:spm_export_vocab` | Vocabulary exporter CLI |
 | `//:spm_eval` | Evaluation CLI |
 | `//:compile_charsmap` | Unicode normalization charsmap compiler CLI |
+| `//:spm_to_fb` | `.model` (Protobuf) to `.spm.fb` (FlatBuffer) converter CLI |
+| `//:spm_lite` | SentencePiece Lite CLI |
 
 ### Running CLIs Directly with Bazel
 
@@ -51,7 +55,7 @@ echo "Hello world." | bazel-bin/src/spm_encode --model=m.model
 Run all unit tests in parallel with caching:
 
 ```bash
-# Run all 22 test suites in parallel
+# Run all test suites in parallel
 bazel test //...
 
 # Or run the consolidated test suite matching CMake's spm_test

@@ -51,8 +51,6 @@ namespace sentencepiece {
 namespace unigram {
 namespace {
 
-constexpr char32_t kSentenceBoundary = 0x0000;
-
 double Digamma(double x) {
   double result = 0.0;
   for (; x < 7; ++x) result -= 1 / x;
@@ -194,8 +192,7 @@ class BoundedPriorityQueue {
 }  // namespace
 
 TrainerModel::TrainerModel(const TrainerSpec& trainer_spec,
-                           const NormalizerSpec& normalizer_spec)
-    : trainer_spec_(trainer_spec), normalizer_spec_(normalizer_spec) {}
+                           const NormalizerSpec& normalizer_spec) {}
 
 TrainerModel::~TrainerModel() {}
 
@@ -418,7 +415,6 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
     stack.push_back({0, 0});
 
     int64_t node_num = 0;
-    int64_t valid_maximal_nodes = 0;
 
     for (int32_t i = 1; i <= n32; ++i) {
       int32_t lcp_val = (i < n32) ? LCP32[i] : 0;
@@ -482,7 +478,6 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
             return;
           }
 
-          valid_maximal_nodes++;
           queue.Add(piece, freq);
         };
         process_interval();

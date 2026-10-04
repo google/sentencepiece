@@ -565,11 +565,6 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              if (!status.ok()) throw status;
              return true;
            })
-      .def("status", &sentencepiece::SentencePieceProcessor::status)
-      .def("SetEncodeExtraOptions",
-           &sentencepiece::SentencePieceProcessor::SetEncodeExtraOptions)
-      .def("SetDecodeExtraOptions",
-           &sentencepiece::SentencePieceProcessor::SetDecodeExtraOptions)
 
       // Single Encode APIs
       .def("_EncodeAsIds",
@@ -1412,8 +1407,6 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              }
              return py::bytes(nbest_spt.SerializeAsString());
            })
-
-      // Sample and Score APIs
 
       // Parallel Encode APIs
       .def(

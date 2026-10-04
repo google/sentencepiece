@@ -16,7 +16,6 @@
 
 #include <algorithm>
 #include <bit>
-#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>

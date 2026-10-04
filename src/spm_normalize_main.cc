@@ -21,7 +21,6 @@
 #include "filesystem.h"
 #include "init.h"
 #include "normalizer.h"
-#include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"

@@ -23,7 +23,6 @@
 #include "absl/types/span.h"
 #include "filesystem.h"
 #include "init.h"
-#include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
 
 ABSL_FLAG(std::string, model, "", "model file name");

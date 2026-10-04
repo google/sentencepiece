@@ -22,10 +22,10 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
+#include "darts.h"
 #include "freelist.h"
 #include "model_interface.h"
 #include "sentencepiece_model.pb.h"
-#include "darts.h"
 
 namespace sentencepiece {
 namespace unigram {
@@ -45,8 +45,6 @@ class Lattice {
     float score;              // logprob of this sentencepiece.
     float backtrace_score;    // backtrace info used in Viterbi.
     Node* prev;               // best previous node on Viterbi path.
-
-    std::string DebugString() const;
   };
 
   // Returns bos node.
