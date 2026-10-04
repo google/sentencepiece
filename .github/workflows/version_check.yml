@@ -1,0 +1,33 @@
+name: Version consistency
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: VERSION.txt matches MODULE.bazel and docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.x'
+      - name: Check version declarations
+        run: python .github/scripts/check_version.py
+      - name: Check the Python package derives its version from VERSION.txt
+        working-directory: python
+        run: |
+          python -m pip install --quiet setuptools
+          test "$(python setup.py --version 2>/dev/null | tail -n 1)" = "$(cat ../VERSION.txt)"
