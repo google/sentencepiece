@@ -239,12 +239,6 @@ METHOD_SIGS = {
     },
     "SentencePieceNormalizer": {
         "__init__": _NORMALIZER_INIT,
-        "LoadFromSerializedProto": "(self, serialized: bytes) -> bool",
-        "LoadFromSerializedNormalizerSpec": "(self, serialized: bytes) -> bool",
-        "LoadFromRuleTSV": "(self, filename: str) -> bool",
-        "LoadFromRuleName": "(self, name: str) -> bool",
-        "LoadFromFile": "(self, arg: str) -> bool",
-        "LoadFromMap": "(self, norm_map: Sequence[tuple[str, str]]) -> bool",
         "Decompile": "(self) -> list[tuple[str, str]]",
         "serialized_model_proto": "(self) -> bytes",
         "serialized_normalizer_spec": "(self) -> bytes",

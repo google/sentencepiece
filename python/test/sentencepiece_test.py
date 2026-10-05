@@ -43,7 +43,11 @@ print(HERE)
 
 print('VERSION={}'.format(spm.__version__))
 
-data_dir = HERE
+data_dir = (
+    HERE
+    if os.path.exists(os.path.join(HERE, 'botchan.txt'))
+    else os.path.normpath(os.path.join(HERE, '..', '..', 'data'))
+)
 
 # SentencePieceNormalizer keeps the flags of the loaded spec unless they are
 # given explicitly. These flags request raw normalization (no whitespace

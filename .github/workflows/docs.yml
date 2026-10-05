@@ -64,6 +64,7 @@ jobs:
             - normalization.md
             - special_symbols.md
             - model_proto.md
+            - cmake.md
             - bazel.md
             - performance_benchmark.md
             - ...

@@ -184,7 +184,7 @@ By default, SentencePiece defines the following mappings for default special sym
 | **PAD** | `<pad>` | Undefined (`-1`) |
 
 You can customize these pieces and IDs at training time using the following flags:
-*   `--{unk|bos|eos|pad}_id=<int>`: Set the integer ID for the symbol. Setting `-1` disables the symbol (except for `unk_id` which must always be defined).
+*   `--{unk|bos|eos|pad}_id=<int>`: Set the integer ID for the symbol. Setting `-1` disables the symbol (`unk_id=-1` requires `--byte_fallback=true` and SentencePiece v0.2.3+ for inference).
 *   `--{unk|bos|eos|pad}_piece=<string>`: Set the surface string representation for the symbol (e.g., `[PAD]`, `[UNK]`).
 *   `--unk_surface=<string>`: Customize the surface string that `decode` emits for unknown tokens. By default, unknown tokens are decoded as `⁇` (U+2047, Double Question Mark).
 

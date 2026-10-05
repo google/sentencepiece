@@ -66,6 +66,8 @@ These options control how SentencePiece processes and samples the training corpu
     *   The ratio of characters in the training corpus that must be covered by the vocabulary.
     *   *How it works*: Characters are sorted by frequency. SentencePiece accumulates them until the target ratio is met. Characters outside this limit are excluded from the alphabet and will be mapped to `<unk>` (or byte fallback).
     *   *Recommendation*: Use `1.0` for languages with small alphabets (English, German, etc.). Use `0.9995` (default) for languages with large character sets (Chinese, Japanese, Korean) to prune rare noise characters/emojis.
+*   **`auto_character_coverage`** (bool, default: `false`)
+    *   *(v0.2.3+)* If `true`, eliminates the manual `--character_coverage` threshold and jointly optimizes single characters and multi-character subwords against UTF-8 byte fallback tokens (`--byte_fallback=true` is required; in Unigram mode, `--use_sparse_pruning=true` is also required). Cannot be combined with `--required_chars` or `--required_chars_file`. See [Auto Character Coverage](auto_character_coverage.md) for details.
 *   **`input_sentence_size`** (uint64, default: `0`)
     *   Maximum number of sentences to load from the input corpus. If `0`, the entire corpus is loaded. Setting this is highly recommended for very large datasets to prevent running out of memory.
 *   **`shuffle_input_sentence`** (bool, default: `true`)
@@ -148,7 +150,7 @@ These options define special symbols (BOS, EOS, PAD, custom control tokens) and 
 *   **`byte_fallback`** (bool, default: `false`)
     *   If `true`, decomposes out-of-vocabulary characters into UTF-8 byte tokens (e.g., `<0xE3>`), completely avoiding `<unk>` tokens. Highly recommended for modern LLMs.
 *   **`unk_id`** (int32, default: `0`), **`bos_id`** (int32, default: `1`), **`eos_id`** (int32, default: `2`), **`pad_id`** (int32, default: `-1`)
-    *   Override default vocabulary IDs for special tokens. Set `-1` to disable the symbol (except for `unk_id` which cannot be disabled).
+    *   Override default vocabulary IDs for special tokens. Set `-1` to disable the symbol (`unk_id=-1` requires `byte_fallback=true` and SentencePiece v0.2.3+ for inference).
 *   **`unk_piece`** (string, default: `"<unk>"`), **`bos_piece`** (string, default: `"<s>"`), **`eos_piece`** (string, default: `"</s>"`), **`pad_piece`** (string, default: `"<pad>"`)
     *   Override the string representations for the default special symbols.
 *   **`unk_surface`** (string, default: `" ⁇ "` (U+2047 double question mark))

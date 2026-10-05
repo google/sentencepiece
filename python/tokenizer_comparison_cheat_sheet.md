@@ -10,7 +10,7 @@ This cheat sheet compares the capabilities, API designs, and performance feature
 
 | Feature / Capability | SentencePiece | Hugging Face `tokenizers` | tiktoken |
 | :--- | :--- | :--- | :--- |
-| **Compared Version** | `>=v0.2.2` | `v0.23.1` | `v0.13.0` |
+| **Compared Version** | `>=v0.2.3` | `v0.23.1` | `v0.13.0` |
 | **Native Backend** | C++ / pybind11 | Rust / PyO3 | Rust / PyO3 |
 | **Supported Algorithms** | BPE, Unigram, Char, Word | BPE, WordPiece, Unigram, WordLevel | BPE |
 | **OOV / Unknown Handling** | `<unk>` token, `byte_fallback` | `<unk>` token, `byte_fallback` (BPE/Unigram), or Byte-level BPE (no `<unk>`) | Byte-level BPE (no `<unk>` token) |
@@ -28,7 +28,7 @@ This cheat sheet compares the capabilities, API designs, and performance feature
 | **Training from Iterator** |  ✅ Yes (`sentence_iterator`) |  ✅ Yes (`train_from_iterator`) | ❌ No |
 | **Subword Regularization (Sampling / N-best)** | ✅ Yes (at call-time; supports Unigram sampling and BPE-dropout) | ⚠️ Partial (BPE-dropout only, configured at model training/load time, no call-time sampling) | ❌ No |
 | **In-Memory Add Tokens** | ⚠️ Partial (Intentional design: dynamic adding is not supported; requires model recreation via modified protobuf) |  ✅ Yes (Easy, via `add_tokens`) | ⚠️ Partial (Intentional design: dynamic adding not supported; requires model recreation via modified dicts) |
-| **Pre-Tokenization (Modular)** | ❌ No (Intentional design: parses raw Unicode stream without pre-splitting) |  ✅ Yes (fully modular: `tokenizer.pre_tokenizer = ...`) | ⚠️ Partial (static via regex `pat_str` in constructor) |
+| **Pre-Tokenization (Modular)** | ⚠️ Partial (Training-time custom pre-tokenization via `pretokenizer` callable or `pretokenization_delimiter`; constrains vocabulary pieces so inference parses raw Unicode stream without runtime pre-splitting) |  ✅ Yes (fully modular: `tokenizer.pre_tokenizer = ...`) | ⚠️ Partial (static via regex `pat_str` in constructor) |
 | **Modular Post-Processing** | ⚠️ Partial (BOS/EOS toggles and extra options only) |  ✅ Yes (template post-processor) | ❌ No |
 | **Text Normalization Support** |  ✅ Yes (baked into model, highly optimized precompiled rules) |  ✅ Yes (fully modular pipeline, e.g. Lowercase, NFKC) | ❌ No (Intentional design: tokenizes raw input exactly as-is) |
 | **Custom Normalizers** |  ✅ Yes (defined at training time via TSV mapping, or at runtime via Python mapping passed to trainer) |  ✅ Yes (custom Python/Rust functions or sequences) | ❌ No |
@@ -307,7 +307,19 @@ Below is a side-by-side comparison of common tasks across the three libraries.
 ### 2.14. Configure Pre-tokenizer
 
 *   **SentencePiece**:
-    *   *Not Supported dynamically* (pre-tokenization is baked into model normalization at training time)
+    *   *Training-time only* (constrains vocabulary piece boundaries during training so inference parses the raw Unicode stream without runtime pre-splitting)
+    ```python
+    import re
+    import sentencepiece as spm
+
+    pat = re.compile(r"'[a-zA-Z]+|[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\d{1,3}|[^\w\s]|▁+|\s+")
+    spm.SentencePieceTrainer.train(
+        input="corpus.txt",
+        model_prefix="m",
+        vocab_size=8000,
+        pretokenizer=pat.findall,  # or pretokenization_delimiter="||||"
+    )
+    ```
 *   **Hugging Face `tokenizers`**:
     ```python
     from tokenizers import pre_tokenizers

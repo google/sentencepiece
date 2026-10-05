@@ -127,9 +127,9 @@ cc_test(
         ":sentencepiece_lite",
         ":sentencepiece_model_converters",
         "//src:sentencepiece_model_cc_proto",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/numeric:bits",
         "@com_google_absl//absl/status",
+        "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
         "@flatbuffers",
     ],
@@ -151,6 +151,7 @@ cc_test(
 cc_test(
     name = "sentencepiece_lite_canonical_test",
     srcs = ["sentencepiece_lite_canonical_test.cc"],
+    data = ["//data:test_data"],
     deps = [
         ":sentencepiece_lite",
         ":sentencepiece_model_converters",
@@ -165,6 +166,10 @@ cc_binary(
     name = "sentencepiece_lite_benchmark",
     srcs = ["sentencepiece_lite_benchmark.cc"],
     data = ["//data:test_data"],
+    tags = [
+        "benchmark",
+        "manual",
+    ],
     deps = [
         ":cached_sentencepiece_lite",
         ":sentencepiece_lite",

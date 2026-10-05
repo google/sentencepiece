@@ -378,7 +378,7 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
   eos->next = nullptr;
   eos->gx = 0.0;
 
-  std::vector<float> alpha(node_allocator_.size(), 0.0);
+  std::vector<float> alpha;
 
   if (sample) {
     // Run forwards algorithm to get normalising constants
@@ -413,14 +413,16 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
     }
 
     const size_t end_nodes_size = end_nodes(node->pos).size();
-    std::vector<float> probs(end_nodes_size, 0.0);
-    std::vector<float> perturbed_probs(end_nodes_size, 0.0);
-    std::vector<double> adjusted_probs(end_nodes_size, 0.0);
-    const float Z = alpha[node->node_id];
+    std::vector<float> probs;
+    std::vector<double> adjusted_probs;
     if (sample) {
+      probs.resize(end_nodes_size, 0.0);
+      std::vector<float> perturbed_probs(end_nodes_size, 0.0);
+      adjusted_probs.resize(end_nodes_size, 0.0);
+      const float Z = alpha[node->node_id];
       float max_score = -1e8;
       // Calculate the marginal and perturbed scores for stochastic search
-      for (size_t i = 0; i < end_nodes(node->pos).size(); i++) {
+      for (size_t i = 0; i < end_nodes_size; i++) {
         Node* lnode = end_nodes(node->pos)[i];
         // Calculate backwards transition score
         probs[i] =
@@ -442,7 +444,7 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
     }
 
     // Expands new node ending at node->pos
-    for (size_t i = 0; i < end_nodes(node->pos).size(); i++) {
+    for (size_t i = 0; i < end_nodes_size; i++) {
       Node* lnode = end_nodes(node->pos)[i];
       auto* hyp = hypothesis_allocator.Allocate();
       hyp->node = lnode;
@@ -513,9 +515,7 @@ std::vector<Lattice::Node*> Lattice::Sample(float inv_theta) {
   const size_t len = size();
   if (len == 0) return {};
 
-  std::vector<float> alpha(node_allocator_.size(), 0.0);
-
-  alpha = ForwardAlgorithm(inv_theta);
+  const std::vector<float> alpha = ForwardAlgorithm(inv_theta);
 
   auto* mt = random::GetRandomGenerator();
 

@@ -120,7 +120,6 @@ class DoubleArray {
   }
 
   bool has_array() const { return array_ != nullptr; }
-  const uint32_t* array() const { return array_; }
 
   // Returns the value associated with `key`, or -1 if not found.
   int exact_lookup(std::string_view key) const {
@@ -201,14 +200,6 @@ class DoubleArray {
   };
 
   View view() const { return View{array_}; }
-
-  uint32_t transition(uint32_t node_pos, std::string_view key) const {
-    return view().transition(node_pos, key);
-  }
-
-  int leaf_value(uint32_t node_pos) const {
-    return view().leaf_value(node_pos);
-  }
 
   // SECURITY CRITICAL: Runtime trie traversals omit per-step bounds checks for
   // performance. This method guarantees memory safety by verifying ahead of
@@ -842,15 +833,10 @@ class Model {
   }
   std::string_view unk_surface() const;
 
-  bool ByteFallbackEnabled() const { return byte_fallback_start_id_ != -1; }
   bool add_dummy_prefix() const { return add_dummy_prefix_; }
 
   bool has_normalizer_spec() const {
     return model_proto_->normalizer_spec() != nullptr;
-  }
-
-  bool treat_whitespace_as_suffix() const {
-    return treat_whitespace_as_suffix_;
   }
 
   bool remove_extra_whitespaces() const {
@@ -859,12 +845,6 @@ class Model {
 
   bool has_non_leading_space_symbol() const {
     return has_non_leading_space_symbol_;
-  }
-
-  const ModelProto& model_proto() const { return *model_proto_; }
-
-  bool has_direct_mappings() const {
-    return model_proto_->has_direct_mappings();
   }
 
   // Returns true if `id` is guaranteed to encode as a single standalone token
@@ -963,7 +943,6 @@ class Model {
   int eos_id_ = -1;
   int pad_id_ = -1;
   bool add_dummy_prefix_ = true;
-  bool treat_whitespace_as_suffix_ = false;
   bool has_non_leading_space_symbol_ = false;
   float unk_score_ = 0.0;
   ModelType model_type_ = ModelType_UNIGRAM;
@@ -1033,13 +1012,10 @@ StatusCode Model::Initialize(std::string_view model_buffer) {
 
   if (has_normalizer_spec()) {
     add_dummy_prefix_ = model_proto_->normalizer_spec()->add_dummy_prefix();
-    treat_whitespace_as_suffix_ =
-        model_proto_->normalizer_spec()->treat_whitespace_as_suffix();
     LITE_RETURN_IF_ERROR(
         normalizer_.Initialize(model_proto_->normalizer_spec()));
   } else {
     add_dummy_prefix_ = true;
-    treat_whitespace_as_suffix_ = false;
   }
 
   model_type_ = model_proto_->model_type();
@@ -1234,14 +1210,6 @@ void Model::Encode(std::string_view normalized, std::vector<int>* ids,
 StatusCode Model::Normalize(std::string_view input, std::string* normalized,
                             std::vector<size_t>* offset) const {
   if (status_ != StatusCode::kOk) return status_;
-  if (!has_normalizer_spec()) {
-    normalized->assign(input.data(), input.size());
-    if (offset != nullptr) {
-      offset->resize(input.size() + 1);
-      std::iota(offset->begin(), offset->end(), 0);
-    }
-    return StatusCode::kOk;
-  }
   return normalizer_.Normalize(input, normalized, offset);
 }
 

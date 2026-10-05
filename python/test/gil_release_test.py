@@ -99,7 +99,12 @@ def test_gil_release():
   )
 
   model_path = "botchan_en_unigram_1000.model"
-  sp = spm.SentencePieceProcessor(model_file=os.path.join(HERE, model_path))
+  data_dir = (
+      HERE
+      if os.path.exists(os.path.join(HERE, model_path))
+      else os.path.normpath(os.path.join(HERE, "..", "..", "data"))
+  )
+  sp = spm.SentencePieceProcessor(model_file=os.path.join(data_dir, model_path))
 
   # 1. Test Encode
   tokens = run_heavy_op_with_gil_check(lambda: sp.encode(heavy_text), "Encode")

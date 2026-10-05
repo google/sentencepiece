@@ -15,7 +15,6 @@ targets = [
     'sentencepiece.pc.in',
     'src',
     'third_party',
-    'data',
 ]
 
 os.makedirs('sentencepiece', exist_ok=True)
@@ -37,6 +36,18 @@ for item in targets:
       )
     else:
       shutil.copy2(src, dst)
+
+os.makedirs(os.path.join('sentencepiece', 'data'), exist_ok=True)
+for fname in os.listdir(os.path.join('..', 'data')):
+  src = os.path.join('..', 'data', fname)
+  if fname.endswith('.bin'):
+    dst = os.path.join('sentencepiece', 'data', fname)
+    print(f'copying {src} -> {dst}')
+    shutil.copy2(src, dst)
+  if fname.startswith('botchan') and os.path.isdir('test'):
+    dst = os.path.join('test', fname)
+    print(f'copying {src} -> {dst}')
+    shutil.copy2(src, dst)
 
 python_exe = sys.executable
 res = subprocess.run([python_exe, '-m', 'build', '--sdist'], check=False)

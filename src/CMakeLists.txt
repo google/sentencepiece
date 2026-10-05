@@ -51,7 +51,6 @@ endif()
 # ==============================================================================
 if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
   FetchContent_GetProperties(protobuf SOURCE_DIR protobuf_SOURCE_DIR)
-  set(PROTOBUF_LITE_SRCS "")
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
   include_directories(${protobuf_SOURCE_DIR}/src)
   include_directories(${protobuf_SOURCE_DIR}/third_party/utf8_range)
@@ -89,7 +88,6 @@ if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
 elseif (SPM_PROTOBUF_PROVIDER STREQUAL "package")
   protobuf_generate_cpp(SPM_PROTO_SRCS SPM_PROTO_HDRS sentencepiece.proto)
   protobuf_generate_cpp(SPM_MODEL_PROTO_SRCS SPM_MODEL_PROTO_HDRS sentencepiece_model.proto)
-  set(PROTOBUF_LITE_SRCS "")
 endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -105,7 +103,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/libsais)
 # 3. Source File Definitions
 # ==============================================================================
 set(SPM_SRCS
-  ${PROTOBUF_LITE_SRCS}
   ${SPM_PROTO_HDRS}
   ${SPM_PROTO_SRCS}
   ${SPM_MODEL_PROTO_HDRS}
@@ -177,7 +174,6 @@ set(SPM_TEST_SRCS
   sentencepiece_processor_test.cc
   sentencepiece_processor_parallel_test.cc
   sentencepiece_trainer_test.cc
-  test_main.cc
   trainer_factory_test.cc
   trainer_interface_test.cc
   unicode_script_test.cc
@@ -206,7 +202,7 @@ target_link_libraries(sentencepiece-static PRIVATE ${SPM_LIBS})
 target_link_libraries(sentencepiece_train-static PRIVATE sentencepiece-static ${SPM_LIBS})
 add_dependencies(sentencepiece_train-static sentencepiece-static)
 
-target_include_directories(sentencepiece-static PUBLIC
+set(SPM_TARGET_INCLUDE_DIRS
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -215,15 +211,9 @@ target_include_directories(sentencepiece-static PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/darts_clone>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_include_directories(sentencepiece_train-static PUBLIC
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/darts_clone>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
+
+target_include_directories(sentencepiece-static PUBLIC ${SPM_TARGET_INCLUDE_DIRS})
+target_include_directories(sentencepiece_train-static PUBLIC ${SPM_TARGET_INCLUDE_DIRS})
 
 set(SPM_CXX_STANDARD_FEATURE cxx_std_20)
 
@@ -236,24 +226,8 @@ if (SPM_ENABLE_SHARED)
   target_link_libraries(sentencepiece PRIVATE ${SPM_LIBS})
   target_link_libraries(sentencepiece_train PRIVATE ${SPM_LIBS} sentencepiece)
   add_dependencies(sentencepiece_train sentencepiece)
-  target_include_directories(sentencepiece PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/darts_clone>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  )
-  target_include_directories(sentencepiece_train PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/darts_clone>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  )
+  target_include_directories(sentencepiece PUBLIC ${SPM_TARGET_INCLUDE_DIRS})
+  target_include_directories(sentencepiece_train PUBLIC ${SPM_TARGET_INCLUDE_DIRS})
   add_library(sentencepiece::sentencepiece ALIAS sentencepiece)
   add_library(sentencepiece::sentencepiece_train ALIAS sentencepiece_train)
   add_library(sentencepiece::sentencepiece-static ALIAS sentencepiece-static)
@@ -397,39 +371,16 @@ if (SPM_LIB_TARGETS)
 endif()
 
 # ==============================================================================
-# 7. Header Generation & Installation
+# 7. Header Installation
 # ==============================================================================
-set(GENERATED_HEADERS_DIR "${CMAKE_CURRENT_BINARY_DIR}/installed_headers")
-set(MODIFIER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modify_headers.cmake")
-
-add_custom_command(
-  OUTPUT "${GENERATED_HEADERS_DIR}/sentencepiece_processor.h"
-  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece_processor.h" "${MODIFIER_SCRIPT}"
-  COMMAND ${CMAKE_COMMAND} -DINPUT_FILE="${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece_processor.h"
-                           -DOUTPUT_FILE="${GENERATED_HEADERS_DIR}/sentencepiece_processor.h"
-                           -P "${MODIFIER_SCRIPT}"
-  COMMENT "Generating modified sentencepiece_processor.h for installation"
+install(
+  FILES
+    sentencepiece_trainer.h
+    sentencepiece_processor.h
+    ${SPM_PROTO_HDRS}
+    ${SPM_MODEL_PROTO_HDRS}
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
-
-add_custom_command(
-  OUTPUT "${GENERATED_HEADERS_DIR}/sentencepiece_trainer.h"
-  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece_trainer.h" "${MODIFIER_SCRIPT}"
-  COMMAND ${CMAKE_COMMAND} -DINPUT_FILE="${CMAKE_CURRENT_SOURCE_DIR}/sentencepiece_trainer.h"
-                           -DOUTPUT_FILE="${GENERATED_HEADERS_DIR}/sentencepiece_trainer.h"
-                           -P "${MODIFIER_SCRIPT}"
-  COMMENT "Generating modified sentencepiece_trainer.h for installation"
-)
-
-add_custom_target(generate_installed_headers ALL
-  DEPENDS "${GENERATED_HEADERS_DIR}/sentencepiece_processor.h"
-          "${GENERATED_HEADERS_DIR}/sentencepiece_trainer.h"
-)
-
-install(FILES "${GENERATED_HEADERS_DIR}/sentencepiece_trainer.h" "${GENERATED_HEADERS_DIR}/sentencepiece_processor.h"
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-if (NOT SPM_PROTOBUF_PROVIDER STREQUAL "internal")
-  install(FILES ${SPM_PROTO_HDRS} ${SPM_MODEL_PROTO_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-endif()
 
 # ==============================================================================
 # 8. Testing & Benchmarks

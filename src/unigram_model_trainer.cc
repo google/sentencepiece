@@ -146,8 +146,8 @@ class BoundedPriorityQueue {
 
   static float CalculatePieceScore(absl::string_view key, uint64_t freq,
                                    float power) {
-    const UnicodeText pw = string_util::UTF8ToUnicodeText(key);
-    return CalculateScore(freq, static_cast<float>(pw.size()), power);
+    return CalculateScore(freq, static_cast<float>(string_util::UTF8Len(key)),
+                          power);
   }
 
   void Gc() {
@@ -155,31 +155,31 @@ class BoundedPriorityQueue {
               << data_.size() << ", keeping top " << gc_keep_capacity_
               << " highest-scoring items)...";
     using MapPair = std::pair<const std::string, uint64_t>;
-    std::vector<const MapPair*> tmp;
+    struct GcItem {
+      const MapPair* kv;
+      float score;
+    };
+    const float power = absl::GetFlag(FLAGS_seed_piece_length_power);
+    std::vector<GcItem> tmp;
     tmp.reserve(data_.size());
     for (const auto& kv : data_) {
-      tmp.push_back(&kv);
+      tmp.push_back({&kv, CalculatePieceScore(kv.first, kv.second, power)});
     }
 
-    const float power = absl::GetFlag(FLAGS_seed_piece_length_power);
-
     const size_t keep = std::min(tmp.size(), gc_keep_capacity_);
-    std::nth_element(tmp.begin(), tmp.begin() + keep, tmp.end(),
-                     [power](const MapPair* lhs, const MapPair* rhs) {
-                       const float lhs_score =
-                           CalculatePieceScore(lhs->first, lhs->second, power);
-                       const float rhs_score =
-                           CalculatePieceScore(rhs->first, rhs->second, power);
-                       return std::forward_as_tuple(
-                                  rhs_score, rhs->first.size(), lhs->first) <
-                              std::forward_as_tuple(
-                                  lhs_score, lhs->first.size(), rhs->first);
-                     });
+    std::nth_element(
+        tmp.begin(), tmp.begin() + keep, tmp.end(),
+        [](const GcItem& lhs, const GcItem& rhs) {
+          return std::forward_as_tuple(rhs.score, rhs.kv->first.size(),
+                                       lhs.kv->first) <
+                 std::forward_as_tuple(lhs.score, lhs.kv->first.size(),
+                                       rhs.kv->first);
+        });
 
     absl::flat_hash_map<std::string, uint64_t> new_data;
     new_data.reserve(keep);
     for (size_t i = 0; i < keep; ++i) {
-      auto& mutable_kv = const_cast<MapPair&>(*tmp[i]);
+      auto& mutable_kv = const_cast<MapPair&>(*tmp[i].kv);
       new_data.emplace(std::move(mutable_kv.first), mutable_kv.second);
     }
     data_ = std::move(new_data);
@@ -344,7 +344,8 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
     while (sentence_idx < sentences_.size() &&
            chunk_bytes.size() < kMaxChunkBytes) {
       const auto& w = sentences_[sentence_idx++];
-      for (int i = 0; i < w.second; ++i) {
+      for (int64_t i = 0; i < w.second && chunk_bytes.size() < kMaxChunkBytes;
+           ++i) {
         chunk_bytes.append(w.first);
         chunk_bytes.push_back('\0');  // Sentence boundary delimiter
       }
@@ -830,12 +831,11 @@ absl::Status Trainer::Train() {
 
   ABSL_RETURN_IF_ERROR(model.status());
   ABSL_RETURN_IF_ERROR(LoadSentences());
+  // Note: Prerequisites for auto_character_coverage (e.g.,
+  // --use_sparse_pruning=true and --byte_fallback=true) are already validated
+  // in VerifySpec() during TrainerInterface initialization / LoadSentences().
   if (!trainer_spec_.auto_character_coverage()) {
     RET_CHECK(!required_chars_.empty());
-  } else {
-    RET_CHECK(absl::GetFlag(FLAGS_use_sparse_pruning))
-        << "--auto_character_coverage in UNIGRAM mode requires "
-           "--use_sparse_pruning=true.";
   }
 
   auto seed_sentencepieces = MakeSeedSentencePieces();
@@ -863,11 +863,18 @@ absl::Status Trainer::Train() {
   return Save();
 }
 
-absl::Status Trainer::TrainDiscretePruning(TrainerModel* model) {
+namespace {
+int64_t ComputeTotalCorpusBytes(const TrainerInterface::Sentences& sentences) {
   int64_t total_corpus_bytes = 0;
-  for (const auto& w : sentences_) {
+  for (const auto& w : sentences) {
     total_corpus_bytes += w.first.size() * w.second;
   }
+  return total_corpus_bytes;
+}
+}  // namespace
+
+absl::Status Trainer::TrainDiscretePruning(TrainerModel* model) {
+  const int64_t total_corpus_bytes = ComputeTotalCorpusBytes(sentences_);
   auto calc_bytes_per_tok = [&](int64_t tokens) -> float {
     return (tokens > 0) ? static_cast<float>(total_corpus_bytes) / tokens
                         : 0.0f;
@@ -907,10 +914,7 @@ absl::Status Trainer::TrainDiscretePruning(TrainerModel* model) {
 }
 
 absl::Status Trainer::TrainSparsePruning(TrainerModel* model) {
-  int64_t total_corpus_bytes = 0;
-  for (const auto& w : sentences_) {
-    total_corpus_bytes += w.first.size() * w.second;
-  }
+  const int64_t total_corpus_bytes = ComputeTotalCorpusBytes(sentences_);
   auto calc_bytes_per_tok = [&](int64_t tokens) -> float {
     return (tokens > 0) ? static_cast<float>(total_corpus_bytes) / tokens
                         : 0.0f;

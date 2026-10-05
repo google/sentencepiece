@@ -111,9 +111,7 @@ jobs:
 
 
       - name: Validate artifact
-        run: |
-          python -m pip install twine
-          twine check --strict python/wheelhouse/*
+        run: twine check --strict python/wheelhouse/*
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -159,10 +157,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          sparse-checkout-cone-mode: false
           sparse-checkout: |
             python/test
             python/tools
             data/botchan.txt
+            data/botchan_en_bpe_1000.model
+            data/botchan_en_unigram_1000.model
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:

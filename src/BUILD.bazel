@@ -278,6 +278,7 @@ cc_binary(
 cc_binary(
     name = "compile_charsmap",
     srcs = ["compile_charsmap_main.cc"],
+    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         ":sentencepiece_processor",

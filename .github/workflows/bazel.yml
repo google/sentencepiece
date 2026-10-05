@@ -90,14 +90,14 @@ jobs:
         shell: bash
         run: |
           mkdir -p build/root/bin build/root/include build/root/lib
-          for bin in spm_encode spm_decode spm_normalize spm_train spm_export_vocab spm_eval compile_charsmap; do
-            if [ -f "bazel-bin/src/$bin" ]; then
-              cp "bazel-bin/src/$bin" build/root/bin/
-              chmod +x "build/root/bin/$bin"
+          for bin in src/spm_encode src/spm_decode src/spm_normalize src/spm_train src/spm_export_vocab src/spm_eval lite/spm_lite lite/spm_to_fb; do
+            if [ -f "bazel-bin/$bin" ]; then
+              cp "bazel-bin/$bin" build/root/bin/
+              chmod +x "build/root/bin/$(basename "$bin")"
             fi
           done
           cp bazel-bin/src/libsentencepiece*.so build/root/lib/ 2>/dev/null || cp bazel-bin/src/libsentencepiece*.dylib build/root/lib/ 2>/dev/null || true
-          cp src/sentencepiece_processor.h src/sentencepiece_trainer.h build/root/include/
+          cp src/sentencepiece_processor.h src/sentencepiece_trainer.h lite/sentencepiece_lite.h lite/cached_sentencepiece_lite.h lite/sentencepiece_model_converters.h build/root/include/
           cp LICENSE build/root/
           cd build && 7z a "sentencepiece-bazel-${{ matrix.os }}-${{ matrix.arch }}.7z" ./root/*
 
@@ -106,15 +106,15 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path build/root/bin, build/root/include, build/root/lib
-          $bins = @("spm_encode.exe", "spm_decode.exe", "spm_normalize.exe", "spm_train.exe", "spm_export_vocab.exe", "spm_eval.exe", "compile_charsmap.exe")
+          $bins = @("src/spm_encode.exe", "src/spm_decode.exe", "src/spm_normalize.exe", "src/spm_train.exe", "src/spm_export_vocab.exe", "src/spm_eval.exe", "lite/spm_lite.exe", "lite/spm_to_fb.exe")
           foreach ($bin in $bins) {
-            if (Test-Path "bazel-bin/src/$bin") {
-              Copy-Item "bazel-bin/src/$bin" build/root/bin/
+            if (Test-Path "bazel-bin/$bin") {
+              Copy-Item "bazel-bin/$bin" build/root/bin/
             }
           }
           Copy-Item "bazel-bin/src/*.dll" build/root/bin/ -ErrorAction SilentlyContinue
           Copy-Item "bazel-bin/src/*.lib" build/root/lib/ -ErrorAction SilentlyContinue
-          Copy-Item "src/sentencepiece_processor.h", "src/sentencepiece_trainer.h" build/root/include/
+          Copy-Item "src/sentencepiece_processor.h", "src/sentencepiece_trainer.h", "lite/sentencepiece_lite.h", "lite/cached_sentencepiece_lite.h", "lite/sentencepiece_model_converters.h" build/root/include/
           Copy-Item "LICENSE" build/root/
           cd build; 7z a "sentencepiece-bazel-${{ matrix.os }}-${{ matrix.arch }}.7z" ./root/*
 

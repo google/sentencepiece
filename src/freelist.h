@@ -80,7 +80,7 @@ class FreeList {
   // The last element is stored at freelist_[chunk_index_][element_index_]
   size_t element_index_ = 0;
   size_t chunk_index_ = 0;
-  size_t chunk_size_ = 0;  // Do not modify except in swap()
+  size_t chunk_size_ = 0;
 };
 }  // namespace model
 }  // namespace sentencepiece

@@ -191,20 +191,9 @@ if (SPM_ABSL_PROVIDER STREQUAL "module")
     GIT_SHALLOW TRUE
   )
   FetchContent_MakeAvailable(abseil-cpp)
-  FetchContent_GetProperties(abseil-cpp SOURCE_DIR abseil_SOURCE_DIR)
-  file(REMOVE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
-  file(CREATE_LINK
-       ${abseil_SOURCE_DIR}/absl
-       ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl
-       SYMBOLIC)
 elseif (SPM_ABSL_PROVIDER STREQUAL "package")
   find_package(absl REQUIRED)
   get_target_property(ABSL_INCLUDE_DIRS absl::base INTERFACE_INCLUDE_DIRECTORIES)
-  file(REMOVE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl)
-  file(CREATE_LINK
-       ${ABSL_INCLUDE_DIRS}/absl
-       ${CMAKE_CURRENT_SOURCE_DIR}/third_party/absl
-       SYMBOLIC)
   include_directories(${ABSL_INCLUDE_DIRS})
 endif()
 
@@ -347,11 +336,7 @@ join_paths(datadir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_DATADIR}" "sentence
 join_paths(datadir_for_config_file "${prefix}" "${CMAKE_INSTALL_DATADIR}" "sentencepiece")
 set(INSTALL_DATADIR ${datadir_for_config_file})
 
-if (SPM_PROTOBUF_PROVIDER STREQUAL "module" OR SPM_PROTOBUF_PROVIDER STREQUAL "package")
-  set(libprotobuf_lite "protobuf-lite")
-else()
-  set(libprotobuf_lite "")
-endif()
+set(libprotobuf_lite "protobuf-lite")
 
 configure_file("${PROJECT_SOURCE_DIR}/config.h.in" "config.h")
 configure_file("${PROJECT_SOURCE_DIR}/sentencepiece.pc.in" "sentencepiece.pc" @ONLY)
@@ -371,7 +356,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 # 6. Subdirectories
 # ==============================================================================
 add_subdirectory(src)
-add_subdirectory(third_party)
 if(SPM_ENABLE_LITE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lite/CMakeLists.txt")
   add_subdirectory(lite)
 endif()
@@ -390,6 +374,6 @@ if (SPM_IS_TOP_LEVEL)
   set(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README.md")
   set(CPACK_PACKAGE_CONTACT "taku@google.com")
   set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Taku Kudo")
-  set(CPACK_SOURCE_IGNORE_FILES "/build/;/.git/;/dist/;/sdist/;~$;${CPACK_SOURCE_IGNORE_FILES}")
+  set(CPACK_SOURCE_IGNORE_FILES "/build/;/.git/;/dist/;/sdist/;/_docs_build/;/site/;/bazel-.*/;~$;${CPACK_SOURCE_IGNORE_FILES}")
   include(CPack)
 endif()

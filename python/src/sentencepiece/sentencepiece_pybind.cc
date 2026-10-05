@@ -475,7 +475,7 @@ std::vector<int> BuildUtf8ToUnicodeMap(absl::string_view orig) {
   return utf8_to_unicode;
 }
 py::dict ExtractOffsetMapping(const sentencepiece::SentencePieceText& spt,
-                              bool return_bytes) {
+                              bool return_bytes, bool include_text = true) {
   std::vector<int> utf8_to_unicode;
   if (!return_bytes) {
     utf8_to_unicode = BuildUtf8ToUnicodeMap(spt.text());
@@ -494,22 +494,19 @@ py::dict ExtractOffsetMapping(const sentencepiece::SentencePieceText& spt,
       offsets[i] = py::make_tuple(piece.begin(), piece.end());
     } else {
       pieces[i] = py::str(piece.piece());
-
       if (piece.begin() >= utf8_to_unicode.size() ||
-
           piece.end() >= utf8_to_unicode.size()) {
         throw py::value_error("Invalid piece offsets in SentencePieceText");
       }
-
-      int start_unicode = utf8_to_unicode[piece.begin()];
-
-      int end_unicode = utf8_to_unicode[piece.end()];
-      offsets[i] = py::make_tuple(start_unicode, end_unicode);
+      offsets[i] = py::make_tuple(utf8_to_unicode[piece.begin()],
+                                  utf8_to_unicode[piece.end()]);
     }
   }
 
   py::dict result;
-  result["text"] = ToPyString(spt.text(), return_bytes);
+  if (include_text) {
+    result["text"] = ToPyString(spt.text(), return_bytes);
+  }
   result["ids"] = ids_list;
   result["pieces"] = pieces;
   result["offsets"] = offsets;
@@ -665,45 +662,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                }
                if (!status.ok()) throw status;
              }
-
-             std::vector<int> utf8_to_unicode;
-             if (!return_bytes) {
-               utf8_to_unicode = BuildUtf8ToUnicodeMap(in.value);
-             }
-
-             const size_t num_pieces = spt.pieces_size();
-             py::list ids(num_pieces);
-             py::list pieces(num_pieces);
-             py::list offsets(num_pieces);
-
-             for (size_t i = 0; i < num_pieces; ++i) {
-               const auto& piece = spt.pieces(i);
-               ids[i] = piece.id();
-               if (return_bytes) {
-                 pieces[i] = py::bytes(piece.piece());
-                 offsets[i] = py::make_tuple(piece.begin(), piece.end());
-               } else {
-                 pieces[i] = py::str(piece.piece());
-
-                 if (piece.begin() >= utf8_to_unicode.size() ||
-
-                     piece.end() >= utf8_to_unicode.size()) {
-                   throw py::value_error(
-                       "Invalid piece offsets in SentencePieceText");
-                 }
-
-                 int start_unicode = utf8_to_unicode[piece.begin()];
-
-                 int end_unicode = utf8_to_unicode[piece.end()];
-                 offsets[i] = py::make_tuple(start_unicode, end_unicode);
-               }
-             }
-
-             py::dict result;
-             result["ids"] = ids;
-             result["pieces"] = pieces;
-             result["offsets"] = offsets;
-             return result;
+             return ExtractOffsetMapping(spt, return_bytes,
+                                         /*include_text=*/false);
            })
 
       // Batch Encode APIs
@@ -876,47 +836,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
 
              py::list py_results(ins.size());
              for (size_t batch_idx = 0; batch_idx < ins.size(); ++batch_idx) {
-               absl::string_view orig = C_ins[batch_idx];
-               const auto& spt = spts[batch_idx];
-
-               std::vector<int> utf8_to_unicode;
-               if (!return_bytes) {
-                 utf8_to_unicode = BuildUtf8ToUnicodeMap(orig);
-               }
-
-               const size_t num_pieces = spt.pieces_size();
-               py::list ids(num_pieces);
-               py::list pieces(num_pieces);
-               py::list offsets(num_pieces);
-
-               for (size_t i = 0; i < num_pieces; ++i) {
-                 const auto& piece = spt.pieces(i);
-                 ids[i] = piece.id();
-                 if (return_bytes) {
-                   pieces[i] = py::bytes(piece.piece());
-                   offsets[i] = py::make_tuple(piece.begin(), piece.end());
-                 } else {
-                   pieces[i] = py::str(piece.piece());
-
-                   if (piece.begin() >= utf8_to_unicode.size() ||
-
-                       piece.end() >= utf8_to_unicode.size()) {
-                     throw py::value_error(
-                         "Invalid piece offsets in SentencePieceText");
-                   }
-
-                   int start_unicode = utf8_to_unicode[piece.begin()];
-
-                   int end_unicode = utf8_to_unicode[piece.end()];
-                   offsets[i] = py::make_tuple(start_unicode, end_unicode);
-                 }
-               }
-
-               py::dict result;
-               result["ids"] = ids;
-               result["pieces"] = pieces;
-               result["offsets"] = offsets;
-               py_results[batch_idx] = result;
+               py_results[batch_idx] = ExtractOffsetMapping(
+                   spts[batch_idx], return_bytes, /*include_text=*/false);
              }
              return py_results;
            })
@@ -1572,7 +1493,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
             }
             if (!pretokenizer.is_none()) {
               components.pretokenizer =
-                  [pretokenizer](
+                  [&pretokenizer](
                       absl::string_view text) -> std::vector<std::string> {
                 py::gil_scoped_acquire acquire;
                 try {

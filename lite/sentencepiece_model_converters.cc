@@ -264,8 +264,6 @@ absl::StatusOr<std::string> ToFlatbuffer(
   }
   fbs.types.reserve(proto.pieces_size());
 
-  std::vector<std::string> sanitized_pieces;
-  sanitized_pieces.reserve(proto.pieces_size());
   std::vector<std::pair<std::string_view, int>> pieces_to_sort;
   pieces_to_sort.reserve(proto.pieces_size());
   std::vector<std::pair<std::string_view, int>> user_defined_pieces;
@@ -286,15 +284,16 @@ absl::StatusOr<std::string> ToFlatbuffer(
     }
     if (piece_view.find('\0') != std::string_view::npos) {  // NOLINT
       if (options.treat_null_byte_as_unused && byte_fallback_enabled) {
-        sanitized_pieces.push_back(absl::StrCat("<unused_", i, ">"));
-        piece_view = sanitized_pieces.back();
+        fbs.pieces.push_back(absl::StrCat("<unused_", i, ">"));
         piece_type = ::sentencepiece::ModelProto::SentencePiece::UNUSED;
       } else {
         return absl::InvalidArgumentError(absl::StrCat(
             "Piece at index ", i, " is invalid (contains null byte)."));
       }
+    } else {
+      fbs.pieces.emplace_back(piece_view);
     }
-    fbs.pieces.emplace_back(piece_view);
+    piece_view = fbs.pieces.back();
     pieces_to_sort.emplace_back(piece_view, i);
     if (piece_type ==
         ::sentencepiece::ModelProto::SentencePiece::USER_DEFINED) {

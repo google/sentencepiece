@@ -27,12 +27,6 @@ libsentencepiece.so*
 libsentencepiece_train.so*
 _sentencepiece.*.so
 
-# Third-party dependencies
-third_party/abseil-cpp
-third_party/absl
-third_party/benchmark
-third_party/protobuf
-
 # Python artifacts
 *.egg-info/
 *.pyc
@@ -40,6 +34,7 @@ __pycache__/
 dist/
 python/bundled
 python/sentencepiece
+python/test/botchan*
 python/test/m_*.model
 python/test/m_*.vocab
 python/test/sp_*.pickle

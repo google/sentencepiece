@@ -58,7 +58,7 @@ def _to_nbest_spt(serialized):
 # - is_batch: True if input is a list of strings, False if input is a single string.
 # - return_type: The requested output format (int, str, bytes, proto, etc.).
 # Note: 'proto' return type is mapped to '_EncodeAsSerializedProto' because the C++
-# wrapper returns a serialized string which is then parsed into a ModelProto in Python.
+# wrapper returns a serialized string which is then parsed into a SentencePieceText proto in Python.
 # 'numpy' return type is mapped to '_EncodeAsBuffer' which returns raw binary buffers.
 _ENCODE_DISPATCH = {
     # Single string input
@@ -132,6 +132,7 @@ SetDataDir = _sentencepiece.SetDataDir
 set_random_generator_seed = SetRandomGeneratorSeed
 set_min_log_level = SetMinLogLevel
 set_nbest_timeout = SetNBestTimeout
+set_data_dir = SetDataDir
 
 class SentencePieceProcessor:
     def __init__(self,
@@ -162,17 +163,6 @@ class SentencePieceProcessor:
         if model_file or model_proto:
             self.Load(model_file=model_file, model_proto=model_proto)
 
-    def _resolve_and_validate_return_type(self, return_type):
-        if return_type is None:
-            return_type = self._return_type
-        if return_type == 'immutable_proto':
-            raise ValueError("immutable_proto is deprecated and no longer supported. Use return_type='proto' instead.")
-        
-        valid_types = (int, str, bytes, 'proto', 'serialized_proto', 'numpy', 'offset_mapping')
-        if return_type not in valid_types:
-            raise ValueError("Invalid return_type: {}. Must be one of {}".format(return_type, valid_types))
-        return return_type
-
     def _resolve_return_type(self, return_type, out_type, default=None):
         if out_type is not None:
             if return_type is not None:
@@ -180,7 +170,12 @@ class SentencePieceProcessor:
             return_type = out_type
         if return_type is None:
             return_type = default if default is not None else self._return_type
-        return self._resolve_and_validate_return_type(return_type)
+        if return_type == 'immutable_proto':
+            raise ValueError("immutable_proto is deprecated and no longer supported. Use return_type='proto' instead.")
+        valid_types = (int, str, bytes, 'proto', 'serialized_proto', 'numpy', 'offset_mapping')
+        if return_type not in valid_types:
+            raise ValueError("Invalid return_type: {}. Must be one of {}".format(return_type, valid_types))
+        return return_type
 
     @classmethod
     def from_file(cls, model_file, **kwargs):
@@ -326,15 +321,11 @@ class SentencePieceProcessor:
     def EncodeAsNumpy(self, input, **kwargs):
         return self.Encode(input=input, return_type='numpy', **kwargs)
 
-
-
     def EncodeAsProto(self, input, **kwargs):
         return self.Encode(input=input, return_type='proto', **kwargs)
 
     def EncodeAsOffsetMapping(self, input, **kwargs):
         return self.Encode(input=input, return_type='offset_mapping', **kwargs)
-
-
 
     def SampleEncodeAsPieces(self, input, nbest_size=None, alpha=None, **kwargs):
         return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
@@ -348,13 +339,9 @@ class SentencePieceProcessor:
         return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
                            return_type='numpy', enable_sampling=True, **kwargs)
 
-
-
     def SampleEncodeAsProto(self, input, nbest_size=None, alpha=None, **kwargs):
         return self.Encode(input=input, nbest_size=nbest_size, alpha=alpha,
                            return_type='proto', enable_sampling=True, **kwargs)
-
-
 
     def NBestEncode(self,
                     input,
@@ -422,14 +409,8 @@ class SentencePieceProcessor:
     def NBestEncodeAsNumpy(self, input, nbest_size=None, **kwargs):
         return self.NBestEncode(input=input, nbest_size=nbest_size, return_type='numpy', **kwargs)
 
-
-
     def NBestEncodeAsProto(self, input, nbest_size=None, **kwargs):
         return self.NBestEncode(input=input, nbest_size=nbest_size, return_type='proto', **kwargs)
-
-
-
-
 
     def ParallelEncode(self,
                        input,
@@ -501,12 +482,8 @@ class SentencePieceProcessor:
     def ParallelEncodeAsNumpy(self, input, **kwargs):
         return self.ParallelEncode(input=input, return_type='numpy', **kwargs)
 
-
-
     def ParallelEncodeAsProto(self, input, **kwargs):
         return self.ParallelEncode(input=input, return_type='proto', **kwargs)
-
-
 
     def Decode(self, input, return_type=None, out_type=None, num_threads=None, thread_pool=None, return_bytes=None):
         return_type = self._resolve_return_type(return_type, out_type, default=str)
@@ -596,17 +573,11 @@ class SentencePieceProcessor:
     def DecodeIds(self, input, return_type=None, **kwargs):
         return self.Decode(input=input, return_type=return_type, **kwargs)
 
-
-
     def DecodePiecesAsProto(self, input, **kwargs):
         return self.Decode(input=input, return_type='proto', **kwargs)
 
     def DecodeIdsAsProto(self, input, **kwargs):
         return self.Decode(input=input, return_type='proto', **kwargs)
-
-
-
-
 
     def Normalize(self, input, with_offsets=None):
         if isinstance(input, list):
@@ -616,8 +587,6 @@ class SentencePieceProcessor:
         if with_offsets:
             return self._processor._NormalizeWithOffsets(input)
         return self._processor._Normalize(input)
-
-
 
     def GetPieceSize(self):
         return self._processor.GetPieceSize()
@@ -821,7 +790,7 @@ class SentencePieceNormalizer:
         self._normalizer.LoadFromSerializedProto(serialized_model_proto)
 
 
-# Helpers for batchnize and snake_case (replicated from SWIG skeleton)
+# Helpers for snake_case aliases
 def _add_snake_case(classname):
     import re
     snake_map = {}
@@ -833,14 +802,9 @@ def _add_snake_case(classname):
         setattr(classname, k, v)
 
 
-
-
-
-# Run batchnize and snake_case on classes
+# Apply aliases and snake_case on classes
 SentencePieceProcessor.Tokenize = SentencePieceProcessor.Encode
 SentencePieceProcessor.Detokenize = SentencePieceProcessor.Decode
-
-
 
 _add_snake_case(SentencePieceProcessor)
 _add_snake_case(SentencePieceTrainer)

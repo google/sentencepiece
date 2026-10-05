@@ -308,7 +308,6 @@ if (BUILD_TESTING OR SPM_BUILD_TEST OR SENTENCEPIECE_LITE_STANDALONE_BUILD)
 
   add_executable(sentencepiece_lite_test
     sentencepiece_lite_test.cc
-    ${SPM_MODEL_PROTO_SRCS}
   )
 
   target_include_directories(sentencepiece_lite_test PRIVATE
@@ -337,7 +336,6 @@ if (BUILD_TESTING OR SPM_BUILD_TEST OR SENTENCEPIECE_LITE_STANDALONE_BUILD)
 
   add_executable(cached_sentencepiece_lite_test
     cached_sentencepiece_lite_test.cc
-    ${SPM_MODEL_PROTO_SRCS}
   )
 
   target_include_directories(cached_sentencepiece_lite_test PRIVATE
@@ -368,7 +366,6 @@ if (BUILD_TESTING OR SPM_BUILD_TEST OR SENTENCEPIECE_LITE_STANDALONE_BUILD)
   if (TARGET sentencepiece-static)
     add_executable(sentencepiece_lite_canonical_test
       sentencepiece_lite_canonical_test.cc
-      ${SPM_MODEL_PROTO_SRCS}
     )
 
     target_include_directories(sentencepiece_lite_canonical_test PRIVATE
@@ -417,9 +414,6 @@ if (SPM_ENABLE_BENCHMARK)
 
   add_executable(sentencepiece_lite_benchmark
     sentencepiece_lite_benchmark.cc
-    sentencepiece_lite.cc
-    sentencepiece_model_converters.cc
-    ${SPM_MODEL_PROTO_SRCS}
   )
 
   if (NOT MSVC)
@@ -429,6 +423,7 @@ if (SPM_ENABLE_BENCHMARK)
   target_link_libraries(sentencepiece_lite_benchmark
     cached_sentencepiece_lite
     sentencepiece_lite
+    sentencepiece_lite_fb_converter
     flatbuffers
     benchmark::benchmark
     ${LITE_PROTOBUF_LIB}

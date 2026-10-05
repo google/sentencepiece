@@ -14,25 +14,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Generate unicode_sciript_data.h from Unicode Scripts.txt
+# Generate unicode_script_map.h from Unicode Scripts.txt
 #
-# usage: ./gen_unicode_Scripts_code.pl < scripts > unicode_script_data.h
+# usage: ./gen_unicode_scripts_code.pl < Scripts.txt > ../src/unicode_script_map.h
 #
 print "#ifndef UNICODE_SCRIPT_DATA_H_\n";
 print "#define UNICODE_SCRIPT_DATA_H_\n";
+print "#include \"absl/container/flat_hash_map.h\"\n";
 print "namespace sentencepiece {\n";
 print "namespace unicode_script {\n";
 print "namespace {\n";
-print "void InitTable(std::unordered_map<char32, ScriptType> *smap) {\n";
-print "  CHECK_NOTNULL(smap)->clear();\n";
+print "void InitTable(absl::flat_hash_map<char32_t, ScriptType>* smap) {\n";
 
 while (<>) {
   chomp;
   if (/^([0-9A-F]+)\s+;\s+(\S+)\s+\#/) {
     printf("  (*smap)[0x%s] = U_%s;\n", $1, $2);
   } elsif (/^([0-9A-F]+)\.\.([0-9A-F]+)\s+;\s+(\S+)\s+\#/) {
-    printf("  for (char32 c = 0x%s; c <= 0x%s; ++c)\n", $1, $2);
-    printf("    (*smap)[c] = U_%s;\n", $3);
+    printf("  for (char32_t c = 0x%s; c <= 0x%s; ++c) (*smap)[c] = U_%s;\n", $1, $2, $3);
   } else {
     next;
   }

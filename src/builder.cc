@@ -735,15 +735,11 @@ absl::Status Builder::SaveCharsMap(absl::string_view filename,
   for (const auto& c : chars_map) {
     std::vector<std::string> src;
     std::vector<std::string> trg;
-    string_util::UnicodeText srcu;
-    string_util::UnicodeText trgu;
     for (char32_t v : c.first) {
       src.push_back(absl::StrFormat("%X", v));
-      srcu.push_back(v);
     }
     for (char32_t v : c.second) {
       trg.push_back(absl::StrFormat("%X", v));
-      trgu.push_back(v);
     }
     std::string line = absl::StrJoin(src, " ") + "\t" +
                        absl::StrJoin(trg, " ") + "\t# " +

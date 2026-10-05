@@ -537,8 +537,7 @@ absl::Status SentencePieceNormalizer::Decompile(
 absl::Status SentencePieceNormalizer::Normalize(absl::string_view input,
                                                 std::string* normalized) const {
   RET_CHECK(normalizer_);
-  std::vector<size_t> norm_to_orig;
-  return normalizer_->Normalize(input, normalized, &norm_to_orig);
+  return normalizer_->Normalize(input, normalized, /*norm_to_orig=*/nullptr);
 }
 
 absl::Status SentencePieceNormalizer::Normalize(
