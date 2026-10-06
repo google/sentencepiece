@@ -53,8 +53,6 @@ std::string GetFilePath(std::string_view path) {
       "../../test_data/",
       "lite/test_data/",
       "../lite/test_data/",
-      "test_data/",
-      "../test_data/",
   };
   for (const auto prefix : kPrefixes) {
     const std::string candidate = std::string(prefix) + std::string(path);
@@ -2060,6 +2058,13 @@ TEST(SentencePieceLiteTest, DecodeWithAndWithoutNonLeadingSpaceSymbols) {
     EXPECT_EQ(decoded, "foo  bar baza b");
     EXPECT_EQ(pieces,
               (std::vector<std::string_view>{"foo ", " bar baz", "a b"}));
+
+    // Mid-loop out-of-range ID must clear output and pieces rather than leaving
+    // unadjusted integer offsets in pieces.
+    EXPECT_EQ(processor.Decode({2, 999999}, &decoded, &pieces),
+              StatusCode::kOutOfRange);
+    EXPECT_TRUE(decoded.empty());
+    EXPECT_TRUE(pieces.empty());
   }
 }
 

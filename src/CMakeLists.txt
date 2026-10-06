@@ -147,6 +147,7 @@ set(SPM_TRAIN_SRCS
   char_model_trainer.h
   bpe_model_trainer.h
   sentencepiece_trainer.h
+  spec_parser.h
   builder.cc
   unicode_script.cc
   trainer_factory.cc
@@ -406,10 +407,11 @@ if (SPM_ENABLE_BENCHMARK)
         sentencepiece sentencepiece_train ${SPM_LIBS} benchmark::benchmark gtest)
 endif()
 
-if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+if (CMAKE_SYSTEM_NAME STREQUAL "iOS" AND COMMAND set_xcode_property)
   set_xcode_property(spm_encode PRODUCT_BUNDLE_IDENTIFIER "SentencePiece" All)
   set_xcode_property(spm_decode PRODUCT_BUNDLE_IDENTIFIER "SentencePiece" All)
   set_xcode_property(spm_normalize PRODUCT_BUNDLE_IDENTIFIER "SentencePiece" All)
   set_xcode_property(spm_train PRODUCT_BUNDLE_IDENTIFIER "SentencePiece" All)
   set_xcode_property(spm_export_vocab PRODUCT_BUNDLE_IDENTIFIER "SentencePiece" All)
+  set_xcode_property(spm_eval PRODUCT_BUNDLE_IDENTIFIER "SentencePiece" All)
 endif()

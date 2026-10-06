@@ -17,9 +17,11 @@ permissions:
 jobs:
   build_wheels:
     outputs:
-      digests-linux: ${{ steps.hash-linux.outputs.digests }}
+      digests-linux-x64: ${{ steps.hash-linux-x64.outputs.digests }}
+      digests-linux-arm64: ${{ steps.hash-linux-arm64.outputs.digests }}
       digests-macos: ${{ steps.hash-macos.outputs.digests }}
-      digests-windows: ${{ steps.hash-windows.outputs.digests }}
+      digests-windows-x64: ${{ steps.hash-windows-x64.outputs.digests }}
+      digests-windows-arm64: ${{ steps.hash-windows-arm64.outputs.digests }}
     strategy:
       fail-fast: false
       matrix:
@@ -133,18 +135,28 @@ jobs:
 
       - name: Generate SLSA subjects - Macos
         id: hash-macos
-        if: runner.os == 'macOS'
-        run: echo "digests=$(shasum -a 256 python/wheelhouse/* | base64)" >> $GITHUB_OUTPUT
+        if: matrix.os == 'macos-latest'
+        run: echo "digests=$(shasum -a 256 python/wheelhouse/* | base64)" >> "$GITHUB_OUTPUT"
 
-      - name: Generate SLSA subjects - Linux
-        id: hash-linux
-        if: runner.os == 'Linux'
-        run: echo "digests=$(sha256sum python/wheelhouse/* | base64 -w0)" >> $GITHUB_OUTPUT
+      - name: Generate SLSA subjects - Linux (x64)
+        id: hash-linux-x64
+        if: matrix.os == 'ubuntu-latest'
+        run: echo "digests=$(sha256sum python/wheelhouse/* | base64 -w0)" >> "$GITHUB_OUTPUT"
 
-      - name: Generate SLSA subjects - Windows
-        id: hash-windows
-        if: runner.os == 'Windows'
-        run: echo "digests=$(sha256sum python/wheelhouse/* | base64 -w0)" >> $GITHUB_OUTPUT
+      - name: Generate SLSA subjects - Linux (ARM64)
+        id: hash-linux-arm64
+        if: matrix.os == 'ubuntu-24.04-arm'
+        run: echo "digests=$(sha256sum python/wheelhouse/* | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate SLSA subjects - Windows (x64)
+        id: hash-windows-x64
+        if: matrix.os == 'windows-latest'
+        run: echo "digests=$(sha256sum python/wheelhouse/* | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate SLSA subjects - Windows (ARM64)
+        id: hash-windows-arm64
+        if: matrix.os == 'windows-11-arm'
+        run: echo "digests=$(sha256sum python/wheelhouse/* | base64 -w0)" >> "$GITHUB_OUTPUT"
 
   free-threading:
     needs: [build_wheels]
@@ -195,15 +207,19 @@ jobs:
       - name: Merge results
         id: hash
         env:
-          LINUX_DIGESTS: "${{ needs.build_wheels.outputs.digests-linux }}"
+          LINUX_X64_DIGESTS: "${{ needs.build_wheels.outputs.digests-linux-x64 }}"
+          LINUX_ARM64_DIGESTS: "${{ needs.build_wheels.outputs.digests-linux-arm64 }}"
           MACOS_DIGESTS: "${{ needs.build_wheels.outputs.digests-macos }}"
-          WINDOWS_DIGESTS: "${{ needs.build_wheels.outputs.digests-windows }}"
+          WINDOWS_X64_DIGESTS: "${{ needs.build_wheels.outputs.digests-windows-x64 }}"
+          WINDOWS_ARM64_DIGESTS: "${{ needs.build_wheels.outputs.digests-windows-arm64 }}"
         run: |
           set -euo pipefail
-          echo "$LINUX_DIGESTS" | base64 -d > checksums.txt
+          echo "$LINUX_X64_DIGESTS" | base64 -d > checksums.txt
+          echo "$LINUX_ARM64_DIGESTS" | base64 -d >> checksums.txt
           echo "$MACOS_DIGESTS" | base64 -d >> checksums.txt
-          echo "$WINDOWS_DIGESTS" | base64 -d >> checksums.txt
-          echo "digests=$(cat checksums.txt | base64 -w0)" >> $GITHUB_OUTPUT
+          echo "$WINDOWS_X64_DIGESTS" | base64 -d >> checksums.txt
+          echo "$WINDOWS_ARM64_DIGESTS" | base64 -d >> checksums.txt
+          echo "digests=$(base64 -w0 < checksums.txt)" >> "$GITHUB_OUTPUT"
 
   provenance:
     if: startsWith(github.ref, 'refs/tags/')

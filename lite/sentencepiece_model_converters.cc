@@ -39,11 +39,11 @@
 namespace sentencepiece::lite {
 namespace {
 
-bool IsInvisiblePiece(const ::sentencepiece::ModelProto::SentencePiece& sp) {
-  return sp.type() == ::sentencepiece::ModelProto::SentencePiece::UNKNOWN ||
-         sp.type() == ::sentencepiece::ModelProto::SentencePiece::CONTROL ||
-         sp.type() == ::sentencepiece::ModelProto::SentencePiece::UNUSED ||
-         sp.type() == ::sentencepiece::ModelProto::SentencePiece::BYTE;
+bool IsInvisiblePiece(::sentencepiece::lite::PieceType type) {
+  return type == ::sentencepiece::lite::PieceType_UNKNOWN ||
+         type == ::sentencepiece::lite::PieceType_CONTROL ||
+         type == ::sentencepiece::lite::PieceType_UNUSED ||
+         type == ::sentencepiece::lite::PieceType_BYTE;
 }
 
 absl::StatusOr<std::vector<uint8_t>> BuildDoubleArrayBlob(
@@ -375,7 +375,7 @@ absl::StatusOr<std::string> ToFlatbuffer(
     absl::flat_hash_set<std::string_view> bigrams_set;
     bigrams_set.reserve(proto.pieces_size());
     for (int i = 0; i < proto.pieces_size(); ++i) {
-      std::string_view piece = proto.pieces(i).piece();
+      std::string_view piece = fbs.pieces[i];
       size_t prev_len = 0;
       size_t curr_offset = 0;
       while (curr_offset < piece.size()) {
@@ -432,15 +432,14 @@ absl::StatusOr<std::string> ToFlatbuffer(
     ids.reserve(16);
     constexpr size_t kMaxDirectMappingPieceLength = 128;
     for (int i = 0; i < proto.pieces_size(); ++i) {
-      const auto& sp = proto.pieces(i);
       // Invisible pieces (control, unk, unused, byte) are filtered out at
       // runtime by IsInvisible() anyway. We mark them as 1 so that BPE models
       // containing only safe normal tokens can serialize their vector as null.
-      if (IsInvisiblePiece(sp)) {
+      if (IsInvisiblePiece(fbs.types[i])) {
         direct_mappings[i] = 1;
         continue;
       }
-      const std::string_view piece = sp.piece();
+      const std::string_view piece = fbs.pieces[i];
       if (piece.size() > kMaxDirectMappingPieceLength) {
         all_are_direct_mappings = false;
         continue;

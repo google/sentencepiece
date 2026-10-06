@@ -364,8 +364,13 @@ endif()
 # 7. CPack Packaging
 # ==============================================================================
 if (SPM_IS_TOP_LEVEL)
+  if (CMAKE_VS_PLATFORM_NAME)
+    set(SPM_PACKAGE_ARCH "${CMAKE_VS_PLATFORM_NAME}")
+  else()
+    set(SPM_PACKAGE_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
   set(CPACK_PACKAGE_FILE_NAME
-      "sentencepiece-${SPM_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+      "sentencepiece-${SPM_VERSION}-${CMAKE_SYSTEM_NAME}-${SPM_PACKAGE_ARCH}")
   set(CPACK_SOURCE_GENERATOR "TXZ")
   set(CPACK_GENERATOR "7Z")
   set(CPACK_PACKAGE_VERSION "${SPM_VERSION}")

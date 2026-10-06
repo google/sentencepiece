@@ -269,7 +269,7 @@ std::vector<std::string> StrSplitAsCSV(absl::string_view text) {
 class ThreadPool::Impl {
  public:
   explicit Impl(int num_threads) {
-    num_threads = std::min<int>(std::max<int>(1, num_threads), 65536);
+    num_threads = std::min<int>(std::max<int>(1, num_threads), 1024);
     threads_.reserve(num_threads);
     for (int i = 0; i < num_threads; ++i) {
       threads_.push_back(std::thread(&Impl::WorkLoop, this));

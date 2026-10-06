@@ -126,7 +126,7 @@ inline void SwapPrecompiledCharsmapEndian(ByteContainer* charsmap,
       (std::endian::native == std::endian::big) == from_little_endian;
   const uint32_t trie_blob_size =
       need_swap_size ? absl::byteswap(words[0]) : words[0];
-  if (sizeof(uint32_t) + trie_blob_size <= charsmap->size() &&
+  if (trie_blob_size <= charsmap->size() - sizeof(uint32_t) &&
       (trie_blob_size % sizeof(uint32_t)) == 0) {
     const size_t num_words = 1 + (trie_blob_size / sizeof(uint32_t));
     for (size_t i = 0; i < num_words; ++i) {

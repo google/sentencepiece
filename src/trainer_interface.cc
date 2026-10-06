@@ -550,6 +550,7 @@ END:
       }
     }
     LOG(INFO) << "all chars count=" << all_chars_count;
+    RET_CHECK_GT(all_chars_count, 0);
 
     // Determines required_chars which must be included in the vocabulary.
     int64_t accumulated_chars_count = 0;

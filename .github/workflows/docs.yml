@@ -39,12 +39,18 @@ jobs:
 
       - name: Prepare _docs_build directory (preserving all relative links, order & MathJax config)
         run: |
-          mkdir -p _docs_build/doc _docs_build/python _docs_build/benchmark _docs_build/lite _docs_build/javascripts
+          mkdir -p _docs_build/doc _docs_build/python _docs_build/benchmark _docs_build/lite _docs_build/contrib/docker _docs_build/javascripts
           cp README.md _docs_build/index.md
+          sed -i \
+            -e 's|(CONTRIBUTING.md)|(https://github.com/google/sentencepiece/blob/master/CONTRIBUTING.md)|g' \
+            -e 's|(LICENSE)|(https://github.com/google/sentencepiece/blob/master/LICENSE)|g' \
+            -e 's|(python/)|(python/README.md)|g' \
+            _docs_build/index.md
           cp doc/*.md _docs_build/doc/
           cp python/*.md _docs_build/python/
           cp benchmark/*.md _docs_build/benchmark/ 2>/dev/null || true
           cp lite/*.md _docs_build/lite/ 2>/dev/null || true
+          cp contrib/docker/*.md _docs_build/contrib/docker/ 2>/dev/null || true
           cat << 'EOF' > _docs_build/.pages
           nav:
             - Overview: index.md

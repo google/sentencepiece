@@ -155,7 +155,7 @@ void Trainer::ComputeFreq(Symbol* symbol) const {
   }
   symbol->freq = 0;
   for (auto it = symbol->positions.begin(); it != symbol->positions.end();) {
-    const Position pos = DecodePos(*it);
+    const Position& pos = *it;
     // symbols_[sid][left] and symbols_[sid]right] must store
     // the same symbols in symbol->left and symbols->right.
     if (symbol->left != symbols_[pos.sid][pos.left] ||
@@ -195,7 +195,7 @@ void Trainer::AddNewPair(int sid, int left, int right) {
   }
   auto* symbol = GetPairSymbol(symbols_[sid][left], symbols_[sid][right]);
   if (symbol != nullptr) {
-    symbol->positions.insert(EncodePos(sid, left, right));
+    symbol->positions.insert({sid, left, right});
     if (!symbol->pending) {
       symbol->pending = true;
       pending_queue_.push_back(symbol);
@@ -217,9 +217,7 @@ absl::Status Trainer::AcceptSymbol(Symbol* symbol) {
   // Add new bigrams which are created after symbol replacement.
   // We do not need to scan all characters, but scan the neighbors in
   // best_symbol.
-  for (const uint64_t& encoded_pos : symbol->positions) {
-    const Position pos = DecodePos(encoded_pos);
-
+  for (const Position& pos : symbol->positions) {
     if (symbols_[pos.sid][pos.left] == nullptr) {
       // left index might be NULL (set in the previous iteration)
       // when left_symbol == right_symbol.

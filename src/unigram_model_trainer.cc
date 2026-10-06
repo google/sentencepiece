@@ -99,20 +99,20 @@ class BoundedPriorityQueue {
     return data_;
   }
 
-  std::vector<std::pair<std::string, uint64_t>> Get() {
+  std::vector<std::pair<std::string, float>> Get() {
     struct ItemScore {
-      const std::string* key;
-      uint64_t score;
+      std::string* key;
+      float score;
     };
 
     std::vector<ItemScore> items;
     items.reserve(data_.size());
     const float power = absl::GetFlag(FLAGS_seed_piece_length_power);
 
-    for (const auto& [key, freq] : data_) {
+    for (auto& [key, freq] : data_) {
       if (freq < 2) continue;
       const float score = CalculatePieceScore(key, freq, power);
-      items.push_back({&key, static_cast<uint64_t>(score)});
+      items.push_back({const_cast<std::string*>(&key), score});
     }
 
     std::sort(
@@ -122,11 +122,11 @@ class BoundedPriorityQueue {
                  std::forward_as_tuple(lhs.score, lhs.key->size(), *rhs.key);
         });
 
-    std::vector<std::pair<std::string, uint64_t>> results;
+    std::vector<std::pair<std::string, float>> results;
     const size_t keep = std::min(items.size(), max_capacity_);
     results.reserve(keep);
     for (size_t i = 0; i < keep; ++i) {
-      results.emplace_back(*items[i].key, items[i].score);
+      results.emplace_back(std::move(*items[i].key), items[i].score);
     }
     data_.clear();
     return results;

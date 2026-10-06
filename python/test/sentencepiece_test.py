@@ -977,6 +977,16 @@ class TestSentencepieceProcessor(unittest.TestCase):
             pretokenizer=throwing_pretokenizer,
         )
 
+      with self.assertRaises(RuntimeError):
+        spm.SentencePieceTrainer.train(
+            input=os.path.join(HERE, 'botchan.txt'),
+            model_prefix=model_prefix,
+            vocab_size=1000,
+            model_type='unigram',
+            pretokenizer=throwing_pretokenizer,
+            allow_inconsistent_pretokenization=True,
+        )
+
   def test_pretokenizer_and_delimiter_mutually_exclusive(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
       model_prefix = os.path.join(tmp_dir, 'm_exclusive')
@@ -1423,6 +1433,7 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual(sp.encode([], return_type=int), [])
     self.assertEqual(sp.encode([], return_type=str), [])
 
+  @unittest.skipUnless(has_protobuf, 'protobuf is not installed')
   def test_offset_mapping(self):
     sp = self.sp_
 
@@ -1499,6 +1510,19 @@ class TestSentencepieceProcessor(unittest.TestCase):
     for (start, end), p in zip(res_bytes['offsets'], proto_bytes.pieces):
       self.assertEqual(byte_text[start:end], p.surface.encode('utf-8'))
 
+    # 7. add_bos, add_eos, reverse, emit_unk_piece are not supported in offset_mapping
+    for kw in (
+        {'add_bos': True},
+        {'add_eos': True},
+        {'reverse': True},
+        {'emit_unk_piece': True},
+    ):
+      with self.assertRaises(RuntimeError):
+        sp.encode(text, return_type='offset_mapping', **kw)
+      with self.assertRaises(RuntimeError):
+        sp.encode([text], return_type='offset_mapping', **kw)
+
+  @unittest.skipUnless(has_protobuf, 'protobuf is not installed')
   def test_decode_offset_mapping(self):
     sp = self.sp_
 
@@ -1550,11 +1574,34 @@ class TestSentencepieceProcessor(unittest.TestCase):
     for (start, end), p in zip(res_bytes['offsets'], proto.pieces):
       self.assertEqual(decoded_bytes[start:end], p.surface.encode('utf-8'))
 
-    # 3. Test decode pieces to offset mapping
+    # 3. Test decode pieces to offset mapping (and tuple of pieces)
     pieces_str = sp.encode(text, return_type=str)
     res_pieces = sp.decode(pieces_str, return_type='offset_mapping')
     self.assertEqual(res['offsets'], res_pieces['offsets'])
     self.assertEqual(res['pieces'], res_pieces['pieces'])
+    self.assertEqual(sp.decode(tuple(pieces_str)), decoded_text)
+    self.assertEqual(
+        sp.decode(tuple(pieces_str), return_type=bytes), decoded_bytes
+    )
+    self.assertEqual(
+        sp.decode(tuple(pieces_str), return_type='serialized_proto'),
+        sp.decode(pieces_str, return_type='serialized_proto'),
+    )
+    self.assertEqual(
+        sp.decode([tuple(pieces_str), tuple(pieces_str)]),
+        [decoded_text, decoded_text],
+    )
+    self.assertEqual(
+        sp.decode((tuple(pieces_str), tuple(pieces_str))),
+        [decoded_text, decoded_text],
+    )
+    self.assertEqual(
+        sp.decode([tuple(pieces_str)], return_type=bytes), [decoded_bytes]
+    )
+    self.assertEqual(
+        sp.decode([tuple(pieces_str)], return_type='serialized_proto'),
+        sp.decode([pieces_str], return_type='serialized_proto'),
+    )
 
     pieces_bytes = [p.encode('utf-8') for p in pieces_str]
     res_pieces_bytes = sp.decode(pieces_bytes, return_type='offset_mapping')

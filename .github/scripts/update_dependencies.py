@@ -29,6 +29,10 @@ CMAKELISTS_PATHS = [
 ]
 MODULE_BAZEL_PATH = REPO_ROOT / "MODULE.bazel"
 VERSION_TXT_PATH = REPO_ROOT / "VERSION.txt"
+PYPROJECT_TOML_PATH = REPO_ROOT / "python" / "pyproject.toml"
+PYTHON_VERSION_PATH = (
+    REPO_ROOT / "python" / "src" / "sentencepiece" / "_version.py"
+)
 
 # Security & sanity regex patterns
 VALID_TAG_PATTERN = re.compile(r"^[a-zA-Z0-9_.\-]+$")
@@ -106,12 +110,9 @@ def get_latest_github_tag(repo_path: str) -> str:
 
 def get_latest_bcr_version(module_name: str) -> str:
     """Fetch the latest non-yanked version from Bazel Central Registry (BCR)."""
-    token = os.getenv("GITHUB_TOKEN")
     headers = {
         "User-Agent": "SentencePiece-Dependency-Updater",
     }
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
 
     bcr_url = f"https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/{module_name}/metadata.json"
     req = urllib.request.Request(bcr_url, headers=headers)
@@ -120,16 +121,20 @@ def get_latest_bcr_version(module_name: str) -> str:
             data = json.loads(resp.read().decode("utf-8"))
             versions = data.get("versions", [])
             yanked = data.get("yanked_versions", {})
-            # Filter out yanked versions and pre-releases
+            # Filter out yanked versions, invalid tags, and pre-releases
             valid_versions = [
-                v
-                for v in versions
-                if v not in yanked and not PRERELEASE_PATTERN.search(v)
+                v for v in versions if v not in yanked and is_valid_tag(v)
             ]
             if valid_versions:
                 return valid_versions[-1]
             elif versions:
-                non_yanked = [v for v in versions if v not in yanked]
+                non_yanked = [
+                    v
+                    for v in versions
+                    if v not in yanked
+                    and isinstance(v, str)
+                    and VALID_TAG_PATTERN.match(v)
+                ]
                 if non_yanked:
                     return non_yanked[-1]
     except Exception as e:
@@ -200,15 +205,20 @@ def update_module_bazel_content(content: str):
     # 1. Synchronize version with VERSION.txt
     if VERSION_TXT_PATH.exists():
         version_val = VERSION_TXT_PATH.read_text(encoding="utf-8").strip()
-        ver_pattern = re.compile(
-            r'(module\s*\(\s*name\s*=\s*"sentencepiece"\s*,\s*version\s*=\s*)"([^"]+)"',
-            re.MULTILINE,
-        )
-        match = ver_pattern.search(new_content)
-        if match and match.group(2) != version_val:
-            current_ver = match.group(2)
-            new_content = ver_pattern.sub(rf'\g<1>"{version_val}"', new_content, count=1)
-            updates.append(f"MODULE.bazel version: {current_ver} -> {version_val}")
+        if is_valid_tag(version_val):
+            ver_pattern = re.compile(
+                r'(module\s*\(\s*name\s*=\s*"sentencepiece"\s*,\s*version\s*=\s*)"([^"]+)"',
+                re.MULTILINE,
+            )
+            match = ver_pattern.search(new_content)
+            if match and match.group(2) != version_val:
+                current_ver = match.group(2)
+                new_content = ver_pattern.sub(
+                    rf'\g<1>"{version_val}"', new_content, count=1
+                )
+                updates.append(
+                    f"MODULE.bazel version: {current_ver} -> {version_val}"
+                )
 
     # 2. Update all bazel_dep declarations from BCR
     dep_pattern = re.compile(
@@ -240,6 +250,48 @@ def update_module_bazel_content(content: str):
     return new_content, updates
 
 
+def sync_python_versions() -> list[str]:
+    """Synchronize python/pyproject.toml and _version.py with VERSION.txt."""
+    if not VERSION_TXT_PATH.exists():
+        return []
+    version_val = VERSION_TXT_PATH.read_text(encoding="utf-8").strip()
+    if not is_valid_tag(version_val):
+        return []
+
+    updates = []
+    if PYPROJECT_TOML_PATH.exists():
+        content = PYPROJECT_TOML_PATH.read_text(encoding="utf-8")
+        ver_pattern = re.compile(r'^(version\s*=\s*)"([^"]+)"', re.MULTILINE)
+        match = ver_pattern.search(content)
+        if match and match.group(2) != version_val:
+            current_ver = match.group(2)
+            new_content = ver_pattern.sub(
+                rf'\g<1>"{version_val}"', content, count=1
+            )
+            PYPROJECT_TOML_PATH.write_text(new_content, encoding="utf-8")
+            updates.append(
+                f"pyproject.toml version: {current_ver} -> {version_val}"
+            )
+
+    if PYTHON_VERSION_PATH.exists():
+        content = PYTHON_VERSION_PATH.read_text(encoding="utf-8")
+        ver_pattern = re.compile(
+            r"^(__version__\s*=\s*)['\"]([^'\"]+)['\"]", re.MULTILINE
+        )
+        match = ver_pattern.search(content)
+        if match and match.group(2) != version_val:
+            current_ver = match.group(2)
+            new_content = ver_pattern.sub(
+                rf"\g<1>'{version_val}'", content, count=1
+            )
+            PYTHON_VERSION_PATH.write_text(new_content, encoding="utf-8")
+            updates.append(
+                f"_version.py version: {current_ver} -> {version_val}"
+            )
+
+    return updates
+
+
 def main():
     all_updates = []
     for cmake_path in CMAKELISTS_PATHS:
@@ -262,11 +314,19 @@ def main():
             MODULE_BAZEL_PATH.write_text(new_bazel, encoding="utf-8")
             all_updates.extend(bazel_updates)
 
+    all_updates.extend(sync_python_versions())
+
     if all_updates:
         print("\nSuccessfully updated dependencies:")
         for u in all_updates:
             print(f"  * {u}")
-        summary_file = os.getenv("GITHUB_STEP_SUMMARY_PATH", "/tmp/update_summary.txt")
+        default_summary = os.path.join(
+            os.getenv("RUNNER_TEMP", "/tmp"), "update_summary.txt"
+        )
+        summary_file = os.getenv(
+            "UPDATE_SUMMARY_PATH",
+            os.getenv("GITHUB_STEP_SUMMARY_PATH", default_summary),
+        )
         try:
             with open(summary_file, "w", encoding="utf-8") as f:
                 f.write(", ".join(all_updates))

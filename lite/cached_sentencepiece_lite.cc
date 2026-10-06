@@ -81,9 +81,10 @@ StatusCode CachedSentencePieceLite::EncodeNormalized(
 
   ids->reserve(normalized_text.size() / kExpectedBytesPerToken + 1);
   std::vector<int> chunk_ids;
-  return processor.PretokenizeAtSafeBoundaries(
+  StatusCode chunk_status = StatusCode::kOk;
+  StatusCode status = processor.PretokenizeAtSafeBoundaries(
       normalized_text, [&](std::string_view chunk) {
-        if (chunk.empty()) return;
+        if (chunk.empty() || chunk_status != StatusCode::kOk) return;
         const uint64_t hash = FastHash64(chunk, effective_seed);
         const uint16_t tag = TokenCache::MakeChunkTag(chunk);
         size_t count = 0;
@@ -93,13 +94,15 @@ StatusCode CachedSentencePieceLite::EncodeNormalized(
           return;
         }
         chunk_ids.clear();
-        processor.EncodeNormalizedChunk(chunk, &chunk_ids);
+        chunk_status = processor.EncodeNormalizedChunk(chunk, &chunk_ids);
+        if (chunk_status != StatusCode::kOk) return;
         ids->insert(ids->end(), chunk_ids.begin(), chunk_ids.end());
         if (!chunk_ids.empty() &&
             chunk_ids.size() <= TokenCache::kMaxCachedTokenCount) {
           cache.Insert(hash, tag, chunk_ids.data(), chunk_ids.size());
         }
       });
+  return status != StatusCode::kOk ? status : chunk_status;
 }
 
 }  // namespace sentencepiece::lite

@@ -28,12 +28,17 @@ jobs:
         id: update
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          UPDATE_SUMMARY_PATH: ${{ runner.temp }}/update_summary.txt
         run: |
           python3 .github/scripts/update_dependencies.py
-          if [ -f /tmp/update_summary.txt ]; then
+          if [ -f "$UPDATE_SUMMARY_PATH" ]; then
             echo "UPDATED=true" >> "$GITHUB_OUTPUT"
-            SUMMARY=$(cat /tmp/update_summary.txt)
-            echo "SUMMARY=$SUMMARY" >> "$GITHUB_OUTPUT"
+            SUMMARY=$(tr '\r\n' '  ' < "$UPDATE_SUMMARY_PATH")
+            {
+              echo "SUMMARY<<EOF"
+              echo "$SUMMARY"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
           else
             echo "UPDATED=false" >> "$GITHUB_OUTPUT"
           fi

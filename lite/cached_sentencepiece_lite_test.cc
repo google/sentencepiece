@@ -48,8 +48,6 @@ std::string GetFilePath(std::string_view path) {
       "../../test_data/",
       "lite/test_data/",
       "../lite/test_data/",
-      "test_data/",
-      "../test_data/",
   };
   for (const auto prefix : kPrefixes) {
     const std::string candidate = std::string(prefix) + std::string(path);

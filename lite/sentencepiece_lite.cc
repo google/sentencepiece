@@ -266,7 +266,8 @@ StatusCode InitializeTrie(const uint8_t* data, size_t size, int max_value_limit,
   if (data == nullptr || size == 0) {
     return is_optional ? StatusCode::kOk : StatusCode::kInternal;
   }
-  if (size < 1024 || (size & 0x3FF) != 0) {
+  if (size < 1024 || (size & 0x3FF) != 0 ||
+      (reinterpret_cast<uintptr_t>(data) % alignof(uint32_t)) != 0) {
     return StatusCode::kInternal;
   }
   trie->set_array(data, size / sizeof(uint32_t));
@@ -851,9 +852,10 @@ class Model {
   // when appearing as an isolated pre-split chunk, bypassing BPE merges.
   bool IsDirectMapping(int id) const {
     if (id >= vocab_size() || IsInvisible(id)) return false;
+    if (!model_proto_->has_direct_mappings()) return false;
     const auto* vector = model_proto_->is_direct_mapping();
     if (vector == nullptr) {
-      return model_proto_->has_direct_mappings();
+      return true;
     }
     return vector->Get(id) != 0;
   }
@@ -1068,8 +1070,7 @@ StatusCode Model::Initialize(std::string_view model_buffer) {
   }
   types_ = model_proto_->types()->data();
 
-  if (model_proto_->has_direct_mappings() &&
-      model_proto_->is_direct_mapping() != nullptr &&
+  if (model_proto_->is_direct_mapping() != nullptr &&
       model_proto_->is_direct_mapping()->size() != vocab_size) {
     return StatusCode::kInternal;
   }
@@ -1126,12 +1127,13 @@ StatusCode Model::Initialize(std::string_view model_buffer) {
   const std::string first_byte_piece = ByteToPiece(0);
   const int first_byte_id = pieces_trie_.exact_lookup(first_byte_piece);
 
-  if (first_byte_id >= 0 && first_byte_id < static_cast<int>(vocab_size)) {
+  if (first_byte_id >= 0 && first_byte_id < static_cast<int>(vocab_size) &&
+      IsByte(first_byte_id)) {
     byte_fallback_start_id_ = first_byte_id;
     for (int i = 0; i < 256; ++i) {
       const std::string piece = ByteToPiece(i);
       const int id = pieces_trie_.exact_lookup(piece);
-      if (id == -1 || id != byte_fallback_start_id_ + i) {
+      if (id == -1 || id != byte_fallback_start_id_ + i || !IsByte(id)) {
         return StatusCode::kInternal;
       }
       byte_to_id_[i] = id;
@@ -1670,6 +1672,9 @@ StatusCode SentencePieceLiteProcessor::PretokenizeAtSafeBoundaries(
   if (model_ == nullptr) {
     return StatusCode::kFailedPrecondition;
   }
+  if (normalized.size() > kMaxInputLength) {
+    return StatusCode::kInvalidArgument;
+  }
   return model_->PretokenizeAtSafeBoundaries(normalized, receiver);
 }
 
@@ -1750,6 +1755,10 @@ StatusCode SentencePieceLiteProcessor::Decode(
   for (size_t i = 0; i < ids.size(); ++i) {
     const int id = ids[i];
     if (id < 0 || id >= vocab_size) {
+      output->clear();
+      if (pieces != nullptr) {
+        pieces->clear();
+      }
       return StatusCode::kOutOfRange;
     }
     if (model_->IsUnknown(id)) {

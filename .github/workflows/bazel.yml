@@ -88,6 +88,9 @@ jobs:
       - name: Package artifacts (Linux / macOS)
         if: runner.os != 'Windows'
         shell: bash
+        env:
+          MATRIX_OS: ${{ matrix.os }}
+          MATRIX_ARCH: ${{ matrix.arch }}
         run: |
           mkdir -p build/root/bin build/root/include build/root/lib
           for bin in src/spm_encode src/spm_decode src/spm_normalize src/spm_train src/spm_export_vocab src/spm_eval lite/spm_lite lite/spm_to_fb; do
@@ -99,11 +102,14 @@ jobs:
           cp bazel-bin/src/libsentencepiece*.so build/root/lib/ 2>/dev/null || cp bazel-bin/src/libsentencepiece*.dylib build/root/lib/ 2>/dev/null || true
           cp src/sentencepiece_processor.h src/sentencepiece_trainer.h lite/sentencepiece_lite.h lite/cached_sentencepiece_lite.h lite/sentencepiece_model_converters.h build/root/include/
           cp LICENSE build/root/
-          cd build && 7z a "sentencepiece-bazel-${{ matrix.os }}-${{ matrix.arch }}.7z" ./root/*
+          cd build && 7z a "sentencepiece-bazel-${MATRIX_OS}-${MATRIX_ARCH}.7z" ./root/*
 
       - name: Package artifacts (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
+        env:
+          MATRIX_OS: ${{ matrix.os }}
+          MATRIX_ARCH: ${{ matrix.arch }}
         run: |
           New-Item -ItemType Directory -Force -Path build/root/bin, build/root/include, build/root/lib
           $bins = @("src/spm_encode.exe", "src/spm_decode.exe", "src/spm_normalize.exe", "src/spm_train.exe", "src/spm_export_vocab.exe", "src/spm_eval.exe", "lite/spm_lite.exe", "lite/spm_to_fb.exe")
@@ -116,7 +122,7 @@ jobs:
           Copy-Item "bazel-bin/src/*.lib" build/root/lib/ -ErrorAction SilentlyContinue
           Copy-Item "src/sentencepiece_processor.h", "src/sentencepiece_trainer.h", "lite/sentencepiece_lite.h", "lite/cached_sentencepiece_lite.h", "lite/sentencepiece_model_converters.h" build/root/include/
           Copy-Item "LICENSE" build/root/
-          cd build; 7z a "sentencepiece-bazel-${{ matrix.os }}-${{ matrix.arch }}.7z" ./root/*
+          cd build; 7z a "sentencepiece-bazel-$env:MATRIX_OS-$env:MATRIX_ARCH.7z" ./root/*
 
       - name: Upload artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

@@ -2,10 +2,20 @@ package(default_visibility = ["//:__subpackages__"])
 
 filegroup(
     name = "test_data",
-    srcs = glob([
-        "*.txt",
-        "*.model",
-        "*.tsv",
-        "*.bin",
-    ]),
+    srcs = [
+        "botchan.txt",
+        "botchan_en_bpe_1000.model",
+        "botchan_en_unigram_1000.model",
+        "gemma_tokenizer.model",
+        "ids_denorm.tsv",
+        "ids_norm.tsv",
+        "nfkc.bin",
+        "nfkc.tsv",
+        "nfkc_cf.bin",
+        "nfkc_cf.tsv",
+        "nmt_nfkc.bin",
+        "nmt_nfkc_cf.bin",
+        "wagahaiwa_nekodearu.txt",
+        "wagahaiwa_nekodearu_ja_bpe_byte_2000.model",
+    ],
 )

@@ -98,7 +98,7 @@ def process_file(
       ):
         continue
       if strip_internal and re.match(
-          r'^#include\s+["<](?:third_party/)?(?:sentencepiece|cached_sentencepiece|flatbuffers|absl|rapidhash|utf8|util/utf8|darts).*',
+          r'^#include\s+["<](?:third_party/)?(?:sentencepiece|cached_sentencepiece|flatbuffers|rapidhash|utf8|util/utf8|darts).*',
           s,
       ):
         continue
@@ -158,6 +158,7 @@ def main():
   ])
   fbs_gen = find_path([
       os.path.join(build_dir, "sentencepiece_lite_generated.h"),
+      os.path.join(build_dir, "lite/sentencepiece_lite_generated.h"),
       os.path.join(lite_dir, "build/sentencepiece_lite_generated.h"),
       os.path.join(repo_root, "build/lite/sentencepiece_lite_generated.h"),
   ])

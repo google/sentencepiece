@@ -84,6 +84,11 @@ alias(
 )
 
 alias(
+    name = "sentencepiece_model_converters",
+    actual = "//lite:sentencepiece_model_converters",
+)
+
+alias(
     name = "spm_lite",
     actual = "//lite:spm_lite",
 )

@@ -40,7 +40,9 @@ jobs:
 
     - name: Config for Windows
       if: runner.os == 'Windows'
-      run: cmake -A ${{ matrix.arch }} -S lite -B lite/build -DSPM_ENABLE_BENCHMARK=ON
+      env:
+        ARCH: ${{ matrix.arch }}
+      run: cmake -A "$ARCH" -S lite -B lite/build -DSPM_ENABLE_BENCHMARK=ON
 
     - name: Config for Linux/MacOSX
       if: runner.os != 'Windows'

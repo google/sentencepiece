@@ -51,6 +51,7 @@ absl::Status Trainer::Train() {
   for (const auto& it : freq) {
     sum += it.second;
   }
+  RET_CHECK_GT(sum, 0);
 
   const auto logsum = std::log(static_cast<float>(sum));
 

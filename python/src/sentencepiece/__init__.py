@@ -633,9 +633,6 @@ class SentencePieceProcessor:
     def __getstate__(self):
         return self.serialized_model_proto()
 
-    def __getstate_for_pickle__(self):
-        return self.serialized_model_proto()
-
     def __setstate__(self, serialized_model_proto):
         self.__init__()
         self.LoadFromSerializedProto(serialized_model_proto)
@@ -655,15 +652,20 @@ class _LogStream:
 
     def __enter__(self):
         if self.ostream is not None:
+            ostream_fileno = self.ostream.fileno()
             self.orig_stream_dup = os.dup(self.orig_stream_fileno)
-            os.dup2(self.ostream.fileno(), self.orig_stream_fileno)
+            try:
+                os.dup2(ostream_fileno, self.orig_stream_fileno)
+            except Exception:
+                os.close(self.orig_stream_dup)
+                raise
 
     def __exit__(self, type, value, traceback):
         if self.ostream is not None:
             os.close(self.orig_stream_fileno)
             os.dup2(self.orig_stream_dup, self.orig_stream_fileno)
             os.close(self.orig_stream_dup)
-            self.ostream.close()
+            self.ostream.flush()
 
 
 class SentencePieceTrainer:

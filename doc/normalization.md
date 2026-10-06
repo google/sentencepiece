@@ -23,7 +23,7 @@ spm_train --normalization_rule_name=identity --input=<input> --model_prefix=<mod
 ```
 
 > [!NOTE]
-> Due to algorithm limitations, SentencePiece does not implement the *entirety* of Unicode NFKC normalization. For examples of specific character sequences that are not normalized by our implementation (such as multiple combining marks), see the comments in [builder.h](../src/builder.h#L59-L90).
+> Due to algorithm limitations, SentencePiece does not implement the *entirety* of Unicode NFKC normalization. For examples of specific character sequences that are not normalized by our implementation (such as multiple combining marks), see the comments in [builder.h](https://github.com/google/sentencepiece/blob/master/src/builder.h#L59-L90).
 
 To see the exact differences between `nmt_nfkc` and `nfkc`, you can compare their definition files:
 ```bash
@@ -53,7 +53,7 @@ To define a custom normalization rule, prepare a Tab-Separated Values (TSV) file
     *   To remove specific characters, you can leave the target sequence empty (i.e., a line with only the source sequence followed by a tab).
 *   **Ambiguity Resolution**: If multiple rules match the same input sequence, SentencePiece always selects the **longest matching rule** (leftmost-longest).
 
-For a concrete example, see [data/nfkc.tsv](../data/nfkc.tsv).
+For a concrete example, see [data/nfkc.tsv](https://github.com/google/sentencepiece/blob/master/data/nfkc.tsv).
 
 Once your TSV file is ready, pass it to the trainer using the `--normalization_rule_tsv` flag:
 
