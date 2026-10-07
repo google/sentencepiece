@@ -5,6 +5,7 @@
 #include <sentencepiece_trainer.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
 #include <cstring>
 #include <iostream>
@@ -17,6 +18,7 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/synchronization/mutex.h"
 
 namespace py = pybind11;
 
@@ -1589,13 +1591,18 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                   sentence_iterator.cast<py::iterator>());
               components.sentence_iterator = py_iter.get();
             }
+            absl::Mutex pretokenizer_mu;
             std::string pretokenizer_error;
+            std::atomic<bool> has_pretokenizer_error{false};
             if (!pretokenizer.is_none()) {
               components.pretokenizer =
-                  [&pretokenizer, &pretokenizer_error](
+                  [&pretokenizer, &pretokenizer_mu, &pretokenizer_error,
+                   &has_pretokenizer_error](
                       absl::string_view text) -> std::vector<std::string> {
+                if (has_pretokenizer_error.load(std::memory_order_relaxed)) {
+                  return {" "};
+                }
                 py::gil_scoped_acquire acquire;
-                if (!pretokenizer_error.empty()) return {};
                 try {
                   py::object py_text = py::str(text.data(), text.size());
                   py::object result = pretokenizer(py_text);
@@ -1605,9 +1612,14 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                   }
                   return chunks;
                 } catch (const std::exception& e) {
-                  pretokenizer_error =
-                      std::string("Pretokenizer failed: ") + e.what();
-                  return {};
+                  absl::MutexLock lock(pretokenizer_mu);
+                  if (pretokenizer_error.empty()) {
+                    pretokenizer_error =
+                        std::string("Pretokenizer failed: ") + e.what();
+                    has_pretokenizer_error.store(true,
+                                                 std::memory_order_relaxed);
+                  }
+                  return {" "};
                 }
               };
             }

@@ -283,7 +283,8 @@ absl::StatusOr<std::string> ToFlatbuffer(
           "Piece at index ", i, " is invalid (empty or too long)."));
     }
     if (piece_view.find('\0') != std::string_view::npos) {  // NOLINT
-      if (options.treat_null_byte_as_unused && byte_fallback_enabled) {
+      if (options.treat_null_byte_as_unused && byte_fallback_enabled &&
+          piece_view.size() == 1) {
         fbs.pieces.push_back(absl::StrCat("<unused_", i, ">"));
         piece_type = ::sentencepiece::ModelProto::SentencePiece::UNUSED;
       } else {
