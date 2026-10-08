@@ -21,10 +21,12 @@
 
 #include "absl/base/internal/endian.h"
 #include "absl/status/status.h"
+#include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "builder.h"
 #include "filesystem.h"
 #include "model_interface.h"
+#include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
 
@@ -290,6 +292,66 @@ TEST(SentencePieceProcessorTest, SanitizeNullBytePiece1308) {
     ASSERT_TRUE(sp.Decode(ids, &decoded).ok());
     EXPECT_EQ("This is a test sentence.", decoded);
   }
+}
+
+TEST(SentencePieceProcessorTest, RejectInvalidModelType) {
+  ModelProto model_proto;
+  auto* trainer_spec = model_proto.mutable_trainer_spec();
+  trainer_spec->set_model_type(static_cast<TrainerSpec::ModelType>(999));
+
+  SentencePieceProcessor sp;
+  absl::Status status = sp.Load(model_proto);
+  EXPECT_FALSE(status.ok());
+  EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
+  EXPECT_TRUE(absl::StrContains(status.message(), "Invalid model_type"));
+}
+
+TEST(SentencePieceProcessorTest, OutOfBoundsPieceAccess) {
+  std::string model_path = GetTestDataPath("botchan_en_unigram_1000.model");
+  std::ifstream ifs(model_path, std::ios::binary);
+  ModelProto model_proto;
+  ASSERT_TRUE(model_proto.ParseFromIstream(&ifs));
+
+  SentencePieceProcessor sp;
+  ASSERT_TRUE(sp.Load(model_proto).ok());
+
+  const int piece_size = sp.GetPieceSize();
+  const int invalid_ids[] = {-1, -100, piece_size, piece_size + 100};
+
+  for (int id : invalid_ids) {
+    EXPECT_EQ("", sp.IdToPiece(id));
+    EXPECT_EQ(0.0f, sp.GetScore(id));
+    EXPECT_FALSE(sp.IsControl(id));
+    EXPECT_FALSE(sp.IsUnknown(id));
+    EXPECT_FALSE(sp.IsUnused(id));
+    EXPECT_FALSE(sp.IsByte(id));
+
+    std::string piece;
+    EXPECT_FALSE(sp.SafeIdToPiece(id, &piece));
+  }
+}
+
+TEST(SentencePieceProcessorTest, InvalidDecodeInput) {
+  std::string model_path = GetTestDataPath("botchan_en_unigram_1000.model");
+  std::ifstream ifs(model_path, std::ios::binary);
+  ModelProto model_proto;
+  ASSERT_TRUE(model_proto.ParseFromIstream(&ifs));
+
+  SentencePieceProcessor sp;
+  ASSERT_TRUE(sp.Load(model_proto).ok());
+
+  std::string decoded;
+  const int piece_size = sp.GetPieceSize();
+
+  std::vector<int> bad_ids = {0, piece_size + 10};
+  absl::Status status = sp.Decode(bad_ids, &decoded);
+  EXPECT_FALSE(status.ok());
+  EXPECT_EQ(status.code(), absl::StatusCode::kOutOfRange);
+
+  SentencePieceText spt;
+  status = sp.Decode(bad_ids, &spt);
+  EXPECT_FALSE(status.ok());
+  EXPECT_EQ(status.code(), absl::StatusCode::kOutOfRange);
 }
 
 }  // namespace

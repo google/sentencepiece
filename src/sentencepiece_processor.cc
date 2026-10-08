@@ -116,6 +116,7 @@ absl::Status SentencePieceProcessor::LoadFromSerializedProto(
 
 absl::Status SentencePieceProcessor::Load(
     std::unique_ptr<ModelProto> model_proto) {
+  RET_CHECK(model_proto != nullptr) << "ModelProto is null.";
   model_proto_ = std::move(model_proto);
   // Workaround for https://github.com/google/sentencepiece/issues/1308
   // Third-party conversion scripts may erroneously insert a raw null-byte
@@ -135,12 +136,20 @@ absl::Status SentencePieceProcessor::Load(
     }
   }
   model_ = ModelFactory::Create(*model_proto_);
+  RET_CHECK(model_ != nullptr) << "Invalid model_type or failed to create model.";
+  ABSL_RETURN_IF_ERROR(model_->status());
+
   normalizer_ = std::make_unique<normalizer::Normalizer>(
       model_proto_->normalizer_spec(), model_proto_->trainer_spec());
+  RET_CHECK(normalizer_ != nullptr);
+  ABSL_RETURN_IF_ERROR(normalizer_->status());
+
   if (model_proto_->has_denormalizer_spec() &&
       !model_proto_->denormalizer_spec().precompiled_charsmap().empty()) {
     denormalizer_ = std::make_unique<normalizer::Normalizer>(
         model_proto_->denormalizer_spec());
+    RET_CHECK(denormalizer_ != nullptr);
+    ABSL_RETURN_IF_ERROR(denormalizer_->status());
   }
 
   // Escapes user-defined-symbols in normalizer.
@@ -180,6 +189,9 @@ absl::Status SentencePieceProcessor::status() const {
   RET_CHECK(normalizer_) << "Normalizer is not initialized.";
   ABSL_RETURN_IF_ERROR(model_->status());
   ABSL_RETURN_IF_ERROR(normalizer_->status());
+  if (denormalizer_) {
+    ABSL_RETURN_IF_ERROR(denormalizer_->status());
+  }
   return absl::OkStatus();
 }
 
@@ -1071,8 +1083,11 @@ int SentencePieceProcessor::PieceToId(absl::string_view piece) const {
 }
 
 const std::string& SentencePieceProcessor::IdToPiece(int id) const {
-  static const std::string* kEmptyString = new std::string;
+  static const absl::NoDestructor<std::string> kEmptyString;
   RET_CHECK_OR_RETURN_DEFAULT(*kEmptyString);
+  if (id < 0 || id >= model_->GetPieceSize()) {
+    return *kEmptyString;
+  }
   return model_->IdToPiece(id);
 }
 
@@ -1087,27 +1102,31 @@ bool SentencePieceProcessor::SafeIdToPiece(int id, std::string* piece) const {
 
 float SentencePieceProcessor::GetScore(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(0.0);
+  if (id < 0 || id >= model_->GetPieceSize()) {
+    return 0.0f;
+  }
   return model_->GetScore(id);
 }
 
 bool SentencePieceProcessor::IsControl(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(0);
-  return id >= 0 && model_->IsControl(id);
+  return id >= 0 && id < model_->GetPieceSize() && model_->IsControl(id);
 }
 
 bool SentencePieceProcessor::IsUnknown(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(0);
-  return id == unk_id_ || (id >= 0 && model_->IsUnknown(id));
+  return id == unk_id_ ||
+         (id >= 0 && id < model_->GetPieceSize() && model_->IsUnknown(id));
 }
 
 bool SentencePieceProcessor::IsUnused(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(false);
-  return model_->IsUnused(id);
+  return id >= 0 && id < model_->GetPieceSize() && model_->IsUnused(id);
 }
 
 bool SentencePieceProcessor::IsByte(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(false);
-  return model_->IsByte(id);
+  return id >= 0 && id < model_->GetPieceSize() && model_->IsByte(id);
 }
 
 int SentencePieceProcessor::unk_id() const { return unk_id_; }
