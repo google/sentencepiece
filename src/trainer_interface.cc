@@ -499,13 +499,15 @@ END:
         },
         pool));
 
-    for (size_t i = 0; i < sentences_.size(); ++i) {
+    for (size_t i = 0; i < sentences_.size();) {
       auto* s = &sentences_[i].first;
       RET_CHECK(s->find(" ") == std::string::npos)
           << "Normalized string must not include spaces";
       if (s->empty()) {
-        std::swap(sentences_[i], sentences_[sentences_.size() - 1]);
-        sentences_.resize(sentences_.size() - 1);
+        std::swap(sentences_[i], sentences_.back());
+        sentences_.pop_back();
+      } else {
+        ++i;
       }
     }
   }

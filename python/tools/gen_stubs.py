@@ -66,9 +66,6 @@ _MODULE_NAME = "sentencepiece"
 # Dunder methods worth keeping in the stub. All other dunders are skipped.
 ALLOWED_DUNDERS = {"__init__", "__len__", "__getitem__"}
 
-# Class-level attributes that are runtime noise.
-SKIP_MEMBERS = {"thisown"}
-
 # Order in which classes are emitted. Discovered classes not listed here are
 # appended afterwards (sorted), so new public classes still show up.
 CLASS_ORDER = [
@@ -304,8 +301,6 @@ def public_members(cls):
   """Public (and selected dunder) member names of a class, deduped/sorted."""
   members = set()
   for name in dir(cls):
-    if name in SKIP_MEMBERS:
-      continue
     if name.startswith("__"):
       if name not in ALLOWED_DUNDERS:
         continue

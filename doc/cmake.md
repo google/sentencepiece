@@ -54,6 +54,7 @@ You can customize the build by passing `-D<OPTION>=<VALUE>` to `cmake -B build`:
 | `SPM_ABSL_PROVIDER` | `module` | Provider for Abseil (`module` fetches via CMake; `package` uses `find_package(absl)`). |
 | `SPM_PROTOBUF_PROVIDER` | `module` | Provider for Protobuf (`module` fetches via CMake; `package` uses `find_package(Protobuf)`). |
 | `SPM_ENABLE_NFKC_COMPILE` | `OFF` | Enable `compile_charsmap` compilation using system ICU. |
+| `SPM_DISABLE_EMBEDDED_DATA` | `OFF` | Disable embedding pre-compiled normalization data into the binary. |
 | `SPM_ENABLE_MSVC_MT_BUILD` | `OFF` | Use static MSVC runtime (`/MT`) on Windows. |
 
 ### Running Unit Tests

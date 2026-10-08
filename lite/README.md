@@ -258,7 +258,7 @@ StatusCode PretokenizeAtSafeBoundaries(
 #### Algorithm & Implementation Details
 
 *   **Character Bigram Co-occurrence Principle**: If a character bigram $(C_i, C_{i+1})$ never appears inside any subword token in the vocabulary, no subword piece can span across the boundary between $C_i$ and $C_{i+1}$. The input text can therefore be split safely at this boundary before encoding.
-*   **AC-style State Reuse Traversal**: All valid character bigrams present in the vocabulary are compiled offline into a Double-Array Trie (`char_bigram_blob`). During input scanning, the runtime reuses single-character trie node state transitions across adjacent pairs (similar to Aho-Corasick failure links). This scans the text in linear $O(N)$ time with zero heap allocations.
+*   **AC-style State Reuse Traversal**: All valid character bigrams present in the vocabulary are compiled offline into a Double-Array Trie (`char_bigram_trie_blob`). During input scanning, the runtime reuses single-character trie node state transitions across adjacent pairs (similar to Aho-Corasick failure links). This scans the text in linear $O(N)$ time with zero heap allocations.
 *   **BPE Queue Complexity Reduction**: For BPE models, splitting a long sentence into $k$ independent chunks reduces priority-queue merge complexity from $O(N \log N)$ to $O(N \log(N/k))$, while enabling trie-based vocabulary shortcut lookups that bypass the priority queue entirely for frequent subwords.
 
 #### Application Example: Parallel Document Tokenization

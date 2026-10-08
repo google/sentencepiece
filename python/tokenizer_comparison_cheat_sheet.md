@@ -393,7 +393,7 @@ Below is a side-by-side comparison of common tasks across the three libraries.
 
     # Or initialize with custom mapping directly:
     norm_custom = spm.SentencePieceNormalizer(norm_map=[('foo', 'bar')])
-    print(norm_custom.normalize("foo"))  # Output: bar
+    print(norm_custom.normalize("foo"))  # Output: ▁bar
     ```
 *   **Hugging Face `tokenizers`**:
     ```python

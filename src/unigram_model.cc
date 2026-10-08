@@ -234,7 +234,7 @@ std::vector<float> Lattice::ForwardAlgorithm(float inv_theta) const {
   return alpha;
 }
 
-std::vector<float> Lattice::BackwardAlgorithm(float inv_theta) const {
+std::vector<float> Lattice::BackwardAlgorithm() const {
   const size_t len = size();
   std::vector<float> beta(node_allocator_.size(), 0.0);
 
@@ -261,7 +261,7 @@ float Lattice::PopulateMarginal(float freq,
   // the index of alpha/beta is Node::node_id.
 
   const auto alpha = ForwardAlgorithm(1.0);
-  const auto beta = BackwardAlgorithm(1.0);
+  const auto beta = BackwardAlgorithm();
 
   const float Z = alpha[begin_nodes_[len][0]->node_id];
   for (size_t pos = 0; pos < len; ++pos) {

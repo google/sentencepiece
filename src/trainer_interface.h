@@ -41,27 +41,6 @@ ABSL_DECLARE_FLAG(float, min_freq_alpha);
 
 namespace sentencepiece {
 
-namespace string_util {
-using UnicodeText = std::vector<char32_t>;
-}  // namespace string_util
-
-template <typename K, typename V>
-std::vector<std::pair<K, V>> Sorted(const std::vector<std::pair<K, V>>& m) {
-  std::vector<std::pair<K, V>> v = m;
-  std::sort(v.begin(), v.end(),
-            [](const std::pair<K, V>& p1, const std::pair<K, V>& p2) {
-              return (p1.second > p2.second ||
-                      (p1.second == p2.second && p1.first < p2.first));
-            });
-  return v;
-}
-
-template <typename K, typename V>
-std::vector<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V>& m) {
-  std::vector<std::pair<K, V>> v(m.begin(), m.end());
-  return Sorted(v);
-}
-
 class MultiFileSentenceIterator : public SentenceIterator {
  public:
   explicit MultiFileSentenceIterator(const std::vector<std::string>& files);
@@ -105,15 +84,6 @@ class TrainerInterface {
   virtual absl::Status Train(const TrainerComponents& components,
                              ModelProto* output_model_proto) {
     components_ = components;
-    output_model_proto_ = output_model_proto;
-    return Train();
-  }
-
-  // Loads sentence from `sentence_iterator` and stores the model
-  // to `output_model_proto`.
-  virtual absl::Status Train(SentenceIterator* sentence_iterator,
-                             ModelProto* output_model_proto) {
-    components_.sentence_iterator = sentence_iterator;
     output_model_proto_ = output_model_proto;
     return Train();
   }

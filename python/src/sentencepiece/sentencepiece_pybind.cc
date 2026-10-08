@@ -8,7 +8,6 @@
 #include <atomic>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -19,6 +18,7 @@
 
 #include "absl/status/status.h"
 #include "absl/synchronization/mutex.h"
+#include "util.h"
 
 namespace py = pybind11;
 
@@ -555,34 +555,12 @@ void CheckProtoArgsThrowException(bool add_bos, bool add_eos, bool reverse,
   }
 }
 
-inline size_t OneCharLen(const char* src) {
-  return "\1\1\1\1\1\1\1\1\1\1\1\1\2\2\3\4"[(*src & 0xFF) >> 4];
-}
-
-std::vector<int> BuildUtf8ToUnicodeMap(absl::string_view orig) {
-  std::vector<int> utf8_to_unicode(orig.size() + 1, 0);
-  size_t prev = 0;
-  int ulen = 0;
-  absl::string_view str = orig;
-  while (!str.empty()) {
-    const size_t mblen =
-        std::min(str.size(),
-                 static_cast<size_t>(std::max<int>(1, OneCharLen(str.data()))));
-    for (size_t i = prev; i < prev + mblen; ++i) {
-      utf8_to_unicode[i] = ulen;
-    }
-    ++ulen;
-    prev += mblen;
-    str.remove_prefix(mblen);
-  }
-  utf8_to_unicode[prev] = ulen;
-  return utf8_to_unicode;
-}
 py::dict ExtractOffsetMapping(const sentencepiece::SentencePieceText& spt,
                               bool return_bytes, bool include_text = true) {
   std::vector<int> utf8_to_unicode;
   if (!return_bytes) {
-    utf8_to_unicode = BuildUtf8ToUnicodeMap(spt.text());
+    utf8_to_unicode =
+        sentencepiece::string_util::UTF8ToUnicodeOffsets(spt.text());
   }
 
   const size_t num_pieces = spt.pieces_size();

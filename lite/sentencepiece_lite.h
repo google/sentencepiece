@@ -48,6 +48,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #ifdef SENTENCEPIECE_LITE_USE_ABSL
@@ -151,9 +152,6 @@ class Model;
 
 // Main tokenization runtime processor executing Unigram and BPE tokenization
 // on FlatBuffers model binaries (.spm.fb).
-class SentencePieceLiteProcessor;
-using SentencePieceLite = SentencePieceLiteProcessor;
-
 class SentencePieceLiteProcessor {
  public:
   SentencePieceLiteProcessor() = delete;

@@ -52,14 +52,14 @@ struct ConverterOptions {
 // Performance note:
 // 1. Initialization / Load Time:
 //    On-the-fly conversion is fast enough for production initialization and is
-//    equivalent in speed (or even faster when skip_char_bigrams = true) to
-//    standard OSS SentencePieceProcessor::LoadFromSerializedProto(proto) for
-//    Unigram models. For BPE models, conversion includes precomputing direct
-//    mapping shortcuts across all pieces.
+//    significantly faster than standard OSS
+//    SentencePieceProcessor::LoadFromSerializedProto(proto) for Unigram models.
+//    For BPE models, conversion includes precomputing direct mapping shortcuts
+//    across all pieces.
 //    - For large 256k Unigram models (e.g., ulm_spm.256k):
-//      OSS Load: ~647 ms vs Lite Fast Init: ~624 ms (faster than OSS!).
+//      OSS Load: ~647 ms vs Lite Fast Init: ~136 ms (~4.8x faster than OSS!).
 //    - For large 262k BPE models (e.g., Gemma 3 262k):
-//      OSS Load: ~211 ms vs Lite Fast Init: ~1,606 ms (includes shortcut
+//      OSS Load: ~211 ms vs Lite Fast Init: ~334 ms (includes shortcut
 //      precomp).
 //
 // 2. Memory / Heap Consumption:

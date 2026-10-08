@@ -15,7 +15,6 @@
 #ifndef SENTENCEPIECE_LITE_CACHED_SENTENCEPIECE_LITE_H_
 #define SENTENCEPIECE_LITE_CACHED_SENTENCEPIECE_LITE_H_
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>

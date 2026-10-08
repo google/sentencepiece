@@ -175,8 +175,10 @@ Include `<sentencepiece_trainer.h>` and call `sentencepiece::SentencePieceTraine
 ```cpp
 #include <sentencepiece_trainer.h>
 
+sentencepiece::TrainerComponents components;
 const auto status = sentencepiece::SentencePieceTrainer::Train(
-    "--input=data/botchan.txt --model_prefix=m --vocab_size=1000");
+    "--input=data/botchan.txt --model_prefix=m --vocab_size=1000",
+    components);
 ```
 
 ### Using a Key-Value Map
@@ -184,34 +186,39 @@ const auto status = sentencepiece::SentencePieceTrainer::Train(
 ```cpp
 #include <sentencepiece_trainer.h>
 
-const auto status = sentencepiece::SentencePieceTrainer::Train({
-    {"input", "data/botchan.txt"},
-    {"model_prefix", "m"},
-    {"vocab_size", "1000"},
-    {"model_type", "unigram"},
-});
+sentencepiece::TrainerComponents components;
+const auto status = sentencepiece::SentencePieceTrainer::Train(
+    {
+        {"input", "data/botchan.txt"},
+        {"model_prefix", "m"},
+        {"vocab_size", "1000"},
+        {"model_type", "unigram"},
+    },
+    components);
 ```
 
-### Using `TrainerSpec` and `TrainerComponents`
+### Using `TrainerComponents` (`TrainerSpec`, Pretokenizer, In-Memory Output)
 
-For programmatic control—such as streaming sentences via `SentenceIterator`, attaching a custom `PretokenizerForTrainingInterface`, or writing the trained `ModelProto` directly to memory without creating files on disk—use the `TrainerComponents` overload:
+For programmatic control—such as configuring `TrainerSpec` and `NormalizerSpec` directly, streaming sentences via `SentenceIterator`, attaching a custom `pretokenizer` callback (`std::function<std::vector<std::string>(absl::string_view)>`), or writing the trained serialized `ModelProto` directly to memory without creating files on disk—populate `TrainerComponents`:
 
 ```cpp
 #include <sentencepiece_trainer.h>
 #include "sentencepiece_model.pb.h"
 
-sentencepiece::TrainerSpec trainer_spec;
-trainer_spec.add_input("data/botchan.txt");
-trainer_spec.set_vocab_size(1000);
-trainer_spec.set_model_type(sentencepiece::TrainerSpec::UNIGRAM);
-
-sentencepiece::NormalizerSpec normalizer_spec;
-sentencepiece::SentencePieceTrainer::PopulateNormalizerSpec(&normalizer_spec);
-
 sentencepiece::TrainerComponents components;
-sentencepiece::ModelProto output_model_proto;
-components.output_model_proto = &output_model_proto;
 
+auto* trainer_spec = components.mutable_trainer_spec();
+trainer_spec->add_input("data/botchan.txt");
+trainer_spec->set_vocab_size(1000);
+trainer_spec->set_model_type(sentencepiece::TrainerSpec::UNIGRAM);
+
+auto* normalizer_spec = components.mutable_normalizer_spec();
+normalizer_spec->set_name("nmt_nfkc");
+
+// Optional: attach a custom pretokenizer callback
+// components.pretokenizer = [](absl::string_view normalized) { ... };
+
+std::string serialized_model_proto;
 const auto status = sentencepiece::SentencePieceTrainer::Train(
-    trainer_spec, normalizer_spec, components);
+    components, &serialized_model_proto);
 ```

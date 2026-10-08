@@ -89,7 +89,7 @@ class Lattice {
   // Runs forwards/backwards algorithm, returns vector with normalised
   // transition probs.
   std::vector<float> ForwardAlgorithm(float theta) const;
-  std::vector<float> BackwardAlgorithm(float theta) const;
+  std::vector<float> BackwardAlgorithm() const;
 
   // Returns n-best results.
   std::vector<LatticePathWithScore> NBest(size_t nbest_size, bool sample,

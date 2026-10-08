@@ -29,7 +29,7 @@
 #include "init.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
-#include "trainer_interface.h"
+#include "util.h"
 
 ABSL_FLAG(std::string, model, "", "model file name");
 ABSL_FLAG(

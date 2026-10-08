@@ -607,7 +607,7 @@ class Normalizer {
 
     if (!trie_.has_array() && offset == nullptr) {
       if (utf8::IsStructurallyValid(input)) {
-        NormalizeIdentityFast(input, space_symbol, &consumed, normalized);
+        NormalizeIdentityFast(input, space_symbol, normalized);
       } else {
         NormalizeGeneralCore(input, space_symbol, &consumed, normalized,
                              /*offset=*/nullptr);
@@ -648,7 +648,7 @@ class Normalizer {
   // Fast path for identity normalization without offsets (empty compiled map),
   // using 64-bit SWAR / SIMD memchr and batched appends.
   void NormalizeIdentityFast(std::string_view input,
-                             std::string_view space_symbol, size_t* consumed,
+                             std::string_view space_symbol,
                              std::string* normalized) const {
     bool is_prev_space = remove_extra_whitespaces_;
     StringScanner scanner(input);
@@ -656,7 +656,6 @@ class Normalizer {
       const std::string_view chunk = scanner.ConsumeUntil(' ');
       if (!chunk.empty()) {
         normalized->append(chunk.data(), chunk.size());
-        *consumed += chunk.size();
         is_prev_space = false;
       }
 
@@ -676,7 +675,6 @@ class Normalizer {
         }
         is_prev_space = false;
       }
-      *consumed += space_count;
     }
   }
 
@@ -1051,16 +1049,12 @@ StatusCode Model::Initialize(std::string_view model_buffer) {
         model_proto_->int_scores()->size() != vocab_size) {
       return StatusCode::kInternal;
     }
+    int_scores_ = model_proto_->int_scores()->data();
   } else {
     if (model_proto_->scores() == nullptr ||
         model_proto_->scores()->size() != vocab_size) {
       return StatusCode::kInternal;
     }
-  }
-
-  if (model_type_ == ModelType_BPE) {
-    int_scores_ = model_proto_->int_scores()->data();
-  } else {
     scores_ = model_proto_->scores()->data();
   }
 
@@ -1307,7 +1301,7 @@ void Model::EncodeUnigram(std::string_view normalized, std::vector<int>* ids,
 
   const int size = normalized.size();
   const float unk_penalty_score = unk_score();
-  std::vector<BestPathNode> best_path_ends_at(size + 1);
+  InlineVector<BestPathNode, 128> best_path_ends_at(size + 1);
   int starts_at = 0;
   // Re-center accumulated Viterbi scores when exceeding +/-kScoreResetThreshold
   // to prevent float32 significand precision loss on long inputs.

@@ -25,7 +25,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
-#include "freelist.h"
 #include "model_interface.h"
 #include "sentencepiece_model.pb.h"
 #include "util.h"

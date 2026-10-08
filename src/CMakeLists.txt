@@ -51,7 +51,6 @@ endif()
 # ==============================================================================
 if (SPM_PROTOBUF_PROVIDER STREQUAL "module")
   FetchContent_GetProperties(protobuf SOURCE_DIR protobuf_SOURCE_DIR)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR})
   include_directories(${protobuf_SOURCE_DIR}/src)
   include_directories(${protobuf_SOURCE_DIR}/third_party/utf8_range)
 
@@ -283,7 +282,7 @@ target_link_libraries(spm_decode sentencepiece ${SPM_LIBS})
 target_link_libraries(spm_normalize sentencepiece sentencepiece_train ${SPM_LIBS})
 target_link_libraries(spm_train sentencepiece sentencepiece_train ${SPM_LIBS})
 target_link_libraries(spm_export_vocab sentencepiece ${SPM_LIBS})
-target_link_libraries(spm_eval sentencepiece sentencepiece_train ${SPM_LIBS})
+target_link_libraries(spm_eval sentencepiece ${SPM_LIBS})
 
 if (SPM_ENABLE_NFKC_COMPILE)
   add_executable(compile_charsmap compile_charsmap_main.cc)

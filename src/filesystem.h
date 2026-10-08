@@ -42,7 +42,6 @@ inline std::string JoinPath(const Args&... args) {
 class ReadableFile {
  public:
   ReadableFile() = default;
-  explicit ReadableFile(absl::string_view filename, bool is_binary = false) {}
   virtual ~ReadableFile() = default;
 
   virtual absl::Status status() const = 0;
@@ -53,7 +52,6 @@ class ReadableFile {
 class WritableFile {
  public:
   WritableFile() = default;
-  explicit WritableFile(absl::string_view filename, bool is_binary = false) {}
   virtual ~WritableFile() = default;
 
   virtual absl::Status status() const = 0;

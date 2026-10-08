@@ -211,7 +211,6 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":sentencepiece_processor",
-        ":sentencepiece_trainer",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
     ],
@@ -269,7 +268,6 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":sentencepiece_processor",
-        ":sentencepiece_trainer",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
     ],

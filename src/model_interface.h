@@ -17,7 +17,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -30,7 +29,6 @@
 #include "normalizer.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
-#include "darts.h"
 
 namespace sentencepiece {
 
@@ -137,9 +135,7 @@ class ModelInterface {
   // Score represents a log probability of the piece.
   // We can roughly estimate the unigram frequency of the piece.
   [[nodiscard]] virtual float GetScore(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
-    return model_proto_->pieces(id).score();
+    return GetScoreInlined(id);
   }
 
   // Returns true if `id` is unknown symbol.
@@ -160,18 +156,12 @@ class ModelInterface {
 
   // Returns true if `id` is unused symbol.
   [[nodiscard]] virtual bool IsUnused(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
-    return (model_proto_->pieces(id).type() ==
-            ModelProto::SentencePiece::UNUSED);
+    return IsUnusedInlined(id);
   }
 
   // Returns true if `id` is user defined symbol.
   [[nodiscard]] virtual bool IsUserDefined(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
-    return (model_proto_->pieces(id).type() ==
-            ModelProto::SentencePiece::USER_DEFINED);
+    return IsUserDefinedInlined(id);
   }
 
   // Returns true if `id` is byte symbol.
@@ -201,20 +191,6 @@ class ModelInterface {
     return model_proto_->pieces(id).score();
   }
 
-  [[nodiscard]] bool IsUnknownInlined(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
-    return (model_proto_->pieces(id).type() ==
-            ModelProto::SentencePiece::UNKNOWN);
-  }
-
-  [[nodiscard]] bool IsControlInlined(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
-    return (model_proto_->pieces(id).type() ==
-            ModelProto::SentencePiece::CONTROL);
-  }
-
   [[nodiscard]] bool IsUnusedInlined(int id) const {
     DCHECK_GE(id, 0);
     DCHECK_LT(id, model_proto_->pieces_size());
@@ -227,12 +203,6 @@ class ModelInterface {
     DCHECK_LT(id, model_proto_->pieces_size());
     return (model_proto_->pieces(id).type() ==
             ModelProto::SentencePiece::USER_DEFINED);
-  }
-
-  [[nodiscard]] bool IsByteInlined(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
-    return (model_proto_->pieces(id).type() == ModelProto::SentencePiece::BYTE);
   }
 
   [[nodiscard]] bool IsReservedId(int id) const {
