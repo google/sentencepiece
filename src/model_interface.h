@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/no_destructor.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -119,8 +120,10 @@ class ModelInterface {
   // Returns the string representation of vocab with `id`.
   // id must be 0 <= id < GetPieceSize().
   [[nodiscard]] virtual const std::string& IdToPiece(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      static const absl::NoDestructor<std::string> kEmptyString("");
+      return *kEmptyString;
+    }
     return model_proto_->pieces(id).piece();
   }
 
@@ -137,47 +140,53 @@ class ModelInterface {
   // Score represents a log probability of the piece.
   // We can roughly estimate the unigram frequency of the piece.
   [[nodiscard]] virtual float GetScore(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      return 0.0f;
+    }
     return model_proto_->pieces(id).score();
   }
 
   // Returns true if `id` is unknown symbol.
   [[nodiscard]] virtual bool IsUnknown(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      return false;
+    }
     return (model_proto_->pieces(id).type() ==
             ModelProto::SentencePiece::UNKNOWN);
   }
 
   // Returns true if `id` is control symbol.
   [[nodiscard]] virtual bool IsControl(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      return false;
+    }
     return (model_proto_->pieces(id).type() ==
             ModelProto::SentencePiece::CONTROL);
   }
 
   // Returns true if `id` is unused symbol.
   [[nodiscard]] virtual bool IsUnused(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      return false;
+    }
     return (model_proto_->pieces(id).type() ==
             ModelProto::SentencePiece::UNUSED);
   }
 
   // Returns true if `id` is user defined symbol.
   [[nodiscard]] virtual bool IsUserDefined(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      return false;
+    }
     return (model_proto_->pieces(id).type() ==
             ModelProto::SentencePiece::USER_DEFINED);
   }
 
   // Returns true if `id` is byte symbol.
   [[nodiscard]] virtual bool IsByte(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      return false;
+    }
     return (model_proto_->pieces(id).type() == ModelProto::SentencePiece::BYTE);
   }
 
@@ -196,48 +205,55 @@ class ModelInterface {
 
   // Non-virtual (inlined) implementation for faster execution.
   [[nodiscard]] float GetScoreInlined(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      return 0.0f;
+    }
     return model_proto_->pieces(id).score();
   }
 
   [[nodiscard]] bool IsUnknownInlined(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      return false;
+    }
     return (model_proto_->pieces(id).type() ==
             ModelProto::SentencePiece::UNKNOWN);
   }
 
   [[nodiscard]] bool IsControlInlined(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      return false;
+    }
     return (model_proto_->pieces(id).type() ==
             ModelProto::SentencePiece::CONTROL);
   }
 
   [[nodiscard]] bool IsUnusedInlined(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      return false;
+    }
     return (model_proto_->pieces(id).type() ==
             ModelProto::SentencePiece::UNUSED);
   }
 
   [[nodiscard]] bool IsUserDefinedInlined(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      return false;
+    }
     return (model_proto_->pieces(id).type() ==
             ModelProto::SentencePiece::USER_DEFINED);
   }
 
   [[nodiscard]] bool IsByteInlined(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      return false;
+    }
     return (model_proto_->pieces(id).type() == ModelProto::SentencePiece::BYTE);
   }
 
   [[nodiscard]] bool IsReservedId(int id) const {
-    DCHECK_GE(id, 0);
-    DCHECK_LT(id, model_proto_->pieces_size());
+    if (id < 0 || model_proto_ == nullptr || id >= model_proto_->pieces_size()) {
+      return false;
+    }
     const auto& piece = model_proto_->pieces(id);
     return (piece.type() != ModelProto::SentencePiece::NORMAL &&
             piece.type() != ModelProto::SentencePiece::USER_DEFINED &&

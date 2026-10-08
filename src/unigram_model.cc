@@ -665,6 +665,7 @@ Model::Model(const ModelProto& model_proto) {
   model_proto_ = &model_proto;
 
   InitializePieces(/* use_reserved_id_map= */ true);
+  if (!status_.ok()) return;
 
   min_score_ = FLT_MAX;
   for (const auto& sp : model_proto_->pieces()) {
