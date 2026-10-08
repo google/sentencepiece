@@ -14,6 +14,7 @@ targets = [
     'config.h.in',
     'sentencepiece.pc.in',
     'src',
+    'lite',
     'third_party',
 ]
 

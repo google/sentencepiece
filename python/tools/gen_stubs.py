@@ -255,6 +255,12 @@ STATIC_METHODS = {("SentencePieceTrainer", "Train")}
 
 # Module-level free functions.
 FUNCTION_SIGS = {
+    "ConvertToFlatbuffer": (
+        "(model_file: str | None = ..., model_proto: Any | bytes | None = ..., "
+        "serialized_model_proto: bytes | None = ..., output_file: str | None = ..., "
+        "skip_char_bigrams: bool = ..., treat_null_byte_as_unused: bool = ..., "
+        "allow_unsupported_model_type: bool = ...) -> bytes | None"
+    ),
     "SetRandomGeneratorSeed": "(seed: int) -> None",
     "SetMinLogLevel": "(v: int) -> None",
     "SetNBestTimeout": "(timeout_ms: int) -> None",

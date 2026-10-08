@@ -1876,6 +1876,52 @@ TEST(SentencePieceModelConvertersTest, RejectInvalidBpeScores) {
   }
 }
 
+TEST(SentencePieceModelConvertersTest,
+     WordAndCharModelConversionAndUnigramFallback) {
+  for (const auto model_type : {::sentencepiece::TrainerSpec::WORD,
+                                ::sentencepiece::TrainerSpec::CHAR}) {
+    ::sentencepiece::ModelProto proto = MinimalUnigramProto();
+    proto.mutable_trainer_spec()->set_model_type(model_type);
+    auto* p1 = proto.add_pieces();
+    p1->set_piece("▁a");
+    p1->set_type(::sentencepiece::ModelProto::SentencePiece::NORMAL);
+    p1->set_score(-1.5f);
+    auto* p2 = proto.add_pieces();
+    p2->set_piece("b");
+    p2->set_type(::sentencepiece::ModelProto::SentencePiece::NORMAL);
+    p2->set_score(-2.5f);
+
+    // Rejected by default when allow_unsupported_model_type is false.
+    auto status_or_default = ToFlatbuffer(proto);
+    EXPECT_FALSE(status_or_default.ok());
+    EXPECT_EQ(status_or_default.status().code(),
+              absl::StatusCode::kInvalidArgument);
+
+    // Allowed when allow_unsupported_model_type is true; model_type is
+    // preserved in FlatBuffers and processor operates internally as UNIGRAM.
+    ConverterOptions options;
+    options.allow_unsupported_model_type = true;
+    auto status_or_allowed = ToFlatbuffer(proto, options);
+    ASSERT_TRUE(status_or_allowed.ok()) << status_or_allowed.status();
+
+    const auto* fb_model = GetModelProto(status_or_allowed->data());
+    ASSERT_NE(fb_model, nullptr);
+    EXPECT_EQ(fb_model->model_type(),
+              model_type == ::sentencepiece::TrainerSpec::WORD
+                  ? ModelType_WORD
+                  : ModelType_CHAR);
+
+    SentencePieceLiteProcessor processor(*status_or_allowed);
+    ASSERT_EQ(processor.status(), StatusCode::kOk);
+    EXPECT_FLOAT_EQ(processor.GetScore(2), -1.5f);
+    EXPECT_FLOAT_EQ(processor.GetScore(3), -2.5f);
+
+    std::vector<int> ids;
+    ASSERT_EQ(processor.EncodeNormalized("▁ab", &ids), StatusCode::kOk);
+    EXPECT_EQ(ids, (std::vector<int>{2, 3}));
+  }
+}
+
 // Single-character BYTE, CONTROL, and UNUSED tokens in a BPE vocabulary must
 // not be emitted as surface tokens by EncodeBPE's initial character split.
 TEST(SentencePieceLiteTest, BpeInitialSingleCharFiltersInvisiblePieceTypes) {

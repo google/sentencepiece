@@ -134,6 +134,72 @@ set_min_log_level = SetMinLogLevel
 set_nbest_timeout = SetNBestTimeout
 set_data_dir = SetDataDir
 
+
+def ConvertToFlatbuffer(
+    model_file=None,
+    model_proto=None,
+    serialized_model_proto=None,
+    output_file=None,
+    skip_char_bigrams=False,
+    treat_null_byte_as_unused=False,
+    allow_unsupported_model_type=False,
+):
+    """Converts a SentencePiece ModelProto into a FlatBuffers (.spm.fb) model.
+
+    Note: WORD and CHAR models are not natively supported in FlatBuffers
+    (.spm.fb) and raise a ValueError by default. Even when
+    `allow_unsupported_model_type=True` is specified, they fall back to
+    UNIGRAM at runtime in SentencePieceLiteProcessor.
+    """
+    num_inputs = sum(
+        x is not None for x in (model_file, model_proto, serialized_model_proto)
+    )
+    if num_inputs != 1:
+        raise ValueError(
+            'Exactly one of model_file, model_proto, or serialized_model_proto must be specified.'
+        )
+
+    out_path = ''
+    if output_file is not None:
+        out_path = os.fsdecode(os.fspath(output_file))
+        if not out_path:
+            raise ValueError('output_file must not be empty.')
+
+    if model_file is not None:
+        model_path = os.fsdecode(os.fspath(model_file))
+        if not model_path:
+            raise ValueError('model_file must not be empty.')
+        return _sentencepiece._ConvertFileToFlatbuffer(
+            model_path,
+            out_path,
+            bool(skip_char_bigrams),
+            bool(treat_null_byte_as_unused),
+            bool(allow_unsupported_model_type),
+        )
+
+    if model_proto is not None:
+        if hasattr(model_proto, 'SerializeToString'):
+            serialized = model_proto.SerializeToString()
+        elif isinstance(model_proto, bytes):
+            serialized = model_proto
+        else:
+            raise TypeError('model_proto must be a ModelProto object or bytes.')
+    else:
+        if not isinstance(serialized_model_proto, bytes):
+            raise TypeError('serialized_model_proto must be bytes.')
+        serialized = serialized_model_proto
+
+    return _sentencepiece._ConvertSerializedProtoToFlatbuffer(
+        serialized,
+        out_path,
+        bool(skip_char_bigrams),
+        bool(treat_null_byte_as_unused),
+        bool(allow_unsupported_model_type),
+    )
+
+
+convert_to_flatbuffer = ConvertToFlatbuffer
+
 class SentencePieceProcessor:
     def __init__(self,
                  model_file=None,

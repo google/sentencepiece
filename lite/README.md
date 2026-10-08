@@ -164,15 +164,28 @@ if (processor.Decode(ids, &text) == sentencepiece::lite::StatusCode::kOk) {
 
 > **Note**: While original `.model` files are endian-independent, FlatBuffers binary files (`.spm.fb`) are endian-dependent. They are fully interoperable across most common little-endian platforms (e.g., x86_64, ARM64, Apple Silicon). Please convert `.model` files on the target machine if using different endian architectures.
 
-### 5.1. Offline Model Conversion (CLI)
+### 5.1. Offline Model Conversion (CLI & Python)
 
-Convert an original SentencePiece model (`.model`) to a FlatBuffers model (`.spm.fb`) using the converter tool:
+Convert an original SentencePiece model (`.model`) to a FlatBuffers model (`.spm.fb`) using the converter CLI tool:
 
 ```bash
 # Convert .model to .spm.fb
 ./build/lite/spm_to_fb --model=model.model --output=model.spm.fb
 # Or with Bazel:
 bazel run //lite:spm_to_fb -- --model=model.model --output=model.spm.fb
+```
+
+Or convert from Python using `sentencepiece.convert_to_flatbuffer` (`ConvertToFlatbuffer`, requires `sentencepiece >= 0.2.3`):
+
+```python
+import sentencepiece as spm
+
+# Convert .model file directly to .spm.fb file
+spm.convert_to_flatbuffer(model_file='model.model', output_file='model.spm.fb')
+
+# Or convert in memory (returns FlatBuffers bytes) from model_file,
+# serialized_model_proto (bytes), or a ModelProto object:
+fb_bytes: bytes = spm.convert_to_flatbuffer(model_file='model.model')
 ```
 
 Loading a pre-converted `.spm.fb` file using `mmap` provides zero-copy startup and zero heap allocations.

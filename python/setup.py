@@ -44,6 +44,8 @@ def find_abseil_lib(search_root):
       'protobuf-lite',
       'libutf8_validity',
       'utf8_validity',
+      'libflatbuffers',
+      'flatbuffers',
   )
   for root, dirs, files in os.walk(search_root):
     for file in files:
@@ -66,6 +68,8 @@ def get_build_includes(build_dir, is_msvc=True):
       os.path.join(build_dir, '_deps', 'abseil-cpp-src'),
       '../src',
       './sentencepiece/src',
+      '../lite',
+      './sentencepiece/lite',
       '..',
       './sentencepiece',
   ]
@@ -122,10 +126,12 @@ class build_ext_unix(_build_ext):
       libs.append('-Wl,-exported_symbols_list,exports_mac.txt')
     else:
       # GNU linker
-      libs.append('-Wl,--start-group')
-      libs.extend(abseil_libs)
-      libs.append('-lgomp')
-      libs.append('-Wl,--end-group')
+      libs = (
+          ['-Wl,--start-group']
+          + libs
+          + abseil_libs
+          + ['-lgomp', '-Wl,--end-group']
+      )
       libs.append('-Wl,--gc-sections')
       libs.append('-Wl,--version-script=exports.txt')
       if sys.platform == 'aix':

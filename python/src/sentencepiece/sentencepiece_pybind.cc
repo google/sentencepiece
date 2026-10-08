@@ -18,6 +18,10 @@
 
 #include "absl/status/status.h"
 #include "absl/synchronization/mutex.h"
+#include "filesystem.h"
+#include "sentencepiece_lite.h"
+#include "sentencepiece_model.pb.h"
+#include "sentencepiece_model_converters.h"
 #include "util.h"
 
 namespace py = pybind11;
@@ -595,6 +599,35 @@ py::dict ExtractOffsetMapping(const sentencepiece::SentencePieceText& spt,
   return result;
 }
 
+absl::Status ConvertModelProtoToFlatbuffer(
+    const sentencepiece::ModelProto& model_proto,
+    const std::string& output_file, bool skip_char_bigrams,
+    bool treat_null_byte_as_unused, bool allow_unsupported_model_type,
+    std::string* fb_out) {
+  sentencepiece::lite::ConverterOptions options;
+  options.skip_char_bigrams = skip_char_bigrams;
+  options.treat_null_byte_as_unused = treat_null_byte_as_unused;
+  options.allow_unsupported_model_type = allow_unsupported_model_type;
+  auto fb_or = sentencepiece::lite::ToFlatbuffer(model_proto, options);
+  if (!fb_or.ok()) return fb_or.status();
+  sentencepiece::lite::SentencePieceLiteProcessor processor(*fb_or);
+  if (processor.status() != sentencepiece::lite::StatusCode::kOk) {
+    return absl::InvalidArgumentError(
+        "Model verification failed: Converted FlatBuffers model is invalid.");
+  }
+  if (!output_file.empty()) {
+    auto output = sentencepiece::filesystem::NewWritableFile(output_file, true);
+    if (!output->status().ok()) return output->status();
+    if (!output->Write(*fb_or)) {
+      return absl::InternalError("Failed to write FlatBuffer model to " +
+                                 output_file);
+    }
+  } else {
+    *fb_out = std::move(*fb_or);
+  }
+  return absl::OkStatus();
+}
+
 }  // namespace
 
 PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
@@ -619,6 +652,49 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
   m.def("SetDataDir", [](const std::string& data_dir) {
     sentencepiece::SetDataDir(data_dir);
   });
+  m.def("_ConvertFileToFlatbuffer",
+        [](const std::string& model_file, const std::string& output_file,
+           bool skip_char_bigrams, bool treat_null_byte_as_unused,
+           bool allow_unsupported_model_type) -> py::object {
+          std::string fb_out;
+          {
+            py::gil_scoped_release release;
+            sentencepiece::ModelProto model_proto;
+            auto status =
+                sentencepiece::io::LoadModelProto(model_file, &model_proto);
+            if (!status.ok()) throw status;
+            status = ConvertModelProtoToFlatbuffer(
+                model_proto, output_file, skip_char_bigrams,
+                treat_null_byte_as_unused, allow_unsupported_model_type,
+                &fb_out);
+            if (!status.ok()) throw status;
+          }
+          if (!output_file.empty()) return py::none();
+          return py::bytes(fb_out);
+        });
+  m.def(
+      "_ConvertSerializedProtoToFlatbuffer",
+      [](const py::bytes& serialized, const std::string& output_file,
+         bool skip_char_bigrams, bool treat_null_byte_as_unused,
+         bool allow_unsupported_model_type) -> py::object {
+        std::string_view serialized_view = serialized.cast<std::string_view>();
+        std::string fb_out;
+        {
+          py::gil_scoped_release release;
+          sentencepiece::ModelProto model_proto;
+          if (!model_proto.ParseFromArray(serialized_view.data(),
+                                          serialized_view.size())) {
+            throw absl::InvalidArgumentError(
+                "Failed to parse ModelProto from serialized bytes.");
+          }
+          auto status = ConvertModelProtoToFlatbuffer(
+              model_proto, output_file, skip_char_bigrams,
+              treat_null_byte_as_unused, allow_unsupported_model_type, &fb_out);
+          if (!status.ok()) throw status;
+        }
+        if (!output_file.empty()) return py::none();
+        return py::bytes(fb_out);
+      });
 
   py::class_<PyThreadPool>(m, "ThreadPool")
       .def(py::init<int>())

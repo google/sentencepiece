@@ -44,6 +44,14 @@ struct ConverterOptions {
   // conversion will fail with an error because null bytes cannot be safely
   // delegated to byte tokens (<0x00>).
   bool treat_null_byte_as_unused = false;
+
+  // WORD and CHAR models are not natively supported in FlatBuffers (.spm.fb)
+  // and cause conversion to fail with an InvalidArgument error by default.
+  // If true, allows converting models with unsupported model types (such as
+  // WORD and CHAR) without error; however, even when enabled, these models
+  // fall back to and operate as UNIGRAM at runtime in
+  // SentencePieceLiteProcessor.
+  bool allow_unsupported_model_type = false;
 };
 
 // Converts a standard SentencePiece ModelProto into a serialized FlatBuffers

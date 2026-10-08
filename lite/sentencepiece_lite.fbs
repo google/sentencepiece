@@ -26,9 +26,15 @@ namespace sentencepiece.lite;
 
 // Corresponds 1-to-1 with `sentencepiece::TrainerSpec::ModelType` in protobuf.
 // Defines the tokenization algorithm used by the model.
+// Note: FlatBuffers (.spm.fb) natively supports UNIGRAM and BPE. WORD and CHAR
+// are rejected by default during conversion; even if allowed via
+// `allow_unsupported_model_type`, they fall back to UNIGRAM at runtime in
+// `SentencePieceLiteProcessor`.
 enum ModelType:byte {
   UNIGRAM = 1,
   BPE = 2,
+  WORD = 3,
+  CHAR = 4,
 }
 
 // Corresponds 1-to-1 with `sentencepiece::ModelProto::SentencePiece::Type` in
@@ -78,7 +84,8 @@ table ModelProto {
   // Surface representation string for unknown tokens (e.g., " \xe2\x81\x87 ").
   unk_surface:string;
 
-  // Tokenization algorithm specification (UNIGRAM or BPE).
+  // Tokenization algorithm specification (UNIGRAM, BPE, WORD, or CHAR; WORD
+  // and CHAR fall back to UNIGRAM in SentencePieceLiteProcessor).
   model_type:ModelType = UNIGRAM;
 
   // Text normalization specification and rules.

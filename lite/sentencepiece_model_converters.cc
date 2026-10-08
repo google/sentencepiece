@@ -223,8 +223,13 @@ absl::StatusOr<std::string> ToFlatbuffer(
   if (proto.has_trainer_spec()) {
     const auto& ts = proto.trainer_spec();
     auto model_type = ts.model_type();
-    if (model_type != ::sentencepiece::TrainerSpec::UNIGRAM &&
-        model_type != ::sentencepiece::TrainerSpec::BPE) {
+    const bool is_supported_type =
+        (model_type == ::sentencepiece::TrainerSpec::UNIGRAM ||
+         model_type == ::sentencepiece::TrainerSpec::BPE) ||
+        (options.allow_unsupported_model_type &&
+         (model_type == ::sentencepiece::TrainerSpec::WORD ||
+          model_type == ::sentencepiece::TrainerSpec::CHAR));
+    if (!is_supported_type) {
       return absl::InvalidArgumentError(absl::StrCat(
           "Unsupported model type: ",
           ::sentencepiece::TrainerSpec::ModelType_Name(model_type)));

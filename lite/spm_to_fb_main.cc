@@ -31,6 +31,10 @@ ABSL_FLAG(std::string, output, "",
 ABSL_FLAG(bool, treat_null_byte_as_unused, false,
           "If true, automatically converts pieces containing null bytes "
           "('\\0') into UNUSED pieces (requires byte_fallback = true).");
+ABSL_FLAG(bool, allow_unsupported_model_type, false,
+          "WORD and CHAR models are not supported in .spm.fb and fail by "
+          "default. If true, allows converting them, but they fall back to "
+          "UNIGRAM at runtime in SentencePieceLiteProcessor.");
 
 int main(int argc, char* argv[]) {
   absl::ParseCommandLine(argc, argv);
@@ -58,6 +62,8 @@ int main(int argc, char* argv[]) {
   sentencepiece::lite::ConverterOptions options;
   options.treat_null_byte_as_unused =
       absl::GetFlag(FLAGS_treat_null_byte_as_unused);
+  options.allow_unsupported_model_type =
+      absl::GetFlag(FLAGS_allow_unsupported_model_type);
 
   auto fbs_bytes_or = sentencepiece::lite::ToFlatbuffer(proto, options);
   if (!fbs_bytes_or.ok()) {

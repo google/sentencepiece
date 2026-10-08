@@ -255,6 +255,35 @@ elseif (SPM_PROTOBUF_PROVIDER STREQUAL "package")
   set(PROTOBUF_LITE_LIBRARY protobuf::libprotobuf-lite)
 endif()
 
+# FlatBuffers
+if (NOT TARGET flatbuffers)
+  include(FetchContent)
+  set(FLATBUFFERS_BUILD_TESTS OFF CACHE BOOL "Disable flatbuffers tests" FORCE)
+  set(FLATBUFFERS_BUILD_FLATLIB ON CACHE BOOL "Enable flatbuffers library" FORCE)
+  set(FLATBUFFERS_INSTALL OFF CACHE BOOL "Disable flatbuffers install" FORCE)
+  if (SPM_FLATC_EXECUTABLE)
+    set(FLATBUFFERS_BUILD_FLATC OFF CACHE BOOL "Disable flatc binary as SPM_FLATC_EXECUTABLE is set" FORCE)
+  else()
+    set(FLATBUFFERS_BUILD_FLATC ON CACHE BOOL "Enable flatc binary" FORCE)
+  endif()
+  FetchContent_Declare(
+    flatbuffers
+    GIT_REPOSITORY https://github.com/google/flatbuffers.git
+    GIT_TAG v25.12.19-2026-02-06-03fffb2
+    GIT_SHALLOW TRUE
+    SOURCE_DIR "${CMAKE_BINARY_DIR}/third_party/flatbuffers-src"
+  )
+  FetchContent_MakeAvailable(flatbuffers)
+  FetchContent_GetProperties(flatbuffers SOURCE_DIR flatbuffers_SOURCE_DIR)
+  if (flatbuffers_SOURCE_DIR)
+    file(REMOVE_RECURSE "${flatbuffers_SOURCE_DIR}/tests/fuzzer")
+  endif()
+  if (SPM_FLATC_EXECUTABLE AND NOT TARGET flatc)
+    add_executable(flatc IMPORTED GLOBAL)
+    set_target_properties(flatc PROPERTIES IMPORTED_LOCATION "${SPM_FLATC_EXECUTABLE}")
+  endif()
+endif()
+
 # Googletest (Testing; also linked by the benchmarks)
 if (SPM_BUILD_TEST OR SPM_ENABLE_BENCHMARK)
   if (SPM_BUILD_TEST)

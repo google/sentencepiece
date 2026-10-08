@@ -1943,6 +1943,95 @@ class TestSentencepieceProcessor(unittest.TestCase):
       self.assertIsInstance(res_tuple, list)
       self.assertEqual(len(res_tuple), 2)
 
+  def test_convert_to_flatbuffer(self):
+    unigram_path = os.path.join(data_dir, 'botchan_en_unigram_1000.model')
+    bpe_path = os.path.join(data_dir, 'botchan_en_bpe_1000.model')
+
+    with open(unigram_path, 'rb') as f:
+      unigram_serialized = f.read()
+
+    # 1. model_file -> bytes (both CamelCase and snake_case)
+    fb_from_file = spm.ConvertToFlatbuffer(model_file=unigram_path)
+    self.assertIsInstance(fb_from_file, bytes)
+    self.assertGreater(len(fb_from_file), 0)
+    self.assertEqual(
+        fb_from_file, spm.convert_to_flatbuffer(model_file=unigram_path)
+    )
+
+    # 2. serialized_model_proto -> bytes
+    fb_from_serialized = spm.convert_to_flatbuffer(
+        serialized_model_proto=unigram_serialized
+    )
+    self.assertEqual(fb_from_file, fb_from_serialized)
+
+    # 3. model_proto (bytes or ModelProto object) -> bytes
+    self.assertEqual(
+        fb_from_file, spm.convert_to_flatbuffer(model_proto=unigram_serialized)
+    )
+    if has_protobuf:
+      from sentencepiece import sentencepiece_model_pb2
+
+      mp = sentencepiece_model_pb2.ModelProto()
+      mp.ParseFromString(unigram_serialized)
+      self.assertEqual(fb_from_file, spm.convert_to_flatbuffer(model_proto=mp))
+
+    # 4. skip_char_bigrams option reduces FlatBuffer size on Unigram models
+    fb_no_bigrams = spm.convert_to_flatbuffer(
+        model_file=unigram_path, skip_char_bigrams=True
+    )
+    self.assertIsInstance(fb_no_bigrams, bytes)
+    self.assertLess(len(fb_no_bigrams), len(fb_from_file))
+
+    # 5. BPE model conversion
+    fb_bpe = spm.convert_to_flatbuffer(model_file=bpe_path)
+    self.assertIsInstance(fb_bpe, bytes)
+    self.assertGreater(len(fb_bpe), 0)
+
+    # 6. output_file writes to disk and returns None
+    with tempfile.TemporaryDirectory() as tmp_dir:
+      out_path = os.path.join(tmp_dir, 'out.spm.fb')
+      ret = spm.convert_to_flatbuffer(
+          model_file=unigram_path, output_file=out_path
+      )
+      self.assertIsNone(ret)
+      with open(out_path, 'rb') as f:
+        self.assertEqual(f.read(), fb_from_file)
+
+    # 7. allow_unsupported_model_type (WORD / CHAR)
+    if has_protobuf:
+      for model_type in (
+          sentencepiece_model_pb2.TrainerSpec.WORD,
+          sentencepiece_model_pb2.TrainerSpec.CHAR,
+      ):
+        mp = sentencepiece_model_pb2.ModelProto()
+        mp.ParseFromString(unigram_serialized)
+        mp.trainer_spec.model_type = model_type
+        with self.assertRaises(ValueError):
+          spm.convert_to_flatbuffer(model_proto=mp)
+        fb_unsupported = spm.convert_to_flatbuffer(
+            model_proto=mp, allow_unsupported_model_type=True
+        )
+        self.assertIsInstance(fb_unsupported, bytes)
+        self.assertGreater(len(fb_unsupported), 0)
+
+    # 8. Validation errors (0 or >1 inputs, invalid types, invalid data)
+    with self.assertRaises(ValueError):
+      spm.convert_to_flatbuffer()
+    with self.assertRaises(ValueError):
+      spm.convert_to_flatbuffer(
+          model_file=unigram_path, serialized_model_proto=unigram_serialized
+      )
+    with self.assertRaises(ValueError):
+      spm.convert_to_flatbuffer(model_file='')
+    with self.assertRaises(ValueError):
+      spm.convert_to_flatbuffer(model_file=unigram_path, output_file='')
+    with self.assertRaises(TypeError):
+      spm.convert_to_flatbuffer(serialized_model_proto='not_bytes')
+    with self.assertRaises(TypeError):
+      spm.convert_to_flatbuffer(model_proto=12345)
+    with self.assertRaises(ValueError):
+      spm.convert_to_flatbuffer(serialized_model_proto=b'corrupted_proto')
+
 
 def suite():
   suite = unittest.TestSuite()
