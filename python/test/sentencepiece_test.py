@@ -29,9 +29,10 @@ import sentencepiece as spm
 
 try:
   from sentencepiece import sentencepiece_pb2
+  from sentencepiece import sentencepiece_model_pb2
 
   has_protobuf = True
-except ImportError:
+except Exception:
   has_protobuf = False
 
 TESTED_RETURN_TYPES = [str, int, 'serialized_proto']

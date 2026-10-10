@@ -165,6 +165,12 @@ void Lattice::SetSentence(absl::string_view sentence) {
 }
 
 Lattice::Node* Lattice::Insert(int pos, int length) {
+  const int len = size();
+  if (pos < 0 || length <= 0 || pos + length > len) {
+    LOG(ERROR) << "Invalid node position or length: pos=" << pos
+               << " length=" << length << " size=" << len;
+    return nullptr;
+  }
   Node* node = NewNode();
   node->pos = pos;
   node->length = length;
@@ -179,6 +185,7 @@ Lattice::Node* Lattice::Insert(int pos, int length) {
 
 Lattice::LatticePathWithScore Lattice::Viterbi() {
   const size_t len = size();
+  if (len == 0) return {};
 
   for (size_t pos = 0; pos <= len; ++pos) {
     for (Node* rnode : begin_nodes_[pos]) {
@@ -203,10 +210,18 @@ Lattice::LatticePathWithScore Lattice::Viterbi() {
 
   // backtrace
   std::vector<Node*> results;
-  float score = begin_nodes(len)[0]->backtrace_score;
-  for (Node* node = begin_nodes_[len][0]->prev; node->prev != nullptr;
-       node = node->prev) {
+  if (begin_nodes_[len].empty() || begin_nodes_[len][0] == nullptr) {
+    LOG(ERROR) << "EOS node is missing in Viterbi.";
+    return {};
+  }
+  float score = begin_nodes_[len][0]->backtrace_score;
+  for (Node* node = begin_nodes_[len][0]->prev;
+       node != nullptr && node->prev != nullptr; node = node->prev) {
     results.push_back(node);
+    if (results.size() > len) {
+      LOG(ERROR) << "Detected cycle or infinite loop in Viterbi backtrace.";
+      return {};
+    }
   }
 
   std::reverse(results.begin(), results.end());
@@ -339,6 +354,9 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
     return {};
   }
 
+  const size_t len = size();
+  if (len == 0) return {};
+
   if (nbest_size == 1 && !sample) {
     return {Viterbi()};
   }
@@ -402,8 +420,13 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
     // Reaches to BOS
     if (node == bos_node()) {
       results.resize(results.size() + 1);
-      for (auto* n = top->next; n->next != nullptr; n = n->next) {
+      for (auto* n = top->next; n != nullptr && n->next != nullptr;
+           n = n->next) {
         results.back().first.push_back(n->node);
+        if (results.back().first.size() > len) {
+          LOG(ERROR) << "Detected cycle in NBest path.";
+          break;
+        }
       }
       results.back().second = top->fx;
       if (results.size() == nbest_size) {
@@ -525,6 +548,7 @@ std::vector<Lattice::Node*> Lattice::Sample(float inv_theta) {
   float Z = alpha[eos_node()->node_id];
   Node* node = eos_node();
   while (true) {
+    if (end_nodes_[node->pos].empty()) break;
     probs.clear();
     for (const Node* lnode : end_nodes_[node->pos]) {
       probs.push_back(std::exp(static_cast<double>(
@@ -536,6 +560,10 @@ std::vector<Lattice::Node*> Lattice::Sample(float inv_theta) {
 
     Z = alpha[node->node_id];
     results.push_back(node);
+    if (results.size() > len) {
+      LOG(ERROR) << "Detected cycle or infinite loop in Sample.";
+      break;
+    }
   }
 
   std::reverse(results.begin(), results.end());
@@ -580,7 +608,9 @@ void Model::PopulateNodes(Lattice* lattice) const {
           get_chars_length(begin_pos, begin + trie_results[k].length);
       const int id = trie_results[k].value;
       if (IsUnusedInlined(id)) continue;
+      if (length <= 0) continue;
       Lattice::Node* node = lattice->Insert(begin_pos, length);
+      if (!node) continue;
       node->id = id;  // the value of Trie stores vocab_id.
       // User defined symbol receives extra bonus to always be selected.
       node->score = IsUserDefinedInlined(id) ? GetUserDefinedScore(length)
@@ -592,8 +622,10 @@ void Model::PopulateNodes(Lattice* lattice) const {
 
     if (!has_single_node) {
       Lattice::Node* node = lattice->Insert(begin_pos, 1);
-      node->id = unk_id_;  // add UNK node.
-      node->score = unk_score;
+      if (node) {
+        node->id = unk_id_;  // add UNK node.
+        node->score = unk_score;
+      }
     }
   }
 }

@@ -176,6 +176,34 @@ TEST(LatticeTest, ViterbiFromIncompleteLatticeTest) {
   lattice.Viterbi();
 }
 
+TEST(LatticeTest, InvalidNodeTest) {
+  Lattice lattice;
+  lattice.SetSentence("ABC");
+  EXPECT_EQ(lattice.Insert(0, 0), nullptr);
+  EXPECT_EQ(lattice.Insert(0, -1), nullptr);
+  EXPECT_EQ(lattice.Insert(-1, 1), nullptr);
+  EXPECT_EQ(lattice.Insert(0, 4), nullptr);
+  EXPECT_EQ(lattice.Insert(2, 2), nullptr);
+
+  auto* n0 = lattice.Insert(0, 1);
+  auto* n1 = lattice.Insert(1, 1);
+  auto* n2 = lattice.Insert(2, 1);
+  ASSERT_NE(n0, nullptr);
+  ASSERT_NE(n1, nullptr);
+  ASSERT_NE(n2, nullptr);
+  n0->score = 1.0f;
+  n1->score = 1.0f;
+  n2->score = 1.0f;
+  EXPECT_EQ(lattice.Viterbi().first.size(), 3);
+}
+
+TEST(LatticeTest, EmptySentenceTest) {
+  Lattice lattice;
+  lattice.SetSentence("");
+  EXPECT_TRUE(lattice.Viterbi().first.empty());
+  EXPECT_TRUE(lattice.Sample(1.0).empty());
+}
+
 std::string GetTokenized(const std::vector<Lattice::Node*>& nodes) {
   std::vector<std::string> tokens;
   for (auto* node : nodes) {

@@ -800,8 +800,15 @@ class Model {
 
   int PieceToId(std::string_view piece) const;
   std::string_view IdToPiece(int id) const;
-  float GetScore(int id) const { return scores_[id]; }
-  int32_t GetIntScore(int id) const { return int_scores_[id]; }
+  // FlatBuffers stores scalar values in little-endian wire format. When reading
+  // through raw pointers (scores_ / int_scores_), EndianScalar byte-swaps the
+  // values on big-endian hosts while remaining a no-op on little-endian hosts.
+  float GetScore(int id) const {
+    return flatbuffers::EndianScalar(scores_[id]);
+  }
+  int32_t GetIntScore(int id) const {
+    return flatbuffers::EndianScalar(int_scores_[id]);
+  }
   bool IsUnknown(int id) const { return types_[id] == PieceType_UNKNOWN; }
   bool IsControl(int id) const { return types_[id] == PieceType_CONTROL; }
   bool IsByte(int id) const { return types_[id] == PieceType_BYTE; }

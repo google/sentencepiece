@@ -692,5 +692,19 @@ TEST(SentencePieceTrainerTest, ByteFallbackWithoutUnkTest) {
     }
   }
 }
+
+TEST(SentencePieceTrainerTest, TrainWithNullCharacterTest) {
+  std::vector<std::string> sentences = {
+      std::string("\x00\x00\x00\x00\x00\x00", 6),
+      std::string("hello\0world", 11),
+      std::string("a\0b\0c\0d\0e\0f", 11),
+      "the quick brown fox jumps over the lazy dog",
+  };
+  std::string model;
+  auto status = SentencePieceTrainer::Train(
+      "--vocab_size=30 --model_type=unigram --num_threads=1", sentences,
+      &model);
+  EXPECT_TRUE(status.ok());
+}
 }  // namespace
 }  // namespace sentencepiece
