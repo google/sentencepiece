@@ -292,7 +292,6 @@ class PyListStringViewVector {
   }
 
   absl::Span<const absl::string_view> views() const { return views_; }
-  size_t size() const { return views_.size(); }
   bool empty() const { return views_.empty(); }
   bool is_bytes() const { return is_bytes_; }
   absl::string_view operator[](size_t i) const { return views_[i]; }
@@ -339,7 +338,6 @@ class PyListStringViewVector {
 // Wrapper class to hold either a zero-copy Span or an owned vector of ints.
 class IntSpanOrVector {
  public:
-  IntSpanOrVector() : is_owned_(false) {}
   IntSpanOrVector(absl::Span<const int> span, py::buffer_info&& info)
       : info_(std::move(info)), span_(span), is_owned_(false) {}
   explicit IntSpanOrVector(std::vector<int>&& vec)

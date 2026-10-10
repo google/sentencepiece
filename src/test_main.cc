@@ -23,7 +23,6 @@
 
 ABSL_FLAG(std::string, test_srcdir,
           sentencepiece::filesystem::JoinPath("..", "data"), "Data directory.");
-ABSL_FLAG(std::string, test_tmpdir, "test_tmp", "Temporary directory.");
 
 int main(int argc, char** argv) {
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);

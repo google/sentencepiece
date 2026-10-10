@@ -22,8 +22,6 @@
 
 #include "absl/base/no_destructor.h"
 #include "absl/container/flat_hash_map.h"
-#include "absl/strings/match.h"
-#include "absl/strings/string_view.h"
 #include "benchmark/benchmark.h"
 #include "cached_sentencepiece_lite.h"
 #include "sentencepiece_lite.h"

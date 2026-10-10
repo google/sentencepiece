@@ -44,7 +44,6 @@
 // 5. Simplicity & Cleanliness: Avoid over-engineering, and keep the codebase
 //    clean, concise, and simple.
 
-#include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -291,7 +290,6 @@ class SentencePieceLiteProcessor {
   int piece_type(int id) const;
 
   // For testing/internal usage only.
-  bool HasNonNullDirectMappingVectorForTesting() const;
   void SetScoreResetThresholdForTesting(float threshold);
 
  private:

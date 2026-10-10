@@ -333,16 +333,9 @@ endif()
 
 if (UNIX)
   include(GNUInstallDirs)
-  set(prefix ${CMAKE_INSTALL_PREFIX})
-  set(exec_prefix "\${prefix}")
-  set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
-  set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
-else()
-  set(prefix ${CMAKE_INSTALL_PREFIX})
-  set(exec_prefix "\${prefix}")
-  set(libdir "\${exec_prefix}/lib")
-  set(includedir "\${prefix}/include")
 endif()
+set(prefix ${CMAKE_INSTALL_PREFIX})
+set(exec_prefix "\${prefix}")
 
 # Helper function for path concatenation
 function(join_paths joined_path first_path_segment)

@@ -865,9 +865,6 @@ class Model {
     return vector->Get(id) != 0;
   }
 
-  bool has_non_null_vector() const {
-    return model_proto_->is_direct_mapping() != nullptr;
-  }
   void SetScoreResetThresholdForTesting(float threshold) {
     score_reset_threshold_ = threshold;
   }
@@ -1710,8 +1707,8 @@ StatusCode SentencePieceLiteProcessor::Decode(
   InlineVector<unsigned char, 64> accumulated_bytes;
   size_t first_byte_index = 0;
 
-  auto flush_bytes = [&]() -> StatusCode {
-    if (accumulated_bytes.empty()) return StatusCode::kOk;
+  auto flush_bytes = [&]() {
+    if (accumulated_bytes.empty()) return;
     size_t offset = 0;
     while (offset < accumulated_bytes.size()) {
       std::string_view bytes_view(
@@ -1743,7 +1740,6 @@ StatusCode SentencePieceLiteProcessor::Decode(
       offset += consumed;
     }
     accumulated_bytes.clear();
-    return StatusCode::kOk;
   };
 
   bool is_bos_ws = true;
@@ -1763,7 +1759,7 @@ StatusCode SentencePieceLiteProcessor::Decode(
       return StatusCode::kOutOfRange;
     }
     if (model_->IsUnknown(id)) {
-      LITE_RETURN_IF_ERROR(flush_bytes());
+      flush_bytes();
       const size_t begin_pos = output->size();
       output->append(model_->unk_surface());
       set_offset(i, begin_pos, output->size());
@@ -1777,7 +1773,7 @@ StatusCode SentencePieceLiteProcessor::Decode(
       }
       accumulated_bytes.push_back(static_cast<unsigned char>(byte));
     } else {
-      LITE_RETURN_IF_ERROR(flush_bytes());
+      flush_bytes();
 
       if (model_->IsControl(id)) {
         set_offset(i, output->size(), output->size());
@@ -1819,7 +1815,7 @@ StatusCode SentencePieceLiteProcessor::Decode(
     }
   }
 
-  LITE_RETURN_IF_ERROR(flush_bytes());
+  flush_bytes();
 
   if (pieces != nullptr) {
     // TRICKY: In-place convert stored integer byte offsets to valid memory
@@ -1875,11 +1871,6 @@ int SentencePieceLiteProcessor::pad_id() const {
 int SentencePieceLiteProcessor::piece_type(int id) const {
   if (model_ == nullptr || id < 0 || id >= model_->vocab_size()) return -1;
   return model_->piece_type(id);
-}
-
-bool SentencePieceLiteProcessor::HasNonNullDirectMappingVectorForTesting()
-    const {
-  return model_ != nullptr && model_->has_non_null_vector();
 }
 
 void SentencePieceLiteProcessor::SetScoreResetThresholdForTesting(

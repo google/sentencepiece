@@ -127,7 +127,6 @@ add_custom_command(
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../lite)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 # darts.h is included unqualified so that the Bazel build can serve it from the
 # darts-clone module; the CMake build keeps compiling the vendored copy.
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/darts_clone)
@@ -249,7 +248,6 @@ set(SPM_TARGET_INCLUDE_DIRS
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/darts_clone>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )

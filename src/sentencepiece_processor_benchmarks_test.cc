@@ -24,6 +24,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "benchmark/benchmark.h"
 #include "filesystem.h"
 #include "init.h"
 #include "model_factory.h"
@@ -31,12 +32,10 @@
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"
-#include "benchmark/benchmark.h"
 #include "util.h"
 
 ABSL_FLAG(std::string, test_srcdir,
           sentencepiece::filesystem::JoinPath("..", "data"), "Data directory.");
-ABSL_FLAG(std::string, test_tmpdir, "test_tmp", "Temporary directory.");
 
 namespace sentencepiece {
 
@@ -244,7 +243,7 @@ BENCHMARK(BM_DecodeOSSModel_Ids);
 // benchmark flags first and hand the remainder (e.g. --test_srcdir) to Abseil.
 // As in test_main.cc, TEST_SRCDIR must be exported and GoogleTest initialized
 // before testing::SrcDir() can locate the test data files.
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv,
                                        /*remove_arg=*/true);

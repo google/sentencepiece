@@ -21,7 +21,6 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "gtest_prod.h"
 
 namespace sentencepiece::normalizer {
 
@@ -137,9 +136,6 @@ class Builder {
   // When char_maps have "aa" => "bb" and "a" => "b", the first
   // rule is not necessary since the second rule can cover the first rule.
   static absl::Status RemoveRedundantMap(CharsMap* chars_map);
-
- private:
-  FRIEND_TEST(BuilderTest, RemoveRedundantMapTest);
 };
 }  // namespace sentencepiece::normalizer
 

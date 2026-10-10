@@ -95,9 +95,7 @@ include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
   ${SPM_ROOT_DIR}
   ${SPM_ROOT_DIR}/src
-  ${SPM_ROOT_DIR}/third_party
   ${SPM_ROOT_DIR}/third_party/darts_clone
-  ${SPM_ROOT_DIR}/third_party/rapidhash
 )
 
 if (SENTENCEPIECE_LITE_STANDALONE_BUILD)
@@ -231,7 +229,6 @@ target_include_directories(cached_sentencepiece_lite PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   $<BUILD_INTERFACE:${SPM_ROOT_DIR}>
-  $<BUILD_INTERFACE:${SPM_ROOT_DIR}/third_party/rapidhash>
 )
 
 target_link_libraries(cached_sentencepiece_lite PUBLIC
@@ -247,10 +244,6 @@ add_library(sentencepiece_lite_fb_converter STATIC
   sentencepiece_model_converters.h
   ${SPM_MODEL_PROTO_SRCS}
 )
-
-if (NOT MSVC)
-  target_compile_definitions(sentencepiece_lite_fb_converter PRIVATE HAVE_PTHREAD=1)
-endif()
 
 target_include_directories(sentencepiece_lite_fb_converter PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -322,10 +315,7 @@ if (BUILD_TESTING OR SPM_BUILD_TEST OR SENTENCEPIECE_LITE_STANDALONE_BUILD)
     sentencepiece_lite_fb_converter
     ${LITE_PROTOBUF_LIB}
     gtest_main
-    gmock
     absl::status
-    absl::flags
-    absl::flags_parse
     absl::strings
   )
 
@@ -351,11 +341,6 @@ if (BUILD_TESTING OR SPM_BUILD_TEST OR SENTENCEPIECE_LITE_STANDALONE_BUILD)
     sentencepiece_lite_fb_converter
     ${LITE_PROTOBUF_LIB}
     gtest_main
-    gmock
-    absl::status
-    absl::flags
-    absl::flags_parse
-    absl::strings
   )
 
   add_test(
@@ -381,11 +366,6 @@ if (BUILD_TESTING OR SPM_BUILD_TEST OR SENTENCEPIECE_LITE_STANDALONE_BUILD)
       sentencepiece-static
       ${LITE_PROTOBUF_LIB}
       gtest_main
-      gmock
-      absl::status
-      absl::flags
-      absl::flags_parse
-      absl::strings
     )
 
     add_test(
@@ -416,10 +396,6 @@ if (SPM_ENABLE_BENCHMARK)
   add_executable(sentencepiece_lite_benchmark
     sentencepiece_lite_benchmark.cc
   )
-
-  if (NOT MSVC)
-    target_compile_definitions(sentencepiece_lite_benchmark PRIVATE HAVE_PTHREAD=1)
-  endif()
 
   target_link_libraries(sentencepiece_lite_benchmark
     cached_sentencepiece_lite

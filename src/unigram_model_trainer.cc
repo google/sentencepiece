@@ -18,8 +18,8 @@
 #include <cfloat>
 #include <cmath>
 #include <cstdint>
-#include <deque>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -27,24 +27,19 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/strings/numbers.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_format.h"
-#include "absl/strings/str_join.h"
-#include "absl/strings/str_replace.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "filesystem.h"
 #include "libsais.h"
-#include "normalizer.h"
 #include "ret_check.h"
 #include "sentencepiece_trainer.h"
 #include "trainer_interface.h"
-#include "unicode_script.h"
 #include "util.h"
 
 namespace sentencepiece {

@@ -23,17 +23,14 @@ os.makedirs('sentencepiece', exist_ok=True)
 for item in targets:
   src = os.path.join('..', item)
   dst = os.path.join('sentencepiece', item)
-  if os.path.lexists(src):
-    if os.path.islink(src):
-      # Skip build-generated symlinks (e.g. third_party/absl)
-      continue
+  if os.path.exists(src):
     print(f'copying {src} -> {dst}')
     if os.path.isdir(src):
       shutil.copytree(
           src,
           dst,
           dirs_exist_ok=True,
-          ignore=shutil.ignore_patterns('absl', '*.pyc', '__pycache__'),
+          ignore=shutil.ignore_patterns('*.pyc', '__pycache__'),
       )
     else:
       shutil.copy2(src, dst)

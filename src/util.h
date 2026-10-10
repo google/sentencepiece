@@ -170,7 +170,7 @@ class ReservoirSampler {
   explicit ReservoirSampler(std::vector<T>* sampled, uint64_t size,
                             uint64_t seed)
       : sampled_(sampled), size_(size), gen_(std::seed_seq{seed}) {}
-  virtual ~ReservoirSampler() = default;
+  ~ReservoirSampler() = default;
 
   void Add(const T& item) {
     if (size_ == 0) {

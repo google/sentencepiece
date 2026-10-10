@@ -14,7 +14,6 @@
 
 #include "sentencepiece_lite.h"
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>

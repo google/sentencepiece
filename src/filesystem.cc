@@ -24,7 +24,6 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "util.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && defined(UNICODE) && \
     defined(_UNICODE)

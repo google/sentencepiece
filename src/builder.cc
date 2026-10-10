@@ -58,7 +58,6 @@
 namespace sentencepiece::normalizer {
 namespace {
 
-constexpr int kMaxUnicode = 0x10FFFF;
 // Limit recursion depth to prevent stack overflow on deep or cyclic tries.
 // Must be at namespace scope (not local scope) to avoid MSVC lambda capture
 // bugs (C3493) in DecompileCharsMap.

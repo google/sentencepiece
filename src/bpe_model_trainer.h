@@ -93,7 +93,7 @@ class Trainer : public TrainerInterface {
   int GetPrevIndex(int sid, int index) const;
 
   // Makes a new bigram from [symbols_[sid][left], symbols_[sid][right]] and
-  // Adds it to symbols_cache_ and active_symbols_.
+  // adds it to symbols_cache_ and pending_queue_.
   void AddNewPair(int sid, int left, int right);
 
   // Resets the fequency of bigram [symbols_[sid][left] symbols_[sid][right]],

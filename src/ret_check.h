@@ -31,13 +31,6 @@
 #define RET_CHECK_LE(a, b) RET_CHECK((a) <= (b))
 #define RET_CHECK_GT(a, b) RET_CHECK((a) > (b))
 #define RET_CHECK_LT(a, b) RET_CHECK((a) < (b))
-
-#define RET_QCHECK_EQ(a, b) RET_CHECK_EQ(a, b)
-#define RET_QCHECK_NE(a, b) RET_CHECK_NE(a, b)
-#define RET_QCHECK_GE(a, b) RET_CHECK_GE(a, b)
-#define RET_QCHECK_LE(a, b) RET_CHECK_LE(a, b)
-#define RET_QCHECK_GT(a, b) RET_CHECK_GT(a, b)
-#define RET_QCHECK_LT(a, b) RET_CHECK_LT(a, b)
 #endif
 
 #endif  // RET_CHECK_H_

@@ -29,9 +29,5 @@ alias(
 cc_library(
     name = "rapidhash",
     hdrs = ["rapidhash/rapidhash.h"],
-    includes = [
-        ".",
-        "rapidhash",
-    ],
 )
 
