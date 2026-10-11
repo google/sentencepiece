@@ -149,8 +149,10 @@ TEST_P(SentencePieceLiteTest, EncodeDecodeIdempotency) {
     ASSERT_EQ(lite_processor_->Decode(lite_ids, &lite_decoded),
               StatusCode::kOk);
 
-    const bool byte_fallback = (lite_processor_->PieceToId("<0x00>") != -1);
-    const int unk_id = lite_processor_->PieceToId("<unk>");
+    const bool byte_fallback =
+        (lite_processor_->piece_type(lite_processor_->PieceToId("<0x00>")) ==
+         static_cast<int>(PieceType_BYTE));
+    const int unk_id = lite_processor_->unk_id();
     if (!byte_fallback &&
         std::find(lite_ids.begin(), lite_ids.end(), unk_id) != lite_ids.end()) {
       continue;
@@ -412,10 +414,13 @@ TEST_P(SentencePieceLiteTest, VocabSizeAndPieceType) {
   EXPECT_EQ(lite_processor_->piece_type(static_cast<int>(vocab_size)), -1);
   EXPECT_EQ(lite_processor_->IdToPiece(-1), "<unk>");
   EXPECT_EQ(lite_processor_->IdToPiece(static_cast<int>(vocab_size)), "<unk>");
-  EXPECT_EQ(lite_processor_->PieceToId("NON_EXISTING_PIECE"), -1);
-  EXPECT_EQ(lite_processor_->PieceToId(""), -1);
-  EXPECT_EQ(lite_processor_->PieceToId(std::string_view("a", 0)), -1);
-  EXPECT_EQ(lite_processor_->PieceToId(std::string_view()), -1);
+  EXPECT_EQ(lite_processor_->PieceToId("NON_EXISTING_PIECE"),
+            lite_processor_->unk_id());
+  EXPECT_EQ(lite_processor_->PieceToId(""), lite_processor_->unk_id());
+  EXPECT_EQ(lite_processor_->PieceToId(std::string_view("a", 0)),
+            lite_processor_->unk_id());
+  EXPECT_EQ(lite_processor_->PieceToId(std::string_view()),
+            lite_processor_->unk_id());
   EXPECT_EQ(lite_processor_->GetScore(-1), 0.0f);
   EXPECT_EQ(lite_processor_->GetScore(static_cast<int>(vocab_size)), 0.0f);
   EXPECT_EQ(lite_processor_->unk_id(), 0);
@@ -480,8 +485,10 @@ TEST_P(SentencePieceLiteTest, IdempotencyOnLargeCorpus) {
     ASSERT_EQ(lite_processor_->Decode(lite_ids, &lite_decoded),
               StatusCode::kOk);
 
-    const bool byte_fallback = (lite_processor_->PieceToId("<0x00>") != -1);
-    const int unk_id = lite_processor_->PieceToId("<unk>");
+    const bool byte_fallback =
+        (lite_processor_->piece_type(lite_processor_->PieceToId("<0x00>")) ==
+         static_cast<int>(PieceType_BYTE));
+    const int unk_id = lite_processor_->unk_id();
     if (!byte_fallback &&
         std::find(lite_ids.begin(), lite_ids.end(), unk_id) != lite_ids.end()) {
       continue;
@@ -1704,6 +1711,7 @@ TEST(SentencePieceLiteTest, ByteFallbackWithoutUnkId) {
   SentencePieceLiteProcessor processor(*ok_res);
   EXPECT_EQ(processor.status(), StatusCode::kOk);
   EXPECT_EQ(processor.unk_id(), -1);
+  EXPECT_EQ(processor.PieceToId("NON_EXISTING_PIECE"), -1);
   EXPECT_EQ(processor.IdToPiece(-1), "<unk>");
 
   // Unknown character 'b' (0x62) falls back to byte token (1 + 0x62 = 99).

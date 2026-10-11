@@ -454,6 +454,14 @@ TEST(BPEModelTest, SpecialSymbolsNoSegmentTest) {
   AddPiece(&model_proto, "x0", 0.0);
   AddPiece(&model_proto, "A>", 0.0);
 
+  // Add single-character CONTROL ("C") and UNUSED ("U") pieces.
+  AddPiece(&model_proto, "C", 0.0);
+  model_proto.mutable_pieces(model_proto.pieces_size() - 1)
+      ->set_type(ModelProto::SentencePiece::CONTROL);
+  AddPiece(&model_proto, "U", 0.0);
+  model_proto.mutable_pieces(model_proto.pieces_size() - 1)
+      ->set_type(ModelProto::SentencePiece::UNUSED);
+
   Model model(model_proto);
 
   // 1. Test CONTROL symbol "<s>".
@@ -494,6 +502,20 @@ TEST(BPEModelTest, SpecialSymbolsNoSegmentTest) {
     for (const auto& part : result) {
       EXPECT_NE(byte_piece, part.first);
     }
+  }
+
+  // 5. Test single-character CONTROL ("C") and UNUSED ("U") symbols.
+  // Expected: mapped to unk_id (0), not their CONTROL / UNUSED IDs.
+  {
+    auto result_c = model.Encode("C");
+    ASSERT_EQ(1, result_c.size());
+    EXPECT_EQ("C", result_c[0].first);
+    EXPECT_EQ(0, result_c[0].second);
+
+    auto result_u = model.Encode("U");
+    ASSERT_EQ(1, result_u.size());
+    EXPECT_EQ("U", result_u[0].first);
+    EXPECT_EQ(0, result_u[0].second);
   }
 }
 

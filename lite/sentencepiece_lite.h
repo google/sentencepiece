@@ -252,7 +252,7 @@ class SentencePieceLiteProcessor {
                     std::vector<std::string_view>* pieces = nullptr) const;
 
   // Returns the ID of the given piece.
-  // Returns -1 if the piece is not found or if no model is loaded.
+  // Returns unk_id() if the piece is not found, or -1 if no model is loaded.
   int PieceToId(std::string_view piece) const;
 
   // Returns the string piece corresponding to the given ID.

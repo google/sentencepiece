@@ -148,7 +148,7 @@ absl::Status SentencePieceProcessor::Load(
   // Precomputes and caches special token IDs.
   // Note that these IDs are not always the same as the IDs in TrainerSpec.
   unk_id_ = PieceToId(model_->unk_piece());
-  if (unk_id_ >= 0 && !IsUnknown(unk_id_)) unk_id_ = -1;
+  if (unk_id_ >= 0 && !model_->IsUnknown(unk_id_)) unk_id_ = -1;
 
   bos_id_ = PieceToId(model_->bos_piece());
   if (bos_id_ >= 0 && !IsControl(bos_id_)) bos_id_ = -1;
@@ -1105,12 +1105,12 @@ bool SentencePieceProcessor::IsUnknown(int id) const {
 
 bool SentencePieceProcessor::IsUnused(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(false);
-  return model_->IsUnused(id);
+  return id >= 0 && model_->IsUnused(id);
 }
 
 bool SentencePieceProcessor::IsByte(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(false);
-  return model_->IsByte(id);
+  return id >= 0 && model_->IsByte(id);
 }
 
 int SentencePieceProcessor::unk_id() const { return unk_id_; }

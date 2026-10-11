@@ -1006,6 +1006,7 @@ TEST(SentencePieceProcessorTest, EndToEndTest) {
   EXPECT_EQ(5, sp.PieceToId("c"));
   EXPECT_EQ(6, sp.PieceToId("ab"));
   EXPECT_EQ(7, sp.PieceToId("\xE2\x96\x81"));
+  EXPECT_EQ(0, sp.PieceToId("unknown_piece"));
 
   EXPECT_EQ("<unk>", sp.IdToPiece(0));
   EXPECT_EQ("<s>", sp.IdToPiece(1));

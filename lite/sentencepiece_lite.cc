@@ -1156,7 +1156,8 @@ std::string_view Model::unk_surface() const {
 }
 
 int Model::PieceToId(std::string_view piece) const {
-  return pieces_trie_.exact_lookup(piece);
+  const int id = pieces_trie_.exact_lookup(piece);
+  return id == -1 ? unk_id_ : id;
 }
 
 std::string_view Model::IdToPiece(int id) const {
@@ -1172,7 +1173,8 @@ void Model::EncodeChunk(std::string_view chunk, std::vector<int>* ids,
     // O(L) direct mapping shortcut for isolated chunks guaranteed to encode as
     // a single token.
     if (uniform_sampler == nullptr) {
-      if (const int id = PieceToId(chunk); IsDirectMapping(id)) {
+      if (const int id = pieces_trie_.exact_lookup(chunk);
+          IsDirectMapping(id)) {
         ids->push_back(id);
         if (pieces != nullptr) {
           pieces->push_back(chunk);
