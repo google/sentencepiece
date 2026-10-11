@@ -569,12 +569,16 @@ std::string SentencePieceNormalizer::serialized_normalizer_spec() const {
 
 void ConvertToUnicodeAlignment(absl::string_view orig, absl::string_view norm,
                                std::vector<size_t>* norm_to_orig) {
+  if (norm_to_orig == nullptr) return;
   const auto orig_offsets = string_util::UTF8ToUnicodeOffsets(orig);
   const auto norm_offsets = string_util::UTF8ToUnicodeOffsets(norm);
+  if (orig_offsets.empty() || norm_offsets.empty()) return;
 
   std::vector<size_t> result(norm_offsets.back() + 1, 0);
   for (size_t i = 0; i < norm_to_orig->size(); ++i) {
-    result[norm_offsets[i]] = orig_offsets[(*norm_to_orig)[i]];
+    if (i < norm_offsets.size() && (*norm_to_orig)[i] < orig_offsets.size()) {
+      result[norm_offsets[i]] = orig_offsets[(*norm_to_orig)[i]];
+    }
   }
   *norm_to_orig = std::move(result);
 }

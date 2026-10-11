@@ -246,7 +246,7 @@ std::vector<std::string> StrSplitAsCSV(absl::string_view text) {
       for (; str < eos; ++str) {
         if (*str == '"') {
           str++;
-          if (*str != '"') break;
+          if (str >= eos || *str != '"') break;
         }
         *end++ = *str;
       }

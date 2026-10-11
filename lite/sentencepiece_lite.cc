@@ -1315,8 +1315,9 @@ void Model::EncodeUnigram(std::string_view normalized, std::vector<int>* ids,
   while (starts_at < size) {
     float best_path_score_till_here =
         best_path_ends_at[starts_at].best_path_score;
-    if (best_path_score_till_here < -kScoreResetThreshold ||
-        best_path_score_till_here > kScoreResetThreshold) {
+    if (std::isfinite(best_path_score_till_here) &&
+        (best_path_score_till_here < -kScoreResetThreshold ||
+         best_path_score_till_here > kScoreResetThreshold)) {
       const float offset = best_path_score_till_here;
       for (int i = starts_at; i <= max_frontier; ++i) {
         if (i == starts_at || best_path_ends_at[i].starts_at != -1) {

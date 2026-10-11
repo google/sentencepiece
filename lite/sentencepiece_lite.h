@@ -170,7 +170,8 @@ class SentencePieceLiteProcessor {
 
   // Normalizes text using model rules. If not nullptr, `(*offset)[x]` stores
   // the byte index in `input` corresponding to `output[x]` (with a sentinel at
-  // `output->size()`).
+  // `output->size()`). If `output` is empty (e.g. empty or whitespace-only
+  // input), `offset` is also empty and has no sentinel.
   StatusCode Normalize(std::string_view input, std::string* output,
                        std::vector<size_t>* offset = nullptr) const;
 

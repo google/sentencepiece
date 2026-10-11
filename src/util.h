@@ -16,6 +16,7 @@
 #define UTIL_H_
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <random>
@@ -208,6 +209,21 @@ std::vector<std::string> StrSplitAsCSV(absl::string_view text);
 namespace log_domain {
 
 double LogSum(const std::vector<double>& xs);
+
+template <typename T>
+inline void SanitizeDiscreteProbs(std::vector<T>* probs) {
+  bool has_positive = false;
+  for (T& p : *probs) {
+    if (std::isfinite(p) && p > T{0}) {
+      has_positive = true;
+    } else {
+      p = T{0};
+    }
+  }
+  if (!has_positive && !probs->empty()) {
+    (*probs)[0] = T{1};
+  }
+}
 
 }  // namespace log_domain
 }  // namespace sentencepiece

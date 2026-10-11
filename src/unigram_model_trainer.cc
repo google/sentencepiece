@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -60,13 +61,14 @@ double Digamma(double x) {
 
 template <typename IT>
 void ToLogProb(IT begin, IT end) {
-  float sum = 0.0;
+  double sum = 0.0;
   for (auto it = begin; it != end; ++it) {
     sum += it->second;
   }
-  float logsum = std::log(static_cast<double>(sum));
+  const double logsum = std::log(sum);
   for (auto it = begin; it != end; ++it) {
-    it->second = std::log(static_cast<double>(it->second)) - logsum;
+    it->second =
+        static_cast<float>(std::log(static_cast<double>(it->second)) - logsum);
   }
 }
 
@@ -206,7 +208,7 @@ absl::Status TrainerModel::SetSentencePieces(SentencePieces&& sentencepieces) {
   for (size_t i = 0; i < sentencepieces_.size(); ++i) {
     const absl::string_view w = sentencepieces_[i].first;  // piece
     const float score = sentencepieces_[i].second;         // score.
-    RET_CHECK(!std::isnan(score));
+    RET_CHECK(std::isfinite(score));
     pieces.emplace_back(w, i);
     min_score_ = std::min(min_score_, score);
     auto* piece = model_proto_data_.add_pieces();
@@ -245,8 +247,10 @@ TrainerModel::SentencePieces Trainer::LoadSeedSentencePiecesFromFile(
     const absl::flat_hash_map<std::string, int64_t>& all_chars) {
   // all_chars must be included in the seed sentencepieces.
   TrainerModel::SentencePieces seed_sentencepieces;
+  absl::flat_hash_set<std::string> seen_pieces;
   for (const auto& it : Sorted(all_chars)) {
     seed_sentencepieces.emplace_back(it);
+    seen_pieces.insert(it.first);
   }
 
   auto seed_sentencepieces_file = sentencepiece::filesystem::NewReadableFile(
@@ -261,12 +265,13 @@ TrainerModel::SentencePieces Trainer::LoadSeedSentencePiecesFromFile(
       return {};
     }
     const auto& seed_sentencepiece = fields[0];
-    if (!absl::SimpleAtoi(fields[1], &freq)) {
+    if (!absl::SimpleAtoi(fields[1], &freq) || freq <= 0) {
       LOG(ERROR) << "Could not parse the frequency; line: " << line;
       return {};
     }
     const UnicodeText uw = string_util::UTF8ToUnicodeText(seed_sentencepiece);
-    if (!IsValidSentencePiece(uw)) {
+    if (!IsValidSentencePiece(uw) ||
+        !seen_pieces.insert(seed_sentencepiece).second) {
       ++skipped_sentencepieces;
       continue;
     }
@@ -316,9 +321,9 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
   }
 
   constexpr size_t kMaxChunkBytes = 500 * 1024 * 1024;  // 500 MB per chunk
-  const int num_threads = trainer_spec_.num_threads();
 
 #if defined(LIBSAIS_OPENMP)
+  const int num_threads = trainer_spec_.num_threads();
   LOG(INFO) << "Extracting seed sentencepieces (libsais_omp, " << num_threads
             << " threads)";
 #else
@@ -741,7 +746,7 @@ TrainerModel::SentencePieces Trainer::PruneUnreachableSentencePieces(
       }
     }
 
-    CHECK(self_node);
+    if (!self_node) continue;
     const float original_score = self_node->score;
 
     // Temporarily disable the self_node to force Viterbi to find an alternative
@@ -800,7 +805,7 @@ TrainerModel::SentencePieces Trainer::FinalizeSentencePieces(
   }
 
   const int vocab_size_size = trainer_spec_.vocab_size() - meta_pieces_.size();
-  CHECK_GT(vocab_size_size, 0);
+  if (vocab_size_size <= 0) return {};
 
   // Then keeps sentencepieces with higher scores.
   for (const auto& w : Sorted(sentencepieces)) {

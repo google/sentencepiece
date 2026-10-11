@@ -605,6 +605,12 @@ END:
           << "Increase vocab_size or decrease character_coverage with "
           << "--character_coverage option.";
     }
+  } else if (trainer_spec_.model_type() != TrainerSpec::WORD &&
+             trainer_spec_.model_type() != TrainerSpec::CHAR) {
+    RET_CHECK_LT(static_cast<int>(meta_pieces_.size()),
+                 trainer_spec_.vocab_size())
+        << "Vocabulary size must be larger than the number of meta pieces ("
+        << trainer_spec_.vocab_size() << " vs " << meta_pieces_.size() << ").";
   }
 
   LOG(INFO) << "Done! preprocessed " << sentences_.size() << " sentences.";

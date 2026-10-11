@@ -408,7 +408,9 @@ int ClampUnsignedToInt(uint64_t v) {
 // Helper to convert py::object (list, tuple, numpy array, etc) to
 // std::vector<int>
 IntSpanOrVector CastToIntSpanOrVector(const py::object& ids_obj) {
-  if (py::isinstance<py::buffer>(ids_obj)) {
+  if (py::isinstance<py::buffer>(ids_obj) &&
+      !py::isinstance<py::bytes>(ids_obj) &&
+      !py::isinstance<py::bytearray>(ids_obj)) {
     try {
       py::buffer_info info = ids_obj.cast<py::buffer>().request();
       if (!IsIntegerFormat(info.format)) {
@@ -439,7 +441,9 @@ IntSpanOrVector CastToIntSpanOrVector(const py::object& ids_obj) {
       std::vector<int> ids(info.shape[0]);
       const char* base = static_cast<const char*>(info.ptr);
       if (info.itemsize == 4 && !is_unsigned && stride == info.itemsize) {
-        std::memcpy(ids.data(), info.ptr, info.shape[0] * 4);
+        if (!ids.empty()) {
+          std::memcpy(ids.data(), info.ptr, info.shape[0] * 4);
+        }
       } else {
         for (py::ssize_t i = 0; i < info.shape[0]; ++i) {
           const char* p = base + i * stride;
@@ -1102,7 +1106,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              }
 
              if (input_is_pieces) {
-               return_bytes = detected_bytes;
+               return_bytes = return_bytes || detected_bytes;
              }
 
              sentencepiece::SentencePieceText spt;
@@ -1355,7 +1359,7 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              }
 
              if (is_pieces_batch) {
-               return_bytes = detected_bytes;
+               return_bytes = return_bytes || detected_bytes;
              }
 
              const size_t batch_size = seq_ins.size();
@@ -1664,10 +1668,11 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                   }
                   return chunks;
                 } catch (const std::exception& e) {
+                  const std::string err_msg = e.what();
                   absl::MutexLock lock(pretokenizer_mu);
                   if (pretokenizer_error.empty()) {
                     pretokenizer_error =
-                        std::string("Pretokenizer failed: ") + e.what();
+                        std::string("Pretokenizer failed: ") + err_msg;
                     has_pretokenizer_error.store(true,
                                                  std::memory_order_relaxed);
                   }

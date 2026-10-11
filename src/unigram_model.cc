@@ -554,6 +554,7 @@ std::vector<Lattice::Node*> Lattice::Sample(float inv_theta) {
       probs.push_back(std::exp(static_cast<double>(
           alpha[lnode->node_id] + inv_theta * lnode->score - Z)));
     }
+    log_domain::SanitizeDiscreteProbs(&probs);
     std::discrete_distribution<int> dist(probs.begin(), probs.end());
     node = end_nodes_[node->pos][dist(*mt)];
     if (node == bos_node()) break;

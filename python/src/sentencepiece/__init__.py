@@ -728,7 +728,6 @@ class _LogStream:
 
     def __exit__(self, type, value, traceback):
         if self.ostream is not None:
-            os.close(self.orig_stream_fileno)
             os.dup2(self.orig_stream_dup, self.orig_stream_fileno)
             os.close(self.orig_stream_dup)
             self.ostream.flush()

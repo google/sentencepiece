@@ -453,6 +453,10 @@ bool DoubleArrayImpl<A, B, T, C>::validate(value_type max_value_limit) const {
       if (((i ^ array_[i].offset()) | 0xFF) >= size_) {
         return false;
       }
+      if (array_[i].has_leaf() &&
+          array_[i ^ array_[i].offset()].label() <= 0xFF) {
+        return false;
+      }
     } else {
       if (max_value_limit >= 0) {
         if (array_[i].value() >= max_value_limit) {

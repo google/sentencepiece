@@ -38,13 +38,24 @@ inline uint64_t FastHash64(std::string_view str, uint64_t seed) {
   return rapidhash_withSeed_unrolled(str.data(), str.size(), seed);
 }
 
+inline size_t ResolveCapacity(TokenCache::Capacity capacity) {
+  switch (capacity) {
+    case TokenCache::Capacity::kTiny:
+    case TokenCache::Capacity::kSmall:
+    case TokenCache::Capacity::kMedium:
+    case TokenCache::Capacity::kLarge:
+      return static_cast<size_t>(capacity);
+  }
+  return static_cast<size_t>(TokenCache::Capacity::kMedium);
+}
+
 }  // namespace
 
 TokenCache::TokenCache() : TokenCache(Capacity::kMedium, PointerSeed(this)) {}
 
 TokenCache::TokenCache(Capacity capacity, uint64_t seed)
-    : num_pairs_(static_cast<size_t>(capacity)),
-      mask_(static_cast<size_t>(capacity) - 1),
+    : num_pairs_(ResolveCapacity(capacity)),
+      mask_(ResolveCapacity(capacity) - 1),
       seed_((seed == 0) ? PointerSeed(this) : seed) {
   Clear();
 }

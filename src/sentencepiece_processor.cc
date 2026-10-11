@@ -139,7 +139,9 @@ absl::Status SentencePieceProcessor::Load(
   }
 
   // Escapes user-defined-symbols in normalizer.
-  normalizer_->SetPrefixMatcher(model_->prefix_matcher());
+  if (model_) {
+    normalizer_->SetPrefixMatcher(model_->prefix_matcher());
+  }
 
   ABSL_RETURN_IF_ERROR(status());
 
@@ -434,7 +436,7 @@ absl::Status SentencePieceProcessor::SampleEncode(
     SentencePieceText* spt) const {
   RET_CHECK_STATUS_PROTO(spt);
 
-  RET_CHECK(!std::isnan(alpha));
+  RET_CHECK(std::isfinite(alpha));
   RET_CHECK_GE(alpha, 0.0);
   RET_CHECK_LE(nbest_size, kMaxNBestSize)
       << "nbest_size must be nbest_size <= " << kMaxNBestSize;
@@ -469,6 +471,7 @@ absl::Status SentencePieceProcessor::SampleEncode(
     std::transform(
         log_probs.begin(), log_probs.end(), std::back_inserter(probs),
         [Z](const auto& log_prob) { return std::exp(log_prob - Z); });
+    log_domain::SanitizeDiscreteProbs(&probs);
 
     auto* mt = random::GetRandomGenerator();
     std::discrete_distribution<int> dist(probs.begin(), probs.end());
@@ -675,6 +678,11 @@ void GetChunkOfInput(const absl::string_view input,
 
   auto normalized_end_it =
       std::upper_bound(normalized_start_it, norm_to_orig.end(), overlap_index);
+  if (normalized_end_it == normalized_start_it) {
+    normalized_chunk = absl::string_view();
+    norm_to_orig_chunk = absl::Span<const size_t>();
+    return;
+  }
   const int normalized_end_index =
       (normalized_end_it - norm_to_orig.begin()) - 1;
   normalized_chunk =

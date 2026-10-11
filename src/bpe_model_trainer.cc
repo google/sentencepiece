@@ -97,7 +97,9 @@ class FenwickTree {
 
 Trainer::Symbol* Trainer::GetCharSymbol(char32_t c) {
   const auto req_it = required_chars_.find(c);
-  const uint64_t freq = (req_it != required_chars_.end()) ? req_it->second : 1;
+  const uint64_t freq = (req_it != required_chars_.end() && req_it->second > 0)
+                            ? req_it->second
+                            : 1;
   CHECK_GT(freq, uint64_t{0});
   const auto it = symbols_cache_.find(c);
   if (it != symbols_cache_.end()) {
