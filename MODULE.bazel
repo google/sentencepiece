@@ -19,7 +19,7 @@ bazel_dep(name = "darts-clone", version = "0.32h.bcr.1")
 # libsais' own CMake build; enable it with --@libsais//:openmp on a toolchain
 # that supports -fopenmp.
 bazel_dep(name = "libsais", version = "2.10.4.bcr.2")
-bazel_dep(name = "rules_cc", version = "0.2.25")
+bazel_dep(name = "rules_cc", version = "0.2.26")
 bazel_dep(name = "rules_proto", version = "7.1.0")
 bazel_dep(name = "protobuf", version = "36.2", repo_name = "com_google_protobuf")
 bazel_dep(name = "abseil-cpp", version = "20260817.0", repo_name = "com_google_absl")
