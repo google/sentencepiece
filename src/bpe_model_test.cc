@@ -519,6 +519,34 @@ TEST(BPEModelTest, SpecialSymbolsNoSegmentTest) {
   }
 }
 
+TEST(BPEModelTest, EmptyPieceAndResegmentCycleTest) {
+  ModelProto model_proto;
+  AddPiece(&model_proto, "<unk>", 0.0);
+  model_proto.mutable_pieces(0)->set_type(ModelProto::SentencePiece::UNKNOWN);
+  AddPiece(&model_proto, "<s>", 0.0);
+  model_proto.mutable_pieces(1)->set_type(ModelProto::SentencePiece::CONTROL);
+  AddPiece(&model_proto, "</s>", 0.0);
+  model_proto.mutable_pieces(2)->set_type(ModelProto::SentencePiece::CONTROL);
+
+  AddPiece(&model_proto, "a", -1.0);
+  AddPiece(&model_proto, "b", -1.0);
+  AddPiece(&model_proto, "ab", 1.0);
+  model_proto.mutable_pieces(model_proto.pieces_size() - 1)
+      ->set_type(ModelProto::SentencePiece::UNUSED);
+
+  Model model(model_proto);
+
+  // Verifies encoding empty string returns empty result gracefully.
+  EXPECT_TRUE(model.Encode("").empty());
+  EXPECT_TRUE(model.SampleEncode("", 0.5).empty());
+
+  // Verifies UNUSED pieces split without producing empty pieces or hanging.
+  auto res = model.Encode("ab");
+  for (const auto& item : res) {
+    EXPECT_FALSE(item.first.empty());
+  }
+}
+
 }  // namespace
 }  // namespace bpe
 }  // namespace sentencepiece

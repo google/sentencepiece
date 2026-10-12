@@ -193,6 +193,7 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
       const Symbol& left_symbol = symbols[left];
       const Symbol& right_symbol = symbols[right];
       if (left_symbol.freeze || right_symbol.freeze) return;
+      if (left_symbol.piece.empty() || right_symbol.piece.empty()) return;
       const absl::string_view piece(
           left_symbol.piece.data(),
           left_symbol.piece.size() + right_symbol.piece.size());
@@ -214,7 +215,8 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
       agenda.push(h);
 
       // Makes `rev_merge` for resegmentation.
-      if (IsUnusedInlined(id))
+      if (IsUnusedInlined(id) && left_symbol.piece != piece &&
+          right_symbol.piece != piece)
         rev_merge[piece] =
             std::make_pair(left_symbol.piece, right_symbol.piece);
     };
@@ -271,6 +273,9 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
 
   auto resegment = [this, &rev_merge](auto& self, absl::string_view w,
                                       EncodeResult* output, int depth) -> void {
+    if (w.empty()) {
+      return;
+    }
     const int id = PieceToIdNoReserved(w);
     if (depth > kMaxBpeResegmentDepth) {
       // Gracefully stop recursion and output the merged piece as-is to avoid
@@ -287,7 +292,8 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
       return;
     }
     const auto p = rev_merge.find(w);
-    if (p == rev_merge.end()) {
+    if (p == rev_merge.end() || p->second.first == w ||
+        p->second.second == w) {
       output->emplace_back(w, unk_id_);
       return;
     }
@@ -298,9 +304,19 @@ std::vector<std::pair<absl::string_view, int>> Model::SampleEncode(
 
   EncodeResult output;
   output.reserve(symbols.size());
-  for (int index = 0; index != -1; index = symbols[index].next) {
+  int steps = 0;
+  const int max_steps = static_cast<int>(symbols.size()) * 2;
+  for (int index = 0; index != -1 && steps < max_steps;
+       index = (index >= 0 && index < static_cast<int>(symbols.size()))
+                   ? symbols[index].next
+                   : -1,
+       ++steps) {
     if (index >= 0 && index < static_cast<int>(symbols.size())) {
-      resegment(resegment, symbols[index].piece, &output, 0);
+      if (!symbols[index].piece.empty()) {
+        resegment(resegment, symbols[index].piece, &output, 0);
+      }
+    } else {
+      break;
     }
   }
 
