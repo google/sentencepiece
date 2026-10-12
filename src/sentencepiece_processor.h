@@ -458,7 +458,7 @@ class SentencePieceProcessor {
       absl::Span<const size_t> norm_to_orig,
       const std::vector<std::pair<absl::string_view, int>>& result,
       SentencePieceText* spt, bool skip_surface = false,
-      size_t input_start_offset = 0) const;
+      size_t input_start_offset = 0, bool apply_extra_options = true) const;
 
   absl::Status ParallelEncodeInternal(absl::string_view input, size_t chunk_len,
                                       ThreadPool& thread_pool,

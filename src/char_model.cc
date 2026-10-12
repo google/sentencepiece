@@ -36,7 +36,9 @@ EncodeResult Model::Encode(absl::string_view normalized) const {
   while (!normalized.empty()) {
     const int mblen = matcher_->PrefixMatch(normalized);
     absl::string_view w(normalized.data(), mblen);
-    output.emplace_back(w, PieceToId(w));
+    const int id = PieceToIdNoReserved(w);
+    output.emplace_back(w,
+                        (id != unk_id_ && IsUnusedInlined(id)) ? unk_id_ : id);
     normalized.remove_prefix(mblen);
   }
 

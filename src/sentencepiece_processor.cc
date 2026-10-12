@@ -70,15 +70,16 @@ constexpr absl::string_view kNullPiece("\0", 1);
 // SentencePieceProcessor::Is*() accessors, these skip the per-call status()
 // validation, so callers must have validated status() beforehand.
 inline bool IsControlId(const ModelInterface& model, int id) {
-  return id >= 0 && model.IsControl(id);
+  return id >= 0 && id < model.GetPieceSize() && model.IsControl(id);
 }
 
 inline bool IsByteId(const ModelInterface& model, int id) {
-  return id >= 0 && model.IsByte(id);
+  return id >= 0 && id < model.GetPieceSize() && model.IsByte(id);
 }
 
 inline bool IsUnknownId(const ModelInterface& model, int unk_id, int id) {
-  return id == unk_id || (id >= 0 && model.IsUnknown(id));
+  return id == unk_id ||
+         (id >= 0 && id < model.GetPieceSize() && model.IsUnknown(id));
 }
 
 }  // namespace
@@ -111,6 +112,7 @@ absl::Status SentencePieceProcessor::LoadFromSerializedProto(
 
 absl::Status SentencePieceProcessor::Load(
     std::unique_ptr<ModelProto> model_proto) {
+  RET_CHECK(model_proto != nullptr);
   model_proto_ = std::move(model_proto);
   // Workaround for https://github.com/google/sentencepiece/issues/1308
   // Third-party conversion scripts may erroneously insert a raw null-byte
@@ -177,6 +179,9 @@ absl::Status SentencePieceProcessor::status() const {
   RET_CHECK(normalizer_) << "Normalizer is not initialized.";
   ABSL_RETURN_IF_ERROR(model_->status());
   ABSL_RETURN_IF_ERROR(normalizer_->status());
+  if (denormalizer_) {
+    ABSL_RETURN_IF_ERROR(denormalizer_->status());
+  }
   return absl::OkStatus();
 }
 
@@ -293,8 +298,8 @@ absl::Status SentencePieceProcessor::SampleEncode(absl::string_view input,
 absl::Status SentencePieceProcessor::PopulateSentencePieceText(
     absl::string_view input, absl::string_view normalized,
     absl::Span<const size_t> norm_to_orig, const EncodeResult& result,
-    SentencePieceText* spt, bool skip_surface,
-    size_t input_start_offset) const {
+    SentencePieceText* spt, bool skip_surface, size_t input_start_offset,
+    bool apply_extra_options) const {
   size_t consumed = 0;
   bool is_prev_unk = false;
   for (const auto& p : result) {
@@ -381,7 +386,9 @@ absl::Status SentencePieceProcessor::PopulateSentencePieceText(
 
   spt->set_text(input.data(), input.size());
 
-  ABSL_RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, spt));
+  if (apply_extra_options) {
+    ABSL_RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, spt));
+  }
 
   return absl::OkStatus();
 }  // namespace sentencepiece
@@ -822,11 +829,18 @@ absl::Status SentencePieceProcessor::ParallelEncodeInternal(
   RET_CHECK_GT(chunk_len, 0);
 
   if (input.empty()) {
-    if (pieces != nullptr) pieces->clear();
-    if (ids != nullptr) ids->clear();
+    if (pieces != nullptr) {
+      pieces->clear();
+      ABSL_RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, pieces));
+    }
+    if (ids != nullptr) {
+      ids->clear();
+      ABSL_RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, ids));
+    }
     if (spt != nullptr) {
       spt->Clear();
       spt->set_text("");
+      ABSL_RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, spt));
     }
     return absl::OkStatus();
   }
@@ -892,7 +906,8 @@ absl::Status SentencePieceProcessor::ParallelEncodeInternal(
           auto status = PopulateSentencePieceText(
               input_chunk, normalized_chunk, norm_to_orig_chunk, encode_result,
               spt_chunks[i], /*skip_surface=*/true,
-              std::get<0>(input_chunk_boundaries[i]));
+              std::get<0>(input_chunk_boundaries[i]),
+              /*apply_extra_options=*/false);
           // Can be optimized to cancel all other threads but then it would be
           // better to switch to absl::StatusBundle..
           if (!status.ok()) {
@@ -915,6 +930,7 @@ absl::Status SentencePieceProcessor::ParallelEncodeInternal(
   // that is also a full token in B. At this point, we terminate iterating over
   // chunk A and start iterating over chunk B, starting at this known good
   // position.
+  const bool has_unk_piece = HasUnkPieceOption();
   for (int loops = 0;; ++loops) {
     size_t start_of_good_tokens = 0;
     std::vector<size_t> bad_joins;
@@ -937,7 +953,13 @@ absl::Status SentencePieceProcessor::ParallelEncodeInternal(
 
         // Add pieces from the chunk. If the piece ends in the overlap, check
         // for a match in the next chunk.
-        if (pieces != nullptr) pieces->emplace_back(piece.piece());
+        if (pieces != nullptr) {
+          if (has_unk_piece && IsUnknownId(*model_, unk_id_, piece.id())) {
+            pieces->emplace_back(model_->unk_piece());
+          } else {
+            pieces->emplace_back(piece.piece());
+          }
+        }
         if (ids != nullptr) ids->emplace_back(piece.id());
         if (spt != nullptr) {
           auto sp = spt->add_pieces();
@@ -999,13 +1021,21 @@ absl::Status SentencePieceProcessor::ParallelEncodeInternal(
                size_t input_start_offset) {
           return PopulateSentencePieceText(input, normalized, norm_to_orig,
                                            result, spt, /*skip_surface=*/false,
-                                           input_start_offset);
+                                           input_start_offset,
+                                           /*apply_extra_options=*/false);
         },
         spt_chunks, input_chunk_boundaries));
   }
 
+  if (pieces != nullptr) {
+    ABSL_RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, pieces));
+  }
+  if (ids != nullptr) {
+    ABSL_RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, ids));
+  }
   if (spt != nullptr) {
     spt->set_text(input.data(), input.size());
+    ABSL_RETURN_IF_ERROR(ApplyExtraOptions(encode_extra_options_, spt));
   }
 
   return absl::OkStatus();
@@ -1076,6 +1106,9 @@ int SentencePieceProcessor::PieceToId(absl::string_view piece) const {
 const std::string& SentencePieceProcessor::IdToPiece(int id) const {
   static const std::string* kEmptyString = new std::string;
   RET_CHECK_OR_RETURN_DEFAULT(*kEmptyString);
+  if (id < 0 || id >= model_->GetPieceSize()) {
+    return *kEmptyString;
+  }
   return model_->IdToPiece(id);
 }
 
@@ -1090,27 +1123,30 @@ bool SentencePieceProcessor::SafeIdToPiece(int id, std::string* piece) const {
 
 float SentencePieceProcessor::GetScore(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(0.0);
+  if (id < 0 || id >= model_->GetPieceSize()) {
+    return 0.0;
+  }
   return model_->GetScore(id);
 }
 
 bool SentencePieceProcessor::IsControl(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(0);
-  return id >= 0 && model_->IsControl(id);
+  return id >= 0 && id < model_->GetPieceSize() && model_->IsControl(id);
 }
 
 bool SentencePieceProcessor::IsUnknown(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(0);
-  return id == unk_id_ || (id >= 0 && model_->IsUnknown(id));
+  return IsUnknownId(*model_, unk_id_, id);
 }
 
 bool SentencePieceProcessor::IsUnused(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(false);
-  return id >= 0 && model_->IsUnused(id);
+  return id >= 0 && id < model_->GetPieceSize() && model_->IsUnused(id);
 }
 
 bool SentencePieceProcessor::IsByte(int id) const {
   RET_CHECK_OR_RETURN_DEFAULT(false);
-  return id >= 0 && model_->IsByte(id);
+  return id >= 0 && id < model_->GetPieceSize() && model_->IsByte(id);
 }
 
 int SentencePieceProcessor::unk_id() const { return unk_id_; }

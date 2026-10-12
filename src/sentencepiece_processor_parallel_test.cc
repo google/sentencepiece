@@ -263,4 +263,54 @@ TEST(SentencepieceProcessorTest, ParallelEncodeTestBotchan) {
   }
 }
 
+TEST(SentencepieceProcessorTest, ParallelEncodeTestExtraOptions) {
+  const std::string test_model_file =
+      filesystem::JoinPath(::testing::SrcDir(), "botchan_en_bpe_1000.model");
+  SentencePieceProcessor sp;
+  CHECK_OK(sp.Load(test_model_file));
+  CHECK_OK(sp.SetEncodeExtraOptions("bos:eos:reverse:unk_piece"));
+
+  ThreadPool thread_pool(4);
+  const std::string en_test_data = LoadTestData("botchan.txt", 25);
+  const std::string ja_test_data = LoadTestData("wagahaiwa_nekodearu.txt", 25);
+
+  for (const absl::string_view input :
+       {absl::string_view(""), absl::string_view(en_test_data)}) {
+    std::vector<int> expected_ids;
+    std::vector<std::string> expected_pieces;
+    SentencePieceText expected_spt;
+    CHECK_OK(sp.Encode(input, &expected_ids));
+    CHECK_OK(sp.Encode(input, &expected_pieces));
+    CHECK_OK(sp.Encode(input, &expected_spt));
+
+    for (const int chunk_size : {64, 128, 256}) {
+      std::vector<int> actual_ids;
+      std::vector<std::string> actual_pieces;
+      SentencePieceText actual_spt;
+      CHECK_OK(sp.ParallelEncode(input, chunk_size, thread_pool, &actual_ids));
+      CHECK_OK(
+          sp.ParallelEncode(input, chunk_size, thread_pool, &actual_pieces));
+      CHECK_OK(sp.ParallelEncode(input, chunk_size, thread_pool, &actual_spt));
+      EXPECT_EQ(expected_ids, actual_ids);
+      EXPECT_EQ(expected_pieces, actual_pieces);
+      ExpectSptEqual(expected_spt, actual_spt);
+    }
+  }
+
+  std::vector<int> expected_ja_ids;
+  std::vector<std::string> expected_ja_pieces;
+  CHECK_OK(sp.Encode(ja_test_data, &expected_ja_ids));
+  CHECK_OK(sp.Encode(ja_test_data, &expected_ja_pieces));
+  for (const int chunk_size : {128, 256}) {
+    std::vector<int> actual_ja_ids;
+    std::vector<std::string> actual_ja_pieces;
+    CHECK_OK(sp.ParallelEncode(ja_test_data, chunk_size, thread_pool,
+                               &actual_ja_ids));
+    CHECK_OK(sp.ParallelEncode(ja_test_data, chunk_size, thread_pool,
+                               &actual_ja_pieces));
+    EXPECT_EQ(expected_ja_ids, actual_ja_ids);
+    EXPECT_EQ(expected_ja_pieces, actual_ja_pieces);
+  }
+}
+
 }  // namespace sentencepiece

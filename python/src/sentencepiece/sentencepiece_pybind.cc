@@ -174,27 +174,26 @@ absl::Status RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
     return absl::InvalidArgumentError(
         "EOS token is not defined as a control symbol in this model.");
   }
+  if (emit_unk_piece && sp.unk_id() == -1) {
+    return absl::InvalidArgumentError(
+        "UNK token is not defined in this model.");
+  }
   if (!add_bos && !add_eos && !reverse && !emit_unk_piece)
     return absl::OkStatus();
+  if (emit_unk_piece) {
+    const auto& unk = sp.IdToPiece(sp.unk_id());
+    for (auto& piece : *pieces) {
+      if (sp.PieceToId(piece) == sp.unk_id()) {
+        piece = unk;
+      }
+    }
+  }
   if (reverse) std::reverse(pieces->begin(), pieces->end());
   if (add_bos) {
     pieces->insert(pieces->begin(), sp.IdToPiece(sp.bos_id()));
   }
   if (add_eos) {
     pieces->push_back(sp.IdToPiece(sp.eos_id()));
-  }
-  if (emit_unk_piece) {
-    if (sp.unk_id() == -1) {
-      return absl::InvalidArgumentError(
-          "UNK token is not defined in this model.");
-    }
-    const auto& unk = sp.IdToPiece(sp.unk_id());
-    for (auto& piece : *pieces) {
-      const int id = sp.PieceToId(piece);
-      if (id == sp.unk_id()) {
-        piece = unk;
-      }
-    }
   }
   return absl::OkStatus();
 }

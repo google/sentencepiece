@@ -88,6 +88,29 @@ TEST(WordModelTest, NotSupportedTest) {
   EXPECT_EQ(EncodeResult(), model.SampleEncode("test", 0.1));
 }
 
+TEST(WordModelTest, EncodeReservedAndUnusedTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+  AddPiece(&model_proto, WS "a", 0.1);
+  // CONTROL piece with leading whitespace (index 4)
+  auto* ctrl = model_proto.add_pieces();
+  ctrl->set_piece(WS "<s>");
+  ctrl->set_type(ModelProto::SentencePiece::CONTROL);
+  // UNUSED piece with leading whitespace (index 5)
+  auto* unused = model_proto.add_pieces();
+  unused->set_piece(WS "unused");
+  unused->set_type(ModelProto::SentencePiece::UNUSED);
+
+  const Model model(model_proto);
+  const EncodeResult result = model.Encode(WS "a" WS "<s>" WS "unused");
+  ASSERT_EQ(3, result.size());
+  EXPECT_EQ(WS "a", result[0].first);
+  EXPECT_EQ(3, result[0].second);
+  EXPECT_EQ(WS "<s>", result[1].first);
+  EXPECT_EQ(0, result[1].second);  // <unk>
+  EXPECT_EQ(WS "unused", result[2].first);
+  EXPECT_EQ(0, result[2].second);  // <unk>
+}
+
 }  // namespace
 }  // namespace word
 }  // namespace sentencepiece

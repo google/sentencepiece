@@ -710,7 +710,22 @@ TEST(UnigramModelTest, ModelNBestTimeoutTest) {
   sentencepiece::SetNBestTimeout(1);  // 1 ms
   nbest = model.NBestEncode(long_input, 100);
   EXPECT_EQ(1, nbest.size());  // fallback to viterbi.
+
+  // Regression test for issue #1347:
+  // A long unary prefix ("x" repeated) followed by a short ambiguous suffix
+  // with tied scores where agenda shrinks once at >= 10000 and then stays
+  // below 10000 while marching through the unary prefix.
+  ModelProto tied_proto = MakeBaseModelProto();
+  AddPiece(&tied_proto, "a", 0.0);
+  AddPiece(&tied_proto, "aa", 0.0);
+  AddPiece(&tied_proto, "x", 0.0);
+  Model tied_model(tied_proto);
+
+  std::string unary_plus_ambiguous(10000, 'x');
+  unary_plus_ambiguous.append(35, 'a');
   sentencepiece::SetNBestTimeout(original_timeout);
+  nbest = tied_model.NBestEncode(unary_plus_ambiguous, 2);
+  EXPECT_GE(nbest.size(), 1);
 }
 
 TEST(UnigramModelTest, EncodeTest) {

@@ -292,5 +292,36 @@ TEST(SentencePieceProcessorTest, SanitizeNullBytePiece1308) {
   }
 }
 
+TEST(SentencePieceProcessorTest, OutOfBoundsPieceAccess) {
+  std::string model_path = GetTestDataPath("botchan_en_unigram_1000.model");
+  SentencePieceProcessor sp;
+  ASSERT_TRUE(sp.Load(model_path).ok());
+
+  const int piece_size = sp.GetPieceSize();
+  ASSERT_GT(piece_size, 0);
+
+  for (int bad_id : {-1, -100, piece_size, piece_size + 100}) {
+    EXPECT_EQ("", sp.IdToPiece(bad_id));
+    std::string piece;
+    EXPECT_FALSE(sp.SafeIdToPiece(bad_id, &piece));
+    EXPECT_EQ(0.0f, sp.GetScore(bad_id));
+    EXPECT_FALSE(sp.IsUnknown(bad_id));
+    EXPECT_FALSE(sp.IsControl(bad_id));
+    EXPECT_FALSE(sp.IsUnused(bad_id));
+    EXPECT_FALSE(sp.IsByte(bad_id));
+  }
+}
+
+TEST(SentencePieceProcessorTest, RejectCorruptedDenormalizer) {
+  std::string model_path = GetTestDataPath("botchan_en_unigram_1000.model");
+  std::ifstream ifs(model_path, std::ios::binary);
+  ModelProto model_proto;
+  ASSERT_TRUE(model_proto.ParseFromIstream(&ifs));
+
+  model_proto.mutable_denormalizer_spec()->set_precompiled_charsmap("abc");
+  SentencePieceProcessor sp;
+  EXPECT_FALSE(sp.Load(model_proto).ok());
+}
+
 }  // namespace
 }  // namespace sentencepiece

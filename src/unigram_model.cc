@@ -410,9 +410,27 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
   }
   agenda.push(eos);
 
-  int shrink_count = 0;  // Number of times agenda has shrunk. For logging only.
-  bool printed_memory_warning = false;  // For logging only.
+  constexpr size_t kMaxAgendaSize = 10000;
+  constexpr size_t kMinAgendaSize = 512;
+  constexpr size_t kMaxHypothesisSize = 100000;
+  constexpr size_t kMaxAllocatorSize = 500000;
+  constexpr int kMaxShrinkCount = 10;
+  const size_t min_agenda_size =
+      std::min<size_t>(kMinAgendaSize, nbest_size * 10);
+  size_t max_hypothesis_size = kMaxHypothesisSize;
+  size_t total_hypotheses = 1;  // Includes EOS hypothesis.
+  int shrink_count = 0;         // Number of times agenda has shrunk.
+  size_t step_count = 0;
   while (!agenda.empty()) {
+    if (timeout_ms > 0 && (++step_count & 0xFFF) == 0) {
+      const auto elapsed = absl::ToInt64Milliseconds(absl::Now() - start_time);
+      if (elapsed >= timeout_ms) {
+        LOG(WARNING) << "NBest search timed out after " << elapsed << " ms. "
+                     << "Falling back to Viterbi best path.";
+        return {Viterbi()};
+      }
+    }
+
     auto* top = agenda.top();
     agenda.pop();
     auto* node = top->node;
@@ -483,21 +501,21 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
       agenda.push(hyp);
     }
 
-    static constexpr int kOneBillion = 1000000000;  // 10^9.
-    if (hypothesis_allocator.size() >= kOneBillion) {
-      if (!printed_memory_warning) {
-        printed_memory_warning = true;
-        LOG(WARNING) << "Allocator size exceeds " << kOneBillion
-                     << " with an example of length " << this->size();
-      }
+    total_hypotheses += end_nodes_size;
+    if (total_hypotheses >= kMaxAllocatorSize ||
+        hypothesis_allocator.size() >= kMaxAllocatorSize) {
+      LOG(WARNING) << "Allocator size exceeds " << kMaxAllocatorSize
+                   << " with an example of length " << this->size()
+                   << ". Falling back to Viterbi best path.";
+      return {Viterbi()};
     }
 
     // When the input is too long or contains duplicated phrases,
-    // `agenda` will get extremely big. Here we avoid this case by
-    // dynamically shrinking the agenda.
-    constexpr int kMaxAgendaSize = 10000;
-    constexpr int kMinAgendaSize = 512;
-    if (agenda.size() >= kMaxAgendaSize) {
+    // `agenda` or `hypothesis_allocator` will get extremely big. Here we avoid
+    // this case by dynamically shrinking the agenda.
+    if (agenda.size() >= kMaxAgendaSize ||
+        (agenda.size() > min_agenda_size &&
+         hypothesis_allocator.size() >= max_hypothesis_size)) {
       if (timeout_ms > 0) {
         const auto elapsed =
             absl::ToInt64Milliseconds(absl::Now() - start_time);
@@ -507,17 +525,24 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
           return {Viterbi()};
         }
       }
-      // Keeps the top `kMinAgendaSize` hypothesis.
+      if (shrink_count >= kMaxShrinkCount) {
+        LOG(WARNING) << "NBest search exceeded max shrink count "
+                     << kMaxShrinkCount
+                     << ". Falling back to Viterbi best path.";
+        return {Viterbi()};
+      }
+      // Keeps the top `min_agenda_size` hypotheses.
       Agenda new_agenda;
       // Keeps the top hypothesis and the ones on their "next" paths.
       model::FreeList<Hypothesis> new_allocator(kPreallocatedHypothesisSize);
       // Map between old Hypothesis* and new Hypothesis*.
       absl::flat_hash_map<const Hypothesis*, Hypothesis*> clone_map;
 
-      const size_t size = std::min<size_t>(kMinAgendaSize, nbest_size * 10);
+      const size_t size = std::min<size_t>(agenda.size(), min_agenda_size);
       shrink_count++;
       LOG(WARNING) << "Too big agenda size " << agenda.size()
-                   << ". Shrinking (round " << shrink_count << ") down to "
+                   << " (allocator size " << hypothesis_allocator.size()
+                   << "). Shrinking (round " << shrink_count << ") down to "
                    << size << ".";
       for (size_t i = 0; i < size; ++i) {
         const Hypothesis* top_hyp = agenda.top();
@@ -528,6 +553,7 @@ std::vector<Lattice::LatticePathWithScore> Lattice::NBest(size_t nbest_size,
       }
       agenda = std::move(new_agenda);
       hypothesis_allocator = std::move(new_allocator);
+      max_hypothesis_size = hypothesis_allocator.size() + kMaxHypothesisSize;
     }
   }
 

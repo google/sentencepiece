@@ -33,7 +33,9 @@ EncodeResult Model::Encode(absl::string_view normalized) const {
 
   EncodeResult output;
   for (const auto& w : SplitIntoWords(normalized)) {
-    output.emplace_back(w, PieceToId(w));
+    const int id = PieceToIdNoReserved(w);
+    output.emplace_back(w,
+                        (id != unk_id_ && IsUnusedInlined(id)) ? unk_id_ : id);
   }
 
   return output;

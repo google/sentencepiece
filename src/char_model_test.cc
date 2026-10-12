@@ -116,6 +116,29 @@ TEST(CharModelTest, NotSupportedTest) {
   EXPECT_EQ(EncodeResult(), model.SampleEncode("test", 0.1));
 }
 
+TEST(CharModelTest, EncodeReservedAndUnusedTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+  AddPiece(&model_proto, "a", 0.1);
+  // Single-character CONTROL piece (index 4)
+  auto* ctrl = model_proto.add_pieces();
+  ctrl->set_piece("x");
+  ctrl->set_type(ModelProto::SentencePiece::CONTROL);
+  // Single-character UNUSED piece (index 5)
+  auto* unused = model_proto.add_pieces();
+  unused->set_piece("y");
+  unused->set_type(ModelProto::SentencePiece::UNUSED);
+
+  const Model model(model_proto);
+  const EncodeResult result = model.Encode("axy");
+  ASSERT_EQ(3, result.size());
+  EXPECT_EQ("a", result[0].first);
+  EXPECT_EQ(3, result[0].second);
+  EXPECT_EQ("x", result[1].first);
+  EXPECT_EQ(0, result[1].second);  // <unk>
+  EXPECT_EQ("y", result[2].first);
+  EXPECT_EQ(0, result[2].second);  // <unk>
+}
+
 }  // namespace
 }  // namespace character
 }  // namespace sentencepiece

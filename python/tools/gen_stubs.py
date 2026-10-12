@@ -88,7 +88,8 @@ _ENCODE = (
     "add_bos: bool | None = ..., add_eos: bool | None = ..., reverse: bool | None = ..., "
     "emit_unk_piece: bool | None = ..., enable_sampling: bool | None = ..., "
     "nbest_size: int | None = ..., alpha: float | None = ..., num_threads: int | None = ..., "
-    "thread_pool: ThreadPool | None = ..., out_type: _OutType | None = ...) -> Any"
+    "thread_pool: ThreadPool | None = ..., out_type: _OutType | None = ..., "
+    "return_bytes: bool | None = ...) -> Any"
 )
 _PARALLEL_ENCODE = (
     "(self, input: str | bytes | Sequence[str] | Sequence[bytes], return_type: _OutType | None = ..., "
