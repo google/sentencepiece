@@ -105,11 +105,11 @@ class ModelInterface {
 
   // Returns the vocab id of `piece`.
   // both `pieces_` and `reserved_id_map_` are checked.
-  // Returns UNK(0) if `piece` is unknown
+  // Returns `unk_id()` if `piece` is unknown.
   [[nodiscard]] virtual int PieceToId(absl::string_view piece) const;
 
   // Returns the vocab id of `piece`.
-  // Returns UNK(0) if `piece` is unknown
+  // Returns `unk_id()` if `piece` is unknown.
   // It does not use reserved_id_map_ for the optimization sake,
   // e.g., BPE merges only with normal pieces.
   [[nodiscard]] int PieceToIdNoReserved(absl::string_view piece) const;

@@ -47,8 +47,8 @@ sp = spm.SentencePieceProcessor(model_file='m.model')
 
 # 3. Encode raw text into subword pieces (strings) or vocabulary IDs (integers).
 text = "I saw a girl with a telescope."
-pieces = sp.encode(text, out_type=str)
-ids = sp.encode(text, out_type=int)
+pieces = sp.encode(text, return_type=str)
+ids = sp.encode(text, return_type=int)
 
 print(f"Pieces: {pieces}")
 # Output: ['▁I', '▁saw', '▁a', '▁girl', '▁with', '▁a', '▁', 'te', 'le', 's', 'c', 'o', 'pe', '.']
@@ -87,7 +87,7 @@ To improve the robustness and accuracy of translation and language models, Sente
 ```python
 # Sample different segmentations on-the-fly
 for _ in range(3):
-    print(sp.encode('New York', out_type=str, enable_sampling=True, alpha=0.1, nbest_size=-1))
+    print(sp.encode('New York', return_type=str, enable_sampling=True, alpha=0.1, nbest_size=-1))
 # May output:
 # ['▁', 'N', 'e', 'w', '▁York']
 # ['▁New', '▁York']

@@ -364,7 +364,7 @@ class SentencePieceProcessor {
   [[nodiscard]] virtual int GetPieceSize() const;
 
   // Returns the vocab id of `piece`.
-  // Returns UNK(0) if `piece` is unknown.
+  // Returns `unk_id()` if `piece` is unknown.
   [[nodiscard]] virtual int PieceToId(absl::string_view piece) const;
 
   // Returns the string representation of vocab with `id`.
@@ -401,7 +401,7 @@ class SentencePieceProcessor {
   // than strict special control symbols.
   //
   // Consequently, encoding extra options (like "bos" / "eos") and Python
-  // wrapper flags (like add_bos=True / add_eos=True) will be IGNORED if
+  // wrapper flags (like add_bos=True / add_eos=True) will return an error if
   // the corresponding tokens are not strictly defined as CONTROL tokens.
 
   // Returns unknown (<unk>) id.
