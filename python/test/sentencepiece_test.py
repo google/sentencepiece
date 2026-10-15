@@ -61,6 +61,14 @@ RAW_NORMALIZER_FLAGS = dict(
 )
 
 
+# Pickle can only find classes defined at module level.
+class _ProcessorWithArg(spm.SentencePieceProcessor):
+
+  def __init__(self, my_arg, **kwargs):
+    super().__init__(**kwargs)
+    self.my_arg = my_arg
+
+
 class TestSentencepieceProcessor(unittest.TestCase):
   """Test case for SentencePieceProcessor"""
 
@@ -1154,6 +1162,18 @@ class TestSentencepieceProcessor(unittest.TestCase):
     expected = sp.encode('hello world.')
     self.assertEqual(pickle.loads(pickle.dumps(sp)).encode('hello world.'), expected)
     self.assertEqual(copy.deepcopy(sp).encode('hello world.'), expected)
+
+    sub_sp = _ProcessorWithArg(
+        my_arg='custom_value',
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model'),
+        add_bos=True,
+        add_eos=True,
+        out_type=str,
+    )
+    cloned = pickle.loads(pickle.dumps(sub_sp))
+    self.assertIsInstance(cloned, _ProcessorWithArg)
+    self.assertEqual(cloned.encode('hello world.'), expected)
+    self.assertEqual(cloned.my_arg, 'custom_value')
 
   def test_unpickle_model_only_state(self):
     # Pickles from older versions store only the serialized model.
