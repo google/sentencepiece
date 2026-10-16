@@ -119,7 +119,7 @@ To perform this efficiently, SentencePiece pre-sorts all characters by gain $g(c
 
 In the Unigram model, `--auto_character_coverage=true` is supported in combination with the new Sparse Pruning training algorithm (`--use_sparse_pruning=true`), enabling automatic allocation between single characters and subwords.
 
-Whereas standard Unigram training unconditionally protects the initial character set selected by `--character_coverage=0.9995` from pruning, Auto-char with Sparse Pruning evaluates and prunes both single characters and subwords jointly under a unified log-likelihood objective. Detailed descriptions of the new Sparse Pruning Unigram training algorithm and its formulation with Auto-char are TBA (To Be Announced).
+Whereas standard Unigram training unconditionally protects the initial character set selected by `--character_coverage=0.9995` from pruning, Auto-char with Sparse Pruning evaluates and prunes both single characters and multi-character subwords jointly under the same rule (expected count $\mathbb{E}[c_i] < \lambda$). See [Sparse L1 Unigram (`--use_sparse_pruning`)](sparse_l1_unigram.md) for details of the algorithm and its relationship to Auto-character Coverage.
 
 ---
 

@@ -159,6 +159,7 @@ For detailed guides, API references, and advanced usage, please refer to the fol
 *   [Performance Benchmark Code & Reproduction Guide](benchmark/README.md)
 *   [Training Options Reference](doc/options.md)
 *   [Auto-Character Coverage & Byte-Fallback Guide](doc/auto_character_coverage.md)
+*   [Sparse L1 Unigram Pruning Guide](doc/sparse_l1_unigram.md)
 *   [Text Normalization & Custom Rules](doc/normalization.md)
 *   [Special Symbols & Control Tokens](doc/special_symbols.md)
 *   [Vocabulary Piece Constraints](doc/piece_constraints.md)

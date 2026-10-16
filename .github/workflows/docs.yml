@@ -66,6 +66,7 @@ jobs:
             - cpp.md
             - options.md
             - auto_character_coverage.md
+            - sparse_l1_unigram.md
             - piece_constraints.md
             - normalization.md
             - special_symbols.md
