@@ -37,7 +37,6 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "filesystem.h"
-#include "model_factory.h"
 #include "model_interface.h"
 #include "normalizer.h"
 #include "ret_check.h"
