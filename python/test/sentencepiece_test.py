@@ -16,6 +16,7 @@
 # limitations under the License.!
 
 from collections import defaultdict
+import copy
 import io
 import os
 import pickle
@@ -58,6 +59,14 @@ RAW_NORMALIZER_FLAGS = dict(
     escape_whitespaces=False,
     remove_extra_whitespaces=False,
 )
+
+
+# Pickle can only find classes defined at module level.
+class _ProcessorWithArg(spm.SentencePieceProcessor):
+
+  def __init__(self, my_arg, **kwargs):
+    super().__init__(**kwargs)
+    self.my_arg = my_arg
 
 
 class TestSentencepieceProcessor(unittest.TestCase):
@@ -1142,6 +1151,37 @@ class TestSentencepieceProcessor(unittest.TestCase):
       id2 = sp.encode('hello world.', return_type=int)
 
       self.assertEqual(id1, id2)
+
+  def test_pickle_keeps_options(self):
+    sp = spm.SentencePieceProcessor(
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model'),
+        add_bos=True,
+        add_eos=True,
+        out_type=str,
+    )
+    expected = sp.encode('hello world.')
+    self.assertEqual(pickle.loads(pickle.dumps(sp)).encode('hello world.'), expected)
+    self.assertEqual(copy.deepcopy(sp).encode('hello world.'), expected)
+
+    sub_sp = _ProcessorWithArg(
+        my_arg='custom_value',
+        model_file=os.path.join(HERE, 'botchan_en_unigram_1000.model'),
+        add_bos=True,
+        add_eos=True,
+        out_type=str,
+    )
+    cloned = pickle.loads(pickle.dumps(sub_sp))
+    self.assertIsInstance(cloned, _ProcessorWithArg)
+    self.assertEqual(cloned.encode('hello world.'), expected)
+    self.assertEqual(cloned.my_arg, 'custom_value')
+
+  def test_unpickle_model_only_state(self):
+    # Pickles from older versions store only the serialized model.
+    sp = spm.SentencePieceProcessor.__new__(spm.SentencePieceProcessor)
+    sp.__setstate__(self.sp_.serialized_model_proto())
+    self.assertEqual(
+        sp.encode('hello world.'), self.sp_.encode('hello world.', return_type=int)
+    )
 
   def test_global_params(self):
     spm.SetRandomGeneratorSeed(0)

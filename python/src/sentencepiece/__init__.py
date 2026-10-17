@@ -697,11 +697,20 @@ class SentencePieceProcessor:
     vocab_size = GetPieceSize
 
     def __getstate__(self):
-        return self.serialized_model_proto()
+        state = self.__dict__.copy()
+        state.pop('_processor', None)
+        state['model_proto'] = self.serialized_model_proto()
+        return state
 
-    def __setstate__(self, serialized_model_proto):
-        self.__init__()
-        self.LoadFromSerializedProto(serialized_model_proto)
+    def __setstate__(self, state):
+        # Pickles written by older versions hold only the serialized model.
+        if not isinstance(state, dict):
+            state = {'model_proto': state}
+        else:
+            state = state.copy()
+        SentencePieceProcessor.__init__(self)
+        self.LoadFromSerializedProto(state.pop('model_proto'))
+        self.__dict__.update(state)
 
     def __len__(self):
         return self.GetPieceSize()
