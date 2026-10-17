@@ -181,6 +181,37 @@ TEST_F(CachedSentencePieceLiteTest, EncodeEquivalence) {
   }
 }
 
+TEST_F(CachedSentencePieceLiteTest, MergesUnknownRunsAcrossChunks) {
+  if (processor_ == nullptr || processor_->status() != StatusCode::kOk) {
+    GTEST_SKIP() << "Model file not available";
+  }
+
+  // The model has no byte fallback, so these characters are unknown and
+  // Encode emits one unk_id per run of them, across safe boundaries.
+  const std::vector<std::string> test_texts = {
+      "ΩЖ",
+      "abc ΩЖ€ def",
+      "吾輩は猫",
+  };
+
+  TokenCache cache;
+  for (const auto& text : test_texts) {
+    std::vector<int> expected;
+    ASSERT_EQ(processor_->Encode(text, &expected), StatusCode::kOk);
+    EXPECT_EQ(
+        std::count(expected.begin(), expected.end(), processor_->unk_id()), 1)
+        << text;
+    // The second call reads the chunks from the cache.
+    for (int i = 0; i < 2; ++i) {
+      std::vector<int> cached_ids;
+      EXPECT_EQ(CachedSentencePieceLite::Encode(*processor_, cache, text,
+                                                &cached_ids),
+                StatusCode::kOk);
+      EXPECT_EQ(cached_ids, expected) << text;
+    }
+  }
+}
+
 TEST_F(CachedSentencePieceLiteTest, CacheClear) {
   if (processor_ == nullptr || processor_->status() != StatusCode::kOk) {
     GTEST_SKIP() << "Model file not available";
