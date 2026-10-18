@@ -654,6 +654,42 @@ TEST(UnigramModelTest, PopulateNodesWithUnusedTest) {
   EXPECT_EQ(0, lattice.begin_nodes(2)[0]->id);
 }
 
+TEST(UnigramModelTest, PopulateNodesSkipsPartialCharacterPieceTest) {
+  ModelProto model_proto = MakeBaseModelProto();
+  AddPiece(&model_proto, "a", 0.1);           // 3
+  AddPiece(&model_proto, "\xe3\x81", 5.0);    // 4: first two bytes of U+3042
+  AddPiece(&model_proto, "\xe3", 5.0);        // 5: lead byte only
+
+  Model model(model_proto);
+  ASSERT_TRUE(model.status().ok());
+
+  Lattice lattice;
+  lattice.SetSentence("\xe3\x81\x82" "a");  // U+3042 'a'
+  model.PopulateNodes(&lattice);
+
+  // Only the UNK fallback may cover U+3042; the partial pieces must not.
+  ASSERT_EQ(1, lattice.begin_nodes(0).size());
+  EXPECT_EQ(0, lattice.begin_nodes(0)[0]->id);
+  EXPECT_EQ(3, lattice.begin_nodes(1)[0]->id);
+
+  // NBest and Sample (lattice paths) agree with Encode (EncodeOptimized).
+  const auto encoded = model.Encode("\xe3\x81\x82" "a");
+  const auto nbest = model.NBestEncode("\xe3\x81\x82" "a", 1);
+  ASSERT_EQ(1, nbest.size());
+  ASSERT_EQ(encoded.size(), nbest[0].first.size());
+  for (size_t i = 0; i < encoded.size(); ++i) {
+    EXPECT_EQ(encoded[i].second, nbest[0].first[i].second);
+    EXPECT_NE(4, nbest[0].first[i].second);
+    EXPECT_NE(5, nbest[0].first[i].second);
+  }
+  for (int trial = 0; trial < 20; ++trial) {
+    for (const auto& p : model.SampleEncode("\xe3\x81\x82" "a", 0.5)) {
+      EXPECT_NE(4, p.second);
+      EXPECT_NE(5, p.second);
+    }
+  }
+}
+
 TEST(UnigramModelTest, ModelNBestTest) {
   ModelProto model_proto = MakeBaseModelProto();
   AddPiece(&model_proto, "a", 0.0);     // 3

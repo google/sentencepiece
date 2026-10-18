@@ -601,6 +601,12 @@ void Model::PopulateNodes(Lattice* lattice) const {
   auto get_chars_length = [&lattice](int begin_pos, const char* end) {
     int pos = begin_pos;
     while (lattice->surface(pos) < end) ++pos;
+    // A trie match whose last byte falls inside a multi-byte character does
+    // not cover whole characters. EncodeOptimized() never selects such a
+    // match, so the lattice must not round it up to the next boundary either:
+    // doing so labels the full character with the id of a piece whose bytes
+    // are only a prefix of it.
+    if (lattice->surface(pos) != end) return 0;
     return pos - begin_pos;
   };
 
