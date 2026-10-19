@@ -90,6 +90,16 @@ StatusCode CachedSentencePieceLite::EncodeNormalized(
   const uint64_t effective_seed = cache.seed() ^ PointerSeed(&processor);
 
   ids->reserve(normalized_text.size() / kExpectedBytesPerToken + 1);
+  // Encode merges a run of unknown pieces into one unk_id, also across
+  // chunks, so a chunk's leading unk_id joins a trailing one.
+  const int unk_id = processor.unk_id();
+  auto append = [ids, unk_id](const auto* begin, const auto* end) {
+    if (begin != end && !ids->empty() && ids->back() == unk_id &&
+        *begin == unk_id) {
+      ++begin;
+    }
+    ids->insert(ids->end(), begin, end);
+  };
   std::vector<int> chunk_ids;
   StatusCode chunk_status = StatusCode::kOk;
   StatusCode status = processor.PretokenizeAtSafeBoundaries(
@@ -100,13 +110,13 @@ StatusCode CachedSentencePieceLite::EncodeNormalized(
         size_t count = 0;
         const int32_t* cached_ids = cache.Lookup(hash, tag, &count);
         if (cached_ids != nullptr) {
-          ids->insert(ids->end(), cached_ids, cached_ids + count);
+          append(cached_ids, cached_ids + count);
           return;
         }
         chunk_ids.clear();
         chunk_status = processor.EncodeNormalizedChunk(chunk, &chunk_ids);
         if (chunk_status != StatusCode::kOk) return;
-        ids->insert(ids->end(), chunk_ids.begin(), chunk_ids.end());
+        append(chunk_ids.data(), chunk_ids.data() + chunk_ids.size());
         if (!chunk_ids.empty() &&
             chunk_ids.size() <= TokenCache::kMaxCachedTokenCount) {
           cache.Insert(hash, tag, chunk_ids.data(), chunk_ids.size());
