@@ -124,6 +124,13 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
       status_ = absl::InternalError("piece must not include null character.");
       return;
     }
+    // The trainer only serializes structurally valid UTF-8 pieces
+    // (TrainerInterface::Serialize); enforce the same invariant on load.
+    if (!string_util::IsStructurallyValid(sp.piece())) {
+      status_ = absl::InternalError(
+          absl::StrCat("piece ", i, " is not a valid UTF-8 string."));
+      return;
+    }
     if (use_reserved_id_map) {
       const bool is_normal_piece =
           (sp.type() == ModelProto::SentencePiece::NORMAL ||

@@ -247,6 +247,46 @@ TEST(ModelInterfaceTest, InvalidModelTest) {
   }
 }
 
+TEST(ModelInterfaceTest, InvalidUTF8PieceTest) {
+  const std::vector<std::string> kInvalidPieces = {
+      "\xe3\x81",      // first two bytes of U+3042
+      "\xe3",          // lead byte only
+      "a\x80",         // stray continuation byte
+      "\xff",          // never valid in UTF-8
+      "\xed\xa0\x80",  // UTF-16 surrogate U+D800
+  };
+  for (const auto type : kModelTypes) {
+    for (const auto& piece : kInvalidPieces) {
+      ModelProto model_proto = MakeBaseModelProto(type);
+      AddPiece(&model_proto, "a");
+      AddPiece(&model_proto, piece);
+      auto model = ModelFactory::Create(model_proto);
+      EXPECT_FALSE(model->status().ok()) << "model type " << type;
+    }
+
+    // Well-formed multi-byte pieces, including U+FFFD itself, are accepted.
+    ModelProto model_proto = MakeBaseModelProto(type);
+    AddPiece(&model_proto, "a");
+    AddPiece(&model_proto, "\xe3\x81\x82");  // U+3042
+    AddPiece(&model_proto, "\xef\xbf\xbd");  // U+FFFD
+    auto model = ModelFactory::Create(model_proto);
+    EXPECT_TRUE(model->status().ok()) << "model type " << type;
+  }
+
+  // Control and user-defined pieces are checked as well.
+  for (const auto piece_type : {ModelProto::SentencePiece::CONTROL,
+                                ModelProto::SentencePiece::USER_DEFINED}) {
+    for (const bool valid : {true, false}) {
+      ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM);
+      AddPiece(&model_proto, "a");
+      AddPiece(&model_proto, valid ? "<x\xe3\x81\x82>" : "<x\xe3\x81>");
+      model_proto.mutable_pieces(4)->set_type(piece_type);
+      auto model = ModelFactory::Create(model_proto);
+      EXPECT_EQ(valid, model->status().ok()) << "piece type " << piece_type;
+    }
+  }
+}
+
 TEST(ModelInterfaceTest, ByteFallbackModelTest) {
   {
     ModelProto model_proto = MakeBaseModelProto(TrainerSpec::UNIGRAM, true);
