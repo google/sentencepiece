@@ -142,6 +142,11 @@ bool is_unicode_decimal_number(char32_t c) {
   return (c >= 0x30 && c <= 0x39) || (c >= 0xff10 && c <= 0xff19);
 }
 
+bool is_unicode_pua(char32_t c) {
+  return (c >= 0xe000 && c <= 0xf8ff) || (c >= 0xf0000 && c <= 0xffffd) ||
+         (c >= 0x100000 && c <= 0x10fffd);
+}
+
 class SentenceSelector {
  public:
   using Sampler = random::ReservoirSampler<TrainerInterface::Sentence>;
@@ -292,6 +297,10 @@ bool TrainerInterface::IsValidSentencePiece(
       return false;
     }
     if (!string_util::IsValidCodepoint(c)) {
+      return false;
+    }
+    if (trainer_spec_.exclude_pua_codepoints() && is_unicode_pua(c) &&
+        !required_chars_.contains(c)) {
       return false;
     }
 
@@ -541,6 +550,13 @@ END:
           // contains an interchange-invalid character.
           RET_CHECK(w.first.find(" ") == std::string::npos)
               << "space must not be included in normalized string.";
+          continue;
+        }
+        // Skips PUA code points unless explicitly specified in required_chars.
+        // If the code point is in required_chars, it is already registered in
+        // chars_count, so this exclusion check does not apply.
+        if (trainer_spec_.exclude_pua_codepoints() && is_unicode_pua(c) &&
+            !chars_count.contains(c)) {
           continue;
         }
         chars_count[c].second += w.second;

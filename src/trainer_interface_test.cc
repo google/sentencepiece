@@ -205,6 +205,32 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   EXPECT_FALSE(IsValid("２００７"));
   EXPECT_FALSE(IsValid("＊１"));
   EXPECT_FALSE(IsValid("２＊"));
+
+  // Unicode Private Use Area (PUA) code points.
+  trainer_spec.set_exclude_pua_codepoints(false);
+  EXPECT_TRUE(IsValid("\uE000"));
+  EXPECT_TRUE(IsValid("\U000F0000"));
+  EXPECT_TRUE(IsValid("\U00100000"));
+  EXPECT_TRUE(IsValid("\uE000\uE001"));
+
+  trainer_spec.set_exclude_pua_codepoints(true);
+  EXPECT_FALSE(IsValid("\uE000"));
+  EXPECT_FALSE(IsValid("\U000F0000"));
+  EXPECT_FALSE(IsValid("\U00100000"));
+  EXPECT_FALSE(IsValid("\uE000\uE001"));
+
+  {
+    // PUA code points registered in required_chars_ are still valid.
+    TrainerInterface pua_trainer(trainer_spec, normalizer_spec,
+                                 denormalizer_spec);
+    pua_trainer.required_chars_.emplace(U'\uE000', 1);
+    EXPECT_TRUE(pua_trainer.IsValidSentencePiece(
+        string_util::UTF8ToUnicodeText("\uE000")));
+    EXPECT_FALSE(pua_trainer.IsValidSentencePiece(
+        string_util::UTF8ToUnicodeText("\uE001")));
+    EXPECT_FALSE(pua_trainer.IsValidSentencePiece(
+        string_util::UTF8ToUnicodeText("\uE000\uE001")));
+  }
 }
 
 TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
@@ -571,6 +597,51 @@ TEST(TrainerInterfaceTest, CharactersTest) {
     EXPECT_EQ(
         trainer.required_chars_,
         E({{ToChar32("a"), 50}, {ToChar32("あ"), 49}, {ToChar32("b"), 1}}));
+  }
+  {
+    const std::string pua_input_file =
+        filesystem::JoinPath(::testing::TempDir(), "pua_input");
+    {
+      auto output = filesystem::NewWritableFile(pua_input_file);
+      std::string line;
+      for (int i = 0; i < 50; ++i) {
+        line += "a\uE000\U000F0000\U00100000";
+      }
+      output->WriteLine(line);
+    }
+    TrainerSpec pua_spec;
+    pua_spec.add_input(pua_input_file);
+    pua_spec.set_model_prefix("model");
+    pua_spec.set_character_coverage(1.0);
+
+    // By default, PUA code points are included in the base character set.
+    {
+      TrainerInterface trainer(pua_spec, normalizer_spec, denormalizer_spec);
+      ABSL_EXPECT_OK(trainer.LoadSentences());
+      EXPECT_EQ(trainer.required_chars_, E({{ToChar32(WS), 1},
+                                            {ToChar32("a"), 50},
+                                            {U'\uE000', 50},
+                                            {U'\U000F0000', 50},
+                                            {U'\U00100000', 50}}));
+    }
+
+    // With exclude_pua_codepoints=true, PUA code points are excluded.
+    pua_spec.set_exclude_pua_codepoints(true);
+    {
+      TrainerInterface trainer(pua_spec, normalizer_spec, denormalizer_spec);
+      ABSL_EXPECT_OK(trainer.LoadSentences());
+      EXPECT_EQ(trainer.required_chars_,
+                E({{ToChar32(WS), 1}, {ToChar32("a"), 50}}));
+    }
+
+    // A PUA code point in required_chars is still included.
+    pua_spec.set_required_chars("\uE000");
+    {
+      TrainerInterface trainer(pua_spec, normalizer_spec, denormalizer_spec);
+      ABSL_EXPECT_OK(trainer.LoadSentences());
+      EXPECT_EQ(trainer.required_chars_,
+                E({{ToChar32(WS), 1}, {ToChar32("a"), 50}, {U'\uE000', 50}}));
+    }
   }
 }
 

@@ -325,6 +325,15 @@ If you must change the behavior of existing symbols (e.g., switching between `CO
 *   **User-defined symbols** are treated as a single, indivisible token. They are never split into smaller pieces, and they are always matched from the input text if present.
 *   **Required characters** (specified via `--required_chars`) are forced to be in the model's alphabet (so they are never mapped to `<unk>`), but they are treated as normal characters during training. They can be split or merged into larger subwords based on frequency.
 
+### Q: How can I keep Private Use Area (PUA) characters out of the vocabulary?
+Web-crawled corpora often contain Unicode Private Use Area code points (`U+E000`–`U+F8FF`, `U+F0000`–`U+FFFFD`, `U+100000`–`U+10FFFD`) coming from icon fonts, legacy vendor encodings, or placeholder markers. Because they have no standardized meaning, they typically should not occupy vocabulary slots. Pass `--exclude_pua_codepoints=true` (or `exclude_pua_codepoints=True` in Python) to drop them from the base character set and from all learned subwords. PUA characters listed in `--required_chars` or `--user_defined_symbols` are still included, so you can selectively allow specific PUA symbols (e.g., private placeholder tokens) while excluding the rest. With `--byte_fallback=true`, excluded PUA characters are encoded as UTF-8 byte tokens; otherwise they are mapped to `<unk>`.
+
+```bash
+% spm_train --input=corpus.txt --model_prefix=m --vocab_size=32000 \
+    --byte_fallback=true --exclude_pua_codepoints=true \
+    --user_defined_symbols=$'\uE000'
+```
+
 ### Q: Do special symbols affect the vocabulary size limit?
 Yes. Special symbols (including default ones like `<s>`, `</s>`, `<unk>`, and custom ones) occupy slots in your vocabulary. If you set `vocab_size=32000` and define 100 special symbols, only 31900 slots will be available for subwords learned from the training corpus.
 

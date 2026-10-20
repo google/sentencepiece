@@ -147,6 +147,8 @@ These options define special symbols (BOS, EOS, PAD, custom control tokens) and 
     *   List of UTF-8 characters that *must* be included in the alphabet (forcing them to never map to `<unk>`), regardless of the `--character_coverage` setting.
 *   **`required_chars_file`** (string, default: `""`)
     *   Path to a file containing required characters (one per line).
+*   **`exclude_pua_codepoints`** (bool, default: `false`)
+    *   *(v0.2.3+)* If `true`, Unicode Private Use Area (PUA) code points (`U+E000`–`U+F8FF`, `U+F0000`–`U+FFFFD`, `U+100000`–`U+10FFFD`) are excluded from the base character set and from learned subwords, regardless of their frequency in the training data. PUA characters that appear in `--required_chars` or `--user_defined_symbols` are still included. Excluded PUA characters are decomposed into UTF-8 byte tokens when `--byte_fallback=true`, and mapped to `<unk>` otherwise. This is useful when the corpus contains vendor-specific icon fonts or placeholder characters that should not consume vocabulary slots.
 *   **`byte_fallback`** (bool, default: `false`)
     *   If `true`, decomposes out-of-vocabulary characters into UTF-8 byte tokens (e.g., `<0xE3>`), completely avoiding `<unk>` tokens. Highly recommended for modern LLMs.
 *   **`unk_id`** (int32, default: `0`), **`bos_id`** (int32, default: `1`), **`eos_id`** (int32, default: `2`), **`pad_id`** (int32, default: `-1`)

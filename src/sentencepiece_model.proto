@@ -20,7 +20,7 @@ option optimize_for = LITE_RUNTIME;
 package sentencepiece;
 
 // TrainerSpec encodes a various parameters for SentencePiece training.
-// Next id: 55
+// Next id: 57
 message TrainerSpec {
   ///////////////////////////////////////////////////////////////////
   // General parameters
@@ -165,6 +165,13 @@ message TrainerSpec {
   // in this field.
   optional string required_chars = 36;
 
+  // If true, Unicode Private Use Area (PUA) code points (U+E000..U+F8FF,
+  // U+F0000..U+FFFFD, U+100000..U+10FFFD) are excluded from the base character
+  // set unless explicitly specified in `required_chars` or
+  // `user_defined_symbols`. Excluded code points are decomposed into UTF-8
+  // bytes when `byte_fallback` is true, and mapped to <unk> otherwise.
+  optional bool exclude_pua_codepoints = 55 [default = false];
+
   // Decomposes unknown pieces into UTF-8 bytes.
   optional bool byte_fallback = 35 [default = false];
 
@@ -207,7 +214,7 @@ message TrainerSpec {
   optional string seed_sentencepieces_file = 54 [default = ""];
 
   // Automatically determines the allocation between characters and subwords.
-  optional bool auto_character_coverage = 55 [default = false];
+  optional bool auto_character_coverage = 56 [default = false];
 
   ///////////////////////////////////////////////////////////////////
   // Deprecated parameters.

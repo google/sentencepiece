@@ -932,6 +932,37 @@ class TestSentencepieceProcessor(unittest.TestCase):
       )
       self.assertEqual(len(results_timeout2), 1)
 
+  def test_train_exclude_pua_codepoints(self):
+    with tempfile.TemporaryDirectory() as tmp_dir:
+      input_file = os.path.join(tmp_dir, 'pua_input.txt')
+      with open(input_file, 'w', encoding='utf-8') as f:
+        for _ in range(100):
+          f.write('hello world \ue000 \ue001 \ue002\n')
+
+      model_prefix = os.path.join(tmp_dir, 'm_pua')
+      spm.SentencePieceTrainer.train(
+          input=input_file,
+          model_prefix=model_prefix,
+          vocab_size=300,
+          hard_vocab_limit=False,
+          model_type='bpe',
+          character_coverage=1.0,
+          byte_fallback=True,
+          exclude_pua_codepoints=True,
+          user_defined_symbols=['\ue000'],
+          required_chars='\ue001',
+      )
+      sp = spm.SentencePieceProcessor(model_file=model_prefix + '.model')
+      # \ue000 (user_defined_symbols) and \ue001 (required_chars) are kept,
+      # while \ue002 (unforced PUA) falls back to UTF-8 bytes.
+      self.assertFalse(sp.is_unknown(sp.piece_to_id('\ue000')))
+      self.assertFalse(sp.is_unknown(sp.piece_to_id('\ue001')))
+      self.assertTrue(sp.is_unknown(sp.piece_to_id('\ue002')))
+      self.assertEqual(
+          sp.encode('\ue000\ue001\ue002', out_type=str),
+          ['▁', '\ue000', '\ue001', '<0xEE>', '<0x80>', '<0x82>'],
+      )
+
   def test_train_with_pretokenizer(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
       model_prefix = os.path.join(tmp_dir, 'm_pretok')
