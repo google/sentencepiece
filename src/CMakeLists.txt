@@ -237,6 +237,10 @@ if (SPM_ENABLE_SHARED)
 endif()
 
 add_library(sentencepiece-static STATIC ${SPM_SRCS})
+if(SPM_ENABLE_PCH)
+  target_precompile_headers(sentencepiece-static PRIVATE
+    "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/common.h>")
+endif()
 add_library(sentencepiece_train-static STATIC ${SPM_TRAIN_SRCS})
 
 target_link_libraries(sentencepiece-static PRIVATE ${SPM_LIBS})

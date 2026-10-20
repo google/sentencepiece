@@ -48,6 +48,7 @@ You can customize the build by passing `-D<OPTION>=<VALUE>` to `cmake -B build`:
 | `SPM_ENABLE_SHARED` | `ON` (`OFF` on Windows) | Build shared libraries (`libsentencepiece.so` / `.dylib`) in addition to static libraries. |
 | `SPM_BUILD_TEST` | `OFF` | Build unit test binaries. |
 | `SPM_ENABLE_BENCHMARK` | `OFF` | Build Google Benchmark suites. |
+| `SPM_ENABLE_PCH` | `OFF` | Precompile `src/common.h` for the static core library. Requires CMake 3.16+. Editing this header rebuilds the PCH. |
 | `SPM_ENABLE_TCMALLOC` | `ON` | Link with TCMalloc (`gperftools`) if available. |
 | `SPM_TCMALLOC_STATIC` | `OFF` | Link static library of TCMalloc. |
 | `SPM_ENABLE_LITE` | `ON` | Build SentencePiece Lite targets (`sentencepiece_lite`, `spm_to_fb`, `spm_lite`). |
