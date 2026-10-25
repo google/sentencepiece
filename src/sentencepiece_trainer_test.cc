@@ -17,6 +17,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/status_matchers.h"
@@ -25,6 +26,7 @@
 #include "absl/strings/string_view.h"
 #include "filesystem.h"
 #include "sentencepiece_model.pb.h"
+#include "trainer_interface.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -744,6 +746,51 @@ TEST(SentencePieceTrainerTest, ExcludePuaCodepointsTest) {
   ABSL_ASSERT_OK(sp.Encode("\uE000\uE001\uE002", &pieces));
   EXPECT_EQ(pieces, std::vector<std::string>({"▁", "\uE000", "\uE001", "<0xEE>",
                                               "<0x80>", "<0x82>"}));
+}
+
+TEST(SentencePieceTrainerTest, ExcludePuaCodepointsWithAutoCoverageTest) {
+  const std::string input_file =
+      filesystem::JoinPath(::testing::TempDir(), "pua_auto_train_input.txt");
+  {
+    auto output = filesystem::NewWritableFile(input_file);
+    for (int i = 0; i < 100; ++i) {
+      output->WriteLine("hello world \uE000 \uE001 \uE002");
+    }
+  }
+
+  // UNIGRAM requires --use_sparse_pruning with --auto_character_coverage.
+  absl::SetFlag(&FLAGS_use_sparse_pruning, true);
+  for (const absl::string_view model_type : {"bpe", "unigram"}) {
+    const std::string model_prefix = filesystem::JoinPath(
+        ::testing::TempDir(), absl::StrCat("pua_auto_model_", model_type));
+    ABSL_ASSERT_OK(SentencePieceTrainer::Train(absl::StrCat(
+        "--input=", input_file, " --model_prefix=", model_prefix,
+        " --model_type=", model_type,
+        " --vocab_size=300 --hard_vocab_limit=false"
+        " --auto_character_coverage=true --byte_fallback=true"
+        " --exclude_pua_codepoints=true --user_defined_symbols=\uE000")));
+
+    SentencePieceProcessor sp;
+    ABSL_ASSERT_OK(sp.Load(absl::StrCat(model_prefix, ".model")));
+
+    // Only the user defined PUA symbol is in the vocabulary. The other PUA
+    // code points are excluded although they are frequent in the corpus.
+    EXPECT_EQ(sp.model_proto().pieces(sp.PieceToId("\uE000")).type(),
+              ModelProto::SentencePiece::USER_DEFINED)
+        << model_type;
+    for (const auto& piece : sp.model_proto().pieces()) {
+      if (piece.type() == ModelProto::SentencePiece::USER_DEFINED) continue;
+      EXPECT_EQ(piece.piece().find("\uE001"), std::string::npos) << model_type;
+      EXPECT_EQ(piece.piece().find("\uE002"), std::string::npos) << model_type;
+    }
+
+    std::vector<std::string> pieces;
+    ABSL_ASSERT_OK(sp.Encode("\uE000\uE002", &pieces));
+    EXPECT_EQ(pieces, std::vector<std::string>(
+                          {"▁", "\uE000", "<0xEE>", "<0x80>", "<0x82>"}))
+        << model_type;
+  }
+  absl::SetFlag(&FLAGS_use_sparse_pruning, false);
 }
 }  // namespace
 }  // namespace sentencepiece

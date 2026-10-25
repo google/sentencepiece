@@ -236,6 +236,15 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePieces() {
     }
   }
 
+  // With auto_character_coverage, sentences are not restricted to
+  // required_chars_. Removes characters that cannot be a piece, e.g., PUA code
+  // points with --exclude_pua_codepoints.
+  if (trainer_spec_.auto_character_coverage()) {
+    absl::erase_if(all_chars, [this](const auto& it) {
+      return !IsValidSentencePiece(string_util::UTF8ToUnicodeText(it.first));
+    });
+  }
+
   if (!trainer_spec_.seed_sentencepieces_file().empty()) {
     return LoadSeedSentencePiecesFromFile(all_chars);
   } else {

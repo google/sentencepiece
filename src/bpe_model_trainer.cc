@@ -432,6 +432,11 @@ std::vector<std::pair<std::string, float>> Trainer::PrunePiecesWithGlobalSearch(
     if (required_chars_.contains(c)) {
       continue;  // Already in required_chars_ (if specified).
     }
+    // Skips characters that cannot be a piece, e.g., PUA code points with
+    // --exclude_pua_codepoints.
+    if (!IsValidSentencePiece(string_util::UnicodeText{c})) {
+      continue;
+    }
     const int byte_len = UTF8ByteLength(c);
     if (byte_len >= 2) {
       const int64_t gain = count * (byte_len - 1);
