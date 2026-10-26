@@ -706,44 +706,5 @@ TEST(SentencePieceTrainerTest, TrainWithNullCharacterTest) {
       &model);
   EXPECT_TRUE(status.ok());
 }
-
-TEST(SentencePieceTrainerTest, ExcludePuaCodepointsTest) {
-  const std::string input_file =
-      filesystem::JoinPath(::testing::TempDir(), "pua_train_input.txt");
-  {
-    auto output = filesystem::NewWritableFile(input_file);
-    for (int i = 0; i < 100; ++i) {
-      output->WriteLine("hello world \uE000 \uE001 \uE002");
-    }
-  }
-
-  const std::string model_prefix =
-      filesystem::JoinPath(::testing::TempDir(), "pua_model");
-  ABSL_ASSERT_OK(SentencePieceTrainer::Train(absl::StrCat(
-      "--input=", input_file, " --model_prefix=", model_prefix,
-      " --model_type=bpe --vocab_size=300 --hard_vocab_limit=false"
-      " --character_coverage=1.0 --byte_fallback=true"
-      " --exclude_pua_codepoints=true --user_defined_symbols=\uE000"
-      " --required_chars=\uE001")));
-
-  SentencePieceProcessor sp;
-  ABSL_ASSERT_OK(sp.Load(absl::StrCat(model_prefix, ".model")));
-
-  // \uE000 (user_defined_symbols) and \uE001 (required_chars) are forced into
-  // the vocabulary, while \uE002 (unforced PUA) is excluded and decomposes to
-  // UTF-8 bytes (<0xEE>, <0x80>, <0x82>).
-  EXPECT_FALSE(sp.IsUnknown(sp.PieceToId("\uE000")));
-  EXPECT_EQ(sp.model_proto().pieces(sp.PieceToId("\uE000")).type(),
-            ModelProto::SentencePiece::USER_DEFINED);
-  EXPECT_FALSE(sp.IsUnknown(sp.PieceToId("\uE001")));
-  EXPECT_EQ(sp.model_proto().pieces(sp.PieceToId("\uE001")).type(),
-            ModelProto::SentencePiece::NORMAL);
-  EXPECT_TRUE(sp.IsUnknown(sp.PieceToId("\uE002")));
-
-  std::vector<std::string> pieces;
-  ABSL_ASSERT_OK(sp.Encode("\uE000\uE001\uE002", &pieces));
-  EXPECT_EQ(pieces, std::vector<std::string>({"▁", "\uE000", "\uE001", "<0xEE>",
-                                              "<0x80>", "<0x82>"}));
-}
 }  // namespace
 }  // namespace sentencepiece

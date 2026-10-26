@@ -101,9 +101,6 @@ ABSL_FLAG(std::string, required_chars, "",
           "set regardless of --character_coverage");
 ABSL_FLAG(std::string, required_chars_file, "",
           "load required_chars from file.");
-ABSL_FLAG(bool, exclude_pua_codepoints,
-          kDefaultTrainerSpec.exclude_pua_codepoints(),
-          "exclude Unicode PUA code points from the base character set");
 ABSL_FLAG(bool, byte_fallback, kDefaultTrainerSpec.byte_fallback(),
           "decompose unknown pieces into UTF-8 byte pieces");
 ABSL_FLAG(
@@ -261,7 +258,6 @@ int main(int argc, char* argv[]) {
   SetTrainerSpecFromFlag(unk_surface);
   SetTrainerSpecFromFlag(required_chars);
   SetTrainerSpecFromFile(required_chars);
-  SetTrainerSpecFromFlag(exclude_pua_codepoints);
   SetTrainerSpecFromFlag(vocabulary_output_piece_score);
   SetRepeatedTrainerSpecFromFlag(control_symbols);
   SetRepeatedTrainerSpecFromFlag(user_defined_symbols);
