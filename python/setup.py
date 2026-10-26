@@ -124,6 +124,14 @@ class build_ext_unix(_build_ext):
       libs.extend(abseil_libs)
       libs.append('-Wl,-dead_strip')
       libs.append('-Wl,-exported_symbols_list,exports_mac.txt')
+    elif sys.platform == 'aix':
+      #  non GNU linker
+      libs.extend(abseil_libs)
+      libs.append('-Wl,-bE:exports_aix.txt')
+      cflags.append('-Wl,-s')
+      libs.append('-Wl,-s')
+      libs.append('-fopenmp')
+      cflags.append('-fopenmp')
     else:
       # GNU linker
       libs = (
@@ -134,12 +142,8 @@ class build_ext_unix(_build_ext):
       )
       libs.append('-Wl,--gc-sections')
       libs.append('-Wl,--version-script=exports.txt')
-      if sys.platform == 'aix':
-        cflags.append('-Wl,-s')
-        libs.append('-Wl,-s')
-      else:
-        cflags.append('-Wl,-strip-all')
-        libs.append('-Wl,-strip-all')
+      cflags.append('-Wl,-strip-all')
+      libs.append('-Wl,-strip-all')
 
     if sys.platform == 'linux':
       libs.append('-Wl,-Bsymbolic')
