@@ -572,6 +572,29 @@ TEST(TrainerInterfaceTest, CharactersTest) {
         trainer.required_chars_,
         E({{ToChar32("a"), 50}, {ToChar32("あ"), 49}, {ToChar32("b"), 1}}));
   }
+  {
+    const std::string mt_input_file =
+        filesystem::JoinPath(::testing::TempDir(), "mt_input");
+    {
+      auto output = filesystem::NewWritableFile(mt_input_file);
+      for (int i = 0; i < 100; ++i) {
+        output->WriteLine(
+            absl::StrCat("hello" WS "world" WS "test" WS "rare\u2603_", i));
+      }
+    }
+    auto run_with_threads = [&](int num_threads) {
+      TrainerSpec mt_spec;
+      mt_spec.add_input(mt_input_file);
+      mt_spec.set_model_prefix("model");
+      mt_spec.set_character_coverage(0.98);
+      mt_spec.set_num_threads(num_threads);
+      TrainerInterface trainer(mt_spec, normalizer_spec, denormalizer_spec);
+      ABSL_EXPECT_OK(trainer.LoadSentences());
+      trainer.SplitSentencesByWhitespace();
+      return std::make_pair(trainer.required_chars_, trainer.sentences_);
+    };
+    EXPECT_EQ(run_with_threads(1), run_with_threads(8));
+  }
 }
 
 TEST(TrainerInterfaceTest, MultiFileSentenceIteratorTest) {

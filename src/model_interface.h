@@ -176,6 +176,10 @@ class ModelInterface {
            model_proto_->trainer_spec().byte_fallback();
   }
 
+  [[nodiscard]] bool has_internal_space_symbol() const {
+    return has_internal_space_symbol_;
+  }
+
  protected:
   // Initializes pieces_ and reserved_id_map_.
   // Control/special symbols (type CONTROL, UNKNOWN, BYTE) are stored in
@@ -227,6 +231,11 @@ class ModelInterface {
 
   // unknown id.
   int unk_id_ = 0;
+
+  // True if any vocabulary piece contains an internal space symbol ("▁" after
+  // any leading "▁"). Defaults to true for mock models that do not call
+  // InitializePieces().
+  bool has_internal_space_symbol_ = true;
 
   // status.
   absl::Status status_;

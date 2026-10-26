@@ -82,7 +82,7 @@ inline float Gumbel() {
   const float kEpsilon = 1e-7;
   auto* mt = random::GetRandomGenerator();
   float noise =
-      -std::log(-(std::log(absl::Uniform(*mt, 0.0f, 1.0f) + kEpsilon)));
+      -std::log(-(std::log(absl::Uniform(*mt, kEpsilon, 1.0f - kEpsilon))));
 
   return noise;
 }

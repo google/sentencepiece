@@ -48,7 +48,28 @@ static std::atomic<uint32_t> g_seed = kDefaultSeed;
 static std::atomic<int> g_nbest_timeout_ms = 30000;
 }  // namespace
 
-void SetRandomGeneratorSeed(uint32_t seed) { g_seed.store(seed); }
+namespace random {
+namespace {
+std::unique_ptr<absl::BitGen>& GetRandomGeneratorStorage() {
+  thread_local static auto mt =
+      GetRandomGeneratorSeed() == kDefaultSeed
+          ? std::make_unique<absl::BitGen>()
+          : std::make_unique<absl::BitGen>(
+                std::seed_seq{GetRandomGeneratorSeed()});
+  return mt;
+}
+}  // namespace
+
+absl::BitGen* GetRandomGenerator() { return GetRandomGeneratorStorage().get(); }
+}  // namespace random
+
+void SetRandomGeneratorSeed(uint32_t seed) {
+  if (seed != kDefaultSeed) {
+    g_seed.store(seed);
+    random::GetRandomGeneratorStorage() =
+        std::make_unique<absl::BitGen>(std::seed_seq{seed});
+  }
+}
 
 uint32_t GetRandomGeneratorSeed() { return g_seed.load(); }
 
@@ -215,19 +236,6 @@ UnicodeTextAndOffsets UTF8ToUnicodeTextAndOffsets(absl::string_view utf8) {
 }
 
 }  // namespace string_util
-
-namespace random {
-absl::BitGen* GetRandomGenerator() {
-  // Thread-locals occupy stack space in every thread ever created by the
-  // program, even if that thread never uses the thread-local variable.
-  thread_local static auto mt =
-      GetRandomGeneratorSeed() == kDefaultSeed
-          ? std::make_unique<absl::BitGen>()
-          : std::make_unique<absl::BitGen>(
-                std::seed_seq{GetRandomGeneratorSeed()});
-  return mt.get();
-}
-}  // namespace random
 
 namespace util {
 

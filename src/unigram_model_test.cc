@@ -269,6 +269,7 @@ TEST(LatticeTest, NBestTest) {
 }
 
 TEST(LatticeTest, NBestSampleTest) {
+  SetRandomGeneratorSeed(0);
   Lattice lattice;
   lattice.SetSentence("ABC");
 
@@ -422,6 +423,7 @@ TEST(LatticeTest, PopulateMarginalTest) {
 }
 
 TEST(LatticeTest, SampleTest) {
+  SetRandomGeneratorSeed(0);
   Lattice lattice;
   lattice.SetSentence("ABC");
 

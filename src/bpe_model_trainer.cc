@@ -15,13 +15,17 @@
 #include "bpe_model_trainer.h"
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
 #include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/hash/hash.h"
@@ -32,6 +36,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "ret_check.h"
+#include "sentencepiece_processor.h"
 #include "util.h"
 
 namespace sentencepiece::bpe {
@@ -153,18 +158,8 @@ void Trainer::ComputeFreq(Symbol* symbol) const {
   if (!symbol->needs_recomputation) {
     return;
   }
-  symbol->freq = 0;
-  for (auto it = symbol->positions.begin(); it != symbol->positions.end();) {
-    const Position& pos = *it;
-    // symbols_[sid][left] and symbols_[sid]right] must store
-    // the same symbols in symbol->left and symbols->right.
-    if (symbol->left != symbols_[pos.sid][pos.left] ||
-        symbol->right != symbols_[pos.sid][pos.right]) {
-      it = symbol->positions.erase(it);
-    } else {
-      symbol->freq += sentences_[pos.sid].second;
-      ++it;
-    }
+  if (symbol->freq == 0) {
+    std::vector<Position>().swap(symbol->positions);
   }
   symbol->needs_recomputation = false;
 }
@@ -195,7 +190,8 @@ void Trainer::AddNewPair(int sid, int left, int right) {
   }
   auto* symbol = GetPairSymbol(symbols_[sid][left], symbols_[sid][right]);
   if (symbol != nullptr) {
-    symbol->positions.insert({sid, left, right});
+    symbol->positions.push_back({sid, left, right});
+    symbol->freq += sentences_[sid].second;
     if (!symbol->pending) {
       symbol->pending = true;
       pending_queue_.push_back(symbol);
@@ -209,7 +205,83 @@ void Trainer::ResetFreq(int sid, int left, int right, const Symbol* best) {
   }
   auto* symbol = GetPairSymbol(symbols_[sid][left], symbols_[sid][right]);
   if (symbol != nullptr && symbol != best) {
+    symbol->freq -= sentences_[sid].second;
     symbol->needs_recomputation = true;
+  }
+}
+
+void Trainer::InitSymbolsAndBigrams() {
+  symbols_.resize(sentences_.size());
+
+  if (trainer_spec_.auto_character_coverage()) {
+    for (const auto& [sentence, _] : sentences_) {
+      for (const char32_t c : string_util::UTF8ToUnicodeText(sentence)) {
+        GetCharSymbol(c);
+      }
+    }
+  } else {
+    for (const auto& [c, _] : required_chars_) {
+      GetCharSymbol(c);
+    }
+  }
+  GetCharSymbol(kUNKChar);
+  GetCharSymbol(kPretokenizationBoundaryChar);
+
+  struct BigramStats {
+    uint64_t freq = 0;
+    std::vector<Position> positions;
+  };
+  const int num_workers = std::clamp<int>(trainer_spec_.num_threads(), 1, 32);
+  std::vector<
+      absl::flat_hash_map<std::pair<const Symbol*, const Symbol*>, BigramStats>>
+      worker_bigrams(num_workers);
+
+  {
+    ThreadPool pool(num_workers);
+    for (int t = 0; t < num_workers; ++t) {
+      const size_t start = (sentences_.size() * t) / num_workers;
+      const size_t end = (sentences_.size() * (t + 1)) / num_workers;
+      pool.Schedule([&, t, start, end]() {
+        for (size_t sid = start; sid < end; ++sid) {
+          for (const char32_t c :
+               string_util::UTF8ToUnicodeText(sentences_[sid].first)) {
+            symbols_[sid].push_back(GetCharSymbol(c));
+          }
+
+          for (size_t i = 1; i < symbols_[sid].size(); ++i) {
+            const Symbol* left = symbols_[sid][i - 1];
+            const Symbol* right = symbols_[sid][i];
+            if (left->is_unk || right->is_unk) continue;
+            auto& stats = worker_bigrams[t][{left, right}];
+            stats.freq += sentences_[sid].second;
+            stats.positions.push_back({static_cast<int>(sid),
+                                       static_cast<int>(i - 1),
+                                       static_cast<int>(i)});
+          }
+        }
+      });
+    }
+  }
+
+  for (auto& bigrams : worker_bigrams) {
+    for (auto& [pair, stats] : bigrams) {
+      if (Symbol* symbol = GetPairSymbol(pair.first, pair.second);
+          symbol != nullptr) {
+        symbol->freq += stats.freq;
+        if (symbol->positions.empty()) {
+          symbol->positions = std::move(stats.positions);
+        } else {
+          symbol->positions.insert(symbol->positions.end(),
+                                   stats.positions.begin(),
+                                   stats.positions.end());
+        }
+        if (!symbol->pending) {
+          symbol->pending = true;
+          pending_queue_.push_back(symbol);
+        }
+      }
+      std::vector<Position>().swap(stats.positions);
+    }
   }
 }
 
@@ -218,12 +290,12 @@ absl::Status Trainer::AcceptSymbol(Symbol* symbol) {
   // We do not need to scan all characters, but scan the neighbors in
   // best_symbol.
   for (const Position& pos : symbol->positions) {
-    if (symbols_[pos.sid][pos.left] == nullptr) {
-      // left index might be NULL (set in the previous iteration)
-      // when left_symbol == right_symbol.
+    // symbols_[sid][left] and symbols_[sid][right] must store
+    // the same symbols as symbol->left and symbol->right.
+    if (symbols_[pos.sid][pos.left] != symbol->left ||
+        symbols_[pos.sid][pos.right] != symbol->right) {
       continue;
     }
-    RET_CHECK(symbols_[pos.sid][pos.right]);
 
     // We have three bigrams [prev, left], [left, right], [right, next],
     // which are affected with this symbol replacement.
@@ -246,6 +318,7 @@ absl::Status Trainer::AcceptSymbol(Symbol* symbol) {
   // Removes best_symbol so it is not selected again.
   symbols_cache_.erase(symbol->fp);
   symbol->active = false;
+  std::vector<Position>().swap(symbol->positions);
 
   return absl::OkStatus();
 }
@@ -270,21 +343,8 @@ absl::Status Trainer::Train() {
 
   const bool auto_vocab = trainer_spec_.auto_character_coverage();
 
-  // Initializes symbols_. symbols_[sid][i] stores an unary symbol.
-  symbols_.resize(sentences_.size());
-  for (size_t i = 0; i < sentences_.size(); ++i) {
-    for (const char32_t c :
-         string_util::UTF8ToUnicodeText(sentences_[i].first)) {
-      symbols_[i].push_back(GetCharSymbol(c));
-    }
-  }
-
-  // Makes all bigram symbols.
-  for (size_t sid = 0; sid < symbols_.size(); ++sid) {
-    for (size_t i = 1; i < symbols_[sid].size(); ++i) {
-      AddNewPair(sid, i - 1, i);
-    }
-  }
+  // Initializes symbols_ and makes all initial bigram symbols.
+  InitSymbolsAndBigrams();
 
   for (Symbol* symbol : pending_queue_) {
     symbol->pending = false;
@@ -326,14 +386,14 @@ absl::Status Trainer::Train() {
         pq_.pop();
         continue;
       }
-      if (entry.freq != symbol->freq) {
-        pq_.pop();
-        continue;
-      }
       if (symbol->needs_recomputation) {
         pq_.pop();
         ComputeFreq(symbol);
         pq_.push({symbol->freq, symbol});
+        continue;
+      }
+      if (entry.freq != symbol->freq) {
+        pq_.pop();
         continue;
       }
       best_symbol = symbol;
@@ -350,6 +410,7 @@ absl::Status Trainer::Train() {
       // Removes best_symbol so it is not selected again.
       symbols_cache_.erase(best_symbol->fp);
       best_symbol->active = false;
+      std::vector<Position>().swap(best_symbol->positions);
       continue;
     }
 

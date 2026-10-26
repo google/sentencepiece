@@ -23,7 +23,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
@@ -70,8 +69,8 @@ class Trainer : public TrainerInterface {
     bool needs_recomputation =
         true;  // true if this symbol needs recomputation.
 
-    // Position list. Use set so that we can keep the order of occurrence.
-    absl::btree_set<Position> positions;
+    // Position list, kept in increasing order of occurrence.
+    std::vector<Position> positions;
 
     Symbol() = default;
   };
@@ -99,6 +98,9 @@ class Trainer : public TrainerInterface {
   // Resets the fequency of bigram [symbols_[sid][left] symbols_[sid][right]],
   // if this bigram is not |best|.
   void ResetFreq(int sid, int left, int right, const Symbol* best);
+
+  // Initializes unary symbols_ and initial bigram symbols across sentences_.
+  void InitSymbolsAndBigrams();
 
   absl::Status AcceptSymbol(Symbol* symbol);
 

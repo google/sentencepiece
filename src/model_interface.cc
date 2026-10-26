@@ -27,6 +27,7 @@
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -84,6 +85,8 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
   pieces_.clear();
   reserved_id_map_.clear();
   unk_id_ = -1;
+  has_internal_space_symbol_ = false;
+  constexpr absl::string_view kSpaceSymbol = "\xe2\x96\x81";
 
   std::set<absl::string_view> user_defined_symbols;
   std::vector<bool> byte_found(256, false);
@@ -139,6 +142,19 @@ void ModelInterface::InitializePieces(bool use_reserved_id_map) {
       status_ =
           absl::InternalError(absl::StrCat(sp.piece(), " is already defined."));
       return;
+    }
+
+    if (!has_internal_space_symbol_ &&
+        sp.type() != ModelProto::SentencePiece::CONTROL &&
+        sp.type() != ModelProto::SentencePiece::UNKNOWN &&
+        sp.type() != ModelProto::SentencePiece::BYTE) {
+      absl::string_view rem = sp.piece();
+      if (absl::StartsWith(rem, kSpaceSymbol)) {
+        rem.remove_prefix(kSpaceSymbol.size());
+      }
+      if (absl::StrContains(rem, kSpaceSymbol)) {
+        has_internal_space_symbol_ = true;
+      }
     }
 
     if (sp.type() == ModelProto::SentencePiece::USER_DEFINED) {

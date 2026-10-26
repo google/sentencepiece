@@ -175,8 +175,12 @@ absl::Status SentencePieceProcessor::SetDecodeExtraOptions(
 }
 
 absl::Status SentencePieceProcessor::status() const {
-  RET_CHECK(model_) << "Model is not initialized.";
-  RET_CHECK(normalizer_) << "Normalizer is not initialized.";
+  if (!model_) {
+    return absl::InternalError("Model is not initialized.");
+  }
+  if (!normalizer_) {
+    return absl::InternalError("Normalizer is not initialized.");
+  }
   ABSL_RETURN_IF_ERROR(model_->status());
   ABSL_RETURN_IF_ERROR(normalizer_->status());
   if (denormalizer_) {
@@ -497,21 +501,21 @@ absl::Status SentencePieceProcessor::Decode(
   if (model_proto_ && model_proto_->trainer_spec().has_unk_surface())
     unk_surface = model_proto_->trainer_spec().unk_surface();
 
-  // Returns decoded piece and a boolean indicating if the function has consumed
-  // a bos whitespace token (a piece starting with a kSpaceSymbol). This is used
-  // to strip only the first whitespace token from the decoded sequence for
-  // add_dummy_prefix.
-  auto DecodeSentencePiece =
-      [&](absl::string_view piece, int id,
-          bool is_bos_ws) -> std::pair<std::string, bool> {
-    if (IsControlId(*model_, id)) {      // <s>, </s>
-      return std::make_pair("", false);  // invisible symbol.
+  // Appends decoded piece to `text` and returns a boolean indicating if the
+  // function has consumed a bos whitespace token (a piece starting with a
+  // kSpaceSymbol). This is used to strip only the first whitespace token from
+  // the decoded sequence for add_dummy_prefix.
+  auto DecodeSentencePiece = [&](absl::string_view piece, int id,
+                                 bool is_bos_ws, std::string* text) -> bool {
+    if (IsControlId(*model_, id)) {  // <s>, </s>
+      return false;                  // invisible symbol.
     } else if (IsUnknownId(*model_, unk_id_, id)) {
       if (id >= 0 && model_->IdToPiece(id) == piece) {  // <unk>
-        return std::make_pair(std::string(unk_surface), false);
+        text->append(unk_surface.data(), unk_surface.size());
       } else {  // return piece when piece is not <unk>.
-        return std::make_pair(std::string(piece), false);
+        text->append(piece.data(), piece.size());
       }
+      return false;
     }
 
     bool has_bos_ws = false;  // whether the token starts with a kSpaceSymbol
@@ -529,8 +533,15 @@ absl::Status SentencePieceProcessor::Decode(
       }
     }
 
-    return std::make_pair(absl::StrReplaceAll(piece, {{kSpaceSymbol, " "}}),
-                          has_bos_ws);
+    if (absl::ConsumePrefix(&piece, kSpaceSymbol)) {
+      text->push_back(' ');
+    }
+    if (!model_->has_internal_space_symbol()) {
+      text->append(piece.data(), piece.size());
+    } else {
+      absl::StrAppend(text, absl::StrReplaceAll(piece, {{kSpaceSymbol, " "}}));
+    }
+    return has_bos_ws;
   };
 
   spt->mutable_pieces()->Reserve(pieces.size());
@@ -543,6 +554,7 @@ absl::Status SentencePieceProcessor::Decode(
   ABSL_RETURN_IF_ERROR(ApplyExtraOptions(decode_extra_options_, spt));
 
   std::string* text = spt->mutable_text();
+  text->reserve(spt->pieces_size());
   auto SetSurface = [&](int index, absl::string_view surface) {
     auto* sp = spt->mutable_pieces(index);
     sp->set_surface(surface.data(), surface.size());
@@ -559,6 +571,7 @@ absl::Status SentencePieceProcessor::Decode(
 
     // Constructs byte sequence.
     std::string bytes;
+    bytes.reserve(token_index_end - token_index_begin);
     for (int i = token_index_begin; i < token_index_end; ++i) {
       const auto& sp = spt->pieces(i);
       const int byte = PieceToByte(sp.piece());
@@ -607,7 +620,6 @@ absl::Status SentencePieceProcessor::Decode(
   int byte_start = 0;
   bool is_bos_ws = true;  // whether we expect a bos ws token to consume.
   bool bos_ws_seen = false;
-  std::string decoded;
 
   for (int i = 0; i < spt->pieces_size(); ++i) {
     const auto& sp = spt->pieces(i);
@@ -618,10 +630,12 @@ absl::Status SentencePieceProcessor::Decode(
       if (bos_ws_seen || !text->empty()) is_bos_ws = false;
 
       byte_start = i + 1;
-      std::tie(decoded, bos_ws_seen) =
-          DecodeSentencePiece(sp.piece(), sp.id(), is_bos_ws);
-
-      SetSurface(i, decoded);
+      const size_t begin_pos = text->size();
+      bos_ws_seen = DecodeSentencePiece(sp.piece(), sp.id(), is_bos_ws, text);
+      auto* mut_sp = spt->mutable_pieces(i);
+      mut_sp->set_begin(begin_pos);
+      mut_sp->set_end(text->size());
+      mut_sp->set_surface(text->data() + begin_pos, text->size() - begin_pos);
     }
   }
   ABSL_RETURN_IF_ERROR(ProcessBytePieces(byte_start, spt->pieces_size()));

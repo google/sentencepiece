@@ -253,6 +253,40 @@ TEST(BPETrainerTest, EndToEndTestWithAutoCharacterCoverage) {
   EXPECT_EQ("吾輩は猫である。未知の漢字驫。", decoded);
 }
 
+TEST(BPETrainerTest, MultiThreadDeterminismTest) {
+  const std::string input =
+      filesystem::JoinPath(::testing::SrcDir(), kTestInputData);
+  const std::string model_st =
+      filesystem::JoinPath(::testing::TempDir(), "bpe_st");
+  const std::string model_mt =
+      filesystem::JoinPath(::testing::TempDir(), "bpe_mt");
+
+  ASSERT_TRUE(
+      SentencePieceTrainer::Train(
+          absl::StrCat("--model_prefix=", model_st, " --input=", input,
+                       " --vocab_size=8000 --model_type=bpe --num_threads=1"))
+          .ok());
+  ASSERT_TRUE(
+      SentencePieceTrainer::Train(
+          absl::StrCat("--model_prefix=", model_mt, " --input=", input,
+                       " --vocab_size=8000 --model_type=bpe --num_threads=8"))
+          .ok());
+
+  SentencePieceProcessor sp_st, sp_mt;
+  ASSERT_TRUE(sp_st.Load(absl::StrCat(model_st, ".model")).ok());
+  ASSERT_TRUE(sp_mt.Load(absl::StrCat(model_mt, ".model")).ok());
+  ASSERT_EQ(sp_st.model_proto().pieces_size(),
+            sp_mt.model_proto().pieces_size());
+  for (int i = 0; i < sp_st.model_proto().pieces_size(); ++i) {
+    EXPECT_EQ(sp_st.model_proto().pieces(i).piece(),
+              sp_mt.model_proto().pieces(i).piece())
+        << "Mismatch at index " << i;
+    EXPECT_FLOAT_EQ(sp_st.model_proto().pieces(i).score(),
+                    sp_mt.model_proto().pieces(i).score())
+        << "Score mismatch at index " << i;
+  }
+}
+
 }  // namespace
 }  // namespace bpe
 }  // namespace sentencepiece
