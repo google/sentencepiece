@@ -14,6 +14,8 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -311,6 +313,63 @@ TEST(SentencepieceProcessorTest, ParallelEncodeTestExtraOptions) {
     EXPECT_EQ(expected_ja_ids, actual_ja_ids);
     EXPECT_EQ(expected_ja_pieces, actual_ja_pieces);
   }
+}
+
+TEST(SentencepieceProcessorTest, ParallelEncodePositiveControl) {
+  const std::string test_model_file = filesystem::JoinPath(
+      ::testing::SrcDir(), "botchan_en_unigram_1000.model");
+  SentencePieceProcessor sp;
+  CHECK_OK(sp.Load(test_model_file));
+
+  ThreadPool thread_pool(2);
+  const std::string input = "This is a positive control test for parallel encode.";
+  std::vector<int> expected_ids;
+  std::vector<int> actual_ids;
+  CHECK_OK(sp.Encode(input, &expected_ids));
+  CHECK_OK(sp.ParallelEncode(input, 8, thread_pool, &actual_ids));
+  EXPECT_EQ(expected_ids, actual_ids);
+}
+
+TEST(SentencepieceProcessorTest, ParallelEncodeRejectsNonPositiveMaxPieceLength) {
+  const std::string test_model_file = filesystem::JoinPath(
+      ::testing::SrcDir(), "botchan_en_unigram_1000.model");
+  ModelProto base_model_proto;
+  CHECK_OK(io::LoadModelProto(test_model_file, &base_model_proto));
+
+  ThreadPool thread_pool(2);
+  for (const int invalid_max_len : {-2, 0}) {
+    ModelProto model_proto = base_model_proto;
+    model_proto.mutable_trainer_spec()->set_max_sentencepiece_length(
+        invalid_max_len);
+    SentencePieceProcessor sp;
+    CHECK_OK(sp.Load(model_proto));
+
+    std::vector<int> ids;
+    EXPECT_FALSE(
+        sp.ParallelEncode("This is a test of parallel encoding.", 2,
+                          thread_pool, &ids)
+            .ok());
+  }
+}
+
+TEST(SentencepieceProcessorTest, ParallelEncodeLargeMaxPieceLengthDoesNotOverflow) {
+  const std::string test_model_file = filesystem::JoinPath(
+      ::testing::SrcDir(), "botchan_en_unigram_1000.model");
+  ModelProto model_proto;
+  CHECK_OK(io::LoadModelProto(test_model_file, &model_proto));
+  model_proto.mutable_trainer_spec()->set_max_sentencepiece_length(
+      std::numeric_limits<int32_t>::max());
+
+  SentencePieceProcessor sp;
+  CHECK_OK(sp.Load(model_proto));
+
+  ThreadPool thread_pool(2);
+  const std::string input = "This is a forty character test sentence.";
+  std::vector<int> expected_ids;
+  std::vector<int> actual_ids;
+  CHECK_OK(sp.Encode(input, &expected_ids));
+  CHECK_OK(sp.ParallelEncode(input, 20, thread_pool, &actual_ids));
+  EXPECT_EQ(expected_ids, actual_ids);
 }
 
 }  // namespace sentencepiece

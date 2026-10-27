@@ -670,11 +670,17 @@ void GetIthChunkBoundaries(
     const std::vector<uint32_t>& utf8_offsets, const size_t chunk_len,
     const size_t i, const size_t overlap,
     std::tuple<size_t, size_t, size_t>& chunk_boundaries) {
-  const size_t unicode_start_offset = i * chunk_len;
+  const size_t unicode_size = input_unicode.size();
+  const size_t unicode_start_offset = std::min<size_t>(
+      i <= unicode_size / chunk_len ? i * chunk_len : unicode_size,
+      unicode_size);
+  const size_t remaining_from_start = unicode_size - unicode_start_offset;
   const size_t unicode_end_offset =
-      std::min<size_t>((i + 1) * chunk_len, input_unicode.size());
+      unicode_start_offset +
+      std::min<size_t>(chunk_len, remaining_from_start);
+  const size_t remaining_from_end = unicode_size - unicode_end_offset;
   const size_t unicode_overlap_offset =
-      std::min<size_t>((i + 1) * chunk_len + overlap, input_unicode.size());
+      unicode_end_offset + std::min<size_t>(overlap, remaining_from_end);
   const size_t start_index = utf8_offsets[unicode_start_offset];
   const size_t end_index = utf8_offsets[unicode_end_offset];
   const size_t overlap_index = utf8_offsets[unicode_overlap_offset];
@@ -688,14 +694,17 @@ void GetChunkOfInput(const absl::string_view input,
                      absl::string_view& input_chunk,
                      absl::string_view& normalized_chunk,
                      absl::Span<const size_t>& norm_to_orig_chunk) {
-  const size_t start_index = std::get<0>(chunk_boundaries);
-  const size_t overlap_index = std::get<2>(chunk_boundaries);
+  const size_t start_index =
+      std::min<size_t>(std::get<0>(chunk_boundaries), input.size());
+  const size_t overlap_index = std::min<size_t>(
+      std::max<size_t>(std::get<2>(chunk_boundaries), start_index),
+      input.size());
   input_chunk = input.substr(start_index, overlap_index - start_index);
 
   auto normalized_start_it =
       std::lower_bound(norm_to_orig.begin(), norm_to_orig.end(), start_index);
-  const int normalized_start_index =
-      (normalized_start_it - norm_to_orig.begin());
+  const size_t normalized_start_index =
+      static_cast<size_t>(normalized_start_it - norm_to_orig.begin());
 
   auto normalized_end_it =
       std::upper_bound(normalized_start_it, norm_to_orig.end(), overlap_index);
@@ -704,8 +713,8 @@ void GetChunkOfInput(const absl::string_view input,
     norm_to_orig_chunk = absl::Span<const size_t>();
     return;
   }
-  const int normalized_end_index =
-      (normalized_end_it - norm_to_orig.begin()) - 1;
+  const size_t normalized_end_index =
+      static_cast<size_t>(normalized_end_it - norm_to_orig.begin()) - 1;
   normalized_chunk =
       absl::ClippedSubstr(normalized, normalized_start_index,
                           normalized_end_index - normalized_start_index);
@@ -760,11 +769,18 @@ ABSL_ATTRIBUTE_COLD absl::Status ReparseBadRanges(
         populate_sentence_piece_text,
     std::vector<SentencePieceText*>& spt_chunks,
     std::vector<std::tuple<size_t, size_t, size_t>>& input_chunk_boundaries) {
+  if (spt_chunks.empty() ||
+      spt_chunks.size() != input_chunk_boundaries.size()) {
+    return absl::InternalError(
+        "Mismatched or empty chunk buffers in ReparseBadRanges.");
+  }
+
   // Convert bad joins into bad join ranges.
   // A bad join range is a contiguous sequence of chunks where none of
   // them joined together successfully.
   std::vector<std::pair<size_t, size_t>> bad_join_ranges;
   for (size_t i : bad_joins) {
+    RET_CHECK_LT(i + 1, spt_chunks.size());
     // Error at i means that i-1 and i don't work together.
     if (bad_join_ranges.empty() || bad_join_ranges.back().second < i) {
       bad_join_ranges.push_back(std::make_pair(i, i + 1));
@@ -841,6 +857,7 @@ absl::Status SentencePieceProcessor::ParallelEncodeInternal(
     SentencePieceText* spt) const {
   ABSL_RETURN_IF_ERROR(status());
   RET_CHECK_GT(chunk_len, 0);
+  RET_CHECK_GT(thread_pool.num_threads(), 0);
 
   if (input.empty()) {
     if (pieces != nullptr) {
@@ -876,9 +893,13 @@ absl::Status SentencePieceProcessor::ParallelEncodeInternal(
   ABSL_RETURN_IF_ERROR(
       normalizer_->Normalize(input, &normalized, &norm_to_orig));
 
+  const int max_piece_length =
+      model_proto().trainer_spec().max_sentencepiece_length();
+  RET_CHECK_GT(max_piece_length, 0);
+  RET_CHECK(!input_unicode.empty());
   // Set the overlap to be 2x the maximum piece length.
-  size_t overlap = model_proto().trainer_spec().max_sentencepiece_length() * 2;
-  size_t num_chunks = (input_unicode.size() + chunk_len - 1) / chunk_len;
+  const size_t overlap = static_cast<size_t>(max_piece_length) * 2;
+  const size_t num_chunks = (input_unicode.size() - 1) / chunk_len + 1;
 
   // Split unnormalized input into chunks, and then map those to chunks in the
   // normalized text.
