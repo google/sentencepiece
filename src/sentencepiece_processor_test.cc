@@ -1524,4 +1524,43 @@ TEST(LoadModelProtoTest, FileLoadsOk) {
   ABSL_EXPECT_OK(io::LoadModelProto(filename, &model_proto));
 }
 
+TEST(SentencePieceProcessorTest, ReloadClearsDenormalizerAndAcceptsValidModel) {
+  auto make_reload_model = [](bool with_denormalizer) {
+    auto model_proto = std::make_unique<ModelProto>();
+    auto *unk = model_proto->add_pieces();
+    unk->set_piece("<unk>");
+    unk->set_type(ModelProto::SentencePiece::UNKNOWN);
+    unk->set_score(0.0f);
+    auto *piece_a = model_proto->add_pieces();
+    piece_a->set_piece("a");
+    piece_a->set_type(ModelProto::SentencePiece::NORMAL);
+    piece_a->set_score(-1.0f);
+    model_proto->mutable_trainer_spec()->set_model_type(TrainerSpec::UNIGRAM);
+    model_proto->mutable_normalizer_spec()->set_name("identity");
+    model_proto->mutable_normalizer_spec()->set_add_dummy_prefix(false);
+    model_proto->mutable_normalizer_spec()->set_remove_extra_whitespaces(false);
+    if (with_denormalizer) {
+      std::string blob(1029, '\0');
+      blob[1] = '\x04';
+      blob[5] = '\x04';
+      model_proto->mutable_denormalizer_spec()->set_precompiled_charsmap(blob);
+      model_proto->mutable_denormalizer_spec()->set_add_dummy_prefix(false);
+      model_proto->mutable_denormalizer_spec()->set_remove_extra_whitespaces(
+          false);
+    }
+    return model_proto;
+  };
+
+  SentencePieceProcessor sp;
+  std::string control_decoded;
+  ASSERT_TRUE(sp.Load(make_reload_model(true)).ok());
+  ASSERT_TRUE(sp.Decode(std::vector<std::string>{"a"}, &control_decoded).ok());
+  EXPECT_EQ("a", control_decoded);
+
+  std::string reloaded_decoded;
+  ASSERT_TRUE(sp.Load(make_reload_model(false)).ok());
+  ASSERT_TRUE(sp.Decode(std::vector<std::string>{"a"}, &reloaded_decoded).ok());
+  EXPECT_EQ("a", reloaded_decoded);
+}
+
 }  // namespace sentencepiece
