@@ -82,4 +82,3 @@ jobs:
         overwrite: true
         prerelease: true
         file_glob: true
-        body: "This is my release text"

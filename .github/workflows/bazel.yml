@@ -141,4 +141,3 @@ jobs:
           overwrite: true
           prerelease: true
           file_glob: true
-          body: "SentencePiece Release (Built with Bazel)"
