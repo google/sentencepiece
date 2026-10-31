@@ -607,6 +607,7 @@ This operates similarly to how [NumPy](https://numpy.org/devdocs/reference/threa
 
 The C++ library's `const` and `static` methods (such as `encode()`, `decode()`, and `train()`) are thread-safe and designed to work in a free-threaded (NoGIL) environment.
 However, non-const methods like `load()` are not thread-safe and can cause data races; ensure you implement appropriate locks when calling them from multiple threads.
+This also applies to regular (GIL-enabled) Python builds: `encode()`, `decode()` and `load()` release the GIL while they run, so do not call `load()` on a processor while another thread is using the same processor.
 
 While this limitation might be removed in the future, please note that it's not a simple fix, as it would require additional shared locks in C++.
 

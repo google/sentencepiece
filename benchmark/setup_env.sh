@@ -19,7 +19,7 @@ INDEX_URL="https://pypi.org/simple"
 pip install --upgrade pip -i "$INDEX_URL"
 
 # Install build requirements for sentencepiece python wrapper
-pip install "setuptools>=61.0" wheel "pybind11>=2.12" -i "$INDEX_URL"
+pip install "setuptools>=61.0" wheel "pybind11>=2.13" -i "$INDEX_URL"
 
 # Install other requirements
 pip install build tiktoken tokenizers pandas datasets -i "$INDEX_URL"
