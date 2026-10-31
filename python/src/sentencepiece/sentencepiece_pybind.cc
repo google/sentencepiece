@@ -292,6 +292,7 @@ class PyListStringViewVector {
 
   absl::Span<const absl::string_view> views() const { return views_; }
   bool empty() const { return views_.empty(); }
+  size_t size() const { return views_.size(); }
   bool is_bytes() const { return is_bytes_; }
   absl::string_view operator[](size_t i) const { return views_[i]; }
 
@@ -835,12 +836,15 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               bool enable_sampling, int nbest_size, float alpha, bool add_bos,
               bool add_eos, bool reverse) {
              PyListStringViewVector C_ins(ins);
-             std::vector<std::vector<int>> outs(ins.size());
-             WorkerPool pool(num_threads, thread_pool, ins.size());
+             // Use the size of C_ins, not that of ins. The list may be
+             // modified by another thread once the GIL is released.
+             const size_t n = C_ins.size();
+             std::vector<std::vector<int>> outs(n);
+             WorkerPool pool(num_threads, thread_pool, n);
              {
                py::gil_scoped_release release;
                auto status = sentencepiece::RunBatch(
-                   ins.size(),
+                   n,
                    [&](size_t i) {
                      std::vector<int> out;
                      absl::Status s;
@@ -866,12 +870,15 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               bool enable_sampling, int nbest_size, float alpha, bool add_bos,
               bool add_eos, bool reverse) {
              PyListStringViewVector C_ins(ins);
-             std::vector<std::vector<int>> temp_outs(ins.size());
-             WorkerPool pool(num_threads, thread_pool, ins.size());
+             // Use the size of C_ins, not that of ins. The list may be
+             // modified by another thread once the GIL is released.
+             const size_t n = C_ins.size();
+             std::vector<std::vector<int>> temp_outs(n);
+             WorkerPool pool(num_threads, thread_pool, n);
              {
                py::gil_scoped_release release;
                auto status = sentencepiece::RunBatch(
-                   ins.size(),
+                   n,
                    [&](size_t i) {
                      std::vector<int> out;
                      absl::Status s;
@@ -889,8 +896,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                    *pool.get());
                if (!status.ok()) throw status;
              }
-             std::vector<VectorBuffer> outs(ins.size());
-             for (size_t i = 0; i < ins.size(); ++i) {
+             std::vector<VectorBuffer> outs(n);
+             for (size_t i = 0; i < n; ++i) {
                outs[i] = VectorBuffer(std::move(temp_outs[i]));
              }
              return outs;
@@ -903,12 +910,15 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
               bool return_bytes) {
              if (ins.empty()) return py::list();
              PyListStringViewVector C_ins(ins);
-             std::vector<std::vector<std::string>> outs(ins.size());
-             WorkerPool pool(num_threads, thread_pool, ins.size());
+             // Use the size of C_ins, not that of ins. The list may be
+             // modified by another thread once the GIL is released.
+             const size_t n = C_ins.size();
+             std::vector<std::vector<std::string>> outs(n);
+             WorkerPool pool(num_threads, thread_pool, n);
              {
                py::gil_scoped_release release;
                auto status = sentencepiece::RunBatch(
-                   ins.size(),
+                   n,
                    [&](size_t i) {
                      std::vector<std::string> out;
                      absl::Status s;
@@ -941,12 +951,15 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              CheckProtoArgsThrowException(add_bos, add_eos, reverse,
                                           emit_unk_piece);
              PyListStringViewVector C_ins(ins);
-             std::vector<std::string> outs(ins.size());
-             WorkerPool pool(num_threads, thread_pool, ins.size());
+             // Use the size of C_ins, not that of ins. The list may be
+             // modified by another thread once the GIL is released.
+             const size_t n = C_ins.size();
+             std::vector<std::string> outs(n);
+             WorkerPool pool(num_threads, thread_pool, n);
              {
                py::gil_scoped_release release;
                auto status = sentencepiece::RunBatch(
-                   ins.size(),
+                   n,
                    [&](size_t i) {
                      sentencepiece::SentencePieceText spt;
                      absl::Status s;
@@ -977,12 +990,15 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              CheckProtoArgsThrowException(add_bos, add_eos, reverse,
                                           emit_unk_piece);
              PyListStringViewVector C_ins(ins);
-             std::vector<sentencepiece::SentencePieceText> spts(ins.size());
-             WorkerPool pool(num_threads, thread_pool, ins.size());
+             // Use the size of C_ins, not that of ins. The list may be
+             // modified by another thread once the GIL is released.
+             const size_t n = C_ins.size();
+             std::vector<sentencepiece::SentencePieceText> spts(n);
+             WorkerPool pool(num_threads, thread_pool, n);
              {
                py::gil_scoped_release release;
                auto status = sentencepiece::RunBatch(
-                   ins.size(),
+                   n,
                    [&](size_t i) {
                      absl::Status s;
                      if (enable_sampling) {
@@ -998,8 +1014,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                if (!status.ok()) throw status;
              }
 
-             py::list py_results(ins.size());
-             for (size_t batch_idx = 0; batch_idx < ins.size(); ++batch_idx) {
+             py::list py_results(n);
+             for (size_t batch_idx = 0; batch_idx < n; ++batch_idx) {
                py_results[batch_idx] = ExtractOffsetMapping(
                    spts[batch_idx], return_bytes, /*include_text=*/false);
              }
