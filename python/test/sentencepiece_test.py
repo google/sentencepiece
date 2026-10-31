@@ -178,6 +178,75 @@ class TestSentencepieceProcessor(unittest.TestCase):
         sp.decode([[], pieces], return_type='offset_mapping'), [empty_om, text_om]
     )
 
+  def test_decode_batch_with_unstable_len(self):
+    # Batch decode APIs accept arbitrary sequences. A user-defined __len__ may
+    # return a different value on every call; the binding must take a single
+    # read of __len__ instead of calling it repeatedly (or while the GIL is
+    # released). Regression test for a heap overflow / out-of-bounds
+    # read in _DecodePieces*Batch and _DecodeAsOffsetMappingBatch.
+    sp = self.sp_
+    text = 'hello world'
+    ids = sp.encode(text, return_type=int)
+    pieces = sp.encode(text, return_type=str)
+
+    class UnstableLen:
+
+      def __init__(self, item, size, lens):
+        self._item = item
+        self._size = size
+        self._lens = iter(lens)
+
+      def __len__(self):
+        return next(self._lens, 1)
+
+      def __getitem__(self, i):
+        if i >= self._size:
+          raise IndexError(i)
+        return self._item
+
+    # __len__ returns 3 on the first call, then a larger / smaller value.
+    growing = lambda item: UnstableLen(item, 3, [3] + [64] * 100)
+    shrinking = lambda item: UnstableLen(item, 3, [3])
+
+    # The binding methods are called directly, since the Python wrapper may
+    # call __len__ itself before reaching them.
+    for make in [growing, shrinking]:
+      self.assertEqual(
+          sp._processor._DecodePiecesBatch(make(pieces), 1, None), [text] * 3
+      )
+      self.assertEqual(
+          sp._processor._DecodePiecesAsBytesBatch(make(pieces), 1, None),
+          [text.encode()] * 3,
+      )
+      self.assertEqual(
+          len(
+              sp._processor._DecodePiecesAsSerializedProtoBatch(
+                  make(pieces), 1, None
+              )
+          ),
+          3,
+      )
+      # The id path converts the batch in a second pass, so a changed __len__
+      # is reported as an error. It must never crash.
+      expected_om = sp.decode(ids, return_type='offset_mapping')
+      try:
+        self.assertEqual(
+            sp._processor._DecodeAsOffsetMappingBatch(
+                make(ids), 1, None, False
+            ),
+            [expected_om] * 3,
+        )
+      except (IndexError, ValueError):
+        pass
+      self.assertEqual(
+          len(
+              sp._processor._DecodeAsOffsetMappingBatch(
+                  make(pieces), 1, None, False
+              )
+          ),
+          3,
+      )
+
   def test_roundtrip(self):
     text = 'I saw a girl with a telescope.'
     ids = self.sp_.EncodeAsIds(text)

@@ -116,6 +116,7 @@ absl::Status SentencePieceProcessor::Load(
   model_.reset();
   normalizer_.reset();
   denormalizer_.reset();
+  unk_id_ = bos_id_ = eos_id_ = pad_id_ = -1;
   model_proto_ = std::move(model_proto);
   // Workaround for https://github.com/google/sentencepiece/issues/1308
   // Third-party conversion scripts may erroneously insert a raw null-byte

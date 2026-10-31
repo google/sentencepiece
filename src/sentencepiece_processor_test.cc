@@ -1563,4 +1563,36 @@ TEST(SentencePieceProcessorTest, ReloadClearsDenormalizerAndAcceptsValidModel) {
   EXPECT_EQ("a", reloaded_decoded);
 }
 
+TEST(SentencePieceProcessorTest, FailedReloadResetsCachedSpecialIds) {
+  auto model_proto = std::make_unique<ModelProto>();
+  auto add_piece = [&](absl::string_view piece,
+                       ModelProto::SentencePiece::Type type) {
+    auto* sp = model_proto->add_pieces();
+    sp->set_piece(std::string(piece));
+    sp->set_type(type);
+    sp->set_score(0.0f);
+  };
+  add_piece("<unk>", ModelProto::SentencePiece::UNKNOWN);
+  add_piece("<s>", ModelProto::SentencePiece::CONTROL);
+  add_piece("</s>", ModelProto::SentencePiece::CONTROL);
+  add_piece("a", ModelProto::SentencePiece::NORMAL);
+  model_proto->mutable_trainer_spec()->set_model_type(TrainerSpec::UNIGRAM);
+  model_proto->mutable_normalizer_spec()->set_name("identity");
+
+  SentencePieceProcessor sp;
+  ASSERT_TRUE(sp.Load(std::move(model_proto)).ok());
+  EXPECT_NE(-1, sp.unk_id());
+  EXPECT_NE(-1, sp.bos_id());
+  EXPECT_NE(-1, sp.eos_id());
+
+  // A model without pieces fails to load. The ids cached from the previous
+  // model must not survive.
+  auto broken = std::make_unique<ModelProto>();
+  EXPECT_FALSE(sp.Load(std::move(broken)).ok());
+  EXPECT_EQ(-1, sp.unk_id());
+  EXPECT_EQ(-1, sp.bos_id());
+  EXPECT_EQ(-1, sp.eos_id());
+  EXPECT_EQ(-1, sp.pad_id());
+}
+
 }  // namespace sentencepiece
