@@ -39,7 +39,7 @@ if (TARGET utf8_validity)
   list(APPEND SPM_LIBS utf8_validity)
 endif()
 if (OpenMP_FOUND)
-  list(APPEND SPM_LIBS OpenMP::OpenMP_CXX)
+  list(APPEND SPM_LIBS OpenMP::OpenMP_C OpenMP::OpenMP_CXX)
 endif()
 if (SPM_ENABLE_NFKC_COMPILE)
   list(APPEND SPM_LIBS ICU::i18n ICU::data ICU::uc)
@@ -295,6 +295,7 @@ set_target_properties(sentencepiece-static PROPERTIES OUTPUT_NAME "sentencepiece
 set_target_properties(sentencepiece_train-static PROPERTIES OUTPUT_NAME "sentencepiece_train")
 
 if (NOT WIN32)
+  set(CMAKE_C_FLAGS "-O3 -Wall -fPIC ${CMAKE_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "-O3 -Wall -fPIC ${CMAKE_CXX_FLAGS}")
   set_source_files_properties(
     sentencepiece.pb.cc sentencepiece_model.pb.cc
