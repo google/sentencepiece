@@ -843,6 +843,14 @@ absl::Status Trainer::Train() {
 
   ABSL_RETURN_IF_ERROR(model.SetSentencePieces(std::move(seed_sentencepieces)));
 
+  // Seed pieces are extracted from whole sentences above. EM only needs
+  // per-word frequencies when pieces cannot cross whitespace, so collapse
+  // sentences into a deduplicated word-frequency list. This drastically
+  // reduces the EM cost on whitespace-delimited languages.
+  if (trainer_spec_.split_by_whitespace()) {
+    SplitSentencesByWhitespace();
+  }
+
   LOG(INFO) << "Using " << sentences_.size() << " sentences for EM training";
 
   desired_vocab_size_ = static_cast<size_t>(trainer_spec_.vocab_size() * 1.1);
