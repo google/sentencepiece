@@ -1,5 +1,9 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "pybind11>=2.13"]
+# pybind11 3.1.0 keeps every str/bytes -> std::string_view argument alive via
+# loader_life_support (one unordered_set insert + malloc per element), which
+# makes batch decode(pieces)/piece_to_id(list) 2-3x slower. Cap below 3.1
+# until the bindings read buffers directly in the hot loops.
+requires = ["setuptools>=61.0", "wheel", "pybind11>=2.13,<3.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
