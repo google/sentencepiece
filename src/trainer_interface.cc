@@ -226,7 +226,7 @@ absl::Status MultiFileSentenceIterator::status() const {
 void MultiFileSentenceIterator::Next() {
   TryRead();
 
-  if (!read_done_ && file_index_ < files_.size()) {
+  while (!read_done_ && file_index_ < files_.size()) {
     const auto& filename = files_[file_index_++];
     fp_ = filesystem::NewReadableFile(filename);
     LOG(INFO) << "Loading corpus: " << filename;
@@ -400,6 +400,9 @@ absl::Status TrainerInterface::LoadSentences() {
     std::string sentence = components_.sentence_iterator->value();
 
     if (is_tsv) {
+      if (sentence.empty()) {
+        continue;
+      }
       const std::vector<std::string> v = absl::StrSplit(sentence, '\t');
       RET_CHECK_EQ(v.size(), 2)
           << "Input format must be: word <tab> freq. " << sentence;

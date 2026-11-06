@@ -620,6 +620,43 @@ TEST(TrainerInterfaceTest, MultiFileSentenceIteratorTest) {
   EXPECT_EQ(expected, results);
 }
 
+TEST(TrainerInterfaceTest, MultiFileSentenceIteratorEmptyFileTest) {
+  const std::string empty1 =
+      filesystem::JoinPath(::testing::TempDir(), "empty1.txt");
+  const std::string empty2 =
+      filesystem::JoinPath(::testing::TempDir(), "empty2.txt");
+  const std::string content =
+      filesystem::JoinPath(::testing::TempDir(), "content.txt");
+
+  ASSERT_TRUE(filesystem::NewWritableFile(empty1));
+  ASSERT_TRUE(filesystem::NewWritableFile(empty2));
+  {
+    auto out = filesystem::NewWritableFile(content);
+    ASSERT_TRUE(out);
+    out->WriteLine("line 1");
+    out->WriteLine("line 2");
+  }
+
+  // All empty files should yield nothing and be immediately done.
+  {
+    MultiFileSentenceIterator it({empty1, empty2});
+    EXPECT_TRUE(it.done());
+    ABSL_EXPECT_OK(it.status());
+  }
+
+  // Empty first file and empty trailing file should not yield phantom empty lines.
+  {
+    MultiFileSentenceIterator it({empty1, content, empty2});
+    std::vector<std::string> results;
+    for (; !it.done(); it.Next()) {
+      results.push_back(it.value());
+    }
+    ABSL_EXPECT_OK(it.status());
+    const std::vector<std::string> expected = {"line 1", "line 2"};
+    EXPECT_EQ(expected, results);
+  }
+}
+
 TEST(TrainerInterfaceTest, MultiFileSentenceIteratorErrorTest) {
   std::vector<std::string> files;
   for (int i = 0; i < 10; ++i) {
