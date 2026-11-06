@@ -706,5 +706,28 @@ TEST(SentencePieceTrainerTest, TrainWithNullCharacterTest) {
       &model);
   EXPECT_TRUE(status.ok());
 }
+
+TEST(SentencePieceTrainerTest, MultiFileInputWithEmptyFileTest) {
+  const std::string empty1 =
+      filesystem::JoinPath(::testing::TempDir(), "empty1.tsv");
+  const std::string tsv_file =
+      filesystem::JoinPath(::testing::TempDir(), "content.tsv");
+  const std::string model =
+      filesystem::JoinPath(::testing::TempDir(), "m_empty_test");
+
+  ASSERT_TRUE(filesystem::NewWritableFile(empty1));
+  {
+    auto out = filesystem::NewWritableFile(tsv_file);
+    ASSERT_TRUE(out);
+    out->WriteLine("hello\t10");
+    out->WriteLine("world\t5");
+  }
+
+  // Multi-file TSV training including empty file should succeed without error.
+  ABSL_EXPECT_OK(SentencePieceTrainer::Train(
+      absl::StrCat("--input=", empty1, ",", tsv_file, " --input_format=tsv",
+                   " --model_prefix=", model,
+                   " --vocab_size=30 --hard_vocab_limit=false")));
+}
 }  // namespace
 }  // namespace sentencepiece
