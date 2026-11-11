@@ -715,7 +715,10 @@ TEST(SentencePieceTrainerTest, MultiFileInputWithEmptyFileTest) {
   const std::string model =
       filesystem::JoinPath(::testing::TempDir(), "m_empty_test");
 
-  ASSERT_TRUE(filesystem::NewWritableFile(empty1));
+  {
+    auto f = filesystem::NewWritableFile(empty1);
+    ASSERT_TRUE(f);
+  }
   {
     auto out = filesystem::NewWritableFile(tsv_file);
     ASSERT_TRUE(out);
@@ -726,6 +729,27 @@ TEST(SentencePieceTrainerTest, MultiFileInputWithEmptyFileTest) {
   // Multi-file TSV training including empty file should succeed without error.
   ABSL_EXPECT_OK(SentencePieceTrainer::Train(
       absl::StrCat("--input=", empty1, ",", tsv_file, " --input_format=tsv",
+                   " --model_prefix=", model,
+                   " --vocab_size=30 --hard_vocab_limit=false")));
+}
+
+TEST(SentencePieceTrainerTest, TsvInputWithBlankLineTest) {
+  const std::string tsv_file =
+      filesystem::JoinPath(::testing::TempDir(), "blank_line.tsv");
+  const std::string model =
+      filesystem::JoinPath(::testing::TempDir(), "m_blank_line_test");
+
+  {
+    auto out = filesystem::NewWritableFile(tsv_file);
+    ASSERT_TRUE(out);
+    out->WriteLine("hello\t10");
+    out->WriteLine("");
+    out->WriteLine("world\t5");
+  }
+
+  // TSV training with blank lines in the middle of a file should succeed.
+  ABSL_EXPECT_OK(SentencePieceTrainer::Train(
+      absl::StrCat("--input=", tsv_file, " --input_format=tsv",
                    " --model_prefix=", model,
                    " --vocab_size=30 --hard_vocab_limit=false")));
 }

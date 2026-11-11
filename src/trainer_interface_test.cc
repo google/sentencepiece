@@ -628,8 +628,14 @@ TEST(TrainerInterfaceTest, MultiFileSentenceIteratorEmptyFileTest) {
   const std::string content =
       filesystem::JoinPath(::testing::TempDir(), "content.txt");
 
-  ASSERT_TRUE(filesystem::NewWritableFile(empty1));
-  ASSERT_TRUE(filesystem::NewWritableFile(empty2));
+  {
+    auto f = filesystem::NewWritableFile(empty1);
+    ASSERT_TRUE(f);
+  }
+  {
+    auto f = filesystem::NewWritableFile(empty2);
+    ASSERT_TRUE(f);
+  }
   {
     auto out = filesystem::NewWritableFile(content);
     ASSERT_TRUE(out);
