@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.google.sentencepiece">
+
+    <application>
+        <!-- Library module: no activities or services declared. -->
+    </application>
+
+</manifest>
