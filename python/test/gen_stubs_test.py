@@ -19,7 +19,11 @@ import sys
 import types
 import unittest
 
-import pytest
+try:
+  import pytest
+except ImportError:
+  pytest = types.ModuleType("pytest")
+  pytest.mark = types.SimpleNamespace(thread_unsafe=lambda f: f)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TOOLS_DIR = os.path.abspath(os.path.join(HERE, os.pardir, "tools"))

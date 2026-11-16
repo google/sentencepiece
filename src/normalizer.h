@@ -16,40 +16,19 @@
 #define NORMALIZER_NORMALIZER_H_
 
 #include <memory>
-#include <set>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "gtest_prod.h"
 #include "sentencepiece_model.pb.h"
-#include "sentencepiece_processor.h"
-#include "darts.h"
+
+namespace sentencepiece::lite {
+class SentencePieceLiteProcessor;
+}
 
 namespace sentencepiece::normalizer {
-
-// Given a list of strings, finds the longest string which is a
-// prefix of a query.
-class PrefixMatcher {
- public:
-  // Initializes the PrefixMatcher with `dic`.
-  explicit PrefixMatcher(const std::set<absl::string_view>& dic);
-
-  // Finds the longest string in dic, which is a prefix of `w`.
-  // Returns the UTF8 byte length of matched string.
-  // `found` is set if a prefix match exists.
-  // If no entry is found, consumes one Unicode character.
-  int PrefixMatch(absl::string_view w, bool* found = nullptr) const;
-
-  // Replaces entries in `w` with `out`.
-  [[nodiscard]] std::string GlobalReplace(absl::string_view w,
-                                          absl::string_view out) const;
-
- private:
-  std::unique_ptr<Darts::DoubleArray> trie_;
-};
 
 // Normalizer implements a simple text normalizer with
 // user-defined string-to-string rules and leftmost longest
@@ -57,21 +36,15 @@ class PrefixMatcher {
 // Builder::CompileCharsMap() method. Pre-compiled rules are
 // also available via Builder::GetPrecompiledCharsMap(<name>) method.
 //
-// The motivation of Normalizer is to make flexible, user-customizable
-// and self-contained normalizer.  All the logic of normalization is
-// encoded in the model proto which allows us to define language/task
-// dependent normalization rules without breaking the default rule.
+// Normalizer wraps sentencepiece::lite::SentencePieceLiteProcessor
+// to perform all text normalization.
 class Normalizer {
  public:
   // Instantiates Normalizer with |spec|.
   // |spec| should not be deleted until Normalizer is destroyed.
   explicit Normalizer(const NormalizerSpec& spec);
-  Normalizer(const NormalizerSpec& spec, const TrainerSpec& trainer_Spec);
+  Normalizer(const NormalizerSpec& spec, const TrainerSpec& trainer_spec);
   virtual ~Normalizer();
-
-  virtual void SetPrefixMatcher(const PrefixMatcher* matcher) {
-    matcher_ = matcher;
-  }
 
   // Returns Status.
   // Normalizes function is valid only when status is OK.
@@ -100,22 +73,7 @@ class Normalizer {
   FRIEND_TEST(NormalizerTest, EncodeDecodePrecompiledCharsMapTest);
   FRIEND_TEST(NormalizerTest, ManySharedPrefixesTest);
 
-  void Init();
-
-  // Normalizes the prefix of |input| and returns the pair of
-  // normalized prefix and length we must consume after
-  // normalization.
-  // Here's the sample code for the full text normalization.
-  //
-  // string output;
-  // absl::string_view input = "...";
-  // while (!input.empty()) {
-  //   const auto p = normalizer.NormalizePrefix(input);
-  //   output.append(p.first.data(), p.first.size());
-  //   input.remove_prefix(p.second);
-  // }
-  [[nodiscard]] std::pair<absl::string_view, int> NormalizePrefix(
-      absl::string_view input) const;
+  void Init(const NormalizerSpec& spec, bool treat_whitespace_as_suffix);
 
   // Encodes trie_blob and normalized string and return compiled blob.
   static std::string EncodePrecompiledCharsMap(absl::string_view trie_blob,
@@ -131,28 +89,11 @@ class Normalizer {
   // to the maximum size of shared common prefix in the chars map.
   static constexpr int kMaxTrieResultsSize = 32;
 
-  // Internal trie for efficient longest matching.
-  std::unique_ptr<Darts::DoubleArray> trie_;
-
-  // "\0" delimitered output string.
-  // the value of |trie_| stores pointers to this string.
-  absl::string_view normalized_;
-
-  // Spec for normalization.
-  const NormalizerSpec* spec_;
-
-  // Prefix matcher;
-  const PrefixMatcher* matcher_ = nullptr;
-
-  // Split hello world into "hello_" and "world_" instead of
-  // "_hello" and "_world".
-  const bool treat_whitespace_as_suffix_ = false;
-
-  // Stores the blob for TRIE encoded in big-endian.
-  std::string precompiled_charsmap_buffer_;
-
   // Normalizer's status.
   absl::Status status_;
+
+  // Lite processor holding the model and its backing buffer.
+  std::unique_ptr<lite::SentencePieceLiteProcessor> lite_processor_;
 };
 }  // namespace sentencepiece::normalizer
 

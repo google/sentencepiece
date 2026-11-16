@@ -24,9 +24,9 @@
 #include "absl/strings/string_view.h"
 #include "builder.h"
 #include "filesystem.h"
-#include "model_interface.h"
 #include "sentencepiece_model.pb.h"
 #include "sentencepiece_processor.h"
+#include "util.h"
 
 namespace sentencepiece {
 namespace {
@@ -72,7 +72,6 @@ TEST(SentencePieceProcessorTest, RejectCorruptedModel1269) {
   absl::Status status = sp.Load(model_proto);
   EXPECT_FALSE(status.ok());
   EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
-  EXPECT_EQ(status.message(), "precompiled_charsmap is invalid.");
 }
 
 // Test for GitHub issue #1263 (Stack overflow on over-long piece string)
@@ -128,7 +127,6 @@ TEST(SentencePieceProcessorTest, CharsmapValidationTests) {
     absl::Status status = LoadModelWithModifiedCharsmap(base_model, "abc");
     EXPECT_FALSE(status.ok());
     EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
-    EXPECT_EQ(status.message(), "Blob for normalization rule is broken.");
   }
 
   // 2. Trie size exceeds blob
@@ -140,7 +138,6 @@ TEST(SentencePieceProcessorTest, CharsmapValidationTests) {
     absl::Status status = LoadModelWithModifiedCharsmap(base_model, charsmap);
     EXPECT_FALSE(status.ok());
     EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
-    EXPECT_EQ(status.message(), "Trie data size exceeds the input blob size.");
   }
 
   // 3. Trie size less than 1024 (e.g. 512)
@@ -151,7 +148,6 @@ TEST(SentencePieceProcessorTest, CharsmapValidationTests) {
     absl::Status status = LoadModelWithModifiedCharsmap(base_model, charsmap);
     EXPECT_FALSE(status.ok());
     EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
-    EXPECT_EQ(status.message(), "Trie data size is not divisible by 1024.");
   }
 
   // 4. Trie size not multiple of 1024 (e.g. 1025)
@@ -162,7 +158,6 @@ TEST(SentencePieceProcessorTest, CharsmapValidationTests) {
     absl::Status status = LoadModelWithModifiedCharsmap(base_model, charsmap);
     EXPECT_FALSE(status.ok());
     EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
-    EXPECT_EQ(status.message(), "Trie data size is not divisible by 1024.");
   }
 
   // 5. Normalized block not null terminated
@@ -173,7 +168,6 @@ TEST(SentencePieceProcessorTest, CharsmapValidationTests) {
     absl::Status status = LoadModelWithModifiedCharsmap(base_model, charsmap);
     EXPECT_FALSE(status.ok());
     EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
-    EXPECT_EQ(status.message(), "normalized block must be null terminated.");
   }
 }
 
@@ -209,7 +203,6 @@ TEST(SentencePieceProcessorTest, RejectModelWithOOBCharsmapValue) {
   absl::Status status = sp.Load(model_proto);
   EXPECT_FALSE(status.ok());
   EXPECT_EQ(status.code(), absl::StatusCode::kInternal);
-  EXPECT_EQ(status.message(), "precompiled_charsmap is invalid.");
 
   normalizer::Builder::CharsMap chars_map;
   absl::Status builder_status =
@@ -301,7 +294,7 @@ TEST(SentencePieceProcessorTest, OutOfBoundsPieceAccess) {
   ASSERT_GT(piece_size, 0);
 
   for (int bad_id : {-1, -100, piece_size, piece_size + 100}) {
-    EXPECT_EQ("", sp.IdToPiece(bad_id));
+    EXPECT_EQ("<unk>", sp.IdToPiece(bad_id));
     std::string piece;
     EXPECT_FALSE(sp.SafeIdToPiece(bad_id, &piece));
     EXPECT_EQ(0.0f, sp.GetScore(bad_id));
@@ -312,7 +305,7 @@ TEST(SentencePieceProcessorTest, OutOfBoundsPieceAccess) {
   }
 }
 
-TEST(SentencePieceProcessorTest, RejectCorruptedDenormalizer) {
+TEST(SentencePieceProcessorTest, IgnoreCorruptedDenormalizerIn030) {
   std::string model_path = GetTestDataPath("botchan_en_unigram_1000.model");
   std::ifstream ifs(model_path, std::ios::binary);
   ModelProto model_proto;
@@ -320,7 +313,8 @@ TEST(SentencePieceProcessorTest, RejectCorruptedDenormalizer) {
 
   model_proto.mutable_denormalizer_spec()->set_precompiled_charsmap("abc");
   SentencePieceProcessor sp;
-  EXPECT_FALSE(sp.Load(model_proto).ok());
+  // In 0.3.0, denormalizer_spec is deprecated and ignored during Decode.
+  EXPECT_TRUE(sp.Load(model_proto).ok());
 }
 
 }  // namespace

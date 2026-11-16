@@ -84,8 +84,6 @@ class Builder {
   //  1) It is unusual to see decomposed Unicode characters in real text.
   //  2) Providing a flexible, user-customizable, and self-contained
   //     normalizer is the goal of SentencePiece.
-  //
-  // TODO(taku): Make NFC, NFD, and NFKD mapping if necessary.
   static absl::Status BuildNFKCMap(CharsMap* chars_map);
 
   // Makes an NFKC-based mapping with NMT specific modifications around

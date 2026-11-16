@@ -51,13 +51,24 @@ std::vector<std::pair<K, V>> Sorted(const absl::flat_hash_map<K, V>& m) {
 }
 
 uint32_t GetRandomGeneratorSeed();
-int GetNBestTimeout();
 
 // Sets data dir containing the global resources, e.g., pre-compiled
 // normalization data.
 void SetDataDir(absl::string_view data_dir);
 
 std::string GetDataDir();
+
+// "_this_is_a_pen" => ["_this", "_is", "_a", "_pen"]
+std::vector<absl::string_view> SplitIntoWords(
+    absl::string_view text, bool treat_ws_as_suffix = false,
+    bool allow_ws_only_pieces = false);
+
+// Converts byte (0-255) to piece (e.g., 58 -> "<0x3A>").
+absl::string_view ByteToPiece(unsigned char c);
+
+// Converts piece to byte (e.g., "<0x3A>" -> 58). Returns -1 if `piece` is not
+// a valid byte piece.
+int PieceToByte(absl::string_view piece);
 
 // String utilities
 namespace string_util {
@@ -146,17 +157,6 @@ UnicodeText UTF8ToUnicodeText(absl::string_view utf8);
 
 std::string UnicodeTextToUTF8(const UnicodeText& utext);
 
-struct UnicodeTextAndOffsets {
-  UnicodeText unicode_text;
-  std::vector<uint32_t> offsets;
-};
-
-// - unicode_text is the UTF-8 string converted to UnicodeText.
-// - offsets.size() == unicode_text.size() + 1
-// - offsets[0] is always 0.
-// - offsets[i] is the offset of unicode_text[i] in the original UTF-8 string.
-UnicodeTextAndOffsets UTF8ToUnicodeTextAndOffsets(absl::string_view utf8);
-
 }  // namespace string_util
 
 namespace random {
@@ -205,26 +205,5 @@ namespace util {
 std::vector<std::string> StrSplitAsCSV(absl::string_view text);
 
 }  // namespace util
-
-namespace log_domain {
-
-double LogSum(const std::vector<double>& xs);
-
-template <typename T>
-inline void SanitizeDiscreteProbs(std::vector<T>* probs) {
-  bool has_positive = false;
-  for (T& p : *probs) {
-    if (std::isfinite(p) && p > T{0}) {
-      has_positive = true;
-    } else {
-      p = T{0};
-    }
-  }
-  if (!has_positive && !probs->empty()) {
-    (*probs)[0] = T{1};
-  }
-}
-
-}  // namespace log_domain
 }  // namespace sentencepiece
 #endif  // UTIL_H_

@@ -126,12 +126,10 @@ ThreadPool = _sentencepiece.ThreadPool
 
 SetRandomGeneratorSeed = _sentencepiece.SetRandomGeneratorSeed
 SetMinLogLevel = _sentencepiece.SetMinLogLevel
-SetNBestTimeout = _sentencepiece.SetNBestTimeout
 SetDataDir = _sentencepiece.SetDataDir
 
 set_random_generator_seed = SetRandomGeneratorSeed
 set_min_log_level = SetMinLogLevel
-set_nbest_timeout = SetNBestTimeout
 set_data_dir = SetDataDir
 
 
@@ -213,7 +211,9 @@ class SentencePieceProcessor:
                  nbest_size=-1,
                  alpha=0.1,
                  num_threads=-1,
-                 return_type=None):
+                 return_type=None,
+                 model_flatbuffer=None,
+                 model_flatbuffer_view=None):
         self._processor = _sentencepiece.SentencePieceProcessor()
         
         # Resolve return_type / out_type
@@ -226,8 +226,16 @@ class SentencePieceProcessor:
         self._nbest_size = nbest_size
         self._alpha = alpha
         self._num_threads = num_threads
-        if model_file or model_proto:
-            self.Load(model_file=model_file, model_proto=model_proto)
+        if (
+            model_file is not None
+            or model_proto is not None
+            or model_flatbuffer is not None
+            or model_flatbuffer_view is not None
+        ):
+            self.Load(model_file=model_file,
+                      model_proto=model_proto,
+                      model_flatbuffer=model_flatbuffer,
+                      model_flatbuffer_view=model_flatbuffer_view)
 
     def _resolve_return_type(self, return_type, out_type, default=None):
         if out_type is not None:
@@ -246,8 +254,16 @@ class SentencePieceProcessor:
     @classmethod
     def from_file(cls, model_file, **kwargs):
         """Creates a SentencePieceProcessor by loading a model file from disk."""
-        if 'model_file' in kwargs or 'model_proto' in kwargs:
-            raise ValueError("model_file and model_proto cannot be passed via kwargs when using from_file classmethod.")
+        if any(
+            k in kwargs
+            for k in (
+                'model_file',
+                'model_proto',
+                'model_flatbuffer',
+                'model_flatbuffer_view',
+            )
+        ):
+            raise ValueError("model_file, model_proto, model_flatbuffer, and model_flatbuffer_view cannot be passed via kwargs when using from_file classmethod.")
         processor = cls(**kwargs)
         processor.LoadFromFile(model_file)
         return processor
@@ -255,28 +271,141 @@ class SentencePieceProcessor:
     @classmethod
     def from_proto(cls, model_proto, **kwargs):
         """Creates a SentencePieceProcessor by loading a serialized model proto from memory."""
-        if 'model_file' in kwargs or 'model_proto' in kwargs:
-            raise ValueError("model_file and model_proto cannot be passed via kwargs when using from_proto classmethod.")
+        if any(
+            k in kwargs
+            for k in (
+                'model_file',
+                'model_proto',
+                'model_flatbuffer',
+                'model_flatbuffer_view',
+            )
+        ):
+            raise ValueError("model_file, model_proto, model_flatbuffer, and model_flatbuffer_view cannot be passed via kwargs when using from_proto classmethod.")
         processor = cls(**kwargs)
         processor.LoadFromSerializedProto(model_proto)
         return processor
 
-    def Load(self, model_file=None, model_proto=None):
-        if model_file and model_proto:
-            raise ValueError('model_file and model_proto must be exclusive.')
-        if model_proto:
+    @classmethod
+    def from_flatbuffer(cls, model_flatbuffer, **kwargs):
+        """Creates a SentencePieceProcessor by loading a serialized FlatBuffer from memory."""
+        if any(
+            k in kwargs
+            for k in (
+                'model_file',
+                'model_proto',
+                'model_flatbuffer',
+                'model_flatbuffer_view',
+            )
+        ):
+            raise ValueError("model_file, model_proto, model_flatbuffer, and model_flatbuffer_view cannot be passed via kwargs when using from_flatbuffer classmethod.")
+        processor = cls(**kwargs)
+        processor.LoadFromSerializedFlatbuffer(model_flatbuffer)
+        return processor
+
+    @classmethod
+    def from_flatbuffer_view(cls, model_flatbuffer_view, **kwargs):
+        """Creates a SentencePieceProcessor by zero-copy loading a FlatBuffer view (e.g. mmap)."""
+        if any(
+            k in kwargs
+            for k in (
+                'model_file',
+                'model_proto',
+                'model_flatbuffer',
+                'model_flatbuffer_view',
+            )
+        ):
+            raise ValueError("model_file, model_proto, model_flatbuffer, and model_flatbuffer_view cannot be passed via kwargs when using from_flatbuffer_view classmethod.")
+        processor = cls(**kwargs)
+        processor.LoadFromFlatbufferView(model_flatbuffer_view)
+        return processor
+
+    def Load(self,
+             model_file=None,
+             model_proto=None,
+             model_flatbuffer=None,
+             model_flatbuffer_view=None):
+        sources = [
+            x for x in (model_file, model_proto, model_flatbuffer, model_flatbuffer_view)
+            if x is not None
+        ]
+        if len(sources) > 1:
+            raise ValueError(
+                'model_file, model_proto, model_flatbuffer, and '
+                'model_flatbuffer_view must be exclusive.'
+            )
+        if model_proto is not None:
             return self.LoadFromSerializedProto(model_proto)
-        if model_file:
+        if model_flatbuffer is not None:
+            return self.LoadFromSerializedFlatbuffer(model_flatbuffer)
+        if model_flatbuffer_view is not None:
+            return self.LoadFromFlatbufferView(model_flatbuffer_view)
+        if model_file is not None:
             return self.LoadFromFile(model_file)
-        raise ValueError('Either model_file or model_proto must be specified.')
+        raise ValueError(
+            'Either model_file, model_proto, model_flatbuffer, or '
+            'model_flatbuffer_view must be specified.'
+        )
 
     def LoadFromFile(self, filename):
-        return self._processor.LoadFromFile(filename)
+        try:
+            result = self._processor.LoadFromFile(filename)
+        except TypeError:
+            raise
+        except BaseException:
+            self._flatbuffer_ref = None
+            raise
+        self._flatbuffer_ref = None
+        return result
 
     def LoadFromSerializedProto(self, serialized):
         if hasattr(serialized, 'SerializeToString'):
             serialized = serialized.SerializeToString()
-        return self._processor.LoadFromSerializedProto(serialized)
+        try:
+            result = self._processor.LoadFromSerializedProto(serialized)
+        except TypeError:
+            raise
+        except BaseException:
+            self._flatbuffer_ref = None
+            raise
+        self._flatbuffer_ref = None
+        return result
+
+    def LoadFromSerializedFlatbuffer(self, serialized):
+        try:
+            result = self._processor.LoadFromSerializedFlatbuffer(serialized)
+        except TypeError:
+            raise
+        except BaseException:
+            self._flatbuffer_ref = None
+            raise
+        self._flatbuffer_ref = None
+        return result
+
+    def LoadFromFlatbufferView(self, buffer):
+        """Loads a FlatBuffer model from `buffer` without copying (zero-copy).
+
+        `buffer` may be any 1-D contiguous object supporting the buffer
+        protocol, e.g. `mmap.mmap`, `SharedMemory.buf`, `memoryview`,
+        `numpy.ndarray`, `bytes` or `bytearray`. Misaligned buffers are copied
+        internally.
+
+        While this processor references `buffer`, a buffer export is held, so
+        `mmap.close()` / `SharedMemory.close()` raise `BufferError` (and
+        `bytearray` / `numpy.ndarray` cannot be resized) instead of leaving a
+        dangling pointer. To release `buffer`, delete this processor or load
+        another model first.
+        """
+        view = memoryview(buffer)
+        try:
+            result = self._processor.LoadFromFlatbufferView(view)
+        except BaseException:
+            # The C++ processor has been reset. Release the export explicitly,
+            # since the traceback may keep `view` alive.
+            self._flatbuffer_ref = None
+            view.release()
+            raise
+        self._flatbuffer_ref = view
+        return result
 
     def Encode(self,
                input,
@@ -693,12 +822,16 @@ class SentencePieceProcessor:
     def serialized_model_proto(self):
         return self._processor.serialized_model_proto()
 
+    def serialized_flatbuffer(self):
+        return self._processor.serialized_flatbuffer()
+
     piece_size = GetPieceSize
     vocab_size = GetPieceSize
 
     def __getstate__(self):
         state = self.__dict__.copy()
         state.pop('_processor', None)
+        state.pop('_flatbuffer_ref', None)
         state['model_proto'] = self.serialized_model_proto()
         return state
 
@@ -708,6 +841,7 @@ class SentencePieceProcessor:
             state = {'model_proto': state}
         else:
             state = state.copy()
+        state.pop('_flatbuffer_ref', None)
         SentencePieceProcessor.__init__(self)
         self.LoadFromSerializedProto(state.pop('model_proto'))
         self.__dict__.update(state)

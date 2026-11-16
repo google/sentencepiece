@@ -29,7 +29,6 @@
 #include "builder.h"
 #include "normalizer.h"
 #include "ret_check.h"
-#include "sentencepiece.pb.h"
 #include "sentencepiece_model.pb.h"
 #include "spec_parser.h"
 #include "trainer_factory.h"
@@ -130,21 +129,18 @@ const NormalizerSpec& TrainerComponents::denormalizer_spec() const {
 // static
 absl::Status SentencePieceTrainer::Train(const TrainerComponents& components,
                                          std::string* serialized_model_proto) {
+  if (!components.denormalizer_spec().normalization_rule_tsv().empty() ||
+      !components.denormalizer_spec().name().empty() ||
+      !components.denormalizer_spec().precompiled_charsmap().empty()) {
+    LOG(WARNING) << "denormalizer_spec is deprecated and ignored.";
+  }
   auto copied_normalizer_spec = components.normalizer_spec();
   ABSL_RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_normalizer_spec, false));
-  auto copied_denormalizer_spec = components.denormalizer_spec();
-  ABSL_RETURN_IF_ERROR(PopulateNormalizerSpec(&copied_denormalizer_spec, true));
   auto trainer =
-      TrainerFactory::Create(components.trainer_spec(), copied_normalizer_spec,
-                             copied_denormalizer_spec);
+      TrainerFactory::Create(components.trainer_spec(), copied_normalizer_spec);
   std::string info =
       absl::StrCat(PrintProto(components.trainer_spec(), "trainer_spec"),
                    PrintProto(copied_normalizer_spec, "normalizer_spec"));
-  if (!copied_denormalizer_spec.precompiled_charsmap().empty()) {
-    info += PrintProto(copied_denormalizer_spec, "denormalizer_spec");
-  } else {
-    info += "denormalizer_spec {}";
-  }
 
   LOG(INFO) << "Starts training with : \n" << info;
 
@@ -448,6 +444,7 @@ absl::Status SentencePieceNormalizer::Load(
     std::unique_ptr<NormalizerSpec> normalizer_spec) {
   RET_CHECK(normalizer_spec) << "normalizer_spec is null";
   normalizer_spec_ = std::move(normalizer_spec);
+  cached_spec_serialized_ = normalizer_spec_->SerializeAsString();
   normalizer_ = std::make_unique<normalizer::Normalizer>(*normalizer_spec_);
   RET_CHECK(normalizer_);
   return normalizer_->status();
@@ -533,8 +530,18 @@ absl::Status SentencePieceNormalizer::Decompile(
   return absl::OkStatus();
 }
 
+void SentencePieceNormalizer::EnsureNormalizerInitialized() const {
+  if (!normalizer_spec_) return;
+  std::string current_serialized = normalizer_spec_->SerializeAsString();
+  if (!normalizer_ || current_serialized != cached_spec_serialized_) {
+    cached_spec_serialized_ = std::move(current_serialized);
+    normalizer_ = std::make_unique<normalizer::Normalizer>(*normalizer_spec_);
+  }
+}
+
 absl::Status SentencePieceNormalizer::Normalize(absl::string_view input,
                                                 std::string* normalized) const {
+  EnsureNormalizerInitialized();
   RET_CHECK(normalizer_);
   return normalizer_->Normalize(input, normalized, /*norm_to_orig=*/nullptr);
 }
@@ -542,6 +549,7 @@ absl::Status SentencePieceNormalizer::Normalize(absl::string_view input,
 absl::Status SentencePieceNormalizer::Normalize(
     absl::string_view input, std::string* normalized,
     std::vector<size_t>* norm_to_orig) const {
+  EnsureNormalizerInitialized();
   RET_CHECK(normalizer_);
   return normalizer_->Normalize(input, normalized, norm_to_orig);
 }

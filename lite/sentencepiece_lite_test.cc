@@ -2121,5 +2121,48 @@ TEST(SentencePieceLiteTest, DecodeWithAndWithoutNonLeadingSpaceSymbols) {
   }
 }
 
+// Regression test: an <unk> piece that emits an empty unk_surface must not
+// clear the BOS whitespace state, so the dummy prefix of the following piece
+// is still stripped (matching SentencePieceProcessor::Decode(pieces)).
+//
+// TODO(taku): Disabled. ToFlatbuffer() does not write an explicitly empty
+// unk_surface, so the lite engine falls back to the default " \xE2\x81\x87 ".
+// Enable this test once the conversion preserves the empty unk_surface.
+TEST(SentencePieceLiteTest, DISABLED_DecodeLeadingUnkWithEmptySurface) {
+  ::sentencepiece::ModelProto proto = MinimalUnigramProto();
+  proto.mutable_trainer_spec()->set_unk_surface("");
+  for (const char* piece : {"▁hello", "▁world"}) {
+    auto* p = proto.add_pieces();
+    p->set_piece(piece);
+    p->set_type(::sentencepiece::ModelProto::SentencePiece::NORMAL);
+    p->set_score(-1.0f);
+  }
+
+  auto status_or = ToFlatbuffer(proto);
+  ASSERT_TRUE(status_or.ok()) << status_or.status();
+  SentencePieceLiteProcessor processor(*status_or);
+  ASSERT_EQ(processor.status(), StatusCode::kOk);
+  const int unk = processor.unk_id();
+  const int hello = processor.PieceToId("▁hello");
+  const int world = processor.PieceToId("▁world");
+
+  std::string decoded;
+  std::vector<std::string_view> pieces;
+  ASSERT_EQ(processor.Decode({unk, hello, world}, &decoded, &pieces),
+            StatusCode::kOk);
+  EXPECT_EQ(decoded, "hello world");
+  EXPECT_EQ(pieces, (std::vector<std::string_view>{"", "hello", " world"}));
+
+  // Consecutive empty unks at BOS behave the same.
+  ASSERT_EQ(processor.Decode({unk, unk, hello}, &decoded, &pieces),
+            StatusCode::kOk);
+  EXPECT_EQ(decoded, "hello");
+
+  // An empty unk after a visible piece keeps the following space.
+  ASSERT_EQ(processor.Decode({hello, unk, world}, &decoded, &pieces),
+            StatusCode::kOk);
+  EXPECT_EQ(decoded, "hello world");
+}
+
 }  // namespace
 }  // namespace sentencepiece::lite

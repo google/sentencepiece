@@ -378,4 +378,170 @@ TEST(BatchRunnerTest, EarlyAbortOnError) {
   EXPECT_LT(execution_count.load(), total_tasks);
 }
 
+#define WS "\xe2\x96\x81"
+
+TEST(UtilTest, SplitIntoWordsTest) {
+  {
+    const auto v = SplitIntoWords(WS "this" WS "is" WS "a" WS "pen");
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ(WS "this", v[0]);
+    EXPECT_EQ(WS "is", v[1]);
+    EXPECT_EQ(WS "a", v[2]);
+    EXPECT_EQ(WS "pen", v[3]);
+  }
+
+  {
+    const auto v = SplitIntoWords("this" WS "is" WS "a" WS "pen");
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ("this", v[0]);
+    EXPECT_EQ(WS "is", v[1]);
+    EXPECT_EQ(WS "a", v[2]);
+    EXPECT_EQ(WS "pen", v[3]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS "this" WS WS "is");
+    EXPECT_EQ(3, v.size());
+    EXPECT_EQ(WS "this", v[0]);
+    EXPECT_EQ(WS, v[1]);
+    EXPECT_EQ(WS "is", v[2]);
+  }
+
+  {
+    const auto v = SplitIntoWords("");
+    EXPECT_TRUE(v.empty());
+  }
+
+  {
+    const auto v = SplitIntoWords("hello");
+    EXPECT_EQ(1, v.size());
+    EXPECT_EQ("hello", v[0]);
+  }
+}
+
+TEST(UtilTest, SplitIntoWordsSuffixTest) {
+  {
+    const auto v = SplitIntoWords("this" WS "is" WS "a" WS "pen" WS, true);
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ("this" WS, v[0]);
+    EXPECT_EQ("is" WS, v[1]);
+    EXPECT_EQ("a" WS, v[2]);
+    EXPECT_EQ("pen" WS, v[3]);
+  }
+
+  {
+    const auto v = SplitIntoWords("this" WS "is" WS "a" WS "pen", true);
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ("this" WS, v[0]);
+    EXPECT_EQ("is" WS, v[1]);
+    EXPECT_EQ("a" WS, v[2]);
+    EXPECT_EQ("pen", v[3]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS "this" WS WS "is", true);
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ(WS, v[0]);
+    EXPECT_EQ("this" WS, v[1]);
+    EXPECT_EQ(WS, v[2]);
+    EXPECT_EQ("is", v[3]);
+  }
+
+  {
+    const auto v = SplitIntoWords("", true);
+    EXPECT_TRUE(v.empty());
+  }
+
+  {
+    const auto v = SplitIntoWords("hello", true);
+    EXPECT_EQ(1, v.size());
+    EXPECT_EQ("hello", v[0]);
+  }
+
+  {
+    const auto v = SplitIntoWords("hello" WS WS, true);
+    EXPECT_EQ(2, v.size());
+    EXPECT_EQ("hello" WS, v[0]);
+    EXPECT_EQ(WS, v[1]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS "hello" WS WS, true);
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ(WS, v[0]);
+    EXPECT_EQ(WS, v[1]);
+    EXPECT_EQ("hello" WS, v[2]);
+    EXPECT_EQ(WS, v[3]);
+  }
+}
+
+TEST(UtilTest, SplitIntoWordsWhiteSpaceOnly) {
+  {
+    const auto v =
+        SplitIntoWords("this" WS "is" WS "a" WS "pen" WS, true, true);
+    EXPECT_EQ(4, v.size());
+    EXPECT_EQ("this" WS, v[0]);
+    EXPECT_EQ("is" WS, v[1]);
+    EXPECT_EQ("a" WS, v[2]);
+    EXPECT_EQ("pen" WS, v[3]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS WS "a", false, true);
+    EXPECT_EQ(1, v.size());
+    EXPECT_EQ(WS WS WS "a", v[0]);
+  }
+
+  {
+    const auto v = SplitIntoWords("a" WS WS WS, true, true);
+    EXPECT_EQ(1, v.size());
+    EXPECT_EQ("a" WS WS WS, v[0]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS, true, true);
+    EXPECT_EQ(1, v.size());
+    EXPECT_EQ(WS WS, v[0]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS "a" WS, true, true);
+    EXPECT_EQ(2, v.size());
+    EXPECT_EQ(WS WS, v[0]);
+    EXPECT_EQ("a" WS, v[1]);
+  }
+
+  {
+    const auto v = SplitIntoWords(WS WS "a" WS, false, true);
+    EXPECT_EQ(2, v.size());
+    EXPECT_EQ(WS WS "a", v[0]);
+    EXPECT_EQ(WS, v[1]);
+  }
+}
+
+TEST(UtilTest, ByteToPieceTest) {
+  EXPECT_EQ(ByteToPiece(0), "<0x00>");
+  EXPECT_EQ(ByteToPiece(1), "<0x01>");
+  EXPECT_EQ(ByteToPiece(10), "<0x0A>");
+  EXPECT_EQ(ByteToPiece(16), "<0x10>");
+  EXPECT_EQ(ByteToPiece(255), "<0xFF>");
+}
+
+TEST(UtilTest, PieceToByteTest) {
+  // Valid byte pieces.
+  EXPECT_EQ(PieceToByte("<0x00>"), 0);
+  EXPECT_EQ(PieceToByte("<0x01>"), 1);
+  EXPECT_EQ(PieceToByte("<0x0A>"), 10);
+  EXPECT_EQ(PieceToByte("<0x10>"), 16);
+  EXPECT_EQ(PieceToByte("<0xFF>"), 255);
+
+  // Invalid byte pieces.
+  EXPECT_EQ(PieceToByte("<0x0>"), -1);
+  EXPECT_EQ(PieceToByte("<0x000>"), -1);
+  EXPECT_EQ(PieceToByte("<0x001>"), -1);
+  EXPECT_EQ(PieceToByte("<0xff>"), -1);
+  EXPECT_EQ(PieceToByte("<0xFG>"), -1);
+  EXPECT_EQ(PieceToByte("a"), -1);
+}
+
 }  // namespace sentencepiece

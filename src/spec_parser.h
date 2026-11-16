@@ -148,10 +148,8 @@ inline std::string PrintProto(const TrainerSpec& message,
   PRINT_PARAM(input_sentence_size);
   PRINT_PARAM(shuffle_input_sentence);
   PRINT_PARAM(seed_sentencepiece_size);
-  PRINT_PARAM(shrinking_factor);
   PRINT_PARAM(max_sentence_length);
   PRINT_PARAM(num_threads);
-  PRINT_PARAM(num_sub_iterations);
   PRINT_PARAM(max_sentencepiece_length);
   PRINT_PARAM(split_by_unicode_script);
   PRINT_PARAM(split_by_number);
@@ -223,10 +221,8 @@ absl::Status SentencePieceTrainer::SetProtoField(absl::string_view name,
   PARSE_UINT64(input_sentence_size);
   PARSE_BOOL(shuffle_input_sentence);
   PARSE_INT32(seed_sentencepiece_size);
-  PARSE_DOUBLE(shrinking_factor);
   PARSE_INT32(max_sentence_length);
   PARSE_INT32(num_threads);
-  PARSE_INT32(num_sub_iterations);
   PARSE_INT32(max_sentencepiece_length);
   PARSE_BOOL(split_by_unicode_script);
   PARSE_BOOL(split_by_number);
@@ -259,6 +255,8 @@ absl::Status SentencePieceTrainer::SetProtoField(absl::string_view name,
   PARSE_DEPRECATED(self_test_sample_size);
   PARSE_DEPRECATED(mining_sentence_size);
   PARSE_DEPRECATED(training_sentence_size);
+  PARSE_DEPRECATED(shrinking_factor);
+  PARSE_DEPRECATED(num_sub_iterations);
   PARSE_DEPRECATED(train_extremely_large_corpus);
   PARSE_DEPRECATED(enable_differential_privacy);
   PARSE_DEPRECATED(differential_privacy_noise_level);

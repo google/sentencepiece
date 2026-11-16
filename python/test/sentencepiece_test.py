@@ -17,6 +17,7 @@
 
 from collections import defaultdict
 import copy
+import glob
 import io
 import os
 import pickle
@@ -25,7 +26,12 @@ import sys
 import tempfile
 import threading
 import unittest
-import pytest
+try:
+  import pytest
+except ImportError:
+  import types
+  pytest = types.ModuleType('pytest')
+  pytest.mark = types.SimpleNamespace(thread_unsafe=lambda f: f)
 import sentencepiece as spm
 
 try:
@@ -843,7 +849,10 @@ class TestSentencepieceProcessor(unittest.TestCase):
       ids = defaultdict(int)
       for n in range(100):
         out = sp.encode(
-            'hello world', return_type=return_type, enable_sampling=True
+            'hello world',
+            return_type=return_type,
+            enable_sampling=True,
+            alpha=1.0,
         )
         if has_protobuf and isinstance(
             out, sentencepiece_pb2.SentencePieceText
@@ -965,42 +974,6 @@ class TestSentencepieceProcessor(unittest.TestCase):
           sp.nbest_encode_as_proto(text, nbest_size=10),
       )
 
-  # SetNBestTimeout/set_nbest_timeout modify a global atomic variable in C++.
-  # This makes this test thread-unsafe when run in parallel with other tests
-  # that perform nbest encoding.
-  @pytest.mark.thread_unsafe
-  def test_nbest_timeout(self):
-    with tempfile.TemporaryDirectory() as tmp_dir:
-      model_prefix = os.path.join(tmp_dir, 'm_timeout')
-      spm.SentencePieceTrainer.train(
-          input=os.path.join(HERE, 'botchan.txt'),
-          model_prefix=model_prefix,
-          vocab_size=1000,
-          model_type='unigram',
-      )
-      sp = spm.SentencePieceProcessor(model_file=model_prefix + '.model')
-      long_input = 'the' * 20000
-      results = sp.nbest_encode(long_input, nbest_size=10, return_type=str)
-      self.assertEqual(len(results), 10)
-
-      spm.SetNBestTimeout(1)
-      results_timeout = sp.nbest_encode(
-          long_input, nbest_size=10, return_type=str
-      )
-      self.assertEqual(len(results_timeout), 1)
-
-      spm.SetNBestTimeout(0)
-      results_no_timeout = sp.nbest_encode(
-          long_input, nbest_size=10, return_type=str
-      )
-      self.assertEqual(len(results_no_timeout), 10)
-
-      spm.set_nbest_timeout(1)
-      results_timeout2 = sp.nbest_encode(
-          long_input, nbest_size=10, return_type=str
-      )
-      self.assertEqual(len(results_timeout2), 1)
-
   def test_train_with_pretokenizer(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
       model_prefix = os.path.join(tmp_dir, 'm_pretok')
@@ -1013,7 +986,6 @@ class TestSentencepieceProcessor(unittest.TestCase):
       )
       sp = spm.SentencePieceProcessor(model_file=model_prefix + '.model')
       self.assertEqual(sp.vocab_size(), 1000)
-      spm.set_nbest_timeout(0)
 
   def test_inconsistent_pretokenizer(self):
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -1047,14 +1019,17 @@ class TestSentencepieceProcessor(unittest.TestCase):
       def throwing_pretokenizer(text):
         raise RuntimeError('Pretokenizer failed')
 
-      with self.assertRaises((ValueError, RuntimeError)):
-        spm.SentencePieceTrainer.train(
-            input=os.path.join(HERE, 'botchan.txt'),
-            model_prefix=model_prefix,
-            vocab_size=1000,
-            model_type='unigram',
-            pretokenizer=throwing_pretokenizer,
-        )
+      for allow_inconsistent in (False, True):
+        with self.assertRaises((ValueError, RuntimeError)) as cm:
+          spm.SentencePieceTrainer.train(
+              input=os.path.join(HERE, 'botchan.txt'),
+              model_prefix=model_prefix,
+              vocab_size=1000,
+              model_type='unigram',
+              pretokenizer=throwing_pretokenizer,
+              allow_inconsistent_pretokenization=allow_inconsistent,
+          )
+        self.assertIn('Pretokenizer failed', str(cm.exception))
 
       with self.assertRaises(RuntimeError):
         spm.SentencePieceTrainer.train(
@@ -1568,22 +1543,24 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual(len(res['ids']), len(res['pieces']))
     self.assertEqual(len(res['ids']), len(res['offsets']))
 
-    proto = sp.encode(text, return_type='proto')
-    expected = get_expected_offsets(text, proto)
-    self.assertEqual(res['offsets'], expected)
+    if has_protobuf:
+      proto = sp.encode(text, return_type='proto')
+      expected = get_expected_offsets(text, proto)
+      self.assertEqual(res['offsets'], expected)
 
-    for (start, end), p in zip(res['offsets'], proto.pieces):
-      self.assertEqual(text[start:end], p.surface)
+      for (start, end), p in zip(res['offsets'], proto.pieces):
+        self.assertEqual(text[start:end], p.surface)
 
     # 2. Test multi-byte Unicode characters (East Asian + Emojis)
     unicode_text = '😊吾輩は猫である。😊'
     res_unicode = sp.encode(unicode_text, return_type='offset_mapping')
-    proto_unicode = sp.encode(unicode_text, return_type='proto')
-    expected_unicode = get_expected_offsets(unicode_text, proto_unicode)
-    self.assertEqual(res_unicode['offsets'], expected_unicode)
+    if has_protobuf:
+      proto_unicode = sp.encode(unicode_text, return_type='proto')
+      expected_unicode = get_expected_offsets(unicode_text, proto_unicode)
+      self.assertEqual(res_unicode['offsets'], expected_unicode)
 
-    for (start, end), p in zip(res_unicode['offsets'], proto_unicode.pieces):
-      self.assertEqual(unicode_text[start:end], p.surface)
+      for (start, end), p in zip(res_unicode['offsets'], proto_unicode.pieces):
+        self.assertEqual(unicode_text[start:end], p.surface)
 
     # 3. Test backward compatibility: return_type='offset_mapping'
     res_compat = sp.encode(unicode_text, return_type='offset_mapping')
@@ -1607,18 +1584,20 @@ class TestSentencepieceProcessor(unittest.TestCase):
     # 6. Test bytes input (should return raw byte offsets directly)
     byte_text = '😊吾輩は猫である。😊'.encode('utf-8')
     res_bytes = sp.encode(byte_text, return_type='offset_mapping')
-    proto_bytes = sp.encode(byte_text, return_type='proto')
+    if has_protobuf:
+      proto_bytes = sp.encode(byte_text, return_type='proto')
 
-    expected_byte_offsets = [(p.begin, p.end) for p in proto_bytes.pieces]
-    self.assertEqual(res_bytes['offsets'], expected_byte_offsets)
+      expected_byte_offsets = [(p.begin, p.end) for p in proto_bytes.pieces]
+      self.assertEqual(res_bytes['offsets'], expected_byte_offsets)
 
     # Verify pieces are also bytes
     for p in res_bytes['pieces']:
       self.assertIsInstance(p, bytes)
 
-    # Verify we can slice raw bytes using offsets and match proto piece values
-    for (start, end), p in zip(res_bytes['offsets'], proto_bytes.pieces):
-      self.assertEqual(byte_text[start:end], p.surface.encode('utf-8'))
+    if has_protobuf:
+      # Verify we can slice raw bytes using offsets and match proto piece values
+      for (start, end), p in zip(res_bytes['offsets'], proto_bytes.pieces):
+        self.assertEqual(byte_text[start:end], p.surface.encode('utf-8'))
 
     # 7. add_bos, add_eos, reverse, emit_unk_piece are not supported in offset_mapping
     for kw in (
@@ -1663,13 +1642,14 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertEqual(res['text'], decoded_text)
 
     # We can compare against proto
-    proto = sp.decode(ids, return_type='proto')
-    decoded_text = sp.decode(ids)
-    expected = get_expected_offsets(decoded_text, proto)
-    self.assertEqual(res['offsets'], expected)
+    if has_protobuf:
+      proto = sp.decode(ids, return_type='proto')
+      decoded_text = sp.decode(ids)
+      expected = get_expected_offsets(decoded_text, proto)
+      self.assertEqual(res['offsets'], expected)
 
-    for (start, end), p in zip(res['offsets'], proto.pieces):
-      self.assertEqual(decoded_text[start:end], p.surface)
+      for (start, end), p in zip(res['offsets'], proto.pieces):
+        self.assertEqual(decoded_text[start:end], p.surface)
 
     # 2. Test decode IDs to offset mapping with return_bytes=True (byte offsets)
     res_bytes = sp.decode(ids, return_type='offset_mapping', return_bytes=True)
@@ -1677,12 +1657,13 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertIsInstance(res_bytes['text'], bytes)
     decoded_bytes = decoded_text.encode('utf-8')
     self.assertEqual(res_bytes['text'], decoded_bytes)
-    expected_bytes = [(p.begin, p.end) for p in proto.pieces]
-    self.assertEqual(res_bytes['offsets'], expected_bytes)
     for p in res_bytes['pieces']:
       self.assertIsInstance(p, bytes)
-    for (start, end), p in zip(res_bytes['offsets'], proto.pieces):
-      self.assertEqual(decoded_bytes[start:end], p.surface.encode('utf-8'))
+    if has_protobuf:
+      expected_bytes = [(p.begin, p.end) for p in proto.pieces]
+      self.assertEqual(res_bytes['offsets'], expected_bytes)
+      for (start, end), p in zip(res_bytes['offsets'], proto.pieces):
+        self.assertEqual(decoded_bytes[start:end], p.surface.encode('utf-8'))
 
     # 3. Test decode pieces to offset mapping (and tuple of pieces)
     pieces_str = sp.encode(text, return_type=str)
@@ -1815,6 +1796,8 @@ class TestSentencepieceProcessor(unittest.TestCase):
       sp.decode(ids, return_type=str, out_type=str)
 
   def test_normalizer_rule_tsv(self):
+    import tempfile
+
     with tempfile.NamedTemporaryFile(
         mode='w', delete=False, suffix='.tsv'
     ) as f:
@@ -2141,6 +2124,179 @@ class TestSentencepieceProcessor(unittest.TestCase):
       spm.convert_to_flatbuffer(model_proto=12345)
     with self.assertRaises(ValueError):
       spm.convert_to_flatbuffer(serialized_model_proto=b'corrupted_proto')
+
+  def test_offset_mapping_extra_args_and_word_pickle(self):
+    sp = self.sp_
+    for kwargs in [
+        {'add_bos': True},
+        {'add_eos': True},
+        {'reverse': True},
+        {'emit_unk_piece': True},
+    ]:
+      with self.assertRaises(RuntimeError):
+        sp.encode('hello world', return_type='offset_mapping', **kwargs)
+      with self.assertRaises(RuntimeError):
+        sp.encode(['hello world'], return_type='offset_mapping', **kwargs)
+
+    with tempfile.TemporaryDirectory() as work_dir:
+      input_file = os.path.join(work_dir, 'input.txt')
+      model_prefix = os.path.join(work_dir, 'word_model')
+      with open(input_file, 'w', encoding='utf-8') as f:
+        f.write('hello world\nhello test\n')
+
+      spm.SentencePieceTrainer.train(
+          input=input_file,
+          model_prefix=model_prefix,
+          model_type='word',
+          vocab_size=8,
+          hard_vocab_limit=False,
+          normalization_rule_name='identity',
+      )
+      sp_word = spm.SentencePieceProcessor(model_file=model_prefix + '.model')
+      sp_unpickled = pickle.loads(pickle.dumps(sp_word))
+      self.assertEqual(
+          sp_word.encode('helloWorld hello world', return_type=str),
+          sp_unpickled.encode('helloWorld hello world', return_type=str),
+      )
+
+  def test_load_from_flatbuffer_and_view(self):
+    import mmap
+    fb_bytes = self.sp_.serialized_flatbuffer()
+    self.assertIsInstance(fb_bytes, bytes)
+    self.assertGreater(len(fb_bytes), 0)
+
+    expected_ids = self.sp_.encode('Hello world! This is a test.', out_type=int)
+    expected_pieces = self.sp_.encode('Hello world! This is a test.', out_type=str)
+
+    # 1. LoadFromSerializedFlatbuffer (owned copy)
+    sp_copy = spm.SentencePieceProcessor()
+    self.assertTrue(sp_copy.LoadFromSerializedFlatbuffer(fb_bytes))
+    self.assertEqual(sp_copy.encode('Hello world! This is a test.', out_type=int), expected_ids)
+    self.assertEqual(sp_copy.encode('Hello world! This is a test.', out_type=str), expected_pieces)
+    self.assertEqual(sp_copy.serialized_flatbuffer(), fb_bytes)
+
+    # 2. LoadFromFlatbufferView with mmap (zero-copy)
+    with tempfile.NamedTemporaryFile(suffix='.fb') as tmp:
+      tmp.write(fb_bytes)
+      tmp.flush()
+      with open(tmp.name, 'rb') as f:
+        mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        sp_mmap = spm.SentencePieceProcessor(model_flatbuffer_view=mm)
+        # Drop local reference to mm; sp_mmap._flatbuffer_ref keeps it alive
+        del mm
+        self.assertEqual(sp_mmap.encode('Hello world! This is a test.', out_type=int), expected_ids)
+        self.assertEqual(sp_mmap.decode(expected_ids), 'Hello world! This is a test.')
+
+    # 3. LoadFromFlatbufferView with memoryview and misaligned slice
+    mv = memoryview(b'_' + fb_bytes)[1:]
+    sp_mv = spm.SentencePieceProcessor()
+    self.assertTrue(sp_mv.LoadFromFlatbufferView(mv))
+    self.assertEqual(sp_mv.encode('Hello world! This is a test.', out_type=int), expected_ids)
+    # Pickling and deepcopying a view-backed processor must drop the
+    # unpicklable memoryview reference and restore from model_proto cleanly.
+    sp_unpickled = pickle.loads(pickle.dumps(sp_mv))
+    self.assertIsNone(sp_unpickled._flatbuffer_ref)
+    self.assertEqual(sp_unpickled.encode('Hello world! This is a test.', out_type=int), expected_ids)
+    sp_deepcopied = copy.deepcopy(sp_mv)
+    self.assertIsNone(sp_deepcopied._flatbuffer_ref)
+    self.assertEqual(sp_deepcopied.encode('Hello world! This is a test.', out_type=int), expected_ids)
+
+    # 4. Constructor / Load keyword args (model_flatbuffer)
+    sp_kw = spm.SentencePieceProcessor(model_flatbuffer=fb_bytes)
+    self.assertEqual(sp_kw.encode('Hello world! This is a test.', out_type=int), expected_ids)
+
+  def test_flatbuffer_view_blocks_close(self):
+    import mmap
+    from multiprocessing import shared_memory
+    fb_bytes = self.sp_.serialized_flatbuffer()
+    text = 'Hello world! This is a test.'
+    expected_ids = self.sp_.encode(text, out_type=int)
+
+    # mmap: close() must fail while referenced (instead of segfaulting later).
+    with tempfile.NamedTemporaryFile(suffix='.fb') as tmp:
+      tmp.write(fb_bytes)
+      tmp.flush()
+      with open(tmp.name, 'rb') as f:
+        mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        sp = spm.SentencePieceProcessor(model_flatbuffer_view=mm)
+        with self.assertRaises(BufferError):
+          mm.close()
+        self.assertEqual(sp.encode(text, out_type=int), expected_ids)
+        # Loading another model releases the view.
+        sp.LoadFromSerializedFlatbuffer(fb_bytes)
+        mm.close()
+        self.assertEqual(sp.encode(text, out_type=int), expected_ids)
+
+    # SharedMemory: close() must fail while referenced; OK after deletion.
+    shm = shared_memory.SharedMemory(create=True, size=len(fb_bytes))
+    try:
+      shm.buf[:len(fb_bytes)] = fb_bytes
+      sp = spm.SentencePieceProcessor()
+      sp.LoadFromFlatbufferView(shm.buf[:len(fb_bytes)])
+      with self.assertRaises(BufferError):
+        shm.close()
+      self.assertEqual(sp.encode(text, out_type=int), expected_ids)
+      del sp
+      shm.close()
+    finally:
+      shm.unlink()
+
+    # A failed load must not keep the buffer exported.
+    ba = bytearray(b'\0' * 64)
+    sp = spm.SentencePieceProcessor()
+    with self.assertRaises(Exception):
+      sp.LoadFromFlatbufferView(ba)
+    ba.extend(b'\0')  # Resizing must succeed (no lingering export).
+
+    # Failed reload after a valid zero-copy load must reset the C++ processor
+    # before releasing the view lock (preventing use-after-free).
+    for fail_fn in (
+        lambda s: s.LoadFromFile('/nonexistent_dir/nonexistent.model'),
+        lambda s: s.LoadFromSerializedProto(b'invalid_proto'),
+        lambda s: s.LoadFromFlatbufferView(memoryview(b'abcd').cast('B', (2, 2))),
+    ):
+      with tempfile.NamedTemporaryFile(suffix='.fb') as tmp:
+        tmp.write(fb_bytes)
+        tmp.flush()
+        with open(tmp.name, 'rb') as f:
+          mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+          sp = spm.SentencePieceProcessor(model_flatbuffer_view=mm)
+          with self.assertRaises(Exception):
+            fail_fn(sp)
+          mm.close()
+          with self.assertRaises((RuntimeError, OSError, ValueError)):
+            sp.encode(text, out_type=int)
+
+    # Empty bytes passed to constructor must fail rather than silently skipping Load.
+    with self.assertRaises((RuntimeError, ValueError)):
+      spm.SentencePieceProcessor(model_flatbuffer=b'')
+    with self.assertRaises((RuntimeError, ValueError)):
+      spm.SentencePieceProcessor(model_proto=b'')
+
+  def test_trainer_overlapping_user_defined_symbols(self):
+    with tempfile.TemporaryDirectory() as work_dir:
+      input_file = os.path.join(work_dir, 'input.txt')
+      model_prefix = os.path.join(work_dir, 'uds_model')
+      with open(input_file, 'w', encoding='utf-8') as f:
+        for _ in range(20):
+          f.write('hello<foobar>world\n')
+
+      spm.SentencePieceTrainer.train(
+          input=input_file,
+          model_prefix=model_prefix,
+          model_type='unigram',
+          vocab_size=20,
+          hard_vocab_limit=False,
+          user_defined_symbols=['<foo>', '<foobar>'],
+      )
+      sp = spm.SentencePieceProcessor(model_file=model_prefix + '.model')
+      # Because '<foobar>' is matched by longest-prefix replacement during
+      # training sentence normalization (instead of '<foo>' + 'bar'), the
+      # characters 'b' and 'a' never appear in the training corpus.
+      self.assertIn('<foobar>', sp.encode('hello<foobar>world', out_type=str))
+      self.assertEqual(sp.piece_to_id('b'), sp.unk_id())
+      self.assertEqual(sp.piece_to_id('a'), sp.unk_id())
+      self.assertEqual(sp.piece_to_id('bar'), sp.unk_id())
 
 
 def suite():

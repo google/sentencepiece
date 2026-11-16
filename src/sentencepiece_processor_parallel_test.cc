@@ -44,13 +44,6 @@ void ExpectSptEqual(const SentencePieceText& expected,
   }
 }
 
-class SentencePieceProcessorMaxLoops : public SentencePieceProcessor {
- public:
-  SentencePieceProcessorMaxLoops(int max_loops) {
-    //    max_reparse_loops_ = max_loops;
-  }
-};
-
 std::string LoadTestData(const std::string& filename, int num_lines) {
   auto fs = filesystem::NewReadableFile(
       filesystem::JoinPath(::testing::SrcDir(), filename));
@@ -164,39 +157,13 @@ TEST(SentencepieceProcessorTest, ParallelEncodeTestJaWithByte) {
   }
 }
 
-TEST(SentencepieceProcessorTest, ParallelEncodeTestJaWithByteIntoSPTZeroLoops) {
-  // Check Japanese tokenized correctly in parallel
+TEST(SentencepieceProcessorTest,
+     ParallelEncodeTestJaWithByteIntoSPTSingleThread) {
+  // Check Japanese tokenized correctly with single-threaded pool.
   const std::string test_model_file = filesystem::JoinPath(
       ::testing::SrcDir(), "wagahaiwa_nekodearu_ja_bpe_byte_2000.model");
 
-  SentencePieceProcessorMaxLoops sp(0);
-  CHECK_OK(sp.Load(test_model_file));
-
-  ThreadPool thread_pool(4);
-
-  const std::string ja_test_data = LoadTestData("wagahaiwa_nekodearu.txt", 25);
-
-  SentencePieceText sequential_encode_spt;
-  SentencePieceText parallel_encode_spt;
-
-  CHECK_OK(sp.Encode(ja_test_data, &sequential_encode_spt));
-
-  for (int chunk_size = 128; chunk_size <= 512; ++chunk_size) {
-    parallel_encode_spt.Clear();
-    CHECK_OK(sp.ParallelEncode(ja_test_data, chunk_size, thread_pool,
-                               &parallel_encode_spt));
-    EXPECT_EQ(parallel_encode_spt.pieces_size(),
-              sequential_encode_spt.pieces_size());
-    ExpectSptEqual(sequential_encode_spt, parallel_encode_spt);
-  }
-}
-
-TEST(SentencepieceProcessorTest, ParallelEncodeTestJaWithByteIntoSPTOneLoop) {
-  // Check Japanese tokenized correctly in parallel
-  const std::string test_model_file = filesystem::JoinPath(
-      ::testing::SrcDir(), "wagahaiwa_nekodearu_ja_bpe_byte_2000.model");
-
-  SentencePieceProcessorMaxLoops sp(1);
+  SentencePieceProcessor sp;
   CHECK_OK(sp.Load(test_model_file));
 
   ThreadPool thread_pool(1);
