@@ -61,15 +61,15 @@ def find_abseil_lib(search_root):
 def get_build_includes(build_dir, is_msvc=True):
   prefix = '/I' if is_msvc else '-I'
   candidates = [
-      os.path.join(build_dir, 'root', 'include'),
-      os.path.join(build_dir, 'src'),
-      os.path.join(build_dir, '_deps', 'protobuf-src', 'src'),
-      os.path.join(build_dir, '_deps', 'protobuf-src', 'third_party', 'utf8_range'),
-      os.path.join(build_dir, '_deps', 'abseil-cpp-src'),
       '../src',
+      os.path.join(build_dir, 'src'),
       './sentencepiece/src',
       '../lite',
       './sentencepiece/lite',
+      os.path.join(build_dir, 'root', 'include'),
+      os.path.join(build_dir, '_deps', 'protobuf-src', 'src'),
+      os.path.join(build_dir, '_deps', 'protobuf-src', 'third_party', 'utf8_range'),
+      os.path.join(build_dir, '_deps', 'abseil-cpp-src'),
       '..',
       './sentencepiece',
   ]
@@ -144,6 +144,7 @@ class build_ext_unix(_build_ext):
       libs.append('-Wl,--version-script=exports.txt')
       cflags.append('-Wl,-strip-all')
       libs.append('-Wl,-strip-all')
+
 
     if sys.platform == 'linux':
       libs.append('-Wl,-Bsymbolic')

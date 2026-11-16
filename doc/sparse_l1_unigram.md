@@ -1,10 +1,13 @@
-# Sparse L1 Unigram (`--use_sparse_pruning`): Vocabulary Selection via Continuous L1 Regularization
+# Sparse L1 Unigram: Vocabulary Selection via Continuous L1 Regularization
 
-SentencePiece 0.2.3 adds **Sparse Pruning (`--use_sparse_pruning=true`)** as an optional vocabulary selection algorithm for the Unigram model (`default = false`; in 0.3.0, this flag is planned to be removed and Sparse Pruning will become the only behavior). Unlike the discrete heuristic pruning of the current default Unigram training (**Discrete Pruning**), Sparse Pruning uses a continuous **L1-regularized EM (Expectation-Maximization)** procedure. This mode is required when [Auto-character Coverage](auto_character_coverage.md) is used with the Unigram model.
+SentencePiece 0.2.3 added **Sparse Pruning** (`--use_sparse_pruning=true`) as an optional vocabulary selection algorithm for the Unigram model. In SentencePiece 0.3.0, the `--use_sparse_pruning` flag has been removed and Sparse Pruning is the only Unigram training behavior. Unlike the discrete heuristic pruning used by the default Unigram training up to 0.2.x (**Discrete Pruning**), Sparse Pruning uses a continuous **L1-regularized EM (Expectation-Maximization)** procedure. It is also the algorithm used when [Auto-character Coverage](auto_character_coverage.md) is combined with the Unigram model.
+
+> [!NOTE]
+> Sections 1 and 5 describe and evaluate Discrete Pruning (`--use_sparse_pruning=false`), the default in SentencePiece 0.2.x, for comparison. Discrete Pruning is not available in 0.3.0.
 
 ---
 
-## 1. Background: Limitations of the Current Default Method (Discrete Pruning)
+## 1. Background: Limitations of the 0.2.x Default Method (Discrete Pruning)
 
 ### 1.1 The Unigram Model and the Vocabulary Selection Problem
 
@@ -16,9 +19,9 @@ $$
 
 Vocabulary selection is the problem of solving $\min_{|V| \le K} \mathcal{L}(V)$ under a vocabulary size budget $K$. Once $V$ is fixed, $P(x)$ can be estimated with EM; the difficulty lies in the discrete choice of $V$. Because searching over all substrings in the corpus is not practical, SentencePiece uses a **Suffix Array** to extract substrings with frequency at least 2 as the initial candidate (seed) vocabulary, and selects $V$ of size $K$ from it by pruning.
 
-### 1.2 The Current Default Method: Discrete Pruning
+### 1.2 The 0.2.x Default Method: Discrete Pruning
 
-The current default implementation (`--use_sparse_pruning=false`, `TrainDiscretePruning` / `PruneSentencePieces`) starts from the seed vocabulary and repeats the following two steps until the vocabulary reaches $K$:
+The 0.2.x default implementation (`--use_sparse_pruning=false`, `TrainDiscretePruning` / `PruneSentencePieces`) starts from the seed vocabulary and repeats the following two steps until the vocabulary reaches $K$:
 
 1. **Fix the vocabulary $V$ and run EM** for a few iterations (`--num_sub_iterations`) to estimate $P(x)$.
 2. **Estimate a heuristic "removal cost" for each subword $x_i$** and remove the bottom 25% (`--shrinking_factor=0.75`).
@@ -165,7 +168,7 @@ In optimization terminology, $\lambda$ is the **Lagrange multiplier** of the con
 
 ## 4. Relation to Auto-character Coverage
 
-[Auto-character Coverage](auto_character_coverage.md) (`--auto_character_coverage=true`) does not pre-select characters with `--character_coverage`, puts every character in the corpus into the seed vocabulary, prunes unnecessary characters under the same criterion as subwords, and leaves the pruned characters to byte fallback at inference time (`--byte_fallback=true`). For Unigram, this mode requires `--use_sparse_pruning=true`.
+[Auto-character Coverage](auto_character_coverage.md) (`--auto_character_coverage=true`) does not pre-select characters with `--character_coverage`, puts every character in the corpus into the seed vocabulary, prunes unnecessary characters under the same criterion as subwords, and leaves the pruned characters to byte fallback at inference time (`--byte_fallback=true`). For Unigram, this mode uses Sparse Pruning.
 
 In both Discrete Pruning's 2-best comparison ($\Delta_i = f_i \cdot \delta\mathrm{loss}_i$) and the exact leave-one-out loss ($\Delta\mathcal{L}_i = -\sum_d \log(1 - P(x_i \mid d))$), evaluating the removal of a single character $c$ is problematic when no shorter alternative path exists in the training lattice: the alternative path probability is $0$ ($P(c \mid d) = 1$), so the loss increase diverges to $+\infty$ (which is why Discrete Pruning unconditionally excludes single characters from pruning).
 
@@ -241,7 +244,6 @@ spm_train \
   --model_prefix=spm_unigram_sparse \
   --model_type=unigram \
   --vocab_size=32000 \
-  --use_sparse_pruning=true \
   --post_l1_debias=true      # default: true
 ```
 
@@ -253,14 +255,12 @@ spm_train \
   --model_prefix=spm_unigram_autochar \
   --model_type=unigram \
   --vocab_size=32000 \
-  --use_sparse_pruning=true \
   --auto_character_coverage=true \
   --byte_fallback=true
 ```
 
 | Flag | Default | Description |
 |---|---|---|
-| `--use_sparse_pruning` | `false` | Perform Unigram vocabulary selection with L1-regularized EM (Sparse Pruning). Currently an experimental `spm_train` CLI-only flag; in 0.3.0 this flag will be removed and Sparse Pruning will become the only behavior. |
 | `--post_l1_debias` | `true` | After the vocabulary is fixed, re-estimate with $\lambda = 0$ to remove the L1 shrinkage bias. Currently a `spm_train` CLI-only flag. |
 
 The training log reports, for each epoch, `active` (number of active subwords), `lambda`, `obj` (per-sentence negative log-likelihood), `|w|` (Viterbi 1-best token count across the corpus), and `bytes/tok` (corpus bytes divided by `|w|`).
@@ -269,7 +269,7 @@ The training log reports, for each epoch, `active` (number of active subwords), 
 
 ## 7. Summary of Differences
 
-| Aspect | Discrete Pruning (current default) | Sparse Pruning (L1) |
+| Aspect | Discrete Pruning (0.2.x default) | Sparse Pruning (L1) |
 |---|---|---|
 | Pruning criterion | $\Delta_i \approx f_i \cdot \delta\mathrm{loss}_i$ (1-best frequency × 2-best alternative) | $\mathbb{E}[c_i]$ (expected count over all paths; lower bound on the leave-one-out loss) |
 | Objective formulation | Discrete $\min_{\lvert V \rvert \le K} \mathcal{L}(V)$ approximated by alternating EM and heuristic pruning | Continuous $\mathcal{L} + \lambda\|\mathbf{w}\|_1$ optimized consistently |

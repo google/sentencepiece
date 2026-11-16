@@ -42,17 +42,15 @@ static char32_t ToChar32(absl::string_view str) {
 TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
-  NormalizerSpec denormalizer_spec;
   trainer_spec.set_model_prefix("model");
   trainer_spec.add_input("input");
 
   // Calls the default method for better coverage.
-  TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  TrainerInterface trainer(trainer_spec, normalizer_spec);
   EXPECT_TRUE(trainer.Train().ok());
 
-  auto IsValid = [&trainer_spec, &normalizer_spec,
-                  &denormalizer_spec](const std::string& str) {
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  auto IsValid = [&trainer_spec, &normalizer_spec](const std::string& str) {
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     const string_util::UnicodeText text = string_util::UTF8ToUnicodeText(str);
     return trainer.IsValidSentencePiece(text);
   };
@@ -210,7 +208,6 @@ TEST(TrainerInterfaceTest, IsValidSentencePieceTest) {
 TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
   TrainerSpec base_trainer_spec;
   NormalizerSpec normalizer_spec;
-  NormalizerSpec denormalizer_spec;
   base_trainer_spec.set_model_prefix("model");
   base_trainer_spec.add_input("input");
 
@@ -229,7 +226,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_eos_id(2);
     trainer_spec.set_pad_id(3);
 
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_EQ(4, trainer.meta_pieces_.size());
     EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
     EXPECT_EQ("<s>", trainer.meta_pieces_[1].first);
@@ -244,7 +241,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_eos_id(2);
     trainer_spec.set_pad_id(1);
 
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_EQ(4, trainer.meta_pieces_.size());
     EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
     EXPECT_EQ("<pad>", trainer.meta_pieces_[1].first);
@@ -259,7 +256,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_eos_id(1);
     trainer_spec.set_pad_id(-1);
 
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_EQ(2, trainer.meta_pieces_.size());
     EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
     EXPECT_EQ("</s>", trainer.meta_pieces_[1].first);
@@ -272,7 +269,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_eos_id(-1);
     trainer_spec.set_pad_id(-1);
 
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_EQ(1, trainer.meta_pieces_.size());
     EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
   }
@@ -289,7 +286,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.add_user_defined_symbols("<u1>");
     trainer_spec.add_user_defined_symbols("<u2>");
 
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_EQ(7, trainer.meta_pieces_.size());
     EXPECT_EQ("<unk>", trainer.meta_pieces_[0].first);
     EXPECT_EQ("<s>", trainer.meta_pieces_[1].first);
@@ -305,7 +302,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_unk_id(0);
     trainer_spec.set_bos_id(-1);
     trainer_spec.set_eos_id(2);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_TRUE(trainer.status().ok());
   }
 
@@ -315,7 +312,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_unk_id(-1);
     trainer_spec.set_bos_id(0);
     trainer_spec.set_eos_id(1);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
   }
 
@@ -326,7 +323,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_bos_id(0);
     trainer_spec.set_eos_id(1);
     trainer_spec.set_byte_fallback(true);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_TRUE(trainer.status().ok());
   }
 
@@ -336,7 +333,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_unk_id(640000);
     trainer_spec.set_bos_id(0);
     trainer_spec.set_eos_id(1);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
   }
 
@@ -346,7 +343,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_unk_id(32000 - 1);
     trainer_spec.set_bos_id(32000 - 100);
     trainer_spec.set_eos_id(32000 - 200);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_TRUE(trainer.status().ok());
   }
 
@@ -357,7 +354,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_bos_id(1);
     trainer_spec.set_eos_id(2);
     trainer_spec.add_control_symbols("<unk>");
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
   }
 
@@ -366,7 +363,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     auto trainer_spec = base_trainer_spec;
     trainer_spec.add_control_symbols("<foo>");
     trainer_spec.add_control_symbols("<foo>");
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
   }
 
@@ -382,7 +379,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.add_user_defined_symbols("<s>");
     trainer_spec.add_user_defined_symbols("<pad>");
     trainer_spec.add_user_defined_symbols("foo");
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_TRUE(trainer.status().ok());
 
     EXPECT_EQ(5, trainer.meta_pieces_.size());
@@ -411,7 +408,7 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     trainer_spec.set_eos_piece("__EOS__");
     trainer_spec.set_pad_piece("__PAD__");
     trainer_spec.set_pad_id(3);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_TRUE(trainer.status().ok());
     EXPECT_EQ("__UNK__", trainer.meta_pieces_[0].first);
     EXPECT_EQ("__BOS__", trainer.meta_pieces_[1].first);
@@ -423,14 +420,14 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
     auto trainer_spec = base_trainer_spec;
     trainer_spec.set_unk_piece("__UNK__");
     trainer_spec.set_bos_piece("__UNK__");
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
   }
 
   {
     auto trainer_spec = base_trainer_spec;
     trainer_spec.set_unk_piece("");
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
   }
 }
@@ -438,7 +435,6 @@ TEST(TrainerInterfaceTest, OverrideSpecialPiecesTest) {
 TEST(TrainerInterfaceTest, BytePiecesTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
-  NormalizerSpec denormalizer_spec;
   trainer_spec.set_model_prefix("model");
   trainer_spec.add_input("input");
 
@@ -449,7 +445,7 @@ TEST(TrainerInterfaceTest, BytePiecesTest) {
 
   trainer_spec.set_byte_fallback(true);
 
-  TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  TrainerInterface trainer(trainer_spec, normalizer_spec);
   EXPECT_TRUE(trainer.status().ok());
 
   // Byte pieces come after control symbols and user-defined symbols.
@@ -463,7 +459,6 @@ TEST(TrainerInterfaceTest, BytePiecesTest) {
 TEST(TrainerInterfaceTest, SerializeTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
-  NormalizerSpec denormalizer_spec;
   trainer_spec.set_model_prefix("model");
   trainer_spec.add_input("input");
 
@@ -474,7 +469,7 @@ TEST(TrainerInterfaceTest, SerializeTest) {
 
   {
     trainer_spec.set_vocab_size(10);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     trainer.final_pieces_ = final_pieces;
     ModelProto model_proto;
     EXPECT_FALSE(trainer.Serialize(&model_proto).ok());
@@ -483,7 +478,7 @@ TEST(TrainerInterfaceTest, SerializeTest) {
   {
     trainer_spec.set_vocab_size(10);
     trainer_spec.set_hard_vocab_limit(false);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     trainer.final_pieces_ = final_pieces;
     ModelProto model_proto;
     EXPECT_TRUE(trainer.Serialize(&model_proto).ok());
@@ -498,7 +493,7 @@ TEST(TrainerInterfaceTest, SerializeTest) {
     trainer_spec.set_vocab_size(10);
     trainer_spec.set_model_type(TrainerSpec::CHAR);
     trainer_spec.set_hard_vocab_limit(true);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     trainer.final_pieces_ = final_pieces;
     ModelProto model_proto;
     EXPECT_TRUE(trainer.Serialize(&model_proto).ok());
@@ -531,14 +526,13 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   }
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
-  NormalizerSpec denormalizer_spec;
   trainer_spec.add_input(input_file);
   trainer_spec.set_model_prefix("model");
   trainer_spec.set_character_coverage(0.98);
 
   using E = absl::flat_hash_map<char32_t, int64_t>;
   {
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     ABSL_EXPECT_OK(trainer.LoadSentences());
     // Because --character_coverage=0.98, "a" and "あ" are chosen, but "b" is
     // dropped.
@@ -547,7 +541,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   }
   {
     trainer_spec.set_required_chars("漢字");
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     ABSL_EXPECT_OK(trainer.LoadSentences());
     // 漢 and 字 do not occur in the line, but they are added.
     EXPECT_EQ(trainer.required_chars_, E({{ToChar32("a"), 50},
@@ -557,7 +551,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   }
   {
     trainer_spec.set_required_chars("aあ");
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     ABSL_EXPECT_OK(trainer.LoadSentences());
     // Adding characters that frequently occur do not change the result.
     EXPECT_EQ(trainer.required_chars_,
@@ -565,7 +559,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
   }
   {
     trainer_spec.set_required_chars("b");
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     ABSL_EXPECT_OK(trainer.LoadSentences());
     // "b" is added with the correct frequency.
     EXPECT_EQ(
@@ -588,7 +582,7 @@ TEST(TrainerInterfaceTest, CharactersTest) {
       mt_spec.set_model_prefix("model");
       mt_spec.set_character_coverage(0.98);
       mt_spec.set_num_threads(num_threads);
-      TrainerInterface trainer(mt_spec, normalizer_spec, denormalizer_spec);
+      TrainerInterface trainer(mt_spec, normalizer_spec);
       ABSL_EXPECT_OK(trainer.LoadSentences());
       trainer.SplitSentencesByWhitespace();
       return std::make_pair(trainer.required_chars_, trainer.sentences_);
@@ -679,59 +673,41 @@ TEST(TrainerInterfaceTest, MultiFileSentenceIteratorErrorTest) {
 TEST(TrainerInterfaceTest, AutoCharacterCoverageVerifySpecTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
-  NormalizerSpec denormalizer_spec;
   trainer_spec.set_model_prefix("model");
   trainer_spec.add_input("input");
   trainer_spec.set_byte_fallback(true);
 
-  // Default: UNIGRAM with discrete pruning is valid.
+  // Default: UNIGRAM with auto_character_coverage=false is valid.
   {
     trainer_spec.set_auto_character_coverage(false);
-    absl::SetFlag(&FLAGS_use_sparse_pruning, false);
     trainer_spec.set_model_type(TrainerSpec::UNIGRAM);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_TRUE(trainer.status().ok());
   }
 
-  // 1. UNIGRAM with auto_character_coverage=true and use_sparse_pruning=false
-  // MUST FAIL.
+  // 1. UNIGRAM with auto_character_coverage=true MUST SUCCEED.
   {
     trainer_spec.set_auto_character_coverage(true);
-    absl::SetFlag(&FLAGS_use_sparse_pruning, false);
     trainer_spec.set_model_type(TrainerSpec::UNIGRAM);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
-    EXPECT_FALSE(trainer.status().ok());
-  }
-
-  // 2. UNIGRAM with auto_character_coverage=true and use_sparse_pruning=true
-  // MUST SUCCEED.
-  {
-    trainer_spec.set_auto_character_coverage(true);
-    absl::SetFlag(&FLAGS_use_sparse_pruning, true);
-    trainer_spec.set_model_type(TrainerSpec::UNIGRAM);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_TRUE(trainer.status().ok());
   }
 
-  // 3. BPE with auto_character_coverage=true MUST SUCCEED.
+  // 2. BPE with auto_character_coverage=true MUST SUCCEED.
   {
     trainer_spec.set_auto_character_coverage(true);
-    absl::SetFlag(&FLAGS_use_sparse_pruning, false);
     trainer_spec.set_model_type(TrainerSpec::BPE);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_TRUE(trainer.status().ok());
   }
 
-  // 4. WORD with auto_character_coverage=true MUST FAIL.
+  // 3. WORD with auto_character_coverage=true MUST FAIL.
   {
     trainer_spec.set_auto_character_coverage(true);
     trainer_spec.set_model_type(TrainerSpec::WORD);
-    TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    TrainerInterface trainer(trainer_spec, normalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
   }
-
-  // Reset flags to defaults.
-  absl::SetFlag(&FLAGS_use_sparse_pruning, false);
 }
 
 }  // namespace sentencepiece
