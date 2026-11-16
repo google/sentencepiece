@@ -34,7 +34,6 @@
 #include "sentencepiece_trainer.h"
 #include "util.h"
 
-ABSL_DECLARE_FLAG(bool, use_sparse_pruning);
 ABSL_DECLARE_FLAG(bool, post_l1_debias);
 ABSL_DECLARE_FLAG(float, seed_piece_length_power);
 ABSL_DECLARE_FLAG(float, min_freq_alpha);
@@ -74,8 +73,7 @@ class TrainerInterface {
   static const char kUNKStr[];
   static const char kPretokenizationBoundaryStr[];
 
-  TrainerInterface(TrainerSpec trainer_spec, NormalizerSpec normalizer_spec,
-                   NormalizerSpec denormalizer_spec);
+  TrainerInterface(TrainerSpec trainer_spec, NormalizerSpec normalizer_spec);
 
   virtual ~TrainerInterface();
 
@@ -133,9 +131,6 @@ class TrainerInterface {
 
   // Normalizer spec
   NormalizerSpec normalizer_spec_;
-
-  // Denormalizer spec
-  NormalizerSpec denormalizer_spec_;
 
   // Reserved control pieces. e.g., <unk>, <s>, </s>.
   // key is vocab id.

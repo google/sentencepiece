@@ -61,15 +61,15 @@ def find_abseil_lib(search_root):
 def get_build_includes(build_dir, is_msvc=True):
   prefix = '/I' if is_msvc else '-I'
   candidates = [
-      os.path.join(build_dir, 'root', 'include'),
-      os.path.join(build_dir, 'src'),
-      os.path.join(build_dir, '_deps', 'protobuf-src', 'src'),
-      os.path.join(build_dir, '_deps', 'protobuf-src', 'third_party', 'utf8_range'),
-      os.path.join(build_dir, '_deps', 'abseil-cpp-src'),
       '../src',
+      os.path.join(build_dir, 'src'),
       './sentencepiece/src',
       '../lite',
       './sentencepiece/lite',
+      os.path.join(build_dir, 'root', 'include'),
+      os.path.join(build_dir, '_deps', 'protobuf-src', 'src'),
+      os.path.join(build_dir, '_deps', 'protobuf-src', 'third_party', 'utf8_range'),
+      os.path.join(build_dir, '_deps', 'abseil-cpp-src'),
       '..',
       './sentencepiece',
   ]
@@ -145,6 +145,7 @@ class build_ext_unix(_build_ext):
       cflags.append('-Wl,-strip-all')
       libs.append('-Wl,-strip-all')
 
+
     if sys.platform == 'linux':
       libs.append('-Wl,-Bsymbolic')
       libs.append('-fopenmp')
@@ -154,6 +155,7 @@ class build_ext_unix(_build_ext):
       cflags.append('-DPy_GIL_DISABLED')
 
     cflags.append('-Wno-unused-function')
+    cflags.append('-Wno-deprecated-declarations')
 
     print('## cflags={}'.format(' '.join(cflags)))
     print('## libs={}'.format(' '.join(libs)))
@@ -210,7 +212,7 @@ class build_ext_win(_build_ext):
       ])
       build_dir = '.\\build'
 
-    cflags = ['/std:c++20'] + get_build_includes(build_dir, is_msvc=True)
+    cflags = ['/std:c++20', '/wd4996'] + get_build_includes(build_dir, is_msvc=True)
     libs = [
         os.path.join(build_dir, 'root', 'lib', 'sentencepiece.lib'),
         os.path.join(build_dir, 'root', 'lib', 'sentencepiece_train.lib'),

@@ -94,7 +94,7 @@ elseif (SPM_PROTOBUF_PROVIDER STREQUAL "package")
   protobuf_generate_cpp(SPM_MODEL_PROTO_SRCS SPM_MODEL_PROTO_HDRS sentencepiece_model.proto)
 endif()
 
-# FlatBuffers dependency and schema generation for SentencePiece Lite converter
+# FlatBuffers dependency and schema generation for SentencePiece Lite backend
 if (TARGET flatbuffers)
   list(APPEND SPM_LIBS $<BUILD_INTERFACE:flatbuffers>)
 endif()
@@ -127,6 +127,7 @@ add_custom_command(
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../lite)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 # darts.h is included unqualified so that the Bazel build can serve it from the
 # darts-clone module; the CMake build keeps compiling the vendored copy.
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/darts_clone)
@@ -142,40 +143,29 @@ set(SPM_SRCS
   ${SPM_PROTO_SRCS}
   ${SPM_MODEL_PROTO_HDRS}
   ${SPM_MODEL_PROTO_SRCS}
-  bpe_model.h
-  gtest_prod.h
-  normalizer.h
-  ret_check.h
-  util.h
-  freelist.h
-  filesystem.h
-  init.h
-  sentencepiece_processor.h
-  word_model.h
-  model_factory.h
-  char_model.h
-  model_interface.h
-  unigram_model.h
-  bpe_model.cc
-  char_model.cc
-  filesystem.cc
-  init.cc
-  model_factory.cc
-  model_interface.cc
-  normalizer.cc
-  sentencepiece_processor.cc
-  unigram_model.cc
-  util.cc
-  word_model.cc)
-
-set(SPM_TRAIN_SRCS
-  ${SPM_PROTO_HDRS}
-  ${SPM_MODEL_PROTO_HDRS}
   ${SPM_LITE_FBS_GEN_HDR}
   ../lite/sentencepiece_lite.h
   ../lite/sentencepiece_lite.cc
   ../lite/sentencepiece_model_converters.h
   ../lite/sentencepiece_model_converters.cc
+  gtest_prod.h
+  normalizer.h
+  ret_check.h
+  util.h
+  filesystem.h
+  init.h
+  model_proto_manager.h
+  model_proto_manager.cc
+  sentencepiece_processor.h
+  filesystem.cc
+  init.cc
+  normalizer.cc
+  sentencepiece_processor.cc
+  util.cc)
+
+set(SPM_TRAIN_SRCS
+  ${SPM_PROTO_HDRS}
+  ${SPM_MODEL_PROTO_HDRS}
   builder.h
   normalization_rule.h
   unicode_script.h
@@ -202,15 +192,12 @@ set(SPM_TRAIN_SRCS
 set(SPM_TEST_SRCS
   ${SPM_PROTO_HDRS}
   ${SPM_MODEL_PROTO_HDRS}
-  bpe_model_test.cc
   bpe_model_trainer_test.cc
   builder_test.cc
   invalid_model_test.cc
-  char_model_test.cc
   char_model_trainer_test.cc
   filesystem_test.cc
-  model_factory_test.cc
-  model_interface_test.cc
+  model_proto_manager_test.cc
   normalizer_test.cc
   sentencepiece_processor_test.cc
   sentencepiece_processor_parallel_test.cc
@@ -218,10 +205,8 @@ set(SPM_TEST_SRCS
   trainer_factory_test.cc
   trainer_interface_test.cc
   unicode_script_test.cc
-  unigram_model_test.cc
   unigram_model_trainer_test.cc
   util_test.cc
-  word_model_test.cc
   word_model_trainer_test.cc)
 
 # ==============================================================================

@@ -117,9 +117,9 @@ To perform this efficiently, SentencePiece pre-sorts all characters by gain $g(c
 
 ## 3. Algorithm: Auto-char + Unigram
 
-In the Unigram model, `--auto_character_coverage=true` is supported in combination with the new Sparse Pruning training algorithm (`--use_sparse_pruning=true`), enabling automatic allocation between single characters and subwords.
+In the Unigram model, `--auto_character_coverage=true` works with the Sparse Pruning training algorithm (which is the default Unigram training mode in SentencePiece 0.3.0), enabling automatic allocation between single characters and subwords.
 
-Whereas standard Unigram training unconditionally protects the initial character set selected by `--character_coverage=0.9995` from pruning, Auto-char with Sparse Pruning evaluates and prunes both single characters and multi-character subwords jointly under the same rule (expected count $\mathbb{E}[c_i] < \lambda$). See [Sparse L1 Unigram (`--use_sparse_pruning`)](sparse_l1_unigram.md) for details of the algorithm and its relationship to Auto-character Coverage.
+Whereas fixed `--character_coverage=0.9995` unconditionally protects the initial character set from pruning, Auto-char with Sparse Pruning evaluates and prunes both single characters and multi-character subwords jointly under the same rule (expected count $\mathbb{E}[c_i] < \lambda$). See [Sparse L1 Unigram](sparse_l1_unigram.md) for details of the algorithm and its relationship to Auto-character Coverage.
 
 ---
 
@@ -228,7 +228,7 @@ Keeping the language mix and all other experimental conditions identical, the ta
 
 ## 5. Usage
 
-Because Auto-char mode relies on decomposing unselected low-frequency characters into byte pieces (`<0x00>`–`<0xFF>`), **`--byte_fallback=true` is mandatory** (training will return an error if `byte_fallback` is `false`). For Unigram models, **`--use_sparse_pruning=true` is also mandatory**.
+Because Auto-char mode relies on decomposing unselected low-frequency characters into byte pieces (`<0x00>`–`<0xFF>`), **`--byte_fallback=true` is mandatory** (training will return an error if `byte_fallback` is `false`).
 
 ### Auto-char + BPE
 ```bash
@@ -249,7 +249,6 @@ spm_train \
   --vocab_size=32000 \
   --model_type=unigram \
   --auto_character_coverage=true \
-  --use_sparse_pruning=true \
   --byte_fallback=true
 ```
 
@@ -297,9 +296,9 @@ Model-specific flags:
 | Model | Additional Flags |
 |---|---|
 | BPE auto-char | `--auto_character_coverage=true` |
-| Unigram auto-char | `--auto_character_coverage=true --use_sparse_pruning=true` |
+| Unigram auto-char | `--auto_character_coverage=true` |
 | BPE 0.9995 + byte-fallback | `--auto_character_coverage=false --character_coverage=0.9995` |
-| Unigram 0.9995 + byte-fallback | `--auto_character_coverage=false --character_coverage=0.9995 --use_sparse_pruning=false` |
+| Unigram 0.9995 + byte-fallback | `--auto_character_coverage=false --character_coverage=0.9995` (benchmarked with the 0.2.x Discrete Pruning trainer, `--use_sparse_pruning=false`, which is not available in 0.3.0) |
 
 ### A.3 Byte-Level BPE Configuration (HuggingFace Tokenizers)
 

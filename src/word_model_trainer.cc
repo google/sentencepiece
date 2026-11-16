@@ -23,8 +23,8 @@
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/strings/string_view.h"
-#include "model_interface.h"
 #include "ret_check.h"
+#include "util.h"
 
 namespace sentencepiece {
 namespace word {

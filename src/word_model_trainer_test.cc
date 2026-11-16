@@ -53,9 +53,7 @@ std::string RunTrainer(const std::vector<std::string>& input, int size) {
   normalizer_spec.set_name("identity");
   normalizer_spec.set_add_dummy_prefix(true);
 
-  NormalizerSpec denormalizer_spec;
-
-  Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  Trainer trainer(trainer_spec, normalizer_spec);
   EXPECT_TRUE(trainer.Train().ok());
 
   SentencePieceProcessor processor;
@@ -101,9 +99,7 @@ TEST(TrainerTest, UserDefinedSymbolsAreTokenizedInWordModel) {
   normalizer_spec.set_name("identity");
   normalizer_spec.set_add_dummy_prefix(true);
 
-  NormalizerSpec denormalizer_spec;
-
-  Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  Trainer trainer(trainer_spec, normalizer_spec);
   ASSERT_TRUE(trainer.Train().ok());
 
   SentencePieceProcessor processor;

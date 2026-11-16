@@ -58,12 +58,8 @@ ABSL_FLAG(int32_t, seed_sentencepiece_size,
           "the size of seed sentencepieces");
 ABSL_FLAG(std::string, seed_sentencepieces_file, "",
           "file to load seed sentencepieces from");
-ABSL_FLAG(double, shrinking_factor, kDefaultTrainerSpec.shrinking_factor(),
-          "Keeps top shrinking_factor pieces with respect to the loss");
 ABSL_FLAG(int32_t, num_threads, kDefaultTrainerSpec.num_threads(),
           "number of threads for training");
-ABSL_FLAG(int32_t, num_sub_iterations, kDefaultTrainerSpec.num_sub_iterations(),
-          "number of EM sub-iterations");
 ABSL_FLAG(int32_t, max_sentencepiece_length,
           kDefaultTrainerSpec.max_sentencepiece_length(),
           "maximum length of sentence piece");
@@ -160,6 +156,10 @@ ABSL_RETIRED_FLAG(int32_t, mining_sentence_size, 0,
                   "the size of sentences the trainer mines");
 ABSL_RETIRED_FLAG(int32_t, training_sentence_size, 0,
                   "the size of sentences the trainer trains");
+ABSL_RETIRED_FLAG(double, shrinking_factor, 0.75,
+                  "Keeps top shrinking_factor pieces with respect to the loss");
+ABSL_RETIRED_FLAG(int32_t, num_sub_iterations, 2,
+                  "number of EM sub-iterations");
 ABSL_RETIRED_FLAG(bool, train_extremely_large_corpus, false,
                   "Increase bit depth for unigram tokenization.");
 ABSL_RETIRED_FLAG(bool, enable_differential_privacy, false,
@@ -174,7 +174,6 @@ int main(int argc, char* argv[]) {
 
   sentencepiece::TrainerSpec trainer_spec;
   sentencepiece::NormalizerSpec normalizer_spec;
-  NormalizerSpec denormalizer_spec;
 
   QCHECK(!absl::GetFlag(FLAGS_input).empty());
   QCHECK(!absl::GetFlag(FLAGS_model_prefix).empty());
@@ -231,9 +230,7 @@ int main(int argc, char* argv[]) {
   SetTrainerSpecFromFlag(shuffle_input_sentence);
   SetTrainerSpecFromFlag(seed_sentencepiece_size);
   SetTrainerSpecFromFlag(seed_sentencepieces_file);
-  SetTrainerSpecFromFlag(shrinking_factor);
   SetTrainerSpecFromFlag(num_threads);
-  SetTrainerSpecFromFlag(num_sub_iterations);
   SetTrainerSpecFromFlag(max_sentencepiece_length);
   SetTrainerSpecFromFlag(max_sentence_length);
   SetTrainerSpecFromFlag(split_by_unicode_script);
@@ -268,20 +265,15 @@ int main(int argc, char* argv[]) {
   SetNormalizerSpecFromFlag(normalization_rule_tsv);
   SetNormalizerSpecFromFlag(add_dummy_prefix);
   SetNormalizerSpecFromFlag(remove_extra_whitespaces);
-
   if (!absl::GetFlag(FLAGS_denormalization_rule_tsv).empty()) {
-    denormalizer_spec.set_normalization_rule_tsv(
-        absl::GetFlag(FLAGS_denormalization_rule_tsv));
-    denormalizer_spec.set_add_dummy_prefix(false);
-    denormalizer_spec.set_remove_extra_whitespaces(false);
-    denormalizer_spec.set_escape_whitespaces(false);
+    LOG(WARNING) << "--denormalization_rule_tsv is deprecated and ignored.";
   }
 
   QCHECK_OK(sentencepiece::SentencePieceTrainer::PopulateModelTypeFromString(
       absl::GetFlag(FLAGS_model_type), &trainer_spec));
 
-  QCHECK_OK(sentencepiece::SentencePieceTrainer::Train(
-      trainer_spec, normalizer_spec, denormalizer_spec));
+  QCHECK_OK(sentencepiece::SentencePieceTrainer::Train(trainer_spec,
+                                                       normalizer_spec));
 
   return 0;
 }
