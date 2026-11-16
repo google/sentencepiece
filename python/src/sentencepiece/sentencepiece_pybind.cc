@@ -141,9 +141,10 @@ class PySentenceIterator final : public sentencepiece::SentenceIterator {
 };
 
 // Helper functions for RewriteIds (adapted from sentencepiece_swig.h)
+template <typename T>
 absl::Status RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
-                        std::vector<int>* ids, bool add_bos, bool add_eos,
-                        bool reverse) {
+                        std::vector<T>* tokens, bool add_bos, bool add_eos,
+                        bool reverse, bool emit_unk_piece = false) {
   if (add_bos && sp.bos_id() == -1) {
     return absl::InvalidArgumentError(
         "BOS token is not defined as a control symbol in this model.");
@@ -152,64 +153,49 @@ absl::Status RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
     return absl::InvalidArgumentError(
         "EOS token is not defined as a control symbol in this model.");
   }
-  if (!add_bos && !add_eos && !reverse) return absl::OkStatus();
-  if (reverse) std::reverse(ids->begin(), ids->end());
-  if (add_bos) {
-    ids->insert(ids->begin(), sp.bos_id());
-  }
-  if (add_eos) {
-    ids->push_back(sp.eos_id());
-  }
-  return absl::OkStatus();
-}
-
-absl::Status RewriteIds(const sentencepiece::SentencePieceProcessor& sp,
-                        std::vector<std::string>* pieces, bool add_bos,
-                        bool add_eos, bool reverse, bool emit_unk_piece) {
-  if (add_bos && sp.bos_id() == -1) {
-    return absl::InvalidArgumentError(
-        "BOS token is not defined as a control symbol in this model.");
-  }
-  if (add_eos && sp.eos_id() == -1) {
-    return absl::InvalidArgumentError(
-        "EOS token is not defined as a control symbol in this model.");
-  }
-  if (emit_unk_piece && sp.unk_id() == -1) {
-    return absl::InvalidArgumentError(
-        "UNK token is not defined in this model.");
-  }
-  if (!add_bos && !add_eos && !reverse && !emit_unk_piece)
-    return absl::OkStatus();
-  if (emit_unk_piece) {
-    const auto& unk = sp.IdToPiece(sp.unk_id());
-    for (auto& piece : *pieces) {
-      if (sp.PieceToId(piece) == sp.unk_id()) {
-        piece = unk;
+  if constexpr (std::is_same_v<T, std::string>) {
+    if (emit_unk_piece && sp.unk_id() == -1) {
+      return absl::InvalidArgumentError(
+          "UNK token is not defined in this model.");
+    }
+    if (!add_bos && !add_eos && !reverse && !emit_unk_piece) {
+      return absl::OkStatus();
+    }
+    if (emit_unk_piece) {
+      const absl::string_view unk = sp.IdToPiece(sp.unk_id());
+      for (auto& piece : *tokens) {
+        if (sp.PieceToId(piece) == sp.unk_id()) {
+          piece.assign(unk.data(), unk.size());
+        }
       }
     }
-  }
-  if (reverse) std::reverse(pieces->begin(), pieces->end());
-  if (add_bos) {
-    pieces->insert(pieces->begin(), sp.IdToPiece(sp.bos_id()));
-  }
-  if (add_eos) {
-    pieces->push_back(sp.IdToPiece(sp.eos_id()));
+    if (reverse) std::reverse(tokens->begin(), tokens->end());
+    if (add_bos) {
+      tokens->insert(tokens->begin(), std::string(sp.IdToPiece(sp.bos_id())));
+    }
+    if (add_eos) {
+      tokens->emplace_back(sp.IdToPiece(sp.eos_id()));
+    }
+  } else {
+    if (!add_bos && !add_eos && !reverse) return absl::OkStatus();
+    if (reverse) std::reverse(tokens->begin(), tokens->end());
+    if (add_bos) {
+      tokens->insert(tokens->begin(), sp.bos_id());
+    }
+    if (add_eos) {
+      tokens->push_back(sp.eos_id());
+    }
   }
   return absl::OkStatus();
 }
 
+template <typename T>
 void RewriteIdsThrowException(const sentencepiece::SentencePieceProcessor& sp,
-                              std::vector<int>* ids, bool add_bos, bool add_eos,
-                              bool reverse) {
-  auto status = RewriteIds(sp, ids, add_bos, add_eos, reverse);
-  if (!status.ok()) throw status;
-}
-
-void RewriteIdsThrowException(const sentencepiece::SentencePieceProcessor& sp,
-                              std::vector<std::string>* pieces, bool add_bos,
-                              bool add_eos, bool reverse, bool emit_unk_piece) {
+                              std::vector<T>* tokens, bool add_bos,
+                              bool add_eos, bool reverse,
+                              bool emit_unk_piece = false) {
   auto status =
-      RewriteIds(sp, pieces, add_bos, add_eos, reverse, emit_unk_piece);
+      RewriteIds(sp, tokens, add_bos, add_eos, reverse, emit_unk_piece);
   if (!status.ok()) throw status;
 }
 
@@ -633,7 +619,11 @@ absl::Status ConvertModelProtoToFlatbuffer(
 
 }  // namespace
 
+#ifdef Py_GIL_DISABLED
 PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
+#else
+PYBIND11_MODULE(_sentencepiece, m) {
+#endif
   RegisterExceptionTranslator();
 
   py::class_<VectorBuffer>(m, "VectorBuffer", py::buffer_protocol())
@@ -651,7 +641,6 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
   // Global functions
   m.def("SetRandomGeneratorSeed", &sentencepiece::SetRandomGeneratorSeed);
   m.def("SetMinLogLevel", &sentencepiece::SetMinLogLevel);
-  m.def("SetNBestTimeout", &sentencepiece::SetNBestTimeout);
   m.def("SetDataDir", [](const std::string& data_dir) {
     sentencepiece::SetDataDir(data_dir);
   });
@@ -720,6 +709,35 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                  serialized.cast<std::string_view>();
              py::gil_scoped_release release;
              auto status = self.LoadFromSerializedProto(serialized_view);
+             if (!status.ok()) throw status;
+             return true;
+           })
+      .def("LoadFromSerializedFlatbuffer",
+           [](sentencepiece::SentencePieceProcessor& self,
+              const py::bytes& serialized) {
+             std::string_view serialized_view =
+                 serialized.cast<std::string_view>();
+             py::gil_scoped_release release;
+             auto status = self.LoadFromSerializedFlatbuffer(serialized_view);
+             if (!status.ok()) throw status;
+             return true;
+           })
+      .def("LoadFromFlatbufferView",
+           [](sentencepiece::SentencePieceProcessor& self,
+              const py::buffer& buffer) {
+             py::buffer_info info = buffer.request();
+             if (info.ndim != 1 || info.strides[0] != info.itemsize) {
+               self.LoadFromFlatbufferView(absl::string_view()).IgnoreError();
+               throw py::value_error(
+                   "FlatBuffer view must be a 1D contiguous buffer.");
+             }
+             const char* ptr = static_cast<const char*>(info.ptr);
+             const size_t size = static_cast<size_t>(info.size * info.itemsize);
+             py::gil_scoped_release release;
+             // Misaligned buffers are copied internally by
+             // LoadFromFlatbufferView().
+             const auto status =
+                 self.LoadFromFlatbufferView(absl::string_view(ptr, size));
              if (!status.ok()) throw status;
              return true;
            })
@@ -1030,7 +1048,6 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              std::string detok;
              {
                py::gil_scoped_release release;
-               CheckIdsThrowException(ids.span(), self.GetPieceSize());
                auto status = self.Decode(ids.span(), &detok);
                if (!status.ok()) throw status;
              }
@@ -1043,7 +1060,6 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              std::string detok;
              {
                py::gil_scoped_release release;
-               CheckIdsThrowException(ids.span(), self.GetPieceSize());
                auto status = self.Decode(ids.span(), &detok);
                if (!status.ok()) throw status;
              }
@@ -1082,7 +1098,6 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
              sentencepiece::SentencePieceText spt;
              {
                py::gil_scoped_release release;
-               CheckIdsThrowException(ids.span(), self.GetPieceSize());
                auto status = self.Decode(ids.span(), &spt);
                if (!status.ok()) throw status;
              }
@@ -1137,7 +1152,6 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                IntSpanOrVector ids = CastToIntSpanOrVector(input);
                {
                  py::gil_scoped_release release;
-                 CheckIdsThrowException(ids.span(), self.GetPieceSize());
                  status = self.Decode(ids.span(), &spt);
                }
              }
@@ -1160,8 +1174,6 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                auto status = sentencepiece::RunBatch(
                    ins.size(),
                    [&](size_t i) {
-                     auto s = CheckIds(ins[i].span(), self.GetPieceSize());
-                     if (!s.ok()) return s;
                      return self.Decode(ins[i].span(), &outs[i]);
                    },
                    *pool.get());
@@ -1186,8 +1198,6 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                auto status = sentencepiece::RunBatch(
                    ins.size(),
                    [&](size_t i) {
-                     auto s = CheckIds(ins[i].span(), self.GetPieceSize());
-                     if (!s.ok()) return s;
                      return self.Decode(ins[i].span(), &outs[i]);
                    },
                    *pool.get());
@@ -1212,10 +1222,8 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                auto status = sentencepiece::RunBatch(
                    ins.size(),
                    [&](size_t i) {
-                     auto s = CheckIds(ins[i].span(), self.GetPieceSize());
-                     if (!s.ok()) return s;
                      sentencepiece::SentencePieceText spt;
-                     s = self.Decode(ins[i].span(), &spt);
+                     auto s = self.Decode(ins[i].span(), &spt);
                      if (!s.ok()) return s;
                      outs[i] = spt.SerializeAsString();
                      return absl::OkStatus();
@@ -1420,8 +1428,6 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
                  auto status = sentencepiece::RunBatch(
                      batch_size,
                      [&](size_t i) {
-                       auto s = CheckIds(C_ins[i].span(), self.GetPieceSize());
-                       if (!s.ok()) return s;
                        return self.Decode(C_ins[i].span(), &spts[i]);
                      },
                      *pool.get());
@@ -1644,6 +1650,11 @@ PYBIND11_MODULE(_sentencepiece, m, py::mod_gil_not_used()) {
       .def("serialized_model_proto",
            [](const sentencepiece::SentencePieceProcessor& self) {
              return py::bytes(self.serialized_model_proto());
+           })
+      .def("serialized_flatbuffer",
+           [](const sentencepiece::SentencePieceProcessor& self) {
+             const absl::string_view fb = self.serialized_flatbuffer();
+             return py::bytes(fb.data(), fb.size());
            });
 
   // Bind Trainer. Use py::nodelete holder to avoid trying to delete it because

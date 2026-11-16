@@ -17,9 +17,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <string>
 #include <vector>
 
+#include "absl/log/log.h"
 #include "absl/status/status_matchers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -36,18 +38,221 @@ namespace unigram {
 #define WS "\xe2\x96\x81"
 
 TEST(UnigramTrainerTest, TrainerModelTest) {
-  TrainerSpec trainer_spec;
-  NormalizerSpec normalizer_spec;
-  const TrainerModel model(trainer_spec, normalizer_spec);
-  EXPECT_EQ(EncodeResult(), model.Encode("test"));
+  const TrainerModel model;
+  EXPECT_TRUE(model.status().ok());
+  EXPECT_EQ(0, model.GetPieceSize());
+}
+
+TEST(UnigramTrainerTest, InvalidNodeTest) {
+  Lattice lattice;
+  lattice.SetSentence("ABC");
+  EXPECT_EQ(lattice.Insert(0, 0), nullptr);
+  EXPECT_EQ(lattice.Insert(0, -1), nullptr);
+  EXPECT_EQ(lattice.Insert(-1, 1), nullptr);
+  EXPECT_EQ(lattice.Insert(0, 4), nullptr);
+  EXPECT_EQ(lattice.Insert(2, 2), nullptr);
+
+  auto* n0 = lattice.Insert(0, 1);
+  auto* n1 = lattice.Insert(1, 1);
+  auto* n2 = lattice.Insert(2, 1);
+  ASSERT_NE(n0, nullptr);
+  ASSERT_NE(n1, nullptr);
+  ASSERT_NE(n2, nullptr);
+  n0->score = 1.0f;
+  n1->score = 1.0f;
+  n2->score = 1.0f;
+  EXPECT_EQ(lattice.Viterbi().first.size(), 3);
+}
+
+TEST(UnigramTrainerTest, EmptySentenceTest) {
+  Lattice lattice;
+  lattice.SetSentence("");
+  EXPECT_TRUE(lattice.Viterbi().first.empty());
+}
+
+namespace {
+// Joins the surfaces of `nodes` with a single space.
+std::string GetTokenized(const Lattice& lattice,
+                         const std::vector<Lattice::Node*>& nodes) {
+  std::vector<std::string> tokens;
+  for (const auto* node : nodes) {
+    const char* begin = lattice.surface(node->pos);
+    const char* end = lattice.surface(node->pos + node->length);
+    tokens.emplace_back(begin, end - begin);
+  }
+  return absl::StrJoin(tokens, " ");
+}
+
+void InsertWithScoreAndId(Lattice* lattice, int pos, int length, float score,
+                          int id = -1) {
+  auto* node = lattice->Insert(pos, length);
+  ASSERT_NE(node, nullptr);
+  node->score = score;
+  node->id = id;
+}
+}  // namespace
+
+TEST(UnigramTrainerTest, LatticeSetSentenceTest) {
+  Lattice lattice;
+
+  EXPECT_EQ(0, lattice.size());
+  EXPECT_EQ(0, lattice.utf8_size());
+
+  lattice.SetSentence("");
+  EXPECT_EQ(0, lattice.size());
+  EXPECT_EQ(0, lattice.utf8_size());
+  EXPECT_STREQ("", lattice.sentence());
+  EXPECT_STREQ("", lattice.surface(0));
+
+  lattice.SetSentence("test");
+  EXPECT_EQ(4, lattice.size());
+  EXPECT_EQ(4, lattice.utf8_size());
+  EXPECT_STREQ("test", lattice.sentence());
+  EXPECT_STREQ("test", lattice.surface(0));
+  EXPECT_STREQ("est", lattice.surface(1));
+  EXPECT_STREQ("st", lattice.surface(2));
+  EXPECT_STREQ("t", lattice.surface(3));
+
+  // Only the EOS node starts at the end of the sentence.
+  ASSERT_EQ(1, lattice.begin_nodes(4).size());
+  EXPECT_EQ(-1, lattice.begin_nodes(4).front()->id);
+
+  lattice.SetSentence("テストab");
+  EXPECT_EQ(5, lattice.size());
+  EXPECT_EQ(11, lattice.utf8_size());
+  EXPECT_STREQ("テストab", lattice.sentence());
+  EXPECT_STREQ("テストab", lattice.surface(0));
+  EXPECT_STREQ("ストab", lattice.surface(1));
+  EXPECT_STREQ("トab", lattice.surface(2));
+  EXPECT_STREQ("ab", lattice.surface(3));
+  EXPECT_STREQ("b", lattice.surface(4));
+
+  lattice.Clear();
+  EXPECT_EQ(0, lattice.size());
+  EXPECT_EQ(0, lattice.utf8_size());
+}
+
+TEST(UnigramTrainerTest, LatticeInsertTest) {
+  Lattice lattice;
+  lattice.SetSentence("ABあい");
+
+  Lattice::Node* node[7];
+  node[0] = lattice.Insert(0, 1);
+  node[1] = lattice.Insert(1, 1);
+  node[2] = lattice.Insert(2, 1);
+  node[3] = lattice.Insert(3, 1);
+  node[4] = lattice.Insert(0, 2);
+  node[5] = lattice.Insert(1, 2);
+  node[6] = lattice.Insert(2, 2);
+  for (const auto* n : node) ASSERT_NE(n, nullptr);
+
+  EXPECT_EQ("A", GetTokenized(lattice, {node[0]}));
+  EXPECT_EQ("B", GetTokenized(lattice, {node[1]}));
+  EXPECT_EQ("あ", GetTokenized(lattice, {node[2]}));
+  EXPECT_EQ("い", GetTokenized(lattice, {node[3]}));
+  EXPECT_EQ("AB", GetTokenized(lattice, {node[4]}));
+  EXPECT_EQ("Bあ", GetTokenized(lattice, {node[5]}));
+  EXPECT_EQ("あい", GetTokenized(lattice, {node[6]}));
+
+  const int expected_pos[] = {0, 1, 2, 3, 0, 1, 2};
+  const int expected_length[] = {1, 1, 1, 1, 2, 2, 2};
+  for (int i = 0; i < 7; ++i) {
+    EXPECT_EQ(expected_pos[i], node[i]->pos) << i;
+    EXPECT_EQ(expected_length[i], node[i]->length) << i;
+    // BOS and EOS take the first two node ids.
+    EXPECT_EQ(i + 2, node[i]->node_id) << i;
+  }
+
+  EXPECT_EQ(2, lattice.begin_nodes(0).size());
+  EXPECT_EQ(2, lattice.begin_nodes(1).size());
+  EXPECT_EQ(2, lattice.begin_nodes(2).size());
+  EXPECT_EQ(1, lattice.begin_nodes(3).size());
+  EXPECT_EQ(1, lattice.begin_nodes(4).size());  // EOS
+
+  EXPECT_EQ(node[0], lattice.begin_nodes(0)[0]);
+  EXPECT_EQ(node[4], lattice.begin_nodes(0)[1]);
+  EXPECT_EQ(node[1], lattice.begin_nodes(1)[0]);
+  EXPECT_EQ(node[5], lattice.begin_nodes(1)[1]);
+  EXPECT_EQ(node[2], lattice.begin_nodes(2)[0]);
+  EXPECT_EQ(node[6], lattice.begin_nodes(2)[1]);
+  EXPECT_EQ(node[3], lattice.begin_nodes(3)[0]);
+}
+
+TEST(UnigramTrainerTest, LatticeViterbiFromIncompleteLatticeTest) {
+  Lattice lattice;
+  lattice.SetSentence("ABC");
+  EXPECT_TRUE(lattice.Viterbi().first.empty());
+
+  // Still incomplete.
+  ASSERT_NE(lattice.Insert(0, 1), nullptr);
+  EXPECT_TRUE(lattice.Viterbi().first.empty());
+
+  ASSERT_NE(lattice.Insert(1, 1), nullptr);
+  ASSERT_NE(lattice.Insert(2, 1), nullptr);
+  EXPECT_EQ(3, lattice.Viterbi().first.size());
+}
+
+TEST(UnigramTrainerTest, LatticeViterbiTest) {
+  Lattice lattice;
+  lattice.SetSentence("ABC");
+
+  InsertWithScoreAndId(&lattice, 0, 1, 0.0);  // A
+  InsertWithScoreAndId(&lattice, 1, 1, 0.0);  // B
+  InsertWithScoreAndId(&lattice, 2, 1, 0.0);  // C
+  EXPECT_EQ("A B C", GetTokenized(lattice, lattice.Viterbi().first));
+
+  InsertWithScoreAndId(&lattice, 0, 2, 2.0);  // AB
+  EXPECT_EQ("AB C", GetTokenized(lattice, lattice.Viterbi().first));
+
+  InsertWithScoreAndId(&lattice, 1, 2, 5.0);  // BC
+  EXPECT_EQ("A BC", GetTokenized(lattice, lattice.Viterbi().first));
+
+  InsertWithScoreAndId(&lattice, 0, 3, 10.0);  // ABC
+  const auto best = lattice.Viterbi();
+  EXPECT_EQ("ABC", GetTokenized(lattice, best.first));
+  EXPECT_NEAR(10.0, best.second, 0.001);
+}
+
+TEST(UnigramTrainerTest, LatticePopulateMarginalTest) {
+  Lattice lattice;
+  lattice.SetSentence("ABC");
+
+  InsertWithScoreAndId(&lattice, 0, 1, 1.0, 0);  // A
+  InsertWithScoreAndId(&lattice, 1, 1, 1.2, 1);  // B
+  InsertWithScoreAndId(&lattice, 2, 1, 2.5, 2);  // C
+  InsertWithScoreAndId(&lattice, 0, 2, 3.0, 3);  // AB
+  InsertWithScoreAndId(&lattice, 1, 2, 4.0, 4);  // BC
+  InsertWithScoreAndId(&lattice, 0, 3, 2.0, 5);  // ABC
+
+  std::vector<float> probs(6, 0.0);
+
+  // Expand all paths:
+  // A B C : exp(1.0 + 1.2 + 2.5) => path1
+  // AB  C : exp(3.0 + 2.5)       => path2
+  // A  BC : exp(1.0 + 4.0)       => path3
+  // ABC   : exp(2.0)             => path4
+  const float p1 = std::exp(1.0 + 1.2 + 2.5);
+  const float p2 = std::exp(3.0 + 2.5);
+  const float p3 = std::exp(1.0 + 4.0);
+  const float p4 = std::exp(2.0);
+  const float Z = p1 + p2 + p3 + p4;
+
+  const float logZ = lattice.PopulateMarginal(1.0, &probs);
+
+  EXPECT_NEAR((p1 + p3) / Z, probs[0], 0.001);  // A
+  EXPECT_NEAR(p1 / Z, probs[1], 0.001);         // B
+  EXPECT_NEAR((p1 + p2) / Z, probs[2], 0.001);  // C
+  EXPECT_NEAR(p2 / Z, probs[3], 0.001);         // AB
+  EXPECT_NEAR(p3 / Z, probs[4], 0.001);         // BC
+  EXPECT_NEAR(p4 / Z, probs[5], 0.001);         // ABC
+  EXPECT_NEAR(std::log(static_cast<double>(Z)), logZ, 0.001);
 }
 
 TEST(UnigramTrainerTest, PruneUnreachableSentencePiecesTest) {
   TrainerSpec trainer_spec;
   NormalizerSpec normalizer_spec;
-  NormalizerSpec denormalizer_spec;
 
-  TrainerModel model(trainer_spec, normalizer_spec);
+  TrainerModel model;
   // "a": -1.0, "b": -2.0
   // "ab": -4.0 (shadowed by "a" + "b" = -3.0 -> unreachable)
   // "c": -1.0, "d": -1.0
@@ -57,7 +262,7 @@ TEST(UnigramTrainerTest, PruneUnreachableSentencePiecesTest) {
                                          {"d", -1.0f},  {"cd", -1.5f}};
   EXPECT_TRUE(model.SetSentencePieces(std::move(pieces)).ok());
 
-  Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  Trainer trainer(trainer_spec, normalizer_spec);
   auto pruned = trainer.PruneUnreachableSentencePieces(model);
 
   std::vector<std::string> pruned_names;
@@ -97,12 +302,10 @@ TrainerResult RunTrainer(const std::vector<std::string>& input, int size) {
   normalizer_spec.set_name("identity");
   normalizer_spec.set_add_dummy_prefix(false);
 
-  NormalizerSpec denormalizer_spec;
-
   std::vector<std::pair<std::string, float>> seed_pieces;
 
   {
-    Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    Trainer trainer(trainer_spec, normalizer_spec);
     ABSL_EXPECT_OK(trainer.LoadSentences());
     TrainerModel::SentencePieces res = trainer.MakeSeedSentencePieces();
 
@@ -114,7 +317,7 @@ TrainerResult RunTrainer(const std::vector<std::string>& input, int size) {
   std::vector<std::string> pieces;
 
   {
-    Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+    Trainer trainer(trainer_spec, normalizer_spec);
     EXPECT_TRUE(trainer.Train().ok());
 
     SentencePieceProcessor processor;
@@ -198,8 +401,8 @@ TEST(UnigramTrainerTest, EndToEndTest) {
   LOG(INFO) << "[" << absl::StrJoin(tok, " ") << std::endl;
   EXPECT_EQ(
       WS
-      " 吾輩 《 わが はい 》 は猫である 。 名前はまだ 無い 。 どこで 生れ た "
-      "か とんと 見当 《 け ん とう 》 が つかぬ 。 何でも 薄 暗 いじめ じめ "
+      " 吾輩 《 わが はい 》 は猫である 。 名前はまだ 無い 。 どこで 生れ たか "
+      "とんと 見当 《 け ん とう 》 が つかぬ 。 何でも 薄 暗 いじめ じめ "
       "した 所で ニャーニャー 泣 いていた 事 だけは 記憶 している 。",
       absl::StrJoin(tok, " "));
 #endif

@@ -21,11 +21,11 @@
 #include <functional>
 #include <limits>
 #include <memory>
-#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/fixed_array.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -46,18 +46,6 @@
 namespace sentencepiece {
 namespace unigram {
 namespace {
-
-double Digamma(double x) {
-  double result = 0.0;
-  for (; x < 7; ++x) result -= 1 / x;
-  x -= 1.0 / 2.0;
-  const double xx = 1.0 / x;
-  const double xx2 = xx * xx;
-  const double xx4 = xx2 * xx2;
-  result += std::log(x) + (1.0 / 24.0) * xx2 - (7.0 / 960.0) * xx4 +
-            (31.0 / 8064.0) * xx4 * xx2 - (127.0 / 30720.0) * xx4 * xx4;
-  return result;
-}
 
 template <typename IT>
 void ToLogProb(IT begin, IT end) {
@@ -186,24 +174,321 @@ class BoundedPriorityQueue {
   size_t gc_keep_capacity_;
   absl::flat_hash_map<std::string, uint64_t> data_;
 };
+
+// Size of nodes pre-allocated in Lattice.
+constexpr size_t kPreallocateLatticeNodeSize = 1024;
+constexpr float kUnkPenalty = 10.0;
+
+inline float LogSumExp(float x, float y, bool init_mode) {
+  if (init_mode) {
+    return y;
+  }
+  const float vmin = std::min(x, y);
+  const float vmax = std::max(x, y);
+  constexpr float kMinusLogEpsilon = 50;
+  if (vmax > vmin + kMinusLogEpsilon) {
+    return vmax;
+  } else {
+    return vmax + std::log1p(std::exp(static_cast<double>(vmin - vmax)));
+  }
+}
+
 }  // namespace
 
-TrainerModel::TrainerModel(const TrainerSpec& trainer_spec,
-                           const NormalizerSpec& normalizer_spec) {}
+Lattice::Lattice() {
+  node_blocks_.push_back(std::make_unique<Node[]>(kPreallocateLatticeNodeSize));
+}
+Lattice::~Lattice() = default;
 
-TrainerModel::~TrainerModel() {}
+const std::vector<Lattice::Node*>& Lattice::begin_nodes(int pos) const {
+  return begin_nodes_[pos];
+}
+
+int Lattice::size() const { return std::max<int>(0, surface_.size() - 1); }
+
+int Lattice::utf8_size() const { return sentence_.size(); }
+
+const char* Lattice::sentence() const { return sentence_.data(); }
+
+const char* Lattice::surface(int pos) const { return surface_[pos]; }
+
+Lattice::Node* Lattice::NewNode() {
+  const size_t block_idx = node_size_ / kPreallocateLatticeNodeSize;
+  const size_t elem_idx = node_size_ % kPreallocateLatticeNodeSize;
+  if (block_idx == node_blocks_.size()) {
+    node_blocks_.push_back(
+        std::make_unique<Node[]>(kPreallocateLatticeNodeSize));
+  }
+  Node* node = &node_blocks_[block_idx][elem_idx];
+  *node = Node{};
+  node->node_id = node_size_++;
+  return node;
+}
+
+void Lattice::Clear() {
+  begin_nodes_.clear();
+  end_nodes_.clear();
+  sentence_ = absl::string_view("");
+  surface_.clear();
+  node_size_ = 0;
+}
+
+void Lattice::SetSentence(absl::string_view sentence) {
+  Clear();
+
+  sentence_ = sentence;
+  surface_.reserve(sentence.size() + 1);
+
+  while (!sentence.empty()) {
+    const int mblen = std::min<int>(string_util::OneCharLen(sentence.data()),
+                                    sentence.size());
+    surface_.push_back(sentence.data());
+    sentence.remove_prefix(mblen);
+  }
+  surface_.push_back(sentence.data());
+
+  const size_t len = size();
+  begin_nodes_.resize(len + 1);
+  end_nodes_.resize(len + 1);
+
+  constexpr size_t kReservedNodeSize = 16;
+  for (size_t i = 0; i <= len; ++i) {
+    begin_nodes_[i].reserve(kReservedNodeSize);
+    end_nodes_[i].reserve(kReservedNodeSize);
+  }
+
+  Node* bos = NewNode();
+  bos->id = -1;
+  bos->pos = 0;
+  end_nodes_[0].push_back(bos);
+
+  Node* eos = NewNode();
+  eos->id = -1;
+  eos->pos = len;
+  begin_nodes_[len].push_back(eos);
+}
+
+Lattice::Node* Lattice::Insert(int pos, int length) {
+  const int len = size();
+  if (pos < 0 || length <= 0 || pos + length > len) {
+    LOG(ERROR) << "Invalid node position or length: pos=" << pos
+               << " length=" << length << " size=" << len;
+    return nullptr;
+  }
+  Node* node = NewNode();
+  node->pos = pos;
+  node->length = length;
+  begin_nodes_[pos].push_back(node);
+  end_nodes_[pos + node->length].push_back(node);
+
+  return node;
+}
+
+Lattice::LatticePathWithScore Lattice::Viterbi() {
+  const size_t len = size();
+  if (len == 0) return {};
+
+  for (size_t pos = 0; pos <= len; ++pos) {
+    for (Node* rnode : begin_nodes_[pos]) {
+      rnode->prev = nullptr;
+      float best_score = 0.0;
+      Node* best_node = nullptr;
+      for (Node* lnode : end_nodes_[pos]) {
+        const float score = lnode->backtrace_score + rnode->score;
+        if (best_node == nullptr || score > best_score) {
+          best_node = lnode;
+          best_score = score;
+        }
+      }
+      if (best_node == nullptr) {
+        LOG(ERROR) << "Failed to find the best path in Viterbi.";
+        return {};
+      }
+      rnode->prev = best_node;
+      rnode->backtrace_score = best_score;
+    }
+  }
+
+  std::vector<Node*> results;
+  if (begin_nodes_[len].empty() || begin_nodes_[len][0] == nullptr) {
+    LOG(ERROR) << "EOS node is missing in Viterbi.";
+    return {};
+  }
+  float score = begin_nodes_[len][0]->backtrace_score;
+  for (Node* node = begin_nodes_[len][0]->prev;
+       node != nullptr && node->prev != nullptr; node = node->prev) {
+    results.push_back(node);
+    if (results.size() > len) {
+      LOG(ERROR) << "Detected cycle or infinite loop in Viterbi backtrace.";
+      return {};
+    }
+  }
+
+  std::reverse(results.begin(), results.end());
+
+  return {results, score};
+}
+
+std::vector<float> Lattice::ForwardAlgorithm() const {
+  const size_t len = size();
+  std::vector<float> alpha(node_size_, 0.0);
+
+  for (size_t pos = 0; pos <= len; ++pos) {
+    for (Node* rnode : begin_nodes_[pos]) {
+      for (Node* lnode : end_nodes_[pos]) {
+        alpha[rnode->node_id] = LogSumExp(alpha[rnode->node_id],
+                                          lnode->score + alpha[lnode->node_id],
+                                          lnode == end_nodes_[pos][0]);
+      }
+    }
+  }
+
+  return alpha;
+}
+
+std::vector<float> Lattice::BackwardAlgorithm() const {
+  const size_t len = size();
+  std::vector<float> beta(node_size_, 0.0);
+
+  for (int pos = len; pos >= 0; --pos) {
+    for (Node* lnode : end_nodes_[pos]) {
+      for (Node* rnode : begin_nodes_[pos]) {
+        beta[lnode->node_id] =
+            LogSumExp(beta[lnode->node_id], rnode->score + beta[rnode->node_id],
+                      rnode == begin_nodes_[pos][0]);
+      }
+    }
+  }
+
+  return beta;
+}
+
+float Lattice::PopulateMarginal(float freq,
+                                std::vector<float>* expected) const {
+  if (expected == nullptr) return 0.0;
+
+  const size_t len = size();
+  const auto alpha = ForwardAlgorithm();
+  const auto beta = BackwardAlgorithm();
+
+  const float Z = alpha[begin_nodes_[len][0]->node_id];
+  for (size_t pos = 0; pos < len; ++pos) {
+    for (Node* node : begin_nodes_[pos]) {
+      if (node->id >= 0) {
+        (*expected)[node->id] +=
+            freq *
+            std::exp(static_cast<double>(alpha[node->node_id] + node->score +
+                                         beta[node->node_id] - Z));
+      }
+    }
+  }
+
+  return freq * Z;
+}
+
+TrainerModel::~TrainerModel() = default;
 
 const TrainerModel::SentencePieces& TrainerModel::GetSentencePieces() const {
   return sentencepieces_;
+}
+
+void TrainerModel::BuildTrie(
+    std::vector<std::pair<absl::string_view, int>>* pieces) {
+  if (!status().ok()) return;
+
+  if (pieces->empty()) {
+    status_ = absl::InternalError("no pieces are loaded.");
+    return;
+  }
+
+  std::sort(pieces->begin(), pieces->end());
+
+  std::vector<const char*> key(pieces->size());
+  std::vector<size_t> length(pieces->size());
+  std::vector<int> value(pieces->size());
+  for (size_t i = 0; i < pieces->size(); ++i) {
+    key[i] = (*pieces)[i].first.data();
+    length[i] = (*pieces)[i].first.size();
+    value[i] = (*pieces)[i].second;
+  }
+
+  trie_ = std::make_unique<Darts::DoubleArray>();
+  if (trie_->build(key.size(), const_cast<char**>(&key[0]),
+                   const_cast<size_t*>(&length[0]), &value[0]) != 0) {
+    status_ = absl::InternalError("cannot build double-array.");
+    return;
+  }
+
+  const int kMaxTrieResultsSize = 1024;
+  std::vector<Darts::DoubleArray::result_pair_type> results(
+      kMaxTrieResultsSize);
+  trie_results_size_ = 0;
+  for (const auto& p : *pieces) {
+    const int num_nodes = trie_->commonPrefixSearch(
+        p.first.data(), results.data(), results.size(), p.first.size());
+    trie_results_size_ = std::max(trie_results_size_, num_nodes);
+  }
+
+  if (trie_results_size_ == 0)
+    status_ = absl::InternalError("no entry is found in the trie.");
+}
+
+void TrainerModel::PopulateNodes(Lattice* lattice) const {
+  auto get_chars_length = [&lattice](int begin_pos, const char* end) {
+    int pos = begin_pos;
+    while (lattice->surface(pos) < end) ++pos;
+    return pos - begin_pos;
+  };
+
+  const float unk_score = min_score() - kUnkPenalty;
+
+  const size_t len = lattice->size();
+  const char* end = lattice->sentence() + lattice->utf8_size();
+
+  absl::FixedArray<Darts::DoubleArray::result_pair_type, 64> trie_results(
+      trie_results_size_ + 1);
+
+  for (size_t begin_pos = 0; begin_pos < len; ++begin_pos) {
+    const char* begin = lattice->surface(begin_pos);
+
+    const size_t num_nodes =
+        std::min<size_t>(trie_->commonPrefixSearch(
+                             begin, trie_results.data(), trie_results.size(),
+                             static_cast<int>(end - begin)),
+                         trie_results.size());
+
+    bool has_single_node = false;
+
+    for (size_t k = 0; k < num_nodes; ++k) {
+      const int id = trie_results[k].value;
+      const int length =
+          get_chars_length(begin_pos, begin + trie_results[k].length);
+      if (length <= 0) continue;
+      Lattice::Node* node = lattice->Insert(begin_pos, length);
+      if (!node) continue;
+      node->id = id;
+      node->score = sentencepieces_[id].second;
+      if (!has_single_node && node->length == 1) {
+        has_single_node = true;
+      }
+    }
+
+    if (!has_single_node) {
+      Lattice::Node* node = lattice->Insert(begin_pos, 1);
+      if (node) {
+        node->id = 0;
+        node->score = unk_score;
+      }
+    }
+  }
 }
 
 absl::Status TrainerModel::SetSentencePieces(SentencePieces&& sentencepieces) {
   sentencepieces_ = std::move(sentencepieces);
 
   min_score_ = FLT_MAX;
-  model_proto_data_.Clear();
-  model_proto_ = &model_proto_data_;
   std::vector<std::pair<absl::string_view, int>> pieces;
+  pieces.reserve(sentencepieces_.size());
 
   for (size_t i = 0; i < sentencepieces_.size(); ++i) {
     const absl::string_view w = sentencepieces_[i].first;  // piece
@@ -211,9 +496,6 @@ absl::Status TrainerModel::SetSentencePieces(SentencePieces&& sentencepieces) {
     RET_CHECK(std::isfinite(score));
     pieces.emplace_back(w, i);
     min_score_ = std::min(min_score_, score);
-    auto* piece = model_proto_data_.add_pieces();
-    piece->set_piece(w.data(), w.size());
-    piece->set_score(score);
   }
 
   BuildTrie(&pieces);
@@ -255,6 +537,11 @@ TrainerModel::SentencePieces Trainer::LoadSeedSentencePiecesFromFile(
 
   auto seed_sentencepieces_file = sentencepiece::filesystem::NewReadableFile(
       trainer_spec_.seed_sentencepieces_file());
+  const size_t effective_seed_size =
+      trainer_spec_.seed_sentencepiece_size() == 0
+          ? std::max<size_t>(
+                100000, static_cast<size_t>(trainer_spec_.vocab_size()) * 8)
+          : static_cast<size_t>(trainer_spec_.seed_sentencepiece_size());
   std::string line;
   int64_t freq = 1;
   int skipped_sentencepieces = 0;
@@ -275,10 +562,9 @@ TrainerModel::SentencePieces Trainer::LoadSeedSentencePiecesFromFile(
       ++skipped_sentencepieces;
       continue;
     }
-    if (seed_sentencepieces.size() >=
-        static_cast<size_t>(trainer_spec_.seed_sentencepiece_size())) {
+    if (seed_sentencepieces.size() >= effective_seed_size) {
       LOG(WARNING) << "Exceeded seed_sentencepiece_size ("
-                   << trainer_spec_.seed_sentencepiece_size()
+                   << effective_seed_size
                    << "); ignoring remaining pieces in file.";
       break;
     }
@@ -416,6 +702,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
     stack.push_back({0, 0});
 
     int64_t node_num = 0;
+    int64_t valid_maximal_nodes = 0;
 
     for (int32_t i = 1; i <= n32; ++i) {
       int32_t lcp_val = (i < n32) ? LCP32[i] : 0;
@@ -479,6 +766,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
             return;
           }
 
+          valid_maximal_nodes++;
           queue.Add(piece, freq);
         };
         process_interval();
@@ -564,163 +852,6 @@ std::vector<float> Trainer::RunEStep(const TrainerModel& model, float* obj,
   CHECK(!std::isnan(*obj));
 
   return expected[0];
-}
-
-TrainerModel::SentencePieces Trainer::RunMStep(
-    const TrainerModel& model, const std::vector<float>& expected) const {
-  const auto& sentencepieces = model.GetSentencePieces();
-  CHECK_EQ(sentencepieces.size(), expected.size());
-  TrainerModel::SentencePieces new_sentencepieces;
-
-  float sum = 0.0;
-  for (size_t i = 0; i < expected.size(); ++i) {
-    const float freq = expected[i];
-
-    // Filter infrequent sentencepieces here.
-    constexpr float kExpectedFrequencyThreshold = 0.5;
-    if (freq < kExpectedFrequencyThreshold) {
-      continue;
-    }
-
-    new_sentencepieces.emplace_back(sentencepieces[i].first, freq);
-    sum += freq;
-  }
-
-  // Here we do not use the original EM, but use the
-  // Bayesianified/DPified EM algorithm.
-  // https://cs.stanford.edu/~pliang/papers/tutorial-acl2007-talk.pdf
-  // This modification will act as a sparse prior.
-  const float logsum = Digamma(sum);
-  for (auto& w : new_sentencepieces) {
-    w.second = Digamma(w.second) - logsum;
-  }
-
-  return new_sentencepieces;
-}
-
-TrainerModel::SentencePieces Trainer::PruneSentencePieces(
-    const TrainerModel& model) const {
-  const auto& sentencepieces = model.GetSentencePieces();
-
-  Lattice lattice;
-  std::vector<bool> always_keep(sentencepieces.size(), true);
-  std::vector<std::vector<int>> alternatives(sentencepieces.size());
-
-  // First, segments the current sentencepieces to know
-  // how each sentencepiece is resegmented if this sentencepiece is removed
-  // from the vocabulary.
-  // To do so, we take the second best segmentation of sentencepiece[i].
-  // alternatives[i] stores the sequence of second best sentencepieces.
-  for (size_t i = 0; i < sentencepieces.size(); ++i) {
-    const auto& w = sentencepieces[i];
-    lattice.SetSentence(w.first);
-    model.PopulateNodes(&lattice);
-    const auto nbests = lattice.NBest(2, false, 0.0);
-    if (nbests.size() == 1) {
-      // No second-best result is found. always keep this sentencepiece.
-      always_keep[i] = true;
-      continue;
-    } else if (nbests[0].first.size() >= 2) {
-      // Can safely remove this sentencepiece if its Viterbi path is split.
-      always_keep[i] = false;
-    } else if (nbests[0].first.size() == 1) {
-      always_keep[i] = true;
-      for (const auto* node : nbests[1].first) {
-        alternatives[i].push_back(node->id);
-      }
-    }
-  }
-
-  // Second, segment all sentences to compute token frequencies
-  // with a unigram language model using the Viterbi path.
-  std::vector<float> freq(sentencepieces.size(), 0.0);
-  {
-    std::vector<std::vector<float>> freqs(trainer_spec_.num_threads());
-
-    auto pool = std::make_unique<ThreadPool>(trainer_spec_.num_threads());
-    for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
-      freqs[n].resize(sentencepieces.size(), 0.0);
-
-      pool->Schedule([&, n]() {
-        Lattice lattice;
-        for (size_t i = n; i < sentences_.size();
-             i += trainer_spec_.num_threads()) {
-          const auto& w = sentences_[i];
-          lattice.SetSentence(w.first);
-          model.PopulateNodes(&lattice);
-          for (const auto* node : lattice.Viterbi().first) {
-            if (node->id >= 0) {
-              freqs[n][node->id] += w.second;
-            }
-          }
-        }
-      });
-    }
-    pool.reset(nullptr);
-
-    for (int n = 0; n < trainer_spec_.num_threads(); ++n) {
-      for (size_t i = 0; i < sentencepieces.size(); ++i) {
-        freq[i] += freqs[n][i];
-      }
-    }
-  }
-
-  const float sum = std::accumulate(freq.begin(), freq.end(), 0.0);
-  const float logsum = std::log(static_cast<double>(sum));
-  std::vector<std::pair<int, float>> candidates;
-  TrainerModel::SentencePieces new_sentencepieces;
-
-  // Finally, computes how likely the LM likelihood is reduced if
-  // the sentencepiece[i] is removed from the vocabulary.
-  // Since the exact computation of loss is difficult, we compute the
-  // loss approximately by assuming that all sentencepiece[i] in the sentences
-  // are replaced with alternatives[i] when sentencepiece[i] is removed.
-  for (size_t i = 0; i < sentencepieces.size(); ++i) {
-    if (freq[i] == 0 || !always_keep[i]) {
-      // not found in Viterbi path. Can remove this entry safely.
-      continue;
-    } else if (alternatives[i].empty()) {
-      // no alternatives. Keeps this entry.
-      new_sentencepieces.push_back(sentencepieces[i]);
-    } else {
-      // The logprob with the sentencepiece[i].
-      const float logprob_sp = std::log(static_cast<double>(freq[i])) - logsum;
-
-      // After removing the sentencepiece[i], its frequency freq[i] is
-      // re-assigned to alternatives.
-      // new_sum = current_sum - freq[i] + freq[i] * alternatives[i].size()
-      //         = current_sum + freq[i] * (alternatives[i] - 1)
-      const float logsum_alt = std::log(
-          static_cast<double>(sum + freq[i] * (alternatives[i].size() - 1)));
-
-      // The frequencies of altenatives are increased by freq[i].
-      float logprob_alt = 0.0;
-      for (const int n : alternatives[i]) {
-        logprob_alt +=
-            (std::log(static_cast<double>(freq[n] + freq[i])) - logsum_alt);
-      }
-
-      // loss: the diff of likelihood after removing the sentencepieces[i].
-      float F = freq[i] / sum;  // normalized token frequency
-      const float loss = F * (logprob_sp - logprob_alt);
-      candidates.emplace_back(i, loss);
-    }
-  }
-
-  const int pruned_size =
-      std::max<int>(desired_vocab_size_,
-                    trainer_spec_.shrinking_factor() * sentencepieces.size());
-
-  // Keeps trainer_spec_.shrinking_factor * sentencepieces.size() pieces.
-  // shrinking_factor is 0.75 by default.
-  for (const auto& w : Sorted(candidates)) {
-    if (new_sentencepieces.size() == static_cast<size_t>(pruned_size)) {
-      break;
-    }
-    new_sentencepieces.emplace_back(sentencepieces[w.first]);
-  }
-
-  return new_sentencepieces;
 }
 
 TrainerModel::SentencePieces Trainer::PruneUnreachableSentencePieces(
@@ -827,13 +958,13 @@ absl::Status Trainer::Train() {
   RET_CHECK_EQ(TrainerSpec::UNIGRAM, trainer_spec_.model_type());
   RET_CHECK(normalizer_spec_.escape_whitespaces());
 
-  TrainerModel model(trainer_spec_, normalizer_spec_);
+  TrainerModel model;
 
   ABSL_RETURN_IF_ERROR(model.status());
   ABSL_RETURN_IF_ERROR(LoadSentences());
   // Note: Prerequisites for auto_character_coverage (e.g.,
-  // --use_sparse_pruning=true and --byte_fallback=true) are already validated
-  // in VerifySpec() during TrainerInterface initialization / LoadSentences().
+  // --byte_fallback=true) are already validated in VerifySpec() during
+  // TrainerInterface initialization / LoadSentences().
   if (!trainer_spec_.auto_character_coverage()) {
     RET_CHECK(!required_chars_.empty());
   }
@@ -855,12 +986,7 @@ absl::Status Trainer::Train() {
 
   desired_vocab_size_ = static_cast<size_t>(trainer_spec_.vocab_size() * 1.1);
 
-  const bool use_sparse = absl::GetFlag(FLAGS_use_sparse_pruning);
-  if (use_sparse) {
-    ABSL_RETURN_IF_ERROR(TrainSparsePruning(&model));
-  } else {
-    ABSL_RETURN_IF_ERROR(TrainDiscretePruning(&model));
-  }
+  ABSL_RETURN_IF_ERROR(TrainSparsePruning(&model));
 
   auto reachable_pieces = PruneUnreachableSentencePieces(model);
   ABSL_RETURN_IF_ERROR(model.SetSentencePieces(std::move(reachable_pieces)));
@@ -880,46 +1006,6 @@ int64_t ComputeTotalCorpusBytes(const TrainerInterface::Sentences& sentences) {
   return total_corpus_bytes;
 }
 }  // namespace
-
-absl::Status Trainer::TrainDiscretePruning(TrainerModel* model) {
-  const int64_t total_corpus_bytes = ComputeTotalCorpusBytes(sentences_);
-  auto calc_bytes_per_tok = [&](int64_t tokens) -> float {
-    return (tokens > 0) ? static_cast<float>(total_corpus_bytes) / tokens
-                        : 0.0f;
-  };
-  while (true) {
-    // Sub-EM iteration.
-    for (int iter = 0; iter < trainer_spec_.num_sub_iterations(); ++iter) {
-      // Executes E step
-      float objective = 0.0;
-      int64_t num_tokens = 0;
-      const auto expected = RunEStep(*model, &objective, &num_tokens);
-
-      // Executes M step.
-      auto new_sentencepieces = RunMStep(*model, expected);
-      ABSL_RETURN_IF_ERROR(
-          model->SetSentencePieces(std::move(new_sentencepieces)));
-
-      LOG(INFO) << "EM sub_iter=" << iter << " size=" << model->GetPieceSize()
-                << " obj=" << objective << " num_tokens=" << num_tokens
-                << " bytes/tok=" << calc_bytes_per_tok(num_tokens);
-    }  // end of Sub EM iteration
-
-    // Prunes pieces (eliminates unreachable/zero-frequency pieces created in
-    // M-step).
-    auto new_sentencepieces = PruneSentencePieces(*model);
-    ABSL_RETURN_IF_ERROR(
-        model->SetSentencePieces(std::move(new_sentencepieces)));
-
-    // Stops the iteration when the size of sentences reaches to the
-    // desired symbol size.
-    if (model->GetPieceSize() <= desired_vocab_size_) {
-      break;
-    }
-  }  // end of EM iteration
-
-  return absl::OkStatus();
-}
 
 absl::Status Trainer::TrainSparsePruning(TrainerModel* model) {
   const int64_t total_corpus_bytes = ComputeTotalCorpusBytes(sentences_);

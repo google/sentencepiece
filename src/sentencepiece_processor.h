@@ -83,13 +83,13 @@ namespace sentencepiece {
 //
 
 class NBestSentencePieceText;
-class ModelInterface;
 class SentencePieceText;
 class ModelProto;
+class NormalizerSpec;
 
-namespace normalizer {
-class Normalizer;
-}  // namespace normalizer
+namespace lite {
+class SentencePieceLiteProcessor;
+}  // namespace lite
 
 // Default ThreadPool implemented using Abseil functionality.
 // If you want to use a custom implementation, please inherit from it.
@@ -162,6 +162,19 @@ class SentencePieceProcessor {
   // Useful to load the model from a platform independent blob object.
   virtual absl::Status LoadFromSerializedProto(absl::string_view serialized);
 
+  // Loads model from `serialized`, which is a serialized FlatBuffer model
+  // binary (.spm.fb). `serialized` is copied into an internal owned buffer.
+  virtual absl::Status LoadFromSerializedFlatbuffer(
+      absl::string_view serialized);
+
+  // Loads model from `flatbuffer_view` without copying (zero-copy).
+  // The caller must guarantee that `flatbuffer_view` remains valid for the
+  // lifetime of this SentencePieceProcessor instance. If `flatbuffer_view` is
+  // not 8-byte aligned, it is copied into an internal owned buffer instead
+  // (equivalent to `LoadFromSerializedFlatbuffer`).
+  virtual absl::Status LoadFromFlatbufferView(
+      absl::string_view flatbuffer_view);
+
   // Returns the status. Encode/Decode methods are valid when status is OK.
   virtual absl::Status status() const;
 
@@ -198,6 +211,20 @@ class SentencePieceProcessor {
   // NBest API.
   //
   // Same as Encode, but returns nbest results.
+  //
+  // Note on 0.3.0 (`sentencepiece::lite` runtime) behavior:
+  // - Supported for Unigram models only (`--model_type=unigram`).
+  // - The 1st candidate (`nbests[0]`) is always the exact deterministic 1-best
+  //   Viterbi segmentation.
+  // - The 2nd candidate (`nbests[1]`) is recovered via Yen-style single-edge
+  //   blocking. The sweep examines at most 160 lattice transitions, so it is
+  //   the exact 2nd-best segmentation only on inputs short enough for the
+  //   sweep to cover every transition.
+  // - Subsequent candidates (`nbests[2..k-1]`) are generated without building a
+  //   full backward A* lattice by combining pairwise edge blocking, localized
+  //   window perturbation, and a low-temperature Gumbel-Max sweep with a fixed
+  //   deterministic seed, then ranking all unique candidates by true model
+  //   score.
   virtual absl::Status NBestEncode(
       absl::string_view input, int nbest_size,
       std::vector<std::vector<std::string>>* pieces) const;
@@ -210,17 +237,15 @@ class SentencePieceProcessor {
   // Sampling API.
   //
   // Unigram and BPE support sampling mode.
+  // Note: In 0.3.0 (`sentencepiece::lite` runtime), `nbest_size` is ignored for
+  // both Unigram and BPE; sampling always draws directly from the full lattice
+  // (equivalent to `nbest_size = -1` in 0.2.x).
   // - Unigram (--model_type=unigram):
-  // `nbest_size`: When `nbest_size` is positive value, approximately samples
-  // one segmentation from nbest candidates. When `nbest_size` is negative
-  // value, samples one segmentation from the hypotheses (Lattice) according to
-  // the generation probabilities using forward-filtering and backward-sampling
-  // algorithm.
-  // `alpha`: Smoothing parameter (inverse temperature). The best segmentation
-  // (Viterbi segmentation) is more likely sampled when setting larger alpha.
-  // When alpha is 0.0, one segmentation is uniformly sampled from the nbest or
-  // lattice. `nbest_size` and `alpha` correspond to parameters `l` and `alpha`
-  // in https://arxiv.org/abs/1804.10959  (nbest_size < 0 means l = infinity)
+  // Samples one segmentation from the full lattice using Gumbel-Max dynamic
+  // programming with smoothing parameter `alpha` (inverse temperature). The
+  // best segmentation (Viterbi segmentation) is more likely sampled when
+  // setting larger `alpha`. When `alpha` is 0.0, one segmentation is uniformly
+  // sampled from the lattice.
   //
   // - BPE (--model_type=bpe):
   // `alpha`: The dropout probability `p` of bpe merge operations in
@@ -364,11 +389,12 @@ class SentencePieceProcessor {
   [[nodiscard]] virtual int GetPieceSize() const;
 
   // Returns the vocab id of `piece`.
-  // Returns `unk_id()` if `piece` is unknown.
+  // Returns `unk_id()` if `piece` is unknown, or -1 if no model is loaded.
   [[nodiscard]] virtual int PieceToId(absl::string_view piece) const;
 
   // Returns the string representation of vocab with `id`.
-  [[nodiscard]] virtual const std::string& IdToPiece(int id) const;
+  // Returns "<unk>" if the ID is out of bounds or if no model is loaded.
+  [[nodiscard]] virtual absl::string_view IdToPiece(int id) const;
 
   // Returns the string representation of vocab with `id`.
   // Returns false when id is out of range.
@@ -416,15 +442,6 @@ class SentencePieceProcessor {
   // Returns PAD (<pad>) id.
   [[nodiscard]] virtual int pad_id() const;
 
-  //////////////////////////////////////////////////////////////
-  // Model management.
-  //
-  // Allows injection of a mock model instance. `model` is moved.
-  void SetModel(std::unique_ptr<ModelInterface>&& model);
-
-  // Allows injection of a normalizer instance. `normalizer` is moved.
-  void SetNormalizer(std::unique_ptr<normalizer::Normalizer>&& normalizer);
-
   // Returns immutable model proto. Useful to obtain extended
   // or experimental parameters encoded in model_proto.
   [[nodiscard]] const ModelProto& model_proto() const;
@@ -433,8 +450,14 @@ class SentencePieceProcessor {
   // Useful to save the state of this instance via Python's pickle object.
   [[nodiscard]] util::bytes serialized_model_proto() const;
 
+  // Returns a string_view pointing to the underlying FlatBuffer model binary,
+  // or "" if no model is loaded.
+  [[nodiscard]] absl::string_view serialized_flatbuffer() const;
+
  private:
   enum ExtraOption { REVERSE, BOS, EOS, UNK_PIECE };
+
+  absl::Status FinishLoad();
 
   absl::Status ParseExtraOptions(absl::string_view extra_option,
                                  std::vector<ExtraOption>* extra_options) const;
@@ -443,22 +466,28 @@ class SentencePieceProcessor {
   absl::Status ApplyExtraOptions(absl::Span<const ExtraOption> extra_options,
                                  T* output) const;
 
-  template <typename T>
-  absl::Status EncodeOptimized(absl::string_view input,
-                               std::vector<T>* output) const;
-
-  template <typename T>
-  absl::Status DecodeOptimized(absl::Span<const T> input,
-                               std::string* detokenized) const;
+  absl::Status DecodePiecesInternal(absl::Span<const absl::string_view> pieces,
+                                    std::string* detokenized,
+                                    SentencePieceText* spt) const;
 
   bool HasUnkPieceOption() const;
 
+  absl::Status EncodeNormalizedInternal(
+      absl::string_view normalized, std::vector<int>* ids,
+      std::vector<std::string_view>* pieces = nullptr) const;
+
+  absl::Status EncodeWordNormalized(
+      absl::string_view normalized, std::vector<int>* ids,
+      std::vector<std::string_view>* pieces = nullptr) const;
+
+  void PopulatePieceStrings(absl::Span<const int> ids,
+                            absl::Span<const std::string_view> piece_views,
+                            std::vector<std::string>* pieces) const;
+
   absl::Status PopulateSentencePieceText(
       absl::string_view input, absl::string_view normalized,
-      absl::Span<const size_t> norm_to_orig,
-      const std::vector<std::pair<absl::string_view, int>>& result,
-      SentencePieceText* spt, bool skip_surface = false,
-      size_t input_start_offset = 0, bool apply_extra_options = true) const;
+      absl::Span<const size_t> norm_to_orig, absl::Span<const int> ids,
+      absl::Span<const std::string_view> pieces, SentencePieceText* spt) const;
 
   absl::Status ParallelEncodeInternal(absl::string_view input, size_t chunk_len,
                                       ThreadPool& thread_pool,
@@ -466,25 +495,29 @@ class SentencePieceProcessor {
                                       std::vector<int>* ids,
                                       SentencePieceText* spt) const;
 
-  std::unique_ptr<ModelInterface> model_;
-  std::unique_ptr<normalizer::Normalizer> normalizer_;
-  std::unique_ptr<normalizer::Normalizer> denormalizer_;
+  static constexpr absl::string_view kDefaultUnkPiece = "<unk>";
+  static constexpr absl::string_view kDefaultBosPiece = "<s>";
+  static constexpr absl::string_view kDefaultEosPiece = "</s>";
+  static constexpr absl::string_view kDefaultUnkSurface = " \xE2\x81\x87 ";
 
-  // Cached IDs.
-  // Note that these IDs are not always the same as the IDs in TrainerSpec.
-  // The TrainerSpec defines the training-time configuration, while these
-  // IDs reflect the actual IDs in the loaded model, which might be different
-  // or disabled (set to -1).
-  int unk_id_ = -1;
-  int bos_id_ = -1;
-  int eos_id_ = -1;
-  int pad_id_ = -1;
+  std::unique_ptr<class ModelProtoManager> model_proto_manager_;
+  const lite::SentencePieceLiteProcessor* lite_processor_ = nullptr;
 
-  // Underlying model protocol buffer. The same lifetime as model_.
-  std::unique_ptr<ModelProto> model_proto_;
+  int model_type_ = 1;
+  absl::string_view unk_piece_ = kDefaultUnkPiece;
+  absl::string_view bos_piece_ = kDefaultBosPiece;
+  absl::string_view eos_piece_ = kDefaultEosPiece;
+  absl::string_view unk_surface_ = kDefaultUnkSurface;
+  bool byte_fallback_ = false;
+  bool treat_whitespace_as_suffix_ = false;
+  bool add_dummy_prefix_ = true;
+  bool remove_extra_whitespaces_ = true;
 
   std::vector<ExtraOption> encode_extra_options_;
   std::vector<ExtraOption> decode_extra_options_;
+
+  absl::Status status_ =
+      absl::FailedPreconditionError("Model is not initialized.");
 };
 
 // Set seed value of random generator.
@@ -496,12 +529,6 @@ void SetRandomGeneratorSeed(unsigned int seed);
 // Set the global log level. The default loglevel is 0.
 // The log is emitted only when min_log_level >= output_log_level.
 void SetMinLogLevel(int v);
-
-// Sets global timeout in milliseconds for NBestEncode.
-// If timeout is reached, the search falls back to Viterbi.
-// The default value is 30000 (30 seconds).
-// 0 or negative value means no timeout.
-void SetNBestTimeout(int timeout_ms);
 
 // IO related functions to absorb model formats.
 namespace io {

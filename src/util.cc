@@ -29,10 +29,14 @@
 #include <vector>
 
 #include "absl/base/internal/endian.h"
+#include "absl/base/no_destructor.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/random/random.h"
 #include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/blocking_counter.h"
@@ -45,30 +49,12 @@ namespace sentencepiece {
 namespace {
 static constexpr uint32_t kDefaultSeed = static_cast<uint32_t>(-1);
 static std::atomic<uint32_t> g_seed = kDefaultSeed;
-static std::atomic<int> g_nbest_timeout_ms = 30000;
+static std::atomic<uint64_t> g_seed_generation = 1;
 }  // namespace
-
-namespace random {
-namespace {
-std::unique_ptr<absl::BitGen>& GetRandomGeneratorStorage() {
-  thread_local static auto mt =
-      GetRandomGeneratorSeed() == kDefaultSeed
-          ? std::make_unique<absl::BitGen>()
-          : std::make_unique<absl::BitGen>(
-                std::seed_seq{GetRandomGeneratorSeed()});
-  return mt;
-}
-}  // namespace
-
-absl::BitGen* GetRandomGenerator() { return GetRandomGeneratorStorage().get(); }
-}  // namespace random
 
 void SetRandomGeneratorSeed(uint32_t seed) {
-  if (seed != kDefaultSeed) {
-    g_seed.store(seed);
-    random::GetRandomGeneratorStorage() =
-        std::make_unique<absl::BitGen>(std::seed_seq{seed});
-  }
+  g_seed.store(seed);
+  g_seed_generation.fetch_add(1);
 }
 
 uint32_t GetRandomGeneratorSeed() { return g_seed.load(); }
@@ -94,10 +80,6 @@ void SetDataDir(absl::string_view data_dir) {
 void SetMinLogLevel(int v) {
   absl::SetMinLogLevel(static_cast<absl::LogSeverityAtLeast>(v));
 }
-
-void SetNBestTimeout(int timeout_ms) { g_nbest_timeout_ms.store(timeout_ms); }
-
-int GetNBestTimeout() { return g_nbest_timeout_ms.load(); }
 
 namespace string_util {
 
@@ -216,26 +198,23 @@ std::string UnicodeTextToUTF8(const UnicodeText& utext) {
   return result;
 }
 
-UnicodeTextAndOffsets UTF8ToUnicodeTextAndOffsets(absl::string_view utf8) {
-  UnicodeTextAndOffsets ret;
-  size_t running_offset = 0;
-  ret.unicode_text.reserve(utf8.size());
-  ret.offsets.reserve(utf8.size() + 1);
-  ret.offsets.push_back(0);
-  const char* begin = utf8.data();
-  const char* end = utf8.data() + utf8.size();
-  while (begin < end) {
-    size_t mblen;
-    const char32_t c = DecodeUTF8(begin, end, &mblen);
-    running_offset += mblen;
-    ret.unicode_text.push_back(c);
-    ret.offsets.push_back(running_offset);
-    begin += mblen;
-  }
-  return ret;
-}
-
 }  // namespace string_util
+
+namespace random {
+absl::BitGen* GetRandomGenerator() {
+  thread_local static uint64_t local_generation = 0;
+  thread_local static std::unique_ptr<absl::BitGen> mt;
+  const uint64_t current_generation = g_seed_generation.load();
+  if (mt == nullptr || local_generation != current_generation) {
+    local_generation = current_generation;
+    const uint32_t seed = GetRandomGeneratorSeed();
+    mt = (seed == kDefaultSeed)
+             ? std::make_unique<absl::BitGen>()
+             : std::make_unique<absl::BitGen>(std::seed_seq{seed});
+  }
+  return mt.get();
+}
+}  // namespace random
 
 namespace util {
 
@@ -382,23 +361,96 @@ absl::Status RunBatch(size_t total_tasks,
   return batch_status;
 }
 
-namespace log_domain {
-double LogSum(const std::vector<double>& xs) {
-  if (xs.empty()) {
-    return -1.0 * std::numeric_limits<double>::max();
-  }
-  double sum = xs.front();
+std::vector<absl::string_view> SplitIntoWords(absl::string_view text,
+                                              bool treat_ws_as_suffix,
+                                              bool allow_ws_only_pieces) {
+  const char* begin = text.data();
+  const char* end = text.data() + text.size();
 
-  auto log_add = [](double xa, double xb) {
-    if (xa > xb) {
-      std::swap(xa, xb);
+  // Space symbol (U+2581)
+  constexpr absl::string_view kSpaceSymbol = "\xe2\x96\x81";
+  bool in_ws_sequence = false;
+
+  std::vector<absl::string_view> result;
+  if (treat_ws_as_suffix) {  // put ws tokens at the end of non-ws sequences.
+    if (begin < end) {
+      result.emplace_back(begin, 0);
     }
-    return xb + std::log1p(std::exp(xa - xb));
-  };
-  for (size_t i = 1; i < xs.size(); ++i) {
-    sum = log_add(sum, xs[i]);
+    while (begin < end) {
+      const int mblen =
+          std::min<int>(string_util::OneCharLen(begin), end - begin);
+      const bool is_ws = absl::string_view(begin, mblen) == kSpaceSymbol;
+
+      if (is_ws) {  // keep track of sequences consecutive ws tokens.
+        in_ws_sequence = true;
+      } else if (in_ws_sequence) {
+        if (allow_ws_only_pieces) {
+          result.emplace_back(begin, 0);
+        }
+
+        in_ws_sequence = false;
+      }
+
+      result.back() =
+          absl::string_view(result.back().data(), result.back().size() + mblen);
+      begin += mblen;
+
+      if (begin < end && is_ws && !allow_ws_only_pieces) {
+        result.emplace_back(begin, 0);
+      }
+    }
+  } else {
+    while (begin < end) {
+      const int mblen =
+          std::min<int>(string_util::OneCharLen(begin), end - begin);
+      bool is_ws = absl::string_view(begin, mblen) == kSpaceSymbol;
+
+      // if is whitespace (and not in sequence if allow_ws_only_pieces is True)
+      if (begin == text.data() ||
+          (is_ws && (!in_ws_sequence || !allow_ws_only_pieces))) {
+        result.emplace_back(begin, 0);  // add empty string piece.
+        in_ws_sequence = true;
+      }
+
+      if (in_ws_sequence && !is_ws) {
+        in_ws_sequence = false;
+      }
+
+      result.back() =
+          absl::string_view(result.back().data(), result.back().size() + mblen);
+      begin += mblen;
+    }
   }
-  return sum;
+
+  return result;
 }
-}  // namespace log_domain
+
+absl::string_view ByteToPiece(unsigned char c) {
+  static const absl::NoDestructor<std::vector<std::string>> kBytePieces([] {
+    std::vector<std::string> v(256);
+    for (int i = 0; i < 256; ++i) {
+      v[i] = absl::StrFormat("<0x%02X>", i);
+    }
+    return v;
+  }());
+  return (*kBytePieces)[c];
+}
+
+int PieceToByte(absl::string_view piece) {
+  using PieceToByteMap = absl::flat_hash_map<absl::string_view, unsigned char>;
+  static const absl::NoDestructor<PieceToByteMap> kMap([] {
+    PieceToByteMap m;
+    for (int i = 0; i < 256; ++i) {
+      m[ByteToPiece(i)] = i;
+    }
+    return m;
+  }());
+
+  if (const auto it = kMap->find(piece); it != kMap->end()) {
+    return it->second;
+  }
+
+  return -1;
+}
+
 }  // namespace sentencepiece

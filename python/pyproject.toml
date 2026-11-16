@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sentencepiece"
-version = "0.2.3"
+version = "0.3.0"
 authors = [
   { name="Taku Kudo", email="taku@google.com" },
 ]

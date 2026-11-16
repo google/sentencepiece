@@ -44,10 +44,7 @@
 
 #ifdef ENABLE_NFKC_COMPILE
 #include <unicode/errorcode.h>
-#include <unicode/locid.h>
 #include <unicode/normlzr.h>
-#include <unicode/numfmt.h>
-#include <unicode/rbnf.h>
 #include <unicode/utypes.h>
 #endif  // ENABLE_NFKC_COMPILE
 
@@ -393,7 +390,6 @@ absl::Status BuildMapInternal(
     Builder::CharsMap* chars_map,
     std::function<Builder::Chars(const Builder::Chars&)> composer,
     std::function<Builder::Chars(const Builder::Chars&)> decomposer) {
-#ifdef ENABLE_NFKC_COMPILE
   // Set of fully NFKD decomposed characters.
   std::set<Builder::Chars> nfkd_decomposed;
 
@@ -439,7 +435,6 @@ absl::Status BuildMapInternal(
 
   ABSL_RETURN_IF_ERROR(Builder::RemoveRedundantMap(&nfkc_map));
   *chars_map = std::move(nfkc_map);
-#endif  // ENABLE_NFKC_COMPILE
   return absl::OkStatus();
 }
 }  // namespace

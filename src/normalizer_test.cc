@@ -24,8 +24,8 @@
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "builder.h"
-#include "sentencepiece_trainer.h"
 #include "darts.h"
+#include "sentencepiece_trainer.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -446,22 +446,6 @@ TEST(NormalizerTest, ManySharedPrefixesTest) {
   EXPECT_EQ(std::string(output.size(), 'a'), output);
 }
 
-TEST(PrefixMatcherTest, ManySharedPrefixesTest) {
-  // PrefixMatcher builds its trie from a model's user-defined symbols, which
-  // can also exceed the on-stack result buffer.
-  std::vector<std::string> keys;
-  for (int i = 1; i <= 70; ++i) keys.emplace_back(std::string(i, 'b'));
-  std::set<absl::string_view> dic(keys.begin(), keys.end());
-
-  const PrefixMatcher matcher(dic);
-  bool found = false;
-  const std::string input(70, 'b');
-  const int mblen = matcher.PrefixMatch(input, &found);
-  EXPECT_TRUE(found);
-  EXPECT_GT(mblen, 0);
-  EXPECT_LE(mblen, static_cast<int>(input.size()));
-}
-
 TEST(NormalizerTest, StatusTest) {
   NormalizerSpec spec;
   {
@@ -480,55 +464,6 @@ TEST(NormalizerTest, StatusTest) {
     const Normalizer normalizer(spec);
     EXPECT_TRUE(normalizer.status().ok());
   }
-}
-
-TEST(NormalizerTest, PrefixMatcherTest) {
-  const PrefixMatcher matcher({"abc", "ab", "xy", "京都"});
-  bool found;
-  EXPECT_EQ(1, matcher.PrefixMatch("test", &found));
-  EXPECT_FALSE(found);
-  EXPECT_EQ(3, matcher.PrefixMatch("abcd", &found));
-  EXPECT_TRUE(found);
-  EXPECT_EQ(2, matcher.PrefixMatch("abxy", &found));
-  EXPECT_TRUE(found);
-  EXPECT_EQ(1, matcher.PrefixMatch("x", &found));
-  EXPECT_FALSE(found);
-  EXPECT_EQ(2, matcher.PrefixMatch("xyz", &found));
-  EXPECT_TRUE(found);
-  EXPECT_EQ(6, matcher.PrefixMatch("京都大学", &found));
-  EXPECT_TRUE(found);
-  EXPECT_EQ(3, matcher.PrefixMatch("東京大学", &found));
-  EXPECT_FALSE(found);
-  EXPECT_EQ(0, matcher.PrefixMatch(absl::string_view("abcd", 0), &found));
-  EXPECT_FALSE(found);
-  EXPECT_EQ(0, matcher.PrefixMatch(absl::string_view(), &found));
-  EXPECT_FALSE(found);
-
-  EXPECT_EQ("", matcher.GlobalReplace("", ""));
-  EXPECT_EQ("", matcher.GlobalReplace("abc", ""));
-  EXPECT_EQ("--de-pqr", matcher.GlobalReplace("xyabcdeabpqr", "-"));
-}
-
-TEST(NormalizerTest, PrefixMatcherWithEmptyTest) {
-  const PrefixMatcher matcher({});
-  bool found;
-  EXPECT_EQ(1, matcher.PrefixMatch("test", &found));
-  EXPECT_FALSE(found);
-  EXPECT_EQ(1, matcher.PrefixMatch("abcd", &found));
-  EXPECT_FALSE(found);
-  EXPECT_EQ(1, matcher.PrefixMatch("abxy", &found));
-  EXPECT_FALSE(found);
-  EXPECT_EQ(1, matcher.PrefixMatch("x", &found));
-  EXPECT_FALSE(found);
-  EXPECT_EQ(1, matcher.PrefixMatch("xyz", &found));
-  EXPECT_FALSE(found);
-  EXPECT_EQ(3, matcher.PrefixMatch("京都大学", &found));
-  EXPECT_FALSE(found);
-  EXPECT_EQ(3, matcher.PrefixMatch("東京大学", &found));
-  EXPECT_FALSE(found);
-
-  EXPECT_EQ("", matcher.GlobalReplace("", ""));
-  EXPECT_EQ("abc", matcher.GlobalReplace("abc", ""));
 }
 
 }  // namespace normalizer

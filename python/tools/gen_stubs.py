@@ -78,6 +78,7 @@ CLASS_ORDER = [
 # Reusable signature fragments (everything after the method name).
 _SPP_INIT = (
     "(self, model_file: str | None = ..., model_proto: bytes | None = ..., "
+    "model_flatbuffer: bytes | None = ..., model_flatbuffer_view: Any = ..., "
     "return_type: _OutType | None = ..., add_bos: bool = ..., add_eos: bool = ..., "
     "reverse: bool = ..., emit_unk_piece: bool = ..., enable_sampling: bool = ..., "
     "nbest_size: int = ..., alpha: float = ..., num_threads: int = ..., "
@@ -149,11 +150,17 @@ _NORMALIZE = "(self, input: str | bytes | Sequence[str] | Sequence[bytes], with_
 METHOD_SIGS = {
     "SentencePieceProcessor": {
         "__init__": _SPP_INIT,
-        "Load": "(self, model_file: str | None = ..., model_proto: bytes | None = ...) -> bool",
+        "Load": (
+            "(self, model_file: str | None = ..., model_proto: bytes | None = ..., "
+            "model_flatbuffer: bytes | None = ..., model_flatbuffer_view: Any = ...) -> bool"
+        ),
         "LoadFromFile": "(self, arg: str) -> bool",
         "LoadFromSerializedProto": "(self, serialized: bytes) -> bool",
+        "LoadFromSerializedFlatbuffer": "(self, serialized: bytes) -> bool",
+        "LoadFromFlatbufferView": "(self, buffer: Any) -> bool",
 
         "serialized_model_proto": "(self) -> bytes",
+        "serialized_flatbuffer": "(self) -> bytes",
         "GetPieceSize": "(self) -> int",
         # The batch overload uses list[...] (not Sequence[...]) because the
         # runtime only dispatches to the batched path when ``type(arg) is
@@ -194,6 +201,7 @@ METHOD_SIGS = {
         "EncodeAsPieces": _INPUT_KWARGS,
         "EncodeAsIds": _INPUT_KWARGS,
         "EncodeAsNumpy": _INPUT_KWARGS,
+
         "EncodeAsProto": _INPUT_KWARGS,
         "EncodeAsOffsetMapping": _INPUT_KWARGS,
 
@@ -201,27 +209,34 @@ METHOD_SIGS = {
         "ParallelEncodeAsPieces": _INPUT_KWARGS,
         "ParallelEncodeAsIds": _INPUT_KWARGS,
         "ParallelEncodeAsNumpy": _INPUT_KWARGS,
+
         "ParallelEncodeAsProto": _INPUT_KWARGS,
 
         "SampleEncodeAsPieces": _SAMPLE_AS,
         "SampleEncodeAsIds": _SAMPLE_AS,
         "SampleEncodeAsNumpy": _SAMPLE_AS,
+
         "SampleEncodeAsProto": _SAMPLE_AS,
 
         "NBestEncode": _NBEST,
         "NBestEncodeAsPieces": _NBEST_AS,
         "NBestEncodeAsIds": _NBEST_AS,
         "NBestEncodeAsNumpy": _NBEST_AS,
+
         "NBestEncodeAsProto": _NBEST_AS,
+
 
         "Decode": _DECODE,
         "DecodePieces": _DECODE_PIECES,
         "DecodeIds": _DECODE_IDS,
+
         "DecodePiecesAsProto": _DECODE_PIECES_PROTO,
         "DecodeIdsAsProto": _DECODE_IDS_PROTO,
 
         "from_file": "(cls, model_file: str, return_type: _OutType | None = ..., **kwargs: Any) -> SentencePieceProcessor",
         "from_proto": "(cls, model_proto: bytes, return_type: _OutType | None = ..., **kwargs: Any) -> SentencePieceProcessor",
+        "from_flatbuffer": "(cls, model_flatbuffer: bytes, return_type: _OutType | None = ..., **kwargs: Any) -> SentencePieceProcessor",
+        "from_flatbuffer_view": "(cls, model_flatbuffer_view: Any, return_type: _OutType | None = ..., **kwargs: Any) -> SentencePieceProcessor",
 
         "Normalize": _NORMALIZE,
         "Tokenize": _ENCODE,
@@ -264,7 +279,6 @@ FUNCTION_SIGS = {
     ),
     "SetRandomGeneratorSeed": "(seed: int) -> None",
     "SetMinLogLevel": "(v: int) -> None",
-    "SetNBestTimeout": "(timeout_ms: int) -> None",
     "SetDataDir": "(data_dir: str) -> None",
 }
 

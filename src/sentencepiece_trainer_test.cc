@@ -32,9 +32,6 @@ namespace {
 
 static constexpr char kTestData[] = "botchan.txt";
 static constexpr char kNfkcTestData[] = "nfkc.tsv";
-static constexpr char kTestDataJa[] = "wagahaiwa_nekodearu.txt";
-static constexpr char kIdsNormTsv[] = "ids_norm.tsv";
-static constexpr char kIdsDenormTsv[] = "ids_denorm.tsv";
 
 void CheckVocab(absl::string_view filename, int expected_vocab_size) {
   SentencePieceProcessor sp;
@@ -44,16 +41,12 @@ void CheckVocab(absl::string_view filename, int expected_vocab_size) {
             sp.model_proto().trainer_spec().vocab_size());
 }
 
-void CheckNormalizer(absl::string_view filename, bool expected_has_normalizer,
-                     bool expected_has_denormalizer) {
+void CheckNormalizer(absl::string_view filename, bool expected_has_normalizer) {
   SentencePieceProcessor sp;
   ASSERT_TRUE(sp.Load(filename.data()).ok());
   const auto& normalizer_spec = sp.model_proto().normalizer_spec();
-  const auto& denormalizer_spec = sp.model_proto().denormalizer_spec();
   EXPECT_EQ(!normalizer_spec.precompiled_charsmap().empty(),
             expected_has_normalizer);
-  EXPECT_EQ(!denormalizer_spec.precompiled_charsmap().empty(),
-            expected_has_denormalizer);
 }
 
 TEST(SentencePieceTrainerTest, TrainFromArgsTest) {
@@ -133,13 +126,13 @@ TEST(SentencePieceTrainerTest, TrainFromIterator) {
                   sentences)
                   .ok());
   CheckVocab(model + ".model", 1000);
-  CheckNormalizer(model + ".model", true, false);
+  CheckNormalizer(model + ".model", true);
 
   ASSERT_TRUE(SentencePieceTrainer::Train(
                   {{"model_prefix", model}, {"vocab_size", "1000"}}, sentences)
                   .ok());
   CheckVocab(model + ".model", 1000);
-  CheckNormalizer(model + ".model", true, false);
+  CheckNormalizer(model + ".model", true);
 
   VectorIterator it(std::move(sentences));
   ASSERT_TRUE(
@@ -147,7 +140,7 @@ TEST(SentencePieceTrainerTest, TrainFromIterator) {
           absl::StrCat("--model_prefix=", model, " --vocab_size=1000"), &it)
           .ok());
   CheckVocab(model + ".model", 1000);
-  CheckNormalizer(model + ".model", true, false);
+  CheckNormalizer(model + ".model", true);
 }
 
 TEST(SentencePieceTrainerTest, TrainWithCustomNormalizationRule) {
@@ -160,26 +153,7 @@ TEST(SentencePieceTrainerTest, TrainWithCustomNormalizationRule) {
                                " --vocab_size=1000 ",
                                "--normalization_rule_tsv=", rule))
                   .ok());
-  CheckNormalizer(model + ".model", true, false);
-}
-
-TEST(SentencePieceTrainerTest, TrainWithCustomDenormalizationRule) {
-  const std::string input_file =
-      filesystem::JoinPath(::testing::SrcDir(), kTestDataJa);
-  const std::string model = filesystem::JoinPath(::testing::TempDir(), "m");
-  const std::string norm_rule_tsv =
-      filesystem::JoinPath(::testing::SrcDir(), kIdsNormTsv);
-  const std::string denorm_rule_tsv =
-      filesystem::JoinPath(::testing::SrcDir(), kIdsDenormTsv);
-  EXPECT_TRUE(
-      SentencePieceTrainer::Train(
-          absl::StrCat("--input=", input_file, " --model_prefix=", model,
-                       " --vocab_size=1000 --model_type=unigram "
-                       "--normalization_rule_tsv=",
-                       norm_rule_tsv,
-                       " --denormalization_rule_tsv=", denorm_rule_tsv))
-          .ok());
-  CheckNormalizer(model + ".model", true, true);
+  CheckNormalizer(model + ".model", true);
 }
 
 TEST(SentencePieceTrainerTest, TrainErrorTest) {
