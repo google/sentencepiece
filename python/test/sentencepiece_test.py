@@ -525,6 +525,30 @@ class TestSentencepieceProcessor(unittest.TestCase):
       s = 'hello\tworld\r\nthis\tis a \b pen'
       self.assertEqual(s, sp.decode(sp.encode(s)))
 
+  def test_train_kwargs_tuple(self):
+    # Tuple-valued repeated options must be passed as CSV like lists,
+    # not stringified as "('foo', 'bar')".
+    def train(**kwargs):
+      model = io.BytesIO()
+      spm.SentencePieceTrainer.train(
+          input=os.path.join(data_dir, 'botchan.txt'),
+          model_writer=model,
+          vocab_size=1000,
+          **kwargs,
+      )
+      return spm.SentencePieceProcessor(model_proto=model.getvalue())
+
+    sp1 = train(user_defined_symbols=['foo', 'bar'], control_symbols=['<x>'])
+    sp2 = train(user_defined_symbols=('foo', 'bar'), control_symbols=('<x>',))
+    self.assertEqual(
+        [sp1.id_to_piece(i) for i in range(sp1.get_piece_size())],
+        [sp2.id_to_piece(i) for i in range(sp2.get_piece_size())],
+    )
+    self.assertNotEqual(sp2.piece_to_id('foo'), sp2.unk_id())
+    self.assertNotEqual(sp2.piece_to_id('bar'), sp2.unk_id())
+    self.assertTrue(sp2.is_control(sp2.piece_to_id('<x>')))
+    self.assertEqual(sp2.encode('foo', out_type=str), ['▁', 'foo'])
+
   def test_serialized_proto(self):
     text = 'I saw a girl with a telescope.'
     y1 = self.sp_.encode(text, return_type='serialized_proto')
