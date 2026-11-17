@@ -749,7 +749,7 @@ class SentencePieceTrainer:
             return _sentencepiece.SentencePieceTrainer._TrainFromString(arg)
 
         def _encode(value):
-            if isinstance(value, list):
+            if isinstance(value, (list, tuple)):
                 f = io.StringIO()
                 writer = csv.writer(f, lineterminator='')
                 writer.writerow([str(v) for v in value])
