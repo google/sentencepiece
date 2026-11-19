@@ -201,6 +201,30 @@ TEST(SentencePieceTrainerTest, TrainTest) {
   ASSERT_TRUE(SentencePieceTrainer::Train(trainer_spec).ok());
 }
 
+TEST(SentencePieceTrainerTest, SparsePruningOptionsTest) {
+  TrainerSpec spec;
+  NormalizerSpec normalizer;
+  NormalizerSpec denormalizer;
+  EXPECT_FALSE(spec.use_sparse_pruning());
+  EXPECT_TRUE(spec.post_l1_debias());
+  EXPECT_FLOAT_EQ(spec.seed_piece_length_power(), 1.0f);
+  EXPECT_FLOAT_EQ(spec.min_freq_alpha(), 0.0f);
+
+  ASSERT_TRUE(SentencePieceTrainer::MergeSpecsFromArgs(
+                  "--use_sparse_pruning=true --post_l1_debias=false "
+                  "--seed_piece_length_power=0.5 --min_freq_alpha=0.1",
+                  &spec, &normalizer, &denormalizer)
+                  .ok());
+  EXPECT_TRUE(spec.use_sparse_pruning());
+  EXPECT_FALSE(spec.post_l1_debias());
+  EXPECT_FLOAT_EQ(spec.seed_piece_length_power(), 0.5f);
+  EXPECT_FLOAT_EQ(spec.min_freq_alpha(), 0.1f);
+
+  TrainerSpec independent;
+  EXPECT_FALSE(independent.use_sparse_pruning());
+  EXPECT_TRUE(independent.post_l1_debias());
+}
+
 TEST(SentencePieceTrainerTest, SetProtoFieldTest) {
   {
     TrainerSpec spec;

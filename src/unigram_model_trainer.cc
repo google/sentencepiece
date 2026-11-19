@@ -28,7 +28,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
@@ -74,8 +73,10 @@ void ToLogProb(IT begin, IT end) {
 
 class BoundedPriorityQueue {
  public:
-  explicit BoundedPriorityQueue(size_t size)
-      : max_capacity_(size), gc_keep_capacity_(8 * size) {}
+  explicit BoundedPriorityQueue(size_t size, float length_power)
+      : max_capacity_(size),
+        gc_keep_capacity_(8 * size),
+        length_power_(length_power) {}
 
   void Add(absl::string_view key_view, uint64_t freq_delta) {
     auto it = data_.find(key_view);
@@ -104,7 +105,7 @@ class BoundedPriorityQueue {
 
     std::vector<ItemScore> items;
     items.reserve(data_.size());
-    const float power = absl::GetFlag(FLAGS_seed_piece_length_power);
+    const float power = length_power_;
 
     for (auto& [key, freq] : data_) {
       if (freq < 2) continue;
@@ -156,7 +157,7 @@ class BoundedPriorityQueue {
       const MapPair* kv;
       float score;
     };
-    const float power = absl::GetFlag(FLAGS_seed_piece_length_power);
+    const float power = length_power_;
     std::vector<GcItem> tmp;
     tmp.reserve(data_.size());
     for (const auto& kv : data_) {
@@ -184,6 +185,7 @@ class BoundedPriorityQueue {
 
   size_t max_capacity_;
   size_t gc_keep_capacity_;
+  const float length_power_;
   absl::flat_hash_map<std::string, uint64_t> data_;
 };
 }  // namespace
@@ -330,7 +332,8 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
   LOG(INFO) << "Extracting seed sentencepieces (libsais)";
 #endif
 
-  BoundedPriorityQueue queue(effective_seed_size);
+  BoundedPriorityQueue queue(effective_seed_size,
+                             trainer_spec_.seed_piece_length_power());
 
   size_t sentence_idx = 0;
   size_t chunk_id = 0;
@@ -362,7 +365,7 @@ TrainerModel::SentencePieces Trainer::MakeSeedSentencePiecesFromCorpus(
     //   N = current chunk byte size (n32)
     //   K = target vocabulary size (vocab_size)
     //   alpha = min_freq_alpha flag (default 0.0 -> min_freq = 2)
-    const float alpha = absl::GetFlag(FLAGS_min_freq_alpha);
+    const float alpha = trainer_spec_.min_freq_alpha();
     const float vocab_size =
         static_cast<float>(std::max<int>(1, trainer_spec_.vocab_size()));
     const float k_log_k = vocab_size * std::log(vocab_size);
@@ -855,7 +858,7 @@ absl::Status Trainer::Train() {
 
   desired_vocab_size_ = static_cast<size_t>(trainer_spec_.vocab_size() * 1.1);
 
-  const bool use_sparse = absl::GetFlag(FLAGS_use_sparse_pruning);
+  const bool use_sparse = trainer_spec_.use_sparse_pruning();
   if (use_sparse) {
     ABSL_RETURN_IF_ERROR(TrainSparsePruning(&model));
   } else {
@@ -988,7 +991,7 @@ absl::Status Trainer::TrainSparsePruning(TrainerModel* model) {
   // vocabulary V* via unpenalized MLE normalization (ToLogProb), restoring
   // exact Maximum Likelihood estimates without subtracting lambda or applying
   // Digamma.
-  const bool debias = absl::GetFlag(FLAGS_post_l1_debias);
+  const bool debias = trainer_spec_.post_l1_debias();
   if (debias) {
     LOG(INFO) << "Post-Lasso Refit...";
     float post_obj = 0.0;

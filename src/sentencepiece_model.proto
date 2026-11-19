@@ -209,6 +209,18 @@ message TrainerSpec {
   // Automatically determines the allocation between characters and subwords.
   optional bool auto_character_coverage = 55 [default = false];
 
+  // Select continuous L1 pruning instead of discrete Unigram pruning.
+  optional bool use_sparse_pruning = 56 [default = false];
+
+  // Refit Unigram probabilities without the L1 penalty after selection.
+  optional bool post_l1_debias = 57 [default = true];
+
+  // Seed candidate score is frequency times length raised to this power.
+  optional float seed_piece_length_power = 58 [default = 1.0];
+
+  // Scale the corpus-dependent minimum frequency used in seed selection.
+  optional float min_freq_alpha = 59 [default = 0.0];
+
   ///////////////////////////////////////////////////////////////////
   // Deprecated parameters.
   // These parameters are deprecated and will be removed in the future.

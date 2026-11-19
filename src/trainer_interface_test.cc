@@ -687,7 +687,7 @@ TEST(TrainerInterfaceTest, AutoCharacterCoverageVerifySpecTest) {
   // Default: UNIGRAM with discrete pruning is valid.
   {
     trainer_spec.set_auto_character_coverage(false);
-    absl::SetFlag(&FLAGS_use_sparse_pruning, false);
+    trainer_spec.set_use_sparse_pruning(false);
     trainer_spec.set_model_type(TrainerSpec::UNIGRAM);
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_TRUE(trainer.status().ok());
@@ -697,7 +697,7 @@ TEST(TrainerInterfaceTest, AutoCharacterCoverageVerifySpecTest) {
   // MUST FAIL.
   {
     trainer_spec.set_auto_character_coverage(true);
-    absl::SetFlag(&FLAGS_use_sparse_pruning, false);
+    trainer_spec.set_use_sparse_pruning(false);
     trainer_spec.set_model_type(TrainerSpec::UNIGRAM);
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_FALSE(trainer.status().ok());
@@ -707,7 +707,7 @@ TEST(TrainerInterfaceTest, AutoCharacterCoverageVerifySpecTest) {
   // MUST SUCCEED.
   {
     trainer_spec.set_auto_character_coverage(true);
-    absl::SetFlag(&FLAGS_use_sparse_pruning, true);
+    trainer_spec.set_use_sparse_pruning(true);
     trainer_spec.set_model_type(TrainerSpec::UNIGRAM);
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_TRUE(trainer.status().ok());
@@ -716,7 +716,7 @@ TEST(TrainerInterfaceTest, AutoCharacterCoverageVerifySpecTest) {
   // 3. BPE with auto_character_coverage=true MUST SUCCEED.
   {
     trainer_spec.set_auto_character_coverage(true);
-    absl::SetFlag(&FLAGS_use_sparse_pruning, false);
+    trainer_spec.set_use_sparse_pruning(false);
     trainer_spec.set_model_type(TrainerSpec::BPE);
     TrainerInterface trainer(trainer_spec, normalizer_spec, denormalizer_spec);
     EXPECT_TRUE(trainer.status().ok());
@@ -730,8 +730,6 @@ TEST(TrainerInterfaceTest, AutoCharacterCoverageVerifySpecTest) {
     EXPECT_FALSE(trainer.status().ok());
   }
 
-  // Reset flags to defaults.
-  absl::SetFlag(&FLAGS_use_sparse_pruning, false);
 }
 
 }  // namespace sentencepiece

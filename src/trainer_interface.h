@@ -23,8 +23,6 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/flags/declare.h"
-#include "absl/flags/flag.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "filesystem.h"
@@ -33,11 +31,6 @@
 #include "sentencepiece_processor.h"
 #include "sentencepiece_trainer.h"
 #include "util.h"
-
-ABSL_DECLARE_FLAG(bool, use_sparse_pruning);
-ABSL_DECLARE_FLAG(bool, post_l1_debias);
-ABSL_DECLARE_FLAG(float, seed_piece_length_power);
-ABSL_DECLARE_FLAG(float, min_freq_alpha);
 
 namespace sentencepiece {
 

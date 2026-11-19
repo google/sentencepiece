@@ -169,6 +169,19 @@ ABSL_RETIRED_FLAG(float, differential_privacy_noise_level, 0.0f,
 ABSL_RETIRED_FLAG(std::uint64_t, differential_privacy_clipping_threshold, 0,
                   "Threshold for clipping the counts for DP");
 
+ABSL_FLAG(bool, use_sparse_pruning, false,
+          "Use continuous L1 sparse pruning in Unigram EM");
+ABSL_FLAG(
+    bool, post_l1_debias, true,
+    "When true (default), resets lambda penalty and re-estimates pure Unigram "
+    "MLE probabilities on the selected vocabulary (Post-Lasso Debiased Mode).");
+ABSL_FLAG(float, seed_piece_length_power, 1.0f,
+          "power exponent beta for seed sentencepiece length weighting: score "
+          "= freq * len^beta (default=1.0)");
+ABSL_FLAG(float, min_freq_alpha, 0.0f,
+          "dynamic minimum frequency factor alpha derived from Zipf law: "
+          "min_freq = max(2, alpha * N / (K * ln(K))) (default=0.0)");
+
 int main(int argc, char* argv[]) {
   sentencepiece::ParseCommandLineFlags(argv[0], &argc, &argv, true);
 
@@ -242,6 +255,10 @@ int main(int argc, char* argv[]) {
   SetTrainerSpecFromFlag(split_digits);
   SetTrainerSpecFromFlag(pretokenization_delimiter);
   SetTrainerSpecFromFlag(byte_fallback);
+  SetTrainerSpecFromFlag(use_sparse_pruning);
+  SetTrainerSpecFromFlag(post_l1_debias);
+  SetTrainerSpecFromFlag(seed_piece_length_power);
+  SetTrainerSpecFromFlag(min_freq_alpha);
   SetTrainerSpecFromFlag(auto_character_coverage);
   SetTrainerSpecFromFlag(treat_whitespace_as_suffix);
   SetTrainerSpecFromFlag(allow_whitespace_only_pieces);

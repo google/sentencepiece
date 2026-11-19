@@ -260,8 +260,8 @@ spm_train \
 
 | Flag | Default | Description |
 |---|---|---|
-| `--use_sparse_pruning` | `false` | Perform Unigram vocabulary selection with L1-regularized EM (Sparse Pruning). Currently an experimental `spm_train` CLI-only flag; in 0.3.0 this flag will be removed and Sparse Pruning will become the only behavior. |
-| `--post_l1_debias` | `true` | After the vocabulary is fixed, re-estimate with $\lambda = 0$ to remove the L1 shrinkage bias. Currently a `spm_train` CLI-only flag. |
+| `--use_sparse_pruning` | `false` | Perform Unigram vocabulary selection with L1-regularized EM (Sparse Pruning). Available through CLI and Python/C++ training options; in 0.3.0 this flag will be removed and Sparse Pruning will become the only behavior. |
+| `--post_l1_debias` | `true` | After the vocabulary is fixed, re-estimate with $\lambda = 0$ to remove the L1 shrinkage bias. Available through CLI and Python/C++ training options. |
 
 The training log reports, for each epoch, `active` (number of active subwords), `lambda`, `obj` (per-sentence negative log-likelihood), `|w|` (Viterbi 1-best token count across the corpus), and `bytes/tok` (corpus bytes divided by `|w|`).
 
@@ -277,3 +277,27 @@ The training log reports, for each epoch, `active` (number of active subwords), 
 | Probability re-estimation | $w_i \leftarrow \mathbb{E}[c_i]$ (with digamma update) | $w_i \leftarrow \max(0, \mathbb{E}[c_i] - \lambda)$ (debiased at the end) |
 | Extra computation | 2-best search + Viterbi re-segmentation pass | None (already computed in the E-step) |
 | Characters | Initial character set excluded from pruning | Same criterion as subwords (Auto-char) |
+
+### Python API
+
+Sparse pruning options are stored in `TrainerSpec` and apply independently to
+each training call. The exported model uses standard Unigram inference.
+
+```python
+import sentencepiece as spm
+
+spm.SentencePieceTrainer.train(
+    input="corpus.txt",
+    model_prefix="unigram_sparse",
+    model_type="unigram",
+    vocab_size=8192,
+    byte_fallback=True,
+    auto_character_coverage=True,
+    use_sparse_pruning=True,
+)
+```
+
+The same options are accepted by the string and C++ training APIs. Defaults
+remain unchanged: discrete pruning, post-L1 debiasing enabled, seed length power
+1.0, and minimum frequency alpha 0.0. These options require a build containing
+the `TrainerSpec` migration; the original 0.2.3 Python wheels do not expose them.

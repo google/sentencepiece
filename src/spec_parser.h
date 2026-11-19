@@ -165,6 +165,10 @@ inline std::string PrintProto(const TrainerSpec& message,
   PRINT_PARAM(required_chars);
   PRINT_PARAM(byte_fallback);
   PRINT_PARAM(auto_character_coverage);
+  PRINT_PARAM(use_sparse_pruning);
+  PRINT_PARAM(post_l1_debias);
+  PRINT_PARAM(seed_piece_length_power);
+  PRINT_PARAM(min_freq_alpha);
   PRINT_PARAM(vocabulary_output_piece_score);
   PRINT_PARAM(seed_sentencepieces_file);
   PRINT_PARAM(hard_vocab_limit);
@@ -240,6 +244,10 @@ absl::Status SentencePieceTrainer::SetProtoField(absl::string_view name,
   PARSE_STRING(required_chars);
   PARSE_BOOL(byte_fallback);
   PARSE_BOOL(auto_character_coverage);
+  PARSE_BOOL(use_sparse_pruning);
+  PARSE_BOOL(post_l1_debias);
+  PARSE_DOUBLE(seed_piece_length_power);
+  PARSE_DOUBLE(min_freq_alpha);
   PARSE_BOOL(hard_vocab_limit);
   PARSE_BOOL(vocabulary_output_piece_score);
   PARSE_STRING(seed_sentencepieces_file);

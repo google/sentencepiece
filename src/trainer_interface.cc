@@ -23,7 +23,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
@@ -44,22 +43,6 @@
 #include "sentencepiece_trainer.h"
 #include "unicode_script.h"
 #include "util.h"
-
-// NOTE: The following flags are experimental options for new L1 sparse Unigram
-// training. They will eventually be migrated to TrainerSpec
-// (trainer_spec.proto).
-ABSL_FLAG(bool, use_sparse_pruning, false,
-          "Use continuous L1 sparse pruning in Unigram EM");
-ABSL_FLAG(
-    bool, post_l1_debias, true,
-    "When true (default), resets lambda penalty and re-estimates pure Unigram "
-    "MLE probabilities on the selected vocabulary (Post-Lasso Debiased Mode).");
-ABSL_FLAG(float, seed_piece_length_power, 1.0f,
-          "power exponent beta for seed sentencepiece length weighting: score "
-          "= freq * len^beta (default=1.0)");
-ABSL_FLAG(float, min_freq_alpha, 0.0f,
-          "dynamic minimum frequency factor alpha derived from Zipf law: "
-          "min_freq = max(2, alpha * N / (K * ln(K))) (default=0.0)");
 
 namespace sentencepiece {
 
@@ -124,7 +107,7 @@ absl::Status VerifySpec(const TrainerSpec& trainer_spec,
         << "--auto_character_coverage is only supported in UNIGRAM or BPE "
            "model mode.";
     if (trainer_spec.model_type() == TrainerSpec::UNIGRAM) {
-      RET_CHECK(absl::GetFlag(FLAGS_use_sparse_pruning))
+      RET_CHECK(trainer_spec.use_sparse_pruning())
           << "--auto_character_coverage in UNIGRAM mode requires "
              "--use_sparse_pruning=true.";
     }
