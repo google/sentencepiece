@@ -15,7 +15,11 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <fstream>
+#include <ios>
+#include <iterator>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -202,6 +206,144 @@ TEST(SentencePieceLiteCanonicalTest, EmptyAndWhitespaceInputsMatchCanonical) {
 
       EXPECT_EQ(lite_decoded, canonical_decoded);
     }
+  }
+}
+
+TEST(SentencePieceLiteCanonicalTest, BpeUnusedMergesMatchCanonical) {
+  ::sentencepiece::ModelProto model_proto;
+  auto* trainer_spec = model_proto.mutable_trainer_spec();
+  trainer_spec->set_model_type(::sentencepiece::TrainerSpec::BPE);
+  trainer_spec->set_unk_id(0);
+
+  auto* normalizer_spec = model_proto.mutable_normalizer_spec();
+  normalizer_spec->set_name("identity");
+  normalizer_spec->set_add_dummy_prefix(false);
+  normalizer_spec->set_remove_extra_whitespaces(false);
+  normalizer_spec->set_escape_whitespaces(false);
+
+  auto add_piece = [&model_proto](
+                       const char* piece, float score,
+                       ::sentencepiece::ModelProto::SentencePiece::Type type =
+                           ::sentencepiece::ModelProto::SentencePiece::NORMAL) {
+    auto* p = model_proto.add_pieces();
+    p->set_piece(piece);
+    p->set_score(score);
+    p->set_type(type);
+  };
+
+  add_piece("<unk>", 0.0f,
+            ::sentencepiece::ModelProto::SentencePiece::UNKNOWN);  // 0
+  add_piece("<s>", 0.0f,
+            ::sentencepiece::ModelProto::SentencePiece::CONTROL);  // 1
+  add_piece("</s>", 0.0f,
+            ::sentencepiece::ModelProto::SentencePiece::CONTROL);  // 2
+  add_piece("abcd", 10.0f);                                        // 3
+  add_piece("abc", 5.0f);                                          // 4
+  add_piece("ab", 2.0f);                                           // 5
+  add_piece("cd", 1.0f);                                           // 6
+  add_piece("a", 0.0f);                                            // 7
+  add_piece("b", 0.0f);                                            // 8
+  add_piece("c", 0.0f);                                            // 9
+  add_piece("d", 0.0f);                                            // 10
+
+  auto verify_matches_canonical = [](const ::sentencepiece::ModelProto& proto) {
+    auto fbs_bytes_or = ::sentencepiece::lite::ToFlatbuffer(proto);
+    ASSERT_TRUE(fbs_bytes_or.ok()) << fbs_bytes_or.status();
+    SentencePieceLiteProcessor lite(*fbs_bytes_or);
+    ASSERT_EQ(lite.status(), StatusCode::kOk);
+
+    ::sentencepiece::SentencePieceProcessor canonical;
+    ASSERT_TRUE(
+        canonical.LoadFromSerializedProto(proto.SerializeAsString()).ok());
+
+    for (const std::string input :
+         {"a", "ab", "abc", "abcd", "abcdabcd", "cd", "abccd"}) {
+      SCOPED_TRACE(input);
+      std::vector<int> lite_ids;
+      ASSERT_EQ(lite.Encode(input, &lite_ids), StatusCode::kOk);
+
+      std::vector<int> canonical_ids;
+      ASSERT_TRUE(canonical.Encode(input, &canonical_ids).ok());
+
+      EXPECT_EQ(lite_ids, canonical_ids);
+    }
+  };
+
+  // Case 1: No UNUSED pieces.
+  verify_matches_canonical(model_proto);
+
+  // Case 2: Top-level "abcd" is UNUSED.
+  model_proto.mutable_pieces(3)->set_type(
+      ::sentencepiece::ModelProto::SentencePiece::UNUSED);
+  verify_matches_canonical(model_proto);
+
+  // Case 3: Both "abcd" and intermediate "ab" are UNUSED, parent "abc" is
+  // NORMAL.
+  model_proto.mutable_pieces(5)->set_type(
+      ::sentencepiece::ModelProto::SentencePiece::UNUSED);
+  verify_matches_canonical(model_proto);
+
+  // Case 4: Both "abcd" and "abc" are UNUSED, "ab" and "cd" are NORMAL.
+  model_proto.mutable_pieces(4)->set_type(
+      ::sentencepiece::ModelProto::SentencePiece::UNUSED);
+  model_proto.mutable_pieces(5)->set_type(
+      ::sentencepiece::ModelProto::SentencePiece::NORMAL);
+  verify_matches_canonical(model_proto);
+}
+
+std::string GetFilePath(std::string_view path) {
+  static constexpr std::string_view kPrefixes[] = {
+      "",
+      "data/",
+      "../data/",
+      "../../data/",
+  };
+  for (const auto prefix : kPrefixes) {
+    const std::string candidate = std::string(prefix) + std::string(path);
+    if (std::ifstream(candidate, std::ios::binary).good()) {
+      return candidate;
+    }
+  }
+  return std::string(path);
+}
+
+std::string ReadFile(std::string_view path) {
+  const std::string actual_path = GetFilePath(path);
+  std::ifstream stream(actual_path, std::ios::binary);
+  EXPECT_TRUE(stream) << "Failed to open file: " << path << " (resolved to "
+                      << actual_path << ")";
+  return std::string((std::istreambuf_iterator<char>(stream)),
+                     std::istreambuf_iterator<char>());
+}
+
+TEST(SentencePieceLiteCanonicalTest, BpeUnusedBotchanCorpusMatchesCanonical) {
+  const std::string model_bytes =
+      ReadFile("botchan_1000_bpe_10pct_unused.model");
+  ::sentencepiece::ModelProto model_proto;
+  ASSERT_TRUE(model_proto.ParseFromString(model_bytes));
+  auto fbs_bytes_or = ::sentencepiece::lite::ToFlatbuffer(model_proto);
+  ASSERT_TRUE(fbs_bytes_or.ok()) << fbs_bytes_or.status();
+  SentencePieceLiteProcessor lite(*fbs_bytes_or);
+  ASSERT_EQ(lite.status(), StatusCode::kOk);
+
+  ::sentencepiece::SentencePieceProcessor canonical;
+  ASSERT_TRUE(canonical.LoadFromSerializedProto(model_bytes).ok());
+
+  auto verify = [&](std::string_view text) {
+    std::vector<int> lite_ids, canonical_ids;
+    ASSERT_EQ(lite.Encode(text, &lite_ids), StatusCode::kOk);
+    ASSERT_TRUE(canonical.Encode(text, &canonical_ids).ok());
+    EXPECT_EQ(lite_ids, canonical_ids);
+  };
+
+  const std::string corpus = ReadFile("botchan.txt");
+  ASSERT_FALSE(corpus.empty());
+  ASSERT_NO_FATAL_FAILURE(verify(corpus));
+
+  std::istringstream lines(corpus);
+  for (std::string line; std::getline(lines, line);) {
+    SCOPED_TRACE(line);
+    ASSERT_NO_FATAL_FAILURE(verify(line));
   }
 }
 
