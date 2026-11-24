@@ -40,6 +40,7 @@ These options control the input/output files, the tokenization algorithm type, a
             *   *References*: See [GitHub Issue #967](https://github.com/google/sentencepiece/issues/967) and [GitHub Issue #1047](https://github.com/google/sentencepiece/issues/1047) for details.
 *   **`model_prefix`** (string, default: `""`)
     *   Prefix for the output files. Training generates `<model_prefix>.model` (binary model file) and `<model_prefix>.vocab` (human-readable vocabulary list).
+    *   *Privacy Note*: Avoid publishing `<model_prefix>.model` and `<model_prefix>.vocab` files trained on unsanitized sensitive data, as rare training strings can be memorized in the vocabulary; see *Privacy & Security Considerations* under `allow_inconsistent_pretokenization` in [Section 4](#4-tokenization--vocabulary-constraints).
 *   **`model_type`** (string, default: `"unigram"`)
     *   The tokenization algorithm to use. Choose from:
         *   `unigram`: Unigram language model (recommended). It fits a probabilistic model and prunes the vocabulary.
@@ -120,6 +121,26 @@ These options apply training-time constraints to control what constitutes a vali
     *   *(Python / C++ API, v0.2.3+)* Dynamic runtime callback (`Callable[[str], List[str]]` in Python or `std::function<vector<string>(string_view)>` in C++) called on normalized text to produce pretokenized token chunks before subword extraction. Supported in both Unigram and BPE. Mutually exclusive with `pretokenization_delimiter`.
 *   **`allow_inconsistent_pretokenization`** (bool, default: `false`)
     *   *(Python / C++ API, v0.2.3+)* When `false` (default), verifies that concatenating pretokenized chunks (`"".join(chunks)`) exactly matches the input normalized sentence. Set `true` to bypass this check if chunks intentionally drop or modify characters.
+    *   *Privacy & Security Considerations*: Subword tokenizers faithfully capture the statistical properties of the training corpus, meaning rare strings (such as personal identifiers, email addresses, or internal project names) can be retained in the generated `<model_prefix>.model` and `<model_prefix>.vocab` files. Publishing tokenizer files trained on sensitive data may leak training data via membership inference attacks. For auditing and quantifying tokenizer membership inference risks prior to release, see the auditing methodology in [USENIX Security '26](https://arxiv.org/abs/2510.05699). To mitigate this risk, sanitize sensitive patterns upstream before training, or use `pretokenizer` with `allow_inconsistent_pretokenization=True` to strip sensitive patterns on the fly without modifying raw corpus files:
+        ```python
+        import re
+        import sentencepiece as spm
+
+        EMAIL_PATTERN = re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}')
+
+        def drop_email_pretokenizer(normalized_text: str) -> list[str]:
+            # Drops sensitive patterns (e.g., emails) during training so they never enter the vocab
+            # e.g., "__hello_foo@bar.com_test" -> ["__hello_", "_test"]
+            return [chunk for chunk in EMAIL_PATTERN.split(normalized_text) if chunk]
+
+        spm.SentencePieceTrainer.train(
+            input="raw_corpus.txt",
+            model_prefix="sanitized_spm",
+            vocab_size=8000,
+            pretokenizer=drop_email_pretokenizer,
+            allow_inconsistent_pretokenization=True,
+        )
+        ```
 *   **`treat_whitespace_as_suffix`** (bool, default: `false`)
     *   Attaches the whitespace marker `▁` as a suffix instead of a prefix (e.g., `world▁` instead of `▁world`).
 *   **`allow_whitespace_only_pieces`** (bool, default: `false`)
