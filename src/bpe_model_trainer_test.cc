@@ -60,13 +60,11 @@ std::string RunTrainer(
   normalizer_spec.set_name("identity");
   normalizer_spec.set_add_dummy_prefix(false);
 
-  NormalizerSpec denormalizer_spec;
-
   for (const auto& w : user_defined_symbols) {
     trainer_spec.add_user_defined_symbols(w);
   }
 
-  Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  Trainer trainer(trainer_spec, normalizer_spec);
   EXPECT_TRUE(trainer.Train().ok());
 
   SentencePieceProcessor processor;
@@ -167,9 +165,7 @@ TEST(BPETrainerTest, AutoCharacterCoverageTest) {
   normalizer_spec.set_name("identity");
   normalizer_spec.set_add_dummy_prefix(false);
 
-  NormalizerSpec denormalizer_spec;
-
-  Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  Trainer trainer(trainer_spec, normalizer_spec);
   EXPECT_TRUE(trainer.Train().ok());
 
   SentencePieceProcessor processor;

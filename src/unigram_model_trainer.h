@@ -15,6 +15,7 @@
 #ifndef UNIGRAM_MODEL_TRAINER_H_
 #define UNIGRAM_MODEL_TRAINER_H_
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
@@ -23,9 +24,9 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "darts.h"
 #include "sentencepiece_model.pb.h"
 #include "trainer_interface.h"
-#include "unigram_model.h"
 #include "util.h"
 
 namespace sentencepiece {
@@ -33,14 +34,80 @@ namespace unigram {
 
 using string_util::UnicodeText;
 
-class TrainerModel : public Model {
+// Lattice represents a search space of sentence piece segmentation.
+class Lattice {
+ public:
+  Lattice();
+  ~Lattice();
+
+  struct Node {
+    uint32_t pos;           // Unicode position in the sentence.
+    uint32_t length;        // Unicode length, not UTF8 byte.
+    uint32_t node_id;       // unique id in the current lattice.
+    int id;                 // vocab id. (maybe -1 for UNK)
+    float score;            // logprob of this sentencepiece.
+    float backtrace_score;  // backtrace info used in Viterbi.
+    Node* prev;             // best previous node on Viterbi path.
+  };
+
+  // Returns nodes starting at |pos|.
+  const std::vector<Node*>& begin_nodes(int pos) const;
+
+  // Returns Unicode character length.
+  int size() const;
+
+  // Returns multi-byte (utf8) length.
+  int utf8_size() const;
+
+  // Returns the substring of sentence. sentence[pos:]
+  const char* surface(int pos) const;
+
+  // Returns immutable sentence. The same as surface(0)
+  const char* sentence() const;
+
+  // Clears the lattice.
+  void Clear();
+
+  // Sets new sentence.
+  void SetSentence(absl::string_view sentence);
+
+  // Inserts a new node at [pos, pos + length - 1].
+  // After calling this method, The caller must set Node::score and Node::id.
+  Node* Insert(int pos, int length);
+
+  using LatticePathWithScore = std::pair<std::vector<Node*>, float>;
+
+  // Returns Viterbi path. All nodes must be populated in advance.
+  LatticePathWithScore Viterbi();
+
+  // Populates marginal probability of every node in this lattice.
+  // |freq| is the frequency of the sentence.
+  // Returns the log-likelihood of this sentence.
+  float PopulateMarginal(float freq, std::vector<float>* expected) const;
+
+ private:
+  Node* NewNode();
+  std::vector<float> ForwardAlgorithm() const;
+  std::vector<float> BackwardAlgorithm() const;
+
+  absl::string_view sentence_;
+  std::vector<const char*> surface_;
+  std::vector<std::vector<Node*>> begin_nodes_;
+  std::vector<std::vector<Node*>> end_nodes_;
+  std::vector<std::unique_ptr<Node[]>> node_blocks_;
+  size_t node_size_ = 0;
+};
+
+class TrainerModel {
  public:
   using SentencePieces = std::vector<std::pair<std::string, float>>;
 
-  TrainerModel(const ModelProto& model_proto) = delete;
-  TrainerModel(const TrainerSpec& trainer_spec,
-               const NormalizerSpec& normalizaiton_spec);
-  ~TrainerModel() override;
+  TrainerModel() = default;
+  ~TrainerModel();
+
+  absl::Status status() const { return status_; }
+
+  int GetPieceSize() const { return static_cast<int>(sentencepieces_.size()); }
 
   // Returns the sentencepieces.
   // The meta symbols, e.g., </s> are NOT included.
@@ -50,22 +117,30 @@ class TrainerModel : public Model {
   // The meta symbols, e.g., </s> are NOT included.
   absl::Status SetSentencePieces(SentencePieces&& sentencepieces);
 
-  EncodeResult Encode(absl::string_view normalized) const override {
-    return {};
-  }
+  // Returns the minimum score in sentence pieces.
+  // min_score() - 10 is used for the cost of unknown sentence.
+  float min_score() const { return min_score_; }
+
+  // Populates all sentence pieces to the |lattice|.
+  // After calling this function, lattice.Viterbi() returns the
+  // best segmentation.
+  void PopulateNodes(Lattice* lattice) const;
 
  private:
+  void BuildTrie(std::vector<std::pair<absl::string_view, int>>* pieces);
+
   SentencePieces sentencepieces_;
-  ModelProto model_proto_data_;
+  float min_score_ = 0.0;
+  std::unique_ptr<Darts::DoubleArray> trie_;
+  int trie_results_size_ = 0;
+  absl::Status status_;
 };
 
 class Trainer : public TrainerInterface {
  public:
   Trainer(const TrainerSpec& trainer_spec,
-          const NormalizerSpec& normalizer_spec,
-          const NormalizerSpec& denormalizer_spec)
-      : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec,
-                                           denormalizer_spec) {}
+          const NormalizerSpec& normalizer_spec)
+      : TrainerInterface::TrainerInterface(trainer_spec, normalizer_spec) {}
 
   // Makes and returns initial seed sentencepieces for EM training.
   TrainerModel::SentencePieces MakeSeedSentencePieces();
@@ -93,23 +168,10 @@ class Trainer : public TrainerInterface {
   std::vector<float> RunEStep(const TrainerModel& model, float* objective,
                               int64_t* num_tokens) const;
 
-  // Executes the M step of EM with the expected frequency and
-  // returns new pieces.
-  TrainerModel::SentencePieces RunMStep(
-      const TrainerModel& model, const std::vector<float>& expected) const;
-
-  // Heuristically prunes the current pieces.
-  // This is called after each EM sub-iteration.
-  TrainerModel::SentencePieces PruneSentencePieces(
-      const TrainerModel& model) const;
-
   // Prunes unreachable sentencepieces whose score is strictly lower than
   // their alternative decomposition (Viterbi score inversion).
   TrainerModel::SentencePieces PruneUnreachableSentencePieces(
       const TrainerModel& model) const;
-
-  // Runs classic discrete pruning EM loop (shrinking_factor per epoch).
-  absl::Status TrainDiscretePruning(TrainerModel* model);
 
   // Runs continuous L1 relaxation proximal sparse pruning EM loop.
   absl::Status TrainSparsePruning(TrainerModel* model);

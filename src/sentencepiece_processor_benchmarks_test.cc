@@ -27,8 +27,6 @@
 #include "benchmark/benchmark.h"
 #include "filesystem.h"
 #include "init.h"
-#include "model_factory.h"
-#include "model_interface.h"
 #include "normalizer.h"
 #include "sentencepiece.pb.h"
 #include "sentencepiece_processor.h"

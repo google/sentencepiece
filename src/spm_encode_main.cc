@@ -125,6 +125,8 @@ int main(int argc, char* argv[]) {
       output->WriteLine(absl::StrJoin(ids, " "));
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "nbest_piece") {
+    LOG(WARNING) << "--output_format=nbest_piece is deprecated; use "
+                    "sample_piece instead.";
     process = [&](absl::string_view line) {
       QCHECK_OK(sp.NBestEncode(line, nbest_size, &nbest_sps));
       for (const auto& result : nbest_sps) {
@@ -132,6 +134,8 @@ int main(int argc, char* argv[]) {
       }
     };
   } else if (absl::GetFlag(FLAGS_output_format) == "nbest_id") {
+    LOG(WARNING)
+        << "--output_format=nbest_id is deprecated; use sample_id instead.";
     process = [&](absl::string_view line) {
       QCHECK_OK(sp.NBestEncode(line, nbest_size, &nbest_ids));
       for (const auto& result : nbest_ids) {

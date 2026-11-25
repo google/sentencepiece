@@ -2,14 +2,14 @@ name: CI for SentencePiece Lite
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, dev-0.3.0 ]
     paths:
       - 'lite/**'
       - '.github/workflows/lite.yml'
     tags:
       - 'v*'
   pull_request:
-    branches: [ master ]
+    branches: [ master, dev-0.3.0 ]
     paths:
       - 'lite/**'
       - '.github/workflows/lite.yml'

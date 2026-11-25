@@ -36,8 +36,8 @@
 #include "absl/strings/str_replace.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "builder.h"
 #include "filesystem.h"
-#include "model_interface.h"
 #include "normalizer.h"
 #include "ret_check.h"
 #include "sentencepiece_processor.h"
@@ -45,11 +45,9 @@
 #include "unicode_script.h"
 #include "util.h"
 
-// NOTE: The following flags are experimental options for new L1 sparse Unigram
+// NOTE: The following flags are experimental options for L1 sparse Unigram
 // training. They will eventually be migrated to TrainerSpec
 // (trainer_spec.proto).
-ABSL_FLAG(bool, use_sparse_pruning, false,
-          "Use continuous L1 sparse pruning in Unigram EM");
 ABSL_FLAG(
     bool, post_l1_debias, true,
     "When true (default), resets lambda penalty and re-estimates pure Unigram "
@@ -93,9 +91,7 @@ absl::Status VerifySpec(const TrainerSpec& trainer_spec,
 
   CHECK_RANGE(trainer_spec.character_coverage(), 0.98, 1.0);
   CHECK_RANGE(trainer_spec.max_sentencepiece_length(), 1, 512);
-  CHECK_RANGE(trainer_spec.num_sub_iterations(), 1, 10);
   CHECK_RANGE(trainer_spec.num_threads(), 1, 1024);
-  CHECK_RANGE(trainer_spec.shrinking_factor(), 0.5, 0.95);
   CHECK_RANGE(trainer_spec.max_sentence_length(), 10, 1073741824);
 #undef CHECK_RANGE
 
@@ -123,11 +119,6 @@ absl::Status VerifySpec(const TrainerSpec& trainer_spec,
               trainer_spec.model_type() == TrainerSpec::BPE)
         << "--auto_character_coverage is only supported in UNIGRAM or BPE "
            "model mode.";
-    if (trainer_spec.model_type() == TrainerSpec::UNIGRAM) {
-      RET_CHECK(absl::GetFlag(FLAGS_use_sparse_pruning))
-          << "--auto_character_coverage in UNIGRAM mode requires "
-             "--use_sparse_pruning=true.";
-    }
     RET_CHECK(trainer_spec.byte_fallback())
         << "--auto_character_coverage requires --byte_fallback=true.";
     RET_CHECK(trainer_spec.required_chars().empty())
@@ -245,11 +236,9 @@ void MultiFileSentenceIterator::TryRead() {
 }
 
 TrainerInterface::TrainerInterface(TrainerSpec trainer_spec,
-                                   NormalizerSpec normalizer_spec,
-                                   NormalizerSpec denormalizer_spec)
+                                   NormalizerSpec normalizer_spec)
     : trainer_spec_(std::move(trainer_spec)),
-      normalizer_spec_(std::move(normalizer_spec)),
-      denormalizer_spec_(std::move(denormalizer_spec)) {
+      normalizer_spec_(std::move(normalizer_spec)) {
   status_ = VerifySpec(trainer_spec_, components_);
   if (status_.ok()) {
     status_ = InitMetaPieces();
@@ -459,12 +448,30 @@ END:
   // Normalize and removes empty string.
   {
     const normalizer::Normalizer normalizer(normalizer_spec_, trainer_spec_);
-    std::set<absl::string_view> meta_pieces_set;
+    normalizer::Builder::CharsMap meta_pieces_map;
+    const auto boundary_chars =
+        string_util::UTF8ToUnicodeText(kPretokenizationBoundaryStr);
     for (const auto& it : meta_pieces_) {
       LOG(INFO) << "Adding meta_piece: " << it.second.first;
-      meta_pieces_set.insert(it.second.first);
+      auto src_chars = string_util::UTF8ToUnicodeText(it.second.first);
+      if (!src_chars.empty() && src_chars != boundary_chars) {
+        meta_pieces_map[std::move(src_chars)] = boundary_chars;
+      }
     }
-    const normalizer::PrefixMatcher meta_pieces_matcher(meta_pieces_set);
+    std::unique_ptr<normalizer::Normalizer> meta_pieces_matcher;
+    if (!meta_pieces_map.empty()) {
+      NormalizerSpec meta_pieces_spec;
+      meta_pieces_spec.set_add_dummy_prefix(false);
+      meta_pieces_spec.set_remove_extra_whitespaces(false);
+      meta_pieces_spec.set_escape_whitespaces(false);
+      std::string blob;
+      ABSL_RETURN_IF_ERROR(
+          normalizer::Builder::CompileCharsMap(meta_pieces_map, &blob));
+      meta_pieces_spec.set_precompiled_charsmap(std::move(blob));
+      meta_pieces_matcher =
+          std::make_unique<normalizer::Normalizer>(meta_pieces_spec);
+      ABSL_RETURN_IF_ERROR(meta_pieces_matcher->status());
+    }
 
     LOG(INFO) << "Normalizing sentences...";
     RET_CHECK(!sentences_.empty());
@@ -474,8 +481,10 @@ END:
         sentences_.size(),
         [&](size_t i) -> absl::Status {
           auto* s = &sentences_[i].first;
-          *s = meta_pieces_matcher.GlobalReplace(normalizer.Normalize(*s),
-                                                 kPretokenizationBoundaryStr);
+          *s = normalizer.Normalize(*s);
+          if (meta_pieces_matcher != nullptr) {
+            *s = meta_pieces_matcher->Normalize(*s);
+          }
           if (components_.pretokenizer) {
             const auto chunks = components_.pretokenizer(*s);
             if (!components_.allow_inconsistent_pretokenization) {
@@ -733,10 +742,6 @@ absl::Status TrainerInterface::Serialize(ModelProto* model_proto) const {
   *model_proto->mutable_trainer_spec() = trainer_spec_;
   *model_proto->mutable_normalizer_spec() = normalizer_spec_;
 
-  if (!denormalizer_spec_.normalization_rule_tsv().empty()) {
-    *model_proto->mutable_denormalizer_spec() = denormalizer_spec_;
-  }
-
   if (!trainer_spec_.hard_vocab_limit() ||
       trainer_spec_.model_type() == TrainerSpec::CHAR) {
     RET_CHECK_GE(trainer_spec_.vocab_size(), model_proto->pieces_size());
@@ -846,9 +851,9 @@ absl::Status TrainerInterface::InitMetaPieces() {
 
   int id = 0;
   auto insert_meta_symbol =
-      [&id, &dup, this](const std::string& w,
+      [&id, &dup, this](absl::string_view w,
                         ModelProto::SentencePiece::Type type) -> absl::Status {
-    if (!dup.insert(w).second) {
+    if (!dup.emplace(w).second) {
       return absl::InternalError(absl::StrCat(
           w, " is already defined. duplicated symbols are not allowed."));
     }
@@ -870,7 +875,7 @@ absl::Status TrainerInterface::InitMetaPieces() {
       while (meta_pieces_.find(id) != meta_pieces_.end()) {
         ++id;
       }
-      meta_pieces_[id] = std::make_pair(w, type);
+      meta_pieces_[id] = std::make_pair(std::string(w), type);
     }
 
     return absl::OkStatus();
@@ -895,6 +900,9 @@ absl::Status TrainerInterface::InitMetaPieces() {
   }
 
   if (trainer_spec_.byte_fallback()) {
+    if (!meta_pieces_.empty()) {
+      id = std::max(id, meta_pieces_.rbegin()->first + 1);
+    }
     for (int i = 0; i < 256; ++i) {
       ABSL_RETURN_IF_ERROR(
           insert_meta_symbol(ByteToPiece(i), ModelProto::SentencePiece::BYTE));

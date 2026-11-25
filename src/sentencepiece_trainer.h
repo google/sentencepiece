@@ -260,8 +260,11 @@ class SentencePieceNormalizer {
   [[nodiscard]] virtual std::string serialized_normalizer_spec() const;
 
  private:
-  std::unique_ptr<normalizer::Normalizer> normalizer_;
+  void EnsureNormalizerInitialized() const;
+
+  mutable std::unique_ptr<normalizer::Normalizer> normalizer_;
   std::unique_ptr<NormalizerSpec> normalizer_spec_;
+  mutable std::string cached_spec_serialized_;
 };
 
 // Converts the utf8 byte spans into Unicode char span.

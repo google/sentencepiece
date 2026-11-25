@@ -52,9 +52,7 @@ std::string RunTrainer(const std::vector<std::string>& input, int size) {
   NormalizerSpec normalizer_spec;
   normalizer_spec.set_name("identity");
 
-  NormalizerSpec denormalizer_spec;
-
-  Trainer trainer(trainer_spec, normalizer_spec, denormalizer_spec);
+  Trainer trainer(trainer_spec, normalizer_spec);
   EXPECT_TRUE(trainer.Train().ok());
 
   SentencePieceProcessor processor;

@@ -59,7 +59,7 @@ Use `--extra_options` to insert BOS/EOS markers:
     ```bash
     spm_encode --model=<model_file> --output_format=sample_piece --nbest_size=-1 --alpha=0.5 < input.txt
     ```
-*   Generate top 10 segmentations as IDs:
+*   Generate up to 10 candidate segmentations as IDs *(deprecated in 0.3.0; prefer `sample_piece` / `sample_id`)*:
     ```bash
     spm_encode --model=<model_file> --output_format=nbest_id --nbest_size=10 < input.txt
     ```

@@ -68,7 +68,7 @@ These options control how SentencePiece processes and samples the training corpu
     *   *How it works*: Characters are sorted by frequency. SentencePiece accumulates them until the target ratio is met. Characters outside this limit are excluded from the alphabet and will be mapped to `<unk>` (or byte fallback).
     *   *Recommendation*: Use `1.0` for languages with small alphabets (English, German, etc.). Use `0.9995` (default) for languages with large character sets (Chinese, Japanese, Korean) to prune rare noise characters/emojis.
 *   **`auto_character_coverage`** (bool, default: `false`)
-    *   *(v0.2.3+)* If `true`, eliminates the manual `--character_coverage` threshold and jointly optimizes single characters and multi-character subwords against UTF-8 byte fallback tokens (`--byte_fallback=true` is required; in Unigram mode, `--use_sparse_pruning=true`—currently a `spm_train` CLI-only flag—is also required). Cannot be combined with `--required_chars` or `--required_chars_file`. See [Auto Character Coverage](auto_character_coverage.md) and [Sparse L1 Unigram](sparse_l1_unigram.md) for details.
+    *   *(v0.2.3+)* If `true`, eliminates the manual `--character_coverage` threshold and jointly optimizes single characters and multi-character subwords against UTF-8 byte fallback tokens (`--byte_fallback=true` is required). Cannot be combined with `--required_chars` or `--required_chars_file`. See [Auto Character Coverage](auto_character_coverage.md) and [Sparse L1 Unigram](sparse_l1_unigram.md) for details.
 *   **`input_sentence_size`** (uint64, default: `0`)
     *   Maximum number of sentences to load from the input corpus. If `0`, the entire corpus is loaded. Setting this is highly recommended for very large datasets to prevent running out of memory.
 *   **`shuffle_input_sentence`** (bool, default: `true`)
@@ -83,13 +83,9 @@ These options control how SentencePiece processes and samples the training corpu
 These options tune the core vocabulary learning process (primarily for Unigram and BPE).
 
 *   **`seed_sentencepiece_size`** (int32, default: `1000000`)
-    *   *(Unigram only)* Initial size of the candidate vocabulary before EM optimization starts. SentencePiece extracts this many frequent substrings as seeds, then iteratively prunes them.
+    *   *(Unigram only)* Initial size of the candidate vocabulary before EM optimization starts. SentencePiece extracts this many frequent substrings as seeds, then prunes them via L1 sparse EM. If set to `0`, dynamically scales to `max(100000, 8 * vocab_size)`.
 *   **`seed_sentencepieces_file`** (string, default: `""`)
     *   *(Unigram only)* Path to a file containing pre-defined subwords (one per line, format: `piece \t frequency`) to seed the vocabulary, instead of extracting them from the corpus.
-*   **`shrinking_factor`** (double, default: `0.75`)
-    *   *(Unigram only)* The ratio by which the vocabulary is pruned in each iteration of EM training. In each step, it keeps the top pieces with respect to the loss, reducing the candidate size by `vocab_size * shrinking_factor` until it reaches `vocab_size`.
-*   **`num_sub_iterations`** (int32, default: `2`)
-    *   *(Unigram only)* Number of EM optimization iterations per vocabulary pruning step.
 *   **`max_sentence_length`** (int32, default: `4192`)
     *   Maximum length (in bytes) of a sentence loaded by the trainer. Longer sentences are silently truncated or skipped to avoid performance bottlenecks.
 *   **`use_all_vocab`** (bool, default: `false`)

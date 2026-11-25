@@ -5,13 +5,13 @@ This document describes the C++ API for loading models, tokenizing and detokeniz
 For instructions on building SentencePiece and linking it in your project, see:
 - [Building with CMake](cmake.md)
 - [Building with Bazel](bazel.md)
-- [SentencePiece Lite Runtime Guide](../lite/README.md) (zero-dependency FlatBuffer runtime)
+- [SentencePiece Lite Runtime Guide](../lite/README.md) (standalone zero-dependency FlatBuffer runtime)
 
 ---
 
 ## 1. Loading a SentencePiece Model
 
-Include `<sentencepiece_processor.h>`, instantiate `sentencepiece::SentencePieceProcessor`, and call `Load()` with a file path or `LoadFromSerializedProto()` with an in-memory binary blob:
+Include `<sentencepiece_processor.h>`, instantiate `sentencepiece::SentencePieceProcessor`, and load a model from a `.model` file, an in-memory serialized `ModelProto`, or a FlatBuffer `.spm.fb` binary:
 
 ```cpp
 #include <sentencepiece_processor.h>
@@ -24,8 +24,20 @@ if (!status.ok()) {
 }
 
 // Or load directly from an in-memory serialized ModelProto:
-// absl::string_view serialized_blob = ...;
-// const auto status = processor.LoadFromSerializedProto(serialized_blob);
+// absl::string_view serialized_proto = ...;
+// const auto status = processor.LoadFromSerializedProto(serialized_proto);
+```
+
+### Zero-Copy FlatBuffer Loading (`.spm.fb`)
+
+In SentencePiece 0.3.0+, `SentencePieceProcessor` executes natively on the FlatBuffer runtime and can load `.spm.fb` models directly:
+
+```cpp
+// Copy a .spm.fb FlatBuffer into an internal 8-byte aligned buffer:
+const auto status = processor.LoadFromSerializedFlatbuffer(flatbuffer_bytes);
+
+// Zero-copy initialization over caller-owned 8-byte aligned memory (e.g., mmap):
+const auto status = processor.LoadFromFlatbufferView(mmap_view);
 ```
 
 ---
@@ -90,9 +102,11 @@ You can also pass a `SentencePieceText*` to `Decode` to inspect piece-to-decoded
 
 ## 4. N-Best Segmentation & Sampling (Subword Regularization)
 
-### N-Best Encoding
+### N-Best Encoding (Deprecated)
 
-Use `NBestEncode` to obtain the top-`nbest_size` segmentations:
+> **Deprecated in 0.3.0**: `NBestEncode` is deprecated and returns approximate sampled candidates beyond the 1st (exact Viterbi) segmentation. Prefer `SampleEncode` below for subword regularization.
+
+Use `NBestEncode` to obtain up to `nbest_size` segmentations (supported for Unigram models):
 
 ```cpp
 std::vector<std::vector<std::string>> nbest_pieces;
@@ -114,7 +128,7 @@ std::vector<int> ids;
 processor.SampleEncode("This is a test.", -1, 0.2, &ids);
 ```
 
-`SampleEncode` takes `nbest_size` and `alpha` (corresponding to $l$ and $\alpha$ in the [Subword Regularization paper](https://arxiv.org/abs/1804.10959), or dropout rate $\alpha$ in [BPE-Dropout](https://arxiv.org/abs/1910.13267)). When `nbest_size` is `-1`, a segmentation is sampled from the full lattice.
+`SampleEncode` samples directly from the full lattice using inverse temperature `alpha` for Unigram (Gumbel-Max dynamic programming) or dropout probability `alpha` for BPE ([BPE-Dropout](https://arxiv.org/abs/1910.13267)).
 
 ---
 
@@ -134,8 +148,8 @@ Use the following methods to query vocabulary metadata and convert between piece
 
 ```cpp
 int vocab_size = processor.GetPieceSize();     // Total vocabulary size
-int id = processor.PieceToId("▁foo");          // Vocabulary ID of "▁foo"
-std::string piece = std::string(processor.IdToPiece(10));  // Piece string for ID 10
+int id = processor.PieceToId("▁foo");          // Vocabulary ID of "▁foo" (unk_id() if not found)
+absl::string_view piece = processor.IdToPiece(10);  // Zero-copy string_view for ID 10
 float score = processor.GetScore(10);          // Log probability / merge score
 
 bool is_unk = processor.IsUnknown(id);         // True if <unk>
@@ -153,7 +167,7 @@ int pad_id = processor.pad_id();
 
 ## 7. Text Normalization
 
-You can normalize text directly via `SentencePieceProcessor::Normalize`, or use the standalone `normalizer::Normalizer` class:
+You can normalize text directly via `SentencePieceProcessor::Normalize`, or use the standalone `SentencePieceNormalizer` / `normalizer::Normalizer` classes:
 
 ```cpp
 std::string normalized;

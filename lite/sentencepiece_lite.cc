@@ -1850,7 +1850,9 @@ StatusCode SentencePieceLiteProcessor::Decode(
       const size_t begin_pos = output->size();
       output->append(model_->unk_surface());
       set_offset(i, begin_pos, output->size());
-      is_bos_ws = false;
+      if (!output->empty()) {
+        is_bos_ws = false;
+      }
       continue;
     }
 
