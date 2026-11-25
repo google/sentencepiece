@@ -532,6 +532,26 @@ class TestSentencepieceProcessor(unittest.TestCase):
       s = 'hello\tworld\r\nthis\tis a \b pen'
       self.assertEqual(s, sp.decode(sp.encode(s)))
 
+  def test_train_kwargs_tuple_iterables(self):
+    # Regression test for #1378: tuples passed as list options (e.g.
+    # user_defined_symbols) must be encoded the same way as lists.
+    # Previously str(tuple) produced "('<s>', '</s>')" and the trainer
+    # silently split it into garbage symbol names.
+    with tempfile.TemporaryDirectory() as tmp_dir:
+      model_prefix = os.path.join(tmp_dir, 'm')
+      spm.SentencePieceTrainer.train(
+          input=[os.path.join(data_dir, 'botchan.txt')],
+          model_prefix=model_prefix,
+          vocab_size=1002,
+          user_defined_symbols=('<s>', '</s>'),
+      )
+      sp = spm.SentencePieceProcessor()
+      sp.Load(f'{model_prefix}.model')
+      self.assertNotEqual(sp.piece_to_id('<s>'), sp.unk_id())
+      self.assertNotEqual(sp.piece_to_id('</s>'), sp.unk_id())
+      self.assertEqual(sp.encode('<s> </s>', out_type=str),
+                         ['▁', '<s>', '▁', '</s>'])
+
   def test_serialized_proto(self):
     text = 'I saw a girl with a telescope.'
     y1 = self.sp_.encode(text, return_type='serialized_proto')

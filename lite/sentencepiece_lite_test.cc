@@ -2164,5 +2164,254 @@ TEST(SentencePieceLiteTest, DISABLED_DecodeLeadingUnkWithEmptySurface) {
   EXPECT_EQ(decoded, "hello world");
 }
 
+TEST(SentencePieceLiteTest, BpeEncodeWithUnused) {
+  ::sentencepiece::ModelProto model_proto;
+  auto* trainer_spec = model_proto.mutable_trainer_spec();
+  trainer_spec->set_model_type(::sentencepiece::TrainerSpec::BPE);
+  trainer_spec->set_unk_id(0);
+
+  auto add_piece = [&model_proto](
+                       std::string_view piece, float score,
+                       ::sentencepiece::ModelProto::SentencePiece::Type type =
+                           ::sentencepiece::ModelProto::SentencePiece::NORMAL) {
+    auto* p = model_proto.add_pieces();
+    p->set_piece(piece);
+    p->set_score(score);
+    p->set_type(type);
+  };
+
+  add_piece("<unk>", 0.0f,
+            ::sentencepiece::ModelProto::SentencePiece::UNKNOWN);  // 0
+  add_piece("<s>", 0.0f,
+            ::sentencepiece::ModelProto::SentencePiece::CONTROL);  // 1
+  add_piece("</s>", 0.0f,
+            ::sentencepiece::ModelProto::SentencePiece::CONTROL);  // 2
+  add_piece("abcd", 10.0f);                                        // 3
+  add_piece("abc", 5.0f);                                          // 4
+  add_piece("ab", 2.0f);                                           // 5
+  add_piece("cd", 1.0f);                                           // 6
+  add_piece("a", 0.0f);                                            // 7
+  add_piece("b", 0.0f);                                            // 8
+  add_piece("c", 0.0f);                                            // 9
+  add_piece("d", 0.0f);                                            // 10
+
+  // 1. No unused pieces: merges all the way to "abcd".
+  {
+    auto status_or = ToFlatbuffer(model_proto);
+    ASSERT_TRUE(status_or.ok()) << status_or.status();
+    SentencePieceLiteProcessor processor(*status_or);
+    ASSERT_EQ(processor.status(), StatusCode::kOk);
+
+    std::vector<int> ids;
+    std::vector<std::string_view> pieces;
+    ASSERT_EQ(processor.EncodeNormalized("abcd", &ids, &pieces),
+              StatusCode::kOk);
+    EXPECT_EQ(ids, (std::vector<int>{3}));
+    EXPECT_EQ(pieces, (std::vector<std::string_view>{"abcd"}));
+  }
+
+  // 2. Top-level "abcd" is UNUSED: resegments to ["abc", "d"].
+  {
+    model_proto.mutable_pieces(3)->set_type(
+        ::sentencepiece::ModelProto::SentencePiece::UNUSED);
+    auto status_or = ToFlatbuffer(model_proto);
+    ASSERT_TRUE(status_or.ok()) << status_or.status();
+    SentencePieceLiteProcessor processor(*status_or);
+    ASSERT_EQ(processor.status(), StatusCode::kOk);
+
+    std::vector<int> ids;
+    std::vector<std::string_view> pieces;
+    ASSERT_EQ(processor.EncodeNormalized("abcd", &ids, &pieces),
+              StatusCode::kOk);
+    EXPECT_EQ(ids, (std::vector<int>{4, 10}));
+    EXPECT_EQ(pieces, (std::vector<std::string_view>{"abc", "d"}));
+  }
+
+  // 3. Both "abcd" and child "ab" are UNUSED, while parent "abc" is NORMAL:
+  // "ab" still merges as an intermediate transition state to form "abc".
+  {
+    model_proto.mutable_pieces(3)->set_type(
+        ::sentencepiece::ModelProto::SentencePiece::UNUSED);
+    model_proto.mutable_pieces(5)->set_type(
+        ::sentencepiece::ModelProto::SentencePiece::UNUSED);
+    auto status_or = ToFlatbuffer(model_proto);
+    ASSERT_TRUE(status_or.ok()) << status_or.status();
+    SentencePieceLiteProcessor processor(*status_or);
+    ASSERT_EQ(processor.status(), StatusCode::kOk);
+
+    std::vector<int> ids;
+    std::vector<std::string_view> pieces;
+    ASSERT_EQ(processor.EncodeNormalized("abcd", &ids, &pieces),
+              StatusCode::kOk);
+    EXPECT_EQ(ids, (std::vector<int>{4, 10}));
+    EXPECT_EQ(pieces, (std::vector<std::string_view>{"abc", "d"}));
+  }
+
+  // 4. "abcd" and "abc" are UNUSED, while "ab" and "cd" are NORMAL:
+  // Segmentation: a|b|c|d => ab|c|d => abc|d => abcd (blocking "cd").
+  // Resegmentation: abcd => abc|d => ab|c|d.
+  {
+    model_proto.mutable_pieces(3)->set_type(
+        ::sentencepiece::ModelProto::SentencePiece::UNUSED);
+    model_proto.mutable_pieces(4)->set_type(
+        ::sentencepiece::ModelProto::SentencePiece::UNUSED);
+    model_proto.mutable_pieces(5)->set_type(
+        ::sentencepiece::ModelProto::SentencePiece::NORMAL);
+    auto status_or = ToFlatbuffer(model_proto);
+    ASSERT_TRUE(status_or.ok()) << status_or.status();
+    SentencePieceLiteProcessor processor(*status_or);
+    ASSERT_EQ(processor.status(), StatusCode::kOk);
+
+    std::vector<int> ids;
+    std::vector<std::string_view> pieces;
+    ASSERT_EQ(processor.EncodeNormalized("abcd", &ids, &pieces),
+              StatusCode::kOk);
+    EXPECT_EQ(ids, (std::vector<int>{5, 9, 10}));
+    EXPECT_EQ(pieces, (std::vector<std::string_view>{"ab", "c", "d"}));
+  }
+}
+
+TEST(SentencePieceLiteTest, BpeEncodeWithDeepUnusedMergeChain) {
+  ::sentencepiece::ModelProto model_proto;
+  auto* trainer_spec = model_proto.mutable_trainer_spec();
+  trainer_spec->set_model_type(::sentencepiece::TrainerSpec::BPE);
+  trainer_spec->set_unk_id(0);
+
+  auto add_piece = [&model_proto](
+                       std::string_view piece, float score,
+                       ::sentencepiece::ModelProto::SentencePiece::Type type =
+                           ::sentencepiece::ModelProto::SentencePiece::NORMAL) {
+    auto* p = model_proto.add_pieces();
+    p->set_piece(piece);
+    p->set_score(score);
+    p->set_type(type);
+  };
+
+  add_piece("<unk>", 0.0f, ::sentencepiece::ModelProto::SentencePiece::UNKNOWN);
+  add_piece("<s>", 0.0f, ::sentencepiece::ModelProto::SentencePiece::CONTROL);
+  add_piece("</s>", 0.0f, ::sentencepiece::ModelProto::SentencePiece::CONTROL);
+
+  constexpr int kDepth = 101;  // Exceeds kMaxBpeResegmentDepth (100).
+  std::vector<std::string> chars;
+  for (int i = 0; i <= kDepth + 1; ++i) {
+    // U+1000 + i in UTF-8 (3 bytes: 0xE1, 0x80 | ((i >> 6) & 0x3F), 0x80 | (i &
+    // 0x3F)).
+    std::string c = {static_cast<char>(0xE1),
+                     static_cast<char>(0x80 | ((i >> 6) & 0x3F)),
+                     static_cast<char>(0x80 | (i & 0x3F))};
+    chars.push_back(c);
+    add_piece(c, 0.0f);
+  }
+
+  std::string current_merge = chars[0] + chars[1];
+  add_piece(current_merge, -1.0f,
+            ::sentencepiece::ModelProto::SentencePiece::UNUSED);
+  for (int i = 1; i <= kDepth; ++i) {
+    current_merge += chars[i + 1];
+    add_piece(current_merge, -static_cast<float>(i + 1),
+              ::sentencepiece::ModelProto::SentencePiece::UNUSED);
+  }
+
+  auto status_or = ToFlatbuffer(model_proto);
+  ASSERT_TRUE(status_or.ok()) << status_or.status();
+  SentencePieceLiteProcessor processor(*status_or);
+  ASSERT_EQ(processor.status(), StatusCode::kOk);
+
+  std::string input;
+  for (const auto& c : chars) {
+    input += c;
+  }
+
+  std::vector<int> ids;
+  std::vector<std::string_view> pieces;
+  ASSERT_EQ(processor.EncodeNormalized(input, &ids, &pieces), StatusCode::kOk);
+  ASSERT_EQ(pieces.size(), static_cast<size_t>(kDepth + 1));
+  ASSERT_EQ(ids.size(), pieces.size());
+  // At depth > kMaxBpeResegmentDepth, the un-resegmented UNUSED piece maps to
+  // unk rather than emitting an invisible UNUSED token ID.
+  EXPECT_EQ(ids[0], processor.unk_id());
+  EXPECT_EQ(pieces[0], chars[0] + chars[1]);
+  for (int i = 1; i <= kDepth; ++i) {
+    EXPECT_EQ(ids[i], processor.PieceToId(chars[i + 1]));
+    EXPECT_EQ(pieces[i], chars[i + 1]);
+  }
+}
+
+TEST(SentencePieceLiteTest, BpeUnusedRepeatedOccurrencePiecesStayInBounds) {
+  ::sentencepiece::ModelProto model_proto;
+  auto* trainer_spec = model_proto.mutable_trainer_spec();
+  trainer_spec->set_model_type(::sentencepiece::TrainerSpec::BPE);
+  trainer_spec->set_unk_id(0);
+  auto add_piece = [&model_proto](
+                       std::string_view piece, float score,
+                       ::sentencepiece::ModelProto::SentencePiece::Type type) {
+    auto* p = model_proto.add_pieces();
+    p->set_piece(piece);
+    p->set_score(score);
+    p->set_type(type);
+  };
+  add_piece("<unk>", 0.0f, ::sentencepiece::ModelProto::SentencePiece::UNKNOWN);
+  // "x", "y", "z" are not in the vocabulary as single characters (=> unk).
+  add_piece("xy", 1.0f, ::sentencepiece::ModelProto::SentencePiece::UNUSED);
+
+  // 1. Consecutive unk pieces merged by EmitPiece must stay contiguous and in
+  // bounds when the same UNUSED piece appears multiple times.
+  {
+    auto status_or = ToFlatbuffer(model_proto);
+    ASSERT_TRUE(status_or.ok()) << status_or.status();
+    SentencePieceLiteProcessor processor(*status_or);
+    ASSERT_EQ(processor.status(), StatusCode::kOk);
+
+    const std::string input = "xyzxy";
+    std::vector<int> ids;
+    std::vector<std::string_view> pieces;
+    ASSERT_EQ(processor.EncodeNormalizedChunk(input, &ids, &pieces),
+              StatusCode::kOk);
+    EXPECT_EQ(ids, (std::vector<int>{0}));
+    ASSERT_EQ(pieces.size(), 1U);
+    // Check pointers before comparing contents to avoid OOB reads.
+    EXPECT_EQ(pieces[0].data(), input.data());
+    ASSERT_LE(pieces[0].data() + pieces[0].size(), input.data() + input.size());
+    EXPECT_EQ(pieces[0], "xyzxy");
+
+    // 8+ ASCII letters also exercise EncodeNormalized via SWAR pretokenization.
+    const std::string swar_input = "xyzxyzxy";
+    ASSERT_EQ(processor.EncodeNormalized(swar_input, &ids, &pieces),
+              StatusCode::kOk);
+    EXPECT_EQ(ids, (std::vector<int>{0}));
+    ASSERT_EQ(pieces.size(), 1U);
+    EXPECT_EQ(pieces[0].data(), swar_input.data());
+    ASSERT_LE(pieces[0].data() + pieces[0].size(),
+              swar_input.data() + swar_input.size());
+    EXPECT_EQ(pieces[0], "xyzxyzxy");
+  }
+
+  // 2. When resegmented children are known NORMAL tokens, each emitted view
+  // must point to its own occurrence in the input rather than aliasing the last
+  // queued occurrence.
+  {
+    add_piece("x", 0.0f, ::sentencepiece::ModelProto::SentencePiece::NORMAL);
+    add_piece("y", 0.0f, ::sentencepiece::ModelProto::SentencePiece::NORMAL);
+    add_piece("z", 0.0f, ::sentencepiece::ModelProto::SentencePiece::NORMAL);
+
+    auto status_or = ToFlatbuffer(model_proto);
+    ASSERT_TRUE(status_or.ok()) << status_or.status();
+    SentencePieceLiteProcessor processor(*status_or);
+    ASSERT_EQ(processor.status(), StatusCode::kOk);
+
+    const std::string input = "xyzxy";
+    std::vector<int> ids;
+    std::vector<std::string_view> pieces;
+    ASSERT_EQ(processor.EncodeNormalizedChunk(input, &ids, &pieces),
+              StatusCode::kOk);
+    EXPECT_EQ(ids, (std::vector<int>{2, 3, 4, 2, 3}));
+    ASSERT_EQ(pieces.size(), input.size());
+    for (size_t i = 0; i < input.size(); ++i) {
+      EXPECT_EQ(pieces[i].data(), input.data() + i) << "at index " << i;
+      EXPECT_EQ(pieces[i].size(), 1U) << "at index " << i;
+    }
+  }
+}
+
 }  // namespace
 }  // namespace sentencepiece::lite

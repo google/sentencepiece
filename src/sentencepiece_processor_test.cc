@@ -2064,6 +2064,33 @@ TEST(SentencePieceProcessorTest, BpeEncodeAmbiguousTest) {
   ExpectEncode(model_proto, "\xE3", {"\xEF\xBF\xBD"}, {0});
 }
 
+TEST(SentencePieceProcessorTest, BpeEncodeWithUnusedTest) {
+  ModelProto model_proto = MakeRuntimeBaseProto(TrainerSpec::BPE);
+  AddRuntimePiece(&model_proto, "abcd", 10.0);  // 3
+  AddRuntimePiece(&model_proto, "abc", 5.0);    // 4
+  AddRuntimePiece(&model_proto, "ab", 2.0);     // 5
+  AddRuntimePiece(&model_proto, "cd", 1.0);     // 6
+  AddRuntimePiece(&model_proto, "a", 0.0);      // 7
+  AddRuntimePiece(&model_proto, "b", 0.0);      // 8
+  AddRuntimePiece(&model_proto, "c", 0.0);      // 9
+  AddRuntimePiece(&model_proto, "d", 0.0);      // 10
+
+  ExpectEncode(model_proto, "abcd", {"abcd"}, {3});
+
+  model_proto.mutable_pieces(3)->set_type(ModelProto::SentencePiece::UNUSED);
+  ExpectEncode(model_proto, "abcd", {"abc", "d"}, {4, 10});
+
+  // Intermediate UNUSED piece "ab" still merges to form NORMAL parent "abc".
+  model_proto.mutable_pieces(5)->set_type(ModelProto::SentencePiece::UNUSED);
+  ExpectEncode(model_proto, "abcd", {"abc", "d"}, {4, 10});
+
+  // Both "abcd" and "abc" are UNUSED while "ab" and "cd" are NORMAL:
+  // merges to "abcd" (blocking "cd") and resegments to ["ab", "c", "d"].
+  model_proto.mutable_pieces(4)->set_type(ModelProto::SentencePiece::UNUSED);
+  model_proto.mutable_pieces(5)->set_type(ModelProto::SentencePiece::NORMAL);
+  ExpectEncode(model_proto, "abcd", {"ab", "c", "d"}, {5, 9, 10});
+}
+
 TEST(SentencePieceProcessorTest, BpeDeepUnusedMergeChainTest) {
   ModelProto model_proto = MakeRuntimeBaseProto(TrainerSpec::BPE);
   constexpr int kDepth = 101;
@@ -2088,11 +2115,21 @@ TEST(SentencePieceProcessorTest, BpeDeepUnusedMergeChainTest) {
   SentencePieceProcessor sp;
   ABSL_ASSERT_OK(sp.Load(model_proto));
   std::vector<std::string> pieces;
-  ABSL_ASSERT_OK(sp.Encode(absl::StrJoin(chars, ""), &pieces));
+  std::vector<int> ids;
+  const std::string input = absl::StrJoin(chars, "");
+  ABSL_ASSERT_OK(sp.Encode(input, &pieces));
+  ABSL_ASSERT_OK(sp.Encode(input, &ids));
 
-  // Every merge is UNUSED, so the chain is split down to single characters.
-  // v0.2.3 stopped at a depth of 100 and emitted one UNUSED piece.
-  EXPECT_EQ(chars, pieces);
+  // Resegmentation stops at depth 100 (`kMaxBpeResegmentDepth`) and maps the
+  // remaining un-resegmented UNUSED piece to <unk> (whereas v0.2.3 emitted the
+  // invisible UNUSED token ID).
+  ASSERT_EQ(static_cast<size_t>(kDepth + 1), pieces.size());
+  ASSERT_EQ(pieces.size(), ids.size());
+  EXPECT_EQ(sp.unk_id(), ids[0]);
+  EXPECT_EQ(chars[0] + chars[1], pieces[0]);
+  for (int i = 1; i <= kDepth; ++i) {
+    EXPECT_EQ(chars[i + 1], pieces[i]);
+  }
 }
 
 TEST(SentencePieceProcessorTest, CharEncodeReservedAndUnusedTest) {

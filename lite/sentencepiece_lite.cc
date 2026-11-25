@@ -28,6 +28,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -817,12 +818,23 @@ class Model {
     return types_[id] == PieceType_USER_DEFINED;
   }
 
+  bool IsUnused(int id) const { return types_[id] == PieceType_UNUSED; }
+
   // Returns true if `id` is a non-surface token (`UNKNOWN`, `CONTROL`,
-  // `UNUSED`, or `BYTE`) that should be excluded from lattice/BPE merges.
+  // `UNUSED`, or `BYTE`) that should be excluded from the Unigram lattice and
+  // direct-mapping shortcuts.
   bool IsInvisible(int id) const {
     if (id < 0) return true;
     const auto type = types_[id];
     return type != PieceType_NORMAL && type != PieceType_USER_DEFINED;
+  }
+
+  // Returns true if `id` is a reserved token (`UNKNOWN`, `CONTROL`, or `BYTE`)
+  // that must not participate in BPE merges. `UNUSED` tokens are allowed to
+  // merge as intermediate transition states and are resegmented afterward.
+  bool IsReservedId(int id) const {
+    if (id < 0) return true;
+    return IsInvisible(id) && !IsUnused(id);
   }
 
   int piece_type(int id) const { return static_cast<int>(types_[id]); }
@@ -855,6 +867,12 @@ class Model {
 
   // Returns true if `id` is guaranteed to encode as a single standalone token
   // when appearing as an isolated pre-split chunk, bypassing BPE merges.
+  //
+  // Note: `is_direct_mapping` is precomputed during `ToFlatbuffer()`
+  // conversion by running `SentencePieceLiteProcessor`. Pre-converted BPE
+  // `.spm.fb` models containing `UNUSED` pieces generated before `UNUSED` BPE
+  // merge support was added must be re-converted so their direct-mapping flags
+  // reflect intermediate `UNUSED` merges.
   bool IsDirectMapping(int id) const {
     if (id >= vocab_size() || IsInvisible(id)) return false;
     if (!model_proto_->has_direct_mappings()) return false;
@@ -948,6 +966,7 @@ class Model {
   int pad_id_ = -1;
   bool add_dummy_prefix_ = true;
   bool has_non_leading_space_symbol_ = false;
+  bool has_unused_ = false;
   float unk_score_ = 0.0;
   ModelType model_type_ = ModelType_UNIGRAM;
   const float* scores_ = nullptr;
@@ -1085,6 +1104,9 @@ StatusCode Model::Initialize(std::string_view model_buffer) {
     if (id < 0 || id >= static_cast<int>(vocab_size) ||
         id != static_cast<int>(i)) {
       return StatusCode::kInternal;
+    }
+    if (IsUnused(i)) {
+      has_unused_ = true;
     }
     if (!has_non_leading_space_symbol_ && !IsControl(i) && !IsUnknown(i)) {
       std::string_view rem = piece;
@@ -1466,12 +1488,20 @@ void Model::EncodeBPE(std::string_view normalized, std::vector<int>* ids,
     return;
   }
 
+  // Reverse merge rules, lazily allocated only when an UNUSED piece is queued.
+  // key: merged UNUSED piece, value: byte length of its left child.
+  // Recorded when a pair is queued (not when merged) to match canonical
+  // SentencePiece, where later entries overwrite earlier ones.
+  std::unique_ptr<std::unordered_map<std::string_view, size_t>> rev_merge;
+
   // BPE-Dropout (Provilkov et al., ACL 2020): `alpha` is the probability (p in
   // [0, 1]) of dropping a merge. When alpha >= 1.0f, 100% of merges are
   // skipped, so we bypass agenda creation and directly output initial symbols.
   if (alpha < 1.0f) {
     InlineVector<SymbolPair, 64> agenda_vec;
     agenda_vec.reserve(symbols.size());
+
+    const bool has_unused = has_unused_;
 
     if (symbols.size() > 1) {
       for (size_t left = 0; left < symbols.size() - 1; ++left) {
@@ -1481,7 +1511,9 @@ void Model::EncodeBPE(std::string_view normalized, std::vector<int>* ids,
             symbols[left].trie_node_pos, symbols[right].piece);
         if (node_pos == DoubleArray::View::kInvalidNodePos) continue;
         const int id = trie_view.leaf_value(node_pos);
-        if (id == -1 || IsInvisible(id)) continue;
+        if (id == -1 || (has_unused ? IsReservedId(id) : IsInvisible(id))) {
+          continue;
+        }
         SymbolPair& h = agenda_vec.emplace_back();
         h.left = left;
         h.right = right;
@@ -1489,6 +1521,18 @@ void Model::EncodeBPE(std::string_view normalized, std::vector<int>* ids,
         h.size = symbols[left].piece.size() + symbols[right].piece.size();
         h.id = id;
         h.trie_node_pos = node_pos;
+
+        // Makes `rev_merge` for resegmentation.
+        if (has_unused && IsUnused(id)) {
+          if (rev_merge == nullptr) {
+            rev_merge = std::make_unique<
+                std::unordered_map<std::string_view, size_t>>();
+          }
+          const std::string_view piece(
+              symbols[left].piece.data(),
+              symbols[left].piece.size() + symbols[right].piece.size());
+          (*rev_merge)[piece] = symbols[left].piece.size();
+        }
       }
     }
 
@@ -1497,8 +1541,8 @@ void Model::EncodeBPE(std::string_view normalized, std::vector<int>* ids,
                      SymbolPairComparator());
     }
 
-    auto MaybeAddNewSymbolPair = [this, &trie_view, &symbols, &agenda_vec](
-                                     int left, int right) {
+    auto MaybeAddNewSymbolPair = [this, &trie_view, &symbols, &agenda_vec,
+                                  &rev_merge, has_unused](int left, int right) {
       if (left == -1 || right == -1) return;
       const Symbol& left_symbol = symbols[left];
       const Symbol& right_symbol = symbols[right];
@@ -1507,7 +1551,9 @@ void Model::EncodeBPE(std::string_view normalized, std::vector<int>* ids,
           trie_view.transition(left_symbol.trie_node_pos, right_symbol.piece);
       if (node_pos == DoubleArray::View::kInvalidNodePos) return;
       const int id = trie_view.leaf_value(node_pos);
-      if (id == -1 || IsInvisible(id)) return;
+      if (id == -1 || (has_unused ? IsReservedId(id) : IsInvisible(id))) {
+        return;
+      }
       SymbolPair h;
       h.left = left;
       h.right = right;
@@ -1518,6 +1564,18 @@ void Model::EncodeBPE(std::string_view normalized, std::vector<int>* ids,
       agenda_vec.push_back(h);
       std::push_heap(agenda_vec.begin(), agenda_vec.end(),  // NOLINT
                      SymbolPairComparator());
+
+      // Makes `rev_merge` for resegmentation.
+      if (has_unused && IsUnused(id)) {
+        if (rev_merge == nullptr) {
+          rev_merge =
+              std::make_unique<std::unordered_map<std::string_view, size_t>>();
+        }
+        const std::string_view piece(
+            left_symbol.piece.data(),
+            left_symbol.piece.size() + right_symbol.piece.size());
+        (*rev_merge)[piece] = left_symbol.piece.size();
+      }
     };
 
     const bool has_sampler = (uniform_sampler != nullptr);
@@ -1559,12 +1617,38 @@ void Model::EncodeBPE(std::string_view normalized, std::vector<int>* ids,
     }
   }
 
-  int curr = 0;
-  while (curr != -1) {
-    if (!symbols[curr].piece.empty()) {
-      EmitPiece(symbols[curr].id, symbols[curr].piece, ids, pieces);
+  if (rev_merge == nullptr) {
+    for (int index = 0; index != -1; index = symbols[index].next) {
+      if (!symbols[index].piece.empty()) {
+        EmitPiece(symbols[index].id, symbols[index].piece, ids, pieces);
+      }
     }
-    curr = symbols[curr].next;
+    return;
+  }
+
+  // Limit recursion depth to prevent stack overflow on malicious models
+  // with extremely deep BPE merge chains.
+  constexpr int kMaxBpeResegmentDepth = 100;
+
+  auto resegment = [this, &rev_merge, ids, pieces](auto& self,
+                                                   std::string_view w, int id,
+                                                   int depth) -> void {
+    if (id >= 0 && IsUnused(id) && depth <= kMaxBpeResegmentDepth) {
+      if (const auto it = rev_merge->find(w); it != rev_merge->end()) {
+        const std::string_view l = w.substr(0, it->second);
+        const std::string_view r = w.substr(it->second);
+        self(self, l, pieces_trie_.exact_lookup(l), depth + 1);
+        self(self, r, pieces_trie_.exact_lookup(r), depth + 1);
+        return;
+      }
+    }
+    EmitPiece((id < 0 || IsInvisible(id)) ? unk_id_ : id, w, ids, pieces);
+  };
+
+  for (int index = 0; index != -1; index = symbols[index].next) {
+    if (!symbols[index].piece.empty()) {
+      resegment(resegment, symbols[index].piece, symbols[index].id, 0);
+    }
   }
 }
 

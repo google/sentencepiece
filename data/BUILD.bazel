@@ -4,6 +4,7 @@ filegroup(
     name = "test_data",
     srcs = [
         "botchan.txt",
+        "botchan_1000_bpe_10pct_unused.model",
         "botchan_en_bpe_1000.model",
         "botchan_en_unigram_1000.model",
         "gemma_tokenizer.model",

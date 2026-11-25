@@ -98,7 +98,7 @@ ids = sp.encode("Hello world!")
 ### 3.7 Stricter Model Validation and Integer BPE Merge Ranks
 - **BPE scores are used as `int32` merge ranks**: BPE piece scores are truncated to integers when the model is converted to the FlatBuffer representation. Models trained by `spm_train` store integer scores and tokenize identically to v0.2.3; a third-party BPE model with fractional scores may tokenize differently where two candidate merges truncate to the same rank.
 - **Models rejected by 0.3.0 that v0.2.3 loaded**: a piece longer than 4096 bytes (v0.2.3 allowed up to 7999 bytes), a BPE piece with a NaN or out-of-`int32`-range score, a piece string that appears twice with different types (for example `<s>` as both `CONTROL` and `NORMAL`), and a CHAR model that has a `NORMAL` piece that is not exactly one Unicode character.
-- **BPE: deep chains of `UNUSED` merges are split all the way down**: v0.2.3 stopped re-splitting an `UNUSED` merged piece at a depth of 100 and emitted the remaining `UNUSED` piece as is. 0.3.0 has no such limit: on a chain of 101 nested `UNUSED` merges it splits the input into single characters and emits no `UNUSED` piece.
+- **BPE: deep chains of `UNUSED` merges exceeding depth 100 map to `<unk>`**: Both v0.2.3 and 0.3.0 resegment merged `UNUSED` BPE pieces recursively up to depth 100 (`kMaxBpeResegmentDepth`). Beyond depth 100, v0.2.3 emitted the remaining `UNUSED` token ID as is, whereas 0.3.0 maps the un-resegmented `UNUSED` piece to `<unk>` (`unk_id`).
 - **Model accepted by 0.3.0 that v0.2.3 rejected**: a Unigram model that contains only reserved pieces (no `NORMAL`, `USER_DEFINED`, or `UNUSED` piece) now loads and encodes every input as `<unk>`.
 
 ---
