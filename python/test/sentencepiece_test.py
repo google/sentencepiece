@@ -19,6 +19,7 @@ from collections import defaultdict
 import copy
 import io
 import os
+import pathlib
 import pickle
 import re
 import sys
@@ -108,6 +109,19 @@ class TestSentencepieceProcessor(unittest.TestCase):
     for i in range(self.sp_.get_piece_size()):
       piece = self.sp_.id_to_piece(i)
       self.assertEqual(i, self.sp_.piece_to_id(piece))
+
+  def test_load_path_like(self):
+    model_file = pathlib.Path(HERE) / 'botchan_en_unigram_1000.model'
+    expected = self.sp_.encode('Hello world.')
+
+    sp = spm.SentencePieceProcessor(model_file=model_file)
+    self.assertEqual(expected, sp.encode('Hello world.'))
+    sp = spm.SentencePieceProcessor.from_file(model_file)
+    self.assertEqual(expected, sp.encode('Hello world.'))
+    sp = spm.SentencePieceProcessor()
+    self.assertTrue(sp.Load(model_file=model_file))
+    self.assertTrue(sp.LoadFromFile(model_file))
+    self.assertEqual(expected, sp.encode('Hello world.'))
 
   def test_decode_invalid_ids(self):
     # kOutOfRange should map to IndexError
@@ -1852,6 +1866,17 @@ class TestSentencepieceProcessor(unittest.TestCase):
       self.assertEqual('BBB', sp.normalize('ABA'))
     finally:
       os.unlink(tsv_path)
+
+  def test_normalizer_path_like(self):
+    model_file = pathlib.Path(HERE) / 'botchan_en_unigram_1000.model'
+    sp = spm.SentencePieceNormalizer(model_file=model_file)
+    self.assertEqual('▁hello▁world', sp.normalize('  hello  world  '))
+
+    with tempfile.TemporaryDirectory() as tmp:
+      tsv_path = pathlib.Path(tmp) / 'rules.tsv'
+      tsv_path.write_text('0041\t0042\n')
+      sp = spm.SentencePieceNormalizer(rule_tsv=tsv_path)
+      self.assertEqual('▁BBB', sp.normalize('AAA'))
 
   def test_normalizer_model_proto(self):
     model_path = os.path.join(HERE, 'botchan_en_unigram_1000.model')

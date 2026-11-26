@@ -271,7 +271,7 @@ class SentencePieceProcessor:
         raise ValueError('Either model_file or model_proto must be specified.')
 
     def LoadFromFile(self, filename):
-        return self._processor.LoadFromFile(filename)
+        return self._processor.LoadFromFile(os.fsdecode(os.fspath(filename)))
 
     def LoadFromSerializedProto(self, serialized):
         if hasattr(serialized, 'SerializeToString'):
@@ -812,7 +812,7 @@ class SentencePieceNormalizer:
         self._normalizer = _sentencepiece.SentencePieceNormalizer()
 
         if model_file:
-            self._normalizer.LoadFromFile(model_file)
+            self._normalizer.LoadFromFile(os.fsdecode(os.fspath(model_file)))
         elif model_proto:
             if hasattr(model_proto, 'SerializeToString'):
                 model_proto = model_proto.SerializeToString()
@@ -822,7 +822,7 @@ class SentencePieceNormalizer:
                 normalizer_spec = normalizer_spec.SerializeToString()
             self._normalizer.LoadFromSerializedNormalizerSpec(normalizer_spec)
         elif rule_tsv:
-            self._normalizer.LoadFromRuleTSV(rule_tsv)
+            self._normalizer.LoadFromRuleTSV(os.fsdecode(os.fspath(rule_tsv)))
         elif rule_name:
             self._normalizer.LoadFromRuleName(rule_name)
         elif norm_map:
