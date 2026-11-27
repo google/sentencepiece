@@ -123,6 +123,34 @@ class TestSentencepieceProcessor(unittest.TestCase):
     self.assertTrue(sp.LoadFromFile(model_file))
     self.assertEqual(expected, sp.encode('Hello world.'))
 
+  def test_load_bytes_like(self):
+    proto = self.sp_.serialized_model_proto()
+    expected = self.sp_.encode('Hello world.')
+
+    for model_proto in (bytearray(proto), memoryview(proto)):
+      sp = spm.SentencePieceProcessor(model_proto=model_proto)
+      self.assertEqual(expected, sp.encode('Hello world.'))
+      sp = spm.SentencePieceProcessor.from_proto(model_proto)
+      self.assertEqual(expected, sp.encode('Hello world.'))
+      sp = spm.SentencePieceProcessor()
+      self.assertTrue(sp.Load(model_proto=model_proto))
+      self.assertTrue(sp.LoadFromSerializedProto(model_proto))
+      self.assertEqual(expected, sp.encode('Hello world.'))
+
+  def test_normalizer_and_flatbuffer_bytes_like(self):
+    proto = self.sp_.serialized_model_proto()
+    expected = spm.SentencePieceNormalizer(model_proto=proto).normalize(' a  b ')
+
+    for model_proto in (bytearray(proto), memoryview(proto)):
+      normalizer = spm.SentencePieceNormalizer(model_proto=model_proto)
+      self.assertEqual(expected, normalizer.normalize(' a  b '))
+      self.assertEqual(
+          spm.ConvertToFlatbuffer(model_proto=proto),
+          spm.ConvertToFlatbuffer(model_proto=model_proto))
+      self.assertEqual(
+          spm.ConvertToFlatbuffer(serialized_model_proto=proto),
+          spm.ConvertToFlatbuffer(serialized_model_proto=model_proto))
+
   def test_decode_invalid_ids(self):
     # kOutOfRange should map to IndexError
     with self.assertRaises(IndexError):

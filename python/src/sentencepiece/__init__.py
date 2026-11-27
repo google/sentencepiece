@@ -135,6 +135,15 @@ set_nbest_timeout = SetNBestTimeout
 set_data_dir = SetDataDir
 
 
+def _serialize(proto):
+    """Returns a serialized proto: bytes, or bytes made from a bytes-like object."""
+    if hasattr(proto, 'SerializeToString'):
+        return proto.SerializeToString()
+    if isinstance(proto, (bytearray, memoryview)):
+        return bytes(proto)
+    return proto
+
+
 def ConvertToFlatbuffer(
     model_file=None,
     model_proto=None,
@@ -178,16 +187,13 @@ def ConvertToFlatbuffer(
         )
 
     if model_proto is not None:
-        if hasattr(model_proto, 'SerializeToString'):
-            serialized = model_proto.SerializeToString()
-        elif isinstance(model_proto, bytes):
-            serialized = model_proto
-        else:
+        serialized = _serialize(model_proto)
+        if not isinstance(serialized, bytes):
             raise TypeError('model_proto must be a ModelProto object or bytes.')
     else:
-        if not isinstance(serialized_model_proto, bytes):
+        serialized = _serialize(serialized_model_proto)
+        if not isinstance(serialized, bytes):
             raise TypeError('serialized_model_proto must be bytes.')
-        serialized = serialized_model_proto
 
     return _sentencepiece._ConvertSerializedProtoToFlatbuffer(
         serialized,
@@ -274,9 +280,7 @@ class SentencePieceProcessor:
         return self._processor.LoadFromFile(os.fsdecode(os.fspath(filename)))
 
     def LoadFromSerializedProto(self, serialized):
-        if hasattr(serialized, 'SerializeToString'):
-            serialized = serialized.SerializeToString()
-        return self._processor.LoadFromSerializedProto(serialized)
+        return self._processor.LoadFromSerializedProto(_serialize(serialized))
 
     def Encode(self,
                input,
@@ -814,13 +818,10 @@ class SentencePieceNormalizer:
         if model_file:
             self._normalizer.LoadFromFile(os.fsdecode(os.fspath(model_file)))
         elif model_proto:
-            if hasattr(model_proto, 'SerializeToString'):
-                model_proto = model_proto.SerializeToString()
-            self._normalizer.LoadFromSerializedProto(model_proto)
+            self._normalizer.LoadFromSerializedProto(_serialize(model_proto))
         elif normalizer_spec:
-            if hasattr(normalizer_spec, 'SerializeToString'):
-                normalizer_spec = normalizer_spec.SerializeToString()
-            self._normalizer.LoadFromSerializedNormalizerSpec(normalizer_spec)
+            self._normalizer.LoadFromSerializedNormalizerSpec(
+                _serialize(normalizer_spec))
         elif rule_tsv:
             self._normalizer.LoadFromRuleTSV(os.fsdecode(os.fspath(rule_tsv)))
         elif rule_name:
